@@ -8,7 +8,7 @@ namespace V3DLib {
   * Using the following idiom was more than 2x slower than insert:
   *
   *    RegIdSet m;
-	*    std::merge(begin(), end(), rhs.begin(), rhs.end(), inserter(m, m.end()));
+  *    std::merge(begin(), end(), rhs.begin(), rhs.end(), inserter(m, m.end()));
   *    (*this) = m;
   */
 void RegIdSet::add(RegIdSet const &rhs) {
