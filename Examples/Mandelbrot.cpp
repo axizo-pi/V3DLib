@@ -244,7 +244,12 @@ void output_pgm(Array &result) {
 void run_qpu_kernel(KernelType &kernel) {
   assertq(0 == settings.numStepsWidth % 16, "Width dimension must be a multiple of 16");
 
+  Timer timer("Kernel compile");
+
   auto k = compile(kernel);
+
+  timer.end(!settings.silent);
+
   k.setNumQPUs(settings.num_qpus);
 
   Int::Array result(settings.num_items());  // Allocate and initialise
