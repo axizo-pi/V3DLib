@@ -27,7 +27,7 @@ void dma(Int::Ptr p) {
 int main(int argc, const char *argv[]) {
   settings.init(argc, argv);
 
-  if (!Platform::has_vc4() && settings.run_type == 0) {
+  if (!Platform::run_vc4() && settings.run_type == 0) {
     printf("\nThe DMA example does not work on v3d, it is only meant for vc4.\n"
            "It will only work for the emulator on v3d.\n\n");
     return 1;

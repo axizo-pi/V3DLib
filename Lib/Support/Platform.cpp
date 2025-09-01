@@ -158,21 +158,28 @@ bool get_chip_version(std::string &model, std::string &revision) {
 
 class PlatformInfo {
 public:
+	enum VideoCoreType {
+		UNKNOWN,
+		vc4,
+		vc6,
+		vc7
+	};
+
   PlatformInfo();
 
   std::string model_number;
   std::string revision;
-  bool has_vc4 = false;
-
-  int size_regfile() const;
-
+	VideoCoreType vc_type = UNKNOWN;
   std::string platform_id; 
 
   bool is_pi_platform;
   bool m_use_main_memory   = false;
   bool m_compiling_for_vc4 = true;
 
+  bool run_vc4() const { return vc_type == vc4; }
+  int size_regfile() const;
   std::string output() const;
+	int max_qpus() const;
 };
 
 
@@ -183,13 +190,15 @@ PlatformInfo::PlatformInfo() {
   }
 
   if (!platform_id.empty() && is_pi_platform) {
-    has_vc4 = (platform_id.npos == platform_id.find("Pi 4"));
+   vc_type = (platform_id.find("Pi 4") != platform_id.npos)? vc6:
+   	(platform_id.find("Pi 5") != platform_id.npos)? vc7:
+		vc4;
   }
 
 #ifndef QPU_MODE
   // Allow only emulator and interpreter modes, no hardware
   m_use_main_memory = true;
-  has_vc4 = true;       // run vc4 code only
+  vc_type = vc4;             // run vc4 code only
 #endif
 }
 
@@ -211,16 +220,32 @@ std::string PlatformInfo::output() const {
     ret << "This is NOT a pi platform!\n";
   } else {
     ret << "This is a pi platform.\n";
+		ret << "GPU: ";
 
-    if (has_vc4) {
-      ret << "GPU: vc4 (VideoCore IV)\n";
-    } else {
-      ret << "GPU: v3d (VideoCore VI)\n";
-    }
+		switch (vc_type) {
+			case UNKNOWN: ret << "Unknown";             break;
+			case vc4:     ret << "vc4 (VideoCore IV)";  break;
+			case vc6:     ret << "v3d (VideoCore VI)";  break;
+			case vc7:     ret << "v3d (VideoCore VII)"; break;
+			default:      ret << "No clue!";
+		}
+
+		ret << "\n";
   }
 
   return ret;
 }
+
+
+int PlatformInfo::max_qpus() const {
+	switch (vc_type) {
+		case vc4: return 12;
+		case vc6: return 8; 
+		case vc7: return 16;
+		default:  return -1;
+	}
+}
+
 
 // Defined like this to delay the creation of the instance after program init,
 // So that other globals get the chance to use it on program init.
@@ -268,7 +293,7 @@ bool Platform::compiling_for_vc4() { return instance().m_compiling_for_vc4; }
 bool Platform::use_main_memory()   { return instance().m_use_main_memory; }
 std::string Platform::platform_info() { return instance().output(); }
 bool Platform::is_pi_platform()    { return instance().is_pi_platform; }
-bool Platform::has_vc4()           { return instance().has_vc4; }
+bool Platform::run_vc4()           { return instance().run_vc4(); }
 
 
 /**
@@ -291,6 +316,8 @@ bool Platform::has_vc4()           { return instance().has_vc4; }
  * concept can actually be convoluted as f*** underwater.
  */
 int Platform::size_regfile() {
+	warning("Platform::size_regfile(): add vc7.");
+
   if (compiling_for_vc4()) {
     return 32;
   } else {
@@ -300,16 +327,14 @@ int Platform::size_regfile() {
 
 
 int Platform::max_qpus() {
-  if (has_vc4()) {
-    return 12;
-  } else {
-    return 8;
-  }
+	return instance().max_qpus();
 }
 
 
 
 int Platform::gather_limit() {
+	warning("Platform::gather_limit(): add vc7.");
+
   if (compiling_for_vc4()) {
     return 4;
   } else {

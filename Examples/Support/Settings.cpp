@@ -246,7 +246,9 @@ bool Settings::process() {
   if (m_use_num_qpus) {
     num_qpus    = p["Num QPU's"]->get_int_value();
 
-    if (run_type != 0 || Platform::has_vc4()) {  // vc4 only
+		printf("TODO Settings::process(): add num_qpu's for vc7.\n");
+
+    if (run_type != 0 || Platform::run_vc4()) {
       if (num_qpus < 0 || num_qpus > 12) {
         printf("ERROR: For vc4 and emulator, the number of QPU's selected must be between 1 and 12 inclusive.\n");
         return false;
@@ -275,14 +277,15 @@ bool Settings::process() {
  * @brief Performance Counters: Enable the counters we are interested in
  */
 void Settings::startPerfCounters() {
-  //printf("Entered Settings::startPerfCounters()\n");
 
 #ifdef QPU_MODE
   if (!show_perf_counters) return;
 
   using PC = V3DLib::vc4::PerformanceCounters;
  
-  if (Platform::has_vc4()) {
+  printf("TODO Settings::startPerfCounters: add vc7\n");
+
+  if (Platform::run_vc4()) {
     PC::enable({
       PC::QPU_INSTRUCTIONS,
       PC::QPU_STALLED_TMU,
@@ -324,7 +327,9 @@ void Settings::stopPerfCounters() {
  
   std::string output;
 
-  if (Platform::has_vc4()) {
+  printf("TODO Settings::stopPerfCounters: add vc7\n");
+
+  if (Platform::run_vc4()) {
     // Show values current counters
     using PC = V3DLib::vc4::PerformanceCounters;
 
@@ -353,13 +358,13 @@ void Settings::process(BaseKernel &k) {
   stopPerfCounters();
 
   // NOTE: For multiple calls here (entirely possible, HeatMap does this),
-  //       this will prevent dumpng the v3d code (mnemonics, actually) on every call.
+  //       this will prevent dumping the v3d code (mnemonics, actually) on every call.
   if (output_code) {
     if (output_count == 0) {
       assert(!name.empty());
       std::string code_filename = name + "_code.txt";
 
-      bool output_for_vc4 = Platform::has_vc4() || (run_type != 0);
+      bool output_for_vc4 = Platform::run_vc4() || (run_type != 0);
       k.pretty(output_for_vc4, code_filename.c_str());
     } else if (output_count == 1) {
       warning("Not outputting code more than once");

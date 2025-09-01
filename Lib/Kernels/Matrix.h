@@ -523,7 +523,7 @@ protected:
 
 
   bool use_multi_kernel_calls(CallType call_type) const {
-    if (call_type == CALL && !Platform::has_vc4()) {
+    if (call_type == CALL && !Platform::run_vc4()) {
       return m_force_multi_kernels_calls;
     }
 

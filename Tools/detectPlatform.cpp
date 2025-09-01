@@ -292,7 +292,7 @@ int main(int argc, char const *argv[]) {
   if (settings.extended) {
     printf("\n");
 
-    if (Platform::has_vc4()) {
+    if (Platform::run_vc4()) {
       detect_vc4();
     } else {
       detect_v3d();
