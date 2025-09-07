@@ -1,5 +1,6 @@
 On Debian 12 Woodworm, Pi <= 3:
 
+**NOT WORKING - Mandelbrot still can't access /dev/mem**
 
 > sudo usermod -a -G kmem [your-username]		# For accessing /dev/mem without sudo
 
