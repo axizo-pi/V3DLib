@@ -42,6 +42,7 @@ class GenPages < WebController
 			"Examples.md",
 			"FAQ.md",
 			"GettingStarted.md",
+			"QuickStart.md",
 			"Issues.md",
 			"Profiling.md",
 			"TODO.md"
