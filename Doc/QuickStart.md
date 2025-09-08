@@ -1,3 +1,12 @@
+
+- Set locale to `en_US.UTF-8' using `sudo raspi-config`, Localization Options.
+
+- For external libs:
+
+    > sudo apt-get install cmake
+
+---------------------------
+
 On Debian 12 Woodworm, Pi <= 3:
 
 **NOT WORKING - Mandelbrot still can't access /dev/mem**

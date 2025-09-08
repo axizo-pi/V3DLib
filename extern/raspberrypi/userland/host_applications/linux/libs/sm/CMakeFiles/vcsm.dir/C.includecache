@@ -1,0 +1,40 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/wim/projects/V3DLib/extern/raspberrypi/userland/host_applications/linux/libs/sm/user-vcsm.c
+stdio.h
+-
+stdlib.h
+-
+stdint.h
+-
+string.h
+-
+errno.h
+-
+fcntl.h
+-
+unistd.h
+-
+sys/mman.h
+-
+sys/ioctl.h
+-
+vmcs_sm_ioctl.h
+-
+vc_sm_cma_ioctl.h
+/home/wim/projects/V3DLib/extern/raspberrypi/userland/host_applications/linux/libs/sm/vc_sm_cma_ioctl.h
+dma-buf.h
+/home/wim/projects/V3DLib/extern/raspberrypi/userland/host_applications/linux/libs/sm/dma-buf.h
+user-vcsm.h
+/home/wim/projects/V3DLib/extern/raspberrypi/userland/host_applications/linux/libs/sm/user-vcsm.h
+interface/vcos/vcos.h
+/home/wim/projects/V3DLib/extern/raspberrypi/userland/host_applications/linux/libs/sm/interface/vcos/vcos.h
+
+/home/wim/projects/V3DLib/extern/raspberrypi/userland/host_applications/linux/libs/sm/user-vcsm.h
+

@@ -44,11 +44,12 @@
 #
 INCLUDE_EXTERN= \
  -I ../CmdParameter/Lib \
- -I mesa/include \
- -I mesa/src
+ -I extern/mesa/include \
+ -I extern/mesa/src
 
 LIB_EXTERN= \
- -Lobj/mesa/bin -lmesa
+ -Lobj/mesa/bin -lmesa \
+ -Lextern/raspberrypi/userland/host_applications/linux/libs/sm -lvcsm
 
 LIB_DEPEND=
 
@@ -138,6 +139,7 @@ EXAMPLES_OBJ = $(patsubst %,$(OBJ_DIR)/%,$(EXAMPLES_EXTRA))
 
 V3DLIB=$(OBJ_DIR)/libv3dlib.a
 MESA_LIB = obj/mesa/bin/libmesa.a
+VCSM_LIB = extern/raspberrypi/userland/host_applications/linux/libs/sm/libvcsm.a
 
 
 # Top-level targets
@@ -184,12 +186,16 @@ init:
 # Targets for static library
 #
 
-$(V3DLIB): $(LIB) $(MESA_LIB)
+$(V3DLIB): $(LIB) $(MESA_LIB) $(VCSM_LIB)
 	@echo Creating $@
 	@ar rcs $@ $^
 
 $(MESA_LIB):
-	cd mesa && make compile
+	cd extern/mesa && make compile
+
+$(VCSM_LIB):
+	cd extern/raspberrypi/userland/host_applications/linux/libs/sm && make
+
 
 
 # Rule for creating object files

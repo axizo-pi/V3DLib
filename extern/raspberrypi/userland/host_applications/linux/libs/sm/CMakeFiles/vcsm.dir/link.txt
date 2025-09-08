@@ -1,0 +1,2 @@
+/usr/bin/ar qc libvcsm.a CMakeFiles/vcsm.dir/user-vcsm.o
+/usr/bin/ranlib libvcsm.a

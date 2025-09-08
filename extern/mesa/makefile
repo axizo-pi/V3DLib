@@ -17,9 +17,9 @@
 #
 ################################################################################
 SRCDIR = src
-OBJDIR = ../obj/mesa/src
-BINDIR = ../obj/mesa/bin
-MAINDIR = ../obj/mesa/main
+OBJDIR = ../../obj/mesa/src
+BINDIR = ../../obj/mesa/bin
+MAINDIR = ../../obj/mesa/main
 
 XX_FLAGS = -MMD -MP -MF"$(@:%.o=%.d)"
 

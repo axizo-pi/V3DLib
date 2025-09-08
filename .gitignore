@@ -7,7 +7,6 @@ obj*
 *.swp
 *.org~
 .~lock.*
-extern
 *_code.txt
 /*.txt
 generated
