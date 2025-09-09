@@ -49,7 +49,7 @@ INCLUDE_EXTERN= \
 
 LIB_EXTERN= \
  -Lobj/mesa/bin -lmesa \
- -Lextern/raspberrypi/userland/host_applications/linux/libs/sm -lvcsm
+ -Lextern/userland/host_applications/linux/libs/sm -lvcsm
 
 LIB_DEPEND=
 
@@ -139,7 +139,7 @@ EXAMPLES_OBJ = $(patsubst %,$(OBJ_DIR)/%,$(EXAMPLES_EXTRA))
 
 V3DLIB=$(OBJ_DIR)/libv3dlib.a
 MESA_LIB = obj/mesa/bin/libmesa.a
-VCSM_LIB = extern/raspberrypi/userland/host_applications/linux/libs/sm/libvcsm.a
+VCSM_LIB = extern/userland/host_applications/linux/libs/sm/libvcsm.a
 
 
 # Top-level targets
@@ -194,7 +194,7 @@ $(MESA_LIB):
 	cd extern/mesa && make compile
 
 $(VCSM_LIB):
-	cd extern/raspberrypi/userland/host_applications/linux/libs/sm && make
+	cd extern/userland/host_applications/linux/libs/sm && make
 
 
 
