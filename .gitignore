@@ -9,3 +9,4 @@ obj*
 .~lock.*
 extern
 *_code.txt
+/*.txt
