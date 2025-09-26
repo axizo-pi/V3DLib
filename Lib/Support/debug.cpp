@@ -1,0 +1,88 @@
+#include "debug.h"
+#include <iostream>
+//#include <cstdio>
+#include "Exception.h"
+
+namespace {
+
+enum LogLevel {
+  ALL,
+  LEVEL_DEBUG,  // prefix because DEBUG is a #define
+  WARNING,
+  ERROR,
+  NONE
+};
+
+LogLevel log_level = ALL;
+bool     param_log_to_cout = true;
+
+}  // anon namespace
+
+#ifdef DEBUG
+
+void debug(const char *str) {
+  if (param_log_to_cout && log_level <= LEVEL_DEBUG) {
+    printf("DEBUG: %s\n", str);
+  }
+}
+
+
+void warning(const char *str) {
+  if (param_log_to_cout && log_level <= WARNING) {
+    printf("WARNING: %s\n", str);
+  }
+}
+
+
+void debug_break(const char *str) {
+  if (log_level <= LEVEL_DEBUG) {
+    printf("DEBUG: %s\n", str);
+    breakpoint
+  }
+}
+
+#endif  // DEBUG
+
+
+void error(const char *str, bool do_throw) {
+  if (param_log_to_cout && log_level <= ERROR) {
+    printf("ERROR: %s\n", str);
+  }
+
+  if (do_throw) {
+    std::string buf = "ERROR: ";
+    buf += str;
+    throw V3DLib::Exception(buf);
+  }
+}
+
+
+void log_to_cout(bool val) {
+  param_log_to_cout = val;
+}
+
+
+/**
+ * Alternative for `assert` that throws passed string.
+ *
+ * This is always enabled, also when not building for DEBUG.
+ * See header comment of `fatal()` in `basics.h`
+ */
+void assertq(bool cond, const char *msg, bool do_break) {
+  if (cond) {
+    return;
+  }
+
+  std::string str = "Assertion failed: ";
+  str += msg;
+
+#ifdef DEBUG
+  if (do_break) {
+    std::cout << "assertq(): breakpoint with message: '" << str << "'" << std::endl;
+    breakpoint
+  }
+#endif
+
+  throw V3DLib::Exception(str);
+}
+
