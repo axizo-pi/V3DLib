@@ -379,7 +379,7 @@ TEST_CASE("Test correct working DSL [dsl]") {
     k.load(&result).call();
 
     float precision = 0.0f;
-    if (Platform::has_vc4()) {
+    if (Platform::run_vc4()) {
       precision = 0.5e-4f;
     }
 
@@ -1235,7 +1235,7 @@ TEST_CASE("Test sin/cos instructions [dsl][sincos]") {
 
   float const hi_precision = 1.2e-3f;
   float const lo_precision = 5.7e-2f;
-  float const qpu_precision = (Platform::has_vc4())?lo_precision:1.0e-6f;  // vc4 will use the lo-res sin function, v3d the hardware, which is really precise
+  float const qpu_precision = (Platform::run_vc4())?lo_precision:1.0e-6f;  // vc4 will use the lo-res sin function, v3d the hardware, which is really precise
 
   {
     float diff = max_abs_value(lib_sin, result.ptr());

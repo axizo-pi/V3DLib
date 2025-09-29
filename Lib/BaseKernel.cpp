@@ -102,7 +102,9 @@ void BaseKernel::interpret() {
  * Invoke kernel on physical QPU hardware
  */
 void BaseKernel::qpu() {
-  if (Platform::has_vc4()) {
+	debug("BaseKernel::qpu(): add vc7.");
+
+  if (Platform::run_vc4()) {
     vc4().invoke(m_numQPUs, uniforms);
   } else {
     v3d().invoke(m_numQPUs, uniforms);

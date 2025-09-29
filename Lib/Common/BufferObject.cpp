@@ -61,7 +61,7 @@ BufferObject &getBufferObject() {
 #ifdef QPU_MODE
   if (Platform::use_main_memory()) {
     return emu::BufferObject::getHeap();
-  } else if (Platform::has_vc4()) {
+  } else if (Platform::run_vc4()) {
     return vc4::BufferObject::getHeap();
   } else {
     return v3d::BufferObject::getHeap();

@@ -244,7 +244,12 @@ void output_pgm(Array &result) {
 void run_qpu_kernel(KernelType &kernel) {
   assertq(0 == settings.numStepsWidth % 16, "Width dimension must be a multiple of 16");
 
+  Timer timer("Kernel compile");
+
   auto k = compile(kernel);
+
+  timer.end(!settings.silent);
+
   k.setNumQPUs(settings.num_qpus);
 
   Int::Array result(settings.num_items());  // Allocate and initialise
@@ -302,7 +307,7 @@ int main(int argc, const char *argv[]) {
   settings.init(argc, argv);
 
 #ifdef ARM32
-  if (!Platform::has_vc4() && settings.kernel <= 1) {
+  if (!Platform::run_vc4() && settings.kernel <= 1) {
     printf("\nWARNING: Mandelbrot will run *sometimes* on a Pi4 with 32-bit Raspbian when GPU kernels are used "
            "(-k=multi or -k=single).\n"
            "Running it has the potential to lock up your Pi. Please use with care.\n\n");

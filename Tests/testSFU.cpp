@@ -58,7 +58,7 @@ TEST_CASE("Test SFU functions [sfu]") {
   //
   // v3d has same output as int and emu.
   //
-  double precision = (Platform::has_vc4())?3e-4:1e-6;
+  double precision = (Platform::run_vc4())?3e-4:1e-6;
 
   results.fill(0.0);
   k.call();

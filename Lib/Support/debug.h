@@ -9,6 +9,16 @@
 #include <assert.h>
 #endif
 
+
+enum LogLevel {
+  ALL,
+  LEVEL_DEBUG,  // prefix because DEBUG is a #define
+  WARNING,
+  ERROR,
+  NO_OUTPUT
+};
+
+
 #ifdef DEBUG
 
 #define breakpoint raise(SIGTRAP);
@@ -33,6 +43,7 @@ inline void warning(std::string const &str) { return warning(str.c_str()); }
 void error(const char *str, bool do_throw = false);
 inline void error(std::string const &msg, bool do_throw = false) { error(msg.c_str(), do_throw); }
 
+void set_loglevel(LogLevel level);
 void log_to_cout(bool val);
 void assertq(bool cond, const char *msg, bool do_break = false);
 

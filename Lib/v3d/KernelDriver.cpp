@@ -732,7 +732,9 @@ bool checkUniformAtTop(V3DLib::Instr::List const &instrs) {
  * Translate instructions from target to v3d
  */
 void _encode(V3DLib::Instr::List const &instrs, Instructions &instructions) {
+#ifdef DEBUG	
   assertq(checkUniformAtTop(instrs), "_encode(): checkUniformAtTop() failed (v3d)", true);
+#endif
   bool prev_was_init_begin = false;
   bool prev_was_init_end    = false;
 
@@ -1179,6 +1181,8 @@ void combine(Instructions &instructions) {
 }
 
 
+#ifdef QPU_MODE
+
 void load_uniforms(Data &unif, int numQPUs, Data const &devnull, Data const &done, IntList const &params) {
   int offset = 0;
 
@@ -1194,6 +1198,8 @@ void load_uniforms(Data &unif, int numQPUs, Data const &devnull, Data const &don
   // The last item is for the 'done' location;
   unif[offset] = (uint32_t) done.getAddress();
 }
+
+#endif  // QPU_MODE
 
 
 void invoke(int numQPUs, Data &devnull, Code &codeMem, IntList &params) {

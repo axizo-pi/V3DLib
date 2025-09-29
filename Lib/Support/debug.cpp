@@ -5,13 +5,6 @@
 
 namespace {
 
-enum LogLevel {
-  ALL,
-  LEVEL_DEBUG,  // prefix because DEBUG is a #define
-  WARNING,
-  ERROR,
-  NONE
-};
 
 LogLevel log_level = ALL;
 bool     param_log_to_cout = true;
@@ -54,6 +47,11 @@ void error(const char *str, bool do_throw) {
     buf += str;
     throw V3DLib::Exception(buf);
   }
+}
+
+
+void set_loglevel(LogLevel level) {
+  log_level = level;
 }
 
 

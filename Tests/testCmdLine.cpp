@@ -32,7 +32,7 @@ enum RunType {
 
 
 void init_msg() {
-  if (!V3DLib::Platform::has_vc4()) {
+  if (!V3DLib::Platform::run_vc4()) {
     static bool showed_msg = false;
     if (showed_msg) return;
 

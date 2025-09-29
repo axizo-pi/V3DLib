@@ -9,7 +9,7 @@ void compare_arrays(Float::Array2D &a, float const *b, float precision) {
 
   // Values empirically determined - the bigger the matrices, the less precise
   if (precision == -1.0f) {
-    if (Platform::has_vc4()) {
+    if (Platform::run_vc4()) {
       precision = 1.0e-3f;
     } else {
       precision = 2.5e-4f;  // This value works for 640x640 matrices

@@ -11,6 +11,21 @@
 //    > sudo ./obj/qpu-debug/bin/runTests -tce=*[matrix]*        // Exclude all tags in list
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////////
+#include "Support/debug.h"
 
-#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+//#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
+#define DOCTEST_CONFIG_IMPLEMENT
 #include "doctest.h"
+
+
+int main(int argc, char** argv) {
+  set_loglevel(LogLevel::WARNING);
+
+  doctest::Context context;
+  context.applyCommandLine(argc, argv);
+  int res = context.run(); // run
+  if(context.shouldExit()) // important - query flags (and --exit) rely on the user doing this
+    return res;          // propagate the result of the tests
+   
+return 0;
+}

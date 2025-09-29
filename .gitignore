@@ -7,6 +7,14 @@ obj*
 *.swp
 *.org~
 .~lock.*
-extern
 *_code.txt
 /*.txt
+generated
+# Definitions for userland
+CMakeCache.txt
+*.pc
+CMakeFiles
+*.cmake
+extern/userland/**/Makefile
+extern/userland/build
+extern/userland/vmcs_config.h
