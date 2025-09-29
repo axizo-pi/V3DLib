@@ -137,7 +137,7 @@ bool compare_dfts(int Dim, bool do_profiling) {
   //
   // Support Stuff
   //
-  CompileFor for_platform = (Platform::has_vc4())?CompileFor::VC4:CompileFor::V3D;
+  CompileFor for_platform = (Platform::run_vc4())?CompileFor::VC4:CompileFor::V3D;
 
   ProfileOutput profile_output;
   profile_output.show_compile(true);
@@ -243,7 +243,7 @@ bool compare_dfts(int Dim, bool do_profiling) {
         INFO("Comparing " << label << " with mult");
         INFO("result: " << result_complex.dump() << ", expected: " << result_mult.dump());
 
-        float precision = Platform::has_vc4()? 0.2f : 0.02f;
+        float precision = Platform::run_vc4()? 0.2f : 0.02f;
         compare_arrays(result_complex, result_mult, precision);
       }
     }
@@ -513,7 +513,7 @@ TEST_CASE("Discrete Fourier Transform tmp [dft][dft2]") {
       // Profiling: try all sizes until compilation fails
       std::cout << "DFT compare" << ProfileOutput::header();
 
-      int Step = Platform::has_vc4()?2:4;
+      int Step = Platform::run_vc4()?2:4;
       int N = 1;
       bool can_continue = true;
       while (can_continue) {

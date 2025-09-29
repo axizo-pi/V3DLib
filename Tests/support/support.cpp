@@ -57,7 +57,7 @@ void match_kernel_outputs(
 bool running_on_v3d() {
   static bool did_first = false;
 
-  if (V3DLib::Platform::has_vc4()) {
+  if (V3DLib::Platform::run_vc4()) {
     if (!did_first) {
       printf("Skipping v3d tests with calls to driver\n");
       did_first = true;
@@ -71,7 +71,7 @@ bool running_on_v3d() {
 
 #ifdef QPU_MODE
 //  #pragma message "QPU mode enabled"
-const char *SUDO = (V3DLib::Platform::has_vc4())? "sudo " : "";  // sudo needed for vc4
+const char *SUDO = (V3DLib::Platform::run_vc4())? "sudo " : "";  // sudo needed for vc4
 #else
 const char *SUDO = "";
 #endif

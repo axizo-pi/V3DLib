@@ -13,7 +13,7 @@ using V3DLib::Platform;
 TEST_CASE("Test correct working of RegisterMap [regmap]") {
 
   SUBCASE("Check num QPU's vc4") {
-    if (!Platform::has_vc4()) return;
+    if (!Platform::run_vc4()) return;
     const int MAX_QPUS = 12;
 
     using RegMap = V3DLib::RegisterMap;
@@ -27,7 +27,7 @@ TEST_CASE("Test correct working of RegisterMap [regmap]") {
   }
 
   SUBCASE("Check num QPU's v3d") {
-    if (Platform::has_vc4()) return; 
+    if (Platform::run_vc4()) return; 
     const int MAX_QPUS_V3D = 8;  // Expected num QPU's
 
     V3DLib::v3d::RegisterMapping map_v3d;  // TODO change to work with instance() call

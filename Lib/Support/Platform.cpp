@@ -316,7 +316,7 @@ bool Platform::run_vc4()           { return instance().run_vc4(); }
  * concept can actually be convoluted as f*** underwater.
  */
 int Platform::size_regfile() {
-	warning("Platform::size_regfile(): add vc7.");
+	debug("Platform::size_regfile(): add vc7.");
 
   if (compiling_for_vc4()) {
     return 32;
@@ -333,7 +333,7 @@ int Platform::max_qpus() {
 
 
 int Platform::gather_limit() {
-	warning("Platform::gather_limit(): add vc7.");
+	debug("Platform::gather_limit(): add vc7.");
 
   if (compiling_for_vc4()) {
     return 4;

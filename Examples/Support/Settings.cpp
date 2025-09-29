@@ -11,6 +11,7 @@
 #include "Kernel.h"
 #include "LibSettings.h"
 #include "Support/basics.h"
+#include "Support/debug.h"
 
 #ifdef QPU_MODE
 #include "Support/Platform.h"
@@ -243,10 +244,14 @@ bool Settings::process() {
   int heap_mem     = p["Shared Memory Size"]->get_int_value();
   V3DLib::LibSettings::heap_size(heap_mem << 20);
 
+  if (silent) {
+    log_to_cout(false);  // Needs to be before debug that follows
+  }
+
   if (m_use_num_qpus) {
     num_qpus    = p["Num QPU's"]->get_int_value();
 
-		printf("TODO Settings::process(): add num_qpu's for vc7.\n");
+		debug("TODO Settings::process(): add num_qpu's for vc7.\n");
 
     if (run_type != 0 || Platform::run_vc4()) {
       if (num_qpus < 0 || num_qpus > 12) {
@@ -259,10 +264,6 @@ bool Settings::process() {
         return false;
       }
     }
-  }
-
-  if (silent) {
-    log_to_cout(false);
   }
 
   if (compile_only || run_type != 0) {
