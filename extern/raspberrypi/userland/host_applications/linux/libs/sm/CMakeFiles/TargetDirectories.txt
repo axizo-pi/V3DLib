@@ -1,7 +1,0 @@
-/home/wim/projects/V3DLib/extern/raspberrypi/userland/host_applications/linux/libs/sm/CMakeFiles/install/strip.dir
-/home/wim/projects/V3DLib/extern/raspberrypi/userland/host_applications/linux/libs/sm/CMakeFiles/install.dir
-/home/wim/projects/V3DLib/extern/raspberrypi/userland/host_applications/linux/libs/sm/CMakeFiles/list_install_components.dir
-/home/wim/projects/V3DLib/extern/raspberrypi/userland/host_applications/linux/libs/sm/CMakeFiles/install/local.dir
-/home/wim/projects/V3DLib/extern/raspberrypi/userland/host_applications/linux/libs/sm/CMakeFiles/rebuild_cache.dir
-/home/wim/projects/V3DLib/extern/raspberrypi/userland/host_applications/linux/libs/sm/CMakeFiles/edit_cache.dir
-/home/wim/projects/V3DLib/extern/raspberrypi/userland/host_applications/linux/libs/sm/CMakeFiles/vcsm.dir
