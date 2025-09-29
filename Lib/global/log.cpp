@@ -1,5 +1,5 @@
 /***********************************
- * Version: 2
+ * Version: 3  - Added hex flag
  ***********************************/
 #include "log.h"
 #include <iostream>
@@ -35,7 +35,23 @@ LogItem &LogItem::operator<<(const char *str) {
 
 
 LogItem &LogItem::operator<<(int n) {
-	m_log.buf() << n;
+  if (m_next_is_hex) {
+    char buf[32];
+    sprintf(buf, "0x%x", n);
+    m_log.buf() << buf;
+
+    m_next_is_hex = false;
+  } else { 
+	  m_log.buf() << n;
+  }
+	return *this;
+}
+
+
+LogItem &LogItem::operator<<(LogFlag f) {
+  if (f == hex) {
+    m_next_is_hex = true;
+  }
 	return *this;
 }
 
@@ -61,7 +77,14 @@ void Logger::flush() {
 			std::cerr << time_buf << prefix << m_buf.str() << "\n";
 			std::flush(std::cout);
 			std::flush(std::cerr);
-			abort();
+
+      //
+      // CATCH NOT WORKING
+      //
+
+      // Throwing is better, since it allows to unroll the stack
+			//abort();
+      throw std::runtime_error(m_buf.str());
 		}
 
 		if (m_level == ERROR) {

@@ -6,9 +6,15 @@ namespace log {
 
 class Logger;
 
+enum LogFlag {
+  none,
+  hex
+};
+
 class LogItem {
 private:
 	Logger &m_log;
+  bool    m_next_is_hex = false;
 
 public:	
 	LogItem(Logger &log) : m_log(log) {}
@@ -17,6 +23,7 @@ public:
 	LogItem &operator<<(const std::string &str);
 	LogItem &operator<<(const char *str);
 	LogItem &operator<<(int n);
+	LogItem &operator<<(LogFlag f);
 };
 
 
