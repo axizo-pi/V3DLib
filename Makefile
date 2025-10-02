@@ -48,12 +48,17 @@ VCSM_DIR=extern/userland/build/lib
 #
 INCLUDE_EXTERN= \
  -I ../CmdParameter/Lib \
- -I extern/mesa/include \
- -I extern/mesa/src
+ -I extern/mesa2/include \
+ -I extern/mesa2/src
+
+# -I extern/mesa/include \
+# -I extern/mesa/src
 
 LIB_EXTERN= \
- -Lobj/mesa/bin -lmesa \
+ -Lobj/mesa2/bin -lmesa2 \
  -L$(VCSM_DIR) -lvcsm
+
+# -Lobj/mesa/bin -lmesa \
 
 LIB_DEPEND=
 
@@ -143,6 +148,7 @@ EXAMPLES_OBJ = $(patsubst %,$(OBJ_DIR)/%,$(EXAMPLES_EXTRA))
 
 V3DLIB=$(OBJ_DIR)/libv3dlib.a
 MESA_LIB=obj/mesa/bin/libmesa.a
+MESA2_LIB=obj/mesa2/bin/libmesa2.a
 VCSM_LIB=$(VCSM_DIR)/libvcsm.a
 
 
@@ -196,6 +202,9 @@ $(V3DLIB): $(LIB) $(MESA_LIB) $(VCSM_LIB)
 
 $(MESA_LIB):
 	cd extern/mesa && make compile
+
+$(MESA2_LIB):
+	cd extern/mesa2 && make compile
 
 $(VCSM_LIB):
   # vc4
