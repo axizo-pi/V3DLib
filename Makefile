@@ -47,18 +47,11 @@ VCSM_DIR=extern/userland/build/lib
 # Stuff for external libraries
 #
 INCLUDE_EXTERN= \
- -I ../CmdParameter/Lib \
- -I extern/mesa2/include \
- -I extern/mesa2/src
-
-# -I extern/mesa/include \
-# -I extern/mesa/src
+ -I ../CmdParameter/Lib
 
 LIB_EXTERN= \
- -Lobj/mesa2/bin -lmesa2 \
- -L$(VCSM_DIR) -lvcsm
-
-# -Lobj/mesa/bin -lmesa \
+ -L$(VCSM_DIR) -lvcsm \
+ -l pthread
 
 LIB_DEPEND=
 
@@ -71,11 +64,29 @@ else
 endif
 
 
-ROOT= Lib
+# Values 1 (old library) or 2 (new library)
+USE_MESA=1
 
-# Compiler and default flags
-CXX= g++
-LINK= $(CXX) $(CXX_FLAGS)
+ifeq ($(USE_MESA), 1)
+  $(info "Making for mesa 1 library")
+
+  INCLUDE_EXTERN+= \
+   -I extern/mesa/include \
+   -I extern/mesa/src
+  LIB_EXTERN+= \
+   -Lobj/mesa/bin -lmesa
+else
+  $(info "Making for mesa 2 library")
+  INCLUDE_EXTERN+= \
+   -I extern/mesa2/include \
+   -I extern/mesa2/src
+  LIB_EXTERN+= \
+   -Lobj/mesa2/bin -lmesa2
+endif
+
+
+
+ROOT= Lib
 
 LIBS := $(LIB_EXTERN)
 
@@ -92,7 +103,12 @@ CXX_FLAGS = \
  -Wall \
  -Wconversion \
  -Wno-psabi \
- -I $(ROOT) $(INCLUDE_EXTERN) -MMD -MP -MF"$(@:%.o=%.d)"
+ -I $(ROOT) $(INCLUDE_EXTERN) -MMD -MP -MF"$(@:%.o=%.d)" \
+ -D USE_MESA=$(USE_MESA)
+
+# Compiler and default flags
+CXX= g++
+LINK= $(CXX) $(CXX_FLAGS)
 
 # Object directory
 OBJ_DIR := obj
@@ -169,11 +185,11 @@ help:
 	@echo 'Where target:'
 	@echo
 	@echo '    help          - Show this text'
-	@echo '    all           - Build all test programs'
+	@echo '    all           - Build all example programs'
 	@echo '    clean         - Delete all interim and target files'
 	@echo '    test          - Run the unit tests'
 	@echo
-	@echo '    one of the test programs - $(EXAMPLES)'
+	@echo '    one of the example programs - $(EXAMPLES)'
 	@echo
 	@echo 'Flags:'
 	@echo
@@ -196,7 +212,8 @@ init:
 # Targets for static library
 #
 
-$(V3DLIB): $(LIB) $(MESA_LIB) $(VCSM_LIB)
+#$(V3DLIB): $(LIB) $(MESA_LIB) $(VCSM_LIB)
+$(V3DLIB): $(LIB) $(MESA2_LIB) $(VCSM_LIB)
 	@echo Creating $@
 	@ar rcs $@ $^
 
@@ -207,10 +224,10 @@ $(MESA2_LIB):
 	cd extern/mesa2 && make compile
 
 $(VCSM_LIB):
-  # vc4
-	#cd extern/userland/host_applications/linux/libs/sm && make
 	cd extern/userland/ && make
 
+  # vc4
+	#cd extern/userland/host_applications/linux/libs/sm && make
 
 
 # Rule for creating object files

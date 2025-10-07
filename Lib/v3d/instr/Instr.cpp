@@ -81,12 +81,27 @@ bool Instr::is_branch() const {
 
 
 /**
+ * Return true if any of the small_imm flags are set (there are four).
+ */
+bool Instr::has_small_imm() const {
+#if USE_MESA == 1
+	return sig.small_imm;
+#else
+	return sig.small_imm_a
+	    || sig.small_imm_b
+	    || sig.small_imm_c
+	    || sig.small_imm_d;
+#endif
+}
+
+
+/**
  * Determine if there are any specials signals used in this instruction
  *
  * @param all_signals  if true, also flag small_imm and rotate; these have a place in the instructions
  */
 bool Instr::has_signal(bool all_signals) const {
-  if (all_signals && (sig.small_imm || sig.rotate)) {
+  if (all_signals && (has_small_imm() || sig.rotate)) {
     return true;
   }
 

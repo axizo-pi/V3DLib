@@ -5,6 +5,10 @@
 
     > sudo apt-get install cmake
 
+- For new mesa(2) lib:
+
+    > sudo apt-get install libdrm-dev
+
 ---------------------------
 
 On Debian 12 Woodworm, Pi <= 3:

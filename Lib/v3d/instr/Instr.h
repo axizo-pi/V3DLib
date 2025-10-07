@@ -150,6 +150,8 @@ private:
   bool raddr_b_is_safe(Location const &loc, CheckSrc check_src) const;
 
   bool alu_set_src(Source const &src, v3d_qpu_mux &mux, CheckSrc check_src);
+
+	bool has_small_imm() const;
 };
 
 }  // instr
