@@ -12,8 +12,13 @@
 // The only field of interest is 'ver' which has value '42' for v3d
 // 
 struct v3d_device_info const devinfo = {42};
+#if USE_MESA == 1
+#else
+#warning "v3d_api.c: Probably need to adjust devinfo for V3D 7.x"
+#endif
 
 
+#if USE_MESA == 1
 static const struct v3d_qpu_alu_instr ALU_NOP = {
     add: {
       op: V3D_QPU_A_NOP,
@@ -36,9 +41,45 @@ static const struct v3d_qpu_alu_instr ALU_NOP = {
       b_unpack: V3D_QPU_UNPACK_NONE
     }
 };
+#else
+
+static const struct v3d_qpu_alu_instr ALU_NOP = {
+    add: {
+      op: V3D_QPU_A_NOP,
+      waddr: 6,
+      magic_write: true,
+      output_pack: V3D_QPU_PACK_NONE,
+
+      a: {
+        mux: V3D_QPU_MUX_R0,
+        unpack: V3D_QPU_UNPACK_NONE 
+      },
+      b: {
+        mux: V3D_QPU_MUX_R0,
+        unpack: V3D_QPU_UNPACK_NONE
+      }
+    },
+    mul: {
+      op: V3D_QPU_M_NOP,
+      waddr: 6,
+      magic_write: true,
+      output_pack: V3D_QPU_PACK_NONE,
+
+      a: {
+        mux: V3D_QPU_MUX_R0,
+        unpack: V3D_QPU_UNPACK_NONE, 
+      },
+      b: {
+        mux: V3D_QPU_MUX_R4,
+        unpack: V3D_QPU_UNPACK_NONE
+      }
+    }
+};
+#endif
 
 
 static bool isNopAdd( const struct v3d_qpu_alu_instr *src) {
+#if USE_MESA == 1
   return (
       src->add.op == ALU_NOP.add.op &&
       src->add.a == ALU_NOP.add.a &&
@@ -49,10 +90,23 @@ static bool isNopAdd( const struct v3d_qpu_alu_instr *src) {
       src->add.a_unpack == ALU_NOP.add.a_unpack &&
       src->add.b_unpack == ALU_NOP.add.b_unpack
   );
+#else
+  return (
+      src->add.op == ALU_NOP.add.op &&
+      src->add.a.mux == ALU_NOP.add.a.mux &&
+      src->add.b.mux == ALU_NOP.add.b.mux &&
+      src->add.waddr == ALU_NOP.add.waddr &&
+      src->add.magic_write == ALU_NOP.add.magic_write &&
+      src->add.output_pack == ALU_NOP.add.output_pack &&
+      src->add.a.unpack == ALU_NOP.add.a.unpack &&
+      src->add.b.unpack == ALU_NOP.add.b.unpack
+  );
+#endif
 }
 
 
 static bool isNopMul( const struct v3d_qpu_alu_instr *src) {
+#if USE_MESA == 1
   return (
       src->mul.op == ALU_NOP.mul.op &&
       src->mul.a == ALU_NOP.mul.a &&
@@ -63,6 +117,18 @@ static bool isNopMul( const struct v3d_qpu_alu_instr *src) {
       src->mul.a_unpack == ALU_NOP.mul.a_unpack &&
       src->mul.b_unpack == ALU_NOP.mul.b_unpack
   );
+#else
+  return (
+      src->mul.op == ALU_NOP.mul.op &&
+      src->mul.a.mux == ALU_NOP.mul.a.mux &&
+      src->mul.b.mux == ALU_NOP.mul.b.mux &&
+      src->mul.waddr == ALU_NOP.mul.waddr &&
+      src->mul.magic_write == ALU_NOP.mul.magic_write &&
+      src->mul.output_pack == ALU_NOP.mul.output_pack &&
+      src->mul.a.unpack == ALU_NOP.mul.a.unpack &&
+      src->mul.b.unpack == ALU_NOP.mul.b.unpack
+  );
+#endif
 }
 
 #define CASE(l)  case V3D_QPU_##l: ret = #l; break;

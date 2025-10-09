@@ -773,7 +773,15 @@ void _encode(V3DLib::Instr::List const &instrs, Instructions &instructions) {
 
 template<typename AddAlu>
 bool can_be_mul_alu(AddAlu const &add_alu) {
-  return ((add_alu.op == V3D_QPU_A_OR && add_alu.a == add_alu.b)       // ORs with 1 source can be translated to mul alu MOV
+
+#if USE_MESA == 1
+  bool is_move_1_source = (add_alu.op == V3D_QPU_A_OR && add_alu.a == add_alu.b);
+#else
+  bool is_move_1_source = (add_alu.op == V3D_QPU_A_OR && add_alu.a.mux == add_alu.b.mux);
+#endif
+
+	// ORs with 1 source can be translated to mul alu MOV
+  return (is_move_1_source
         || add_alu.op == V3D_QPU_A_ADD
         || add_alu.op == V3D_QPU_A_SUB)
        && (!add_alu.magic_write || add_alu.waddr < V3D_QPU_WADDR_NOP)  // Don't write to special registers in the mul alu
@@ -837,16 +845,25 @@ bool can_combine(v3d::instr::Instr const &instr1, v3d::instr::Instr const &instr
 
 
   // Output instr1 should not be used as input instr2
+#if USE_MESA == 1
   auto a2 = instr2.mul_nop()?instr2.alu.add.a:instr2.alu.mul.a;
   auto b2 = instr2.mul_nop()?instr2.alu.add.b:instr2.alu.mul.b;
+
+	bool small_imm_b = instr2.sig.small_imm == 1;
+#else
+  auto a2 = instr2.mul_nop()?instr2.alu.add.a.mux:instr2.alu.mul.a.mux;
+  auto b2 = instr2.mul_nop()?instr2.alu.add.b.mux:instr2.alu.mul.b.mux;
+
+	bool small_imm_b = instr2.sig.small_imm_b == 1;
+#endif
 
   bool is_rf1 = !magic_write1;
   if (is_rf1) {
     if (a2 == V3D_QPU_MUX_A && instr2.raddr_a == waddr1) return false;
     if (b2 == V3D_QPU_MUX_A && instr2.raddr_a == waddr1) return false;
 
-    if (a2 == V3D_QPU_MUX_B && !instr2.sig.small_imm && instr2.raddr_b == waddr1) return false;
-    if (b2 == V3D_QPU_MUX_B && !instr2.sig.small_imm && instr2.raddr_b == waddr1) return false;
+    if (a2 == V3D_QPU_MUX_B && !small_imm_b && instr2.raddr_b == waddr1) return false;
+    if (b2 == V3D_QPU_MUX_B && !small_imm_b && instr2.raddr_b == waddr1) return false;
   } else {
     if (a2 < V3D_QPU_MUX_A && a2 == waddr1) return false;
     if (b2 < V3D_QPU_MUX_A && b2 == waddr1) return false;
@@ -884,7 +901,11 @@ bool can_combine(v3d::instr::Instr const &instr1, v3d::instr::Instr const &instr
 bool convert_alu_op_to_mul_op(v3d_qpu_mul_op &mul_op, v3d::instr::Instr const &add_instr) {
   switch (add_instr.alu.add.op) {
     case V3D_QPU_A_OR:
+#if USE_MESA == 1
       if (add_instr.alu.add.a == add_instr.alu.add.b) {
+#else
+      if (add_instr.alu.add.a.mux == add_instr.alu.add.b.mux) {
+#endif
         mul_op = V3D_QPU_M_MOV;
         return true;
       }
@@ -944,16 +965,26 @@ bool add_alu_to_mul_alu(Instr const &in_instr, Instr &dst) {
 
   if (in_instr.mul_nop()) {
     dst.alu.mul.output_pack = in_instr.alu.add.output_pack;
+#if USE_MESA == 1
     dst.alu.mul.a_unpack    = in_instr.alu.add.a_unpack;
     dst.alu.mul.b_unpack    = in_instr.alu.add.b_unpack;
+#else
+    dst.alu.mul.a.unpack    = in_instr.alu.add.a.unpack;
+    dst.alu.mul.b.unpack    = in_instr.alu.add.b.unpack;
+#endif
 
     dst.flags.mc  = in_instr.flags.ac;
     dst.flags.mpf = in_instr.flags.apf;
     dst.flags.muf = in_instr.flags.auf;
   } else {
     dst.alu.mul.output_pack = in_instr.alu.mul.output_pack;
+#if USE_MESA == 1
     dst.alu.mul.a_unpack    = in_instr.alu.mul.a_unpack;
     dst.alu.mul.b_unpack    = in_instr.alu.mul.b_unpack;
+#else
+    dst.alu.mul.a.unpack    = in_instr.alu.mul.a.unpack;
+    dst.alu.mul.b.unpack    = in_instr.alu.mul.b.unpack;
+#endif
 
     dst.flags.mc  = in_instr.flags.mc;
     dst.flags.mpf = in_instr.flags.mpf;

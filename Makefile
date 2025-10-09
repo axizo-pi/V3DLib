@@ -65,7 +65,7 @@ endif
 
 
 # Values 1 (old library) or 2 (new library)
-USE_MESA=1
+USE_MESA=2
 
 ifeq ($(USE_MESA), 1)
   $(info "Making for mesa 1 library")
@@ -85,6 +85,8 @@ else
 endif
 
 
+# TODO: make a script determining with videocore version we're compiling on (6 or 7)
+VIDEOCORE_VERSION=6
 
 ROOT= Lib
 
@@ -104,7 +106,8 @@ CXX_FLAGS = \
  -Wconversion \
  -Wno-psabi \
  -I $(ROOT) $(INCLUDE_EXTERN) -MMD -MP -MF"$(@:%.o=%.d)" \
- -D USE_MESA=$(USE_MESA)
+ -D USE_MESA=$(USE_MESA) \
+ -D VIDEOCORE_VERSION=$(VIDEOCORE_VERSION)
 
 # Compiler and default flags
 CXX= g++

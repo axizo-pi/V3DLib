@@ -93,7 +93,11 @@ public:
   DestReg mul_dest() const;
 
 private:
+#if USE_MESA == 1
   DestReg add_src_dest(v3d_qpu_mux src) const;
+#else
+  DestReg add_src_dest(v3d_qpu_input src) const;
+#endif
   
 public:
   DestReg add_src_a() const;
@@ -115,7 +119,11 @@ public:
   bool alu_mul_set(V3DLib::Instr const &src_instr);
 
 private:
+#if USE_MESA == 1
   std::unique_ptr<Source> alu_src(v3d_qpu_mux src) const;
+#else
+  std::unique_ptr<Source> alu_src(v3d_qpu_input input) const;
+#endif
 
 public:
   // TODO see if following can be replaced by DestReg
@@ -149,7 +157,11 @@ private:
   bool raddr_a_is_safe(Location const &loc, CheckSrc check_src) const;
   bool raddr_b_is_safe(Location const &loc, CheckSrc check_src) const;
 
+#if USE_MESA == 1
   bool alu_set_src(Source const &src, v3d_qpu_mux &mux, CheckSrc check_src);
+#else
+	bool alu_set_src(Source const &src, v3d_qpu_input &input, CheckSrc check_src);
+#endif
 
 	bool has_small_imm() const;
 };

@@ -5,6 +5,20 @@ namespace V3DLib {
 namespace v3d {
 namespace instr {
 
+namespace {
+
+void set_muxes(v3d_qpu_alu_instr &alu, v3d_qpu_mux mux_a, v3d_qpu_mux mux_b) {
+#if USE_MESA == 1
+  alu.mul.a     = mux_a;
+  alu.mul.b     = mux_b;
+#else
+  alu.mul.a.mux = mux_a;
+  alu.mul.b.mux = mux_b;
+#endif
+}
+
+} // anon namespace
+
 ///////////////////////////////////////////////////////////////////////////////
 // Class Mnemonic 
 ///////////////////////////////////////////////////////////////////////////////
@@ -123,8 +137,7 @@ Mnemonic &Mnemonic::mov(uint8_t rf_addr, Register const &reg) {
   m_doing_add = false;
 
   alu.mul.op    = V3D_QPU_M_MOV;
-  alu.mul.a     = reg.to_mux();
-  alu.mul.b     = V3D_QPU_MUX_B;
+  set_muxes(alu, reg.to_mux(), V3D_QPU_MUX_B);
   alu.mul.waddr = rf_addr;
 
   return *this;
@@ -155,7 +168,11 @@ Mnemonic &Mnemonic::rotate(Location const &dst, Location const &a, SmallImm cons
   if (b.val() != 0) {  // Don't bother rotating if there is no rotate
     sig.rotate = true;
   }
+#if USE_MESA == 1
   sig.small_imm = false;      // Should *not* be set for rotate
+#else
+  sig.small_imm_b = false;      // Should *not* be set for rotate
+#endif
   alu.mul.op = V3D_QPU_M_MOV;
 
   return *this;
@@ -227,8 +244,7 @@ Mnemonic tidx(Location const &reg) {
 
   instr.sig_magic  = true;  // TODO is this really needed? Not present in eidx
   instr.alu.add.op = V3D_QPU_A_TIDX;
-  instr.alu.add.a  = V3D_QPU_MUX_R1;
-  instr.alu.add.b  = V3D_QPU_MUX_R0;
+  set_muxes(instr.alu, V3D_QPU_MUX_R1, V3D_QPU_MUX_R0);
 
   return instr;
 }
@@ -242,9 +258,8 @@ Mnemonic eidx(Location const &reg) {
   Mnemonic instr;
   instr.alu_add_set_dst(reg);
 
-  instr.alu.add.op    = V3D_QPU_A_EIDX;
-  instr.alu.add.a     = V3D_QPU_MUX_R2;
-  instr.alu.add.b     = V3D_QPU_MUX_R0;
+  instr.alu.add.op = V3D_QPU_A_EIDX;
+  set_muxes(instr.alu, V3D_QPU_MUX_R2, V3D_QPU_MUX_R0);
 
   return instr;
 }
@@ -270,8 +285,7 @@ Mnemonic barrierid(v3d_qpu_waddr waddr) {
   Mnemonic instr;
 
   instr.alu.add.op    = V3D_QPU_A_BARRIERID;
-  instr.alu.add.a     = V3D_QPU_MUX_R4;
-  instr.alu.add.b     = V3D_QPU_MUX_R2;
+  set_muxes(instr.alu, V3D_QPU_MUX_R4, V3D_QPU_MUX_R2);
   instr.alu.add.waddr = waddr;
 
   return instr;
@@ -282,8 +296,7 @@ Mnemonic vpmsetup(Register const &reg2) {
   Mnemonic instr;
 
   instr.alu.add.op    = V3D_QPU_A_VPMSETUP;
-  instr.alu.add.a     = reg2.to_mux();
-  instr.alu.add.b     = V3D_QPU_MUX_R3;
+  set_muxes(instr.alu, reg2.to_mux(), V3D_QPU_MUX_R3);
 
   return instr;
 }
@@ -294,7 +307,11 @@ Mnemonic ffloor(Location const &dst, Source const &srca) {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
+#if USE_MESA == 1
   instr.alu.add.b_unpack = (v3d_qpu_input_unpack) V3D_QPU_A_FFLOOR; // ?? Looks wrong but matches the mesa disasm
+#else
+  instr.alu.add.b.unpack = (v3d_qpu_input_unpack) V3D_QPU_A_FFLOOR; // ?? Looks wrong but matches the mesa disasm
+#endif
 #pragma GCC diagnostic pop
 
 
@@ -307,8 +324,7 @@ Mnemonic flpop(RFAddress rf_addr1, RFAddress rf_addr2) {
 
   instr.raddr_a       = rf_addr2.to_waddr();
   instr.alu.add.op    = V3D_QPU_A_FLPOP;
-  instr.alu.add.a     = V3D_QPU_MUX_A;
-  instr.alu.add.b     = V3D_QPU_MUX_R4;
+  set_muxes(instr.alu, V3D_QPU_MUX_A, V3D_QPU_MUX_R4);
   instr.alu.add.waddr = rf_addr1.to_waddr();
   instr.alu.add.magic_write = false;
 

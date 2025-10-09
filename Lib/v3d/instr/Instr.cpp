@@ -276,6 +276,7 @@ std::string Instr::pretty_instr() const {
   if (sig.rotate) {
     if (!is_branch()) {  // Assumption: rotate signal irrelevant for branch
 
+#if USE_MESA == 1
       // Only two possibilities here: r5 or small imm (sig for small imm not set!)
       if (alu.mul.b == V3D_QPU_MUX_R5) {
         ret << ", r5";
@@ -284,6 +285,21 @@ std::string Instr::pretty_instr() const {
       } else {
         assertq(false, "pretty_instr(): unexpected mux value for mul b for rotate", true);
       }
+#else
+#if VIDEOCORE_VERSION == 6 
+      // Only two possibilities here: r5 or small imm (sig for small imm not set!)
+      if (alu.mul.b.mux == V3D_QPU_MUX_R5) {
+        ret << ", r5";
+      } else if (alu.mul.b.mux == V3D_QPU_MUX_B) {
+        ret << ", " << raddr_b;
+      } else {
+        assertq(false, "pretty_instr(): unexpected mux value for mul b for rotate", true);
+      }
+#else
+	// Ref. see: mesa2/src/broadcom/qpu/qpu_instr.h
+	assert(false, "Don't know how to deal with vc7");
+#endif
+#endif
 
       ret << indent((int) ret.size()) << "; rot";
     }
@@ -548,12 +564,24 @@ DestReg Instr::mul_dest() const {
 }
 
 
+#if USE_MESA == 1
 DestReg Instr::add_src_dest(v3d_qpu_mux src) const {
+#else
+DestReg Instr::add_src_dest(v3d_qpu_input src) const {
+#endif
+#if USE_MESA == 1
   if (src < V3D_QPU_MUX_A) {
     return DestReg(src, true);
   } else if (src == V3D_QPU_MUX_A) {
     return DestReg(raddr_a, false);
   } else if (!sig.small_imm) {  // must be MUX_B
+#else
+  if (src.mux < V3D_QPU_MUX_A) {
+    return DestReg(src.mux, true);
+  } else if (src.mux == V3D_QPU_MUX_A) {
+    return DestReg(raddr_a, false);
+  } else if (!sig.small_imm_b) {
+#endif
     return DestReg(raddr_b, false);
   }
 
@@ -629,12 +657,21 @@ bool Instr::raddr_in_use(CheckSrc check_src, v3d_qpu_mux mux) const {
   bool in_use = false;
 
   switch (check_src) {  // Note reverse order, fall-thru intentional
+#if USE_MESA == 1
     case CHECK_MUL_B:
       in_use = in_use || (alu.mul.a == mux);
     case CHECK_MUL_A:
       in_use = in_use || (alu.add.b == mux);
     case CHECK_ADD_B:
       in_use = in_use || (alu.add.a == mux);
+#else
+    case CHECK_MUL_B:
+      in_use = in_use || (alu.mul.a.mux == mux);
+    case CHECK_MUL_A:
+      in_use = in_use || (alu.add.b.mux == mux);
+    case CHECK_ADD_B:
+      in_use = in_use || (alu.add.a.mux == mux);
+#endif
     case CHECK_ADD_A:
       break;
   }
@@ -646,12 +683,27 @@ bool Instr::raddr_in_use(CheckSrc check_src, v3d_qpu_mux mux) const {
 bool Instr::raddr_b_is_safe(Location const &loc, CheckSrc check_src) const {
   assert(loc.is_rf());
   if (!raddr_in_use(check_src, V3D_QPU_MUX_B)) return true;
+#if USE_MESA == 1
   if (sig.small_imm) return false; 
+#else
+  if (sig.small_imm_b) return false; 
+#endif
   return (raddr_b == loc.to_waddr());
 }
 
 
+#if USE_MESA == 1
 bool Instr::alu_set_src(Source const &src, v3d_qpu_mux &mux, CheckSrc check_src) {
+
+	#define get_small_imm_b sig.small_imm
+	#define set_small_imm_b(val) sig.small_imm  = val
+#else
+bool Instr::alu_set_src(Source const &src, v3d_qpu_input &input, CheckSrc check_src) {
+
+	auto &mux = input.mux;
+	#define get_small_imm_b sig.small_imm_b
+	#define set_small_imm_b(val) sig.small_imm_b  = val
+#endif
   if (src.is_location()) {
     Location const &loc = src.location();
 
@@ -672,23 +724,30 @@ bool Instr::alu_set_src(Source const &src, v3d_qpu_mux &mux, CheckSrc check_src)
     auto imm = src.small_imm();
 
     if (raddr_in_use(check_src, V3D_QPU_MUX_B)) {
-      if (!sig.small_imm) return false;
+		  if (get_small_imm_b) return false; 
       if (raddr_b != imm.to_raddr()) return false;  // If small imm is already set to wanted value, all is well
     }
 
     // All is well
-    sig.small_imm = true; 
-    raddr_b       = imm.to_raddr(); 
-    mux           = V3D_QPU_MUX_B;
+    set_small_imm_b(true); 
+    raddr_b     = imm.to_raddr(); 
+    mux         = V3D_QPU_MUX_B;
   }
 
   return true;
+
+	#undef get_small_imm_b
+	#undef set_small_imm_b
 }
 
 
 bool Instr::alu_add_set_a(Source const &src) {
   if (!alu_set_src(src, alu.add.a, CHECK_ADD_A)) return false;
+#if USE_MESA == 1
   alu.add.a_unpack = src.input_unpack();
+#else
+  alu.add.a.unpack = src.input_unpack();
+#endif
   return true;
 }
 
@@ -700,7 +759,11 @@ bool Instr::alu_add_set(Location const &dst, Source const &a, Source const &b) {
 
   bool ret = alu_set_src(b, alu.add.b, CHECK_ADD_B);
   if (ret) {
+#if USE_MESA == 1
     alu.add.b_unpack = b.input_unpack();
+#else
+    alu.add.b.unpack = b.input_unpack();
+#endif
   } else {
     throw Exception("alu_add_set failed");
   }
@@ -720,8 +783,13 @@ bool Instr::alu_mul_set(Location const &dst, Source const &a, Source const &b) {
   alu.mul.output_pack = dst.output_pack();
 
   if (!(alu_set_src(a, alu.mul.a, CHECK_MUL_A) && alu_set_src(b, alu.mul.b, CHECK_MUL_B))) return false;
+#if USE_MESA == 1
   alu.mul.a_unpack = a.input_unpack();
   alu.mul.b_unpack = b.input_unpack();
+#else
+  alu.mul.a.unpack = a.input_unpack();
+  alu.mul.b.unpack = b.input_unpack();
+#endif
   return true;
 }
 
@@ -881,7 +949,12 @@ std::unique_ptr<Source> Instr::mul_alu_a() const { return alu_src(alu.mul.a); }
 std::unique_ptr<Source> Instr::mul_alu_b() const { return alu_src(alu.mul.b); }
 
 
+#if USE_MESA == 1
 std::unique_ptr<Source> Instr::alu_src(v3d_qpu_mux src) const {
+#else
+std::unique_ptr<Source> Instr::alu_src(v3d_qpu_input input) const {
+	auto &src = input.mux;
+#endif
   std::unique_ptr<Source> res;
 
   if (src < V3D_QPU_MUX_A) {
@@ -890,7 +963,11 @@ std::unique_ptr<Source> Instr::alu_src(v3d_qpu_mux src) const {
   } else if (src == V3D_QPU_MUX_A) {
     // address a, rf-reg
     res.reset(new Source(RFAddress(raddr_a)));
+#if USE_MESA == 1
   } else if (sig.small_imm) {
+#else
+  } else if (sig.small_imm_b) {
+#endif
     // address b, small imm
     res.reset(new Source(SmallImm((int) raddr_b, false)));
   } else {
