@@ -302,6 +302,27 @@ static const char *dump_add_op(enum v3d_qpu_add_op val) {
     CASE(A_ITOF)
     CASE(A_CLZ)
     CASE(A_UTOF)
+
+#if USE_MESA == 1
+#else
+    CASE(A_FLAFIRST)   // mesa2: added between vc6 opcodes; pehaps neglected vc6 opcodes
+    CASE(A_FLNAFIRST)  // idem
+
+    /* V3D 7.x */
+    CASE(A_FMOV)
+    CASE(A_MOV)
+    CASE(A_VPACK)
+    CASE(A_V8PACK)
+    CASE(A_V10PACK)
+    CASE(A_V11FPACK)
+    CASE(A_BALLOT)
+    CASE(A_BCASTF)
+    CASE(A_ALLEQ)
+    CASE(A_ALLFEQ)
+    CASE(A_ROTQ)
+    CASE(A_ROT)
+    CASE(A_SHUFFLE)
+#endif
   }
 
   assert(ret != 0);
@@ -309,7 +330,12 @@ static const char *dump_add_op(enum v3d_qpu_add_op val) {
 }
 
 
+#if USE_MESA == 1
 static const char *dump_mux(enum v3d_qpu_mux val) {
+#else
+static const char *dump_mux(struct v3d_qpu_input input) {
+  enum v3d_qpu_mux val = input.mux;
+#endif
   char *ret = "<<UNKNOWN>>";
 
   switch (val) {
@@ -387,6 +413,17 @@ static const char *dump_mul_op(enum v3d_qpu_mul_op val) {
     CASE(M_MOV)
     CASE(M_NOP)
     CASE(M_FMUL)
+
+#if USE_MESA == 1
+#else
+    /* V3D 7.x */
+    CASE(M_FTOUNORM16)
+    CASE(M_FTOSNORM16)
+    CASE(M_VFTOUNORM8)
+    CASE(M_VFTOSNORM8)
+    CASE(M_VFTOUNORM10LO)
+    CASE(M_VFTOUNORM10HI)
+#endif
   }
 
   assert(ret != 0);
@@ -417,20 +454,27 @@ void instr_dump(char *buffer, struct v3d_qpu_instr *instr) {
 
 
   char buffer_sig[1024] = "\0";
-  if (instr->sig.thrsw) strcat(buffer_sig, "thrsw ");
-  if (instr->sig.ldunif) strcat(buffer_sig, "ldunif ");
-  if (instr->sig.ldunifa) strcat(buffer_sig, "ldunifa ");
-  if (instr->sig.ldunifrf) strcat(buffer_sig, "ldunifrf ");
-  if (instr->sig.ldunifarf) strcat(buffer_sig, "ldunifarf ");
-  if (instr->sig.ldtmu) strcat(buffer_sig, "ldtmu ");
-  if (instr->sig.ldvary) strcat(buffer_sig, "ldvary ");
-  if (instr->sig.ldvpm) strcat(buffer_sig, "ldvpm ");
-  if (instr->sig.ldtlb) strcat(buffer_sig, "ldtlb ");
-  if (instr->sig.ldtlbu) strcat(buffer_sig, "ldtlbu ");
-  if (instr->sig.small_imm) strcat(buffer_sig, "small_imm ");
-  if (instr->sig.ucb) strcat(buffer_sig, "ucb ");
-  if (instr->sig.rotate) strcat(buffer_sig, "rotate ");
-  if (instr->sig.wrtmuc) strcat(buffer_sig, "wrtmuc ");
+  if (instr->sig.thrsw)       strcat(buffer_sig, "thrsw ");
+  if (instr->sig.ldunif)      strcat(buffer_sig, "ldunif ");
+  if (instr->sig.ldunifa)     strcat(buffer_sig, "ldunifa ");
+  if (instr->sig.ldunifrf)    strcat(buffer_sig, "ldunifrf ");
+  if (instr->sig.ldunifarf)   strcat(buffer_sig, "ldunifarf ");
+  if (instr->sig.ldtmu)       strcat(buffer_sig, "ldtmu ");
+  if (instr->sig.ldvary)      strcat(buffer_sig, "ldvary ");
+  if (instr->sig.ldvpm)       strcat(buffer_sig, "ldvpm ");
+  if (instr->sig.ldtlb)       strcat(buffer_sig, "ldtlb ");
+  if (instr->sig.ldtlbu)      strcat(buffer_sig, "ldtlbu ");
+  if (instr->sig.ucb)         strcat(buffer_sig, "ucb ");
+  if (instr->sig.rotate)      strcat(buffer_sig, "rotate ");
+  if (instr->sig.wrtmuc)      strcat(buffer_sig, "wrtmuc ");
+#if USE_MESA == 1
+  if (instr->sig.small_imm)   strcat(buffer_sig, "small_imm ");
+#else
+  if (instr->sig.small_imm_a) strcat(buffer_sig, "small_imm_a ");
+  if (instr->sig.small_imm_b) strcat(buffer_sig, "small_imm_b ");
+  if (instr->sig.small_imm_c) strcat(buffer_sig, "small_imm_c ");
+  if (instr->sig.small_imm_d) strcat(buffer_sig, "small_imm_d ");
+#endif
 
   char buffer_union[1024] = "\0";
   char buffer_alu_add[1024] = "\0";
@@ -466,8 +510,13 @@ void instr_dump(char *buffer, struct v3d_qpu_instr *instr) {
         instr->alu.add.waddr,
         TF(instr->alu.add.magic_write),
         dump_output_pack(instr->alu.add.output_pack),
+#if USE_MESA == 1
         dump_input_unpack(instr->alu.add.a_unpack),
         dump_input_unpack(instr->alu.add.b_unpack)
+#else
+        dump_input_unpack(instr->alu.add.a.unpack),
+        dump_input_unpack(instr->alu.add.b.unpack)
+#endif
       );
     }
 
@@ -481,8 +530,13 @@ void instr_dump(char *buffer, struct v3d_qpu_instr *instr) {
         instr->alu.mul.waddr,
         TF(instr->alu.mul.magic_write),
         dump_output_pack(instr->alu.mul.output_pack),
+#if USE_MESA == 1
         dump_input_unpack(instr->alu.mul.a_unpack),
         dump_input_unpack(instr->alu.mul.b_unpack)
+#else
+        dump_input_unpack(instr->alu.mul.a.unpack),
+        dump_input_unpack(instr->alu.mul.b.unpack)
+#endif
       );
     }
 

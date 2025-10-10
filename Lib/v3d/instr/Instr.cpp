@@ -716,7 +716,8 @@ bool Instr::alu_set_src(Source const &src, v3d_qpu_input &input, CheckSrc check_
       raddr_b = loc.to_waddr(); 
       mux = V3D_QPU_MUX_B;
     } else {
-      return false;  // raddr_a and raddr_b both in use
+			warning("alu_set_src: raddr_a and raddr_b both in use");
+      return false;
     }
 
   } else {
@@ -724,8 +725,15 @@ bool Instr::alu_set_src(Source const &src, v3d_qpu_input &input, CheckSrc check_
     auto imm = src.small_imm();
 
     if (raddr_in_use(check_src, V3D_QPU_MUX_B)) {
-		  if (get_small_imm_b) return false; 
-      if (raddr_b != imm.to_raddr()) return false;  // If small imm is already set to wanted value, all is well
+      if (raddr_b != imm.to_raddr()) {
+				warning("alu_set_src: imm not equal to raddr_b");
+				return false;
+			}
+
+		  if (get_small_imm_b) {
+				warning("alu_set_src: both raddr_b and small_imm_b set");
+				return false;
+			}
     }
 
     // All is well
