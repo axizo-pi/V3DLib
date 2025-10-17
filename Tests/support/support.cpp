@@ -1,6 +1,9 @@
 #include "support.h"
 #include <sys/time.h>
 #include <sstream>
+#include <algorithm>
+#include <iterator>
+
 
 
 double get_time() {
@@ -148,3 +151,62 @@ void dump_array(V3DLib::Int::Array const &a, int linesize) {
   auto str = dump_array_template(a, a.size(), linesize);
   printf("%s\n", str.c_str());
 }
+
+
+namespace {
+
+// Source: https://stackoverflow.com/questions/216823/how-can-i-trim-a-stdstring
+
+// Trim from the start (in place)
+inline void ltrim(std::string &s) {
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
+        return !std::isspace(ch);
+    }));
+}
+
+// Trim from the end (in place)
+inline void rtrim(std::string &s) {
+    s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
+        return !std::isspace(ch);
+    }).base(), s.end());
+}
+
+inline void trim(std::string &s) {
+    rtrim(s);
+    ltrim(s);
+}
+
+
+struct BothAre
+{
+    char c;
+    BothAre(char r) : c(r) {}
+    bool operator()(char l, char r) const
+    {
+            return r == c && l == c;
+    }
+};
+
+}  // anon namespace
+
+
+/**
+ * Replace multiple spaces with single space.
+ *
+ * Leading and trailing spaces are trimmed.
+ *
+ * Source: https://stackoverflow.com/questions/5561138/interview-question-trim-multiple-consecutive-spaces-from-a-string
+ */
+std::string condense_whitespace(std::string str) {
+  std::string::iterator i = unique(str.begin(), str.end(), BothAre(' '));
+  
+  std::stringstream ss;
+  std::copy(str.begin(), i, std::ostream_iterator<char>(ss /*std::cout*/, ""));
+
+  auto ret = ss.str();
+  trim(ret);
+  return ret;
+}
+
+
+

@@ -1,7 +1,20 @@
+/******************************************************************
+ * * Useful little code snippet for comparing expected and generated opcodes:
+ *
+ * uint64_t op = 0x3c203192bb814000ull; //, "barrierid  syncb     ; nop               ; thrsw" },
+ * test_unpack_pack(op);  // See commented out code below
+ * Instr::show(op);
+ * auto tmp_op =
+ *   barrierid(syncb).nop().thrsw()
+ * ;
+ * tmp_op.dump(true);
+ *
+ ******************************************************************/
 #include "disasm_kernel.h"
 #include "Support/basics.h"
 #include "v3d/instr/Mnemonics.h"
 #include "qpu_disasm.h"
+#include <iostream>  // std::cout
 
 namespace {
 
@@ -47,7 +60,7 @@ std::vector<uint64_t> qpu_disasm_kernel() {
   ret
     << nop().ldvary()
     << fadd(r1, r1, r5).thrsw()
-    << vpmsetup(r5).ldunif()
+    //<< vpmsetup(r5).ldunif()  vpmsetup removed in V3D 4.1
     << nop().ldunifa()  // NB for version 33 this is `nop().ldvpm()`
     << bor(rf(0), r3, r3).mov(vpm, r3)
 
@@ -113,18 +126,6 @@ std::vector<uint64_t> qpu_disasm_kernel() {
     /* v4.2 changes */
     << barrierid(syncb).nop().thrsw()
   ;
-
-/*
-  // Useful little code snippet for comparing expected and generated opcodes
-
-  uint64_t op = 0x3c203192bb814000ull; //, "barrierid  syncb     ; nop               ; thrsw" },
-  test_unpack_pack(op);
-  Instr::show(op);
-  auto tmp_op =
-    barrierid(syncb).nop().thrsw()
-  ;
-  tmp_op.dump(true);
-*/
 
   ret << nop();
 

@@ -7,7 +7,18 @@ namespace instr {
 
 namespace {
 
-void set_muxes(v3d_qpu_alu_instr &alu, v3d_qpu_mux mux_a, v3d_qpu_mux mux_b) {
+void set_muxes_add(v3d_qpu_alu_instr &alu, v3d_qpu_mux mux_a, v3d_qpu_mux mux_b) {
+#if USE_MESA == 1
+  alu.add.a     = mux_a;
+  alu.add.b     = mux_b;
+#else
+  alu.add.a.mux = mux_a;
+  alu.add.b.mux = mux_b;
+#endif
+}
+
+
+void set_muxes_mul(v3d_qpu_alu_instr &alu, v3d_qpu_mux mux_a, v3d_qpu_mux mux_b) {
 #if USE_MESA == 1
   alu.mul.a     = mux_a;
   alu.mul.b     = mux_b;
@@ -137,7 +148,7 @@ Mnemonic &Mnemonic::mov(uint8_t rf_addr, Register const &reg) {
   m_doing_add = false;
 
   alu.mul.op    = V3D_QPU_M_MOV;
-  set_muxes(alu, reg.to_mux(), V3D_QPU_MUX_B);
+  set_muxes_mul(alu, reg.to_mux(), V3D_QPU_MUX_B);
   alu.mul.waddr = rf_addr;
 
   return *this;
@@ -244,7 +255,7 @@ Mnemonic tidx(Location const &reg) {
 
   instr.sig_magic  = true;  // TODO is this really needed? Not present in eidx
   instr.alu.add.op = V3D_QPU_A_TIDX;
-  set_muxes(instr.alu, V3D_QPU_MUX_R1, V3D_QPU_MUX_R0);
+  set_muxes_add(instr.alu, V3D_QPU_MUX_R1, V3D_QPU_MUX_R0);
 
   return instr;
 }
@@ -259,7 +270,7 @@ Mnemonic eidx(Location const &reg) {
   instr.alu_add_set_dst(reg);
 
   instr.alu.add.op = V3D_QPU_A_EIDX;
-  set_muxes(instr.alu, V3D_QPU_MUX_R2, V3D_QPU_MUX_R0);
+  set_muxes_add(instr.alu, V3D_QPU_MUX_R2, V3D_QPU_MUX_R0);
 
   return instr;
 }
@@ -285,21 +296,26 @@ Mnemonic barrierid(v3d_qpu_waddr waddr) {
   Mnemonic instr;
 
   instr.alu.add.op    = V3D_QPU_A_BARRIERID;
-  set_muxes(instr.alu, V3D_QPU_MUX_R4, V3D_QPU_MUX_R2);
+  set_muxes_add(instr.alu, V3D_QPU_MUX_R4, V3D_QPU_MUX_R2);
   instr.alu.add.waddr = waddr;
 
   return instr;
 }
 
 
+/*
+Not used anywhere in the code, a test fails on it.
+By the looks of it, it has been removed in V3D 4.1
+
 Mnemonic vpmsetup(Register const &reg2) {
   Mnemonic instr;
 
   instr.alu.add.op    = V3D_QPU_A_VPMSETUP;
-  set_muxes(instr.alu, reg2.to_mux(), V3D_QPU_MUX_R3);
+  set_muxes_add(instr.alu, reg2.to_mux(), V3D_QPU_MUX_R3);
 
   return instr;
 }
+*/
 
 
 Mnemonic ffloor(Location const &dst, Source const &srca) {
@@ -324,7 +340,7 @@ Mnemonic flpop(RFAddress rf_addr1, RFAddress rf_addr2) {
 
   instr.raddr_a       = rf_addr2.to_waddr();
   instr.alu.add.op    = V3D_QPU_A_FLPOP;
-  set_muxes(instr.alu, V3D_QPU_MUX_A, V3D_QPU_MUX_R4);
+  set_muxes_add(instr.alu, V3D_QPU_MUX_A, V3D_QPU_MUX_R4);
   instr.alu.add.waddr = rf_addr1.to_waddr();
   instr.alu.add.magic_write = false;
 

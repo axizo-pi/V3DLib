@@ -14,7 +14,7 @@
 struct v3d_device_info const devinfo = {42};
 #if USE_MESA == 1
 #else
-#warning "v3d_api.c: Probably need to adjust devinfo for V3D 7.x"
+#warning "v3d_api.c: Probably need to adjust devinfo for V3D 7.x; currently using V3D 4.2"
 #endif
 
 

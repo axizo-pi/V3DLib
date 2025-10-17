@@ -465,7 +465,8 @@ TEST_CASE("Check v3d assembly/disassembly [v3d][asm]") {
            << band(r1, r0, 0b1111);
 
     for (int n = 0; n < (int) instrs.size(); ++n) {
-      REQUIRE(instrs[n].mnemonic() == expected[n]);
+			// The whitespace layout changed in mesa2; condense_whitespace() nullifies different spaces
+			REQUIRE(condense_whitespace(instrs[n].mnemonic()) == condense_whitespace(expected[n]));
     }
   }
 

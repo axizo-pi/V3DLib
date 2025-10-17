@@ -102,4 +102,6 @@ extern const char *SUDO;
 
 void make_test_dir();
 
+std::string condense_whitespace(std::string str);
+
 #endif  //  _TEST_SUPPORT_SUPPORT_H
