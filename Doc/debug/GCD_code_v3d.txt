@@ -1,0 +1,170 @@
+
+Source code
+===========
+
+v0 = Uniform;                                               # QPU id
+v1 = Uniform;                                               # Num QPUs
+v2 = Uniform;                                               # devnull
+v3 = Uniform Ptr;
+v4 = Uniform Ptr;
+v5 = Uniform Ptr;
+v6 = *v3;
+v7 = *v4;
+While (any(Var: v6!=Var: v7))
+  Where (Var: v6>Var: v7)
+    v6 = (v6-v7);
+  End
+  Where (Var: v6<Var: v7)
+    v7 = (v7-v6);
+  End
+End
+*v5 = v6;
+
+
+Target code
+===========
+
+0: A0 <- or(S[UNIFORM], S[UNIFORM])                         # QPU id
+1: A0 <- or(S[UNIFORM], S[UNIFORM])                         # Num QPUs
+2: A1 <- or(S[UNIFORM], S[UNIFORM])                         # devnull
+3: A1 <- or(S[UNIFORM], S[UNIFORM])
+4: A2 <- or(S[UNIFORM], S[UNIFORM])
+5: A3 <- or(S[UNIFORM], S[UNIFORM])
+6: INIT_BEGIN
+7: ACC0 <- or(00.000000, 00.000000)
+8: ACC0 <-{sf-Z} sub(A0, 8)
+9: if all(ZC) goto L2
+10: NOP
+11: NOP
+12: NOP
+13: ACC0 <- or(S[QPU_NUM], S[QPU_NUM])
+14: ACC0 <- shr(ACC0, 2)
+15: ACC1 <- and(ACC0, 15)
+16: L2
+17: ACC0 <- or(S[ELEM_NUM], S[ELEM_NUM])                    # Initialize uniform ptr offsets
+18: ACC0 <- shl(ACC0, 2)
+19: A1 <- add(A1, ACC0)
+20: A2 <- add(A2, ACC0)
+21: A3 <- add(A3, ACC0)                                     # End initialize uniform ptr offsets
+22: INIT_END
+23: S[TMU0_S] <- or(A1, A1)
+24: RECV(A0)
+25: S[TMU0_S] <- or(A2, A2)
+26: RECV(A1)
+27: LI ACC2 <- 0                                            # Store condition as Bool var
+28: ACC0 <-{sf-Z} sub(A0, A1)
+29: where ZC: ACC2 <- or(1, 1)
+30: ACC0 <-{sf-Z} or(ACC2, ACC2)                            # End store condition as Bool var
+31: if all(ZS) goto L1
+32: NOP
+33: NOP
+34: NOP
+35: L0
+36: LI ACC2 <- 0                                            # Store condition as Bool var; Start where (always)
+37: ACC0 <-{sf-N} sub(A1, A0)
+38: where NS: ACC2 <- or(1, 1)
+39: ACC0 <-{sf-Z} or(ACC2, ACC2)                            # End store condition as Bool var; where condition final
+40: where ZC: A0 <- sub(A0, A1)                             # then-branch of where (always)
+41: LI ACC2 <- 0                                            # Store condition as Bool var; Start where (always)
+42: ACC0 <-{sf-N} sub(A0, A1)
+43: where NS: ACC2 <- or(1, 1)
+44: ACC0 <-{sf-Z} or(ACC2, ACC2)                            # End store condition as Bool var; where condition final
+45: where ZC: A1 <- sub(A1, A0)                             # then-branch of where (always)
+46: LI ACC2 <- 0                                            # Store condition as Bool var
+47: ACC0 <-{sf-Z} sub(A0, A1)
+48: where ZC: ACC2 <- or(1, 1)
+49: ACC0 <-{sf-Z} or(ACC2, ACC2)                            # End store condition as Bool var
+50: if any(ZC) goto L0
+51: NOP
+52: NOP
+53: NOP
+54: L1
+55: S[VPM_WRITE] <- or(A0, A0)                              # store_var v3d
+56: S[DMA_ST_ADDR] <- or(A3, A3)
+57: _ <- tmuwt()
+
+Opcodes for v3d
+===============
+
+nop                           ; nop                         ; ldunifrf.rf0  # QPU id
+nop                           ; nop                         ; ldunifrf.rf0  # Num QPUs
+nop                           ; nop                         ; ldunifrf.rf1  # devnull
+nop                           ; nop                         ; ldunifrf.rf1
+nop                           ; nop                         ; ldunifrf.rf2
+nop                           ; nop                         ; ldunifrf.rf3
+
+# Init block
+or r0, 0, 0                   ; nop
+sub.pushz r0, rf0, 8          ; nop
+b.allna  24                                                 # Jump to label L2
+nop                           ; nop
+nop                           ; nop
+nop                           ; nop
+tidx r0                       ; nop
+shr r0, r0, 2                 ; nop
+and r1, r0, 15                ; nop
+eidx r0                       ; nop                         # Initialize uniform ptr offsets; Label L2
+shl r0, r0, 2                 ; nop
+add rf1, rf1, r0              ; add rf2, rf2, r0
+add rf3, rf3, r0              ; nop                         # End initialize uniform ptr offsets
+
+# This single thread switch and two instructions just before the loop are
+# really important for TMU read to achieve a better performance.
+# This also enables TMU read requests without the thread switch signal, and
+# the eight-depth TMU read request queue.
+nop                           ; nop                         ; thrsw
+nop                           ; nop
+nop                           ; nop
+
+# Main program
+or tmua, rf1, rf1             ; nop
+nop                           ; nop                         ; ldtmu.rf0
+or tmua, rf2, rf2             ; nop
+nop                           ; nop                         ; ldtmu.rf1
+or r2, 0, 0                   ; nop                         # Store condition as Bool var
+sub.pushz r0, rf0, rf1        ; nop
+or.ifna r2, 1, 1              ; nop
+or.pushz r0, r2, r2           ; nop                         # End store condition as Bool var
+b.alla  152                                                 # Jump to label L1
+nop                           ; nop
+nop                           ; nop
+nop                           ; nop
+or r2, 0, 0                   ; nop                         # Store condition as Bool var; Start where (always); Label L0
+sub.pushn r0, rf1, rf0        ; nop
+or.ifa r2, 1, 1               ; nop
+or.pushz r0, r2, r2           ; nop                         # End store condition as Bool var; where condition final
+nop                           ; sub.pushz r0, r0, 0
+sub.ifna rf0, rf0, rf1        ; nop                         # then-branch of where (always)
+or r2, 0, 0                   ; nop                         # Store condition as Bool var; Start where (always)
+sub.pushn r0, rf0, rf1        ; nop
+or.ifa r2, 1, 1               ; nop
+or.pushz r0, r2, r2           ; nop                         # End store condition as Bool var; where condition final
+nop                           ; sub.pushz r0, r0, 0
+sub.ifna rf1, rf1, 0          ; mov r2, 0                   # then-branch of where (always); Store condition as Bool var
+sub.pushz r0, rf0, rf1        ; nop
+or.ifna r2, 1, 1              ; nop
+or.pushz r0, r2, r2           ; nop                         # End store condition as Bool var
+b.anyna  -152                                               # Jump to label L0
+nop                           ; nop
+nop                           ; nop
+nop                           ; nop
+or tmud, rf0, rf0             ; nop                         # store_var v3d; Label L1
+or tmua, rf3, rf3             ; nop
+tmuwt -                       ; nop
+
+# This synchronization is needed between the last TMU operation and the
+# program end with the thread switch just before the main body above.
+barrierid syncb               ; nop                         ; thrsw
+nop                           ; nop
+nop                           ; nop
+
+# Program tail
+nop                           ; nop                         ; thrsw
+nop                           ; nop                         ; thrsw
+nop                           ; nop
+nop                           ; nop
+nop                           ; nop                         ; thrsw
+nop                           ; nop
+nop                           ; nop
+nop                           ; nop
+
