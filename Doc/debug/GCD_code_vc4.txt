@@ -1,0 +1,242 @@
+
+Source code
+===========
+
+v0 = Uniform;                                               # QPU id
+v1 = Uniform;                                               # Num QPUs
+v2 = Uniform Ptr;
+v3 = Uniform Ptr;
+v4 = Uniform Ptr;
+v5 = *v2;
+v6 = *v3;
+While (any(Var: v5!=Var: v6))
+  Where (Var: v5>Var: v6)
+    v5 = (v5-v6);
+  End
+  Where (Var: v5<Var: v6)
+    v6 = (v6-v5);
+  End
+End
+*v4 = v5;
+
+# Kernel termination
+dmaReadWait();                                              # Ensure outstanding DMAs have completed
+dmaWriteWait();
+If (any(Var: v0==Int 0))
+  v7 = (v1-1);                                              # QPU 0 wait for other QPUs to finish
+  v8 = 0;
+  While (any(Var: v8<Var: v7))
+    semaDec(15);
+    v8 = (v8+1);
+  End
+  hostIRQ();                                                # Send host IRQ
+Else
+  semaInc(15);
+End
+
+
+Target code
+===========
+
+0: A0 <- or(S[UNIFORM], S[UNIFORM])                         # QPU id
+1: A1 <- or(S[UNIFORM], S[UNIFORM])                         # Num QPUs
+2: B0 <- or(S[UNIFORM], S[UNIFORM])
+3: A2 <- or(S[UNIFORM], S[UNIFORM])
+4: B1 <- or(S[UNIFORM], S[UNIFORM])
+5: B2 <- or(S[UNIFORM], S[UNIFORM])                         # Last uniform load is dummy value
+6: ACC0 <- or(S[ELEM_NUM], S[ELEM_NUM])                     # Initialize uniform ptr offsets
+7: ACC0 <- shl(ACC0, 2)
+8: B0 <- add(B0, ACC0)
+9: A2 <- add(A2, ACC0)
+10: B1 <- add(B1, ACC0)                                     # End initialize uniform ptr offsets
+11: S[TMU0_S] <- or(B0, B0)
+12: RECV(ACC4)
+13: B0 <- or(ACC4, ACC4)
+14: S[TMU0_S] <- or(A2, A2)
+15: RECV(ACC4)
+16: A2 <- or(ACC4, ACC4)
+17: LI ACC1 <- 0                                            # Store condition as Bool var
+18: ACC0 <-{sf-Z} sub(B0, A2)
+19: where ZC: LI ACC1 <- 1
+20: ACC0 <-{sf-Z} or(ACC1, ACC1)                            # End store condition as Bool var
+21: if all(ZS) goto PC+1+18                                 # Jump to label L1
+22: NOP
+23: NOP
+24: NOP
+25: LI ACC1 <- 0                                            # Store condition as Bool var; Start where (always); Label L0
+26: ACC0 <-{sf-N} sub(A2, B0)
+27: where NS: LI ACC1 <- 1
+28: ACC0 <-{sf-Z} or(ACC1, ACC1)                            # End store condition as Bool var; where condition final
+29: where ZC: B0 <- sub(B0, A2)                             # then-branch of where (always)
+30: LI ACC1 <- 0                                            # Store condition as Bool var; Start where (always)
+31: ACC0 <-{sf-N} sub(B0, A2)
+32: where NS: LI ACC1 <- 1
+33: ACC0 <-{sf-Z} or(ACC1, ACC1)                            # End store condition as Bool var; where condition final
+34: where ZC: A2 <- sub(A2, B0)                             # then-branch of where (always)
+35: LI ACC1 <- 0                                            # Store condition as Bool var
+36: ACC0 <-{sf-Z} sub(B0, A2)
+37: where ZC: LI ACC1 <- 1
+38: ACC0 <-{sf-Z} or(ACC1, ACC1)                            # End store condition as Bool var
+39: if any(ZC) goto PC+1+-18                                # Jump to label L0
+40: NOP
+41: NOP
+42: NOP
+43: LI ACC1 <- 16                                           # Start DMA store request; Label L1
+44: ACC1 <- add(ACC1, S[QPU_NUM])
+45: LI ACC0 <- 4608
+46: S[WR_SETUP] <- or(ACC1, ACC0)
+47: LI ACC2 <- 256
+48: ACC2 <- add(ACC2, S[QPU_NUM])
+49: where never: _ <- or(S[DMA_ST_WAIT], S[DMA_ST_WAIT])
+50: LI S[WR_SETUP] <- -1073741824
+51: LI ACC1 <- -2013184000
+52: ACC0 <- shl(ACC2, 3)
+53: S[WR_SETUP] <- or(ACC1, ACC0)
+54: ACC0 <- or(B0, B0)
+55: S[VPM_WRITE] <- shl(ACC0, 00.000000)
+56: S[DMA_ST_ADDR] <- or(B1, B1)                            # End DMA store request
+
+# Kernel termination
+57: where never: _ <- or(S[DMA_LD_WAIT], S[DMA_LD_WAIT])    # Ensure outstanding DMAs have completed
+58: where never: _ <- or(S[DMA_ST_WAIT], S[DMA_ST_WAIT])
+59: ACC1 <- or(A0, A0)
+60: LI ACC2 <- 0                                            # Store condition as Bool var
+61: ACC0 <-{sf-Z} sub(ACC1, 00.000000)
+62: where ZS: LI ACC2 <- 1
+63: ACC0 <-{sf-Z} or(ACC2, ACC2)                            # End store condition as Bool var
+64: if all(ZS) goto PC+1+25                                 # Jump to label L3
+65: NOP
+66: NOP
+67: NOP
+68: ACC3 <- sub(A1, 1)                                      # QPU 0 wait for other QPUs to finish
+69: LI ACC2 <- 0
+70: LI ACC1 <- 0                                            # Store condition as Bool var
+71: ACC0 <-{sf-N} sub(ACC2, ACC3)
+72: where NS: LI ACC1 <- 1
+73: ACC0 <-{sf-Z} or(ACC1, ACC1)                            # End store condition as Bool var
+74: if all(ZS) goto PC+1+10                                 # Jump to label L5
+75: NOP
+76: NOP
+77: NOP
+78: SDEC 15                                                 # Label L4
+79: ACC2 <- add(ACC2, 1)
+80: LI ACC1 <- 0                                            # Store condition as Bool var
+81: ACC0 <-{sf-N} sub(ACC2, ACC3)
+82: where NS: LI ACC1 <- 1
+83: ACC0 <-{sf-Z} or(ACC1, ACC1)                            # End store condition as Bool var
+84: if any(ZC) goto PC+1+-10                                # Jump to label L4
+85: NOP
+86: NOP
+87: NOP
+88: IRQ                                                     # Send host IRQ; Label L5
+89: if always goto PC+1+1                                   # Jump to label L2
+90: NOP
+91: NOP
+92: NOP
+93: SINC 15                                                 # Label L3
+94: END                                                     # Label L2
+95: NOP
+96: NOP
+97: NOP
+
+Opcodes for vc4
+===============
+
+mov ra0, uni ; nop nop, uni, uni
+mov ra1, uni ; nop nop, uni, uni
+mov rb0, uni ; nop nop, uni, uni
+mov ra2, uni ; nop nop, uni, uni
+mov rb1, uni ; nop nop, uni, uni
+mov rb2, uni ; nop nop, uni, uni
+mov r0, elem ; nop nop, elem, elem
+sig_small_imm shl r0, r0, 2 ; nop nop, r0, 2
+add rb0, rb0, r0 ; nop nop, rb0, r0
+add ra2, ra2, r0 ; nop nop, ra2, r0
+add rb1, rb1, r0 ; nop nop, rb1, r0
+mov tmu0_s, rb0 ; nop nop, rb0, rb0
+load_tmu0 nop nop, r0, r0 ; nop nop, r0, r0
+mov rb0, r4 ; nop nop, r4, r4
+mov tmu0_s, ra2 ; nop nop, ra2, ra2
+load_tmu0 nop nop, r0, r0 ; nop nop, r0, r0
+mov ra2, r4 ; nop nop, r4, r4
+load_imm r1, nop, 0x00000000 (0.000000)
+sub.sf r0, rb0, ra2 ; nop nop, rb0, ra2
+load_imm r1.zc, nop, 0x00000001 (0.000000)
+mov.sf r0, r1 ; nop nop, r1, r1
+branch.all_zs 144
+load_imm nop, nop, 0x00000000 (0.000000)
+load_imm nop, nop, 0x00000000 (0.000000)
+load_imm nop, nop, 0x00000000 (0.000000)
+load_imm r1, nop, 0x00000000 (0.000000)
+sub.sf r0, ra2, rb0 ; nop nop, ra2, rb0
+load_imm r1.ns, nop, 0x00000001 (0.000000)
+mov.sf r0, r1 ; nop nop, r1, r1
+sub.zc rb0, rb0, ra2 ; nop nop, rb0, ra2
+load_imm r1, nop, 0x00000000 (0.000000)
+sub.sf r0, rb0, ra2 ; nop nop, rb0, ra2
+load_imm r1.ns, nop, 0x00000001 (0.000000)
+mov.sf r0, r1 ; nop nop, r1, r1
+sub.zc ra2, ra2, rb0 ; nop nop, ra2, rb0
+load_imm r1, nop, 0x00000000 (0.000000)
+sub.sf r0, rb0, ra2 ; nop nop, rb0, ra2
+load_imm r1.zc, nop, 0x00000001 (0.000000)
+mov.sf r0, r1 ; nop nop, r1, r1
+branch.any_zc -144
+load_imm nop, nop, 0x00000000 (0.000000)
+load_imm nop, nop, 0x00000000 (0.000000)
+load_imm nop, nop, 0x00000000 (0.000000)
+load_imm r1, nop, 0x00000010 (0.000000)
+add r1, r1, qpu ; nop nop, r1, qpu
+load_imm r0, nop, 0x00001200 (0.000000)
+or vw_setup, r1, r0 ; nop nop, r1, r0
+load_imm r2, nop, 0x00000100 (0.000000)
+add r2, r2, qpu ; nop nop, r2, qpu
+mov.never nop, vpm_st_wait ; nop nop, vpm_st_wait, vpm_st_wait
+load_imm vw_setup, nop, 0xc0000000 (-2.000000)
+load_imm r1, nop, 0x88014000 (-0.000000)
+sig_small_imm shl r0, r2, 3 ; nop nop, r2, 3
+or vw_setup, r1, r0 ; nop nop, r1, r0
+mov r0, rb0 ; nop nop, rb0, rb0
+sig_small_imm shl vpm, r0, 0 ; nop nop, r0, 0
+mov vw_addr, rb1 ; nop nop, rb1, rb1
+mov.never nop, vpm_ld_wait ; nop nop, vpm_ld_wait, vpm_ld_wait
+mov.never nop, vpm_st_wait ; nop nop, vpm_st_wait, vpm_st_wait
+mov r1, ra0 ; nop nop, ra0, ra0
+load_imm r2, nop, 0x00000000 (0.000000)
+sig_small_imm sub.sf r0, r1, 0 ; nop nop, r1, 0
+load_imm r2.zs, nop, 0x00000001 (0.000000)
+mov.sf r0, r2 ; nop nop, r2, r2
+branch.all_zs 200
+load_imm nop, nop, 0x00000000 (0.000000)
+load_imm nop, nop, 0x00000000 (0.000000)
+load_imm nop, nop, 0x00000000 (0.000000)
+sig_small_imm sub r3, ra1, 1 ; nop nop, ra1, 1
+load_imm r2, nop, 0x00000000 (0.000000)
+load_imm r1, nop, 0x00000000 (0.000000)
+sub.sf r0, r2, r3 ; nop nop, r2, r3
+load_imm r1.ns, nop, 0x00000001 (0.000000)
+mov.sf r0, r1 ; nop nop, r1, r1
+branch.all_zs 80
+load_imm nop, nop, 0x00000000 (0.000000)
+load_imm nop, nop, 0x00000000 (0.000000)
+load_imm nop, nop, 0x00000000 (0.000000)
+load_imm nop, nop, 0x0000001f (0.000000)
+sig_small_imm add r2, r2, 1 ; nop nop, r2, 1
+load_imm r1, nop, 0x00000000 (0.000000)
+sub.sf r0, r2, r3 ; nop nop, r2, r3
+load_imm r1.ns, nop, 0x00000001 (0.000000)
+mov.sf r0, r1 ; nop nop, r1, r1
+branch.any_zc -80
+load_imm nop, nop, 0x00000000 (0.000000)
+load_imm nop, nop, 0x00000000 (0.000000)
+load_imm nop, nop, 0x00000000 (0.000000)
+load_imm host_int, nop, 0x00000001 (0.000000)
+branch 8
+load_imm nop, nop, 0x00000000 (0.000000)
+load_imm nop, nop, 0x00000000 (0.000000)
+load_imm nop, nop, 0x00000000 (0.000000)
+load_imm nop, nop, 0x0000000f (0.000000)
+sig_end nop nop, r0, r0 ; nop nop, r0, r0
+load_imm nop, nop, 0x00000000 (0.000000)
+load_imm nop, nop, 0x00000000 (0.000000)
+load_imm nop, nop, 0x00000000 (0.000000)
