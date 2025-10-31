@@ -70,6 +70,7 @@ void KernelDriver::encode() {
 void KernelDriver::emit_opcodes(FILE *f) {
   fprintf(f, "Opcodes for vc4\n");
   fprintf(f, "===============\n\n");
+  fflush(f);
 
   encode();
 
