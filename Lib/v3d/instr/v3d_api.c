@@ -6,17 +6,8 @@
 #include "util/ralloc.h"  // ralloc_free()
 #include "broadcom/common/v3d_device_info.h"
 
-
-//
-// Required by many broadcom v3d calls
-// The only field of interest is 'ver' which has value '42' for v3d
-// 
-struct v3d_device_info const devinfo = {42};
-#if USE_MESA == 1
-#else
-#warning "v3d_api.c: Probably need to adjust devinfo for V3D 7.x; currently using V3D 4.2"
-#endif
-
+// defined in v3d/v3d.cpp
+extern struct v3d_device_info const *devinfo();
 
 #if USE_MESA == 1
 static const struct v3d_qpu_alu_instr ALU_NOP = {
@@ -607,13 +598,13 @@ void instr_dump(char *buffer, struct v3d_qpu_instr *instr) {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool instr_unpack(uint64_t packed_instr, struct v3d_qpu_instr *instr) {
-  return v3d_qpu_instr_unpack(&devinfo, packed_instr, instr);
+  return v3d_qpu_instr_unpack(devinfo(), packed_instr, instr);
 }
 
 
 uint64_t instr_pack(struct v3d_qpu_instr const *instr) {
   uint64_t packed_instr;
-  v3d_qpu_instr_pack(&devinfo, instr, &packed_instr);
+  v3d_qpu_instr_pack(devinfo(), instr, &packed_instr);
   //assert(packed_instr != 0);
   return packed_instr;
 }
@@ -622,19 +613,14 @@ uint64_t instr_pack(struct v3d_qpu_instr const *instr) {
 const char *instr_mnemonic(const struct v3d_qpu_instr *instr) {
   static char buffer[256];
 
-  //struct v3d_device_info devinfo;
-  //devinfo.ver = 42;
-
-  const char *decoded = v3d_qpu_decode(&devinfo, instr);
+  const char *decoded = v3d_qpu_decode(devinfo(), instr);
   snprintf(buffer, 256, decoded);
   ralloc_free((char *)decoded);
 
   return buffer;
 }
 
-bool small_imm_pack(uint32_t value, uint32_t *packed_small_immediate) {
-  //struct v3d_device_info devinfo;
-  //devinfo.ver = 42;
 
-  return v3d_qpu_small_imm_pack(&devinfo, value, packed_small_immediate);
+bool small_imm_pack(uint32_t value, uint32_t *packed_small_immediate) {
+  return v3d_qpu_small_imm_pack(devinfo(), value, packed_small_immediate);
 }

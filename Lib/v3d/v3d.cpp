@@ -22,7 +22,7 @@ namespace {
 int fd = 0;
 
 bool got_devinfo = false;
-struct v3d_device_info devinfo;
+struct v3d_device_info s_devinfo;
 
 typedef struct {
     uint32_t size   = 0;
@@ -299,7 +299,7 @@ bool _v3d_device_info() {
 		}
 	}
 
-	bool ret =  v3d_get_device_info(fd, &devinfo, drmIoctl);
+	bool ret =  v3d_get_device_info(fd, &s_devinfo, drmIoctl);
 
 	if (!fd_is_open) {
 		// Close fd again if not open previously
@@ -391,6 +391,21 @@ bool v3d_close() {
 }
 
 
+// Used in v3d/instr/v3d_api.c, hence the 'extern' brackets
+extern "C" {
+
+struct v3d_device_info const *devinfo() {
+	if(!_v3d_device_info()) {
+		error("devinfo: Call to _v3d_device_info() failed");
+		return nullptr;
+	}
+
+	return &s_devinfo;
+}
+
+}
+
+
 std::string v3d_device_info() {
 	std::stringstream buf;
 
@@ -398,6 +413,9 @@ std::string v3d_device_info() {
 		buf << "Call to _v3d_device_info() failed\n";
 		return buf.str();
 	}
+
+
+	auto &devinfo = s_devinfo;
 
 	buf << "v3d devinfo" << "\n"
       << "===========" << "\n"
