@@ -25,6 +25,7 @@ struct Settings {
   void process(BaseKernel &k);
   virtual bool init_params() { return true; }
   TypedParameter::List const &parameters() const { return m_all_params.parameters(); }
+	bool run_on_hardware() const { return run_type == 0; }
 
 private:
   CmdParameters * const m_derived_params;

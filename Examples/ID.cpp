@@ -19,7 +19,7 @@ int main(int argc, const char *argv[]) {
 
   settings.init(argc, argv);
 
-  auto k = compile(id_kernel);                    // Construct kernel
+  auto k = compile(id_kernel, settings.run_on_hardware()); // Construct kernel
   k.setNumQPUs(numQPUs);
 
   Int::Array result(16*numQPUs);                  // Allocate and initialise array shared between ARM and GPU

@@ -4,16 +4,8 @@
 #include <algorithm>  // std::move
 #include "BaseKernel.h"
 #include "Source/Complex.h"
-//#include "Support/assign.h"
 
 namespace V3DLib {
-
-enum CompileFor {
-  VC4 = 1,
-  V3D = 2,
-  BOTH = VC4 + V3D
-};
-
 
 // ============================================================================
 // Parameter passing
@@ -91,15 +83,14 @@ public:
   /**
    * Construct kernel out of C++ function
    */
-  Kernel(KernelFunction f, CompileFor compile_for) {
-    if (compile_for & VC4) {
+  Kernel(KernelFunction f, bool run_on_hardware) {
+    if (!run_on_hardware || Platform::run_vc4()) {
       compile_init(true);
       vc4().compile([this, f] () {
         f(mkArg<ts>()...);  // Construct the AST for vc4; see Note 2 in class header
       });
-    }
-
-    if (compile_for & V3D) {
+    } else {
+			// Compile v3d
       compile_init(false);
 
       v3d().compile([this, f] () {
@@ -124,8 +115,8 @@ public:
 
 
 template <typename... ts>
-Kernel<ts...> compile(void (*f)(ts... params), CompileFor compile_for = BOTH) {
-  Kernel<ts...> k(f, compile_for);
+Kernel<ts...> compile(void (*f)(ts... params), bool run_on_hardware) {
+  Kernel<ts...> k(f, run_on_hardware);
   return std::move(k);
 }
 
