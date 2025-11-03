@@ -9,6 +9,8 @@
 #include "vc4/Mailbox.h"
 #include "vc4/RegisterMap.h"
 #include "v3d/RegisterMapping.h"
+#include "v3d/v3d.h"
+
 
 using namespace V3DLib;
 
@@ -289,6 +291,12 @@ int main(int argc, char const *argv[]) {
 
 
 #ifdef QPU_MODE
+  if (!Platform::run_vc4()) {
+    printf("\n\n");
+    std::string ret =  v3d_device_info();
+    printf(ret.c_str());
+  }
+
   if (settings.extended) {
     printf("\n");
 

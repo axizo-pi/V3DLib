@@ -622,8 +622,8 @@ uint64_t instr_pack(struct v3d_qpu_instr const *instr) {
 const char *instr_mnemonic(const struct v3d_qpu_instr *instr) {
   static char buffer[256];
 
-  struct v3d_device_info devinfo;
-  devinfo.ver = 42;
+  //struct v3d_device_info devinfo;
+  //devinfo.ver = 42;
 
   const char *decoded = v3d_qpu_decode(&devinfo, instr);
   snprintf(buffer, 256, decoded);
@@ -633,8 +633,8 @@ const char *instr_mnemonic(const struct v3d_qpu_instr *instr) {
 }
 
 bool small_imm_pack(uint32_t value, uint32_t *packed_small_immediate) {
-  struct v3d_device_info devinfo;
-  devinfo.ver = 42;
+  //struct v3d_device_info devinfo;
+  //devinfo.ver = 42;
 
   return v3d_qpu_small_imm_pack(&devinfo, value, packed_small_immediate);
 }

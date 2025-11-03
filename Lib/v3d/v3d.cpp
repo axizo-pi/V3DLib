@@ -5,6 +5,8 @@
 #ifdef QPU_MODE
 
 #include "v3d.h"
+#include "Support/basics.h"
+#include "broadcom/common/v3d_device_info.h"
 #include <cassert>
 #include <sys/ioctl.h>
 #include <cstddef>    // NULL
@@ -13,11 +15,14 @@
 #include <sys/mman.h>
 #include <stdio.h>
 #include <unistd.h>   // close(), sysconf()
-#include "Support/basics.h"
+#include <sstream>
 
 namespace {
 
 int fd = 0;
+
+bool got_devinfo = false;
+struct v3d_device_info devinfo;
 
 typedef struct {
     uint32_t size   = 0;
@@ -256,6 +261,59 @@ int open_card(char const *card) {
 }
 
 
+/**
+ * Call ioctl, restarting if it is interrupted
+ *
+ * Source: mesa/src/drm/xf86drm.c
+ */
+int drmIoctl(int fd, unsigned long request, void *arg)
+{
+    int ret;
+
+    do {
+				//(v3d_ioctl_fun)
+        ret = ioctl(fd, request, arg);
+    } while (ret == -1 && (errno == EINTR || errno == EAGAIN));
+    return ret;
+}
+
+
+/**
+ * Retrieve the device info for the current v3d device.
+ *
+ * @return true if call succeeded, false otherwise
+ */
+bool _v3d_device_info() {
+	//printf("Called _v3d_device_info\n");
+	if (got_devinfo) return true;  // Don't bother getting if got already
+
+	bool fd_is_open = (fd != 0);
+
+	if (!fd_is_open) {
+		// open fd if not already open
+		//printf("_v3d_device_info opening fd\n");
+
+		if (!v3d_open()) {
+			error("_v3d_device_info: Could not open fd.");
+			return false;
+		}
+	}
+
+	bool ret =  v3d_get_device_info(fd, &devinfo, drmIoctl);
+
+	if (!fd_is_open) {
+		// Close fd again if not open previously
+		if (!v3d_close()) {
+			error("_v3d_device_info: Could not close fd.");
+		}
+	}
+
+	got_devinfo = ret;
+
+	return ret;
+}
+
+
 bool v3d_wait_bo(uint32_t handle, uint64_t timeout_ns) {
   assert(handle != 0);
   assert(timeout_ns > 0);
@@ -330,6 +388,47 @@ bool v3d_close() {
   fd = 0;
 
   return true;
+}
+
+
+std::string v3d_device_info() {
+	std::stringstream buf;
+
+	if(!_v3d_device_info()) {
+		buf << "Call to _v3d_device_info() failed\n";
+		return buf.str();
+	}
+
+	buf << "v3d devinfo" << "\n"
+      << "===========" << "\n"
+      << "Version                   : " <<  (int) devinfo.ver << "\n"
+	    << "Revision Number           : " <<  (int) devinfo.rev << "; Compatibility rev #: " << (int) devinfo.compat_rev << "\n"
+	    << "Max # performance counters: " <<  (int) devinfo.max_perfcnt   << "\n"
+	    << "VPM size                  : " <<  (int) devinfo.vpm_size  << " bytes"  << "\n"
+	    << "Num QPU's                 : " <<  (int) devinfo.qpu_count << "   (NSLC*QUPS from the core's IDENT registers.)" << "\n"
+	    << "Has accumulators          : " <<  (devinfo.has_accumulators? "yes":"no")   << "\n"
+	    << "Has reset counter         : " <<  (devinfo.has_reset_counter? "yes":"no")  << "\n"
+	    << "Granularity               : " <<  devinfo.clipper_xy_granularity << " (Granularity for the Clipper XY Scaling)" << "\n"
+
+
+				// WRI: Explanatory gobbledygook:
+
+        /** The Control List Executor (CLE) pre-fetches V3D_CLE_READAHEAD
+         *  bytes from the Control List buffer. The usage of these last bytes
+         *  should be avoided or the CLE would pre-fetch the data after the
+         *  end of the CL buffer, reporting the kernel "MMU error from client
+         *  CLE".
+         */
+	    << "CLE readahead             : " <<  (int) devinfo.cle_readahead        << "\n"
+
+      // Minimum size for a buffer storing the Control List Executor (CLE)
+	    << "CLE buffer min size       : " <<  (int) devinfo.cle_buffer_min_size  << "\n"
+	;
+
+
+
+
+	return buf.str();
 }
 
 
