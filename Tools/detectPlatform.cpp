@@ -292,7 +292,7 @@ int main(int argc, char const *argv[]) {
 
 #ifdef QPU_MODE
   if (!Platform::run_vc4()) {
-    printf("\n\n");
+    printf("\n");
     std::string ret =  v3d_device_info();
     printf(ret.c_str());
   }

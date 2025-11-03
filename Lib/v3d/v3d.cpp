@@ -401,25 +401,29 @@ std::string v3d_device_info() {
 
 	buf << "v3d devinfo" << "\n"
       << "===========" << "\n"
-      << "Version                   : " <<  (int) devinfo.ver << "\n"
-	    << "Revision Number           : " <<  (int) devinfo.rev << "; Compatibility rev #: " << (int) devinfo.compat_rev << "\n"
-	    << "Max # performance counters: " <<  (int) devinfo.max_perfcnt   << "\n"
+      << "Version                   : " <<  (int) devinfo.ver                    << "\n"
+	    << "Revision number           : " <<  (int) devinfo.rev                    << "\n"
+			<< "Compatibility rev number  : " <<  (int) devinfo.compat_rev             << "\n"
+	    << "Max # performance counters: " <<  (int) devinfo.max_perfcnt            << "\n"
 	    << "VPM size                  : " <<  (int) devinfo.vpm_size  << " bytes"  << "\n"
-	    << "Num QPU's                 : " <<  (int) devinfo.qpu_count << "   (NSLC*QUPS from the core's IDENT registers.)" << "\n"
-	    << "Has accumulators          : " <<  (devinfo.has_accumulators? "yes":"no")   << "\n"
+
+ 			// NSLC*QUPS from the core's IDENT registers. 
+	    << "Num QPU's                 : " <<  (int) devinfo.qpu_count              << "\n"
+
+	    << "Has accumulators          : " <<  (devinfo.has_accumulators?  "yes":"no")  << "\n"
 	    << "Has reset counter         : " <<  (devinfo.has_reset_counter? "yes":"no")  << "\n"
-	    << "Granularity               : " <<  devinfo.clipper_xy_granularity << " (Granularity for the Clipper XY Scaling)" << "\n"
 
+			// Granularity for the Clipper XY Scaling 
+	    << "Granularity               : " <<  devinfo.clipper_xy_granularity << "\n"
 
-				// WRI: Explanatory gobbledygook:
-
-        /** The Control List Executor (CLE) pre-fetches V3D_CLE_READAHEAD
-         *  bytes from the Control List buffer. The usage of these last bytes
-         *  should be avoided or the CLE would pre-fetch the data after the
-         *  end of the CL buffer, reporting the kernel "MMU error from client
-         *  CLE".
-         */
-	    << "CLE readahead             : " <<  (int) devinfo.cle_readahead        << "\n"
+			// WRI: Explanatory gobbledygook:
+      /** The Control List Executor (CLE) pre-fetches V3D_CLE_READAHEAD
+       *  bytes from the Control List buffer. The usage of these last bytes
+       *  should be avoided or the CLE would pre-fetch the data after the
+       *  end of the CL buffer, reporting the kernel "MMU error from client
+       *  CLE".
+       */
+	    << "CLE readahead             : " <<  (int) devinfo.cle_readahead << "\n"
 
       // Minimum size for a buffer storing the Control List Executor (CLE)
 	    << "CLE buffer min size       : " <<  (int) devinfo.cle_buffer_min_size  << "\n"
