@@ -66,17 +66,16 @@ public:
   V3DLib::KernelDriver const &v3d() const;
 
   void compile_init(bool do_vc4);
-  void pretty(bool output_for_vc4, const char *filename = nullptr, bool output_qpu_code = true);
+  void pretty(const char *filename = nullptr, bool output_qpu_code = true);
 
   BaseKernel &setNumQPUs(int n) { m_settings.num_qpus = n; return *this; }
   int numQPUs() const { return m_settings.num_qpus; }
 
-  void run();
+  void call() { _run(); }
 
   // TODO make private
   void emu();
   void interpret();
-  void call();
 #ifdef QPU_MODE
   void qpu();
 #endif  // QPU_MODE
@@ -96,6 +95,8 @@ protected:
   // (There are other reasons but this is the main one)
   std::unique_ptr<vc4::KernelDriver> m_vc4_driver;
   std::unique_ptr<v3d::KernelDriver> m_v3d_driver;
+
+  void _run();
 };
 
 

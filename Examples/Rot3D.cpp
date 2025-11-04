@@ -112,17 +112,15 @@ void run_scalar_kernel() {
 
 
 void run_qpu_kernel(KernelType &kernel) {
-  auto k = compile(kernel);  // Construct kernel
+  auto k = compile(kernel, settings);  // Construct kernel
   k.setNumQPUs(settings.num_qpus);
 
   // Allocate and initialise arrays shared between ARM and GPU
   Float::Array x(settings.num_vertices), y(settings.num_vertices);
   init_arrays(x, y);
 
-  k.load(settings.num_vertices, cosf(settings.THETA), sinf(settings.THETA), &x, &y);
-
-  Timer timer;  // Time the run only
-  settings.process(k);
+  Timer timer;
+  k.run(settings.num_vertices, cosf(settings.THETA), sinf(settings.THETA), &x, &y);
   timer.end(!settings.silent);
 
   disp_arrays(x, y);
@@ -130,17 +128,15 @@ void run_qpu_kernel(KernelType &kernel) {
 
 
 void run_qpu_kernel_3() {
-  auto k = compile(rot3D_3_decorator(settings.num_vertices, settings.num_qpus));
+  auto k = compile(rot3D_3_decorator(settings.num_vertices, settings.num_qpus), settings);
   k.setNumQPUs(settings.num_qpus);
 
   // Allocate and initialise arrays shared between ARM and GPU
   Float::Array x(settings.num_vertices), y(settings.num_vertices);
   init_arrays(x, y);
 
-  k.load(cosf(settings.THETA), sinf(settings.THETA), &x, &y);
-
-  Timer timer;  // Time the run only
-  settings.process(k);
+  Timer timer;
+  k.run(cosf(settings.THETA), sinf(settings.THETA), &x, &y);
   timer.end(!settings.silent);
 
   disp_arrays(x, y);

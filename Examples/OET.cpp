@@ -38,14 +38,13 @@ void kernel(Int::Ptr p) {
 int main(int argc, const char *argv[]) {
   settings.init(argc, argv);
 
-  auto k = compile(kernel);                       // Construct kernel
+  auto k = compile(kernel, settings);             // Construct kernel
 
   Int::Array a(32);                               // Allocate and initialise array shared between ARM and GPU
   for (int i = 0; i < (int) a.size(); i++)
     a[i] = 100 - i;
 
-  k.load(&a);                                     // Load the uniforms
-  settings.process(k);                            // Invoke the kernel
+  k.run(&a);                                     // Load the uniforms and invoke the kernel
 
   for (int i = 0; i < (int) a.size(); i++)        // Display the result
     printf("%i: %i\n", i, (i & 1) ? a[16+(i>>1)] : a[i>>1]);

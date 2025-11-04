@@ -62,7 +62,7 @@ bool running_on_v3d() {
 
   if (V3DLib::Platform::run_vc4()) {
     if (!did_first) {
-      printf("Skipping v3d tests with calls to driver\n");
+      printf("Skipping v3d tests\n");
       did_first = true;
     }
     return false;

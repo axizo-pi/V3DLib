@@ -33,7 +33,7 @@ void BufferObject::alloc_mem(uint32_t size_in_bytes) {
   // Allocate memory
   handle = mem_alloc(mb, size_in_bytes*4, 4096, GPU_MEM_FLG);
   if (!handle) {
-    fatal("Failed to allocate vc4 shared  memory.");
+    fatal("Failed to allocate vc4 shared memory.");
   }
 
   uint32_t phyaddr = mem_lock(mb, handle);

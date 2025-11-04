@@ -137,8 +137,6 @@ bool compare_dfts(int Dim, bool do_profiling) {
   //
   // Support Stuff
   //
-  CompileFor for_platform = (Platform::run_vc4())?CompileFor::VC4:CompileFor::V3D;
-
   ProfileOutput profile_output;
   profile_output.show_compile(true);
 
@@ -201,7 +199,7 @@ bool compare_dfts(int Dim, bool do_profiling) {
     // Do regular complex matrix multiplication
     // In this call, the matrix and input are switched.
     // This is slightly more efficient and should not affect the result
-    auto k = compile(kernels::matrix_mult_decorator(input, dft_matrix, result_mult), for_platform);
+    auto k = compile(kernels::matrix_mult_decorator(input, dft_matrix, result_mult));
     profile_output.add_compile(label, timer1, Dim);
 
     if (!k.has_errors()) {
@@ -231,7 +229,7 @@ bool compare_dfts(int Dim, bool do_profiling) {
     std::string label = "dft complex";
 
     Timer timer1;
-    auto k = compile(kernels::dft_decorator(input, result_complex), for_platform);
+    auto k = compile(kernels::dft_decorator(input, result_complex));
     profile_output.add_compile(label, timer1, Dim);
 
     if (!k.has_errors()) {
@@ -253,7 +251,7 @@ bool compare_dfts(int Dim, bool do_profiling) {
     std::string label = "dft float";
 
     Timer timer1;
-    auto k = compile(kernels::dft_decorator(input_float, result_float), for_platform);
+    auto k = compile(kernels::dft_decorator(input_float, result_float));
     profile_output.add_compile(label, timer1, Dim);
 
     if (!k.has_errors()) {
@@ -440,7 +438,7 @@ TEST_CASE("Discrete Fourier Transform [dft]") {
     {
       Complex::Array2D result_tmp;  // Will be Dimx16, columns padded to 16 and only 1st relevant
       auto k = compile(kernels::matrix_mult_decorator(dft_matrix, input, result_tmp));
-      k.pretty(false,  "obj/test/dft_matrix_v3d.txt");
+      k.pretty("obj/test/dft_matrix_v3d.txt");
 
       //std::cout << "result dimensions: (" << result_tmp.rows() << ", " << result_tmp.columns() << ")" << std::endl;
 

@@ -246,7 +246,7 @@ void run_qpu_kernel(KernelType &kernel) {
 
   Timer timer("Kernel compile");
 
-  auto k = compile(kernel);
+  auto k = compile(kernel, settings);
 
   timer.end(!settings.silent);
 
@@ -254,14 +254,13 @@ void run_qpu_kernel(KernelType &kernel) {
 
   Int::Array result(settings.num_items());  // Allocate and initialise
 
-  k.load(
+  k.run(
     settings.topLeftReal, settings.topLeftIm,
     settings.offsetX(), settings.offsetY(),
     settings.numStepsWidth, settings.numStepsHeight,
     settings.num_iterations,
     &result);
 
-  settings.process(k);
   output_pgm(result);
 }
 

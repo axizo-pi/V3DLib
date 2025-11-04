@@ -72,7 +72,7 @@ void run_int() {
   printf("Running integer kernel.\n");
 
   // Construct kernel
-  auto k = compile(tri_int);
+  auto k = compile(tri_int, settings);
   k.setNumQPUs(settings.num_qpus);
 
   // Allocate and initialise array shared between ARM and GPU
@@ -81,8 +81,7 @@ void run_int() {
     array[i] = i;
 
   // Invoke the kernel
-  k.load(&array);
-  settings.process(k);
+  k.run(&array);
 
   // Display the result
   for (int i = 0; i < (int) array.size(); i++)
@@ -94,7 +93,7 @@ void run_float() {
   printf("Running float kernel.\n");
 
   // Construct kernel
-  auto k = compile(tri_float);
+  auto k = compile(tri_float, settings);
   k.setNumQPUs(settings.num_qpus);
 
   // Allocate and initialise array shared between ARM and GPU
@@ -103,8 +102,7 @@ void run_float() {
     array[i] = (float) i;
 
   // Invoke the kernel
-  k.load(&array);
-  settings.process(k);
+  k.run(&array);
 
   // Display the result
   for (int i = 0; i < (int) array.size(); i++)

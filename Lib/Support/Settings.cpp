@@ -150,17 +150,6 @@ using ::operator<<;  // C++ weirdness
 ///////////////////////////////////////////////////
 
 void BaseSettings::process(BaseKernel &k) {
-  startPerfCounters();
-
-  if (!compile_only) {
-    switch (run_type) {
-      case 0: k.call(); break;
-      case 1: k.emu(); break;
-      case 2: k.interpret(); break;
-    }
-  }
-
-  stopPerfCounters();
 
   // NOTE: For multiple calls here (entirely possible, HeatMap does this),
   //       this will prevent dumping the v3d code (mnemonics, actually) on every call.
@@ -169,8 +158,7 @@ void BaseSettings::process(BaseKernel &k) {
       assert(!name.empty());
       std::string code_filename = name + "_code.txt";
 
-      bool output_for_vc4 = Platform::run_vc4() || (run_type != 0);
-      k.pretty(output_for_vc4, code_filename.c_str());
+      k.pretty(code_filename.c_str());
     } else if (output_count == 1) {
       warning("Not outputting code more than once");
     }

@@ -10,21 +10,21 @@ class BaseKernel;
 struct BaseSettings {
   std::string name;
 
-  bool compile_only;
-  int  run_type;
-  int  num_qpus = 1;
-  bool output_code;
+  bool compile_only = false;
+  int  run_type     = 0;
+  int  num_qpus     = 1;
+  bool output_code  = false;
 #ifdef QPU_MODE
-  bool   show_perf_counters;
+  bool   show_perf_counters = false;
 #endif  // QPU_MODE
 
+  void startPerfCounters();
+  void stopPerfCounters();
   void process(BaseKernel &k);
 
 private:
   int output_count = 0;
 
-  void startPerfCounters();
-  void stopPerfCounters();
 };
 
 

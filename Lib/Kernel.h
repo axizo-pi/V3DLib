@@ -101,13 +101,29 @@ public:
 
   /**
    * Load uniform values.
-   *
-   * Pass params, checking arguments types us against parameter types ts.
    */
   template <typename... us>
   Kernel &load(us... args) {
     uniforms.clear();
+
+    // Check arguments types of param us against types of ts
     nothing(passParam<ts, us>(uniforms, args)...);
+
+    return *this;
+  }
+
+
+  /**
+   * Load uniform values and invoke the kernel.
+   */
+  template <typename... us>
+  Kernel &run(us... args) {
+    uniforms.clear();
+
+    // Check arguments types of param us against types of ts
+    nothing(passParam<ts, us>(uniforms, args)...);
+
+		_run();
     return *this;
   }
 };
@@ -115,6 +131,17 @@ public:
 
 template <typename... ts>
 Kernel<ts...> compile(void (*f)(ts... params), BaseSettings const &settings) {
+  Kernel<ts...> k(f, settings);
+  return std::move(k);
+}
+
+
+/**
+ * Compile with the default settings
+ */
+template <typename... ts>
+Kernel<ts...> compile(void (*f)(ts... params)) {
+	BaseSettings settings;
   Kernel<ts...> k(f, settings);
   return std::move(k);
 }

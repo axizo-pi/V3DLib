@@ -18,6 +18,9 @@
 namespace {
 using namespace V3DLib;
 
+
+BaseSettings settings;   // Settings with default values
+
 // ============================================================================
 // Support routines
 // ============================================================================
@@ -98,9 +101,8 @@ void test_dotvector() {
 
   REQUIRE(a.size() == b.size());
 
-  auto k = compile(check_dotvector<N>);
-  k.load(&b, &a, &result);
-  k.call();
+  auto k = compile(check_dotvector<N>, settings);
+  k.run(&b, &a, &result);
 
   for (int i = 0; i < (int) a.size(); i++) {
     INFO("N: " << N << ", i: " << i);
@@ -126,8 +128,7 @@ void test_dotvector() {
 
   // Do it again with simpler values for hand calculation
   a.fill(1);
-  k.load(&b, &a, &result);
-  k.call();
+  k.run(&b, &a, &result);
   REQUIRE(result[0] == (float) (16*N));
 }
 
@@ -146,7 +147,7 @@ void check_matrix_results(
   //
   a.fill(0);
   result.fill(-1);
-  k.call();
+  k.run(&result, &a, &a);
   compare_array_scalar(result, 0.0f);
 
   //
@@ -154,7 +155,7 @@ void check_matrix_results(
   //
   a.fill(1);
   result.fill(-1);
-  k.call();
+  k.run(&result, &a, &a);
   compare_array_scalar(result, (float) dimension);
 
   //
@@ -163,7 +164,7 @@ void check_matrix_results(
   a.make_unit_matrix();
   check_unitary(a);
 
-  k.call();
+  k.run(&result, &a, &a);
   check_unitary(result);
 
   //
@@ -177,8 +178,7 @@ void check_matrix_results(
   copy_transposed(a_transposed, a_scalar, dimension, dimension);
 
   kernels::matrix_mult_scalar(dimension, expected, a_scalar, a_transposed);
-  k.load(&result, &a, &a);
-  k.call();
+  k.run(&result, &a, &a);
 
   compare_arrays(result, expected);
 }
@@ -215,16 +215,14 @@ void test_square_matrix_multiplication(int dimension) {
 
 
   INFO("Doing TMU");
-  auto k = compile(kernels::matrix_mult_decorator(dimension));
-  k.load(&result, &a, &a);
+  auto k = compile(kernels::matrix_mult_decorator(dimension), settings);
   check_matrix_results(dimension, k, a, result, a_scalar, expected);
 
   // Do the same thing with DMA (different for vc4 only)
   LibSettings::use_tmu_for_load(false);  // selects DMA
   INFO("Doing DMA");
 
-  auto k2 = compile(kernels::matrix_mult_decorator(dimension));
-  k2.load(&result, &a, &a);
+  auto k2 = compile(kernels::matrix_mult_decorator(dimension), settings);
   check_matrix_results(dimension, k2, a, result, a_scalar, expected);
 
   LibSettings::use_tmu_for_load(true);
@@ -248,14 +246,13 @@ void test_matrix_multiplication(int rows, int inner, int cols, float init_a = 1,
 
   INFO("rows: " << rows << ", inner: " << inner << ", cols: " << cols << ", num QPUs: " << num_qpus);
 
-  auto k = compile(kernels::matrix_mult_decorator(a, b, result));
+  auto k = compile(kernels::matrix_mult_decorator(a, b, result), settings);
   REQUIRE(!k.has_errors());
 
   k.setNumQPUs(num_qpus);
   result.fill(-1.0f);
 
-  k.load(&result, &a, &b);
-  k.call();
+  k.run(&result, &a, &b);
 
   // NOTE: this does not compare the entire results array, just the relevant bit(s)
   for (int r = 0; r < rows; ++r) {
@@ -301,9 +298,8 @@ TEST_CASE("Test matrix algebra components [matrix][comp]") {
     Float::Array result(16);
     result.fill(-1);
 
-    auto k = compile(check_sum_kernel);
-    k.load(&vec, &result);
-    k.call();
+    auto k = compile(check_sum_kernel, settings);
+    k.run(&vec, &result);
 
     float precision = 0.0f;
     if (Platform::run_vc4()) {
@@ -316,8 +312,7 @@ TEST_CASE("Test matrix algebra components [matrix][comp]") {
       vec[i] = 0.1f*((float ) (i + 1));
     }
 
-    k.load(&vec, &result);
-    k.call();
+    k.run(&vec, &result);
     REQUIRE(abs(result[0] - 0.1f*(16*17/2)) <= precision);
   }
 
@@ -332,9 +327,8 @@ TEST_CASE("Test matrix algebra components [matrix][comp]") {
     Float::Array result(16);
     result.fill(-1);
 
-    auto k = compile(check_set_at);
-    k.load(&vec, &result, 0);
-    k.call();
+    auto k = compile(check_set_at, settings);
+    k.run(&vec, &result, 0);
 
     for (int i = 0; i < (int) result.size(); i++) {
       if (i == 0) {
@@ -344,8 +338,7 @@ TEST_CASE("Test matrix algebra components [matrix][comp]") {
       }
     }
 
-    k.load(&vec, &result, 7);
-    k.call();
+    k.run(&vec, &result, 7);
 
     for (int i = 0; i < (int) result.size(); i++) {
       if (i == 0 || i == 7) {
@@ -434,10 +427,9 @@ void test_complex_dotvector() {
 
   REQUIRE(a.size() == b.size());
 
-  auto k = compile(check_complex_dotvector<N>);
-  k.pretty(false, "check_complex_dotvector.txt");
-  k.load(&b, &a, &result);
-  k.call();
+  auto k = compile(check_complex_dotvector<N>, settings);
+  k.pretty("check_complex_dotvector.txt");
+  k.run(&b, &a, &result);
 
   for (int i = 0; i < (int) a.size(); i++) {
     INFO("N: " << N << ", i: " << i);
@@ -463,12 +455,12 @@ void test_complex_dotvector() {
 
   // Do it again with simpler values for hand calculation
   a.fill({ 1,  0});
-  k.call();
+  k.run(&b, &a, &result);
   REQUIRE(result[0] == complex(16*N, 0));
 
   // Do it again with re and im having values
   a.fill({ 1,  2});
-  k.call();
+  k.run(&b, &a, &result);
   expected = complex(16*N*-3, 16*N*4);
   INFO("result: "   << result[0].dump());
   INFO("expected: " << expected.dump());
@@ -520,18 +512,19 @@ void test_complex_matrix_multiplication(
   // Test using decorator - this does not use num_blocks
   //
   INFO("Decorator");
-  auto k = compile(kernels::matrix_mult_decorator(a, b, result));
-  k.pretty(true, "mult_complex_vc4.txt");
+	BaseSettings settings;
+  switch(call_type) {
+    case CALL:      settings.run_type = 0; break;
+    case EMULATE:   settings.run_type = 1; break;
+    case INTERPRET: settings.run_type = 2; break;
+  }
+
+  auto k = compile(kernels::matrix_mult_decorator(a, b, result), settings);
+  k.pretty("mult_complex_vc4.txt");
   k.setNumQPUs(num_qpus);
   result.fill({-1.0f, -1.0f});
 
-  k.load(&result, &a, &b);
-
-  switch(call_type) {
-    case CALL:      k.call();      break;
-    case INTERPRET: k.interpret(); break;
-    case EMULATE:   k.emu();       break;
-  }
+  k.run(&result, &a, &b);
 
   INFO("num QPUs:" << num_qpus << ", num blocks: " << num_blocks);
   check_complex_matrix_multiplication(rows, inner, cols, result, init_a*init_b);
@@ -541,7 +534,6 @@ void test_complex_matrix_multiplication(
   //
   INFO("Matrix");
   Matrix m(a, b);
-  //m.compile();  // Not really required, added to trigger debug statements for recompile
   m.setNumQPUs(num_qpus);
   m.num_blocks(num_blocks);
   m.call(call_type);
@@ -590,9 +582,8 @@ TEST_CASE("Test complex matrix algebra with varying sizes [matrix][complex]") {
     Complex::Array2D a(Dim);
     Complex::Array2D result(Dim);
 
-    auto k = compile(kernels::matrix_mult_decorator(a, a, result));
-    k.load(&result, &a, &a);
-    k.pretty(false, "obj/test/real_im_v3d.txt");
+    auto k = compile(kernels::matrix_mult_decorator(a, a, result), settings);
+    k.pretty("obj/test/real_im_v3d.txt");
 
     //
     // Compare real only
@@ -600,8 +591,7 @@ TEST_CASE("Test complex matrix algebra with varying sizes [matrix][complex]") {
     copy_array(a.re(), scalar);
     a.im().fill(0.0f);
     {
-      //Timer("Real only", true);
-      k.call();
+    	k.run(&result, &a, &a);
     }
     compare_arrays(result.re(), scalar_result);
     compare_array_scalar(result.im(), 0.0f);
@@ -613,8 +603,7 @@ TEST_CASE("Test complex matrix algebra with varying sizes [matrix][complex]") {
     copy_array(a.im(), scalar);
     a.re().fill(0.0f);
     {
-      //Timer("Im only", true);
-      k.call();
+    	k.run(&result, &a, &a);
     }
 
     // Negate result

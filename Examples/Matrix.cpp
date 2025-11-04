@@ -94,7 +94,7 @@ void run_scalar_kernel() {
 
 
 void run_qpu_kernel() {
-  auto k = compile(kernels::matrix_mult_decorator(settings.dimension));  // Construct kernel
+  auto k = compile(kernels::matrix_mult_decorator(settings.dimension), settings);  // Construct kernel
   k.setNumQPUs(settings.num_qpus);
 
 
@@ -111,9 +111,8 @@ void run_qpu_kernel() {
   }
 
   Timer timer;
-  k.load(&result, &a, &b);
   for (int i = 0; i < settings.repeats; ++i) {
-    settings.process(k);
+    k.run(&result, &a, &b);
   }
   timer.end(!settings.silent);
 }

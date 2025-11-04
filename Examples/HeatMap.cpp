@@ -195,20 +195,17 @@ void run_kernel() {
   inject_hotspots(mapA);
 
   // Compile kernel
-  auto k = compile(heatmap_kernel);
+  auto k = compile(heatmap_kernel, settings);
   k.setNumQPUs(settings.num_qpus);
 
   Timer timer("QPU run time");
 
   for (int i = 0; i < settings.num_steps; i++) {
     if (i & 1) {
-      k.load(&mapB, &mapA, settings.HEIGHT, settings.WIDTH);  // Load the uniforms
+      k.run(&mapB, &mapA, settings.HEIGHT, settings.WIDTH);  // Load the uniforms and invoke the kernel
     } else {
-      k.load(&mapA, &mapB, settings.HEIGHT, settings.WIDTH);  // Load the uniforms
+      k.run(&mapA, &mapB, settings.HEIGHT, settings.WIDTH);  // Load the uniforms and invoke the kernel
     }
-
-    // Invoke the kernel
-    settings.process(k);
   }
 
   timer.end(!settings.silent);

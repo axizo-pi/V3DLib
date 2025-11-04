@@ -33,14 +33,13 @@ int main(int argc, const char *argv[]) {
     return 1;
   }
 
-  auto k = compile(dma, CompileFor::VC4);         // Construct kernel, only compile for vc4
+  auto k = compile(dma, settings);                // Construct kernel
 
   Int::Array array(256);                          // Allocate and initialise array shared between ARM and GPU
   for (int i = 0; i < 256; i++)
     array[i] = i;
 
-  k.load(&array);                                 // Invoke the kernel
-  settings.process(k);  
+  k.run(&array);                                  // Invoke the kernel
 
   for (int i = 0; i < 16; i++) {                  // Display the result
     for (int j = 0; j < 16; j++) {

@@ -470,7 +470,7 @@ public:
 
       // First call doesn't need to get the result values for addition; they are zero anyway
       load(m_k_first, 0);
-      k_first_call(call_type);
+      k_first_call();
       //debug(m_result.dump());
 
       if (num_blocks() == 2) {
@@ -478,12 +478,12 @@ public:
         auto &settings = kernels::get_matrix_settings();
         int offset = settings.width();
         load(m_k, offset);
-        k_call(call_type);
+        k_call();
       }
     } else {
       //debug("single block");
       load(m_k, 0);
-      k_call(call_type);
+      k_call();
     }
   }
 
@@ -602,25 +602,15 @@ private:
   }
 
 
-  void k_first_call(CallType call_type) {
+  void k_first_call() {
     assert(m_k_first);
-
-    switch(call_type) {
-      case CALL:      /* debug("Doing call on k_first"); */      m_k_first->call();      break;
-      case INTERPRET: debug("Doing interpret on k_first");       m_k_first->interpret(); break;  // Doesn't work, not expecting it to be called
-      case EMULATE:   /* debug("Doing emulate on k_first"); */   m_k_first->emu();       break;
-    }
+    m_k_first->call();
   }
 
 
-  void k_call(CallType call_type) {
+  void k_call() {
     assert(m_k);
-
-    switch(call_type) {
-      case CALL:      /* debug("Doing call on k"); */      m_k->call();      break;
-      case INTERPRET: debug("Doing interpret on k");       m_k->interpret(); break; // Doesn't work, not expecting it to be called
-      case EMULATE:   /* debug("Doing emulate on k"); */   m_k->emu();       break;
-    }
+    m_k->call();
   }
 };
 

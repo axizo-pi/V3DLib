@@ -20,14 +20,13 @@ void kernel(Int::Ptr p) {
 int main(int argc, const char *argv[]) {
   settings.init(argc, argv);
 
-  auto k = compile(kernel);                       // Construct kernel
+  auto k = compile(kernel, settings);             // Construct kernel
 
   Int::Array array(2*16);                         // Allocate and initialise array shared between ARM and GPU
   for (int i = 0; i < (int) array.size(); i++)
     array[i] = i;
 
-  k.load(&array);                                 // Invoke the kernel
-  settings.process(k);
+  k.run(&array);                                  // Invoke the kernel
 
   for (int i = 0; i < (int) array.size()/2; i++)  // Display the result
     printf("%i: %i\n", i, array[i]);

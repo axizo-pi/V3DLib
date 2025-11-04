@@ -14,13 +14,12 @@ void hello(Int::Ptr p) {                          // The kernel definition
 int main(int argc, const char *argv[]) {
   settings.init(argc, argv);
 
-  auto k = compile(hello);                        // Construct the kernel
+  auto k = compile(hello, settings);              // Construct the kernel
 
   Int::Array array(16);                           // Allocate and initialise the array shared between ARM and GPU
   array.fill(100);
 
-  k.load(&array);                                 // Invoke the kernel
-  settings.process(k);  
+  k.run(&array);                                  // Invoke the kernel
 
   for (int i = 0; i < (int) array.size(); i++) {  // Display the result
     printf("%i: %i\n", i, array[i]);

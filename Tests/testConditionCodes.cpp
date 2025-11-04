@@ -418,8 +418,7 @@ TEST_CASE("Test Where blocks [where][cond]") {
 
   k.load(&result);
 /*
-  k.pretty(true, "obj/test/where_blocks_vc4.txt");
-  k.pretty(false, "obj/test/where_blocks_v3d.txt");
+  k.pretty("obj/test/where_blocks.txt");
   k.dump_compile_data(true, "obj/test/where_blocks_compile_data_vc4.txt");
   k.dump_compile_data(false, "obj/test/where_blocks_compile_data_v3d.txt");
 */
@@ -487,7 +486,6 @@ TEST_CASE("Test if/where without loop [noloop][cond]") {
     Int::Array result(VEC_SIZE);
 
     auto k1 = compile(noloop_where_kernel);
-    //k1.pretty(true, "obj/test/noloop_where_kernel.txt");
     //k1.dump_compile_data(true, "obj/test/noloop_where_compile_data_vc4.txt");
 
     k1.load(&result, 0, 0);   run_cpu(result, k1, expected_1, 1);
@@ -516,13 +514,13 @@ TEST_CASE("Test if/where without loop [noloop][cond]") {
     Int::Array result(VEC_SIZE);
 
     auto k3 = compile(noloop_multif_kernel);
-    k3.pretty(false,  "obj/test/noloop_multif_v3d.txt");  // Keep enabled to avoid failing assertions, see below
+    k3.pretty("obj/test/noloop_multif_v3d.txt");  // Keep enabled to avoid failing assertions, see below
 
     k3.load(&result,  0,  0); run_cpu(result, k3, expected_1);
     k3.load(&result, 12, 15); run_cpu(result, k3, expected_2);
     k3.load(&result, 21, 15); run_cpu(result, k3, expected_1);
 
-    // Fickle! Works always if k3.pretty(false...) called above, otherwise *may* assert
+    // Fickle! Works always if k3.pretty(...) called above, otherwise *may* assert
     // TODO examine this
     k3.load(&result, 0, 0);   run_qpu(result, k3, 6, expected_1);
 
@@ -535,7 +533,6 @@ TEST_CASE("Test if/where without loop [noloop][cond]") {
     Int::Array result(VEC_SIZE);
 
     auto k4 = compile(noloop_if_andor_kernel);
-    //k4.pretty(false, nullptr, false);
 
     k4.load(&result,  0,  0); run_cpu(result, k4, expected_1, 41);
     k4.load(&result,  0, 15); run_cpu(result, k4, expected_2, 42);
@@ -570,7 +567,7 @@ TEST_CASE("Test multiple and/or [andor][cond]") {
 
     auto k = compile(andor_kernel);
     k.load(&result);
-    k.pretty(false, "andor_kernel_v3d.txt");
+    k.pretty("andor_kernel_v3d.txt");
 
     reset(result);
     k.interpret();
@@ -590,7 +587,7 @@ TEST_CASE("Test multiple and/or [andor][cond]") {
     Float::Array result(width*height);
 
     auto k1 = compile(andor_where_kernel);
-    k1.pretty(true, "obj/test/andor_where_kernel.txt");
+    k1.pretty("obj/test/andor_where_kernel.txt");
     k1.load(&result, width, height);
 
     reset(result);

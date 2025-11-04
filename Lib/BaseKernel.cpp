@@ -59,16 +59,40 @@ bool BaseKernel::has_errors() const {
 }
 
 
-void BaseKernel::pretty(bool output_for_vc4, const char *filename, bool output_qpu_code) {
-  if (output_for_vc4) {
+void BaseKernel::pretty(const char *filename, bool output_qpu_code) {
+  if (has_vc4()) {
     vc4().pretty(filename, output_qpu_code);
-  } else {
+  } else if (has_v3d()) {
     v3d().pretty(filename, output_qpu_code);
   }
 }
 
 
-void BaseKernel::run() {
+void BaseKernel::_run() {
+#ifdef QPU_MODE
+  if (Platform::use_main_memory() && m_settings.run_type == 0) {
+    warning("Main memory selected in QPU mode, running on emulator instead of QPU.");
+    m_settings.run_type = 1;
+  }
+#else
+  if (m_settings.run_type == 0) {
+    warning("Not compiled for QPU, running on emulator instead of QPU.");
+    m_settings.run_type = 1;
+  }
+#endif
+
+  m_settings.startPerfCounters();
+
+  if (!m_settings.compile_only) {
+    switch (m_settings.run_type) {
+      case 0: qpu(); break;
+      case 1: emu(); break;
+      case 2: interpret(); break;
+    }
+  }
+
+  m_settings.stopPerfCounters();
+
   m_settings.process(*this);
 }
 
@@ -121,23 +145,6 @@ void BaseKernel::qpu() {
   }
 }
 #endif  // QPU_MODE
-
-
-/**
- * Invoke the kernel
- */
-void BaseKernel::call() {
-#ifdef QPU_MODE
-  if (Platform::use_main_memory()) {
-    warning("Main memory selected in QPU mode, running on emulator instead of QPU.");
-    emu();
-  } else {
-    qpu();
-  }
-#else
-  emu();
-#endif
-};
 
 
 std::string BaseKernel::compile_info() const {

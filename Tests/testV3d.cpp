@@ -376,6 +376,8 @@ TEST_CASE("Driver call for v3d should work [v3d][driver]") {
 TEST_CASE("Check v3d rotate assembly/disassembly [v3d][asm]") {
   using namespace V3DLib::v3d::instr;
 
+  if (!v3d_init()) return;
+
   SUBCASE("rotate kernel generates correctly encoded output") {
     std::vector<uint64_t> arr = rotate_kernel();
     REQUIRE(arr.size() > 0);
@@ -388,6 +390,8 @@ TEST_CASE("Check v3d rotate assembly/disassembly [v3d][asm]") {
 
 TEST_CASE("Check v3d assembly/disassembly [v3d][asm]") {
   using namespace V3DLib::v3d::instr;
+
+  if (!v3d_init()) return;
 
   SUBCASE("Correct output of dump program") {
     const char *expected = "\n{\n\
