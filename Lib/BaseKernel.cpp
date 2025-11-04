@@ -76,7 +76,7 @@ void BaseKernel::_run() {
   }
 #else
   if (m_settings.run_type == 0) {
-    warning("Not compiled for QPU, running on emulator instead of QPU.");
+    debug("Not compiled for QPU, running on emulator instead of QPU.");
     m_settings.run_type = 1;
   }
 #endif
@@ -127,7 +127,6 @@ void BaseKernel::interpret() {
 }
 
 
-#ifdef QPU_MODE
 /**
  * Invoke kernel on physical QPU hardware
  */
@@ -138,13 +137,16 @@ void BaseKernel::qpu() {
     showed = true;
   }
 
+#ifdef QPU_MODE
   if (Platform::run_vc4()) {
     vc4().invoke(numQPUs(), uniforms);
   } else {
     v3d().invoke(numQPUs(), uniforms);
   }
-}
+#else
+  debug("qpu(): QPU mode not enabled, running emu() instead.");
 #endif  // QPU_MODE
+}
 
 
 std::string BaseKernel::compile_info() const {

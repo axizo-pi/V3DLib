@@ -6,8 +6,20 @@
 #include "util/ralloc.h"  // ralloc_free()
 #include "broadcom/common/v3d_device_info.h"
 
+#ifdef QPU_MODE
 // defined in v3d/v3d.cpp
 extern struct v3d_device_info const *devinfo();
+#else
+
+/**
+ * Empty call to satisfy linking in non-QPU mode.
+ * 
+ * v3d should never be used anyway in that case.
+ */
+static struct v3d_device_info const *devinfo() { return NULL; }
+
+#endif // QPU_MODE
+
 
 #if USE_MESA == 1
 static const struct v3d_qpu_alu_instr ALU_NOP = {

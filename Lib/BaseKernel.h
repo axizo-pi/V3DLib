@@ -17,8 +17,8 @@ namespace V3DLib {
  *
  *     - interpret(...)  - run on source code interpreter
  *     - emu(...)        - run on the target code emulator (`vc4` code only)
- *     - qpu(...)        - run on physical QPUs (only when QPU_MODE enabled))
- *     - call(...)       - depending on QPU_MODE, call `qpu()` or `emu()`
+ *     - qpu(...)        - run on physical QPUs (when QPU_MODE enabled, run emu()))
+ *     - call(...)       - depending on setting, call any of the above
  *                      This is useful for cross-platform compatibility
  *
  *    The interpreter and emulator are useful for development/debugging and 
@@ -76,9 +76,7 @@ public:
   // TODO make private
   void emu();
   void interpret();
-#ifdef QPU_MODE
   void qpu();
-#endif  // QPU_MODE
 
   std::string compile_info() const;
   void dump_compile_data(bool output_for_vc4, char const *filename);
