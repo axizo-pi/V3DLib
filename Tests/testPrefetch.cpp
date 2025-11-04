@@ -97,13 +97,7 @@ TEST_CASE("Test prefetch on stmt stack [prefetch]") {
     result.fill(-1);
 
     auto k = compile(prefetch_kernel<Int, Int::Ptr>);
-    //k.pretty(true);
-    //k.pretty(false);
-    k.load(&result, &src);
-    k.interpret();
-    //k.emu();  // Failed assertion, DMA not active
-
-    //dump_array(result, 16);
+    k.run(&result, &src);
   
     for (int i = 0; i < (int) result.size(); ++i) {
       INFO("i: " << i);
@@ -122,8 +116,7 @@ TEST_CASE("Test prefetch on stmt stack [prefetch]") {
     result.fill(-1);
 
     auto k = compile(prefetch_kernel<Float, Float::Ptr>);
-    k.load(&result, &src);
-    k.interpret();
+    k.run(&result, &src);
 
     for (int i = 0; i < (int) result.size(); ++i) {
       INFO("i: " << i);
@@ -144,11 +137,7 @@ TEST_CASE("Test prefetch on stmt stack [prefetch]") {
     result.fill(-1);
 
     auto k = compile(multi_prefetch_kernel<N>);
-    //k.pretty(true);
-    k.load(&result, &src);
-    k.interpret();
-
-    //dump_array(result, 16);
+    k.run(&result, &src);
 
     for (int i = 0; i < (int) result.size(); ++i) {
       INFO("i: " << i);

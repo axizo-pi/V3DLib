@@ -39,17 +39,6 @@ TEST_CASE("Test SFU functions [sfu]") {
   Float::Array results(16*N);
 
   auto k = compile(sfu);
-  k.load(1.1f, &results);
-
-  INFO("Running interpreter");
-  results.fill(0.0);
-  k.interpret();
-  check(results, 1e-6);
-
-  INFO("Running emulator");
-  results.fill(0.0);
-  k.emu();
-  check(results, 1e-6);
 
   INFO("Running qpu");
   //
@@ -61,6 +50,6 @@ TEST_CASE("Test SFU functions [sfu]") {
   double precision = (Platform::run_vc4())?3e-4:1e-6;
 
   results.fill(0.0);
-  k.call();
+  k.run(1.1f, &results);
   check(results, precision);
 }

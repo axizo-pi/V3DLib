@@ -398,7 +398,7 @@ TEST_CASE("Discrete Fourier Transform [dft]") {
 
     auto k = compile(kernels::matrix_mult_decorator(dft_conjugate, dft_matrix, result));
     result.fill({-1, -1});
-    k.load(&result, &dft_conjugate, &dft_matrix).emu();
+    k.run(&result, &dft_conjugate, &dft_matrix);
 
     float const precision2 = 2e-2f;
 
@@ -444,8 +444,7 @@ TEST_CASE("Discrete Fourier Transform [dft]") {
 
       k.setNumQPUs(8);  // Running with multi-QPU gives very limited performance improvement
       result.fill({-1, -1});
-      k.load(&result_tmp, &dft_matrix, &input);
-      k.call();
+      k.run(&result_tmp, &dft_matrix, &input);
 
       // Columns are padded to multiples of 16, only the first column is relevant
       // Translate to better form
@@ -463,9 +462,7 @@ TEST_CASE("Discrete Fourier Transform [dft]") {
       auto k = compile(kernels::matrix_mult_decorator(input, dft_matrix, result_switched));
 
       k.setNumQPUs(8);  // Running with multi-QPU gives very limited performance improvement
-      k.load(&result_switched, &input, &dft_matrix);
-
-      k.interpret();
+      k.run(&result_switched, &input, &dft_matrix);
     }
 
     //std::cout << result.dump() << std::endl;

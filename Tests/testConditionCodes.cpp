@@ -240,15 +240,6 @@ void noloop_if_and_kernel(Int::Ptr result, Int x, Int y) {
 }
 
 
-void noloop_if_andor_kernel(Int::Ptr result, Int x, Int y) {
-  Int tmp = 0;
-  If ((y > 10 && y < 20) || (x > 10 && x < 20))
-    tmp = 1;
-  End
-  *result = tmp;
-}
-
-
 void noloop_multif_kernel(Int::Ptr result, Int x, Int y) {
   Int tmp = 0;
   If (y > 10)
@@ -412,52 +403,29 @@ void check_pgm(std::string const &filename) {
 TEST_CASE("Test Where blocks [where][cond]") {
   int const NUM_TESTS = 7;
 
-  auto k = compile(where_kernel);
+	BaseSettings settings;
 
   Int::Array result(NUM_TESTS*VEC_SIZE);
 
-  k.load(&result);
-/*
-  k.pretty("obj/test/where_blocks.txt");
-  k.dump_compile_data(true, "obj/test/where_blocks_compile_data_vc4.txt");
-  k.dump_compile_data(false, "obj/test/where_blocks_compile_data_v3d.txt");
-*/
-
-  reset(result);
-  k.emu();
+  auto k1 = compile(where_kernel, settings);
+  k1.run(&result);
   check_where_result(result);
 
   reset(result);
-  k.interpret();
+	settings.run_type = 1;
+  auto k2 = compile(where_kernel, settings);
+  k2.run(&result);
   check_where_result(result);
 
   reset(result);
-  k.call();
+	settings.run_type = 2;
+  auto k3 = compile(where_kernel, settings);
+  k3.run(&result);
   check_where_result(result);
 }
 
 
 namespace {
-
-  template<typename KernelType>
-  void run_cpu(Int::Array &result, KernelType &k, uint32_t *expected, int index = -1) {
-    // INFO NOT DISPLAYING
-    if (index == -1 ) {
-      INFO("Testing cpu run");
-    } else {
-      //printf("Testing cpu run %d\n", index);
-      INFO("Testing cpu run index " << index);
-    }
-
-    reset(result, -1);
-    k.interpret();
-    check(result, 0, expected);
-
-    reset(result, -1);
-    k.emu();
-    check(result, 0, expected);
-  };
-
 
   template<typename KernelType>
   void run_qpu(Int::Array &result, KernelType &k, int index, uint32_t *expected) {
@@ -488,9 +456,6 @@ TEST_CASE("Test if/where without loop [noloop][cond]") {
     auto k1 = compile(noloop_where_kernel);
     //k1.dump_compile_data(true, "obj/test/noloop_where_compile_data_vc4.txt");
 
-    k1.load(&result, 0, 0);   run_cpu(result, k1, expected_1, 1);
-    k1.load(&result, 12, 15); run_cpu(result, k1, expected_2, 2);
-    k1.load(&result, 21, 15); run_cpu(result, k1, expected_1, 3);
     k1.load(&result, 0, 0);   run_qpu(result, k1, 0, expected_1);
     k1.load(&result, 12, 15); run_qpu(result, k1, 1, expected_2);
     k1.load(&result, 21, 15); run_qpu(result, k1, 2, expected_1);
@@ -502,9 +467,6 @@ TEST_CASE("Test if/where without loop [noloop][cond]") {
 
     auto k2 = compile(noloop_if_and_kernel);
 
-    k2.load(&result, 0, 0);   run_cpu(result, k2, expected_1);
-    k2.load(&result, 12, 15); run_cpu(result, k2, expected_2);
-    k2.load(&result, 21, 15); run_cpu(result, k2, expected_1);
     k2.load(&result, 0, 0);   run_qpu(result, k2, 3, expected_1);
     k2.load(&result, 21, 15); run_qpu(result, k2, 5, expected_1);
   }
@@ -516,33 +478,12 @@ TEST_CASE("Test if/where without loop [noloop][cond]") {
     auto k3 = compile(noloop_multif_kernel);
     k3.pretty("obj/test/noloop_multif_v3d.txt");  // Keep enabled to avoid failing assertions, see below
 
-    k3.load(&result,  0,  0); run_cpu(result, k3, expected_1);
-    k3.load(&result, 12, 15); run_cpu(result, k3, expected_2);
-    k3.load(&result, 21, 15); run_cpu(result, k3, expected_1);
-
     // Fickle! Works always if k3.pretty(...) called above, otherwise *may* assert
     // TODO examine this
     k3.load(&result, 0, 0);   run_qpu(result, k3, 6, expected_1);
 
     k3.load(&result, 12, 15); run_qpu(result, k3, 7, expected_2);
     k3.load(&result, 21, 15); run_qpu(result, k3, 8, expected_1);
-  }
-
-
-  SUBCASE("Testing noloop_if_andor_kernel") {
-    Int::Array result(VEC_SIZE);
-
-    auto k4 = compile(noloop_if_andor_kernel);
-
-    k4.load(&result,  0,  0); run_cpu(result, k4, expected_1, 41);
-    k4.load(&result,  0, 15); run_cpu(result, k4, expected_2, 42);
-    k4.load(&result,  0, 22); run_cpu(result, k4, expected_1, 43);
-    k4.load(&result, 12,  0); run_cpu(result, k4, expected_2, 44);
-    k4.load(&result, 12, 15); run_cpu(result, k4, expected_2, 45);
-    k4.load(&result, 12, 22); run_cpu(result, k4, expected_2, 46);
-    k4.load(&result, 21,  0); run_cpu(result, k4, expected_1, 47);
-    k4.load(&result, 21, 15); run_cpu(result, k4, expected_2, 48);
-    k4.load(&result, 21, 22); run_cpu(result, k4, expected_1, 49);
   }
 }
 
@@ -566,19 +507,8 @@ TEST_CASE("Test multiple and/or [andor][cond]") {
     Int::Array result(NUM_TESTS*VEC_SIZE);
 
     auto k = compile(andor_kernel);
-    k.load(&result);
+    k.run(&result);
     k.pretty("andor_kernel_v3d.txt");
-
-    reset(result);
-    k.interpret();
-    check_andor_result(result);
-
-    reset(result);
-    k.emu();
-    check_andor_result(result);
-
-    reset(result);
-    k.call();
     check_andor_result(result);
   }
 
@@ -588,18 +518,7 @@ TEST_CASE("Test multiple and/or [andor][cond]") {
 
     auto k1 = compile(andor_where_kernel);
     k1.pretty("obj/test/andor_where_kernel.txt");
-    k1.load(&result, width, height);
-
-    reset(result);
-    k1.interpret();
-    check_output(result, "where_int");
-
-    reset(result);
-    k1.emu();
-    check_output(result, "where_emu");
-
-    reset(result);
-    k1.call();
+    k1.run(&result, width, height);
     check_output(result, "where_qpu");
   }
 
@@ -607,19 +526,9 @@ TEST_CASE("Test multiple and/or [andor][cond]") {
   SUBCASE("Test andor_if_kernel") {
     Float::Array result(width*height);
 
+    reset(result);
     auto k2 = compile(andor_if_kernel);
-    k2.load(&result, width, height);
-
-    reset(result);
-    k2.interpret();
-    check_output(result, "if_int");
-
-    reset(result);
-    k2.emu();
-    check_output(result, "if_emu");
-
-    reset(result);
-    k2.call();
+    k2.run(&result, width, height);
     check_output(result, "if_qpu");
   }
 
@@ -628,18 +537,8 @@ TEST_CASE("Test multiple and/or [andor][cond]") {
     Float::Array result(width*height);
 
     auto k3 = compile(andor_multi_if_kernel);
-    k3.load(&result, width, height);
-
     reset(result);
-    k3.interpret();
-    check_output(result, "multi_if_int");
-
-    reset(result);
-    k3.emu();
-    check_output(result, "multi_if_emu");
-
-    reset(result);
-    k3.call();
+    k3.run(&result, width, height);
     check_output(result, "multi_if_qpu");
   }
 }

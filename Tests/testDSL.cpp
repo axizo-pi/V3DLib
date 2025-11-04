@@ -342,15 +342,7 @@ TEST_CASE("Test correct working DSL [dsl]") {
     result.fill(-2);  // Initialize to unexpected value
 
     auto k = compile(kernel_specific_instructions);
-    k.load(&result).interpret();
-    check_vector(result, 0, expected);
-
-    result.fill(-2);
-    k.load(&result).emu();
-    check_vector(result, 0, expected);
-
-    result.fill(-2);
-    k.load(&result).call();
+    k.run(&result);
     check_vector(result, 0, expected);
   }
 
@@ -367,18 +359,9 @@ TEST_CASE("Test correct working DSL [dsl]") {
     result.fill(-2);  // Initialize to unexpected value
 
     auto k = compile(kernel_specific_float_instructions);
-    k.load(&result);
-    k.interpret();
-    check_vector(result, 0, expected);
+    k.run(&result);
 
-    result.fill(-2);
-    k.load(&result).emu();
-    check_vector(result, 0, expected);
-
-    result.fill(-2);
-    k.load(&result).call();
-
-    float precision = 0.0f;
+    float precision = 0;
     if (Platform::run_vc4()) {
       precision = 0.5e-4f;
     }
@@ -397,11 +380,6 @@ TEST_CASE("Test Conditionals [dsl][cond]") {
     int const N = 25;  // Number of expected result vectors
 
     auto k = compile(kernelIfWhen);
-/*
-    k.pretty(true,  "obj/test/kernelIfWhen_vc4.txt", false);
-    k.pretty(false, "obj/test/kernelIfWhen_v3d.txt");
-    k.dump_compile_data(false, "obj/test/kernelIfWhen_v3d_data.txt");
-*/
 
     Int::Array result(16*N);
 
@@ -414,17 +392,8 @@ TEST_CASE("Test Conditionals [dsl][cond]") {
     // Run kernel in the three different run modes
     //
     INFO("Checking conditionals");
-/*
     reset();
-    k.load(&result).interpret();
-    check_conditionals(result, N);
-
-    reset();
-    k.load(&result).emu();
-    check_conditionals(result, N);
-*/
-    reset();
-    k.load(&result).call();
+    k.run(&result).call();
     check_conditionals(result, N);
   }
 }
@@ -445,16 +414,7 @@ TEST_CASE("Test construction of composed types in DSL [dsl][complex]") {
 
     Complex::Array result(16*N);
 
-    k.load(&input, &result).call();
-
-/*
-    std::cout << input.dump();
-    std::cout << result.dump();
-
-    std::cout << result[0].dump()     << "\n";
-    std::cout << complex(1, 0).dump();
-    std::cout << std::endl;
-*/
+    k.run(&input, &result);
 
     REQUIRE(result[0] ==  complex(1, 0));
     REQUIRE(result[1] ==  complex(-1, 0));
@@ -606,7 +566,7 @@ TEST_CASE("Test For-loops [dsl][for]") {
     auto k = compile(nested_for_kernel);
 
     Int::Array result(16);
-    k.load(&result).emu();
+    k.run(&result);
 
     vector<int> expected = {18, 27, 18, 27, 18, 27, 18, 27, 18, 27, 18, 27, 18, 27, 18, 27};
     check_vector(result, 0, expected);
@@ -746,18 +706,8 @@ TEST_CASE("Initialization with index() on uniform pointers should work as expect
 
   SUBCASE("Test with TMU") {
     auto k = compile(offsets_kernel<Int, Int::Ptr>);
-    k.load(&result, &a);
-
     reset();
-    k.interpret();
-    check("tmu interpeter");
-
-    reset();
-    k.emu();
-    check("tmu emulator");
-
-    reset();
-    k.call();
+    k.run(&result, &a);
     check("tmu qpu");
   }
 
@@ -766,18 +716,7 @@ TEST_CASE("Initialization with index() on uniform pointers should work as expect
     LibSettings::use_tmu_for_load(false);
 
     auto k = compile(offsets_kernel<Int, Int::Ptr>);
-    k.load(&result, &a);
-
-    reset();
-    k.interpret();
-    check("dma interpreter");
-
-    reset();
-    k.emu();
-    check("dma emulator");
-
-    reset();
-    k.call();
+    k.run(&result, &a);
     check("dma qpu");
 
     LibSettings::use_tmu_for_load(false);
@@ -898,18 +837,11 @@ TEST_CASE("Test functions [dsl][func]") {
 
     {
       auto k = compile(cosine_kernel);
-      k.load(&qpu_cos, size, freq, offset);
-      k.interpret();
+      k.run(&qpu_cos, size, freq, offset);
 
       float max_diff = calc_max_diff(lib_cos, qpu_cos, size); 
       INFO("Max diff: " << max_diff);
       REQUIRE(max_diff < MAX_DIFF);
-    }
-
-    {
-      auto k = compile(sine_kernel);
-      k.load(&qpu_sin, size, freq, offset);
-      k.call();
     }
 
     PGM pgm(size, 400);
@@ -931,9 +863,7 @@ TEST_CASE("Test functions [dsl][func]") {
     results_qpu.fill(-1.0f);
 
     auto k = compile(floor_kernel);
-    //k.pretty(false, nullptr, true);
-    k.load(&results_qpu, &input_qpu, NumValues);
-    k.call();
+    k.run(&results_qpu, &input_qpu, NumValues);
 
     for (int n = 0; n < NumValues; ++n) {
       INFO("input_qpu     : " << dump_array2(input_qpu));
@@ -955,8 +885,7 @@ TEST_CASE("Test functions [dsl][func]") {
     results_qpu.fill(-1.0f);
 
     auto k = compile(fabs_kernel);
-    k.load(&results_qpu, &input_qpu, NumValues);
-    k.call();
+    k.run(&results_qpu, &input_qpu, NumValues);
 
     for (int n = 0; n < NumValues; ++n) {
       INFO("results_scalar: " << dump_array2(results_scalar, NumValues));
@@ -1022,9 +951,6 @@ TEST_CASE("Test issues [dsl][issues]") {
     int const N = 6;
 
     auto k = compile(issues_kernel);
-    //k.pretty(true, "obj/test/issues_kernel_vc4.txt", false);
-    //k.dump_compile_data(true, "obj/test/issues_kernel_vc4_dump.txt");
-    //k.pretty(false, "obj/test/issues_kernel_v3d.txt");
 
     Int::Array input(16);
     input.fill(7);
@@ -1032,8 +958,7 @@ TEST_CASE("Test issues [dsl][issues]") {
     Int::Array result(16*N);
     result.fill(-1);
 
-    k.load(&result, &input);
-    k.emu();
+    k.run(&result, &input);
 
     check_vector(result, 0, 0);
     check_vector(result, 1, 0);

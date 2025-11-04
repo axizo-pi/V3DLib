@@ -70,9 +70,13 @@ void BaseKernel::pretty(const char *filename, bool output_qpu_code) {
 
 void BaseKernel::_run() {
 #ifdef QPU_MODE
-  if (Platform::use_main_memory() && m_settings.run_type == 0) {
-    warning("Main memory selected in QPU mode, running on emulator instead of QPU.");
-    m_settings.run_type = 1;
+  if (Platform::use_main_memory()) {
+    if(!has_vc4()) {
+      fatal("Main memory selected in QPU mode and not compiled for vc4, can not run.");
+    } else {
+      debug("Main memory selected in QPU mode, running on emulator instead of QPU.");
+      m_settings.run_type = 1;
+    }
   }
 #else
   if (m_settings.run_type == 0) {

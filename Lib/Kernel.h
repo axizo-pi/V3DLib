@@ -83,6 +83,13 @@ public:
    * Construct kernel out of C++ function
    */
   Kernel(KernelFunction f, BaseSettings const &settings) : BaseKernel(settings) {
+#ifdef QPU_MODE
+  	if (Platform::use_main_memory() && m_settings.run_type == 0) {
+	    debug("Main memory selected in QPU mode, running on emulator instead of QPU.");
+	    m_settings.run_type = 1;
+	  }
+#endif
+
     if (m_settings.run_type != 0 || Platform::run_vc4()) {
       compile_init(true);
       vc4().compile([this, f] () {

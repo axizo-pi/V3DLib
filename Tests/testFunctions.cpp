@@ -40,8 +40,7 @@ TEST_CASE("Test functions [funcs]") {
     result.fill(-1);
 
     auto k = compile(hello_int_kernel);
-    k.load(&result);
-    k.interpret();
+    k.run(&result);
 
     for (int i = 0; i < (int) result.size(); i++) {
       REQUIRE(result[i] == 42);
@@ -53,8 +52,7 @@ TEST_CASE("Test functions [funcs]") {
     result.fill(-1);
 
     auto k = compile(hello_float_kernel);
-    k.load(&result);
-    k.interpret();
+    k.run(&result);
 
     for (int i = 0; i < (int) result.size(); i++) {
       REQUIRE(result[i] == 42.0f);
