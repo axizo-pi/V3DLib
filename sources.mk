@@ -1,7 +1,7 @@
 #
 # This file is generated!  Editing it directly is a bad idea.
 #
-# Generated on: Mon 29 Sep 2025 12:09:42 PM CEST
+# Generated on: Tue 04 Nov 2025 07:01:40 AM CET
 #
 ###############################################################################
 
@@ -52,6 +52,7 @@ OBJ := \
   Support/Helpers.o  \
   Support/Platform.o  \
   Support/HeapManager.o  \
+  Support/Settings.o  \
   global/log.o  \
   SourceTranslate.o  \
   Common/SharedArray.o  \
@@ -119,9 +120,6 @@ EXAMPLES := \
   Matrix  \
   detectPlatform  \
 
-# support files for examples
-EXAMPLES_EXTRA := \
-  Examples/Support/Settings.o  \
 # support files for tests
 TESTS_FILES := \
   Tests/testRegMap.o  \

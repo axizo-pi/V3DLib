@@ -19,7 +19,7 @@ int main(int argc, const char *argv[]) {
 
   settings.init(argc, argv);
 
-  auto k = compile(id_kernel, settings.run_on_hardware()); // Construct kernel
+  auto k = compile(id_kernel, settings); // Construct kernel
   k.setNumQPUs(numQPUs);
 
   Int::Array result(16*numQPUs);                  // Allocate and initialise array shared between ARM and GPU
@@ -29,7 +29,7 @@ int main(int argc, const char *argv[]) {
   index_array.fill(2);
 
   k.load(&result, &index_array);                  // Load the uniforms
-  settings.process(k);                            // Invoke the kernel
+  k.run();                                        // Invoke the kernel
 
   for (int i = 0; i < (int) result.size(); i++) { // Display the result
     printf("%3i: %2i, %2i\n", i, result[i], index_array[i]);

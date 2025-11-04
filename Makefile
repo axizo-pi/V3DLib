@@ -154,14 +154,11 @@ LIB = $(patsubst %,$(OBJ_DIR)/Lib/%,$(OBJ))
 
 EXAMPLE_TARGETS = $(patsubst %,$(OBJ_DIR)/bin/%,$(EXAMPLES))
 TESTS_OBJ = $(patsubst %,$(OBJ_DIR)/%,$(TESTS_FILES))
-EXAMPLES_OBJ = $(patsubst %,$(OBJ_DIR)/%,$(EXAMPLES_EXTRA))
-#$(info $(EXAMPLES_OBJ))
 
 #
 # Dependencies from list of object files
 #
 -include $(LIB:.o=.d)
--include $(EXAMPLES_OBJ:.o=.d)
 -include $(TESTS_OBJ:.o=.d)
 
 
@@ -183,7 +180,7 @@ VCSM_LIB=$(VCSM_DIR)/libvcsm.a
 help:
 	@echo 'Usage:'
 	@echo
-	@echo '    make [QPU=1] [DEBUG=1] [target]*'
+	@echo '    make [target]* [QPU=1] [DEBUG=1]
 	@echo
 	@echo 'Where target:'
 	@echo
@@ -191,6 +188,7 @@ help:
 	@echo '    all           - Build all example programs'
 	@echo '    clean         - Delete all interim and target files'
 	@echo '    test          - Run the unit tests'
+	@echo '    gen           - Create source dependencies for the makefile
 	@echo
 	@echo '    one of the example programs - $(EXAMPLES)'
 	@echo
@@ -246,7 +244,7 @@ $(OBJ_DIR)/%.o: %.c | init
 	@$(CXX) -x c -c -o $@ $< $(CXX_FLAGS)
 
 
-$(OBJ_DIR)/bin/%: $(OBJ_DIR)/Examples/%.o $(EXAMPLES_OBJ) $(V3DLIB) $(LIB_DEPEND)
+$(OBJ_DIR)/bin/%: $(OBJ_DIR)/Examples/%.o $(V3DLIB) $(LIB_DEPEND)
 	@echo Linking $@...
 	@mkdir -p $(@D)
 	@$(LINK) $^ $(LIBS) -o $@
@@ -274,10 +272,10 @@ else
 endif
 
 
-$(UNIT_TESTS): $(TESTS_OBJ) $(EXAMPLES_OBJ) $(V3DLIB) $(LIB_DEPEND)
+$(UNIT_TESTS): $(TESTS_OBJ) $(V3DLIB) $(LIB_DEPEND)
 	@echo Linking unit tests
 	@mkdir -p $(@D)
-	@$(CXX) $(CXX_FLAGS) $(TESTS_OBJ) $(EXAMPLES_OBJ) -L$(OBJ_DIR) -lv3dlib $(LIBS) -o $@
+	@$(CXX) $(CXX_FLAGS) $(TESTS_OBJ) -L$(OBJ_DIR) -lv3dlib $(LIBS) -o $@
 
 runTests: $(UNIT_TESTS)
 

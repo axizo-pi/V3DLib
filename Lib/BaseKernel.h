@@ -3,6 +3,7 @@
 #include <memory>
 #include "vc4/KernelDriver.h"
 #include "v3d/KernelDriver.h"
+#include "Support/Settings.h"
 
 namespace V3DLib {
 
@@ -54,7 +55,7 @@ namespace V3DLib {
  */
 class BaseKernel {
 public:
-  BaseKernel();
+  BaseKernel(BaseSettings const &settings);
   BaseKernel(BaseKernel &&k) = default;
 
   bool has_vc4() const;
@@ -67,9 +68,12 @@ public:
   void compile_init(bool do_vc4);
   void pretty(bool output_for_vc4, const char *filename = nullptr, bool output_qpu_code = true);
 
-  BaseKernel &setNumQPUs(int n) { m_numQPUs = n; return *this; }
-  int numQPUs() const { return m_numQPUs; }
+  BaseKernel &setNumQPUs(int n) { m_settings.num_qpus = n; return *this; }
+  int numQPUs() const { return m_settings.num_qpus; }
 
+  void run();
+
+  // TODO make private
   void emu();
   void interpret();
   void call();
@@ -85,7 +89,7 @@ public:
   std::string info() const;
 
 protected:
-  int m_numQPUs = 1;               // Number of QPUs to run on
+  BaseSettings m_settings;
   IntList uniforms;                // Parameters to be passed to kernel
 
   // Defined as unique pointers so that they easily survive the std::move

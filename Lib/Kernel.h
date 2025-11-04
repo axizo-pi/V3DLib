@@ -75,7 +75,6 @@ template <typename... ts> struct Kernel : public BaseKernel {
 
   // Construct an argument of QPU type 't'.
   template <typename T> inline T mkArg() { return T::mkArg(); }
-
 public:
   Kernel(Kernel const &k) = delete;
   Kernel(Kernel &&k) = default;
@@ -83,8 +82,8 @@ public:
   /**
    * Construct kernel out of C++ function
    */
-  Kernel(KernelFunction f, bool run_on_hardware) {
-    if (!run_on_hardware || Platform::run_vc4()) {
+  Kernel(KernelFunction f, BaseSettings const &settings) : BaseKernel(settings) {
+    if (m_settings.run_type != 0 || Platform::run_vc4()) {
       compile_init(true);
       vc4().compile([this, f] () {
         f(mkArg<ts>()...);  // Construct the AST for vc4; see Note 2 in class header
@@ -115,8 +114,8 @@ public:
 
 
 template <typename... ts>
-Kernel<ts...> compile(void (*f)(ts... params), bool run_on_hardware) {
-  Kernel<ts...> k(f, run_on_hardware);
+Kernel<ts...> compile(void (*f)(ts... params), BaseSettings const &settings) {
+  Kernel<ts...> k(f, settings);
   return std::move(k);
 }
 

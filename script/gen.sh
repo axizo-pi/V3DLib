@@ -48,9 +48,6 @@ OBJ_TEST=$(echo "$OBJ_TEST_TMP" | sed "s/^/  /g")
 
 EXAMPLES_SUPPORT=$(find Examples/Support -name '*.cpp')
 
-# TODO remove final line with two spaces (need bash equivalent of 'chomp')
-EXAMPLES_EXTRA=$(echo "$EXAMPLES_SUPPORT" | sed "s/\\.cpp$/\\.o  \\\\/g" | sed "s/^/  /")
-
 # Get list of executables
 # NOTE: grepping on 'main(' is not fool-proof, of course.
 EXE1=$(grep -rl "main(" Examples/ Tools/)
@@ -75,9 +72,6 @@ $OBJ
 EXAMPLES := \\
 $EXAMPLES
 
-# support files for examples
-EXAMPLES_EXTRA := \\
-$EXAMPLES_EXTRA
 # support files for tests
 TESTS_FILES := \\
 $OBJ_TEST

@@ -8,7 +8,8 @@ namespace V3DLib {
 
 using ::operator<<;  // C++ weirdness
 
-BaseKernel::BaseKernel() {}
+BaseKernel::BaseKernel(BaseSettings const &settings) : m_settings(settings) {}
+
 
 bool BaseKernel::has_vc4() const { return m_vc4_driver.get() != nullptr; }
 bool BaseKernel::has_v3d() const { return m_v3d_driver.get() != nullptr; }
@@ -67,6 +68,11 @@ void BaseKernel::pretty(bool output_for_vc4, const char *filename, bool output_q
 }
 
 
+void BaseKernel::run() {
+  m_settings.process(*this);
+}
+
+
 /**
  * Invoke the emulator
  *
@@ -79,7 +85,7 @@ void BaseKernel::emu() {
   }
 
   assert(uniforms.size() != 0);
-  emulate(m_numQPUs, vc4().targetCode(), vc4().numVars(), uniforms, getBufferObject());
+  emulate(numQPUs(), vc4().targetCode(), vc4().numVars(), uniforms, getBufferObject());
 }
 
 
@@ -93,7 +99,7 @@ void BaseKernel::interpret() {
   }
 
   assert(uniforms.size() != 0);
-  interpreter(m_numQPUs, vc4().sourceCode(), vc4().numVars(), uniforms, getBufferObject());
+  interpreter(numQPUs(), vc4().sourceCode(), vc4().numVars(), uniforms, getBufferObject());
 }
 
 
@@ -109,9 +115,9 @@ void BaseKernel::qpu() {
   }
 
   if (Platform::run_vc4()) {
-    vc4().invoke(m_numQPUs, uniforms);
+    vc4().invoke(numQPUs(), uniforms);
   } else {
-    v3d().invoke(m_numQPUs, uniforms);
+    v3d().invoke(numQPUs(), uniforms);
   }
 }
 #endif  // QPU_MODE
