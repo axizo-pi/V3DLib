@@ -19,8 +19,6 @@ namespace {
 using namespace V3DLib;
 
 
-BaseSettings settings;   // Settings with default values
-
 // ============================================================================
 // Support routines
 // ============================================================================
@@ -101,7 +99,7 @@ void test_dotvector() {
 
   REQUIRE(a.size() == b.size());
 
-  auto k = compile(check_dotvector<N>, settings);
+  auto k = compile(check_dotvector<N>);
   k.run(&b, &a, &result);
 
   for (int i = 0; i < (int) a.size(); i++) {
@@ -215,14 +213,14 @@ void test_square_matrix_multiplication(int dimension) {
 
 
   INFO("Doing TMU");
-  auto k = compile(kernels::matrix_mult_decorator(dimension), settings);
+  auto k = compile(kernels::matrix_mult_decorator(dimension));
   check_matrix_results(dimension, k, a, result, a_scalar, expected);
 
   // Do the same thing with DMA (different for vc4 only)
   LibSettings::use_tmu_for_load(false);  // selects DMA
   INFO("Doing DMA");
 
-  auto k2 = compile(kernels::matrix_mult_decorator(dimension), settings);
+  auto k2 = compile(kernels::matrix_mult_decorator(dimension));
   check_matrix_results(dimension, k2, a, result, a_scalar, expected);
 
   LibSettings::use_tmu_for_load(true);
@@ -246,7 +244,7 @@ void test_matrix_multiplication(int rows, int inner, int cols, float init_a = 1,
 
   INFO("rows: " << rows << ", inner: " << inner << ", cols: " << cols << ", num QPUs: " << num_qpus);
 
-  auto k = compile(kernels::matrix_mult_decorator(a, b, result), settings);
+  auto k = compile(kernels::matrix_mult_decorator(a, b, result));
   REQUIRE(!k.has_errors());
 
   k.setNumQPUs(num_qpus);
@@ -298,7 +296,7 @@ TEST_CASE("Test matrix algebra components [matrix][comp]") {
     Float::Array result(16);
     result.fill(-1);
 
-    auto k = compile(check_sum_kernel, settings);
+    auto k = compile(check_sum_kernel);
     k.run(&vec, &result);
 
     float precision = 0.0f;
@@ -327,7 +325,7 @@ TEST_CASE("Test matrix algebra components [matrix][comp]") {
     Float::Array result(16);
     result.fill(-1);
 
-    auto k = compile(check_set_at, settings);
+    auto k = compile(check_set_at);
     k.run(&vec, &result, 0);
 
     for (int i = 0; i < (int) result.size(); i++) {
@@ -427,7 +425,7 @@ void test_complex_dotvector() {
 
   REQUIRE(a.size() == b.size());
 
-  auto k = compile(check_complex_dotvector<N>, settings);
+  auto k = compile(check_complex_dotvector<N>);
   k.pretty("check_complex_dotvector.txt");
   k.run(&b, &a, &result);
 
@@ -497,7 +495,7 @@ void test_complex_matrix_multiplication(
   int num_blocks = 1,
   complex init_a = {1, 0},
   complex init_b = {1, 0},
-  CallType call_type = CALL
+	bool do_emulate = false
 ) {
   REQUIRE(rows > 0);
   REQUIRE(inner > 0);
@@ -513,10 +511,8 @@ void test_complex_matrix_multiplication(
   //
   INFO("Decorator");
 	BaseSettings settings;
-  switch(call_type) {
-    case CALL:      settings.run_type = 0; break;
-    case EMULATE:   settings.run_type = 1; break;
-    case INTERPRET: settings.run_type = 2; break;
+	if (do_emulate) {
+    settings.run_type = 1;
   }
 
   auto k = compile(kernels::matrix_mult_decorator(a, b, result), settings);
@@ -536,7 +532,7 @@ void test_complex_matrix_multiplication(
   Matrix m(a, b);
   m.setNumQPUs(num_qpus);
   m.num_blocks(num_blocks);
-  m.call(call_type);
+  m.call(do_emulate?EMULATE:CALL);
   check_complex_matrix_multiplication(rows, inner, cols, m.result(), init_a*init_b);
 }
 
@@ -582,7 +578,7 @@ TEST_CASE("Test complex matrix algebra with varying sizes [matrix][complex]") {
     Complex::Array2D a(Dim);
     Complex::Array2D result(Dim);
 
-    auto k = compile(kernels::matrix_mult_decorator(a, a, result), settings);
+    auto k = compile(kernels::matrix_mult_decorator(a, a, result));
     k.pretty("obj/test/real_im_v3d.txt");
 
     //
@@ -788,9 +784,9 @@ TEST_CASE("Test matrix mult on emulator [matrix][emu]") {
 
   // NOTES:
   //   - Interpreter will not work, because VPM operations are not supported in it
-  test_complex_matrix_multiplication(  2,  3*16,  2,  1, 1, {-1.0f, 2.0f}, { 1.0f, -1.0f }, EMULATE);
-  test_complex_matrix_multiplication(  2,  4*16,  5,  1, 2, {-1.0f, 2.0f}, { 1.0f, -1.0f }, EMULATE);
-  test_complex_matrix_multiplication(  3,  4*16,  17, 7, 1, {-1.0f, 2.0f}, { 1.0f, -1.0f }, EMULATE);
+  test_complex_matrix_multiplication(  2,  3*16,  2,  1, 1, {-1.0f, 2.0f}, { 1.0f, -1.0f }, true);
+  test_complex_matrix_multiplication(  2,  4*16,  5,  1, 2, {-1.0f, 2.0f}, { 1.0f, -1.0f }, true);
+	test_complex_matrix_multiplication(  3,  4*16,  17, 7, 1, {-1.0f, 2.0f}, { 1.0f, -1.0f }, true);
 
   Platform::use_main_memory(false);
 }
