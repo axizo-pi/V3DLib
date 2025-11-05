@@ -636,3 +636,13 @@ const char *instr_mnemonic(const struct v3d_qpu_instr *instr) {
 bool small_imm_pack(uint32_t value, uint32_t *packed_small_immediate) {
   return v3d_qpu_small_imm_pack(devinfo(), value, packed_small_immediate);
 }
+
+
+const char *qpu_decode(struct v3d_qpu_instr const *instr) {
+	return v3d_qpu_decode(devinfo(), instr);
+}
+
+
+const char *qpu_disasm(uint64_t packed) {
+	return v3d_qpu_disasm(devinfo(), packed);
+}
