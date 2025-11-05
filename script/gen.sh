@@ -46,8 +46,6 @@ $C_OBJ_TEST_TMP
 ")
 OBJ_TEST=$(echo "$OBJ_TEST_TMP" | sed "s/^/  /g")
 
-EXAMPLES_SUPPORT=$(find Examples/Support -name '*.cpp')
-
 # Get list of executables
 # NOTE: grepping on 'main(' is not fool-proof, of course.
 EXE1=$(grep -rl "main(" Examples/ Tools/)

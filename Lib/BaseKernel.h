@@ -3,7 +3,7 @@
 #include <memory>
 #include "vc4/KernelDriver.h"
 #include "v3d/KernelDriver.h"
-#include "Support/Settings.h"
+#include "Support/BaseSettings.h"
 
 namespace V3DLib {
 
