@@ -728,6 +728,10 @@ bool Instr::alu_set_src(Source const &src, v3d_qpu_input &input, CheckSrc check_
     }
 
   } else {
+		if (devinfo_ver() == 71) {
+			warning("small_int on b should not be used for vc7");
+		}
+
     // Handle small imm
     auto imm = src.small_imm();
 
@@ -755,12 +759,43 @@ bool Instr::alu_set_src(Source const &src, v3d_qpu_input &input, CheckSrc check_
 
 
 bool Instr::alu_add_set_a(Source const &src) {
-  if (!alu_set_src(src, alu.add.a, CHECK_ADD_A)) return false;
+
+  if ((devinfo_ver() < 71) || src.is_location()) {
+  	if (!alu_set_src(src, alu.add.a, CHECK_ADD_A)) return false;
+	} else {
+		// Small Imm on a for vc7
+    auto imm = src.small_imm();
+    alu.add.a.raddr = imm.to_raddr(); 
+		sig.small_imm_a = 1;
+	}
+
 #if USE_MESA == 1
   alu.add.a_unpack = src.input_unpack();
 #else
   alu.add.a.unpack = src.input_unpack();
 #endif
+
+  return true;
+}
+
+
+bool Instr::alu_add_set_b(Source const &src) {
+
+  if ((devinfo_ver() < 71) || src.is_location()) {
+  	if (!alu_set_src(src, alu.add.b, CHECK_ADD_B)) return false;
+	} else {
+		// Small Imm on a for vc7
+    auto imm = src.small_imm();
+    alu.add.b.raddr = imm.to_raddr(); 
+		sig.small_imm_b = 1;
+	}
+
+#if USE_MESA == 1
+  alu.add.b_unpack = src.input_unpack();
+#else
+  alu.add.b.unpack = src.input_unpack();
+#endif
+
   return true;
 }
 
@@ -768,18 +803,17 @@ bool Instr::alu_add_set_a(Source const &src) {
 bool Instr::alu_add_set(Location const &dst, Source const &a, Source const &b) {
   alu_add_set_dst(dst);
 
-  if (!alu_add_set_a(a)) return false;
+	bool ret = true;
 
-  bool ret = alu_set_src(b, alu.add.b, CHECK_ADD_B);
-  if (ret) {
-#if USE_MESA == 1
-    alu.add.b_unpack = b.input_unpack();
-#else
-    alu.add.b.unpack = b.input_unpack();
-#endif
-  } else {
+  ret = alu_add_set_a(a);
+		
+	if (ret) {
+ 		ret = alu_add_set_b(b);
+	}
+
+	if (!ret) {
     throw Exception("alu_add_set failed");
-  }
+	}
 
   return ret;
 }

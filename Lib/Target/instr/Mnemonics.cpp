@@ -82,7 +82,7 @@ Reg rf(uint8_t index) {
 Instr mov(Reg dst, RegOrImm const &src) {
   dst.can_write(true);
 
-  if (Platform::compiling_for_vc4() && src.is_imm()) {
+  if ((Platform::compiling_for_vc4() || Platform::compiling_for_vc7()) && src.is_imm()) {
     return li(dst, src.imm().val);
   } else {
     return bor(dst, src, src);

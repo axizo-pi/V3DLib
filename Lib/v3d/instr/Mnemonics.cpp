@@ -289,7 +289,17 @@ Mnemonic ftoi(Location const &dst, Location const &a) {
 }
 
 
-Mnemonic mov(Location const &dst, Source const &a) { return Mnemonic(V3D_QPU_A_OR, dst, a, a); }
+Mnemonic mov(Location const &dst, Source const &a) {
+	if (devinfo_ver() < 71) {
+		return Mnemonic(V3D_QPU_A_OR, dst, a, a);
+	} else {
+  	Mnemonic instr;
+  	instr.alu_add_set_dst(dst);
+	  instr.alu_add_set_a(a);
+	  instr.alu.add.op = V3D_QPU_A_MOV;
+		return instr;
+	}
+}
 
 
 Mnemonic barrierid(v3d_qpu_waddr waddr) {

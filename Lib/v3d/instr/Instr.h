@@ -108,10 +108,9 @@ public:
   bool is_src(DestReg const &dst_reg) const;
   bool is_dst(DestReg const &dst_reg) const;
 
-  void alu_add_set_dst(Location const &dst); // Still needed in Mnemonics
+  void alu_add_set_dst(Location const &dst); // public because needed in Mnemonics
   bool alu_add_set_a(Source const &src);     // idem
 
-public:
   bool alu_add_set(Location const &dst, Source const &a, Source const &b);
   bool alu_mul_set(Location const &dst, Source const &a, Source const &b);
 
@@ -119,6 +118,8 @@ public:
   bool alu_mul_set(V3DLib::Instr const &src_instr);
 
 private:
+  bool alu_add_set_b(Source const &src);
+
 #if USE_MESA == 1
   std::unique_ptr<Source> alu_src(v3d_qpu_mux src) const;
 #else

@@ -445,6 +445,7 @@ bool encode_int(Instructions &ret, std::unique_ptr<Location> &dst, int value) {
   int rep_value;
 
   if (SmallImm::int_to_opcode_value(value, rep_value)) {  // direct translation
+		debug("Here");
     SmallImm imm(rep_value);
     ret << mov(*dst, imm);
   } else if (convert_int_powers(ret, value)) {            // powers of 2 of basic small int's 
@@ -736,7 +737,7 @@ void _encode(V3DLib::Instr::List const &instrs, Instructions &instructions) {
   assertq(checkUniformAtTop(instrs), "_encode(): checkUniformAtTop() failed (v3d)", true);
 #endif
   bool prev_was_init_begin = false;
-  bool prev_was_init_end    = false;
+  bool prev_was_init_end   = false;
 
   // Main loop
   for (int i = 0; i < instrs.size(); i++) {

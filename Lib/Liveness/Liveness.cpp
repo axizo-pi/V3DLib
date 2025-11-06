@@ -349,11 +349,17 @@ void Liveness::optimize(Instr::List &instrs, int numVars) {
     //std::cout << live.dump() << std::endl;
   }
 
-  //Timer t3("introduceAccum");
-  int prev_count_skips = count_skips(instrs);
-  compile_data.num_accs_introduced = introduceAccum(live, instrs);
-  assertq(prev_count_skips == count_skips(instrs), "SKIP count changed after introduceAccum()");
-  //t3.end();
+	//
+	// vc7 has no general purpose accumulators,
+	// So we won't bother replacing variables with them
+	//
+	if (!Platform::compiling_for_vc7()) {
+	  //Timer t3("introduceAccum");
+	  int prev_count_skips = count_skips(instrs);
+	  compile_data.num_accs_introduced = introduceAccum(live, instrs);
+	  assertq(prev_count_skips == count_skips(instrs), "SKIP count changed after introduceAccum()");
+	  //t3.end();
+	}
 
   // Times for following (now) insignificant
 

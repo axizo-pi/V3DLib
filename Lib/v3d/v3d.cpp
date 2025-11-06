@@ -410,7 +410,7 @@ struct v3d_device_info const *devinfo() {
 
 
 bool v3d_device_vc7() {
-	warning("Called v3d_device_vc7()");
+	//warning("Called v3d_device_vc7()");
 	_v3d_device_info();
 
 	// Paranoia - notify unknown version

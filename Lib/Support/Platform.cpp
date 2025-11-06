@@ -304,7 +304,6 @@ bool Platform::compiling_for_vc4() { return instance().m_compiling_for_vc4; }
  */
 bool Platform::compiling_for_vc7() {
   if (instance().m_compiling_for_vc4) return false;
-	warning("Called compiling_for_vc7()");
   return v3d_device_vc7();
 }
 

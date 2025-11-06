@@ -21,7 +21,6 @@ int main(int argc, const char *argv[]) {
   settings.init(argc, argv);
 
   auto k = compile(id_kernel, settings);          // Construct kernel
-  printf("Compiling for vc7: %d\n", Platform::compiling_for_vc7());
   k.setNumQPUs(numQPUs);
 
   Int::Array result(16*numQPUs);                  // Allocate and initialise array shared between ARM and GPU

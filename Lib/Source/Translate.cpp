@@ -668,6 +668,7 @@ Instr::List varAssign(Var v, Expr::Ptr expr) {
  * Similar to 'simplify' but ensure that the result is a variable.
  */
 Expr::Ptr putInVar(Instr::List *seq, Expr::Ptr e) {
+	debug("Put in var");
   if (e->tag() == Expr::VAR) {
     return e;
   }
