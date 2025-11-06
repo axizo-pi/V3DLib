@@ -19,7 +19,7 @@ BufferObject::~BufferObject() {
  *
  */
 void BufferObject::alloc_mem(uint32_t size_in_bytes) {
-	debug("Called BufferObject::alloc_mem()");
+	//debug("Called BufferObject::alloc_mem()");
 
   if (Platform::run_vc4()) fatal("Trying to run v3d code on a vc4");
   if (!v3d_open())         assert(false);  // Only open device if not already done so

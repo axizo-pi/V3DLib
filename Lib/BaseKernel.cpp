@@ -46,7 +46,7 @@ void BaseKernel::compile_init(bool do_vc4) {
     Platform::compiling_for_vc4(true);
     vc4().init_compile();
   } else {
-		debug("Compiling for v3d");
+		//debug("Compiling for v3d");
     assert(!has_v3d());
     m_v3d_driver.reset(new v3d::KernelDriver);
     Platform::compiling_for_vc4(false);
