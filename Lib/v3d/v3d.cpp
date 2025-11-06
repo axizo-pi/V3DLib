@@ -410,10 +410,11 @@ struct v3d_device_info const *devinfo() {
 
 
 bool v3d_device_vc7() {
+	warning("Called v3d_device_vc7()");
 	_v3d_device_info();
 
 	// Paranoia - notify unknown version
-  if (s_devinfo.ver != 0 || s_devinfo.ver != 42 || s_devinfo.ver != 71) {
+  if (!(s_devinfo.ver == 0 || s_devinfo.ver == 42 || s_devinfo.ver == 71)) {
 		warning("Unexpected device_info version");
 	}
 

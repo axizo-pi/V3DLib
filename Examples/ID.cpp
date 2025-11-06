@@ -15,13 +15,13 @@ void id_kernel(Int::Ptr p, Int::Ptr q) {
 
 
 int main(int argc, const char *argv[]) {
-  printf("Compiling for vc7: %d\n", Platform::compiling_for_vc7());
 
   int numQPUs = 8;                                // Max number of QPUs for v3d
 
   settings.init(argc, argv);
 
   auto k = compile(id_kernel, settings);          // Construct kernel
+  printf("Compiling for vc7: %d\n", Platform::compiling_for_vc7());
   k.setNumQPUs(numQPUs);
 
   Int::Array result(16*numQPUs);                  // Allocate and initialise array shared between ARM and GPU

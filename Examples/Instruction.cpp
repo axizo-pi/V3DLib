@@ -22,6 +22,12 @@
  * --
  * - raddr_a, raddr_b do not register (expected)
  * - add raddr's: smallest value always put in a from instr struct (check 4x?)
+ * - sig, can not combine:
+ *		- thrsw, small_imm_a
+ * - When a small_imm field is set, set corresponding raddr is a small immediate
+ *    - int range: -16..15
+ * - Setting 2 fields to small_imm results in assertion on disasm.
+ * - 'mov rf0, 0' needs to use add.a raddr for small_imm
  *
  *
  * BRANCH
@@ -106,11 +112,13 @@ MAYBE_UNUSED std::string diff_bits(uint64_t a, uint64_t b) {
 }
 
 
-string instr_format(string h2, string desc, uint64_t val) {
+string instr_format(string h2, string desc, uint64_t val, bool show_desc = false) {
 	stringstream buf;
 
-	buf << line << h << line << h2 << line << format_bits(val);
-	buf << line << desc;
+	buf << line << h << line << h2 << line << format_bits(val) << line;
+	if (show_desc) {
+		buf << desc;
+	}
 
 	return buf.str();
 }
@@ -314,10 +322,11 @@ int main(int argc, const char *argv[]) {
 			//.thrsw = 1,
 			//.ldunif = 1,
 			//.ldunifa = 1
-			//.small_imm_d = 1
+			.small_imm_a = 1,
+			//.small_imm_b = 1
 	 	},
-		.sig_addr = 63,
-		.sig_magic = true,
+		.sig_addr = 0,
+		.sig_magic = false,
     //.raddr_b = 63,  // 4x
 		.flags = {
 		  //.ac = V3D_QPU_COND_IFA,
@@ -327,14 +336,13 @@ int main(int argc, const char *argv[]) {
 		},
 		.alu = {
 			.add = {
-				  .op = V3D_QPU_A_NOP,
+				  .op = V3D_QPU_A_MOV,
 			  	.a = {
             //.mux = V3D_QPU_MUX_B,
-            //.raddr = 0
+            .raddr = 0 
           },
 			  	.b = {
             //.mux = V3D_QPU_MUX_R4,
-            //.raddr = 0
           },
 		 	    .waddr = 0, //V3D_QPU_WADDR_NOP,
 					.magic_write = false,
