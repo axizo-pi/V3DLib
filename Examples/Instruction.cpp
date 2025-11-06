@@ -379,11 +379,19 @@ int main(int argc, const char *argv[]) {
 	cout << "Decode: " << qpu_decode(&instr) << "\n";
 	cout << "Disasm: " << qpu_disasm(packed) << "\n";
 
-	if (instr.type == V3D_QPU_INSTR_TYPE_ALU) {
-		cout << instr_format_alu_4x(packed);
-	} else {
-		cout << instr_format_branch_4x(packed);
-	}
+  if (devinfo()->ver == 42) {
+  	if (instr.type == V3D_QPU_INSTR_TYPE_ALU) {
+  		cout << instr_format_alu_4x(packed);
+  	} else {
+  		cout << instr_format_branch_4x(packed);
+  	}
+  } else {
+  	if (instr.type == V3D_QPU_INSTR_TYPE_ALU) {
+  		cout << instr_format_alu_7x(packed);
+  	} else {
+  		cout << instr_format_branch_7x(packed);
+  	}
+  }
 
 	//uint64_t b = 0x400000005000000L;
 	//cout << diff_bits(packed, b);

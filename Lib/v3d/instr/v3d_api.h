@@ -12,8 +12,7 @@
 extern "C" {
 #endif // __cplusplus
 
-extern struct v3d_device_info const v3d_devinfo;
-
+struct v3d_device_info const *devinfo();  // defined in v3d/v3d.cpp
 void instr_dump(char *buffer, struct v3d_qpu_instr *instr);
 bool instr_unpack(uint64_t packed_instr, struct v3d_qpu_instr *instr);
 uint64_t instr_pack(struct v3d_qpu_instr const *instr);
