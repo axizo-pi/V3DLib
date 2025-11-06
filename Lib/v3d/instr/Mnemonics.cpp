@@ -38,7 +38,7 @@ void set_muxes_mul(v3d_qpu_alu_instr &alu, v3d_qpu_mux mux_a, v3d_qpu_mux mux_b)
  * Initialize the add alu
  */
 Mnemonic::Mnemonic(v3d_qpu_add_op op, Location const &dst, Source const &a, Source const &b) {
-  init(NOP);
+  init(NOP());
   alu_add_set(dst, a, b);
   alu.add.op = op;
 }

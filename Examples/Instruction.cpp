@@ -317,6 +317,7 @@ int main(int argc, const char *argv[]) {
 			//.small_imm_d = 1
 	 	},
 		.sig_addr = 63,
+		.sig_magic = true,
     //.raddr_b = 63,  // 4x
 		.flags = {
 		  //.ac = V3D_QPU_COND_IFA,
@@ -379,7 +380,7 @@ int main(int argc, const char *argv[]) {
 	cout << "Decode: " << qpu_decode(&instr) << "\n";
 	cout << "Disasm: " << qpu_disasm(packed) << "\n";
 
-  if (devinfo()->ver == 42) {
+  if (devinfo_ver() == 42) {
   	if (instr.type == V3D_QPU_INSTR_TYPE_ALU) {
   		cout << instr_format_alu_4x(packed);
   	} else {
@@ -393,9 +394,12 @@ int main(int argc, const char *argv[]) {
   	}
   }
 
-	//uint64_t b = 0x400000005000000L;
-	//cout << diff_bits(packed, b);
-
+/*
+  uint64_t const NOP = 0x3c003186bb800000;  // This is actually 'nop nop'
+	cout << "NOP   : " << hex << NOP << "\n";
+	cout << "Disasm: " << qpu_disasm(NOP) << "\n";
+	cout << diff_bits(NOP, packed);
+*/
 
   return 0;
 }

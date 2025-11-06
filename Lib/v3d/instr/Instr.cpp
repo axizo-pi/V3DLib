@@ -67,7 +67,14 @@ v3d_qpu_cond translate_assign_cond(AssignCond cond) {
 
 namespace instr {
 
-uint64_t const Instr::NOP = 0x3c003186bb800000;  // This is actually 'nop nop'
+uint64_t Instr::NOP() {
+  if (devinfo_ver() == 42) {
+		return 0x3c003186bb800000;  // This is actually 'nop nop'
+	} else {
+		// 7x, vc7
+		return 0x38000000bb03f000;
+	}
+}
 
 
 Instr::Instr(uint64_t in_code) {

@@ -48,7 +48,7 @@ public:
   // End Label support
 
 public:
-  Instr(uint64_t in_code = NOP);
+  Instr(uint64_t in_code = NOP());
 
   bool skip() const { return m_skip; }
   void skip(bool val) { m_skip = val; }
@@ -135,7 +135,7 @@ public:
   std::unique_ptr<Source> mul_alu_b() const;
 
 protected:
-  static uint64_t const NOP;
+  static uint64_t NOP();
 
   void init(uint64_t in_code);
   void set_branch_condition(v3d_qpu_branch_cond cond);
