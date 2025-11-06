@@ -1,3 +1,11 @@
+# Add` gdb` breakpoint to code
+
+```
+#include <csignal>          // std::raise(SIGINT);
+...
+	std::raise(SIGINT);
+```
+
 # GCD hangs on pi4 (vc6)
 
 GCD gives following error output:

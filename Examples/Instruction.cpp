@@ -12,14 +12,15 @@
  *   - following verified ok: thrsw ldunif
  * - raddr_a, raddr_b do not register on 7.x
  * - mul add output_pack can not be disasm'd for nonzero values
- * - fadd, faddnf: same packed
+ * - faddnf: translates to fadd when packed
+ * - add.op = V3D_QPU_A_VFPACK sets 'add output pack' to 11. Otherwise it's just an V3D_QPU_A_FADD
  *
  *
  * BRANCH
  * ======
  *
  * - Adresses in instr get rounded down to 4-bit boundaries on pack.
- *   This makes sort of sense since instructions are 64 bits.
+ *   This makes sense since instructions are 64 bits.
  */
 #include "v3d/instr/v3d_api.h"
 #include "broadcom/qpu/qpu_disasm.h"
@@ -29,6 +30,8 @@
 #include <sstream>
 
 using namespace std;
+
+#define MAYBE_UNUSED __attribute__((unused))
 
 namespace {
 
@@ -51,6 +54,50 @@ std::string format_bits(uint64_t val) {
 		if (n == 32) buf << "|\n";
 	}
 	buf << "|\n";
+
+	return buf.str();
+}
+
+
+MAYBE_UNUSED std::string diff_bits(uint64_t a, uint64_t b) {
+	int count = 0;
+	stringstream buf;
+
+	buf << line;
+
+	for (int n = 63; n >= 0; n--) {
+		int bit_a = (a >> n) & 1;
+		int bit_b = (b >> n) & 1;
+
+		if (bit_a == bit_b) {
+			buf << "|  ";
+		} else {
+			count++;
+			if (bit_a == 1) {
+				buf << "| a";
+			} else {
+				buf << "| b";
+			}
+		}
+
+		if (n == 32) buf << "|\n";
+	}
+	buf << "|\n";
+
+	buf << line;
+
+	stringstream buf2;
+	buf2 << "\n" << count << " diffs\n";
+
+	return buf2.str() + buf.str();
+}
+
+
+string instr_format(string h2, string desc, uint64_t val) {
+	stringstream buf;
+
+	buf << line << h << line << h2 << line << format_bits(val);
+	buf << line << desc;
 
 	return buf.str();
 }
@@ -195,12 +242,8 @@ std::string instr_format_alu(uint64_t val) {
 		"    I get the impression that add/mul exclude each other on push\n"
 	;
 
-	stringstream buf;
 
-	buf << line << h << line << h2 << line << format_bits(val);
-	buf << line << desc;
-
-	return buf.str();
+	return instr_format(h2, desc, val);
 }
 
 
@@ -213,22 +256,18 @@ std::string instr_format_branch(uint64_t val) {
 
 	string desc = "\n"
 		"- offset_top   : top 8 bits of 32-bit offset address\n"
-		"- offset_bottom: lower 24 bits of 32-bit offset address. The bottom 3 bits are not counted\n"
+		"- offset_bottom: lower 24 bits of 32-bit offset address. The bottom 3 bits are left out\n"
 		"- fign         : msfign\n"
 		"- cond         : enum values of cond are not consecutive in the packed instr\n"
 
 	;
 
-	stringstream buf;
-	buf << line << h << line << h2 << line << format_bits(val);
-	buf << line << desc;
-
-	return buf.str();
+	return instr_format(h2, desc, val);
 }
 
 
 int main(int argc, const char *argv[]) {
-	struct v3d_qpu_instr instr_alu = {
+	MAYBE_UNUSED struct v3d_qpu_instr instr_alu = {
 		.type = V3D_QPU_INSTR_TYPE_ALU,
 		.sig  = {
 			//.thrsw = 1,
@@ -245,20 +284,23 @@ int main(int argc, const char *argv[]) {
 		},
 		.alu = {
 			.add = {
-				  //.op = V3D_QPU_A_FADDNF,
+				  .op = V3D_QPU_A_NOP,
 			  	.a = { .raddr = 0 },
 			  	.b = { .raddr = 0 },
-		 	    .waddr = 0,
-					//.magic_write = true,
+		 	    .waddr = 0, //V3D_QPU_WADDR_NOP,
+					.magic_write = false,
 			},
 			.mul = {
+				  .op = V3D_QPU_M_NOP,
 				  //.op = V3D_QPU_M_FMOV,
 					//.output_pack = V3D_QPU_PACK_NONE  // Other values fail disasm
+		 	    .waddr = 0, //V3D_QPU_WADDR_NOP,
+					.magic_write = false,
 			},
 		},
 	};
 
-	struct v3d_qpu_instr instr_branch = {
+	MAYBE_UNUSED struct v3d_qpu_instr instr_branch = {
 		.type = V3D_QPU_INSTR_TYPE_BRANCH,
 		.branch = {
 			//.cond = V3D_QPU_BRANCH_COND_ANYNA,
@@ -270,7 +312,7 @@ int main(int argc, const char *argv[]) {
 		}
 	};
 
-	auto &instr = instr_branch;
+	auto &instr = instr_alu;
 
 	//display(instr);
 
@@ -286,6 +328,9 @@ int main(int argc, const char *argv[]) {
 	} else {
 		cout << instr_format_branch(packed);
 	}
+
+	uint64_t b = 0x400000005000000L;
+	cout << diff_bits(packed, b);
 
 
   return 0;
