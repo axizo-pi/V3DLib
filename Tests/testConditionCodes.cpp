@@ -408,19 +408,19 @@ TEST_CASE("Test Where blocks [where][cond]") {
   Int::Array result(NUM_TESTS*VEC_SIZE);
 
   auto k1 = compile(where_kernel, settings);
-  k1.run(&result);
+  k1.load(&result).run();
   check_where_result(result);
 
   reset(result);
 	settings.run_type = 1;
   auto k2 = compile(where_kernel, settings);
-  k2.run(&result);
+  k2.load(&result).run();
   check_where_result(result);
 
   reset(result);
 	settings.run_type = 2;
   auto k3 = compile(where_kernel, settings);
-  k3.run(&result);
+  k3.load(&result).run();
   check_where_result(result);
 }
 
@@ -431,7 +431,7 @@ namespace {
   void run_qpu(Int::Array &result, KernelType &k, int index, uint32_t *expected) {
     INFO("Testing qpu run index: " << index);
     reset(result, -1);
-    k.call();
+    k.run();
     check(result, 0, expected);
   };
 
@@ -507,7 +507,7 @@ TEST_CASE("Test multiple and/or [andor][cond]") {
     Int::Array result(NUM_TESTS*VEC_SIZE);
 
     auto k = compile(andor_kernel);
-    k.run(&result);
+    k.load(&result).run();
     k.pretty("andor_kernel_v3d.txt");
     check_andor_result(result);
   }
@@ -518,7 +518,7 @@ TEST_CASE("Test multiple and/or [andor][cond]") {
 
     auto k1 = compile(andor_where_kernel);
     k1.pretty("obj/test/andor_where_kernel.txt");
-    k1.run(&result, width, height);
+    k1.load(&result, width, height).run();
     check_output(result, "where_qpu");
   }
 
@@ -528,7 +528,7 @@ TEST_CASE("Test multiple and/or [andor][cond]") {
 
     reset(result);
     auto k2 = compile(andor_if_kernel);
-    k2.run(&result, width, height);
+    k2.load(&result, width, height).run();
     check_output(result, "if_qpu");
   }
 
@@ -538,7 +538,7 @@ TEST_CASE("Test multiple and/or [andor][cond]") {
 
     auto k3 = compile(andor_multi_if_kernel);
     reset(result);
-    k3.run(&result, width, height);
+    k3.load(&result, width, height).run();
     check_output(result, "multi_if_qpu");
   }
 }

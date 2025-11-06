@@ -342,7 +342,7 @@ TEST_CASE("Test correct working DSL [dsl]") {
     result.fill(-2);  // Initialize to unexpected value
 
     auto k = compile(kernel_specific_instructions);
-    k.run(&result);
+    k.load(&result).run();
     check_vector(result, 0, expected);
   }
 
@@ -359,7 +359,7 @@ TEST_CASE("Test correct working DSL [dsl]") {
     result.fill(-2);  // Initialize to unexpected value
 
     auto k = compile(kernel_specific_float_instructions);
-    k.run(&result);
+    k.load(&result).run();
 
     float precision = 0;
     if (Platform::run_vc4()) {
@@ -393,7 +393,7 @@ TEST_CASE("Test Conditionals [dsl][cond]") {
     //
     INFO("Checking conditionals");
     reset();
-    k.run(&result).call();
+    k.load(&result).run();
     check_conditionals(result, N);
   }
 }
@@ -414,7 +414,7 @@ TEST_CASE("Test construction of composed types in DSL [dsl][complex]") {
 
     Complex::Array result(16*N);
 
-    k.run(&input, &result);
+    k.load(&input, &result).run();
 
     REQUIRE(result[0] ==  complex(1, 0));
     REQUIRE(result[1] ==  complex(-1, 0));
@@ -498,7 +498,7 @@ TEST_CASE("Test specific operations in DSL [dsl][ops]") {
     k.dump_compile_data(false, "obj/test/int_ops_kernel_compile_data_v3d.txt");
     k.pretty(false, "obj/test/int_ops_kernel_v3d.txt", true);
 */
-    k.call();
+    k.run();
 
     vector<vector<int>> expected = {
       {3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18},                    // +=
@@ -526,7 +526,7 @@ TEST_CASE("Test specific operations in DSL [dsl][ops]") {
 
     Float::Array result(16*N);
 
-    k.load(&result).call();
+    k.load(&result).run();
 
     vector<float> expected = { 3.25,  4.25,  5.25,  6.25,  7.25,  8.25,  9.25, 10.25,
                               11.25, 12.25, 13.25, 14.25, 15.25, 16.25, 17.25, 18.25};
@@ -566,7 +566,7 @@ TEST_CASE("Test For-loops [dsl][for]") {
     auto k = compile(nested_for_kernel);
 
     Int::Array result(16);
-    k.run(&result);
+    k.load(&result).run();
 
     vector<int> expected = {18, 27, 18, 27, 18, 27, 18, 27, 18, 27, 18, 27, 18, 27, 18, 27};
     check_vector(result, 0, expected);
@@ -707,7 +707,7 @@ TEST_CASE("Initialization with index() on uniform pointers should work as expect
   SUBCASE("Test with TMU") {
     auto k = compile(offsets_kernel<Int, Int::Ptr>);
     reset();
-    k.run(&result, &a);
+    k.load(&result, &a).run();
     check("tmu qpu");
   }
 
@@ -716,7 +716,7 @@ TEST_CASE("Initialization with index() on uniform pointers should work as expect
     LibSettings::use_tmu_for_load(false);
 
     auto k = compile(offsets_kernel<Int, Int::Ptr>);
-    k.run(&result, &a);
+    k.load(&result, &a).run();
     check("dma qpu");
 
     LibSettings::use_tmu_for_load(false);
@@ -837,7 +837,7 @@ TEST_CASE("Test functions [dsl][func]") {
 
     {
       auto k = compile(cosine_kernel);
-      k.run(&qpu_cos, size, freq, offset);
+      k.load(&qpu_cos, size, freq, offset).run();
 
       float max_diff = calc_max_diff(lib_cos, qpu_cos, size); 
       INFO("Max diff: " << max_diff);
@@ -863,7 +863,7 @@ TEST_CASE("Test functions [dsl][func]") {
     results_qpu.fill(-1.0f);
 
     auto k = compile(floor_kernel);
-    k.run(&results_qpu, &input_qpu, NumValues);
+    k.load(&results_qpu, &input_qpu, NumValues).run();
 
     for (int n = 0; n < NumValues; ++n) {
       INFO("input_qpu     : " << dump_array2(input_qpu));
@@ -885,7 +885,7 @@ TEST_CASE("Test functions [dsl][func]") {
     results_qpu.fill(-1.0f);
 
     auto k = compile(fabs_kernel);
-    k.run(&results_qpu, &input_qpu, NumValues);
+    k.load(&results_qpu, &input_qpu, NumValues).run();
 
     for (int n = 0; n < NumValues; ++n) {
       INFO("results_scalar: " << dump_array2(results_scalar, NumValues));
@@ -958,7 +958,7 @@ TEST_CASE("Test issues [dsl][issues]") {
     Int::Array result(16*N);
     result.fill(-1);
 
-    k.run(&result, &input);
+    k.load(&result, &input).run();
 
     check_vector(result, 0, 0);
     check_vector(result, 1, 0);
@@ -1155,8 +1155,7 @@ TEST_CASE("Test sin/cos instructions [dsl][sincos]") {
 
   auto k = compile(sincos_kernel);
   //k.pretty(false);
-  k.load(&result, N);
-  k.call();
+  k.load(&result, N).run();
 
   float const hi_precision = 1.2e-3f;
   float const lo_precision = 5.7e-2f;
@@ -1206,7 +1205,7 @@ TEST_CASE("Test integer division and remainder [dsl][intdiv]") {
   auto k = compile(int_div_kernel);
 
   auto test = [&k, &quotient, &remainder] (int a, int b, int quotient_expected, int remainder_expected) {
-    k.load(&quotient, &remainder, a, b).call();
+    k.load(&quotient, &remainder, a, b).run();
     INFO(quotient.dump());
     INFO(remainder.dump());
     REQUIRE(quotient[0]  == quotient_expected);

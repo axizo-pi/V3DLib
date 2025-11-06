@@ -97,7 +97,7 @@ TEST_CASE("Test prefetch on stmt stack [prefetch]") {
     result.fill(-1);
 
     auto k = compile(prefetch_kernel<Int, Int::Ptr>);
-    k.run(&result, &src);
+    k.load(&result, &src).run();
   
     for (int i = 0; i < (int) result.size(); ++i) {
       INFO("i: " << i);
@@ -116,7 +116,7 @@ TEST_CASE("Test prefetch on stmt stack [prefetch]") {
     result.fill(-1);
 
     auto k = compile(prefetch_kernel<Float, Float::Ptr>);
-    k.run(&result, &src);
+    k.load(&result, &src).run();
 
     for (int i = 0; i < (int) result.size(); ++i) {
       INFO("i: " << i);
@@ -137,7 +137,7 @@ TEST_CASE("Test prefetch on stmt stack [prefetch]") {
     result.fill(-1);
 
     auto k = compile(multi_prefetch_kernel<N>);
-    k.run(&result, &src);
+    k.load(&result, &src).run();
 
     for (int i = 0; i < (int) result.size(); ++i) {
       INFO("i: " << i);

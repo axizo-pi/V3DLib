@@ -112,7 +112,7 @@ void run_qpu_kernel() {
 
   Timer timer;
   for (int i = 0; i < settings.repeats; ++i) {
-    k.run(&result, &a, &b);
+    k.load(&result, &a, &b).run();
   }
   timer.end(!settings.silent);
 }

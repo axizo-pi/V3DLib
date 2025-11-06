@@ -202,9 +202,9 @@ void run_kernel() {
 
   for (int i = 0; i < settings.num_steps; i++) {
     if (i & 1) {
-      k.run(&mapB, &mapA, settings.HEIGHT, settings.WIDTH);  // Load the uniforms and invoke the kernel
+      k.load(&mapB, &mapA, settings.HEIGHT, settings.WIDTH).run();  // Load the uniforms and invoke the kernel
     } else {
-      k.run(&mapA, &mapB, settings.HEIGHT, settings.WIDTH);  // Load the uniforms and invoke the kernel
+      k.load(&mapA, &mapB, settings.HEIGHT, settings.WIDTH).run();  // Load the uniforms and invoke the kernel
     }
   }
 

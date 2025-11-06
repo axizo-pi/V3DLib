@@ -254,12 +254,12 @@ void run_qpu_kernel(KernelType &kernel) {
 
   Int::Array result(settings.num_items());  // Allocate and initialise
 
-  k.run(
+  k.load(
     settings.topLeftReal, settings.topLeftIm,
     settings.offsetX(), settings.offsetY(),
     settings.numStepsWidth, settings.numStepsHeight,
     settings.num_iterations,
-    &result);
+    &result).run();
 
   output_pgm(result);
 }

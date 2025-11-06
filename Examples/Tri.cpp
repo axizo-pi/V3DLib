@@ -81,7 +81,7 @@ void run_int() {
     array[i] = i;
 
   // Invoke the kernel
-  k.run(&array);
+  k.load(&array).run();
 
   // Display the result
   for (int i = 0; i < (int) array.size(); i++)
@@ -102,7 +102,7 @@ void run_float() {
     array[i] = (float) i;
 
   // Invoke the kernel
-  k.run(&array);
+  k.load(&array).run();
 
   // Display the result
   for (int i = 0; i < (int) array.size(); i++)

@@ -44,7 +44,7 @@ int main(int argc, const char *argv[]) {
   for (int i = 0; i < (int) a.size(); i++)
     a[i] = 100 - i;
 
-  k.run(&a);                                     // Load the uniforms and invoke the kernel
+  k.load(&a).run();                               // Load the uniforms and invoke the kernel
 
   for (int i = 0; i < (int) a.size(); i++)        // Display the result
     printf("%i: %i\n", i, (i & 1) ? a[16+(i>>1)] : a[i>>1]);

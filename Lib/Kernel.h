@@ -118,28 +118,12 @@ public:
 
     return *this;
   }
-
-
-  /**
-   * Load uniform values and invoke the kernel.
-   */
-  template <typename... us>
-  Kernel &run(us... args) {
-    uniforms.clear();
-
-    // Check arguments types of param us against types of ts
-    nothing(passParam<ts, us>(uniforms, args)...);
-
-		_run();
-    return *this;
-  }
 };
 
 
 template <typename... ts>
 Kernel<ts...> compile(void (*f)(ts... params), BaseSettings const &settings) {
-  Kernel<ts...> k(f, settings);
-  return std::move(k);
+  return Kernel<ts...>(f, settings);
 }
 
 
@@ -149,8 +133,7 @@ Kernel<ts...> compile(void (*f)(ts... params), BaseSettings const &settings) {
 template <typename... ts>
 Kernel<ts...> compile(void (*f)(ts... params)) {
 	BaseSettings settings;
-  Kernel<ts...> k(f, settings);
-  return std::move(k);
+  return Kernel<ts...>(f, settings);
 }
 
 }  // namespace V3DLib

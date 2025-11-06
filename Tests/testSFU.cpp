@@ -50,6 +50,6 @@ TEST_CASE("Test SFU functions [sfu]") {
   double precision = (Platform::run_vc4())?3e-4:1e-6;
 
   results.fill(0.0);
-  k.run(1.1f, &results);
+  k.load(1.1f, &results).run();
   check(results, precision);
 }

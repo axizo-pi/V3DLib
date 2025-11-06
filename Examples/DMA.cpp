@@ -39,7 +39,7 @@ int main(int argc, const char *argv[]) {
   for (int i = 0; i < 256; i++)
     array[i] = i;
 
-  k.run(&array);                                  // Invoke the kernel
+  k.load(&array).run();                           // Invoke the kernel
 
   for (int i = 0; i < 16; i++) {                  // Display the result
     for (int j = 0; j < 16; j++) {

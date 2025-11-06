@@ -316,16 +316,10 @@ bool Platform::run_vc4()           { return instance().run_vc4(); }
  * concept can actually be convoluted as f*** underwater.
  */
 int Platform::size_regfile() {
-  {
-    static bool showed = false;
-  	if (!showed) debug("Platform::size_regfile(): add vc7.");
-    showed = true;
-  }
-
   if (compiling_for_vc4()) {
     return 32;
   } else {
-    return 64;
+    return 64;  // Also for 7x
   }
 }
 

@@ -258,7 +258,8 @@ bool Settings::process() {
     }
   }
 
-  if (compile_only || run_type != 0) {
+  if (run_type != 0) {
+		printf("Settings: using main memory.\n");
     Platform::use_main_memory(true);
   }
 

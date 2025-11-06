@@ -45,7 +45,7 @@ TEST_CASE("Test loading of immediates [dsl][imm]") {
   //k.dump_compile_data(true, "./obj/test/test_imm_vc4_data.txt");
   //k.pretty(true, "./obj/test/test_imm_vc4.txt");
   REQUIRE(!k.has_errors());
-  k.run(&int_result, &float_result);
+  k.load(&int_result, &float_result).run();
 
   REQUIRE(int_result[ 0]     ==  25);
   REQUIRE(int_result[16]     ==  15);

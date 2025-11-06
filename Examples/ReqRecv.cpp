@@ -26,7 +26,7 @@ int main(int argc, const char *argv[]) {
   for (int i = 0; i < (int) array.size(); i++)
     array[i] = i;
 
-  k.run(&array);                                  // Invoke the kernel
+  k.load(&array).run();                           // Invoke the kernel
 
   for (int i = 0; i < (int) array.size()/2; i++)  // Display the result
     printf("%i: %i\n", i, array[i]);

@@ -18,13 +18,14 @@ namespace V3DLib {
  *     - interpret(...)  - run on source code interpreter
  *     - emu(...)        - run on the target code emulator (`vc4` code only)
  *     - qpu(...)        - run on physical QPUs (when QPU_MODE enabled, run emu()))
- *     - call(...)       - depending on setting, call any of the above
- *                      This is useful for cross-platform compatibility
+ *     - run(...)        - Call the best run option from previous depending on settings and compile options
  *
- *    The interpreter and emulator are useful for development/debugging and 
- *    for equivalence testing for the hardware QPU.
+ *    The interpreter and emulator are useful for:
+ *      - cross-platform compatibility
+ *      - development/debugging
+ *      - equivalence testing for the hardware QPU
  *
- *    Just keep in mind that the interpreter and emulator are really slow
+ *    Keep in mind that the interpreter and emulator are really slow
  *    in comparison to the hardware.
  *
  *
@@ -71,7 +72,7 @@ public:
   BaseKernel &setNumQPUs(int n) { m_settings.num_qpus = n; return *this; }
   int numQPUs() const { return m_settings.num_qpus; }
 
-  void call() { _run(); }
+  void run();
 
   // TODO make private
   void emu();
@@ -93,8 +94,6 @@ protected:
   // (There are other reasons but this is the main one)
   std::unique_ptr<vc4::KernelDriver> m_vc4_driver;
   std::unique_ptr<v3d::KernelDriver> m_v3d_driver;
-
-  void _run();
 };
 
 

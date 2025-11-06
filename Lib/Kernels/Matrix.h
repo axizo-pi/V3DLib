@@ -604,13 +604,13 @@ private:
 
   void k_first_call() {
     assert(m_k_first);
-    m_k_first->call();
+    m_k_first->run();
   }
 
 
   void k_call() {
     assert(m_k);
-    m_k->call();
+    m_k->run();
   }
 };
 

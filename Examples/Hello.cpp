@@ -19,7 +19,7 @@ int main(int argc, const char *argv[]) {
   Int::Array array(16);                           // Allocate and initialise the array shared between ARM and GPU
   array.fill(100);
 
-  k.run(&array);                                  // Invoke the kernel
+  k.load(&array).run();                           // Invoke the kernel
 
   for (int i = 0; i < (int) array.size(); i++) {  // Display the result
     printf("%i: %i\n", i, array[i]);

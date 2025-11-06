@@ -913,7 +913,7 @@ void tiny_fft(Complex::Ptr &b, Complex::Ptr &devnull) {
  *
  * The result is returned in b.
  *
- * This kernel works with `emu()` and on `v3d` with `call()`,
+ * This kernel works with `emu()` and on `v3d` with `run()`,
  * *not* with `interpret()` or on `vc4`. So be it. Life sucks sometimes.
  *
  * ============================================================================
@@ -1103,7 +1103,7 @@ TEST_CASE("FFT test with scalar [fft]") {
     fft_context.init(log2n);
     auto k = compile(fft_kernel);
     k.load(&result, &devnull, &signal);
-    k.call();
+    k.run();
     //std::cout << "Kernel output: " << result.dump() << std::endl;
 
     float precision = 5.0e-5f;
@@ -1207,7 +1207,7 @@ TEST_CASE("FFT test with DFT [fft][test2]") {
       Timer timer2("DFT run time");
       k.load(&result_dft, &a);
       //k.setNumQPUs(1);
-      k.call();
+      k.run();
       timer2.end();
 
       //std::cout << "DFT result: " << result_dft.dump() << std::endl;
@@ -1237,7 +1237,7 @@ TEST_CASE("FFT test with DFT [fft][test2]") {
       //Timer timer2("FFT run time");
       k.setNumQPUs(fft_context.num_qpus);
       k.load(&result_fft, &devnull, &signal);
-      k.call();
+      k.run();
       //timer2.end();
 
       INFO("comparing FFT with scalar");
@@ -1441,7 +1441,7 @@ TEST_CASE("FFT Support [fft]") {
       src_vec = k_index;
       auto k = compile(vecload_kernel);
       k.load(&result);
-      k.call();
+      k.run();
 
       //std::cout << "16vec output: " << result.dump() << std::endl;
       for (int i = 0; i < (int) k_index.size(); ++i) {
@@ -1454,7 +1454,7 @@ TEST_CASE("FFT Support [fft]") {
       src_vec = k_m2_index;
       auto k = compile(vecload_kernel);
       k.load(&result);
-      k.call();
+      k.run();
 
       //std::cout << "16vec output: " << result.dump() << std::endl;
       for (int i = 0; i < (int) k_m2_index.size(); ++i) {
@@ -1483,7 +1483,7 @@ TEST_CASE("FFT Support [fft]") {
     src_vec = k_index;
     auto k = compile(vecoffset_kernel);
     k.load(&result, &a, &devnull);
-    k.call();
+    k.run();
 
     //std::cout << "16vec output: " << result.dump() << std::endl;
 

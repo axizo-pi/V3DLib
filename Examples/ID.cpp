@@ -28,7 +28,7 @@ int main(int argc, const char *argv[]) {
   Int::Array index_array(16*numQPUs);
   index_array.fill(2);
 
-  k.run(&result, &index_array);                   // Load the uniforms and invoke the kernel
+  k.load(&result, &index_array).run();            // Load the uniforms and invoke the kernel
 
   for (int i = 0; i < (int) result.size(); i++) { // Display the result
     printf("%3i: %2i, %2i\n", i, result[i], index_array[i]);

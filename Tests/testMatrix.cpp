@@ -100,7 +100,7 @@ void test_dotvector() {
   REQUIRE(a.size() == b.size());
 
   auto k = compile(check_dotvector<N>);
-  k.run(&b, &a, &result);
+  k.load(&b, &a, &result).run();
 
   for (int i = 0; i < (int) a.size(); i++) {
     INFO("N: " << N << ", i: " << i);
@@ -126,7 +126,7 @@ void test_dotvector() {
 
   // Do it again with simpler values for hand calculation
   a.fill(1);
-  k.run(&b, &a, &result);
+  k.load(&b, &a, &result).run();
   REQUIRE(result[0] == (float) (16*N));
 }
 
@@ -145,7 +145,7 @@ void check_matrix_results(
   //
   a.fill(0);
   result.fill(-1);
-  k.run(&result, &a, &a);
+  k.load(&result, &a, &a).run();
   compare_array_scalar(result, 0.0f);
 
   //
@@ -153,7 +153,7 @@ void check_matrix_results(
   //
   a.fill(1);
   result.fill(-1);
-  k.run(&result, &a, &a);
+  k.load(&result, &a, &a).run();
   compare_array_scalar(result, (float) dimension);
 
   //
@@ -162,7 +162,7 @@ void check_matrix_results(
   a.make_unit_matrix();
   check_unitary(a);
 
-  k.run(&result, &a, &a);
+  k.load(&result, &a, &a).run();
   check_unitary(result);
 
   //
@@ -176,7 +176,7 @@ void check_matrix_results(
   copy_transposed(a_transposed, a_scalar, dimension, dimension);
 
   kernels::matrix_mult_scalar(dimension, expected, a_scalar, a_transposed);
-  k.run(&result, &a, &a);
+  k.load(&result, &a, &a).run();
 
   compare_arrays(result, expected);
 }
@@ -250,7 +250,7 @@ void test_matrix_multiplication(int rows, int inner, int cols, float init_a = 1,
   k.setNumQPUs(num_qpus);
   result.fill(-1.0f);
 
-  k.run(&result, &a, &b);
+  k.load(&result, &a, &b).run();
 
   // NOTE: this does not compare the entire results array, just the relevant bit(s)
   for (int r = 0; r < rows; ++r) {
@@ -297,7 +297,7 @@ TEST_CASE("Test matrix algebra components [matrix][comp]") {
     result.fill(-1);
 
     auto k = compile(check_sum_kernel);
-    k.run(&vec, &result);
+    k.load(&vec, &result).run();
 
     float precision = 0.0f;
     if (Platform::run_vc4()) {
@@ -310,7 +310,7 @@ TEST_CASE("Test matrix algebra components [matrix][comp]") {
       vec[i] = 0.1f*((float ) (i + 1));
     }
 
-    k.run(&vec, &result);
+    k.load(&vec, &result).run();
     REQUIRE(abs(result[0] - 0.1f*(16*17/2)) <= precision);
   }
 
@@ -326,7 +326,7 @@ TEST_CASE("Test matrix algebra components [matrix][comp]") {
     result.fill(-1);
 
     auto k = compile(check_set_at);
-    k.run(&vec, &result, 0);
+    k.load(&vec, &result, 0).run();
 
     for (int i = 0; i < (int) result.size(); i++) {
       if (i == 0) {
@@ -336,7 +336,7 @@ TEST_CASE("Test matrix algebra components [matrix][comp]") {
       }
     }
 
-    k.run(&vec, &result, 7);
+    k.load(&vec, &result, 7).run();
 
     for (int i = 0; i < (int) result.size(); i++) {
       if (i == 0 || i == 7) {
@@ -427,7 +427,7 @@ void test_complex_dotvector() {
 
   auto k = compile(check_complex_dotvector<N>);
   k.pretty("check_complex_dotvector.txt");
-  k.run(&b, &a, &result);
+  k.load(&b, &a, &result).run();
 
   for (int i = 0; i < (int) a.size(); i++) {
     INFO("N: " << N << ", i: " << i);
@@ -453,12 +453,12 @@ void test_complex_dotvector() {
 
   // Do it again with simpler values for hand calculation
   a.fill({ 1,  0});
-  k.run(&b, &a, &result);
+  k.load(&b, &a, &result).run();
   REQUIRE(result[0] == complex(16*N, 0));
 
   // Do it again with re and im having values
   a.fill({ 1,  2});
-  k.run(&b, &a, &result);
+  k.load(&b, &a, &result).run();
   expected = complex(16*N*-3, 16*N*4);
   INFO("result: "   << result[0].dump());
   INFO("expected: " << expected.dump());
@@ -520,7 +520,7 @@ void test_complex_matrix_multiplication(
   k.setNumQPUs(num_qpus);
   result.fill({-1.0f, -1.0f});
 
-  k.run(&result, &a, &b);
+  k.load(&result, &a, &b).run();
 
   INFO("num QPUs:" << num_qpus << ", num blocks: " << num_blocks);
   check_complex_matrix_multiplication(rows, inner, cols, result, init_a*init_b);
@@ -587,7 +587,7 @@ TEST_CASE("Test complex matrix algebra with varying sizes [matrix][complex]") {
     copy_array(a.re(), scalar);
     a.im().fill(0.0f);
     {
-    	k.run(&result, &a, &a);
+    	k.load(&result, &a, &a).run();
     }
     compare_arrays(result.re(), scalar_result);
     compare_array_scalar(result.im(), 0.0f);
@@ -599,7 +599,7 @@ TEST_CASE("Test complex matrix algebra with varying sizes [matrix][complex]") {
     copy_array(a.im(), scalar);
     a.re().fill(0.0f);
     {
-    	k.run(&result, &a, &a);
+    	k.load(&result, &a, &a).run();
     }
 
     // Negate result

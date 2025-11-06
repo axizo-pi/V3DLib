@@ -120,7 +120,7 @@ void run_qpu_kernel(KernelType &kernel) {
   init_arrays(x, y);
 
   Timer timer;
-  k.run(settings.num_vertices, cosf(settings.THETA), sinf(settings.THETA), &x, &y);
+  k.load(settings.num_vertices, cosf(settings.THETA), sinf(settings.THETA), &x, &y).run();
   timer.end(!settings.silent);
 
   disp_arrays(x, y);
@@ -136,7 +136,7 @@ void run_qpu_kernel_3() {
   init_arrays(x, y);
 
   Timer timer;
-  k.run(cosf(settings.THETA), sinf(settings.THETA), &x, &y);
+  k.load(cosf(settings.THETA), sinf(settings.THETA), &x, &y).run();
   timer.end(!settings.silent);
 
   disp_arrays(x, y);

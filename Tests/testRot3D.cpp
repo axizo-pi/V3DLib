@@ -99,7 +99,7 @@ TEST_CASE("Test working of Rot3D example [rot3d]") {
       initArrays(x, y, N);
 
       auto k = compile(rot3D_1);
-      k.load(N, cosf(THETA), sinf(THETA), &x, &y).call();
+      k.load(N, cosf(THETA), sinf(THETA), &x, &y).run();
       compareResults(x_scalar, y_scalar, x, y, N, "Rot3D 1", false);  // Last param false: do approximate match
 
       // Save results for compare with other kernels 
@@ -124,7 +124,7 @@ TEST_CASE("Test working of Rot3D example [rot3d]") {
 
       INFO("Running kernel 1 with DMA");
       initArrays(x, y, N);
-      k.load(N, cosf(THETA), sinf(THETA), &x, &y).call();
+      k.load(N, cosf(THETA), sinf(THETA), &x, &y).run();
       compareResults(x_1, y_1, x, y, N, "Rot3D_1 DMA");
       LibSettings::use_tmu_for_load(true);
     }
@@ -136,13 +136,13 @@ TEST_CASE("Test working of Rot3D example [rot3d]") {
 
       INFO("Running kernel 1a with 1 QPU");
       initArrays(x, y, N);
-      k.load(N, cosf(THETA), sinf(THETA), &x, &y).call();
+      k.load(N, cosf(THETA), sinf(THETA), &x, &y).run();
       compareResults(x_1, y_1, x, y, N, "Rot3D_1a");
 
       INFO("Running kernel 1a with 8 QPUs");
       k.setNumQPUs(8);
       initArrays(x, y, N);
-      k.load(N, cosf(THETA), sinf(THETA), &x, &y).call();
+      k.load(N, cosf(THETA), sinf(THETA), &x, &y).run();
       compareResults(x_1, y_1, x, y, N, "Rot3D_1a");
     }
 
@@ -152,13 +152,13 @@ TEST_CASE("Test working of Rot3D example [rot3d]") {
 
       INFO("Running kernel 2 with 1 QPU");
       initArrays(x, y, N);
-      k.load(N, cosf(THETA), sinf(THETA), &x, &y).call();
+      k.load(N, cosf(THETA), sinf(THETA), &x, &y).run();
       compareResults(x_1, y_1, x, y, N, "Rot3D_2");
 
       INFO("Running kernel 2 with 8 QPUs");
       k.setNumQPUs(8);
       initArrays(x, y, N);
-      k.load(N, cosf(THETA), sinf(THETA), &x, &y).call();
+      k.load(N, cosf(THETA), sinf(THETA), &x, &y).run();
       compareResults(x_1, y_1, x, y, N, "Rot3D_2 8 QPUs");
     }
 
@@ -169,7 +169,7 @@ TEST_CASE("Test working of Rot3D example [rot3d]") {
 
       auto k = compile(rot3D_3_decorator(N));
       //k.pretty(true, "kernel3_prefetch.txt");
-      k.load(cosf(THETA), sinf(THETA), &x, &y).call();
+      k.load(cosf(THETA), sinf(THETA), &x, &y).run();
       compareResults(x_1, y_1, x, y, N, "Rot3D_3");
     }
 
@@ -181,7 +181,7 @@ TEST_CASE("Test working of Rot3D example [rot3d]") {
       auto k = compile(rot3D_3_decorator(N, 8));
       k.setNumQPUs(8);
       //k.pretty(true);
-      k.load(cosf(THETA), sinf(THETA), &x, &y).call();
+      k.load(cosf(THETA), sinf(THETA), &x, &y).run();
       compareResults(x_1, y_1, x, y, N, "Rot3D_3 8 QPUs");
     }
 
@@ -196,14 +196,14 @@ TEST_CASE("Test working of Rot3D example [rot3d]") {
     auto k_1 = compile(rot3D_1);
     Float::Array x_1(N), y_1(N);
     initArrays(x_1, y_1, N);
-    k_1.load(N, cosf(THETA), sinf(THETA), &x_1, &y_1).call();
+    k_1.load(N, cosf(THETA), sinf(THETA), &x_1, &y_1).run();
 
     // Next kernel intentionally defined in the same shared array as previous kernel
     // That's the goal of this test.
     auto k_2 = compile(rot3D_2);
     Float::Array x_2(N), y_2(N);
     initArrays(x_2, y_2, N);
-    k_2.load(N, cosf(THETA), sinf(THETA), &x_2, &y_2).call();
+    k_2.load(N, cosf(THETA), sinf(THETA), &x_2, &y_2).run();
 
     compareResults(x_1, y_1, x_2, y_2, N, "Rot3D_1 and Rot3D_2 1 QPU");
   }

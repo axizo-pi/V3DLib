@@ -35,7 +35,7 @@ int main(int argc, const char *argv[]) {
     b[i] = 100 + (rand() % 100);
   }
 
-  k.run(&a, &b, &r);                              // Invoke the kernel
+  k.load(&a, &b, &r).run();                       // Invoke the kernel
 
   for (int i = 0; i < 16; i++)                    // Display the result
     printf("gcd(%i, %i) = %i\n", a[i], b[i], r[i]);

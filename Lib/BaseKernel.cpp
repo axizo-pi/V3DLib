@@ -46,6 +46,7 @@ void BaseKernel::compile_init(bool do_vc4) {
     Platform::compiling_for_vc4(true);
     vc4().init_compile();
   } else {
+		debug("Compiling for v3d");
     assert(!has_v3d());
     m_v3d_driver.reset(new v3d::KernelDriver);
     Platform::compiling_for_vc4(false);
@@ -68,14 +69,14 @@ void BaseKernel::pretty(const char *filename, bool output_qpu_code) {
 }
 
 
-void BaseKernel::_run() {
+void BaseKernel::run() {
 #ifdef QPU_MODE
   if (Platform::use_main_memory()) {
-    if(!has_vc4()) {
-      fatal("Main memory selected in QPU mode and not compiled for vc4, can not run.");
-    } else {
+    if(has_vc4()) {
       debug("Main memory selected in QPU mode, running on emulator instead of QPU.");
       m_settings.run_type = 1;
+    } else {
+      fatal("Main memory selected in QPU mode and not compiled for vc4, can not run.");
     }
   }
 #else
@@ -107,6 +108,8 @@ void BaseKernel::_run() {
  * The emulator runs vc4 code.
  */
 void BaseKernel::emu() {
+	assert(!m_settings.compile_only);		// Paranoia
+
   if (vc4().has_errors()) {
     warning("Not running on emulator, there were errors during compile.");
     return;
@@ -121,6 +124,8 @@ void BaseKernel::emu() {
  * Invoke the interpreter
  */
 void BaseKernel::interpret() {
+	assert(!m_settings.compile_only);		// Paranoia
+
   if (vc4().has_errors()) {
     warning("Not running interpreter, there were errors during compile.");
     return;
@@ -135,11 +140,7 @@ void BaseKernel::interpret() {
  * Invoke kernel on physical QPU hardware
  */
 void BaseKernel::qpu() {
-  {
-    static bool showed = false;
-  	if (!showed) debug("BaseKernel::qpu(): add vc7.");
-    showed = true;
-  }
+	assert(!m_settings.compile_only);		// Paranoia
 
 #ifdef QPU_MODE
   if (Platform::run_vc4()) {
@@ -148,7 +149,7 @@ void BaseKernel::qpu() {
     v3d().invoke(numQPUs(), uniforms);
   }
 #else
-  debug("qpu(): QPU mode not enabled, running emu() instead.");
+  fatal("qpu(): QPU mode not enabled, can not run on hardware.");
 #endif  // QPU_MODE
 }
 
