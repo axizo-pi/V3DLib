@@ -5,15 +5,23 @@
  * ALU
  * ===
  * - waddr and a/b raddr for both add and mul 6 bits
- * - add raddr's: smallest value always put in a from instr struct
  * - mul raddr's: order preserved
  * - sig_addr does not register, maybe dependent on sig
  * - various sig's can not be combined; not all combinations are valid
  *   - following verified ok: thrsw ldunif
- * - raddr_a, raddr_b do not register on 7.x
  * - mul add output_pack can not be disasm'd for nonzero values
  * - faddnf: translates to fadd when packed
  * - add.op = V3D_QPU_A_VFPACK sets 'add output pack' to 11. Otherwise it's just an V3D_QPU_A_FADD
+ *
+ * 4x
+ * --
+ * - Can't set add/mul.a/b.raddr (expected)
+ * - a/b might be flipped on add.fadd, mul.add
+ *
+ * 7x
+ * --
+ * - raddr_a, raddr_b do not register (expected)
+ * - add raddr's: smallest value always put in a from instr struct (check 4x?)
  *
  *
  * BRANCH
@@ -41,6 +49,11 @@ string line =
 string h =
 "|63|62|61|60|59|58|57|56|55|54|53|52|51|50|49|48|47|46|45|44|43|42|41|40|39|38|37|36|35|34|33|32|\n"
 "|31|30|29|28|27|26|25|24|23|22|21|20|19|18|17|16|15|14|13|12|11|10|09|08|07|06|05|04|03|02|01|00|\n"
+	;
+
+string h2_temp =
+"|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |\n"
+"|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |\n"
 	;
 
 std::string format_bits(uint64_t val) {
@@ -198,7 +211,7 @@ std::string disp_branch_instr(struct v3d_qpu_branch_instr const &b) {
 }
 
 
-void display(struct v3d_qpu_instr const &instr) {
+void display_instr(struct v3d_qpu_instr const &instr) {
 	cout <<
 "\n"
 "struct v3d_qpu_instr {\n"
@@ -221,7 +234,7 @@ void display(struct v3d_qpu_instr const &instr) {
 }
 
 
-std::string instr_format_alu(uint64_t val) {
+std::string instr_format_alu_7x(uint64_t val) {
 
 	string h2 =
 "|  |  |  |  |  | 1| 0|  |  |  |  |  |  |  |  |  | apf?|mw|aw| mul waddr       | add waddr       |\n"
@@ -247,7 +260,7 @@ std::string instr_format_alu(uint64_t val) {
 }
 
 
-std::string instr_format_branch(uint64_t val) {
+std::string instr_format_branch_7x(uint64_t val) {
 
 	string h2 =
 "|  |  |  |  |  | 0| 1|  | offset_bottom                                                | cond   |\n"
@@ -259,7 +272,35 @@ std::string instr_format_branch(uint64_t val) {
 		"- offset_bottom: lower 24 bits of 32-bit offset address. The bottom 3 bits are left out\n"
 		"- fign         : msfign\n"
 		"- cond         : enum values of cond are not consecutive in the packed instr\n"
+	;
 
+	return instr_format(h2, desc, val);
+}
+
+
+std::string instr_format_alu_4x(uint64_t val) {
+
+	string h2 =
+"|  |  |  |  |  | 1| 0|  |  |  |  |  |  |  |  |  |  |  |  |  | mul_waddr       | add_waddr       |\n"
+"|  |  |  |  |  |1?|  |1?|mul_muxb|mul_muxa|add_muxb|add_muxa| raddr_a         | raddr_b         |\n"
+	;
+
+	string desc = "\n"
+	;
+
+
+	return instr_format(h2, desc, val);
+}
+
+
+std::string instr_format_branch_4x(uint64_t val) {
+
+	string h2 =
+"|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |\n"
+"| offset_top            |  | fign|  |  |  |  | bdu |ub| bdi |  |  |  |  |  |  |  |  |  |  |  |  |\n"
+	;
+
+	string desc = "\n"
 	;
 
 	return instr_format(h2, desc, val);
@@ -275,7 +316,8 @@ int main(int argc, const char *argv[]) {
 			//.ldunifa = 1
 			//.small_imm_d = 1
 	 	},
-		//.sig_addr = 64,
+		.sig_addr = 63,
+    //.raddr_b = 63,  // 4x
 		.flags = {
 		  //.ac = V3D_QPU_COND_IFA,
 		  //.mc = V3D_QPU_COND_IFA
@@ -285,13 +327,27 @@ int main(int argc, const char *argv[]) {
 		.alu = {
 			.add = {
 				  .op = V3D_QPU_A_NOP,
-			  	.a = { .raddr = 0 },
-			  	.b = { .raddr = 0 },
+			  	.a = {
+            //.mux = V3D_QPU_MUX_B,
+            //.raddr = 0
+          },
+			  	.b = {
+            //.mux = V3D_QPU_MUX_R4,
+            //.raddr = 0
+          },
 		 	    .waddr = 0, //V3D_QPU_WADDR_NOP,
 					.magic_write = false,
 			},
 			.mul = {
 				  .op = V3D_QPU_M_NOP,
+			  	.a = {
+            //.mux = V3D_QPU_MUX_B,
+            //.raddr = 0
+          },
+			  	.b = {
+            //.mux = V3D_QPU_MUX_R4,
+            //.raddr = 0
+          },
 				  //.op = V3D_QPU_M_FMOV,
 					//.output_pack = V3D_QPU_PACK_NONE  // Other values fail disasm
 		 	    .waddr = 0, //V3D_QPU_WADDR_NOP,
@@ -314,7 +370,7 @@ int main(int argc, const char *argv[]) {
 
 	auto &instr = instr_alu;
 
-	//display(instr);
+	//display_instr(instr);
 
 	uint64_t packed =  instr_pack(&instr);
 
@@ -324,13 +380,13 @@ int main(int argc, const char *argv[]) {
 	cout << "Disasm: " << qpu_disasm(packed) << "\n";
 
 	if (instr.type == V3D_QPU_INSTR_TYPE_ALU) {
-		cout << instr_format_alu(packed);
+		cout << instr_format_alu_4x(packed);
 	} else {
-		cout << instr_format_branch(packed);
+		cout << instr_format_branch_4x(packed);
 	}
 
-	uint64_t b = 0x400000005000000L;
-	cout << diff_bits(packed, b);
+	//uint64_t b = 0x400000005000000L;
+	//cout << diff_bits(packed, b);
 
 
   return 0;
