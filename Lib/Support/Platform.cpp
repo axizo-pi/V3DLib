@@ -5,6 +5,7 @@
 #include <string.h>  // strstr()
 #include "defines.h"
 #include "basics.h"
+#include "v3d/v3d.h"
 
 namespace V3DLib {
 namespace {
@@ -290,6 +291,23 @@ void Platform::use_main_memory(bool val) {
 void Platform::compiling_for_vc4(bool val) { instance().m_compiling_for_vc4 = val; }
 
 bool Platform::compiling_for_vc4() { return instance().m_compiling_for_vc4; }
+
+
+/**
+ * Determine if the compilation is done for vc7.
+ *
+ * Device (hardware) is accessed to determine what platform we are compiling on.
+ *
+ * Strictly speaking, it should not be necessary to determine the platform
+ * we are running on. It is possible to compile for any platform on any
+ * platform.
+ */
+bool Platform::compiling_for_vc7() {
+  if (instance().m_compiling_for_vc4) return false;
+  return v3d_device_vc7();
+}
+
+
 bool Platform::use_main_memory()   { return instance().m_use_main_memory; }
 std::string Platform::platform_info() { return instance().output(); }
 bool Platform::is_pi_platform()    { return instance().is_pi_platform; }

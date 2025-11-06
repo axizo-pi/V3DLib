@@ -14,6 +14,7 @@ public:
   static bool run_vc4();
   static void compiling_for_vc4(bool val);
   static bool compiling_for_vc4();
+  static bool compiling_for_vc7();
   static void use_main_memory(bool val);
   static bool use_main_memory();
   static int  size_regfile();

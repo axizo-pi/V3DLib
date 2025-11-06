@@ -21,8 +21,8 @@ namespace {
 
 int fd = 0;
 
-bool got_devinfo = false;
-struct v3d_device_info s_devinfo;
+bool did_devinfo = false;
+struct v3d_device_info s_devinfo = { .ver = 0 /* 0 signals no v3d */ };
 
 typedef struct {
     uint32_t size   = 0;
@@ -285,7 +285,8 @@ int drmIoctl(int fd, unsigned long request, void *arg)
  */
 bool _v3d_device_info() {
 	//printf("Called _v3d_device_info\n");
-	if (got_devinfo) return true;  // Don't bother getting if got already
+	if (did_devinfo) return true;  // run this exactly one
+	did_devinfo = true;
 
 	bool fd_is_open = (fd != 0);
 
@@ -308,7 +309,9 @@ bool _v3d_device_info() {
 		}
 	}
 
-	got_devinfo = ret;
+	if (!ret) {
+		warning("Could not get device_info");
+	}
 
 	return ret;
 }
@@ -403,6 +406,18 @@ struct v3d_device_info const *devinfo() {
 	return &s_devinfo;
 }
 
+}
+
+
+bool v3d_device_vc7() {
+	_v3d_device_info();
+
+	// Paranoia - notify unknown version
+  if (s_devinfo.ver != 0 || s_devinfo.ver != 42 || s_devinfo.ver != 71) {
+		warning("Unexpected device_info version");
+	}
+
+	return (s_devinfo.ver == 71);
 }
 
 
