@@ -66,6 +66,7 @@ public:
   v3d_qpu_mux to_mux() const override;
 
   bool operator==(Location const &rhs) const override;
+	std::string const &name() const { return m_name; }
 
 private:
   std::string   m_name;

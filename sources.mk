@@ -1,7 +1,7 @@
 #
 # This file is generated!  Editing it directly is a bad idea.
 #
-# Generated on: Wed Nov  5 02:39:12 PM CET 2025
+# Generated on: Fri Nov  7 08:38:49 AM CET 2025
 #
 ###############################################################################
 
@@ -89,6 +89,7 @@ OBJ := \
   v3d/instr/RFAddress.o  \
   v3d/instr/Register.o  \
   v3d/instr/Instr.o  \
+  v3d/instr/Location.o  \
   v3d/instr/SmallImm.o  \
   v3d/instr/Snippets.o  \
   v3d/instr/Encode.o  \

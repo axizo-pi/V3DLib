@@ -7,7 +7,7 @@
 #include <time.h>   // strftime()
 
 
-namespace log {
+namespace Log {
 
 Logger::Level log_level = Logger::DDEBUG;
 
@@ -113,4 +113,4 @@ Logger cerr(Logger::ERROR);    // same as error
 Logger error(Logger::ERROR);
 Logger fatal(Logger::FATAL);
 
-} // namespace log
+} // namespace Log

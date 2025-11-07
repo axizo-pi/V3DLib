@@ -2,7 +2,7 @@
 #define BASIC_LOG_H
 #include <sstream>
 
-namespace log {
+namespace Log {
 
 class Logger;
 
@@ -71,6 +71,6 @@ extern Logger cerr;  // same as error
 extern Logger error;
 extern Logger fatal;
 
-} // namespace log
+} // namespace Log
 
 #endif // BASIC_LOG_H

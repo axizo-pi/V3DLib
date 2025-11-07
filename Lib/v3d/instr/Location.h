@@ -18,6 +18,8 @@ public:
   virtual v3d_qpu_mux to_mux() const = 0;
   virtual bool operator==(Location const &rhs) const = 0;
 
+	static bool check_acc_usage(Location const &loc);
+
 protected:
   v3d_qpu_output_pack m_output_pack   = V3D_QPU_PACK_NONE;
   v3d_qpu_input_unpack m_input_unpack = V3D_QPU_UNPACK_NONE;

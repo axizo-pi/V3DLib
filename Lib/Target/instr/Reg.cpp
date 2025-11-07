@@ -183,6 +183,36 @@ std::string Reg::dump() const {
 }
 
 
+/**
+ * ACC0 is often used as a temp register for vc4 and vc6.
+ *
+ * This does not work any more for vc7, which does not have 
+ * general purpose accumulators
+ *
+ * This routine replaces ACC0 with an rf register for vc7.
+ */
+Reg Reg::get_acc_tmp() {
+  using namespace V3DLib::Target::instr;
+
+	{
+		// Check if VarGen is not reset before coming here
+		std::string buf = "VarGen count: ";
+		buf << V3DLib::VarGen::count();
+		debug(buf);
+	}
+	assert(V3DLib::VarGen::count() != 0);;
+
+	Reg dst;
+ 	if (Platform::compiling_for_vc7()) {
+	 	dst =	Reg(V3DLib::VarGen::fresh());
+	} else {
+		dst = ACC0;
+	}
+
+	return dst;
+}
+
+
 // TODO Move this away, to DMA
 bool is_dma_only_register(Reg const &reg) {
   if (reg.tag != SPECIAL) return false;

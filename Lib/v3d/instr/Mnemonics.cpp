@@ -41,6 +41,10 @@ Mnemonic::Mnemonic(v3d_qpu_add_op op, Location const &dst, Source const &a, Sour
   init(NOP());
   alu_add_set(dst, a, b);
   alu.add.op = op;
+
+	Location::check_acc_usage(dst);
+	if (a.is_location()) Location::check_acc_usage(a.location());
+	if (b.is_location()) Location::check_acc_usage(b.location());
 }
 
 

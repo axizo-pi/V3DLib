@@ -75,6 +75,7 @@ struct Reg {
   RegTag regfile() const; 
 
   std::string dump() const;
+	static Reg get_acc_tmp();
 };
 
 

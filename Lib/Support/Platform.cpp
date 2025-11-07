@@ -334,11 +334,14 @@ bool Platform::run_vc4()           { return instance().run_vc4(); }
  * concept can actually be convoluted as f*** underwater.
  */
 int Platform::size_regfile() {
-  if (compiling_for_vc4()) {
-    return 32;
-  } else {
-    return 64;  // Also for 7x
-  }
+  if (compiling_for_vc4()) return 32;
+
+	// For vc7, the top two elements in the regfile are reserved for
+	// replacements for r0 (ACC0) and r1 (ACC1).
+	// As stated repeatedly, there are no general purpose acc's in vc7.
+  if (compiling_for_vc7()) return 62;
+
+	return 64;  // vc6
 }
 
 

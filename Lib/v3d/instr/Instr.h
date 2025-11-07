@@ -119,6 +119,8 @@ public:
 
 private:
   bool alu_add_set_b(Source const &src);
+  bool alu_mul_set_a(Source const &src);
+  bool alu_mul_set_b(Source const &src);
 
 #if USE_MESA == 1
   std::unique_ptr<Source> alu_src(v3d_qpu_mux src) const;

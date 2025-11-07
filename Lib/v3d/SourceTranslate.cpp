@@ -99,8 +99,11 @@ Instr label(Label in_label) {
 void add_init(Instr::List &code) {
   using namespace V3DLib::Target::instr;
 
+
   int insert_index = code.tag_index(INIT_BEGIN);
   assertq(insert_index >= 0, "Expecting init begin marker");
+
+	Reg dst = Reg::get_acc_tmp();
 
   Instr::List ret;
   Label endifLabel = freshLabel();
@@ -119,11 +122,11 @@ void add_init(Instr::List &code) {
   // threads, otherwise there would be gaps in the qpu id.
   //
   ret << mov(rf(RSV_QPU_ID), 0)           // not needed, already init'd to 0. Left here to counter future brainfarts
-      << sub(ACC0, rf(RSV_NUM_QPUS), 8).pushz()
+      << sub(dst, rf(RSV_NUM_QPUS), 8).pushz()
       << branch(endifLabel).allzc()       // nop()'s added downstream
-      << mov(ACC0, QPU_ID)
-      << shr(ACC0, ACC0, 2)
-      << band(rf(RSV_QPU_ID), ACC0, 15)
+      << mov(dst, QPU_ID)
+      << shr(dst, dst, 2)
+      << band(rf(RSV_QPU_ID), dst, 15)
       << label(endifLabel)
 
       << add_uniform_pointer_offset(code);

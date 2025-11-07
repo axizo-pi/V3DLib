@@ -9,7 +9,7 @@
 #include "Support/basics.h"
 #include "Mnemonics.h"
 #include "OpItems.h"
-
+#include "Support/Platform.h"
 
 
 namespace V3DLib {
@@ -699,74 +699,114 @@ bool Instr::raddr_b_is_safe(Location const &loc, CheckSrc check_src) const {
 }
 
 
+/**
+ * Following for vc4 and vc6
+ */
 #if USE_MESA == 1
 bool Instr::alu_set_src(Source const &src, v3d_qpu_mux &mux, CheckSrc check_src) {
+	fatal("alu_set_src(): Not supporting mesa1 any more");
+	return false;
+}
 
-	#define get_small_imm_b sig.small_imm
-	#define set_small_imm_b(val) sig.small_imm  = val
 #else
+
 bool Instr::alu_set_src(Source const &src, v3d_qpu_input &input, CheckSrc check_src) {
+	assert(!Platform::compiling_for_vc7());
 
-	auto &mux = input.mux;
-	#define get_small_imm_b sig.small_imm_b
-	#define set_small_imm_b(val) sig.small_imm_b  = val
-#endif
-  if (src.is_location()) {
-    Location const &loc = src.location();
+	if (Platform::compiling_for_vc7()) {
+		// TODO: get rid of this, should never be called
 
-    if (loc.is_acc()) {
-      mux = loc.to_mux();
-    } else if (raddr_a_is_safe(loc, check_src)) {
-      raddr_a = loc.to_waddr(); 
-      mux = V3D_QPU_MUX_A;
-    } else if (raddr_b_is_safe(loc, check_src)) {
-      raddr_b = loc.to_waddr(); 
-      mux = V3D_QPU_MUX_B;
-    } else {
-			//warning("alu_set_src: raddr_a and raddr_b both in use");
-      return false;
-    }
+	  if (src.is_location()) {
+	    Location const &loc = src.location();
 
-  } else {
-		if (devinfo_ver() == 71) {
-			warning("small_int on b should not be used for vc7");
+	    if (raddr_a_is_safe(loc, check_src)) {
+	      raddr_a = loc.to_waddr(); 
+	    } else if (raddr_b_is_safe(loc, check_src)) {
+	      raddr_b = loc.to_waddr(); 
+	    } else {
+				warning("alu_set_src: raddr_a and raddr_b both in use");
+	      return false;
+	    }
+
+	  } else {
+	    // Handle small imm
+	    auto imm = src.small_imm();
+
+	    if (raddr_in_use(check_src, V3D_QPU_MUX_B)) {
+	      if (raddr_b != imm.to_raddr()) {
+					//warning("alu_set_src: imm not equal to raddr_b");
+					return false;
+				}
+	
+				// Test not necessary because small_imm_b is set below anyway
+				//assertq(sig.small_imm_b, "small_imm_b not set, expected.");
+	    }
+
+	    // All is well
+			sig.small_imm_b  = true;
+	    raddr_b          = imm.to_raddr(); 
 		}
+	} else {
+		// vc6
+		auto &mux = input.mux;
 
-    // Handle small imm
-    auto imm = src.small_imm();
+	  if (src.is_location()) {
+	    Location const &loc = src.location();
 
-    if (raddr_in_use(check_src, V3D_QPU_MUX_B)) {
-      if (raddr_b != imm.to_raddr()) {
-				//warning("alu_set_src: imm not equal to raddr_b");
-				return false;
-			}
+	    if (loc.is_acc()) {
+	      mux = loc.to_mux();
+	    } else if (raddr_a_is_safe(loc, check_src)) {
+	      raddr_a = loc.to_waddr(); 
+	      mux = V3D_QPU_MUX_A;
+	    } else if (raddr_b_is_safe(loc, check_src)) {
+	      raddr_b = loc.to_waddr(); 
+	      mux = V3D_QPU_MUX_B;
+	    } else {
+				//warning("alu_set_src: raddr_a and raddr_b both in use");
+	      return false;
+	    }
 
-			// Test not necessary because small_imm_b is set below anyway
-			//assertq(get_small_imm_b, "small_imm_b not set, expected.");
-    }
+	  } else {
+	    // Handle small imm
+	    auto imm = src.small_imm();
 
-    // All is well
-    set_small_imm_b(true); 
-    raddr_b     = imm.to_raddr(); 
-    mux         = V3D_QPU_MUX_B;
+	    if (raddr_in_use(check_src, V3D_QPU_MUX_B)) {
+	      if (raddr_b != imm.to_raddr()) {
+					//warning("alu_set_src: imm not equal to raddr_b");
+					return false;
+				}
+	
+				// Test not necessary because small_imm_b is set below anyway
+				//assertq(sig.small_imm_b, "small_imm_b not set, expected.");
+	    }
+
+	    // All is well
+			sig.small_imm_b  = true;
+	    raddr_b          = imm.to_raddr(); 
+	    mux              = V3D_QPU_MUX_B;
+		}
   }
 
   return true;
-
-	#undef get_small_imm_b
-	#undef set_small_imm_b
 }
+
+#endif
 
 
 bool Instr::alu_add_set_a(Source const &src) {
 
-  if ((devinfo_ver() < 71) || src.is_location()) {
+  if ((devinfo_ver() < 71)) {
   	if (!alu_set_src(src, alu.add.a, CHECK_ADD_A)) return false;
 	} else {
-		// Small Imm on a for vc7
-    auto imm = src.small_imm();
-    alu.add.a.raddr = imm.to_raddr(); 
-		sig.small_imm_a = 1;
+  	if (src.is_location()) {
+    	Location const &loc = src.location();
+      alu.add.a.raddr = loc.to_waddr(); 
+		} else {
+			// Small Imm on a for vc7
+	    auto imm = src.small_imm();
+	    alu.add.a.raddr = imm.to_raddr(); 
+			sig.small_imm_a = 1;
+		}
 	}
 
 #if USE_MESA == 1
@@ -779,22 +819,58 @@ bool Instr::alu_add_set_a(Source const &src) {
 }
 
 
-bool Instr::alu_add_set_b(Source const &src) {
+bool Instr::alu_mul_set_a(Source const &src) {
+	assert(Platform::compiling_for_vc7());
 
-  if ((devinfo_ver() < 71) || src.is_location()) {
-  	if (!alu_set_src(src, alu.add.b, CHECK_ADD_B)) return false;
+ 	if (src.is_location()) {
+   	Location const &loc = src.location();
+     alu.mul.a.raddr = loc.to_waddr(); 
 	} else {
 		// Small Imm on a for vc7
+    auto imm = src.small_imm();
+    alu.mul.a.raddr = imm.to_raddr(); 
+		sig.small_imm_a = 1;
+	}
+
+  alu.mul.a.unpack = src.input_unpack();
+
+  return true;  // Can't fail, never mind
+}
+
+
+bool Instr::alu_add_set_b(Source const &src) {
+	assert(Platform::compiling_for_vc7());
+
+ 	if (src.is_location()) {
+   	Location const &loc = src.location();
+     alu.add.b.raddr = loc.to_waddr(); 
+	} else {
+		// Small Imm on b for vc7
     auto imm = src.small_imm();
     alu.add.b.raddr = imm.to_raddr(); 
 		sig.small_imm_b = 1;
 	}
 
-#if USE_MESA == 1
-  alu.add.b_unpack = src.input_unpack();
-#else
   alu.add.b.unpack = src.input_unpack();
-#endif
+
+  return true;
+}
+
+
+bool Instr::alu_mul_set_b(Source const &src) {
+	assert(Platform::compiling_for_vc7());
+
+ 	if (src.is_location()) {
+   	Location const &loc = src.location();
+     alu.mul.b.raddr = loc.to_waddr(); 
+	} else {
+		// Small Imm on b for vc7
+    auto imm = src.small_imm();
+    alu.mul.b.raddr = imm.to_raddr(); 
+		sig.small_imm_b = 1;
+	}
+
+  alu.add.b.unpack = src.input_unpack();
 
   return true;
 }
@@ -829,14 +905,23 @@ bool Instr::alu_mul_set(Location const &dst, Source const &a, Source const &b) {
   alu.mul.waddr = dst.to_waddr();
   alu.mul.output_pack = dst.output_pack();
 
-  if (!(alu_set_src(a, alu.mul.a, CHECK_MUL_A) && alu_set_src(b, alu.mul.b, CHECK_MUL_B))) return false;
+	if (!Platform::compiling_for_vc7()) {
+  	if (!(alu_set_src(a, alu.mul.a, CHECK_MUL_A) && alu_set_src(b, alu.mul.b, CHECK_MUL_B))) return false;
 #if USE_MESA == 1
-  alu.mul.a_unpack = a.input_unpack();
-  alu.mul.b_unpack = b.input_unpack();
+  	alu.mul.a_unpack = a.input_unpack();
+  	alu.mul.b_unpack = b.input_unpack();
 #else
-  alu.mul.a.unpack = a.input_unpack();
-  alu.mul.b.unpack = b.input_unpack();
+  	alu.mul.a.unpack = a.input_unpack();
+  	alu.mul.b.unpack = b.input_unpack();
 #endif
+		return true;
+	}
+
+	bool ret = alu_mul_set_a(a);
+	assert(ret);
+
+	ret = alu_mul_set_b(b);
+	assert(ret);
   return true;
 }
 

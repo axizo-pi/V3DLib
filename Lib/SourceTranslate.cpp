@@ -45,11 +45,13 @@ Instr::List ISourceTranslate::load_var(Var &in_dst, Expr &e) {
 Instr::List add_uniform_pointer_offset(Instr::List &code) {
   using namespace V3DLib::Target::instr;
 
+	Reg dst = Reg::get_acc_tmp();
+
   Instr::List ret;
 
   // offset = 4 * vector_id;
-  ret << mov(ACC0, ELEM_ID).comment("Initialize uniform ptr offsets")
-      << shl(ACC0, ACC0, 2);            // offset now in ACC0
+  ret << mov(dst, ELEM_ID).comment("Initialize uniform ptr offsets")
+      << shl(dst, dst, 2);
 
   // add the offset to all the uniform pointers
   for (int index = 0; index < code.size(); ++index) {
@@ -58,7 +60,7 @@ Instr::List add_uniform_pointer_offset(Instr::List &code) {
     if (!instr.isUniformLoad()) break;  // Assumption: uniform loads always at top
 
     if (instr.isUniformPtrLoad()) {
-      ret << add(rf((uint8_t) index), rf((uint8_t) index), ACC0);
+      ret << add(rf((uint8_t) index), rf((uint8_t) index), dst);
     }
   }
 

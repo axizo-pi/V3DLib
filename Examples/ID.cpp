@@ -34,6 +34,7 @@ int main(int argc, const char *argv[]) {
   for (int i = 0; i < (int) result.size(); i++) { // Display the result
     printf("%3i: %2i, %2i\n", i, result[i], index_array[i]);
   }
-  
+
+	//k.dump_compile_data(false, "ID_dump.txt");
   return 0;
 }

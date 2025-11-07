@@ -31,6 +31,28 @@ std::vector<std::string> local_errors;
 
 
 /**
+ * For vc7, replace r0/r1 with rf63/62.
+ * These have been reserverd for this specific purpose during compile
+ * @see Platform::size_regfile()
+ */
+Location const &acc_proxy(int which_acc) {
+	static RFAddress rf63(63);
+	static RFAddress rf62(62);
+
+	assert(which_acc == 0 || which_acc == 1);
+
+	if (!Platform::compiling_for_vc7()) {
+		if (which_acc == 0) return r0;
+		return r1;
+	}
+
+	// vc7
+	if (which_acc == 0) return rf63;
+	return rf62;
+}
+
+
+/**
  * For v3d, the QPU and ELEM num are not special registers but instructions.
  *
  * In order to not disturb the code translation too much, they are derived from the target instructions:
@@ -358,8 +380,8 @@ bool convert_int_powers(Instructions &output, int in_value) {
   cmt << "Load immediate " << in_value;
 
   Instructions ret;
-  ret << mov(r0, imm).comment(cmt);
-  ret << shl(r0, r0, SmallImm(left_shift));
+  ret << mov(acc_proxy(0), imm).comment(cmt);
+  ret << shl(acc_proxy(0), acc_proxy(0), SmallImm(left_shift));
 
   output << ret;
   return true;
@@ -402,9 +424,9 @@ bool encode_int_immediate(Instructions &output, int in_value) {
       if (i > 0) {
         if (convert_int_powers(ret, 4*i)) {
           // r0 now contains value for left shift
-          ret << shl(r1, r1, r0);
+          ret << shl(acc_proxy(1), acc_proxy(1), acc_proxy(0));
         } else {
-          ret << shl(r1, r1, SmallImm(4*i));
+          ret << shl(acc_proxy(1), acc_proxy(1), SmallImm(4*i));
         }
       }
       did_first = true;
@@ -445,13 +467,12 @@ bool encode_int(Instructions &ret, std::unique_ptr<Location> &dst, int value) {
   int rep_value;
 
   if (SmallImm::int_to_opcode_value(value, rep_value)) {  // direct translation
-		debug("Here");
     SmallImm imm(rep_value);
     ret << mov(*dst, imm);
   } else if (convert_int_powers(ret, value)) {            // powers of 2 of basic small int's 
-    ret << mov(*dst, r0);
+    ret << mov(*dst, acc_proxy(0));
   } else if (encode_int_immediate(ret, value)) {          // Use full blunt conversion (heavy but always works)
-    ret << mov(*dst, r1);
+    ret << mov(*dst, acc_proxy(1));
   } else {
     success = false;                                      // Conversion failed
   }
@@ -851,12 +872,6 @@ bool can_combine(v3d::instr::Instr const &instr1, v3d::instr::Instr const &instr
   auto b2 = instr2.mul_nop()?instr2.alu.add.b:instr2.alu.mul.b;
 
 	bool small_imm_b = instr2.sig.small_imm == 1;
-#else
-  auto a2 = instr2.mul_nop()?instr2.alu.add.a.mux:instr2.alu.mul.a.mux;
-  auto b2 = instr2.mul_nop()?instr2.alu.add.b.mux:instr2.alu.mul.b.mux;
-
-	bool small_imm_b = instr2.sig.small_imm_b == 1;
-#endif
 
   bool is_rf1 = !magic_write1;
   if (is_rf1) {
@@ -869,6 +884,47 @@ bool can_combine(v3d::instr::Instr const &instr1, v3d::instr::Instr const &instr
     if (a2 < V3D_QPU_MUX_A && a2 == waddr1) return false;
     if (b2 < V3D_QPU_MUX_A && b2 == waddr1) return false;
   }
+#else
+	if (Platform::compiling_for_vc7()) {
+		// vc7 - no mux's, add/mul.a can also be small imm, raddr's in different location
+		debug("can_combine() - vc7");
+
+	  auto a2 = instr2.mul_nop()?instr2.alu.add.a:instr2.alu.mul.a;
+	  auto b2 = instr2.mul_nop()?instr2.alu.add.b:instr2.alu.mul.b;
+
+		bool small_imm_a = instr2.sig.small_imm_a == 1;
+		bool small_imm_b = instr2.sig.small_imm_b == 1;
+		assert(
+			(!small_imm_a && !small_imm_b) ||
+			(small_imm_a != small_imm_b)
+		);
+	
+	  if (magic_write1) {
+			return false;
+	  } else {
+	    if (!small_imm_a && a2.raddr == waddr1) return false;
+	    if (!small_imm_b && b2.raddr == waddr1) return false;
+	  }
+	} else {
+		// vc6 - same as mesa1 except for location mux's
+	  auto a2_mux = instr2.mul_nop()?instr2.alu.add.a.mux:instr2.alu.mul.a.mux;
+	  auto b2_mux = instr2.mul_nop()?instr2.alu.add.b.mux:instr2.alu.mul.b.mux;
+
+		bool small_imm_b = instr2.sig.small_imm_b == 1;
+	
+	  bool is_rf1 = !magic_write1;
+	  if (is_rf1) {
+	    if (a2_mux == V3D_QPU_MUX_A && instr2.raddr_a == waddr1) return false;
+	    if (b2_mux == V3D_QPU_MUX_A && instr2.raddr_a == waddr1) return false;
+
+	    if (a2_mux == V3D_QPU_MUX_B && !small_imm_b && instr2.raddr_b == waddr1) return false;
+	    if (b2_mux == V3D_QPU_MUX_B && !small_imm_b && instr2.raddr_b == waddr1) return false;
+	  } else {
+	    if (a2_mux < V3D_QPU_MUX_A && a2_mux == waddr1) return false;
+	    if (b2_mux < V3D_QPU_MUX_A && b2_mux == waddr1) return false;
+	  }
+	}
+#endif
 
   // mul/alu splits can always be combined
   if (instr1.mul_nop() && !instr2.mul_nop()) {
@@ -902,11 +958,13 @@ bool can_combine(v3d::instr::Instr const &instr1, v3d::instr::Instr const &instr
 bool convert_alu_op_to_mul_op(v3d_qpu_mul_op &mul_op, v3d::instr::Instr const &add_instr) {
   switch (add_instr.alu.add.op) {
     case V3D_QPU_A_OR:
+			if (
 #if USE_MESA == 1
-      if (add_instr.alu.add.a == add_instr.alu.add.b) {
+      add_instr.alu.add.a == add_instr.alu.add.b
 #else
-      if (add_instr.alu.add.a.mux == add_instr.alu.add.b.mux) {
+      add_instr.alu.add.a.mux == add_instr.alu.add.b.mux
 #endif
+			) {
         mul_op = V3D_QPU_M_MOV;
         return true;
       }

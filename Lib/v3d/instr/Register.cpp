@@ -2,7 +2,6 @@
 #include "Support/basics.h"  // Exception
 #include "RFAddress.h"
 
-
 namespace V3DLib {
 namespace v3d {
 namespace instr {
