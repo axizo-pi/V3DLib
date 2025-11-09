@@ -122,11 +122,7 @@ private:
   bool alu_mul_set_a(Source const &src);
   bool alu_mul_set_b(Source const &src);
 
-#if USE_MESA == 1
-  std::unique_ptr<Source> alu_src(v3d_qpu_mux src) const;
-#else
-  std::unique_ptr<Source> alu_src(v3d_qpu_input input) const;
-#endif
+  std::unique_ptr<Source> alu_src(v3d_qpu_mux src) const;  // < vc7
 
 public:
   // TODO see if following can be replaced by DestReg

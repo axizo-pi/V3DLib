@@ -1,5 +1,6 @@
 #include "Mnemonics.h"
 #include "Support/basics.h"
+#include "Support/Platform.h"
 
 namespace V3DLib {
 namespace v3d {
@@ -294,7 +295,7 @@ Mnemonic ftoi(Location const &dst, Location const &a) {
 
 
 Mnemonic mov(Location const &dst, Source const &a) {
-	if (devinfo_ver() < 71) {
+	if (!Platform::compiling_for_vc7()) {
 		return Mnemonic(V3D_QPU_A_OR, dst, a, a);
 	} else {
   	Mnemonic instr;

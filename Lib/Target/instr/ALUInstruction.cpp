@@ -18,7 +18,11 @@ bool ALUInstruction::oneOperand() const {
   if (!(srcB.is_reg() && srcB.reg().tag == NONE)) return false;
 
   // Pedantry: these should be the only operations with one operand
-  assert(op.value() == ALUOp::A_FSIN || op.value() == ALUOp::A_FFLOOR);
+  assert(
+		op.value() == ALUOp::A_FSIN   ||
+		op.value() == ALUOp::A_FFLOOR ||
+		op.value() == ALUOp::A_MOV // vc7 
+	);
   return true;
 }
 

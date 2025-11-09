@@ -31,24 +31,27 @@ std::vector<std::string> local_errors;
 
 
 /**
- * For vc7, replace r0/r1 with rf63/62.
+ * For vc7, replace r0/r1/r2 with rf63/62/61.
  * These have been reserverd for this specific purpose during compile
  * @see Platform::size_regfile()
  */
 Location const &acc_proxy(int which_acc) {
 	static RFAddress rf63(63);
 	static RFAddress rf62(62);
+	static RFAddress rf61(61);
 
-	assert(which_acc == 0 || which_acc == 1);
+	assert(which_acc == 0 || which_acc == 1 || which_acc == 2);
 
 	if (!Platform::compiling_for_vc7()) {
 		if (which_acc == 0) return r0;
-		return r1;
+		if (which_acc == 1) return r1;
+		return r2;
 	}
 
 	// vc7
 	if (which_acc == 0) return rf63;
-	return rf62;
+	if (which_acc == 1) return rf62;
+	return rf61;
 }
 
 
@@ -91,12 +94,17 @@ void checkSpecialIndex(V3DLib::Instr const &src_instr) {
     return;  // Nothing to do
   }
 
-  if (src_instr.ALU.op.value() != ALUOp::A_BOR) {
+  if (src_instr.ALU.op.value() != ALUOp::A_BOR && src_instr.ALU.op.value() != ALUOp::A_MOV) {  // A_MOV is vc7-specific
     // All other instructions disallowed
     fatal("For v3d, special registers QPU_NUM and ELEM_NUM can only be used in a move instruction");
     return;
   }
 
+	if (srca.is_none() || srcb.is_none()) {
+		return;
+	}
+
+	// Following probably outdated since None sources were introduced
   assertq((a_is_special && b_is_special), "src a and src b must both be special for QPU and ELEM nums");
   assertq(srca == srcb, "checkSpecialIndex(): src a and b must be the same if they are both special num's");
 }
@@ -186,6 +194,10 @@ bool translateOpcode(V3DLib::Instr const &src_instr, Instructions &ret) {
   case ALUOp::A_EIDX:
     assert(src_instr.ALU.noOperands());
     ret << eidx(*dst_reg);
+    break;
+  case ALUOp::A_MOV:
+    assert(src_instr.ALU.oneOperand());
+    ret << mov(*dst_reg, reg_a);
     break;
   default: {
     // Handle general case
@@ -1116,8 +1128,6 @@ void combine(Instructions &instructions) {
       for (int n = last + 1; n < (int) instructions.size(); n++) {
         auto &instr = instructions[n];
 
-        //breakpoint
-
         assert(!instr.skip());
         if (!instr.is_nop()) break;  // pure nop ldtmu only
         if (!instr.is_ldtmu()) break;
@@ -1162,8 +1172,6 @@ void combine(Instructions &instructions) {
           shift_to = m;
         }
 
-        //breakpoint
-
         if (shift_to != 0) {
           auto &instr2 = instructions[shift_to];
           instr2.sig.ldtmu = true;
@@ -1173,7 +1181,6 @@ void combine(Instructions &instructions) {
         }
       }
 
-      //breakpoint
       i += (last - first);
       continue;
     }

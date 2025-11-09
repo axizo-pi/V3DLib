@@ -62,7 +62,10 @@ public:
     A_EIDX,
     A_FFLOOR,
     A_FSIN,
-    A_TMUWT
+    A_TMUWT,
+
+		// vc7
+		A_MOV
   };
 
   ALUOp() = default;

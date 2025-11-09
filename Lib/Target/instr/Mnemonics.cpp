@@ -20,6 +20,20 @@ Instr genInstr(ALUOp::Enum op, Reg dst, RegOrImm const &srcA, RegOrImm const &sr
 }
 
 
+Instr genInstr(ALUOp::Enum op, Reg dst, RegOrImm const &src) {
+  dst.can_write(true);
+
+  Instr instr(ALU);
+  instr.ALU.op   = ALUOp(op);
+  instr.ALU.srcA = src;
+  instr.ALU.srcA.can_read(true);
+  instr.ALU.srcB = Target::instr::None;
+  instr.dest(dst);
+
+  return instr;
+}
+
+
 /**
  * SFU functions always write to ACC4
  * Also 2 NOP's required; TODO see this can be optimized
@@ -79,11 +93,22 @@ Reg rf(uint8_t index) {
 }
 
 
+Instr _mov(Reg dst, RegOrImm const &src) {
+	return genInstr(ALUOp::A_MOV, dst, src);
+}
+
+
 Instr mov(Reg dst, RegOrImm const &src) {
   dst.can_write(true);
 
-  if ((Platform::compiling_for_vc4() || Platform::compiling_for_vc7()) && src.is_imm()) {
+  if (src.is_imm()) {
     return li(dst, src.imm().val);
+	} else if (src.is_reg() && src.reg().tag == SPECIAL) {
+		// The logic for special reg's is under bor(), so we 
+		// need to redirect there
+    return bor(dst, src, src);
+	}	else if (Platform::compiling_for_vc7()) {
+    return _mov(dst, src);
   } else {
     return bor(dst, src, src);
   }

@@ -34,6 +34,7 @@ struct RegOrImm {
 
   bool is_reg() const { return m_is_reg;  }
   bool is_imm() const { return !m_is_reg; }
+	bool is_none() const { return is_reg() && m_reg.is_none(); } 
   bool can_read(bool check = false) const;
   std::string disp() const;
 

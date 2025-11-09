@@ -343,15 +343,24 @@ bool Instr::isUniformLoad() const {
 
   Reg const UNIFORM_READ( SPECIAL, SPECIAL_UNIFORM);  // From Mnemonics
 
+	// NOTE: instructions with no src fields exist, eg. tmuwt
+
+  if (ALU.srcA.is_none()) {
+	  assertq(ALU.srcB.is_none(), "srcB not expected to be None if srcA is None");
+		return false;
+	}
+
+  if (ALU.srcB.is_none()) {
+		// Don't bother comparing A and B
+		return (ALU.srcA == UNIFORM_READ);
+	}
+
   if (ALU.srcA != UNIFORM_READ) {
     assertq(ALU.srcB != UNIFORM_READ, "Both srcA and srcB should both be UNIFORM_READ or not");  // Sanity check
     return false;
   }
 
-  // Sanity checks
   assertq(ALU.srcB == UNIFORM_READ, "Both srcA and srcB should be UNIFORM_READ");
-  assertq(ALU.op == ALUOp::A_BOR, "Expcting uniform read only in combination with move");  // This is how we use it, 
-                                                                                           // may be overly strict.
   return true;
 }
 

@@ -59,7 +59,9 @@ std::vector<op_item> op_items = {
   { ALUOp::A_EIDX,   V3D_QPU_A_EIDX   },
   { ALUOp::A_FFLOOR, V3D_QPU_A_FFLOOR },
   { ALUOp::A_FSIN,   V3D_QPU_A_SIN    },                   // NOTE: Extra NOP's and read in generation
-  { ALUOp::A_TMUWT,  V3D_QPU_A_TMUWT  }                    // NOTE: Extra NOP's and read in generation
+  { ALUOp::A_TMUWT,  V3D_QPU_A_TMUWT  },                   // NOTE: Extra NOP's and read in generation
+	// VC7
+  { ALUOp::A_MOV,    V3D_QPU_A_MOV    }
 };
 
 
@@ -140,14 +142,6 @@ bool OpItems::uses_add_alu(V3DLib::Instr const &instr) {
   assert(item != nullptr);
 
   if (!item->has_add_op) return false;
-/*
-  if (item->has_mul_op) {
-    std::string msg;
-    msg << "uses_add_alu(): target lang alu op '" << op << "' also has mul translation.";
-    warning(msg);
-  }
-*/
-
   return true;
 }
 
@@ -159,15 +153,6 @@ bool OpItems::uses_mul_alu(V3DLib::Instr const &instr) {
   assert(item != nullptr);
 
   if (!item->has_mul_op) return false;
-
-/*
-  if (item->has_add_op) {
-    std::string msg;
-    msg << "uses_mul_alu(): target lang alu op '" << op << "' also has add translation.";
-    warning(msg);
-  }
-*/
-
   return true;
 }
 

@@ -1,6 +1,7 @@
 #include "Encode.h"
 #include "Support/Exception.h"
 #include "Mnemonics.h"
+#include "Support/Platform.h"
 
 namespace V3DLib {
 namespace v3d {
@@ -59,6 +60,9 @@ uint8_t to_waddr(Reg const &reg) {
 
 
 void check_unhandled_registers(Reg reg, bool do_src_regs) {
+	if (reg.is_none()) return; // Don't bother checking
+
+
   if (do_src_regs) {
     switch (reg.tag) {
       case REG_B:
@@ -74,7 +78,8 @@ void check_unhandled_registers(Reg reg, bool do_src_regs) {
         case SPECIAL_UNIFORM:
         case SPECIAL_ELEM_NUM:
         case SPECIAL_QPU_NUM:
-          assertq(false, "check_unhandled_registers(): Not expecting this SPECIAL regId, should be handled before call()", true);
+					// These can occur for vc7
+          assertq(Platform::compiling_for_vc7(), "check_unhandled_registers(): Not expecting this SPECIAL regId, should be handled before call()", true);
         break;
 
         default: break;
@@ -126,6 +131,7 @@ std::unique_ptr<Location> encodeSrcReg(Reg reg) {
       break;
 
     default:
+			breakpoint;
       assertq(false, "V3DLib: unexpected reg-tag in encodeSrcReg()");
   }
 
@@ -201,7 +207,7 @@ std::unique_ptr<Location> encodeDestReg(V3DLib::Instr const &src_instr) {
       // srcA and srcB are the same rf-register
       if (srcA.is_reg()
       && (srcA.reg().tag == REG_A || srcA.reg().tag == REG_B)
-      && (srcA == src_instr.ALU.srcB)
+      && (srcA == src_instr.ALU.srcB || src_instr.ALU.srcB.is_none())  // 2nd item for vc7
       ) {
         ret = encodeSrcReg(srcA.reg());
       } else {

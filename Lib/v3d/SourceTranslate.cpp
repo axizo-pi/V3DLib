@@ -23,6 +23,7 @@ Instr::List SourceTranslate::store_var(Var dst_addr, Var src) {
   Reg srcData(dst_addr);
   Reg srcAddr(src);
 
+	// NOTE: these are instructions from Target, not v3d/instr
   ret << mov(TMUD, srcAddr)
       << mov(TMUA, srcData)
       << tmuwt();

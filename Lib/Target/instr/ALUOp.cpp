@@ -60,6 +60,8 @@ std::string ALUOp::pretty() const {
     case A_FFLOOR:  return "ffloor";
     case A_FSIN:    return "sin";
     case A_TMUWT:   return "tmuwt";
+		// vc7
+    case A_MOV:     return "mov";
     default:
       assertq(false, "pretty(): Unknown ALU opcode", true);
       return "";

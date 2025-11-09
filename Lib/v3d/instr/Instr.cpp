@@ -824,7 +824,7 @@ bool Instr::alu_mul_set_a(Source const &src) {
 
  	if (src.is_location()) {
    	Location const &loc = src.location();
-     alu.mul.a.raddr = loc.to_waddr(); 
+    alu.mul.a.raddr = loc.to_waddr(); 
 	} else {
 		// Small Imm on a for vc7
     auto imm = src.small_imm();
@@ -905,8 +905,19 @@ bool Instr::alu_mul_set(Location const &dst, Source const &a, Source const &b) {
   alu.mul.waddr = dst.to_waddr();
   alu.mul.output_pack = dst.output_pack();
 
-	if (!Platform::compiling_for_vc7()) {
-  	if (!(alu_set_src(a, alu.mul.a, CHECK_MUL_A) && alu_set_src(b, alu.mul.b, CHECK_MUL_B))) return false;
+	bool ret;
+
+	if (Platform::compiling_for_vc7()) {
+		ret = alu_mul_set_a(a);
+		assert(ret);
+	
+		ret = alu_mul_set_b(b);
+		assert(ret);
+	} else {
+  	ret = alu_set_src(a, alu.mul.a, CHECK_MUL_A) && alu_set_src(b, alu.mul.b, CHECK_MUL_B);
+	}
+
+	if (ret) {
 #if USE_MESA == 1
   	alu.mul.a_unpack = a.input_unpack();
   	alu.mul.b_unpack = b.input_unpack();
@@ -914,15 +925,9 @@ bool Instr::alu_mul_set(Location const &dst, Source const &a, Source const &b) {
   	alu.mul.a.unpack = a.input_unpack();
   	alu.mul.b.unpack = b.input_unpack();
 #endif
-		return true;
 	}
 
-	bool ret = alu_mul_set_a(a);
-	assert(ret);
-
-	ret = alu_mul_set_b(b);
-	assert(ret);
-  return true;
+	return ret;
 }
 
 
@@ -981,6 +986,7 @@ bool Instr::alu_mul_set(V3DLib::Instr const &src_instr) {
   }
 
   if (!V3DLib::v3d::instr::OpItems::get_mul_op(alu, mul_op)) {
+		warning("alu_mul_set(): Can't convert mul op");
     return false;  // Can't convert
   }
 
@@ -1070,36 +1076,117 @@ std::unique_ptr<Location> Instr::mul_alu_dst() const {
     res.reset(new RFAddress(alu.mul.waddr));
   }
 
-  assert(res);
-  return res;
+  assert(res);  return res;
 }
 
 
-std::unique_ptr<Source> Instr::add_alu_a() const { return alu_src(alu.add.a); }
-std::unique_ptr<Source> Instr::add_alu_b() const { return alu_src(alu.add.b); }
-std::unique_ptr<Source> Instr::mul_alu_a() const { return alu_src(alu.mul.a); }
-std::unique_ptr<Source> Instr::mul_alu_b() const { return alu_src(alu.mul.b); }
-
+std::unique_ptr<Source> Instr::add_alu_a() const {
+	auto const &src = alu.add.a;
 
 #if USE_MESA == 1
-std::unique_ptr<Source> Instr::alu_src(v3d_qpu_mux src) const {
+	return alu_src(src);
 #else
-std::unique_ptr<Source> Instr::alu_src(v3d_qpu_input input) const {
-	auto &src = input.mux;
+  std::unique_ptr<Source> res;
+
+  if (sig.small_imm_a) { // add a, small imm
+    res.reset(new Source(SmallImm((int) src.raddr, false)));
+  } else {               // add a, rf
+    res.reset(new Source(RFAddress(src.raddr)));
+  }
+
+  assert(res);
+  return res;
 #endif
+}
+
+
+std::unique_ptr<Source> Instr::add_alu_b() const {
+	auto const &src = alu.add.b;
+
+#if USE_MESA == 1
+	return alu_src(src);
+#else
+  std::unique_ptr<Source> res;
+
+  if (sig.small_imm_b) { // add b, small imm
+    res.reset(new Source(SmallImm((int) src.raddr, false)));
+  } else {               // add b, rf
+    res.reset(new Source(RFAddress(src.raddr)));
+  }
+
+  assert(res);
+  return res;
+#endif
+}
+
+
+std::unique_ptr<Source> Instr::mul_alu_a() const {
+	auto const &src = alu.mul.a;
+
+#if USE_MESA == 1
+	return alu_src(src);
+#else
+  std::unique_ptr<Source> res;
+
+  if (sig.small_imm_c) { // mul a, small imm
+    res.reset(new Source(SmallImm((int) src.raddr, false)));
+  } else {               // mul a, rf
+    res.reset(new Source(RFAddress(src.raddr)));
+  }
+
+  assert(res);
+  return res;
+#endif
+}
+
+
+std::unique_ptr<Source> Instr::mul_alu_b() const {
+	auto const &src = alu.mul.b;
+
+#if USE_MESA == 1
+	return alu_src(src);
+#else
+  std::unique_ptr<Source> res;
+
+  if (sig.small_imm_d) { // mul b, small imm
+    res.reset(new Source(SmallImm((int) src.raddr, false)));
+  } else {               // mul b, rf
+    res.reset(new Source(RFAddress(src.raddr)));
+  }
+
+  assert(res);
+  return res;
+#endif
+}
+
+
+std::unique_ptr<Source> Instr::alu_src(v3d_qpu_mux src) const {
+	assert(!Platform::compiling_for_vc7());
   std::unique_ptr<Source> res;
 
   if (src < V3D_QPU_MUX_A) {
     // Accumulator
     res.reset(new Source(Register("", (v3d_qpu_waddr) src, src)));
-  } else if (src == V3D_QPU_MUX_A) {
-    // address a, rf-reg
+  } else if (src == V3D_QPU_MUX_A) { // address a, rf-reg
     res.reset(new Source(RFAddress(raddr_a)));
-#if USE_MESA == 1
-  } else if (sig.small_imm) {
-#else
-  } else if (sig.small_imm_b) {
-#endif
+  } else if (sig.small_imm_b) {      // address b, small imm
+    res.reset(new Source(SmallImm((int) raddr_b, false)));
+  } else {
+    // address b, rf-reg
+    res.reset(new Source(RFAddress(raddr_b)));
+  }
+
+  assert(res);
+  return res;
+}
+
+#if 0
+
+// mesa2
+std::unique_ptr<Source> Instr::alu_src(v3d_qpu_input input) const {
+  std::unique_ptr<Source> res;
+
+  if (sig.small_imm_b) {
     // address b, small imm
     res.reset(new Source(SmallImm((int) raddr_b, false)));
   } else {
@@ -1110,6 +1197,8 @@ std::unique_ptr<Source> Instr::alu_src(v3d_qpu_input input) const {
   assert(res);
   return res;
 }
+
+#endif
 
 }  // namespace instr
 

@@ -127,6 +127,11 @@ RegTag Reg::regfile() const {
 }
 
 
+bool Reg::is_none() const {
+	return *this == Target::instr::None;
+}
+
+
 bool Reg::can_read(bool check) const {
   bool ret = true;
 
