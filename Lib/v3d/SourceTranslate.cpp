@@ -100,37 +100,46 @@ Instr label(Label in_label) {
 void add_init(Instr::List &code) {
   using namespace V3DLib::Target::instr;
 
-
   int insert_index = code.tag_index(INIT_BEGIN);
   assertq(insert_index >= 0, "Expecting init begin marker");
 
 	Reg dst = Reg::get_acc_tmp();
 
   Instr::List ret;
-  Label endifLabel = freshLabel();
 
-  // Determine the qpu index for 'current' QPU
-  // This is derived from the thread index. 
-  //
-  // Broadly:
-  //
-  // If (numQPUs() == 8)  // Alternative is 1, then qpu num initalized to 0 is ok
-  //   me() = (thread_index() >> 2) & 0b1111;
-  // End
-  //
-  // This works because the thread indexes are consecutive for multiple reserved
-  // threads. It's probably also the reason why you can select only 1 or 8 (max)
-  // threads, otherwise there would be gaps in the qpu id.
-  //
-  ret << mov(rf(RSV_QPU_ID), 0)           // not needed, already init'd to 0. Left here to counter future brainfarts
-      << sub(dst, rf(RSV_NUM_QPUS), 8).pushz()
-      << branch(endifLabel).allzc()       // nop()'s added downstream
-      << mov(dst, QPU_ID)
-      << shr(dst, dst, 2)
-      << band(rf(RSV_QPU_ID), dst, 15)
-      << label(endifLabel)
+	if (Platform::compiling_for_vc7()) {
+		// vc7: No restriction on #QPU's 1 or 8
+	  ret << mov(dst, QPU_ID)
+	      << shr(dst, dst, 2)
+	      << band(rf(RSV_QPU_ID), dst, 15)
+		;
+	} else {
+	  // vc6: Determine the qpu index for 'current' QPU
+	  // This is derived from the thread index. 
+	  //
+	  // Broadly:
+	  //
+	  // If (numQPUs() == 8)  // Alternative is 1, then qpu num initalized to 0 is ok
+	  //   me() = (thread_index() >> 2) & 0b1111;
+	  // End
+	  //
+	  // This works because the thread indexes are consecutive for multiple reserved
+	  // threads. It's probably also the reason why you can select only 1 or 8 (max)
+	  // threads, otherwise there would be gaps in the qpu id.
+	  //
+  	Label endifLabel = freshLabel();
 
-      << add_uniform_pointer_offset(code);
+	  ret << mov(rf(RSV_QPU_ID), 0)           // not needed, already init'd to 0. Left here to counter future brainfarts
+	      << sub(dst, rf(RSV_NUM_QPUS), 8).pushz()
+	      << branch(endifLabel).allzc()       // nop()'s added downstream
+	      << mov(dst, QPU_ID)
+	      << shr(dst, dst, 2)
+	      << band(rf(RSV_QPU_ID), dst, 15)
+	      << label(endifLabel)
+		;
+	}
+
+  ret << add_uniform_pointer_offset(code);
 
   code.insert(insert_index + 1, ret);  // Insert init code after the INIT_BEGIN marker
 }

@@ -15,18 +15,18 @@ void id_kernel(Int::Ptr p, Int::Ptr q) {
 
 
 int main(int argc, const char *argv[]) {
-
-  int numQPUs = 8;                                // Max number of QPUs for v3d
+  int numQPUs = 8;                                // Max number of QPUs for vc6, can be increased for vc4 and vc7
 
   settings.init(argc, argv);
 
   auto k = compile(id_kernel, settings);          // Construct kernel
   k.setNumQPUs(numQPUs);
 
-  Int::Array result(16*numQPUs);                  // Allocate and initialise array shared between ARM and GPU
+ 	// Allocate and initialise array shared between ARM and GPU
+  Int::Array result(16*numQPUs);                  // QPU index
   result.fill(-1);
 
-  Int::Array index_array(16*numQPUs);
+  Int::Array index_array(16*numQPUs);             // register (vector) index
   index_array.fill(2);
 
   k.load(&result, &index_array).run();            // Load the uniforms and invoke the kernel

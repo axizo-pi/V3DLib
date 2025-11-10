@@ -196,6 +196,7 @@ bool translateOpcode(V3DLib::Instr const &src_instr, Instructions &ret) {
     ret << eidx(*dst_reg);
     break;
   case ALUOp::A_MOV:
+		//breakpoint;
     assert(src_instr.ALU.oneOperand());
     ret << mov(*dst_reg, reg_a);
     break;
@@ -1411,9 +1412,19 @@ void KernelDriver::allocate() {
 
 
 void KernelDriver::invoke_intern(int numQPUs, IntList &params) {
-  if (numQPUs != 1 && numQPUs != 8) {
-    error("Num QPU's must be 1 or 8", true);
-  }
+	if (numQPUs <= 0) {
+	    error("Zero or negative QPU's selected", true);
+	}
+
+	if (Platform::compiling_for_vc7()) {
+	  if (numQPUs > 16) {
+	    error("Num QPU's exceeded; Max QPU's is 16 for vc7", true);
+		}
+	} else {
+	  if (numQPUs != 1 && numQPUs != 8) {
+	    error("Num QPU's must be 1 or 8 for vc6", true);
+	  }
+	}
 
   assertq(!has_errors(), "v3d kernels has errors, can not invoke");
 

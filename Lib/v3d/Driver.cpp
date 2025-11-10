@@ -49,6 +49,8 @@ namespace v3d {
 /**
  * Execute a kernel on v3d hardware
  *
+ * @param thread number of baatches to run
+ *
  * @return true if execution went well and no timeout,
  *         false otherwise
  *
@@ -76,6 +78,10 @@ bool Driver::execute(Code &code, Data *uniforms, uint32_t thread) {
   WorkGroup workgroup;
   uint32_t wgs_per_sg = 16;
 
+	if (!Platform::compiling_for_vc7()) {
+		thread--;   // For some reason, this is required for vc6
+	}
+
   st_v3d_submit_csd st = {
     {
       workgroup.wg_x << 16,
@@ -86,7 +92,7 @@ bool Driver::execute(Code &code, Data *uniforms, uint32_t thread) {
         (wgs_per_sg << 8) |
         (workgroup.wg_size() & 0xff)
       ),
-      thread - 1,           // Number of batches minus 1
+      thread,
       code_phyaddr,         // Shader address, pnan, singleseg, threading
       unif_phyaddr
     },

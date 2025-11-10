@@ -13,8 +13,10 @@ void set_muxes_add(v3d_qpu_alu_instr &alu, v3d_qpu_mux mux_a, v3d_qpu_mux mux_b)
   alu.add.a     = mux_a;
   alu.add.b     = mux_b;
 #else
-  alu.add.a.mux = mux_a;
-  alu.add.b.mux = mux_b;
+	if (!Platform::compiling_for_vc7()) {  // No mux's on vc7
+	  alu.add.a.mux = mux_a;
+	  alu.add.b.mux = mux_b;
+	}
 #endif
 }
 
@@ -24,8 +26,10 @@ void set_muxes_mul(v3d_qpu_alu_instr &alu, v3d_qpu_mux mux_a, v3d_qpu_mux mux_b)
   alu.mul.a     = mux_a;
   alu.mul.b     = mux_b;
 #else
-  alu.mul.a.mux = mux_a;
-  alu.mul.b.mux = mux_b;
+	if (!Platform::compiling_for_vc7()) {  // No mux's on vc7
+	  alu.mul.a.mux = mux_a;
+	  alu.mul.b.mux = mux_b;
+	}
 #endif
 }
 
