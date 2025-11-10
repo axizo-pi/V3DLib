@@ -1,5 +1,6 @@
 #include "Register.h"
 #include "Support/basics.h"  // Exception
+#include "Support/Platform.h"  // Exception
 #include "RFAddress.h"
 
 namespace V3DLib {
@@ -24,6 +25,8 @@ Register::Register(const char *name, v3d_qpu_waddr waddr_val, v3d_qpu_mux mux_va
 
 
 v3d_qpu_mux Register::to_mux() const {
+	assertq(Platform::compiling_for_vc7(), "Don't use mux's on vc7");
+
   if (!m_mux_is_set) {
     std::string buf;
     buf += "Can't use mux value for register '" + m_name + "', it is not defined";

@@ -178,6 +178,7 @@ public:
   bool m_compiling_for_vc4 = true;
 
   bool run_vc4() const { return vc_type == vc4; }
+  bool run_vc7() const { return vc_type == vc7; }
   int size_regfile() const;
   std::string output() const;
 	int max_qpus() const;
@@ -312,6 +313,7 @@ bool Platform::use_main_memory()   { return instance().m_use_main_memory; }
 std::string Platform::platform_info() { return instance().output(); }
 bool Platform::is_pi_platform()    { return instance().is_pi_platform; }
 bool Platform::run_vc4()           { return instance().run_vc4(); }
+bool Platform::run_vc7()           { return instance().run_vc7(); }
 
 
 /**

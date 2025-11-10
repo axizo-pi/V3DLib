@@ -900,7 +900,7 @@ bool can_combine(v3d::instr::Instr const &instr1, v3d::instr::Instr const &instr
 #else
 	if (Platform::compiling_for_vc7()) {
 		// vc7 - no mux's, add/mul.a can also be small imm, raddr's in different location
-		debug("can_combine() - vc7");
+		//debug("can_combine() - vc7");
 
 	  auto a2 = instr2.mul_nop()?instr2.alu.add.a:instr2.alu.mul.a;
 	  auto b2 = instr2.mul_nop()?instr2.alu.add.b:instr2.alu.mul.b;

@@ -1,12 +1,12 @@
 /**
  * Adjusted from: https://gist.github.com/notogawa/36d0cc9168ae3236902729f26064281d
  */
-
 #ifdef QPU_MODE
 
 #include "v3d.h"
 #include "Support/basics.h"
 #include "broadcom/common/v3d_device_info.h"
+#include "instr/v3d_api.h"
 #include <cassert>
 #include <sys/ioctl.h>
 #include <cstddef>    // NULL
@@ -89,35 +89,29 @@ void log_error(int ret, char const *prefix = "") {
   error(buf);
 }
 
+
 /*
-void log_offset(uint32_t offset) {
-  std::string msg = "create_bo.offset : ";
-  msg << offset
-      << "; multiple page size: ";
-
-  if (offset % sysconf(_SC_PAGE_SIZE) != 0) {
-    msg << "no";
-  } else {
-    msg << "yes";
-  }
-
-  debug(msg);
-}
-*/
-
+// Test done anyway for Pi5 (vc7), disabling for now till insight strikes
 
 void warn_offset(uint32_t offset) {
-  //log_offset(offset);
+	uint32_t page_size = (uint32_t) sysconf(_SC_PAGE_SIZE);
 
-  if (offset % sysconf(_SC_PAGE_SIZE) != 0) {
+	// This apparently can be called outside of compile, can't use V3DLib::Platform::compiling_for_vc7()
+	if (devinfo_ver() >= 71) {  // Doesn't work either
+		// Pagesize for Pi5 (vc7) is 16KB, but everything seems to work fine despite warning
+		page_size = 4*1024;
+	}
+
+  if (offset % page_size != 0) {
     std::string msg = "alloc_intern(): create_bo.offset ";
     msg << "(" << offset << ") "
         << "is not a multiple of pagesize "
-        << "(" << sysconf(_SC_PAGE_SIZE) << "); "
+        << "(" << page_size << "); "
         << "mmap() may fail";
     warning(msg);
   }
 }
+*/
 
 
 /**
@@ -179,7 +173,7 @@ bool alloc_intern(
   handle  = create_bo.handle;
   phyaddr = create_bo.offset;
 
-  warn_offset(create_bo.offset);
+  //warn_offset(create_bo.offset);
 
   drm_v3d_mmap_bo mmap_bo;
   mmap_bo.handle = create_bo.handle;

@@ -347,6 +347,10 @@ static const char *dump_mux(enum v3d_qpu_mux val) {
 static const char *dump_mux(struct v3d_qpu_input input) {
   enum v3d_qpu_mux val = input.mux;
 #endif
+	if (devinfo_ver() >= 71) {
+		return "<<No mux on vc7>>";
+	}
+
   char *ret = "<<UNKNOWN>>";
 
   switch (val) {

@@ -243,11 +243,14 @@ bool Settings::process() {
   if (m_use_num_qpus) {
     num_qpus    = p["Num QPU's"]->get_int_value();
 
-		debug("TODO Settings::process(): add num_qpu's for vc7.\n");
-
     if (run_type != 0 || Platform::run_vc4()) {
       if (num_qpus < 0 || num_qpus > 12) {
         printf("ERROR: For vc4 and emulator, the number of QPU's selected must be between 1 and 12 inclusive.\n");
+        return false;
+      }
+		}	else if (Platform::run_vc7()) {
+      if (num_qpus < 0 || num_qpus > 16) {
+        printf("ERROR: For vc4 and emulator, the number of QPU's selected must be between 1 and 16 inclusive.\n");
         return false;
       }
     } else {

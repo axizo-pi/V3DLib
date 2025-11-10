@@ -199,13 +199,15 @@ std::string Reg::dump() const {
 Reg Reg::get_acc_tmp() {
   using namespace V3DLib::Target::instr;
 
+	/*
 	{
 		// Check if VarGen is not reset before coming here
 		std::string buf = "VarGen count: ";
 		buf << V3DLib::VarGen::count();
 		debug(buf);
 	}
-	assert(V3DLib::VarGen::count() != 0);;
+	*/
+	assert(V3DLib::VarGen::count() != 0);
 
 	Reg dst;
  	if (Platform::compiling_for_vc7()) {
