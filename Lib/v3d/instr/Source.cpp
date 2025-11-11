@@ -6,6 +6,10 @@ namespace V3DLib {
 namespace v3d {
 namespace instr {
 
+/////////////////////////////////////////////////
+// Class Source
+/////////////////////////////////////////////////
+
 Source::Source(V3DLib::RegOrImm const &rhs) :
   m_is_location(rhs.is_reg()),
   m_location(rhs.is_reg()?encodeSrcReg(rhs.reg()):nullptr),
@@ -53,6 +57,11 @@ bool Source::operator==(Location const &rhs) const {
   assert(m_location);
   return *m_location == rhs;
 }
+
+
+/////////////////////////////////////////////////
+// Class BaseSource
+/////////////////////////////////////////////////
 
 
 

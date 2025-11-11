@@ -12,6 +12,7 @@
 #include "instr/Encode.h"
 #include "instr/Mnemonics.h"
 #include "instr/OpItems.h"
+#include "instr/BaseSource.h"
 
 namespace V3DLib {
 namespace v3d {
@@ -920,10 +921,14 @@ bool can_combine(v3d::instr::Instr const &instr1, v3d::instr::Instr const &instr
 	  }
 	} else {
 		// vc6 - same as mesa1 except for location mux's
-	  auto a2_mux = instr2.mul_nop()?instr2.alu.add.a.mux:instr2.alu.mul.a.mux;
-	  auto b2_mux = instr2.mul_nop()?instr2.alu.add.b.mux:instr2.alu.mul.b.mux;
 
 		bool small_imm_b = instr2.sig.small_imm_b == 1;
+
+		// Small imm can only be in add b
+		if (small_imm_b) return false;
+
+	  auto a2_mux = instr2.mul_nop()?instr2.alu.add.a.mux:instr2.alu.mul.a.mux;
+	  auto b2_mux = instr2.mul_nop()?instr2.alu.add.b.mux:instr2.alu.mul.b.mux;
 	
 	  bool is_rf1 = !magic_write1;
 	  if (is_rf1) {
@@ -998,9 +1003,24 @@ bool convert_alu_op_to_mul_op(v3d_qpu_mul_op &mul_op, v3d::instr::Instr const &a
 
 
 /**
- * Set the mul alu with the add alu part of in_instr
+ * Combine two instructions to an add/mul instruction.
+ *
+ * The in_instr must either be an add or mul instruction, not both.
+ * The dst must be and add instruction only.
+ *
+ * There are two options:
+ *   1. the add instruction in in_instr can be translated to a mul instruction
+ *   2. in_instr contains only a mul instruction which can be moved to dst
+ *
+ * There are pleny of limitations which are taken into account here.
+ *
+ * @param in_instr instruction that will be combined
+ * @param dst      instruct that will contain the add and mul instruction (inshalla)
+ *
+ * @return true if combine succeeded, false otherwise
  */
 bool add_alu_to_mul_alu(Instr const &in_instr, Instr &dst) {
+	// Perhaps TODO: change these assert's int 'if () return false'
   assert((!in_instr.add_nop() &&  in_instr.mul_nop()) 
       || ( in_instr.add_nop() && !in_instr.mul_nop())); 
   assert(dst.mul_nop()); 
@@ -1008,32 +1028,53 @@ bool add_alu_to_mul_alu(Instr const &in_instr, Instr &dst) {
   //
   // Get used dst and src
   //
-  std::unique_ptr<Location> dst_loc;
-  std::unique_ptr<Source> src_a;
-  std::unique_ptr<Source> src_b;
+  //std::unique_ptr<Location> dst_loc;
+	BaseSource alu_add_a = in_instr.alu_add_a();
+	BaseSource alu_add_b = in_instr.alu_add_b();
+	BaseSource alu_mul_a = in_instr.alu_mul_a();
+	BaseSource alu_mul_b = in_instr.alu_mul_b();
 
-  if (in_instr.mul_nop()) {
+
+	{
+		std::string msg;
+		msg << "\n"
+        << "  alu_add_a: " << alu_add_a.dump() << "\n"
+        << "  alu_add_b: " << alu_add_b.dump() << "\n"
+        << "  alu_mul_a: " << alu_mul_a.dump() << "\n"
+        << "  alu_mul_b: " << alu_mul_b.dump();
+    debug(msg);
+	}
+
+  if (in_instr.mul_nop()) {  // Take the values from alu add
     v3d_qpu_mul_op mul_op;
-    if (!convert_alu_op_to_mul_op(mul_op, in_instr)) return false;
-    dst.alu.mul.op = mul_op;
+    if (!convert_alu_op_to_mul_op(mul_op, in_instr)) return false;  // False if no applicable translation add -> mul
 
-    // Take values from add alu 
-    dst_loc = in_instr.add_alu_dst();
-    src_a   = in_instr.add_alu_a();
-    src_b   = in_instr.add_alu_b();
-  } else {
+		if (!dst.alu_mul_b_safe(alu_add_b)) return false;
+		if (!dst.alu_mul_a_safe(alu_add_a)) return false;
+
+  	dst.alu.mul.op = mul_op;
+		auto dst_loc = in_instr.add_alu_dst();
+  	dst.alu_mul_dst(*dst_loc);  // dst (waddr) is always safe
+  	dst.alu_mul_a(alu_add_a);
+  	dst.alu_mul_b(alu_add_b);
+  } else {                  // Take the values from alu mul
+		if (!dst.alu_mul_b_safe(alu_mul_b)) return false;
+		if (!dst.alu_mul_a_safe(alu_mul_a)) return false;
+
     dst.alu.mul.op = in_instr.alu.mul.op;
-
-    // Take values from mul alu 
-    dst_loc = in_instr.mul_alu_dst();
-    src_a   = in_instr.mul_alu_a();
-    src_b   = in_instr.mul_alu_b();
+		auto dst_loc = in_instr.mul_alu_dst();
+  	dst.alu_mul_dst(*dst_loc);
+  	dst.alu_mul_a(alu_mul_a);
+  	dst.alu_mul_b(alu_mul_b);
   }
-  assert(dst_loc.get() != nullptr);
-  assert(src_a.get()   != nullptr);
-  assert(src_b.get()   != nullptr);
 
-  if (!dst.alu_mul_set(*dst_loc, *src_a, *src_b)) return false;
+	{
+		std::string msg;
+    msg << "\n"
+        << "  dst : " << dst.mnemonic(false)
+		;
+    debug(msg);
+	}
 
   if (in_instr.mul_nop()) {
     dst.alu.mul.output_pack = in_instr.alu.add.output_pack;
@@ -1213,6 +1254,7 @@ void combine(Instructions &instructions) {
     msg << "line " << i << ":\n"
         << "  " << instr1.mnemonic(false) << "\n"
         << "  " << instr2.mnemonic(false);
+		debug(msg);
 
     // attempt the conversion
     {
@@ -1230,7 +1272,7 @@ void combine(Instructions &instructions) {
 
       if (success) {
         msg << "\n  Possible conversion: " << dst.mnemonic(false);
-        //debug(msg);
+        debug(msg);
 
         instr1.skip(true);
         instr2 = dst;
@@ -1246,13 +1288,12 @@ void combine(Instructions &instructions) {
   }
 
   compile_data.num_instructions_combined += combine_count;
-/*
+
   if (combine_count > 0) {
     std::string msg;
     msg << "Combined " << combine_count << " v3d instructions";
     debug(msg);
   }
-*/
 
   //
   // Combine skips
@@ -1269,11 +1310,9 @@ void combine(Instructions &instructions) {
   }
 
   if (skip_count > 0) {
-/*
     std::string msg;
     msg << "Skipped " << skip_count << " instructions";
     debug(msg);
-*/
     instructions = ret;
   }
 }

@@ -8,6 +8,8 @@
 #include "Source.h"
 #include "Encode.h"
 #include "Target/instr/ALUInstruction.h"
+#include "BaseSource.h"
+
 
 namespace V3DLib {
 
@@ -117,6 +119,13 @@ public:
   bool alu_add_set(V3DLib::Instr const &src_instr);
   bool alu_mul_set(V3DLib::Instr const &src_instr);
 
+	// BaseSource implementation
+  void alu_mul_dst(Location const &dst);
+  void alu_mul_a(BaseSource const &src);
+  void alu_mul_b(BaseSource const &src);
+	bool alu_mul_a_safe(BaseSource const &src);
+	bool alu_mul_b_safe(BaseSource const &src);
+
 private:
   bool alu_add_set_b(Source const &src);
   bool alu_mul_set_a(Source const &src);
@@ -132,6 +141,11 @@ public:
   std::unique_ptr<Source> add_alu_b() const;
   std::unique_ptr<Source> mul_alu_a() const;
   std::unique_ptr<Source> mul_alu_b() const;
+
+  BaseSource alu_add_a() const;
+  BaseSource alu_add_b() const;
+  BaseSource alu_mul_a() const;
+  BaseSource alu_mul_b() const;
 
 protected:
   static uint64_t NOP();
