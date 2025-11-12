@@ -923,24 +923,29 @@ bool Instr::alu_mul_a_safe(BaseSource const &src) {
 
 	if (src.is_small_imm()) {
 		if (!Platform::compiling_for_vc7()) {
-			warning("alu_mul_a_safe: can not use small imm on vc6");
+			//warning("alu_mul_a_safe: can not use small imm on vc6");
 			return false;
 		}
 	} else if (src.is_reg()) {
 		if (Platform::compiling_for_vc7()) {
-			warning("alu_mul_a_safe: can not use registers on vc7");
+			//warning("alu_mul_a_safe: can not use registers on vc7");
 			return false;
 		}
 	} else {
 		// rf location - always possible for vc7
 		if (!Platform::compiling_for_vc7()) {
-			assertq(alu.add.a.mux != V3D_QPU_MUX_B, "vc6: not dealing with V3D_QPU_MUX_B on add/mul.a right now");
-
-			// For vc6, raddr_a for add and mul must match exactly for rf
-			if (alu.add.a.mux == V3D_QPU_MUX_A && raddr_a != src.val()) {
-				warning("alu_mul_a_safe: vc6 raddr_a for add and mul do not match");
-				return false;
+			if (alu.add.a.mux == V3D_QPU_MUX_A) {
+				if (raddr_a == src.val()) {
+					return true;   // Can reuse raddr_a for mul.a
+				}
+			} else if (alu.add.a.mux == V3D_QPU_MUX_B) { 
+				if (raddr_b == src.val()) {
+					return true;  // Can reuse raddr_b for mul.a
+				}
 			}
+
+			//warning("alu_mul_a_safe: vc6 add raddr_a/b do not match with mul a");
+			return false;
 		}
 	}
 
@@ -958,7 +963,7 @@ bool Instr::alu_mul_b_safe(BaseSource const &src) {
 
 	if (src.is_small_imm()) {
 		if (!Platform::compiling_for_vc7()) {
-			warning("alu_mul_b_safe: can not use small imm on vc6");
+			//warning("alu_mul_b_safe: can not use small imm on vc6");
 			return false;
 		}
 	} else if (src.is_reg()) {
@@ -969,13 +974,18 @@ bool Instr::alu_mul_b_safe(BaseSource const &src) {
 	} else {
 		// rf location - always possible for vc7
 		if (!Platform::compiling_for_vc7()) {
-			assertq(alu.add.b.mux != V3D_QPU_MUX_A, "vc6: not dealing with V3D_QPU_MUX_A on add/mul.b right now");
-
-			// For vc6, raddr_b for add and mul must match exactly for rf
-			if (alu.add.b.mux == V3D_QPU_MUX_B && raddr_b != src.val()) {
-				warning("alu_mul_b_safe: vc6 raddr_b for add and mul do not match");
-				return false;
+			if (alu.add.b.mux == V3D_QPU_MUX_A) {
+				if (raddr_a == src.val()) {
+					return true;  // Can reuse raddr_a for mul.b
+				}
+			} else if (alu.add.b.mux == V3D_QPU_MUX_B) { 
+				if (raddr_b == src.val()) {
+					return true;  // Can reuse raddr_b for mul.b
+				}
 			}
+
+			//warning("alu_mul_b_safe: vc6 add raddr_a/b do not match with mul b");
+			return false;
 		}
 	}
 
@@ -1115,6 +1125,11 @@ bool Instr::alu_mul_set(V3DLib::Instr const &src_instr) {
 }
 
 
+bool Instr::alu_set(V3DLib::Instr const &src_instr) {
+    return alu_add_set(src_instr) || alu_mul_set(src_instr);
+}
+
+
 ///////////////////////////////////////////////////////////////////////////////
 // Label support
 //////////////////////////////////////////////////////////////////////////////
@@ -1229,15 +1244,15 @@ BaseSource Instr::alu_add_a() const {
 
 	if (Platform::compiling_for_vc7()) {
 		// vc7 - no acc's
-	  res.set(alu.add.a.raddr, sig.small_imm_a);
+	  res.set(alu.add.a.raddr, sig.small_imm_a, false, false);
 	} else {
 		// vc6 - no small imm on a
-		assert(alu.add.a.mux != V3D_QPU_MUX_B);
-
 		if (alu.add.a.mux == V3D_QPU_MUX_A) {
-	    res.set(raddr_a, false );
+	    res.set(raddr_a, false, false, true );
+		} else if (alu.add.a.mux == V3D_QPU_MUX_B) {
+	    res.set(raddr_b, false, false, false );
 		} else {
-	    res.set(alu.add.a.mux, false, true);
+	    res.set(alu.add.a.mux, false, true, false);
 		}
 	}
 
@@ -1259,17 +1274,17 @@ BaseSource Instr::alu_add_b() const {
 
 	if (Platform::compiling_for_vc7()) {
 		// vc7 - no acc's
-	  res.set(alu.add.b.raddr, sig.small_imm_b);
+	  res.set(alu.add.b.raddr, sig.small_imm_b, false, false);
 	} else {
 		// vc6
-		assert(alu.add.b.mux != V3D_QPU_MUX_B);
-
 		if (sig.small_imm_b) {
-	    res.set(raddr_b, true );
+	    res.set(raddr_b, true, false, false );
 		} else if (alu.add.b.mux == V3D_QPU_MUX_A) {
-	    res.set(raddr_b, false );
+	    res.set(raddr_a, false, false, true );
+		} else if (alu.add.b.mux == V3D_QPU_MUX_B) {
+	    res.set(raddr_b, false, false, false );
 		} else {
-	    res.set(alu.add.b.mux, false, true);
+	    res.set(alu.add.b.mux, false, true, false);
 		}
 	}
 
@@ -1308,15 +1323,15 @@ BaseSource Instr::alu_mul_a() const {
 
 	if (Platform::compiling_for_vc7()) {
 		// vc7 - no acc's
-	  res.set(alu.mul.a.raddr, sig.small_imm_c);
+	  res.set(alu.mul.a.raddr, sig.small_imm_c, false, false);
 	} else {
-		// vc6 - no small imm on mul a
-		assert(alu.mul.a.mux != V3D_QPU_MUX_B);
-
+		// vc6 - no small imm on imul a
 		if (alu.mul.a.mux == V3D_QPU_MUX_A) {
-	    res.set(raddr_a, false );
+	    res.set(raddr_a, false, false, true );
+		} else if (alu.mul.a.mux == V3D_QPU_MUX_B) {
+	    res.set(raddr_b, false, false, false );
 		} else {
-	    res.set(alu.mul.a.mux, false, true);
+	    res.set(alu.mul.b.mux, false, true, false);
 		}
 	}
 
@@ -1338,15 +1353,15 @@ BaseSource Instr::alu_mul_b() const {
 
 	if (Platform::compiling_for_vc7()) {
 		// vc7 - no acc's
-	  res.set(alu.mul.b.raddr, sig.small_imm_d);
+	  res.set(alu.mul.b.raddr, sig.small_imm_d, false, false);
 	} else {
-		// vc6 - no small imm on mul b
-		assert(alu.mul.b.mux != V3D_QPU_MUX_B);
-
+		// vc6 - no small imm on mul b 
 		if (alu.mul.b.mux == V3D_QPU_MUX_A) {
-	    res.set(raddr_b, false );
+	    res.set(raddr_a, false, false, true );
+		} else if (alu.mul.b.mux == V3D_QPU_MUX_B) {
+	    res.set(raddr_b, false, false, false );
 		} else {
-	    res.set(alu.mul.b.mux, false, true);
+	    res.set(alu.mul.b.mux, false, true, false);
 		}
 	}
 

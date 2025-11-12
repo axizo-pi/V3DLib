@@ -205,7 +205,7 @@ bool translateOpcode(V3DLib::Instr const &src_instr, Instructions &ret) {
     // Handle general case
     Instr instr;
 
-    if (instr.alu_add_set(src_instr) || instr.alu_mul_set(src_instr)) {
+    if (instr.alu_set(src_instr)) {
       ret << instr;
     } else {
       did_something = false;
@@ -1149,7 +1149,7 @@ void combine(Instructions &instructions) {
         }
 
         if (instr.flag_set()) {
-          breakpoint // Deal with this when it happens
+					return false;
         }
 /*
         std::string msg = "Useless move at ";

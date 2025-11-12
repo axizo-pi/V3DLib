@@ -119,6 +119,8 @@ public:
   bool alu_add_set(V3DLib::Instr const &src_instr);
   bool alu_mul_set(V3DLib::Instr const &src_instr);
 
+  bool alu_set(V3DLib::Instr const &src_instr);
+
 	// BaseSource implementation
   void alu_mul_dst(Location const &dst);
   void alu_mul_a(BaseSource const &src);
@@ -134,7 +136,7 @@ private:
   std::unique_ptr<Source> alu_src(v3d_qpu_mux src) const;  // < vc7
 
 public:
-  // TODO see if following can be replaced by DestReg
+  // TODO see if this can be cleaned up;  could be replaced by DestReg, but I prefer BaseSource
   std::unique_ptr<Location> add_alu_dst() const;
   std::unique_ptr<Location> mul_alu_dst() const;
   std::unique_ptr<Source> add_alu_a() const;
