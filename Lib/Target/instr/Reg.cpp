@@ -195,18 +195,10 @@ std::string Reg::dump() const {
  * general purpose accumulators
  *
  * This routine replaces ACC0 with an rf register for vc7.
- */
+ * /
 Reg Reg::get_acc_tmp() {
   using namespace V3DLib::Target::instr;
 
-	/*
-	{
-		// Check if VarGen is not reset before coming here
-		std::string buf = "VarGen count: ";
-		buf << V3DLib::VarGen::count();
-		debug(buf);
-	}
-	*/
 	assert(V3DLib::VarGen::count() != 0);
 
 	Reg dst;
@@ -218,6 +210,7 @@ Reg Reg::get_acc_tmp() {
 
 	return dst;
 }
+*/
 
 
 // TODO Move this away, to DMA

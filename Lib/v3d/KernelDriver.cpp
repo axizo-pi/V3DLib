@@ -326,42 +326,76 @@ void handle_condition_tags(V3DLib::Instr const &src_instr, Instructions &ret) {
  *   TODO make better.
  *
  * * A rotate is actually a mov() with the rotate signal set.
+ * * on vc7 ROT is an operation on add.
  */
 bool translateRotate(V3DLib::Instr const &instr, Instructions &ret) {
   if (!instr.ALU.op.isRot()) return false;
 
-  // dest is location where r1 (result of rotate) must be stored 
-  auto dst_reg = encodeDestReg(instr);
+	auto dst_reg = encodeDestReg(instr);
   assert(dst_reg);
-  assertq(dst_reg->to_mux() != V3D_QPU_MUX_R1, "Rotate can not have destination register R1", true);
 
   auto reg_a = instr.ALU.srcA;
   auto src_a = encodeSrcReg(reg_a.reg());
   auto reg_b = instr.ALU.srcB;                  // reg b is either r5 or small imm
 
-  if (src_a->to_mux() != V3D_QPU_MUX_R0) {
-    ret << mov(r0, *src_a).comment("moving param 2 of rotate to r0. WARNING: r0 might already be in use, check!");
-  }
 
+	if (Platform::compiling_for_vc7()) {
+		// Assumptions
+		//  - waddr is an rf register (logical)
+		//  - Thing to rotate is in add a
+		//  - rot value is a small imm in add a
+		//  - nop not required after rotate
+		{
+			std::string buf;
+			buf << "translateRotate vc7 input instr: " << instr.dump();
+			debug(buf);
+		}
 
-  // TODO: the Target source step already adds a nop.
-  //       With the addition of previous mov to r0, the 'other' nop becomes useless, remove that one for v3d.
-  ret << nop().comment("NOP required for rotate");
-
-  if (reg_b.is_reg()) {
-    breakpoint  // Not called yet
-
-    assert(instr.ALU.srcB.reg().tag == ACC && instr.ALU.srcB.reg().regId == 5);  // reg b must be r5
-    auto src_b = encodeSrcReg(reg_b.reg());
-
-    ret << rotate(r1, r0, *src_b);
-
-  } else {
+		assert(dst_reg->is_rf());
+		assert(src_a->is_rf());
+		assert(reg_b.is_imm());  // rf not handled yet
+	
     SmallImm imm(reg_b.imm().val); // Legal values small imm tested in rotate()
-    ret << rotate(r1, r0, imm);
-  }
 
-  ret << bor(*dst_reg, r1, r1);
+		Instr dst_instr;
+		dst_instr.alu.add.op = V3D_QPU_A_ROT;
+  	dst_instr.alu_add_set(*dst_reg, *src_a, imm);
+
+		{
+			std::string buf;
+			buf << "translateRotate vc7 instruction: " << dst_instr.mnemonic(false);
+			debug(buf);
+		}
+
+		ret << dst_instr;
+
+	} else {
+  	// dest is location where r1 (result of rotate) must be stored 
+	  assertq(dst_reg->to_mux() != V3D_QPU_MUX_R1, "Rotate can not have destination register r1", true);
+
+	  if (src_a->to_mux() != V3D_QPU_MUX_R0) {
+	    ret << mov(r0, *src_a).comment("moving param 2 of rotate to r0. WARNING: r0 might already be in use, check!");
+	  }
+
+	  // TODO: the Target source step already adds a nop.
+	  //       With the addition of previous mov to r0, the 'other' nop becomes useless, remove that one for v3d.
+	  ret << nop().comment("NOP required for rotate");
+
+	  if (reg_b.is_reg()) {
+	    breakpoint  // Not called yet
+
+	    assert(instr.ALU.srcB.reg().tag == ACC && instr.ALU.srcB.reg().regId == 5);  // reg b must be r5
+	    auto src_b = encodeSrcReg(reg_b.reg());
+
+	    ret << rotate(r1, r0, *src_b);
+
+	  } else {
+	    SmallImm imm(reg_b.imm().val); // Legal values small imm tested in rotate()
+	    ret << rotate(r1, r0, imm);
+	  }
+
+	  ret << bor(*dst_reg, r1, r1);
+	}
 
   return true;
 }

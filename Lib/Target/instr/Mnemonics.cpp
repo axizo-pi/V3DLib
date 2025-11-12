@@ -55,13 +55,36 @@ Instr::List sfu_function(Var dst, Var srcA, Reg const &sfu_reg, const char *labe
   return ret;
 }
 
+Reg const ACC0_(ACC, 0);
+
 }  // anon namespace
 
 namespace Target {
 namespace instr {
 
 Reg const None(NONE, 0);
-Reg const ACC0(ACC, 0);
+
+
+/**
+ * Replace ACC0 with an rf register for vc7.
+ *
+ * ACC0 is often used as a temp register for vc4 and vc6.
+ * This does not work any more for vc7, which does not have 
+ * general purpose accumulators.
+ *
+ * Just remember that every call generates a new variable.
+ * If you need to reuse a given ACC0 instance, keep a reference.
+ */
+Reg ACC0() {
+	if (Platform::compiling_for_vc7()) {
+		assert(V3DLib::VarGen::count() != 0);
+	 	return Reg(V3DLib::VarGen::fresh());
+	} else {
+		return ACC0_;
+	}
+}
+
+
 Reg const ACC1(ACC, 1);
 Reg const ACC2(ACC, 2);
 Reg const ACC3(ACC, 3);

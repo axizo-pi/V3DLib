@@ -7,7 +7,7 @@ namespace Target {
 namespace instr {
 
 extern Reg const None;
-extern Reg const ACC0;
+Reg ACC0();
 extern Reg const ACC1;
 extern Reg const ACC2;
 extern Reg const ACC3;

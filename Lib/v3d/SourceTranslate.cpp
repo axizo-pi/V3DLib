@@ -103,15 +103,15 @@ void add_init(Instr::List &code) {
   int insert_index = code.tag_index(INIT_BEGIN);
   assertq(insert_index >= 0, "Expecting init begin marker");
 
-	Reg dst = Reg::get_acc_tmp();
+	Reg acc = ACC0();;
 
   Instr::List ret;
 
 	if (Platform::compiling_for_vc7()) {
 		// vc7: No restriction on #QPU's 1 or 8
-	  ret << mov(dst, QPU_ID)
-	      << shr(dst, dst, 2)
-	      << band(rf(RSV_QPU_ID), dst, 15)
+	  ret << mov(acc, QPU_ID)
+	      << shr(acc, acc, 2)
+	      << band(rf(RSV_QPU_ID), acc, 15)
 		;
 	} else {
 	  // vc6: Determine the qpu index for 'current' QPU
@@ -130,11 +130,11 @@ void add_init(Instr::List &code) {
   	Label endifLabel = freshLabel();
 
 	  ret << mov(rf(RSV_QPU_ID), 0)           // not needed, already init'd to 0. Left here to counter future brainfarts
-	      << sub(dst, rf(RSV_NUM_QPUS), 8).pushz()
+	      << sub(acc, rf(RSV_NUM_QPUS), 8).pushz()
 	      << branch(endifLabel).allzc()       // nop()'s added downstream
-	      << mov(dst, QPU_ID)
-	      << shr(dst, dst, 2)
-	      << band(rf(RSV_QPU_ID), dst, 15)
+	      << mov(acc, QPU_ID)
+	      << shr(acc, acc, 2)
+	      << band(rf(RSV_QPU_ID), acc, 15)
 	      << label(endifLabel)
 		;
 	}

@@ -95,7 +95,7 @@ void check_unhandled_registers(Reg reg, bool do_src_regs) {
   // Do dst regs
   switch (reg.tag) {
     case REG_B:
-      debug_break("encodeDestReg(): Not expecting REG_B any more, examine");
+      debug_break("Not expecting REG_B any more, examine");
       break;
     case SPECIAL:
       if (is_dma_only_register(reg)) {

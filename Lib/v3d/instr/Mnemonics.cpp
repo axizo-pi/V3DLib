@@ -178,6 +178,7 @@ Mnemonic &Mnemonic::fmov(Location const &dst, Source const &src) {
  * See notes in header comment of rotate overload for add alu above.
  */
 Mnemonic &Mnemonic::rotate(Location const &dst, Location const &a, SmallImm const &b) {
+	assertq(!Platform::compiling_for_vc7(), "This implementation of rotate is not for vc7");
   assertq(dst.to_mux()  == V3D_QPU_MUX_R1, "rotate dest can only be r1");
   assertq(a.to_mux() == V3D_QPU_MUX_R0,    "rotate src a can only be r0", true);
   assertq(-15 <= b.val() && b.val() < 16,  "rotate: smallimm must be in proper range");
