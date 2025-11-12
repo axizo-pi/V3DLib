@@ -12,6 +12,7 @@ public:
   static std::string platform_info();
   static std::string pi_version();
   static bool run_vc4();
+  static bool run_vc7();
   static void compiling_for_vc4(bool val);
   static bool compiling_for_vc4();
   static bool compiling_for_vc7();

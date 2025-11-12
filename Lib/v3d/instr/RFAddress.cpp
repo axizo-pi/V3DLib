@@ -1,5 +1,6 @@
 #include "RFAddress.h"
-#include "../../Support/debug.h"
+#include "Support/debug.h"
+#include "Support/Platform.h"
 
 namespace V3DLib {
 namespace v3d {
@@ -7,6 +8,8 @@ namespace instr {
 
 
 v3d_qpu_mux RFAddress::to_mux() const {
+	assertq(!Platform::compiling_for_vc7(), "Don't use mux's on vc7");
+
   return V3D_QPU_MUX_A;
 }
 
