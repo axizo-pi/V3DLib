@@ -1070,11 +1070,16 @@ bool add_alu_to_mul_alu(Instr const &in_instr, Instr &dst) {
 
 	{
 		std::string msg;
+
+		//breakpoint;
+		std::string tmp = dst.mnemonic(false);
+
     msg << "\n"
-        << "  dst : " << dst.mnemonic(false)
+        << "  dst : " << tmp
 		;
     debug(msg);
 	}
+
 
   if (in_instr.mul_nop()) {
     dst.alu.mul.output_pack = in_instr.alu.add.output_pack;
@@ -1106,6 +1111,19 @@ bool add_alu_to_mul_alu(Instr const &in_instr, Instr &dst) {
 
   dst.header(in_instr.header());
   dst.comment(in_instr.comment());
+
+	{
+		std::string msg;
+    msg << "\n"
+        << "  dst : " << dst.mnemonic(false)
+		;
+    debug(msg);
+
+			debug(alu_mul_b.dump());
+			std::string tmp;
+			tmp << "mul mux b:" << dst.alu.mul.b.mux  << ", raddr_b: " << dst.raddr_b;
+			debug(tmp);
+	}
 
   return true;
 }

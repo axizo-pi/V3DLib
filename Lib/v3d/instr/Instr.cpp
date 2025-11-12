@@ -293,19 +293,19 @@ std::string Instr::pretty_instr() const {
         assertq(false, "pretty_instr(): unexpected mux value for mul b for rotate", true);
       }
 #else
-#if VIDEOCORE_VERSION == 6 
-      // Only two possibilities here: r5 or small imm (sig for small imm not set!)
-      if (alu.mul.b.mux == V3D_QPU_MUX_R5) {
-        ret << ", r5";
-      } else if (alu.mul.b.mux == V3D_QPU_MUX_B) {
-        ret << ", " << raddr_b;
-      } else {
-        assertq(false, "pretty_instr(): unexpected mux value for mul b for rotate", true);
-      }
-#else
-	// Ref. see: mesa2/src/broadcom/qpu/qpu_instr.h
-	assert(false, "Don't know how to deal with vc7");
-#endif
+			if (Platform::compiling_for_vc7()) {
+				// Ref. see: mesa2/src/broadcom/qpu/qpu_instr.h
+				assert("Don't know how to deal with vc7");
+			} else {
+	      // Only two possibilities here: r5 or small imm (sig for small imm not set!)
+	      if (alu.mul.b.mux == V3D_QPU_MUX_R5) {
+	        ret << ", r5";
+	      } else if (alu.mul.b.mux == V3D_QPU_MUX_B) {
+	        ret << ", " << raddr_b;
+	      } else {
+	        assertq(false, "pretty_instr(): unexpected mux value for mul b for rotate", true);
+	      }
+			}
 #endif
 
       ret << indent((int) ret.size()) << "; rot";
@@ -873,6 +873,22 @@ void Instr::alu_mul_dst(Location const &dst) {
 }
 
 
+/**
+ * Insight
+ * -------
+ *
+ * vc6 mux:
+ * 	V3D_QPU_MUX_A: use raddr_a
+ * 	V3D_QPU_MUX_B: use raddr_b
+ *
+ * This gives a tiny bit of extra flexibilty, because it's possible
+ * to select raddr_a/b for add/mul.a/b.
+ * TODO: Examine this (some time, ever, not up to it now).
+ *
+ * For the time being, we stick to V3D_QPU_MUX_A for add/mul.a and V3D_QPU_MUX_B for add/mul.b.
+ *
+ * This is different from vc4, where the values indicate using rfA or rfB.
+ */
 void Instr::alu_mul_a(BaseSource const &src) {
 	assert(src.is_set());
 
@@ -918,6 +934,8 @@ bool Instr::alu_mul_a_safe(BaseSource const &src) {
 	} else {
 		// rf location - always possible for vc7
 		if (!Platform::compiling_for_vc7()) {
+			assertq(alu.add.a.mux != V3D_QPU_MUX_B, "vc6: not dealing with V3D_QPU_MUX_B on add/mul.a right now");
+
 			// For vc6, raddr_a for add and mul must match exactly for rf
 			if (alu.add.a.mux == V3D_QPU_MUX_A && raddr_a != src.val()) {
 				warning("alu_mul_a_safe: vc6 raddr_a for add and mul do not match");
@@ -951,8 +969,10 @@ bool Instr::alu_mul_b_safe(BaseSource const &src) {
 	} else {
 		// rf location - always possible for vc7
 		if (!Platform::compiling_for_vc7()) {
+			assertq(alu.add.b.mux != V3D_QPU_MUX_A, "vc6: not dealing with V3D_QPU_MUX_A on add/mul.b right now");
+
 			// For vc6, raddr_b for add and mul must match exactly for rf
-			if (alu.add.b.mux == V3D_QPU_MUX_A && raddr_b != src.val()) {
+			if (alu.add.b.mux == V3D_QPU_MUX_B && raddr_b != src.val()) {
 				warning("alu_mul_b_safe: vc6 raddr_b for add and mul do not match");
 				return false;
 			}
@@ -979,7 +999,7 @@ void Instr::alu_mul_b(BaseSource const &src) {
 		if (Platform::compiling_for_vc7()) {
 			alu.mul.b.raddr = src.val();
 		} else {
-			alu.mul.b.mux = V3D_QPU_MUX_A;
+			alu.mul.b.mux = V3D_QPU_MUX_B;
 			raddr_b = src.val();
 		}
 	}
