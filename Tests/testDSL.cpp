@@ -446,10 +446,12 @@ void int_ops_kernel(Int::Ptr result) {
     result += 16;
   };
 
+	comment("add 3");
   Int a = index();
   a += 3;
   store(a);
 
+	comment("sub 11");
   a -= 11;
   store(a);
 
@@ -493,11 +495,10 @@ TEST_CASE("Test specific operations in DSL [dsl][ops]") {
     result.fill(-1);
 
     k.load(&result);
-/*
-    k.pretty(true, "obj/test/int_ops_kernel_vc4.txt", true);
-    k.dump_compile_data(false, "obj/test/int_ops_kernel_compile_data_v3d.txt");
-    k.pretty(false, "obj/test/int_ops_kernel_v3d.txt", true);
-*/
+
+    //k.dump_compile_data(false, "obj/test/int_ops_kernel_compile_data_v3d.txt");
+    k.pretty("obj/test/int_ops_kernel_v3d.txt", true);
+
     k.run();
 
     vector<vector<int>> expected = {
