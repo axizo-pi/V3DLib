@@ -771,6 +771,13 @@ float calc_max_diff(T1 &arr1, T2 &arr2, int size) {
 }
 
 
+/**
+ * This test works fine when run separately, but 
+ * not when run in the full unit test.
+ *
+ * No clue why; adjusted Makefile to run this test
+ * separately
+ */
 TEST_CASE("Test functions [dsl][func]") {
   int const NumValues       = 15;
   int const SharedArraySize = (NumValues/16 +1)*16;
