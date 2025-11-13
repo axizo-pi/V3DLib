@@ -31,6 +31,12 @@ Instr::List ISourceTranslate::load_var(Var &in_dst, Expr &e) {
   Reg src(e.deref_ptr()->var());
   Reg dst(in_dst);
 
+	if (Platform::compiling_for_vc7()) {
+		// TODO: examine if this should be added for first call only
+		debug("load_var(): adding TMUAU for vc7");
+  	ret << mov(TMUAU, src);
+	}
+
   ret << mov(TMU0_S, src)
       << recv(dst);
 

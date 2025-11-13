@@ -231,6 +231,7 @@ Register const r3("r3", V3D_QPU_WADDR_R3, V3D_QPU_MUX_R3, true);
 Register const r4("r4", V3D_QPU_WADDR_R4, V3D_QPU_MUX_R4, true);
 Register const r5("r5", V3D_QPU_WADDR_R5, V3D_QPU_MUX_R5);
 Register const tmua("tmua", V3D_QPU_WADDR_TMUA);
+Register const tmuau("tmuau", V3D_QPU_WADDR_TMUAU);
 Register const tmud("tmud", V3D_QPU_WADDR_TMUD);
 Register const tlb("tlb", V3D_QPU_WADDR_TLB);
 Register const recip("recip", V3D_QPU_WADDR_RECIP);
