@@ -7,7 +7,7 @@ V3DLib::Settings settings;
 
 
 void hello(Int::Ptr p) {                          // The kernel definition
-  *p = 1;
+	*p = 1;
 }
 
 

@@ -175,6 +175,12 @@ std::unique_ptr<Location> encodeDestReg(V3DLib::Instr const &src_instr) {
           break;
         case SPECIAL_TMU0_S:              // Read TMU
           ret = loc_ptr(tmua);
+					break;
+        case SPECIAL_TMUAU:
+          ret = loc_ptr(tmuau);
+          break;
+        case SPECIAL_TMUC:
+          ret = loc_ptr(tmuc);
           break;
 
         // SFU registers

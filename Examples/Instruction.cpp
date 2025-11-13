@@ -245,7 +245,7 @@ void display_instr(struct v3d_qpu_instr const &instr) {
 std::string instr_format_alu_7x(uint64_t val) {
 
 	string h2 =
-"|  |  |  |  |  | 1| 0|  |  |  |  |  |  |  |  |  | apf?|mw|aw| mul waddr       | add waddr       |\n"
+"|  |  |  |  |  | 1| sig          |sm| sig_addr (2apf?)|mw|aw| mul waddr       | add waddr       |\n"
 "|  |  | a_pa|  |1?|  |1?| mul a raddr     | mul b raddr     | add a raddr     | add b raddr     |\n"
 	;
 
@@ -261,6 +261,26 @@ std::string instr_format_alu_7x(uint64_t val) {
 		"- apf?: there is overlap with mpf. I don't get it yet\n"
 		"  - It looks like apf/mpf share the same field, and bit 50 is set for mul\n"
 		"    I get the impression that add/mul exclude each other on push\n"
+		"- sm  : sig_magic; true handles sig_addr as v3d_qpu_waddr\n"
+		"- sig:\n"
+		"                   53: thrsw \n"
+		"               54    : ldunif    - combines with thrsw; can't combine with ldunifa, ldunifrf, ldunifarf\n"
+		"   57, 56            : ldunifa   - can't combine with thrsw\n"
+		"       56, 55        : ldunifrf  - with sig_addr\n"
+		"   57, 56,         53: ldunifarf\n"
+		"           55        : ldtmu\n"
+		"       56            : ldvary\n"
+		"                     : ldvpm     - error disasm when used on its own\n"
+		"   57                : ldtlb\n"
+		"   57,             53: ldtmu\n"
+		"   57,     55, 54    : ucb\n"
+		"                     : rotate    - error disasm when used on its own\n"
+		"   57,         54    : wrtmuc\n"
+		"\n"
+		"       56, 55, 54    : small_imm_a - 0 in raddr does not register for small_imm's\n"
+		"       56, 55, 54, 53: small_imm_b\n"
+		"   57, 56, 55, 54    : small_imm_c\n"
+		"   57, 56, 55, 54, 53: small_imm_d\n"
 	;
 
 
@@ -320,10 +340,10 @@ int main(int argc, const char *argv[]) {
 		.type = V3D_QPU_INSTR_TYPE_ALU,
 		.sig  = {
 			//.thrsw = 1,
-			//.ldunif = 1,
-			//.ldunifa = 1
+			//.ldunifrf = 1
+			//.ldtmu = 1,
+			//.wrtmuc = 1
 			.small_imm_a = 1,
-			//.small_imm_b = 1
 	 	},
 		.sig_addr = 0,
 		.sig_magic = false,
@@ -336,10 +356,10 @@ int main(int argc, const char *argv[]) {
 		},
 		.alu = {
 			.add = {
-				  .op = V3D_QPU_A_MOV,
+				  .op = V3D_QPU_A_NOT,
 			  	.a = {
             //.mux = V3D_QPU_MUX_B,
-            .raddr = 0 
+            .raddr = 2 
           },
 			  	.b = {
             //.mux = V3D_QPU_MUX_R4,
@@ -402,12 +422,10 @@ int main(int argc, const char *argv[]) {
   	}
   }
 
-/*
-  uint64_t const NOP = 0x3c003186bb800000;  // This is actually 'nop nop'
-	cout << "NOP   : " << hex << NOP << "\n";
-	cout << "Disasm: " << qpu_disasm(NOP) << "\n";
-	cout << diff_bits(NOP, packed);
-*/
+  uint64_t const prev = 0x38000000f903f003;  
+	cout << "Prev  : " << hex << prev << "\n";
+	cout << "Disasm: " << qpu_disasm(prev) << "\n";
+	cout << diff_bits(prev, packed);
 
   return 0;
 }

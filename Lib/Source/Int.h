@@ -76,10 +76,11 @@ IntExpr operator&(IntExpr a, IntExpr b);
 IntExpr operator|(IntExpr a, IntExpr b);
 IntExpr operator^(IntExpr a, IntExpr b);
 IntExpr operator~(IntExpr a);
-IntExpr min(IntExpr a, IntExpr b);
-IntExpr max(IntExpr a, IntExpr b);
-IntExpr shr(IntExpr a, IntExpr b);
-IntExpr ror(IntExpr a, IntExpr b);
+IntExpr min( IntExpr a, IntExpr b);
+IntExpr max( IntExpr a, IntExpr b);
+IntExpr shr( IntExpr a, IntExpr b);
+IntExpr ror( IntExpr a, IntExpr b);
+IntExpr bnot(IntExpr a);
 
 IntExpr operator/(IntExpr a, IntExpr b);
 IntExpr operator%(IntExpr a, IntExpr b);
