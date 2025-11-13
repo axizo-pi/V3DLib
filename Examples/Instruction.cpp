@@ -341,11 +341,11 @@ int main(int argc, const char *argv[]) {
 		.sig  = {
 			//.thrsw = 1,
 			//.ldunifrf = 1
-			.ldtmu = 1,
+			//.ldtmu = 1,
 			//.wrtmuc = 1
-			//.small_imm_a = 1,
+			.small_imm_a = 1,
 	 	},
-		.sig_addr = 10,
+		.sig_addr = 0,
 		.sig_magic = false,
     //.raddr_b = 63,  // 4x
 		.flags = {
@@ -356,10 +356,10 @@ int main(int argc, const char *argv[]) {
 		},
 		.alu = {
 			.add = {
-				  .op = V3D_QPU_A_MOV,
+				  .op = V3D_QPU_A_NOT,
 			  	.a = {
             //.mux = V3D_QPU_MUX_B,
-            .raddr = 0 
+            .raddr = 2 
           },
 			  	.b = {
             //.mux = V3D_QPU_MUX_R4,

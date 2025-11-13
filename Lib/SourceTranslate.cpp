@@ -33,8 +33,11 @@ Instr::List ISourceTranslate::load_var(Var &in_dst, Expr &e) {
 
 	if (Platform::compiling_for_vc7()) {
 		// TODO: examine if this should be added for first call only
-		debug("load_var(): adding TMUAU for vc7");
-  	ret << mov(TMUAU, src);
+		//debug("load_var(): adding TMUAU for vc7");
+  	//ret << mov(TMUAU, src);
+
+		debug("load_var(): adding TMUC for vc7");
+  	ret << mov(TMUC, ~0);
 	}
 
   ret << mov(TMU0_S, src)

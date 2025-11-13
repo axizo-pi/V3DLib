@@ -124,6 +124,7 @@ extern Register const r4;
 extern Register const r5;
 extern Register const tmua;
 extern Register const tmuau;
+extern Register const tmuc;
 extern Register const tmud;
 extern Register const tlb;
 extern Register const recip;

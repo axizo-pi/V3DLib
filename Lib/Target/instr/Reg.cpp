@@ -26,6 +26,7 @@ char const *specialStr(RegId rid) {
     case SPECIAL_SFU_EXP:       return "SFU_EXP";
     case SPECIAL_SFU_LOG:       return "SFU_LOG";
     case SPECIAL_TMUAU:         return "TMUAU";    // vc7 only?
+    case SPECIAL_TMUC:          return "TMUC";     // vc7 only?
   }
 
   // Unreachable

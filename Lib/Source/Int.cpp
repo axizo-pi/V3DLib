@@ -152,11 +152,12 @@ IntExpr operator>>(IntExpr a, IntExpr b) { return mkIntApply(a, Op(SHR,  INT32),
 IntExpr operator&(IntExpr a, IntExpr b)  { return mkIntApply(a, Op(BAND, INT32), b); }
 IntExpr operator|(IntExpr a, IntExpr b)  { return mkIntApply(a, Op(BOR,  INT32), b); }
 IntExpr operator^(IntExpr a, IntExpr b)  { return mkIntApply(a, Op(BXOR, INT32), b); }
-IntExpr operator~(IntExpr a)             { return mkIntApply(a, Op(BNOT, INT32), a); }
+IntExpr operator~(IntExpr a)             { return mkIntApply(a, Op(BNOT, INT32), a); }  //Translated to move;  Should be same as bnot()
 IntExpr min(IntExpr a, IntExpr b)        { return mkIntApply(a, Op(MIN,  INT32), b); }
 IntExpr max(IntExpr a, IntExpr b)        { return mkIntApply(a, Op(MAX,  INT32), b); }
 IntExpr shr(IntExpr a, IntExpr b)        { return mkIntApply(a, Op(USHR, INT32), b); }
 IntExpr ror(IntExpr a, IntExpr b)        { return mkIntApply(a, Op(ROR,  INT32), b); }
+IntExpr bnot(IntExpr a)                  { return mkIntApply(a, Op(BNOT, INT32), a); }  // TODO: NOT WORKING; always returns 0
 
 
 /**

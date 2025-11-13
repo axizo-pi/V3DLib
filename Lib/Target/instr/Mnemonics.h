@@ -18,6 +18,7 @@ extern Reg const QPU_ID;
 extern Reg const ELEM_ID;
 extern Reg const TMU0_S;
 extern Reg const TMUAU;
+extern Reg const TMUC;
 extern Reg const VPM_WRITE;
 extern Reg const VPM_READ;
 extern Reg const WR_SETUP;

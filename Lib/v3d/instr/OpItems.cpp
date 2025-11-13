@@ -52,9 +52,10 @@ std::vector<op_item> op_items = {
   { ALUOp::A_BAND,   V3D_QPU_A_AND    },
   { ALUOp::A_BOR,    V3D_QPU_A_OR     },
   { ALUOp::A_BXOR,   V3D_QPU_A_XOR    },
+  { ALUOp::A_BNOT,   V3D_QPU_A_NOT    },
   { ALUOp::M_FMUL,   false,           V3D_QPU_M_FMUL },
   { ALUOp::M_MUL24,  false,           V3D_QPU_M_SMUL24 },
-  { ALUOp::M_ROTATE, false,           V3D_QPU_M_MOV },     // Special case: it's a mul alu mov with sig.rotate set
+  { ALUOp::M_ROTATE, false,           V3D_QPU_M_MOV },     // < vc7:Special case: it's a mul alu mov with sig.rotate set
   { ALUOp::A_TIDX,   V3D_QPU_A_TIDX   },
   { ALUOp::A_EIDX,   V3D_QPU_A_EIDX   },
   { ALUOp::A_FFLOOR, V3D_QPU_A_FFLOOR },

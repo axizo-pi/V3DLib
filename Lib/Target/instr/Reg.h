@@ -54,6 +54,7 @@ enum Special {
 
 	// vc7 tmu read
   SPECIAL_TMUAU,
+  SPECIAL_TMUC,
 };
 
 
