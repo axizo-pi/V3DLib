@@ -35,6 +35,7 @@
 
 ## Compile source code
 
+- [ ] Check on rotate value in `rotate()`. Ideally this should be between -15..15 inclusive.
 - [x] Find a way to detect `For....}` issue. Should terminate with `End` but compiles fine.
 - [x] This does not work in source lang code, fix: `*dst = *src`, where dst/src are uniform pointers
 - [x] `If (a != b)` appears to do the same as `any(a != b)`, verify. *Result: Verified, identical*
@@ -209,9 +210,10 @@ Error(s) on command line:
 
 ## Optimization and Cleanup
 
-- [ ] Tone down mesa library, compile takes long.
+- [x] Tone down mesa library, compile takes long.
       Tried this but gave up after it became evident nothing could be removed.
       Perhaps leave out the `*.c` files? Not looking forward to it, lots of work.
+			**Solved by switching to newer version of mesa lib (mesa2)**
 - [x] Complete conversion `Seq<Instr>` to `Instr::List`
 - [x] Get rid of senseless variable reassignment in source language.
 
