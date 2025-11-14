@@ -7,12 +7,13 @@ namespace instr {
 
 namespace {
 
-const int V3D_QPU_MUX_R5 = 5;   // From qpu+instr.h. The mux values <= this one aare the same
+const int V3D_QPU_MUX_R5 = 5;   // From qpu.instr.h. The mux values <= this one aare the same
 
 bool compare_src_dst(BaseSource const &src, BaseSource const &dst) {
   assert(src.is_set() && dst.is_set());
 
   if (src.is_small_imm()) return false;
+  if (dst.is_magic())     return false;
   if (src.is_reg() == dst.is_reg()) {  // for both rf and reg
     return src.val() == dst.val();
   }

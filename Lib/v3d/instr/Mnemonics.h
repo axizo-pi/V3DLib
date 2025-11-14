@@ -75,10 +75,11 @@ Mnemonic &mnemonic(Location const &dst, Source const &srca, Source const &srcb) 
 
   REGULAR_INSTR(add,    V3D_QPU_M_ADD)
   REGULAR_INSTR(sub,    V3D_QPU_M_SUB)
-  REGULAR_INSTR_B(fmul,   V3D_QPU_M_FMUL)
-  REGULAR_INSTR_B(smul24, V3D_QPU_M_SMUL24)
+  REGULAR_INSTR(fmul,   V3D_QPU_M_FMUL)
+  REGULAR_INSTR(smul24, V3D_QPU_M_SMUL24)
   REGULAR_INSTR(vfmul,  V3D_QPU_M_VFMUL)
 
+#undef REGULAR_INSTR_B
 #undef REGULAR_INSTR
 
   // Other mul mnemonics

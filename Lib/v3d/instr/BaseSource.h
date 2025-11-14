@@ -27,6 +27,7 @@ public:
   bool is_small_imm() const { return m_is_small_imm; }
   bool is_reg()       const { return m_is_reg; }
   bool is_rfa()       const { return m_is_rfa; }
+  bool is_magic()     const { return m_is_magic; }
 
 private:
   bool    m_is_set       = false;

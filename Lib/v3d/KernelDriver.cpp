@@ -1123,17 +1123,9 @@ bool add_alu_to_mul_alu(Instr const &in_instr, Instr &dst) {
   	dst.alu_mul_b(alu_mul_b);
   }
 
-	{
-		std::string msg;
-
-		//breakpoint;
-		std::string tmp = dst.mnemonic(false);
-
-    msg << "\n"
-        << "  dst : " << tmp
-		;
-    debug(msg);
-	}
+  Log::debug << "\n"
+             << "  dst : " << dst.mnemonic(false)
+	;
 
 
   if (in_instr.mul_nop()) {
@@ -1210,10 +1202,10 @@ void combine(Instructions &instructions) {
 
       if (instr.flag_set()) return false;
 
-      Log::warn
-				<< "Useless move at " << i << ": " << instr.mnemonic(false)
-				<< "dst: " << dst.dump()
-			;
+      //Log::debug
+			//	<< "Useless move at " << i << ": " << instr.mnemonic(false)
+			//	<< "dst: " << dst.dump()
+			//;
 
       return true;
     }
@@ -1315,8 +1307,7 @@ void combine(Instructions &instructions) {
     // Remove useless copies
     //
     if (check_assign_to_self(instr2, i)) {
-			Log::warn << "Skipping useless copy: " << instr2.mnemonic(false);
-			breakpoint;        // Warn me if/when this ever happens
+			Log::debug << "Skipping useless copy: " << instr2.mnemonic(false);
       instr2.skip(true);
       continue;
     }

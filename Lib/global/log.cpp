@@ -9,11 +9,27 @@
 
 namespace Log {
 
+namespace {
+
 Logger::Level log_level = Logger::DDEBUG;
+
+//
+// Ensure that no logging information is written to console.
+//
+// If logging to file is enabled, logfiles should still be written written
+//
+bool s_log_to_cout = true;
+
+}  // anon namespace
 
 
 void set_level(Logger::Level level) {
 	log_level = level;
+}
+
+
+void log_to_cout(bool val) {
+  s_log_to_cout = val;
 }
 
 
@@ -57,6 +73,9 @@ LogItem &LogItem::operator<<(LogFlag f) {
 
 
 void Logger::flush() {
+  if (!s_log_to_cout) return;  // TODO: adjustment needed when logging to file enabled
+
+
 	if (m_level >= log_level) {
 
 		char time_buf[256];

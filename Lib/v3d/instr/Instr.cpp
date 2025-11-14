@@ -726,6 +726,8 @@ bool Instr::alu_set_src(Source const &src, v3d_qpu_input &input, CheckSrc check_
       return false;
     }
 
+		input.unpack = loc.input_unpack();
+
   } else {
     // Handle small imm
     auto imm = src.small_imm();
@@ -744,6 +746,7 @@ bool Instr::alu_set_src(Source const &src, v3d_qpu_input &input, CheckSrc check_
 		sig.small_imm_b  = true;
     raddr_b          = imm.to_raddr(); 
     mux              = V3D_QPU_MUX_B;
+		input.unpack     = imm.input_unpack();
 	}
 
   return true;

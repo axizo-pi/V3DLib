@@ -318,9 +318,8 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
       continue;
     }
 
-    Log::debug << "LI at " << i << " (block " << live.cfg().block_at(i) << "): "   // conflict with debug()
-               << instr.mnemonic(false) << "\n";
-
+    //Log::debug << "LI at " << i << " (block " << live.cfg().block_at(i) << "): "   // conflict with debug()
+    //           << instr.mnemonic(false) << "\n";
 
     // Scan forward to find replaceable LI's (i.e. LI's with same value in same or child block)
     int last_use = i;
@@ -350,10 +349,10 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
       if (instr2.LI.imm != instr.LI.imm) continue;
       if (!live.cfg().is_parent_block(j, live.cfg().block_at(i))) continue;
 
-      Log::debug << "Could replace LI at " << j << " (block " << live.cfg().block_at(j) << "): "
-           << instr2.mnemonic(false) << "\n"
-           << "  Scanning for dest reg: " << instr2.dest().dump() << "\n"
-        ;
+      //Log::debug << "Could replace LI at " << j << " (block " << live.cfg().block_at(j) << "): "
+      //     << instr2.mnemonic(false) << "\n"
+      //     << "  Scanning for dest reg: " << instr2.dest().dump() << "\n"
+      //;
 
       //
       // Find and replace all occurences of the second LI with the first LI instruction

@@ -53,7 +53,9 @@ private:
 	std::stringstream m_buf;
 };
 
+
 void set_level(Logger::Level level);
+void log_to_cout(bool val);
 
 #pragma push_macro("assert")
 #undef assert
