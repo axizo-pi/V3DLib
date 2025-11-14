@@ -39,8 +39,24 @@
 #
 ###############################################################################
 
-# Following worked on vc4
-#VCSM_DIR=extern/userland/host_applications/linux/libs/sm
+QPU=1
+DEBUG=1
+
+ifeq ($(QPU), 1)
+ifeq ($(DEBUG), 1)
+$(info Using default values QPU=1 and DEBUG=1)
+$(info To override, call make files with `make (-e) QPU=0` and/or `DEBUG=0`)
+endif
+endif
+
+## sudo required for QPU-mode on Pi
+ifeq ($(QPU), 1)
+	SUDO := sudo
+else
+	SUDO :=
+endif
+
+
 VCSM_DIR=extern/userland/build/lib
 
 #
@@ -263,14 +279,6 @@ $(EXAMPLES) :% : $(OBJ_DIR)/bin/%
 #
 
 UNIT_TESTS := $(OBJ_DIR)/bin/runTests
-
-## sudo required for QPU-mode on Pi
-ifeq ($(QPU), 1)
-	SUDO := sudo
-else
-	SUDO :=
-endif
-
 
 $(UNIT_TESTS): $(TESTS_OBJ) $(V3DLIB) $(LIB_DEPEND)
 	@echo Linking unit tests
