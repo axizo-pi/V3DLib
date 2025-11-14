@@ -297,9 +297,12 @@ make_test: runTests ID Hello Rot3D ReqRecv GCD Tri detectPlatform OET Instructio
 #
 test : make_test
 	@echo Running unit tests with \'$(SUDO) $(UNIT_TESTS)\'
-	@$(SUDO) $(UNIT_TESTS) -tce=*[fft][test2]* -tce="*[dsl][func]*"
-	@$(SUDO) $(UNIT_TESTS) -tc=*[fft][test2]*
-	@$(SUDO) $(UNIT_TESTS) -tc="*[dsl][func]*"
+	@$(SUDO) $(UNIT_TESTS) -tce="*[pass2]*"
+	@$(SUDO) $(UNIT_TESTS) -tc="*[pass2]*"
+
+
+#	@$(SUDO) $(UNIT_TESTS) -tc=*[fft][test2]*
+#	@$(SUDO) $(UNIT_TESTS) -tc="*[dsl][func]*"
 
 
 ###############################

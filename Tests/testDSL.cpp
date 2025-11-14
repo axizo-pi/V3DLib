@@ -784,7 +784,7 @@ float calc_max_diff(T1 &arr1, T2 &arr2, int size) {
  * No clue why; adjusted Makefile to run this test
  * separately
  */
-TEST_CASE("Test functions [dsl][func]") {
+TEST_CASE("Test functions [dsl][func][pass2]") {
   int const NumValues       = 15;
   int const SharedArraySize = (NumValues/16 +1)*16;
 

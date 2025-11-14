@@ -1118,9 +1118,10 @@ TEST_CASE("FFT test with scalar [fft]") {
 
 //
 // Will sometimes timeout (Pi4 64-bit) when run in combination with rest of unit tests.
-// See runTests rule in Makefile for solution, namely run it separately
+// For this reason, label 'pass2' is added. This is picked up in the makefile, along
+// with other tests with similar problems
 //
-TEST_CASE("FFT test with DFT [fft][test2]") {
+TEST_CASE("FFT test with DFT [fft][test2][pass2]") {
   if (!running_on_v3d()) return;  // FFT works only on v3d
 
   auto init_result = [] (Complex::Array &result, Float::Array &a, int Dim, int log2n) {
