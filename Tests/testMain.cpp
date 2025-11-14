@@ -12,6 +12,7 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 #include "Support/debug.h"
+#include "global/log.h"     // set_level()
 
 //#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #define DOCTEST_CONFIG_IMPLEMENT
@@ -20,6 +21,7 @@
 
 int main(int argc, char** argv) {
   set_loglevel(LogLevel::WARNING);
+  Log::set_level(Log::Logger::WARNING);
 
   doctest::Context context;
   context.applyCommandLine(argc, argv);

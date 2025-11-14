@@ -13,6 +13,7 @@
 #include "instr/Mnemonics.h"
 #include "instr/OpItems.h"
 #include "instr/BaseSource.h"
+#include "global/log.h"
 
 namespace V3DLib {
 namespace v3d {
@@ -432,6 +433,13 @@ bool convert_int_powers(Instructions &output, int in_value) {
   ret << shl(acc_proxy(0), acc_proxy(0), SmallImm(left_shift));
 
   output << ret;
+/*
+	{
+		std::string buf;
+		buf << "Till here: " << in_value;
+		warning(buf);
+	}
+*/
   return true;
 }
 
@@ -472,9 +480,9 @@ bool encode_int_immediate(Instructions &output, int in_value) {
       if (i > 0) {
         if (convert_int_powers(ret, 4*i)) {
           // r0 now contains value for left shift
-          ret << shl(acc_proxy(1), acc_proxy(1), acc_proxy(0));
+          ret << shl(acc_proxy(1), acc_proxy(1), acc_proxy(0)).comment("Here 1");
         } else {
-          ret << shl(acc_proxy(1), acc_proxy(1), SmallImm(4*i));
+          ret << shl(acc_proxy(1), acc_proxy(1), SmallImm(4*i)).comment("Here 2");;
         }
       }
       did_first = true;
@@ -482,15 +490,15 @@ bool encode_int_immediate(Instructions &output, int in_value) {
       if (i > 0) {
         if (convert_int_powers(ret, 4*i)) {
           // r0 now contains value for left shift
-          ret << shl(r0, imm, r0);
+          ret << shl(r0, imm, r0).comment("Here 3");;
         } else {
           ret << mov(r0, imm);
-          ret << shl(r0, r0, SmallImm(4*i));
+          ret << shl(r0, r0, SmallImm(4*i)).comment("Here 4");;
         }
 
         ret << bor(r1, r1, r0);
       } else {
-        ret << bor(r1, r1, imm);
+        ret << bor(r1, r1, imm).comment("Here 5");
       }
     }
   }
@@ -513,6 +521,13 @@ bool encode_int_immediate(Instructions &output, int in_value) {
 bool encode_int(Instructions &ret, std::unique_ptr<Location> &dst, int value) {
   bool success = true;
   int rep_value;
+/*
+	{
+		std::string buf;
+		buf << "encode_int(): " << value;
+		warning(buf);
+	}
+*/
 
   if (SmallImm::int_to_opcode_value(value, rep_value)) {  // direct translation
     SmallImm imm(rep_value);
@@ -522,8 +537,14 @@ bool encode_int(Instructions &ret, std::unique_ptr<Location> &dst, int value) {
   } else if (encode_int_immediate(ret, value)) {          // Use full blunt conversion (heavy but always works)
     ret << mov(*dst, acc_proxy(1));
   } else {
+		//warning("convert_int_powers() FAILED");
     success = false;                                      // Conversion failed
   }
+
+	if (success) {
+		//warning("convert_int_powers() OK");
+		ret.back().comment("encode_int()");
+	}
 
   return success;
 }
@@ -1169,32 +1190,35 @@ void combine(Instructions &instructions) {
   // Detect useless moves, eg: or  rf2, rf2, rf2    ; nop
   //
   auto check_assign_to_self = [] (Instr const &instr, int i) -> bool {
-    if (!instr.is_branch() && !instr.add_nop() && instr.mul_nop() && instr.alu.add.op == V3D_QPU_A_OR) {
-      auto dst = instr.add_alu_dst();
-      assert(dst);
-      auto a = instr.add_alu_a();
-      assert(a);
-      auto b = instr.add_alu_b();
-      assert(b);
+    if (
+			!instr.is_branch() &&
+			!instr.add_nop() && instr.mul_nop() &&
+			 instr.alu.add.op == V3D_QPU_A_OR
+		) {
+      auto dst = instr.alu_add_dst();
+      assert(dst.is_set());
+      auto a = instr.alu_add_a();
+      assert(a.is_set());
+      auto b = instr.alu_add_b();
+      assert(b.is_set());
 
-      if (*a == *b && *dst == *a) {
-        if (instr.has_signal(true)) {
-          breakpoint // Deal with this when it happens
-        }
+      if (!(a == b && dst == a)) return false; 
 
-        if (instr.flag_set()) {
-					return false;
-        }
-/*
-        std::string msg = "Useless move at ";
-        msg << i << ": " << instr.mnemonic(false);
-        warning(msg);
-*/
-        return true;
+      if (instr.has_signal(true)) {
+        breakpoint // Deal with this when it happens
       }
+
+      if (instr.flag_set()) return false;
+
+      Log::warn
+				<< "Useless move at " << i << ": " << instr.mnemonic(false)
+				<< "dst: " << dst.dump()
+			;
+
+      return true;
     }
 
-    return false;
+		return false;
   };
 
   assertq(!check_assign_to_self(instructions[0], 0), "First instruction is useless copy");
@@ -1214,7 +1238,7 @@ void combine(Instructions &instructions) {
     //
     // Combine pure nop ldtmu instruction with next
     // 
-    if (false && instr1.is_ldtmu() && instr1.is_nop()) {
+    if (false && instr1.is_ldtmu() && instr1.is_nop()) { // TODO: check reasong for false
 
       // There can be multiple consecutive tmu loads, shift them all in reverse order
       int first = i - 1;
@@ -1291,6 +1315,8 @@ void combine(Instructions &instructions) {
     // Remove useless copies
     //
     if (check_assign_to_self(instr2, i)) {
+			Log::warn << "Skipping useless copy: " << instr2.mnemonic(false);
+			breakpoint;        // Warn me if/when this ever happens
       instr2.skip(true);
       continue;
     }

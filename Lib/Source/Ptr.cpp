@@ -37,6 +37,8 @@ Int &get_increment() {
 }
 */
 
+PointerExpr bare_addself(Pointer &self, IntExpr b) { return mkApply(self.expr(), Op(ADD, INT32), b.expr()); }
+
 }  // anon namespace
 
 
@@ -63,7 +65,6 @@ PointerExpr Pointer::addself(int b)       { return (self() = self() + b); }
 PointerExpr Pointer::addself(IntExpr b)   { return (self() = self() + b); }
 PointerExpr Pointer::subself(IntExpr b)   { return (self() = self() - b); }
 
-PointerExpr Pointer::bare_addself(IntExpr b) { return mkApply(expr(), Op(ADD, INT32), b.expr()); }
 
 
 Pointer &Pointer::self() {
@@ -83,8 +84,9 @@ void Pointer::inc() {
   int const INC = 16*4;  // for getting next block for a sequential pointer
   increment.reset(new Int(INC));  comment("pointer increment");
 
-  //self() = bare_addself(get_increment());  comment("increment pointer");
-  self() = bare_addself(*increment);  comment("increment pointer");
+  self() = bare_addself(*this, *increment);  comment("increment pointer");
+
+//  self() = bare_addself(*this, val_64());  comment("increment pointer");
 }
 
 

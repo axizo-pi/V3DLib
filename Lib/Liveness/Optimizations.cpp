@@ -5,6 +5,9 @@
 #include "Target/Subst.h"
 #include "Support/Timer.h"
 #include "Support/basics.h"
+#include "global/log.h"
+
+using namespace Log;
 
 namespace V3DLib {
 namespace {
@@ -268,8 +271,8 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
         assert(reg_usage.first_usage() == reg_usage.first_dst());
         bool can_remove = true;
 
-        for (int i = reg_usage.first_usage() + 1; i <= reg_usage.last_usage(); i++) {
-          auto &instr2 = instrs[i];
+        for (int j = reg_usage.first_usage() + 1; j <= reg_usage.last_usage(); j++) {
+          auto &instr2 = instrs[j];
           if (instr2.tag != InstrTag::ALU) continue;
           if (!instr2.is_src_reg(instr.dest())) continue;
 /*
@@ -308,19 +311,16 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
         }
 
         if (can_remove) {
-          instr.tag = SKIP;
+          instr.set_skip();
         }
       }
 
       continue;
     }
 
-   //std::cout << "  Scanning for LI: " << instr.dump() << std::endl; 
+    Log::debug << "LI at " << i << " (block " << live.cfg().block_at(i) << "): "   // conflict with debug()
+               << instr.mnemonic(false) << "\n";
 
-/*
-    std::cout << "LI at " << i << " (block " << live.cfg().block_at(i) << "): "
-              << instr.mnemonic(false) << std::endl;
-*/
 
     // Scan forward to find replaceable LI's (i.e. LI's with same value in same or child block)
     int last_use = i;
@@ -349,10 +349,11 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
       if (instr2.tag != InstrTag::LI) continue;
       if (instr2.LI.imm != instr.LI.imm) continue;
       if (!live.cfg().is_parent_block(j, live.cfg().block_at(i))) continue;
-//      std::cout << "  Could replace LI at " << j << " (block " << live.cfg().block_at(j) << "): "
-//                << instr2.mnemonic(false) << std::endl;
 
-//      std::cout << "  Scanning for dest reg: " << instr2.LI.dest.dump() << std::endl;
+      Log::debug << "Could replace LI at " << j << " (block " << live.cfg().block_at(j) << "): "
+           << instr2.mnemonic(false) << "\n"
+           << "  Scanning for dest reg: " << instr2.dest().dump() << "\n"
+        ;
 
       //
       // Find and replace all occurences of the second LI with the first LI instruction
@@ -385,6 +386,12 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
         }
 
 
+        Log::debug << "Renaming instr:\n"
+                   << "current     : " << i << ": " << current.dump()         << "\n"
+                   << "instr3      : " << k << ": " << instr3.mnemonic(false) << "\n"
+                   << "replace_with:   "    << ": " << replace_with.dump()    << "\n"
+        ;
+
         if (renameUses(instr3, current, replace_with)) {
           //msg_replace(k, instr3, current, replace_with);
           num_subsitutions++;
@@ -394,23 +401,14 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
 
       if (num_subsitutions > 0) {
         last_use = j;
-/*
-        std::string msg;
-        msg << "Replacing instruction at " << j << " with with NOP";
-        debug(msg);
-*/
-        instr2.tag = InstrTag::SKIP;
+
+        Log::debug << "Setting skip on instruction at " << j;
+        instr2.set_skip();
       }
     }
 
     found_something = true;
   }
-
-/*
-  if (found_something) {
-    std::cout << live.cfg().dump_blocks() << std::endl;
-  }
-*/
 
   return found_something;
 }

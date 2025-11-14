@@ -103,7 +103,7 @@ void add_init(Instr::List &code) {
   int insert_index = code.tag_index(INIT_BEGIN);
   assertq(insert_index >= 0, "Expecting init begin marker");
 
-	Reg acc = ACC0();;
+	Reg acc = ACC0();
 
   Instr::List ret;
 

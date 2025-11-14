@@ -111,17 +111,26 @@ IntExpr index() {
   }
 }
 
-// A vector containing the QPU id
+
+IntExpr val_64() {
+  Expr::Ptr e = std::make_shared<Expr>(VarGen::fresh(VAR_64));
+  return IntExpr(e);
+}
+
+
+/**
+ * Reserved var. A vector containing the QPU id
+ */
 IntExpr me() {
-  // There is reserved var holding the QPU ID.
   Expr::Ptr e = std::make_shared<Expr>(Var(STANDARD, RSV_QPU_ID));
   return IntExpr(e);
 }
 
 
-// A vector containing the QPU count
+/**
+ * Reserved var. A vector containing the QPU count
+ */
 IntExpr numQPUs() {
-  // There is reserved var holding the QPU count.
   Expr::Ptr e = std::make_shared<Expr>(Var(STANDARD, RSV_NUM_QPUS));
   return IntExpr(e);
 }

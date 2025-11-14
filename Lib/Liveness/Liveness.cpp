@@ -19,7 +19,7 @@ int count_skips(Instr::List &instrs) {
   int ret = 0;
 
   for (int i = 0; i < (int) instrs.size(); i++) {
-    if (instrs[i].tag == InstrTag::SKIP) {
+    if (instrs[i].skip()) {
       ret++;
     }
   }
@@ -90,7 +90,7 @@ void allocate_registers(Instr &instr, RegUsage const &alloc) {
 /**
  * Removes all SKIP instructions from the list
  *
- * Creating a new list is MUCH faster than inline removal using Instr::remove().
+ * NOTE: Creating a new list is MUCH faster than inline removal using Instr::remove().
  * i.e.  Remove 1857 SKIPs from kernel final size 140828
  *        - remove() -> 28.557023s
  *        - new list -> 0.170661s
@@ -102,7 +102,7 @@ Instr::List  remove_replaced_instructions(Instr::List &instrs) {
   int count = 0;
 
   while (cur < instrs.size()) {
-    if (instrs[cur].tag == InstrTag::SKIP) {
+    if (instrs[cur].skip()) {
       count++;
     } else {
       ret << instrs[cur];

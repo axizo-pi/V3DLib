@@ -642,24 +642,27 @@ template<typename T, typename Ptr>
 void offsets_kernel(Ptr result, Ptr src) {
   Int a = index();
   *result = a;
-  result.inc();
+  result.inc();           comment("Kernel inc 0");
 
   T val = *src;
-  *result = val;
+  *result = val;          comment("Kernel inc 1");
+
 
   T val2 = *(src + 32);
-  *(result + 16) = val2;
+  *(result + 16) = val2;  comment("Kernel inc 3");
 
   val2 = src[32];
-  result[32] = val2;
+  result[32] = val2;      comment("Kernel inc 4");
 
   src.inc();
   result.inc();
   result.inc();
   result.inc();
 
+
   val = *src;
   *result = val;
+
   result.inc();
 
   gather(src);  comment("Start gather test");
@@ -699,7 +702,7 @@ TEST_CASE("Initialization with index() on uniform pointers should work as expect
 
   auto check = [&result, &expected] (char const *label) {
     for (int i = 0; i < (int) result.size(); i++) {
-      INFO("label: " << label << ", row: " << (i/16) << ", index: " << (i %16));
+      INFO("label: " << label << ", row: " << (i/16) << ", index: " << (i % 16));
       REQUIRE(result[i] == expected[i]);
     }
   };
@@ -707,6 +710,8 @@ TEST_CASE("Initialization with index() on uniform pointers should work as expect
 
   SUBCASE("Test with TMU") {
     auto k = compile(offsets_kernel<Int, Int::Ptr>);
+    //k.pretty("offsets_kernel_5.txt", true);
+		//k.dump_compile_data(false, "offsets_kernel_compile_data.txt");
     reset();
     k.load(&result, &a).run();
     check("tmu qpu");

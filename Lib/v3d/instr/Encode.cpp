@@ -2,10 +2,17 @@
 #include "Support/Exception.h"
 #include "Mnemonics.h"
 #include "Support/Platform.h"
+#include "Support/basics.h"
+
 
 namespace V3DLib {
+
+
 namespace v3d {
 namespace instr {
+
+using ::operator<<;  // C++ weirdness
+
 namespace {
 
 uint8_t const NOP_ADDR    = 39;
@@ -127,10 +134,15 @@ std::unique_ptr<Location> encodeSrcReg(Reg reg) {
       break;
     case NONE:
       is_none = true;
-      breakpoint  // Apparently never reached
+      breakpoint;
       break;
 
     default:
+      {
+        std::string buf;
+        buf << "encodeSrcReg(): unknown register: " << reg.dump();
+        warning(buf);
+      }
 			breakpoint;
       assertq(false, "V3DLib: unexpected reg-tag in encodeSrcReg()");
   }

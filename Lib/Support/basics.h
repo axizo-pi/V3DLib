@@ -1,6 +1,7 @@
 #ifndef _V3DLIB_SUPPORT_BASICS_H
 #define _V3DLIB_SUPPORT_BASICS_H
 #include <vector>
+#include <string>
 #include "Exception.h"
 #include "debug.h"
 

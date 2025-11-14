@@ -8,7 +8,6 @@ namespace instr {
 
 
 v3d_qpu_mux RFAddress::to_mux() const {
-	breakpoint;
 	assertq(!Platform::compiling_for_vc7(), "Don't use mux's on vc7");
 
   return V3D_QPU_MUX_A;

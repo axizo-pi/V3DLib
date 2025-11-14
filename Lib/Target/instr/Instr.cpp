@@ -1,10 +1,13 @@
 #include "Instr.h"         // Location of definition struct Instr
 #include "Support/debug.h"
+#include "global/log.h"
 #include "Target/Pretty.h"  // pretty_instr_tag()
 #include "Support/basics.h"
 #include "Support/Platform.h"
 #include "Source/BExpr.h"   // class CmpOp
 #include "LibSettings.h"
+
+using namespace Log;
 
 namespace V3DLib {
 
@@ -222,6 +225,34 @@ Instr &Instr::setCondFlag(Flag flag) {
   assert(tag == InstrTag::LI || InstrTag::ALU);
   m_set_cond.setFlag(flag);
   return *this;
+}
+
+
+/**
+ * Check if this statement should be skipped.
+ *
+ * When true, the statement must be skipped during execution
+ * (eg. emulator), or removed on final generation.
+ */
+bool Instr::skip() const {
+  return tag == InstrTag::SKIP;
+}
+
+
+/**
+ * Set instruction to SKIP.
+ *
+ * Note that member tag is still public. This is to avoid screwing
+ * up any related logic.
+ *
+ * The goal is to centralize the assignment of SKIP.
+ *
+ */
+void Instr::set_skip() {
+  assertq(tag != InstrTag::SKIP, "set_skip(): statement already set to SKIP");
+  //Log::debug << "Instr::set_skip() called on: " << mnemonic(false);
+
+  tag = InstrTag::SKIP;
 }
 
 
@@ -692,7 +723,7 @@ void check_zeroes(Instr::List const &instrs) {
   }
 
   if (!success) {
-    error("zeroes encountered in instruction sequence", true);
+    ::error("zeroes encountered in instruction sequence", true);
   }
 }
 

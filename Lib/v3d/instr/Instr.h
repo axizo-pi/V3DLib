@@ -144,6 +144,7 @@ public:
   std::unique_ptr<Source> mul_alu_a() const;
   std::unique_ptr<Source> mul_alu_b() const;
 
+  BaseSource alu_add_dst() const;
   BaseSource alu_add_a() const;
   BaseSource alu_add_b() const;
   BaseSource alu_mul_a() const;

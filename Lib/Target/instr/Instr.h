@@ -124,6 +124,9 @@ struct Instr : public InstructionComment {
   void break_point() { m_break_point = true; }
   bool break_point() const { return m_break_point; }
 
+  bool skip() const;
+  void set_skip();
+
   // ==================================================
   // Helper methods
   // ==================================================

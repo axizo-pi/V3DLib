@@ -397,15 +397,9 @@ void Instr::set_branch_condition(V3DLib::BranchCond src_cond) {
   //      instr.na0();
   //      instr.a0();
 
-// <<<<<<<<<<<<<<<<<<<<<<<<
   if (src_cond.tag == BranchCond::COND_ALWAYS) {
      return;  // nothing to do
   } else if (src_cond.tag == BranchCond::COND_ALL) {
-/*   ======================== * /
-  if (src_cond.tag == COND_ALWAYS) {
-    return;  // nothing to do
-  } else if (src_cond.tag == COND_ALL) {
-/ * >>>>>>>>>>>>>>>>>>>>>>>> */
     switch (src_cond.flag) {
       case ZC:
       case NC:
@@ -1233,6 +1227,23 @@ std::unique_ptr<Source> Instr::add_alu_a() const {
 /**
  * Return the contents of alu add a
  */
+BaseSource Instr::alu_add_dst() const {
+#if USE_MESA == 1
+	fatal("alu_add_dst(): does not support mesa1");
+#endif
+  BaseSource res;
+
+	if (add_nop()) return res;
+
+	res.set_from_dst(alu.add.waddr, alu.add.magic_write);
+
+	return res;
+}
+
+
+/**
+ * Return the contents of alu add a
+ */
 BaseSource Instr::alu_add_a() const {
 #if USE_MESA == 1
 	fatal("alu_add_a(): does not support mesa1");
@@ -1244,15 +1255,15 @@ BaseSource Instr::alu_add_a() const {
 
 	if (Platform::compiling_for_vc7()) {
 		// vc7 - no acc's
-	  res.set(alu.add.a.raddr, sig.small_imm_a, false, false);
+	  res.set_from_src(alu.add.a.raddr, sig.small_imm_a, false, false);
 	} else {
 		// vc6 - no small imm on a
 		if (alu.add.a.mux == V3D_QPU_MUX_A) {
-	    res.set(raddr_a, false, false, true );
+	    res.set_from_src(raddr_a, false, false, true );
 		} else if (alu.add.a.mux == V3D_QPU_MUX_B) {
-	    res.set(raddr_b, false, false, false );
+	    res.set_from_src(raddr_b, false, false, false );
 		} else {
-	    res.set(alu.add.a.mux, false, true, false);
+	    res.set_from_src(alu.add.a.mux, false, true, false);
 		}
 	}
 
@@ -1274,17 +1285,17 @@ BaseSource Instr::alu_add_b() const {
 
 	if (Platform::compiling_for_vc7()) {
 		// vc7 - no acc's
-	  res.set(alu.add.b.raddr, sig.small_imm_b, false, false);
+	  res.set_from_src(alu.add.b.raddr, sig.small_imm_b, false, false);
 	} else {
 		// vc6
 		if (sig.small_imm_b) {
-	    res.set(raddr_b, true, false, false );
+	    res.set_from_src(raddr_b, true, false, false );
 		} else if (alu.add.b.mux == V3D_QPU_MUX_A) {
-	    res.set(raddr_a, false, false, true );
+	    res.set_from_src(raddr_a, false, false, true );
 		} else if (alu.add.b.mux == V3D_QPU_MUX_B) {
-	    res.set(raddr_b, false, false, false );
+	    res.set_from_src(raddr_b, false, false, false );
 		} else {
-	    res.set(alu.add.b.mux, false, true, false);
+	    res.set_from_src(alu.add.b.mux, false, true, false);
 		}
 	}
 
@@ -1323,15 +1334,15 @@ BaseSource Instr::alu_mul_a() const {
 
 	if (Platform::compiling_for_vc7()) {
 		// vc7 - no acc's
-	  res.set(alu.mul.a.raddr, sig.small_imm_c, false, false);
+	  res.set_from_src(alu.mul.a.raddr, sig.small_imm_c, false, false);
 	} else {
 		// vc6 - no small imm on imul a
 		if (alu.mul.a.mux == V3D_QPU_MUX_A) {
-	    res.set(raddr_a, false, false, true );
+	    res.set_from_src(raddr_a, false, false, true );
 		} else if (alu.mul.a.mux == V3D_QPU_MUX_B) {
-	    res.set(raddr_b, false, false, false );
+	    res.set_from_src(raddr_b, false, false, false );
 		} else {
-	    res.set(alu.mul.b.mux, false, true, false);
+	    res.set_from_src(alu.mul.b.mux, false, true, false);
 		}
 	}
 
@@ -1353,15 +1364,15 @@ BaseSource Instr::alu_mul_b() const {
 
 	if (Platform::compiling_for_vc7()) {
 		// vc7 - no acc's
-	  res.set(alu.mul.b.raddr, sig.small_imm_d, false, false);
+	  res.set_from_src(alu.mul.b.raddr, sig.small_imm_d, false, false);
 	} else {
 		// vc6 - no small imm on mul b 
 		if (alu.mul.b.mux == V3D_QPU_MUX_A) {
-	    res.set(raddr_a, false, false, true );
+	    res.set_from_src(raddr_a, false, false, true );
 		} else if (alu.mul.b.mux == V3D_QPU_MUX_B) {
-	    res.set(raddr_b, false, false, false );
+	    res.set_from_src(raddr_b, false, false, false );
 		} else {
-	    res.set(alu.mul.b.mux, false, true, false);
+	    res.set_from_src(alu.mul.b.mux, false, true, false);
 		}
 	}
 

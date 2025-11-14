@@ -27,12 +27,15 @@ char const *specialStr(RegId rid) {
     case SPECIAL_SFU_LOG:       return "SFU_LOG";
     case SPECIAL_TMUAU:         return "TMUAU";    // vc7 only?
     case SPECIAL_TMUC:          return "TMUC";     // vc7 only?
+
+    case SPECIAL_VAR64:         return "Var64";
   }
 
   // Unreachable
   assert(false);
   return "";
 }
+
 
 void var_to_reg(Var var, Reg &r) {
   switch (var.tag()) {
@@ -66,6 +69,9 @@ void var_to_reg(Var var, Reg &r) {
       break;
     case TMU0_ADDR:
       r = Target::instr::TMU0_S;
+      break;
+    case VAR_64:
+      r = Target::instr::VAR_64;
       break;
     default:
       assertq(false, "srcReg(): Unhandled Var-tag");

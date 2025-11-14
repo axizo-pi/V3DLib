@@ -57,7 +57,6 @@ public:
 
 protected:
   PointerExpr addself(int b);
-  PointerExpr bare_addself(IntExpr b);
   PointerExpr addself(IntExpr b);
   PointerExpr subself(IntExpr b);
   PointerExpr add(int b) const;
