@@ -1099,7 +1099,6 @@ bool add_alu_to_mul_alu(Instr const &in_instr, Instr &dst) {
 
 
 void combine(Instructions &instructions) {
-
   //
   // Detect useless moves, eg: or  rf2, rf2, rf2    ; nop
   //

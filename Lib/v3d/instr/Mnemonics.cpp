@@ -163,14 +163,75 @@ Mnemonic &Mnemonic::fmov(Location const &dst, Source const &src) {
 
 
 /**
- * Rotate for mul alu.
+ * Perform full rotate with offset in r5; vc6 only
  *
- * Rotate only works via the mul ALU.
+ * Only mul ALU can do rotate, so this method just redirects.
+ * Interestinly, sig.rotate still exists on vc7
  *
- * See notes in header comment of rotate overload for add alu above.
+ * - dest is r1
+ * - reg a is r0
+ * - reg b if used is r5, otherwise smallimm with specific range passed (see override below)
+ * - uses mov as opcode
+ *
+ * Since dest, src are fixed, these are not passed in.
+ * If this conflicts with syntax of any other assemblers, change this
+ * (it already conflicts with python6 assembler).
+ *
+ * ============================================================================
+ * NOTES
+ * -----
+ * 
+ * * Message from the `py-videocore6` maintainer:
+ *
+ *    > Yes, rotate only works on mul ALU as in VC4 QPU.
+ *
+ * * Rotate signal is not outputted in broadcom menmonic dump.
+ *   This is most likely because rotate is of no use to MESA.
+ *
+ * * From python6 project(test_signals.py):
+ *
+ *   - nop required before rotate (but lines 82, 147 only done once before loop)
+ *   - Smallimm offset in range -15,16 inclusive; 'i == offset' in points below
+ *
+ *   1. rot signal with rN source performs as a full rotate
+ *     - nop().add(r1, r0, r0, sig = rot(i))  # Also with r5=offset, rot signal still used!
+ *   2. rotate alias
+ *     - rotate(r1, r0, i)       # add alias, 'i % 1 == 0' ??? Always true
+ *     - nop().rotate(r1, r0, i) # mul alias
+ *     - rotate(r1, r0, r5)       # add alias
+ *     - nop().rotate(r1, r0, r5) # mul alias
+ *   3. rot signal with rfN source performs as a quad rotate
+ *     - nop().add(r1, rf32, rf32, sig = rot(i))
+ *     - nop().add(r1, rf32, rf32, sig = rot(r5))
+ *   4. quad_rotate alias
+ *     - quad_rotate(r1, rf32, i)       # add alias
+ *     - nop().quad_rotate(r1, rf32, i) # mul alias
+ *     - quad_rotate(r1, rf32, r5)       # add alias
+ *     - nop().quad_rotate(r1, rf32, r5) # mul alias
+ *   5. instruction with r5rep dst performs as a full broadcast
+ *     - Uses rot signal with special condition
+ *     -  Skip for now
+ *   6. broadcast alias
+ *     - idem 5, skip for now
+ *   7. instruction with r5 dst performs as a quad broadcast
+ *     - idem 5, skip for now
+ *
+ * * Conclusions previous point:
+ *
+ *   Only 2. relevant for V3DLib code, skip rest for now
+ *
+ *   - nop required before rotate (but lines 82, 147 only done once before loop)
+ *   - Only mul alu can do rotate (vc4 AND v3d)
+ *   - dst apparently always r1
+ *   - src apparently always r0 for 'full rotate'; TODO likely not true, check
+ *   - offset is either a SmallImm or in r5
+ *   - Smallimm offset in range -15,16 inclusive
+ *   - TODO: try to understand the newfangled quad rotate shit.
+ *
  */
 Mnemonic &Mnemonic::rotate(Location const &dst, Location const &a, SmallImm const &b) {
-	assertq(!Platform::compiling_for_vc7(), "This implementation of rotate is not for vc7");
+	assertq(!Platform::compiling_for_vc7(), "rotate on mul is for vc6 only");
+
   assertq(dst.to_mux()  == V3D_QPU_MUX_R1, "rotate dest can only be r1");
   assertq(a.to_mux() == V3D_QPU_MUX_R0,    "rotate src a can only be r0", true);
   assertq(-15 <= b.val() && b.val() < 16,  "rotate: smallimm must be in proper range");
@@ -190,11 +251,13 @@ Mnemonic &Mnemonic::rotate(Location const &dst, Location const &a, SmallImm cons
 
 
 /**
- * Rotate for mul alu.
+ * Rotate for mul alu, vc6 only.
  *
- * See notes in header comment of rotate overload for add alu above.
+ * See notes in header comment of rotate overload above.
  */
 Mnemonic &Mnemonic::rotate(Location const &dst, Location const &a, Location const &b) {
+	assertq(!Platform::compiling_for_vc7(), "rotate on mul is for vc6 only");
+
   assertq(dst.to_mux()  == V3D_QPU_MUX_R1, "rotate dest can only be r1");
   assertq(a.to_mux() == V3D_QPU_MUX_R0,    "rotate src a can only be r0");
   assertq(b.to_mux() == V3D_QPU_MUX_R5,    "rotate src b can only be r5");
@@ -416,88 +479,30 @@ Mnemonic sampid(Location const &dst) {
 // Rotate instructions
 ///////////////////////////////////////////////////////////////////////////////
 
+
 /**
- * Perform full rotate with offset in r5.
- *
- * Only mul ALU can do rotate, so this method just redirects.
- *
- * - dest is r1
- * - reg a is r0
- * - reg b if used is r5, otherwise smallimm with specific range passed (see override below)
- * - uses mov as opcode
- *
- * Since dest, src are fixed, these are not passed in.
- * If this conflicts with syntax of any other assemblers, change this
- * (it already conflicts with python6 assembler).
- *
- * ============================================================================
- * NOTES
- * -----
- * 
- * * Message from the `py-videocore6` maintainer:
- *
- *    > Yes, rotate only works on mul ALU as in VC4 QPU.
- *
- * * Rotate signal is not outputted in broadcom menmonic dump.
- *   This is most likely because rotate is of no use to MESA.
- *
- * * From python6 project(test_signals.py):
- *
- *   - nop required before rotate (but lines 82, 147 only done once before loop)
- *   - Smallimm offset in range -15,16 inclusive; 'i == offset' in points below
- *
- *   1. rot signal with rN source performs as a full rotate
- *     - nop().add(r1, r0, r0, sig = rot(i))  # Also with r5=offset, rot signal still used!
- *   2. rotate alias
- *     - rotate(r1, r0, i)       # add alias, 'i % 1 == 0' ??? Always true
- *     - nop().rotate(r1, r0, i) # mul alias
- *     - rotate(r1, r0, r5)       # add alias
- *     - nop().rotate(r1, r0, r5) # mul alias
- *   3. rot signal with rfN source performs as a quad rotate
- *     - nop().add(r1, rf32, rf32, sig = rot(i))
- *     - nop().add(r1, rf32, rf32, sig = rot(r5))
- *   4. quad_rotate alias
- *     - quad_rotate(r1, rf32, i)       # add alias
- *     - nop().quad_rotate(r1, rf32, i) # mul alias
- *     - quad_rotate(r1, rf32, r5)       # add alias
- *     - nop().quad_rotate(r1, rf32, r5) # mul alias
- *   5. instruction with r5rep dst performs as a full broadcast
- *     - Uses rot signal with special condition
- *     -  Skip for now
- *   6. broadcast alias
- *     - idem 5, skip for now
- *   7. instruction with r5 dst performs as a quad broadcast
- *     - idem 5, skip for now
- *
- * * Conclusions previous point:
- *
- *   Only 2. relevant for V3DLib code, skip rest for now
- *
- *   - nop required before rotate (but lines 82, 147 only done once before loop)
- *   - Only mul alu can do rotate (vc4 AND v3d)
- *   - dst apparently always r1
- *   - src apparently always r0 for 'full rotate'; TODO likely not true, check
- *   - offset is either a SmallImm or in r5
- *   - Smallimm offset in range -15,16 inclusive
- *   - TODO: try to understand the newfangled quad rotate shit.
- *
+ * For vc6, this call is redirected to mul rotate
  */
 Mnemonic rotate(Location const &dst, Location const &a, Location const &b) {
-  Mnemonic instr;
-  return instr.rotate(dst, a, b);
+	if (Platform::compiling_for_vc7()) {
+		return Mnemonic(V3D_QPU_A_ROT, dst, a, b);
+	} else {
+	  Mnemonic instr;
+  	return instr.rotate(dst, a, b);
+	}
 }
 
 
 /**
- * Rotate.
- *
- * Rotate only works via the mul ALU.
- *
- * See notes in header comment of rotate overload above.
+ * 
  */
 Mnemonic rotate(Location const &dst, Location const &a, SmallImm const &b) {
-  Mnemonic instr;
-  return instr.rotate(dst, a, b);
+	if (Platform::compiling_for_vc7()) {
+		return Mnemonic(V3D_QPU_A_ROT, dst, a, b);
+	} else {
+	  Mnemonic instr;
+  	return instr.rotate(dst, a, b);
+	}
 }
 
 

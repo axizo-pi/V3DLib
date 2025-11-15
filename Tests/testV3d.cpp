@@ -487,22 +487,39 @@ TEST_CASE("Check v3d opcodes [v3d][opcodes]") {
   SUBCASE("For opcode with two small immediates values, value should be the same") {
     REQUIRE_THROWS(shl(r0, 1, 5));
     REQUIRE_NOTHROW(shl(r3, 4, 4));
+	
+		if (V3DLib::Platform::compiling_for_vc7()) {
+   	 	REQUIRE_THROWS(nop().add(r0, 1, 5));
+    	REQUIRE_NOTHROW(nop().add(r3, 4, 4));
+		}
   }
 
   SUBCASE("Selected opcode should be encoded correctly") {
-    using std::cout;
-    using std::endl;
-    //printf("Selected opcode should be encoded correctly\n");
+		if (!V3DLib::Platform::compiling_for_vc7()) {
+			// acc's, vc6
+    	std::vector<std::string> expected = {
+      	"and  rf0, r0, 15     ; nop",
+      	"and  r1, r0, 15      ; nop"
+    	};
+
+    	Instructions instrs; 
+    	instrs << band(rf(0), r0, 0b1111)
+           	 << band(r1, r0, 0b1111);
+    
+			for (int n = 0; n < (int) instrs.size(); ++n) {
+				// The whitespace layout changed in mesa2; condense_whitespace() nullifies different spaces
+				REQUIRE(condense_whitespace(instrs[n].mnemonic()) == condense_whitespace(expected[n]));
+    	}
+		}
 
     std::vector<std::string> expected = {
-      "and  rf0, r0, 15     ; nop",
-      "and  r1, r0, 15      ; nop"
+      "and  rf0, rf1, 15     ; nop",
+      "and  rf2, rf3, 15      ; nop"
     };
 
     Instructions instrs; 
-
-    instrs << band(rf(0), r0, 0b1111)
-           << band(r1, r0, 0b1111);
+    instrs << band(rf(0), rf(1), 0b1111)
+           << band(rf(2), rf(3), 0b1111);
 
     for (int n = 0; n < (int) instrs.size(); ++n) {
 			// The whitespace layout changed in mesa2; condense_whitespace() nullifies different spaces
@@ -527,29 +544,35 @@ TEST_CASE("Check v3d opcodes [v3d][opcodes]") {
   SUBCASE("Opcodes not in qpu_disasm kernel assembled correctly") {
     Instructions ret;
 
-    ret
-      << nop().smul24(r1, SmallImm(2), rf(0))
-      << rotate(r1, r0, r5)
-      << rotate(r1, r0, 3)
-      << shl(r3, 4, 4).mov(rf(1), r5)
-    ;
+		if (V3DLib::Platform::compiling_for_vc7()) {
+    	ret
+      	<< nop().smul24(rf(1), SmallImm(2), rf(0))
+      	<< rotate(rf(1), rf(0), rf(15))
+      	<< rotate(rf(1), rf(0), 3)
+      	<< shl(rf(3), 4, 4).mov(rf(1), rf(5))
+    	;
+		} else {
+    	ret
+      	<< nop().smul24(r1, SmallImm(2), rf(0))
+      	<< rotate(r1, r0, r5)
+      	<< rotate(r1, r0, 3)
+      	<< shl(r3, 4, 4).mov(rf(1), r5)
+    	;
+		}
 
-/*
+	/*
     // Just eyeball them for now
     printf("Eyeballing opcodes:\n");
     for (auto &op : ret) {
       std::cout << op.mnemonic() << std::endl;
-      //op.dump(true);
     }
 
     // Show last in full
     {
       auto &op = ret.back();
-
-      std::cout << op.mnemonic() << std::endl;
-      op.dump(true);
+      std::cout << "Final: " << op.mnemonic() << std::endl;
     }
-*/
+	*/
   }
 }
 

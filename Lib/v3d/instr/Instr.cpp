@@ -806,6 +806,13 @@ bool Instr::alu_add_set(Location const &dst, Source const &a, Source const &b) {
 
 	bool ret = true;
 
+	// Following applies to vc6 AND vc7
+	if (!a.is_location() && !b.is_location()) {
+		if (!(a.small_imm() == b.small_imm())) {
+    	throw Exception("alu_add_set: can not pass two different small immediates.");
+		}
+	}
+
   ret = alu_add_set_a(a);
 		
 	if (ret) {
@@ -1002,13 +1009,24 @@ bool Instr::alu_mul_set(Location const &dst, Source const &a, Source const &b) {
 
 	bool ret;
 
+
 	if (Platform::compiling_for_vc7()) {
+		if (!a.is_location() && !b.is_location()) {
+			if (!(a.small_imm() == b.small_imm())) {
+	    	throw Exception("alu_mul_set: can not pass two different small immediates on vc7.");
+			}
+		}
+
 		ret = alu_mul_set_a(a);
 		assert(ret);
 	
 		ret = alu_mul_set_b(b);
 		assert(ret);
 	} else {
+		if (!a.is_location() || !b.is_location()) {
+		 	throw Exception("alu_mul_set: can not use small immediates on mul vc6.");
+		}
+
   	ret = alu_set_src(a, alu.mul.a, CHECK_MUL_A) && alu_set_src(b, alu.mul.b, CHECK_MUL_B);
 	}
 
