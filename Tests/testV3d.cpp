@@ -349,6 +349,10 @@ TEST_CASE("Check v3d code is working properly [v3d][code]") {
 
 TEST_CASE("Driver call for v3d should work [v3d][driver]") {
   if (!v3d_init()) return;
+	if (V3DLib::Platform::compiling_for_vc7()) {
+    printf("Precompiled kernels are for vc6, will not run (correctly) on vc7\n");
+		return;
+	}
 
   SUBCASE("Summation example should work from bytecode") {
     uint8_t num_qpus = 8;  // Don't change these values! That's how the summation kernel bytecode
@@ -388,6 +392,10 @@ TEST_CASE("Check v3d rotate assembly/disassembly [v3d][asm]") {
   using namespace V3DLib::v3d::instr;
 
   if (!v3d_init()) return;
+	if (V3DLib::Platform::compiling_for_vc7()) {
+    printf("Precompiled kernels are for vc6, will not run (correctly) on vc7\n");
+		return;
+	}
 
   SUBCASE("rotate kernel generates correctly encoded output") {
     std::vector<uint64_t> arr = rotate_kernel();
@@ -403,6 +411,10 @@ TEST_CASE("Check v3d assembly/disassembly [v3d][asm]") {
   using namespace V3DLib::v3d::instr;
 
   if (!v3d_init()) return;
+	if (V3DLib::Platform::compiling_for_vc7()) {
+		// The expected output is vc6-specific, ignore OR fix (TODO)
+		return;
+	}
 
   SUBCASE("Correct output of dump program") {
     const char *expected = "\n{\n\
@@ -446,6 +458,7 @@ TEST_CASE("Check v3d assembly/disassembly [v3d][asm]") {
 
   SUBCASE("Register without mux definition should throw on usage") {
     using namespace V3DLib::v3d::instr;
+		// Mux's not available on vc7
 
     REQUIRE_NOTHROW(r0.to_waddr());
     REQUIRE_NOTHROW(r0.to_mux());
@@ -458,11 +471,23 @@ TEST_CASE("Check v3d assembly/disassembly [v3d][asm]") {
   }
 
 
+  SUBCASE("qpu_disasm kernel generates correctly encoded output") {
+    auto &bytecode      = qpu_disasm_bytecode();
+    auto  kernel_output = qpu_disasm_kernel();
+    REQUIRE(kernel_output.size() > 0);
+
+    match_kernel_outputs(bytecode, kernel_output, true);  // true: skip `nop` in kernel_output, can't generate
+  }
+}
+
+
+TEST_CASE("Check v3d opcodes [v3d][opcodes]") {
+  using namespace V3DLib::v3d::instr;
+
   SUBCASE("For opcode with two small immediates values, value should be the same") {
     REQUIRE_THROWS(shl(r0, 1, 5));
     REQUIRE_NOTHROW(shl(r3, 4, 4));
   }
-
 
   SUBCASE("Selected opcode should be encoded correctly") {
     using std::cout;
@@ -496,15 +521,6 @@ TEST_CASE("Check v3d assembly/disassembly [v3d][asm]") {
     // Special case: branch with field bu == false: ignore bdu field
     // This should succeed!
     REQUIRE(Instr::compare_codes(0x02ffeff3ff009000, 0x02ffeff3ff001000)); // 2x b.na0  -4112
-  }
-
-
-  SUBCASE("qpu_disasm kernel generates correctly encoded output") {
-    auto &bytecode      = qpu_disasm_bytecode();
-    auto  kernel_output = qpu_disasm_kernel();
-    REQUIRE(kernel_output.size() > 0);
-
-    match_kernel_outputs(bytecode, kernel_output, true);  // true: skip `nop` in kernel_output, can't generate
   }
 
 
