@@ -81,11 +81,11 @@ endif
 
 
 INCLUDE_EXTERN+= \
- -I extern/mesa2/include \
- -I extern/mesa2/src
+ -I extern/mesa/include \
+ -I extern/mesa/src
 
 LIB_EXTERN+= \
- -Lobj/mesa2/bin -lmesa2
+ -Lobj/mesa/bin -lmesa
 
 
 # TODO: make a script determining with videocore version we're compiling on (6 or 7)
@@ -165,7 +165,7 @@ TESTS_OBJ = $(patsubst %,$(OBJ_DIR)/%,$(TESTS_FILES))
 
 
 V3DLIB=$(OBJ_DIR)/libv3dlib.a
-MESA_LIB=obj/mesa2/bin/libmesa2.a
+MESA_LIB=obj/mesa/bin/libmesa.a
 VCSM_LIB=$(VCSM_DIR)/libvcsm.a
 
 
@@ -219,7 +219,7 @@ $(V3DLIB): $(LIB) $(MESA_LIB) $(VCSM_LIB)
 	@ar rcs $@ $^
 
 $(MESA_LIB):
-	cd extern/mesa2 && make compile
+	cd extern/mesa && make compile
 
 $(VCSM_LIB):
 	cd extern/userland/ && make

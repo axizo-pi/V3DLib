@@ -17,14 +17,14 @@
 #
 ################################################################################
 SRCDIR = src
-BASEDIR = ../../obj/mesa2
+BASEDIR = ../../obj/mesa
 OBJDIR = $(BASEDIR)/src
 BINDIR = $(BASEDIR)/bin
 MAINDIR = $(BASEDIR)/main
 
 XX_FLAGS = -MMD -MP -MF"$(@:%.o=%.d)"
 
-MESA_LIB=$(BINDIR)/libmesa2.a
+MESA_LIB=$(BINDIR)/libmesa.a
 
 INCLUDES = \
 -I ./src/ \
