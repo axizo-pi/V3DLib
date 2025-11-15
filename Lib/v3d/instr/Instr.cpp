@@ -1009,7 +1009,6 @@ bool Instr::alu_mul_set(Location const &dst, Source const &a, Source const &b) {
 
 	bool ret;
 
-
 	if (Platform::compiling_for_vc7()) {
 		if (!a.is_location() && !b.is_location()) {
 			if (!(a.small_imm() == b.small_imm())) {
