@@ -8,10 +8,7 @@ namespace instr {
 
 extern Reg const None;
 Reg ACC0();
-extern Reg const ACC1;
-extern Reg const ACC2;
-extern Reg const ACC3;
-extern Reg const ACC4;
+Reg ACC4();
 extern Reg const ACC5;
 extern Reg const UNIFORM_READ;
 extern Reg const QPU_ID;

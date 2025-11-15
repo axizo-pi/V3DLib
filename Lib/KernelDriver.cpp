@@ -87,10 +87,12 @@ void loadStorePass(Instr::List &instrs) {
   for (int i = 0; i < instrs.size(); i++) {
     Instr instr = instrs[i];
 
-    if (instr.tag == RECV && instr.dest() != ACC4) {
+		auto acc4 = ACC4();   // Should not be converted to rf here
+
+    if (instr.tag == RECV && instr.dest() != acc4) {
       Instr::List tmp(2);
-      tmp << recv(ACC4)
-          << mov(instr.dest(), ACC4);
+      tmp << recv(acc4)
+          << mov(instr.dest(), acc4);
       tmp.front().transfer_comments(instr);
 
       newInstrs << tmp;

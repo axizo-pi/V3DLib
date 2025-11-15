@@ -51,12 +51,13 @@ Instr::List sfu_function(Var dst, Var srcA, Reg const &sfu_reg, const char *labe
   ret << mov(sfu_reg, srcA).comment(cmt)
       << nop
       << nop
-      << mov(dst, ACC4);
+      << mov(dst, ACC4());
 
   return ret;
 }
 
 Reg const ACC0_(ACC, 0);
+Reg const ACC4_(ACC, 4);
 
 }  // anon namespace
 
@@ -66,16 +67,20 @@ namespace instr {
 Reg const None(NONE, 0);
 
 
-/**
- * Replace ACC0 with an rf register for vc7.
+/*================================================================
+ * Replace ACCs's with rf registers for vc7.
  *
  * ACC0 is often used as a temp register for vc4 and vc6.
  * This does not work any more for vc7, which does not have 
  * general purpose accumulators.
  *
+ * ACC1, ACC2, ACC3 do not appear to be used anywhere, removed.
+ * ACC4 and ACC5 have special purposes
+ *
  * Just remember that every call generates a new variable.
- * If you need to reuse a given ACC0 instance, keep a reference.
- */
+ * If you need to reuse a given ACC instance, keep a reference.
+ =================================================================*/
+
 Reg ACC0() {
 	if (Platform::compiling_for_vc7()) {
 		assert(V3DLib::VarGen::count() != 0);
@@ -86,11 +91,26 @@ Reg ACC0() {
 }
 
 
-Reg const ACC1(ACC, 1);
-Reg const ACC2(ACC, 2);
-Reg const ACC3(ACC, 3);
-Reg const ACC4(ACC, 4);
+/**
+ * This is a special purpose register  on vc4, vc6.
+ * It is not on vc7.
+ */
+Reg ACC4() {
+	if (Platform::compiling_for_vc7()) {
+		assert(V3DLib::VarGen::count() != 0);
+	 	return Reg(V3DLib::VarGen::fresh());
+	} else {
+		return ACC4_;
+	}
+}
+
+
+/**
+ * This is a special purpose register on vc4, vc6.
+ * It is still present vc7, but renamed to QUAD.
+ */
 Reg const ACC5(ACC, 5);
+
 Reg const UNIFORM_READ( SPECIAL, SPECIAL_UNIFORM);
 Reg const QPU_ID(       SPECIAL, SPECIAL_QPU_NUM);
 Reg const ELEM_ID(      SPECIAL, SPECIAL_ELEM_NUM);
