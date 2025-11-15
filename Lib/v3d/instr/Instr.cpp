@@ -92,7 +92,7 @@ bool Instr::is_branch() const {
  * Return true if any of the small_imm flags are set (there are four).
  */
 bool Instr::has_small_imm() const {
-	return sig.small_imm_a
+	return sig.small_imm_a  // This is actually vc7. Problem?
 	    || sig.small_imm_b
 	    || sig.small_imm_c
 	    || sig.small_imm_d;
@@ -407,41 +407,23 @@ void Instr::set_branch_condition(V3DLib::BranchCond src_cond) {
         set_branch_condition(V3D_QPU_BRANCH_COND_ALLA);
         break;
       default:
-// <<<<<<<<<<<<<<<<<<<<<<<<
         assertq(false, "Unknown branch condition under COND_ALL");
     }
   } else if (src_cond.tag == BranchCond::COND_ANY) {
-/*   ======================== * /
-        debug_break("Unknown branch condition under COND_ALL");  // Warn me if this happens
-    }
-  } else if (src_cond.tag == COND_ANY) {
-/ * >>>>>>>>>>>>>>>>>>>>>>>> */
     switch (src_cond.flag) {
       case ZC:
       case NC:
-/* <<<<<<<<<<<<<<<<<<<<<<<<
-        assertq(false, "Unknown branch condition under COND_ANY");
-   ======================== */
         set_branch_condition(V3D_QPU_BRANCH_COND_ANYNA);  // TODO: verify
-/* >>>>>>>>>>>>>>>>>>>>>>>> */
         break;
       case ZS:
       case NS:
         set_branch_condition(V3D_QPU_BRANCH_COND_ANYA);   // TODO: verify
         break;
       default:
-/* <<<<<<<<<<<<<<<<<<<<<<<<
-        assertq(false, "Unknown branch condition under COND_ANY");
-   ======================== */
         debug_break("Unknown branch condition under COND_ANY");  // Warn me if this happens
-/* >>>>>>>>>>>>>>>>>>>>>>>> */
     }
   } else {
-/* <<<<<<<<<<<<<<<<<<<<<<<<
-    assertq(false, "Branch condition not COND_ALL or COND_ANY");
-   ======================== */
     debug_break("Branch condition not COND_ALL or COND_ANY");  // Warn me if this happens
-/* >>>>>>>>>>>>>>>>>>>>>>>> */
   }
 }
 
@@ -808,7 +790,7 @@ bool Instr::alu_add_set(Location const &dst, Source const &a, Source const &b) {
 
 	// Following applies to vc6 AND vc7
 	if (!a.is_location() && !b.is_location()) {
-		if (!(a.small_imm() == b.small_imm())) {
+		if (a.small_imm().val() != b.small_imm().val()) {
     	throw Exception("alu_add_set: can not pass two different small immediates.");
 		}
 	}
@@ -1290,7 +1272,6 @@ BaseSource Instr::alu_add_b() const {
 /**
  * Return the contents of alu mul a
  *
- * =================================================
  * Interesting thought:
  * --------------------
  *
