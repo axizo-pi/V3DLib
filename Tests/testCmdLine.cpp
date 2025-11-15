@@ -50,12 +50,11 @@ void init_msg() {
  * @return true if can run
  */
 bool gcd_msg() {
-  if (V3DLib::Platform::run_vc4()) return true;
+  if (!V3DLib::Platform::run_vc7()) return true;
 
-  // running on v3d
   static bool showed_msg = false;
   if (!showed_msg) {
-    printf("NOTE: Skipping GCD in tests on v3d; Need to fix GCD first.\n");
+    printf("NOTE: Skipping GCD in tests on vc7; Need to fix GCD first.\n");
     showed_msg = true;
   }
 
