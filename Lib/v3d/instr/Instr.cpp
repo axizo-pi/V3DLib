@@ -11,6 +11,7 @@
 #include "OpItems.h"
 #include "Support/Platform.h"
 
+using namespace Log;
 
 namespace V3DLib {
 namespace v3d {
@@ -218,7 +219,7 @@ void Instr::set_push_tag(SetCond set_cond) {
 bool Instr::check_dst() const {
   int ld_count = sig_dst_count();
   if (ld_count > 1) {
-    error("More than one ld-signal with dst register set");
+    cerr << "More than one ld-signal with dst register set";
     return false;
   }
 
@@ -230,19 +231,19 @@ bool Instr::check_dst() const {
 
   if (sig_dst == add_dst) {
     breakpoint
-    error("signal dst register same as add alu dst register");
+    cerr << "signal dst register same as add alu dst register";
     ret = false;
   }
 
   if (sig_dst == mul_dst) {
     breakpoint
-    error("signal dst register same as mul alu dst register");
+    cerr << "signal dst register same as mul alu dst register";
     ret = false;
   }
 
   if (add_dst == mul_dst) {
     breakpoint
-    error("add alu dst register same as mul alu dst register");
+    cerr << "add alu dst register same as mul alu dst register";
     ret = false;
   }
 
@@ -258,6 +259,14 @@ std::string Instr::dump() const {
 
 
 std::string Instr::pretty_instr() const {
+/*
+	Log::debug
+		<< "output pack values:\n"
+    << "  add: " << alu.add.output_pack << "\n"
+    << "  mul: " << alu.mul.output_pack
+	;
+*/
+
   std::string ret = instr_mnemonic(this);
 
   auto indent = [] (int size) -> std::string {
@@ -348,17 +357,21 @@ std::string Instr::mnemonics(std::vector<uint64_t> const &in_code) {
 
 
 void Instr::init(uint64_t in_code) {
+  if (!instr_unpack(in_code, this)) {
+    warn << "Instr:init: call to instr_unpack failed.";
+    return;
+  }
+
   raddr_a = 0;
 
   // These do not always get initialized in unpack
-  sig_addr = 0;
+  sig_addr  = 0;
   sig_magic = false;
-  raddr_b = 0; // Not set for branch
+  raddr_b   = 0;      // Not set for branch
 
-  if (!instr_unpack(in_code, this)) {
-    warning("Instr:init: call to instr_unpack failed.");
-    return;
-  }
+	alu.add.output_pack = V3D_QPU_PACK_NONE;
+	alu.mul.output_pack = V3D_QPU_PACK_NONE;
+
 
   if (is_branch()) {
     if (!branch.ub) {

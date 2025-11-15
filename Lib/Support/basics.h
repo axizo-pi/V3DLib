@@ -4,6 +4,7 @@
 #include <string>
 #include "Exception.h"
 #include "debug.h"
+#include "global/log.h"
 
 namespace V3DLib {
 
