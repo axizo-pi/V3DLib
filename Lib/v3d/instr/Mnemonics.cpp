@@ -146,7 +146,7 @@ Mnemonic &Mnemonic::mov(Location const &dst, Source const &src) {
  * Can't consolidate this yet, required for special register vpm
  */
 Mnemonic &Mnemonic::mov(uint8_t rf_addr, Register const &reg) {
-	assertq(Platform::compiling_for_vc7(), "Mnemonic::mov(): don't call this on vc7");
+	assertq(!Platform::compiling_for_vc7(), "Mnemonic::mov(): don't call this on vc7");
   m_doing_add = false;
 
   alu.mul.op    = V3D_QPU_M_MOV;

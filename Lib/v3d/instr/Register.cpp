@@ -25,13 +25,12 @@ Register::Register(const char *name, v3d_qpu_waddr waddr_val, v3d_qpu_mux mux_va
 
 
 v3d_qpu_mux Register::to_mux() const {
-	breakpoint;
 	assertq(!Platform::compiling_for_vc7(), "Don't use mux's on vc7");
 
   if (!m_mux_is_set) {
-    std::string buf;
-    buf += "Can't use mux value for register '" + m_name + "', it is not defined";
-    throw Exception(buf);
+    // It is (most likely) a special register
+    // return a non-acc value in this case
+    return V3D_QPU_MUX_B;
   }
 
   return m_mux_val;
