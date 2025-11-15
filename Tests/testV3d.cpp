@@ -482,6 +482,7 @@ TEST_CASE("Check v3d assembly/disassembly [v3d][asm]") {
 
 
 TEST_CASE("Check v3d opcodes [v3d][opcodes]") {
+  if (!v3d_init()) return;
   using namespace V3DLib::v3d::instr;
 
   SUBCASE("For opcode with two small immediates values, value should be the same") {

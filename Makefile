@@ -206,9 +206,10 @@ clean:
 
 init:
 	@./script/install.sh
-	@./script/detect_tabs.sh
 	@mkdir -p ./obj/test
 
+# Part of init:
+#@./script/detect_tabs.sh   - This is for github, which has awkward tabs for displaying source code
 
 #
 # Targets for static library

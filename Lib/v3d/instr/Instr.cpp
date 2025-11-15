@@ -92,7 +92,7 @@ bool Instr::is_branch() const {
  * Return true if any of the small_imm flags are set (there are four).
  */
 bool Instr::has_small_imm() const {
-	return sig.small_imm_a
+	return sig.small_imm_a  // This is actually vc7. Problem?
 	    || sig.small_imm_b
 	    || sig.small_imm_c
 	    || sig.small_imm_d;
@@ -808,7 +808,7 @@ bool Instr::alu_add_set(Location const &dst, Source const &a, Source const &b) {
 
 	// Following applies to vc6 AND vc7
 	if (!a.is_location() && !b.is_location()) {
-		if (!(a.small_imm() == b.small_imm())) {
+		if (a.small_imm().val() != b.small_imm().val()) {
     	throw Exception("alu_add_set: can not pass two different small immediates.");
 		}
 	}
@@ -1012,7 +1012,7 @@ bool Instr::alu_mul_set(Location const &dst, Source const &a, Source const &b) {
 
 	if (Platform::compiling_for_vc7()) {
 		if (!a.is_location() && !b.is_location()) {
-			if (!(a.small_imm() == b.small_imm())) {
+			if (a.small_imm().val() != b.small_imm().val()) {
 	    	throw Exception("alu_mul_set: can not pass two different small immediates on vc7.");
 			}
 		}
