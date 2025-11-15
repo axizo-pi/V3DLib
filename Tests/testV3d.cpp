@@ -350,7 +350,7 @@ TEST_CASE("Check v3d code is working properly [v3d][code]") {
 TEST_CASE("Driver call for v3d should work [v3d][driver]") {
   if (!v3d_init()) return;
 	if (V3DLib::Platform::compiling_for_vc7()) {
-    printf("Precompiled kernels are for vc6, will not run (correctly) on vc7\n");
+		Log::debug << "Precompiled kernels are for vc6, will not run (correctly) on vc7";
 		return;
 	}
 
@@ -393,7 +393,7 @@ TEST_CASE("Check v3d rotate assembly/disassembly [v3d][asm]") {
 
   if (!v3d_init()) return;
 	if (V3DLib::Platform::compiling_for_vc7()) {
-    printf("Precompiled kernels are for vc6, will not run (correctly) on vc7\n");
+		Log::debug << "Precompiled kernels are for vc6, will not run (correctly) on vc7";
 		return;
 	}
 
