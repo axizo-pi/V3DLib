@@ -5,7 +5,7 @@
 #include <string.h>  // strstr()
 #include "defines.h"
 #include "basics.h"
-#include "v3d/v3d.h"
+//#include "v3d/v3d.h"
 
 namespace V3DLib {
 namespace {
@@ -178,6 +178,7 @@ public:
   bool m_compiling_for_vc4 = true;
 
   bool run_vc4() const { return vc_type == vc4; }
+  bool run_vc6() const { return vc_type == vc6; }
   bool run_vc7() const { return vc_type == vc7; }
   int size_regfile() const;
   std::string output() const;
@@ -197,14 +198,14 @@ PlatformInfo::PlatformInfo() {
 		vc4;
   }
 
-	// As default, select compiling for the platform you are on.
-	// If you want to compile to vc4, you need to explicitly set this.
-  m_compiling_for_vc4 = (vc_type == vc4);
-
 #ifndef QPU_MODE
   // Allow only emulator and interpreter modes, no hardware
   m_use_main_memory = true;
   vc_type = vc4;             // run vc4 code only
+#else
+	// As default, select compiling for the platform you are on.
+	// If you want to compile to vc4, you need to explicitly set this.
+  m_compiling_for_vc4 = (vc_type == vc4);
 #endif
 }
 
@@ -293,7 +294,10 @@ void Platform::use_main_memory(bool val) {
  * This is distinct from the platform we are actually running on.
  * The compilation can occur on any platform, including non-pi.
  */
-void Platform::compiling_for_vc4(bool val) { instance().m_compiling_for_vc4 = val; }
+void Platform::compiling_for_vc4(bool val) { 
+  Log::debug << "compiling_for_vc4 val: " << val;
+  instance().m_compiling_for_vc4 = val;
+}
 
 bool Platform::compiling_for_vc4() { return instance().m_compiling_for_vc4; }
 
@@ -308,8 +312,9 @@ bool Platform::compiling_for_vc4() { return instance().m_compiling_for_vc4; }
  * platform.
  */
 bool Platform::compiling_for_vc7() {
-  if (instance().m_compiling_for_vc4) return false;
-  return v3d_device_vc7();
+  if (instance().m_compiling_for_vc4) return false;  // This override any device selection, due to emulator and interpreter
+  return instance().run_vc7();  // This option is way easier
+  // return v3d_device_vc7();
 }
 
 

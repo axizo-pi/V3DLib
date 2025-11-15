@@ -19,7 +19,8 @@ public:
   Source(SmallImm const &rhs);
   Source(int rhs);
 
-  bool is_location() const { return m_is_location; }
+  bool is_location()  const { return  m_is_location; }
+  bool is_small_imm() const { return !m_is_location; }
   Location const &location() const;
   SmallImm const &small_imm() const;
 

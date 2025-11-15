@@ -156,6 +156,10 @@ void Settings::init(int argc, const char *argv[]) {
   m_all_params.add(base_params_instance(m_use_num_qpus));
 
   check_params(m_all_params, argc, argv);
+
+  // Set default logging to warnings
+  set_loglevel(WARNING);
+  Log::set_level(Log::Logger::WARNING);
 }
 
 

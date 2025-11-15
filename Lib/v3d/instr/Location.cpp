@@ -27,7 +27,6 @@ bool Location::check_acc_usage(Location const &loc) {
    mux == V3D_QPU_MUX_R3 ||
    mux == V3D_QPU_MUX_R4
 	) {
-		fatal << "Can not use general purpose registers on vc7";
 		return false;
 	}
 
