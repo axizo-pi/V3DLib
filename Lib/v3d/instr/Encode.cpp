@@ -174,27 +174,18 @@ std::unique_ptr<Location> encodeDestReg(V3DLib::Instr const &src_instr) {
         // These DMA registers *are* handled
         // They get translated to the corresponding v3d registers
         // TODO get VPM/DMA out of sight
-        case SPECIAL_VPM_WRITE:           // Write TMU, to set data to write
-          ret = loc_ptr(tmud);
-          break;
-        case SPECIAL_DMA_ST_ADDR:         // Write TMU, to set memory address to write to
-          ret = loc_ptr(tmua);
-          break;
-        case SPECIAL_TMU0_S:              // Read TMU
-          ret = loc_ptr(tmua);
-					break;
-        case SPECIAL_TMUAU:
-          ret = loc_ptr(tmuau);
-          break;
-        case SPECIAL_TMUC:
-          ret = loc_ptr(tmuc);
-          break;
+        case SPECIAL_VPM_WRITE    : ret = loc_ptr(tmud);  break; // Write TMU, to set data to write
+        case SPECIAL_DMA_ST_ADDR  : ret = loc_ptr(tmua);  break; // Write TMU, to set memory address to write to
+        case SPECIAL_TMU0_S       : ret = loc_ptr(tmua);  break; // Read TMU
+        case SPECIAL_TMUAU        : ret = loc_ptr(tmuau); break;
+        case SPECIAL_TMUC         : ret = loc_ptr(tmuc);  break;
+        case SPECIAL_TMUL         : ret = loc_ptr(tmul);  break;
 
         // SFU registers
-        case SPECIAL_SFU_RECIP    : ret = loc_ptr(recip);     break;
-        case SPECIAL_SFU_RECIPSQRT: ret = loc_ptr(rsqrt);     break;  // Alternative: register rsqrt2
-        case SPECIAL_SFU_EXP      : ret = loc_ptr(exp);       break;
-        case SPECIAL_SFU_LOG      : ret = loc_ptr(log);       break;
+        case SPECIAL_SFU_RECIP    : ret = loc_ptr(recip); break;
+        case SPECIAL_SFU_RECIPSQRT: ret = loc_ptr(rsqrt); break;  // Alternative: register rsqrt2
+        case SPECIAL_SFU_EXP      : ret = loc_ptr(exp);   break;
+        case SPECIAL_SFU_LOG      : ret = loc_ptr(log);   break;
 
         default:
           assertq(false, "encodeDestReg(): not expecting reg tag", true);

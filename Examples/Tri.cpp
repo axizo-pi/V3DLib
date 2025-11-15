@@ -38,6 +38,7 @@ void tri_int(Int::Ptr p) {
   p += me()*16;
 
   Int n = *p;
+
   Int sum = 0;
   While (any(n > 0))
     Where (n > 0)
@@ -45,6 +46,7 @@ void tri_int(Int::Ptr p) {
       n = n - 1;
     End
   End
+
   *p = sum;
 }
 
@@ -53,6 +55,7 @@ void tri_float(Float::Ptr p) {
   p += me()*16;
 
   Int n = toInt(*p);
+
   Int sum = 0;
   While (any(n > 0))
     Where (n > 0)
@@ -60,6 +63,7 @@ void tri_float(Float::Ptr p) {
       n = n - 1;
     End
   End
+
   *p = toFloat(sum);
 }
 

@@ -97,6 +97,7 @@ Reg const ELEM_ID(      SPECIAL, SPECIAL_ELEM_NUM);
 Reg const TMU0_S(       SPECIAL, SPECIAL_TMU0_S);
 Reg const TMUAU(        SPECIAL, SPECIAL_TMUAU);      // Perhaps needed for vc7, known in vc6, unknown for vc4
 Reg const TMUC(         SPECIAL, SPECIAL_TMUC);       // idem
+Reg const TMUL(         SPECIAL, SPECIAL_TMUL);       // idem
 Reg const VPM_WRITE(    SPECIAL, SPECIAL_VPM_WRITE);
 Reg const VPM_READ(     SPECIAL, SPECIAL_VPM_READ);
 Reg const WR_SETUP(     SPECIAL, SPECIAL_WR_SETUP);

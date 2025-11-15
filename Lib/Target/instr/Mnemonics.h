@@ -35,6 +35,7 @@ extern Reg const SFU_LOG;
 // Following registers are synonyms for v3d code generation,
 // to better indicate the intent. Definitions of vc4 concepts
 // are reused here, in order to prevent the code getting into a mess.
+extern Reg const TMUL;
 extern Reg const TMUD;
 extern Reg const TMUA;
 

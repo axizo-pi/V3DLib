@@ -127,6 +127,7 @@ extern Register const tmua;
 extern Register const tmuau;
 extern Register const tmuc;
 extern Register const tmud;
+extern Register const tmul;
 extern Register const tlb;
 extern Register const recip;
 extern Register const rsqrt;
