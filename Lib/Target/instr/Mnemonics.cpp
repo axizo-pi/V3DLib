@@ -1,6 +1,7 @@
 #include "Mnemonics.h"
 #include "Support/basics.h"
 #include "Support/Platform.h"
+#include "global/log.h"
 
 namespace V3DLib {
 namespace {
@@ -109,8 +110,6 @@ Reg const SFU_RECIPSQRT(SPECIAL, SPECIAL_SFU_RECIPSQRT);
 Reg const SFU_EXP(      SPECIAL, SPECIAL_SFU_EXP);
 Reg const SFU_LOG(      SPECIAL, SPECIAL_SFU_LOG);
 
-Reg const VAR_64(       SPECIAL, SPECIAL_VAR64);
-
 // Synonyms for v3d
 Reg const TMUD(SPECIAL, SPECIAL_VPM_WRITE);
 Reg const TMUA(SPECIAL, SPECIAL_DMA_ST_ADDR);
@@ -128,14 +127,16 @@ Instr _mov(Reg dst, RegOrImm const &src) {
 Instr mov(Reg dst, RegOrImm const &src) {
   dst.can_write(true);
 
-  if (src.is_imm()) {
-    return li(dst, src.imm().val);
-	} else if (src.is_reg() && src.reg().tag == SPECIAL) {
+	//Log::debug << "dst: " << dst.dump() << "; " << "tag: " << dst.tag;   
+
+	if (src.is_reg() && src.reg().tag == SPECIAL) {
 		// The logic for special reg's is under bor(), so we 
 		// need to redirect there
     return bor(dst, src, src);
-	}	else if (Platform::compiling_for_vc7()) {
+	} else if (Platform::compiling_for_vc7()) {
     return _mov(dst, src);
+	} else if (src.is_imm()) {
+    return li(dst, src.imm().val);
   } else {
     return bor(dst, src, src);
   }

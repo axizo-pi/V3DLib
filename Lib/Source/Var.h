@@ -25,8 +25,6 @@ enum VarTag {
 
   , DUMMY        // No variable. As a source variable, it indicates that given operation has no input
                  // TODO: As a destination variable, it indicates that the result can be ignored
-
-  , VAR_64
 };
 
 typedef int VarId;

@@ -346,11 +346,7 @@ bool translateRotate(V3DLib::Instr const &instr, Instructions &ret) {
 		//  - Thing to rotate is in add a
 		//  - rot value is a small imm in add a
 		//  - nop not required after rotate
-		{
-			std::string buf;
-			buf << "translateRotate vc7 input instr: " << instr.dump();
-			debug(buf);
-		}
+		Log::debug << "translateRotate vc7 input instr: " << instr.dump();
 
 		assert(dst_reg->is_rf());
 		assert(src_a->is_rf());
@@ -362,11 +358,7 @@ bool translateRotate(V3DLib::Instr const &instr, Instructions &ret) {
 		dst_instr.alu.add.op = V3D_QPU_A_ROT;
   	dst_instr.alu_add_set(*dst_reg, *src_a, imm);
 
-		{
-			std::string buf;
-			buf << "translateRotate vc7 instruction: " << dst_instr.mnemonic(false);
-			debug(buf);
-		}
+		Log::debug << "translateRotate vc7 instruction: " << dst_instr.mnemonic(false);
 
 		ret << dst_instr;
 
@@ -433,13 +425,6 @@ bool convert_int_powers(Instructions &output, int in_value) {
   ret << shl(acc_proxy(0), acc_proxy(0), SmallImm(left_shift));
 
   output << ret;
-/*
-	{
-		std::string buf;
-		buf << "Till here: " << in_value;
-		warning(buf);
-	}
-*/
   return true;
 }
 
@@ -521,13 +506,6 @@ bool encode_int_immediate(Instructions &output, int in_value) {
 bool encode_int(Instructions &ret, std::unique_ptr<Location> &dst, int value) {
   bool success = true;
   int rep_value;
-/*
-	{
-		std::string buf;
-		buf << "encode_int(): " << value;
-		warning(buf);
-	}
-*/
 
   if (SmallImm::int_to_opcode_value(value, rep_value)) {  // direct translation
     SmallImm imm(rep_value);
@@ -537,12 +515,10 @@ bool encode_int(Instructions &ret, std::unique_ptr<Location> &dst, int value) {
   } else if (encode_int_immediate(ret, value)) {          // Use full blunt conversion (heavy but always works)
     ret << mov(*dst, acc_proxy(1));
   } else {
-		//warning("convert_int_powers() FAILED");
     success = false;                                      // Conversion failed
   }
 
 	if (success) {
-		//warning("convert_int_powers() OK");
 		ret.back().comment("encode_int()");
 	}
 
@@ -1089,16 +1065,14 @@ bool add_alu_to_mul_alu(Instr const &in_instr, Instr &dst) {
 	BaseSource alu_mul_a = in_instr.alu_mul_a();
 	BaseSource alu_mul_b = in_instr.alu_mul_b();
 
-
-	{
-		std::string msg;
-		msg << "\n"
-        << "  alu_add_a: " << alu_add_a.dump() << "\n"
-        << "  alu_add_b: " << alu_add_b.dump() << "\n"
-        << "  alu_mul_a: " << alu_mul_a.dump() << "\n"
-        << "  alu_mul_b: " << alu_mul_b.dump();
-    debug(msg);
-	}
+/*
+	Log::debug
+ 		<< "\n"
+    << "  alu_add_a: " << alu_add_a.dump() << "\n"
+    << "  alu_add_b: " << alu_add_b.dump() << "\n"
+    << "  alu_mul_a: " << alu_mul_a.dump() << "\n"
+    << "  alu_mul_b: " << alu_mul_b.dump();
+*/
 
   if (in_instr.mul_nop()) {  // Take the values from alu add
     v3d_qpu_mul_op mul_op;
@@ -1318,12 +1292,13 @@ void combine(Instructions &instructions) {
     //
     bool do_converse;
     if (!can_combine(instr1, instr2, do_converse)) continue;
-
-    std::string msg = "combine() considering ";
-    msg << "line " << i << ":\n"
-        << "  " << instr1.mnemonic(false) << "\n"
-        << "  " << instr2.mnemonic(false);
-		debug(msg);
+/*
+		Log::debug << "combine() considering "
+    					 << "line " << i << ":\n"
+        			 << "  " << instr1.mnemonic(false) << "\n"
+               << "  " << instr2.mnemonic(false)
+		;
+*/
 
     // attempt the conversion
     {
@@ -1340,8 +1315,7 @@ void combine(Instructions &instructions) {
       bool success = !mul_instr.flag_set() && add_alu_to_mul_alu(mul_instr, dst);
 
       if (success) {
-        msg << "\n  Possible conversion: " << dst.mnemonic(false);
-        debug(msg);
+				Log::debug << "\n  Possible conversion: " << dst.mnemonic(false);
 
         instr1.skip(true);
         instr2 = dst;
@@ -1352,9 +1326,8 @@ void combine(Instructions &instructions) {
       continue;
     }
 
-    debug(msg);  // Deal with unhandled case in this loop
-    break;       // ...as we encounter them
-  }
+    break; // Deal with unhandled case in this loop as we encounter them
+ 	}
 
   compile_data.num_instructions_combined += combine_count;
 

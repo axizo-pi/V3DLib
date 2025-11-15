@@ -54,10 +54,7 @@ enum Special {
 
 	// vc7 tmu read
   SPECIAL_TMUAU,
-  SPECIAL_TMUC,
-
-  // Local special registers
-  SPECIAL_VAR64
+  SPECIAL_TMUC
 };
 
 
@@ -83,7 +80,6 @@ struct Reg {
   RegTag regfile() const; 
 
   std::string dump() const;
-//	static Reg get_acc_tmp();
 };
 
 

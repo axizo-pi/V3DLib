@@ -1,5 +1,8 @@
 #include "BaseSource.h"
 #include "Support/basics.h"
+#include "Support/Platform.h"
+
+
 
 namespace V3DLib {
 namespace v3d {
@@ -91,16 +94,20 @@ std::string BaseSource::dump() const {
 
     if (m_is_small_imm) {
       ret << "Small imm: ";
-    } else if (m_is_reg) {
-      ret << "Reg: ";
-    } else if (m_is_rfa) {
-      ret << "rfa: ";
-    } else {
-      ret << "rfb: ";
-    }
+    } else if (!Platform::compiling_for_vc7()) {
+			// vc6
+			if (m_is_reg) {
+      	ret << "Reg: ";
+	    } else if (m_is_rfa) {
+	      ret << "rfa: ";
+	    } else {
+	      ret << "rfb: ";
+	    }
+		}
+
+  	ret << m_val;
   }
 
-  ret << m_val;
   return ret;
 }
 

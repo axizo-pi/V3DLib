@@ -64,7 +64,6 @@ IntExpr index();
 IntExpr me();
 IntExpr numQPUs();
 IntExpr vpmGetInt();
-IntExpr val_64();
 
 IntExpr rotate(IntExpr a, IntExpr b);
 

@@ -31,7 +31,6 @@ extern Reg const SFU_RECIP;
 extern Reg const SFU_RECIPSQRT;
 extern Reg const SFU_EXP;
 extern Reg const SFU_LOG;
-extern Reg const VAR_64;
 
 // Following registers are synonyms for v3d code generation,
 // to better indicate the intent. Definitions of vc4 concepts

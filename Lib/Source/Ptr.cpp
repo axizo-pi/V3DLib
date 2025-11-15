@@ -85,8 +85,6 @@ void Pointer::inc() {
   increment.reset(new Int(INC));  comment("pointer increment");
 
   self() = bare_addself(*this, *increment);  comment("increment pointer");
-
-//  self() = bare_addself(*this, val_64());  comment("increment pointer");
 }
 
 

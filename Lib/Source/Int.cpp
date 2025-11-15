@@ -112,12 +112,6 @@ IntExpr index() {
 }
 
 
-IntExpr val_64() {
-  Expr::Ptr e = std::make_shared<Expr>(VarGen::fresh(VAR_64));
-  return IntExpr(e);
-}
-
-
 /**
  * Reserved var. A vector containing the QPU id
  */

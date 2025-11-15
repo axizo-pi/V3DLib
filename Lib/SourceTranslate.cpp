@@ -1,6 +1,7 @@
 #include "SourceTranslate.h"
 #include <memory>
 #include "Support/debug.h"
+#include "global/log.h"
 #include "Support/Platform.h"
 #include "vc4/SourceTranslate.h"
 #include "v3d/SourceTranslate.h"
@@ -33,8 +34,8 @@ Instr::List ISourceTranslate::load_var(Var &in_dst, Expr &e) {
 
 	if (Platform::compiling_for_vc7()) {
 		// TODO: examine if this should be added for first call only
-		//debug("load_var(): adding TMUAU for vc7");
-  	//ret << mov(TMUAU, src);
+		debug("load_var(): adding TMUAU for vc7");
+  	ret << mov(TMUAU, src);
 
 		debug("load_var(): adding TMUC for vc7");
   	ret << mov(TMUC, ~0);
@@ -42,6 +43,8 @@ Instr::List ISourceTranslate::load_var(Var &in_dst, Expr &e) {
 
   ret << mov(TMU0_S, src)
       << recv(dst);
+
+	Log::debug << "\n" << ret.dump(true);
 
   return ret;
 }

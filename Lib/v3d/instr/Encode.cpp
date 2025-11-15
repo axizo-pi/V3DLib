@@ -3,11 +3,11 @@
 #include "Mnemonics.h"
 #include "Support/Platform.h"
 #include "Support/basics.h"
+#include "global/log.h"
 
+using namespace Log;
 
 namespace V3DLib {
-
-
 namespace v3d {
 namespace instr {
 
@@ -47,12 +47,12 @@ std::unique_ptr<Location> loc_acc(RegId regId, int max_id) {
 
 void check_reg(Reg reg) {
   if (reg.regId < 0) {
-    error("Unassigned regId value", true);
+    ::error("Unassigned regId value", true);
   }
 
   if (reg.regId >= NUM_REGS_RF) {
     breakpoint
-    error("regId value out of range", true);
+    ::error("regId value out of range", true);
   }
 }
 
@@ -138,17 +138,12 @@ std::unique_ptr<Location> encodeSrcReg(Reg reg) {
       break;
 
     default:
-      {
-        std::string buf;
-        buf << "encodeSrcReg(): unknown register: " << reg.dump();
-        warning(buf);
-      }
 			breakpoint;
-      assertq(false, "V3DLib: unexpected reg-tag in encodeSrcReg()");
+      cerr << "encodeSrcReg(): unexpected register: " << reg.dump() << thrw;
   }
 
   if (ret.get() == nullptr && !is_none) {
-    assertq(false, "V3DLib: missing case in encodeSrcReg()", true);
+    cerr << "V3DLib: missing case in encodeSrcReg()" << thrw;
   }
 
   return ret;

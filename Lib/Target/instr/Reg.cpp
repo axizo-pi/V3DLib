@@ -27,8 +27,6 @@ char const *specialStr(RegId rid) {
     case SPECIAL_SFU_LOG:       return "SFU_LOG";
     case SPECIAL_TMUAU:         return "TMUAU";    // vc7 only?
     case SPECIAL_TMUC:          return "TMUC";     // vc7 only?
-
-    case SPECIAL_VAR64:         return "Var64";
   }
 
   // Unreachable
@@ -69,9 +67,6 @@ void var_to_reg(Var var, Reg &r) {
       break;
     case TMU0_ADDR:
       r = Target::instr::TMU0_S;
-      break;
-    case VAR_64:
-      r = Target::instr::VAR_64;
       break;
     default:
       assertq(false, "srcReg(): Unhandled Var-tag");
@@ -144,7 +139,11 @@ bool Reg::can_read(bool check) const {
   bool ret = true;
 
   if (tag == SPECIAL) {
-    if (regId == SPECIAL_VPM_WRITE || regId == SPECIAL_TMU0_S) {
+    if (
+			regId == SPECIAL_VPM_WRITE ||
+			regId == SPECIAL_TMU0_S ||
+			regId == SPECIAL_TMUC
+		) {
       ret = false;
     }
   }
@@ -194,31 +193,6 @@ std::string Reg::dump() const {
 
   return ret;
 }
-
-
-/**
- * ACC0 is often used as a temp register for vc4 and vc6.
- *
- * This does not work any more for vc7, which does not have 
- * general purpose accumulators
- *
- * This routine replaces ACC0 with an rf register for vc7.
- * /
-Reg Reg::get_acc_tmp() {
-  using namespace V3DLib::Target::instr;
-
-	assert(V3DLib::VarGen::count() != 0);
-
-	Reg dst;
- 	if (Platform::compiling_for_vc7()) {
-	 	dst =	Reg(V3DLib::VarGen::fresh());
-	} else {
-		dst = ACC0;
-	}
-
-	return dst;
-}
-*/
 
 
 // TODO Move this away, to DMA
