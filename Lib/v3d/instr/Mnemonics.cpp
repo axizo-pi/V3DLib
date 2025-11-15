@@ -9,28 +9,18 @@ namespace instr {
 namespace {
 
 void set_muxes_add(v3d_qpu_alu_instr &alu, v3d_qpu_mux mux_a, v3d_qpu_mux mux_b) {
-#if USE_MESA == 1
-  alu.add.a     = mux_a;
-  alu.add.b     = mux_b;
-#else
 	if (!Platform::compiling_for_vc7()) {  // No mux's on vc7
 	  alu.add.a.mux = mux_a;
 	  alu.add.b.mux = mux_b;
 	}
-#endif
 }
 
 
 void set_muxes_mul(v3d_qpu_alu_instr &alu, v3d_qpu_mux mux_a, v3d_qpu_mux mux_b) {
-#if USE_MESA == 1
-  alu.mul.a     = mux_a;
-  alu.mul.b     = mux_b;
-#else
 	if (!Platform::compiling_for_vc7()) {  // No mux's on vc7
 	  alu.mul.a.mux = mux_a;
 	  alu.mul.b.mux = mux_b;
 	}
-#endif
 }
 
 } // anon namespace
@@ -189,11 +179,8 @@ Mnemonic &Mnemonic::rotate(Location const &dst, Location const &a, SmallImm cons
   if (b.val() != 0) {  // Don't bother rotating if there is no rotate
     sig.rotate = true;
   }
-#if USE_MESA == 1
-  sig.small_imm = false;      // Should *not* be set for rotate
-#else
+
   sig.small_imm_b = false;      // Should *not* be set for rotate
-#endif
   alu.mul.op = V3D_QPU_M_MOV;
 
   return *this;
@@ -345,11 +332,9 @@ Mnemonic ffloor(Location const &dst, Source const &srca) {
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
-#if USE_MESA == 1
-  instr.alu.add.b_unpack = (v3d_qpu_input_unpack) V3D_QPU_A_FFLOOR; // ?? Looks wrong but matches the mesa disasm
-#else
+
   instr.alu.add.b.unpack = (v3d_qpu_input_unpack) V3D_QPU_A_FFLOOR; // ?? Looks wrong but matches the mesa disasm
-#endif
+
 #pragma GCC diagnostic pop
 
 

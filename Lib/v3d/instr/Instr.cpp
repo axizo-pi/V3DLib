@@ -91,14 +91,10 @@ bool Instr::is_branch() const {
  * Return true if any of the small_imm flags are set (there are four).
  */
 bool Instr::has_small_imm() const {
-#if USE_MESA == 1
-	return sig.small_imm;
-#else
 	return sig.small_imm_a
 	    || sig.small_imm_b
 	    || sig.small_imm_c
 	    || sig.small_imm_d;
-#endif
 }
 
 
@@ -262,7 +258,6 @@ std::string Instr::dump() const {
 
 
 std::string Instr::pretty_instr() const {
-
   std::string ret = instr_mnemonic(this);
 
   auto indent = [] (int size) -> std::string {
@@ -283,16 +278,6 @@ std::string Instr::pretty_instr() const {
   if (sig.rotate) {
     if (!is_branch()) {  // Assumption: rotate signal irrelevant for branch
 
-#if USE_MESA == 1
-      // Only two possibilities here: r5 or small imm (sig for small imm not set!)
-      if (alu.mul.b == V3D_QPU_MUX_R5) {
-        ret << ", r5";
-      } else if (alu.mul.b == V3D_QPU_MUX_B) {
-        ret << ", " << raddr_b;
-      } else {
-        assertq(false, "pretty_instr(): unexpected mux value for mul b for rotate", true);
-      }
-#else
 			if (Platform::compiling_for_vc7()) {
 				// Ref. see: mesa2/src/broadcom/qpu/qpu_instr.h
 				assert("Don't know how to deal with vc7");
@@ -306,7 +291,6 @@ std::string Instr::pretty_instr() const {
 	        assertq(false, "pretty_instr(): unexpected mux value for mul b for rotate", true);
 	      }
 			}
-#endif
 
       ret << indent((int) ret.size()) << "; rot";
     }
@@ -565,24 +549,12 @@ DestReg Instr::mul_dest() const {
 }
 
 
-#if USE_MESA == 1
-DestReg Instr::add_src_dest(v3d_qpu_mux src) const {
-#else
 DestReg Instr::add_src_dest(v3d_qpu_input src) const {
-#endif
-#if USE_MESA == 1
-  if (src < V3D_QPU_MUX_A) {
-    return DestReg(src, true);
-  } else if (src == V3D_QPU_MUX_A) {
-    return DestReg(raddr_a, false);
-  } else if (!sig.small_imm) {  // must be MUX_B
-#else
   if (src.mux < V3D_QPU_MUX_A) {
     return DestReg(src.mux, true);
   } else if (src.mux == V3D_QPU_MUX_A) {
     return DestReg(raddr_a, false);
   } else if (!sig.small_imm_b) {
-#endif
     return DestReg(raddr_b, false);
   }
 
@@ -658,21 +630,12 @@ bool Instr::raddr_in_use(CheckSrc check_src, v3d_qpu_mux mux) const {
   bool in_use = false;
 
   switch (check_src) {  // Note reverse order, fall-thru intentional
-#if USE_MESA == 1
-    case CHECK_MUL_B:
-      in_use = in_use || (alu.mul.a == mux);
-    case CHECK_MUL_A:
-      in_use = in_use || (alu.add.b == mux);
-    case CHECK_ADD_B:
-      in_use = in_use || (alu.add.a == mux);
-#else
     case CHECK_MUL_B:
       in_use = in_use || (alu.mul.a.mux == mux);
     case CHECK_MUL_A:
       in_use = in_use || (alu.add.b.mux == mux);
     case CHECK_ADD_B:
       in_use = in_use || (alu.add.a.mux == mux);
-#endif
     case CHECK_ADD_A:
       break;
   }
@@ -684,11 +647,7 @@ bool Instr::raddr_in_use(CheckSrc check_src, v3d_qpu_mux mux) const {
 bool Instr::raddr_b_is_safe(Location const &loc, CheckSrc check_src) const {
   assert(loc.is_rf());
   if (!raddr_in_use(check_src, V3D_QPU_MUX_B)) return true;
-#if USE_MESA == 1
-  if (sig.small_imm) return false; 
-#else
   if (sig.small_imm_b) return false; 
-#endif
   return (raddr_b == loc.to_waddr());
 }
 
@@ -696,14 +655,6 @@ bool Instr::raddr_b_is_safe(Location const &loc, CheckSrc check_src) const {
 /**
  * Following for vc4 and vc6
  */
-#if USE_MESA == 1
-bool Instr::alu_set_src(Source const &src, v3d_qpu_mux &mux, CheckSrc check_src) {
-	fatal("alu_set_src(): Not supporting mesa1 any more");
-	return false;
-}
-
-#else
-
 bool Instr::alu_set_src(Source const &src, v3d_qpu_input &input, CheckSrc check_src) {
 	assert(!Platform::compiling_for_vc7());
 
@@ -751,8 +702,6 @@ bool Instr::alu_set_src(Source const &src, v3d_qpu_input &input, CheckSrc check_
 
   return true;
 }
-
-#endif
 
 
 bool Instr::alu_add_set_a(Source const &src) {
@@ -1029,13 +978,8 @@ bool Instr::alu_mul_set(Location const &dst, Source const &a, Source const &b) {
 	}
 
 	if (ret) {
-#if USE_MESA == 1
-  	alu.mul.a_unpack = a.input_unpack();
-  	alu.mul.b_unpack = b.input_unpack();
-#else
   	alu.mul.a.unpack = a.input_unpack();
   	alu.mul.b.unpack = b.input_unpack();
-#endif
 	}
 
 	return ret;
@@ -1198,10 +1142,6 @@ std::unique_ptr<Location> Instr::mul_alu_dst() const {
 
 std::unique_ptr<Source> Instr::add_alu_a() const {
 	auto const &src = alu.add.a;
-
-#if USE_MESA == 1
-	return alu_src(src);
-#else
   std::unique_ptr<Source> res;
 
 	if (Platform::compiling_for_vc7()) {
@@ -1223,7 +1163,6 @@ std::unique_ptr<Source> Instr::add_alu_a() const {
 
   assert(res);
   return res;
-#endif
 }
 
 
@@ -1231,9 +1170,6 @@ std::unique_ptr<Source> Instr::add_alu_a() const {
  * Return the contents of alu add a
  */
 BaseSource Instr::alu_add_dst() const {
-#if USE_MESA == 1
-	fatal("alu_add_dst(): does not support mesa1");
-#endif
   BaseSource res;
 
 	if (add_nop()) return res;
@@ -1248,10 +1184,6 @@ BaseSource Instr::alu_add_dst() const {
  * Return the contents of alu add a
  */
 BaseSource Instr::alu_add_a() const {
-#if USE_MESA == 1
-	fatal("alu_add_a(): does not support mesa1");
-#endif
-
   BaseSource res;
 
 	if (add_nop()) return res;
@@ -1278,10 +1210,6 @@ BaseSource Instr::alu_add_a() const {
  * Return the contents of alu add b
  */
 BaseSource Instr::alu_add_b() const {
-#if USE_MESA == 1
-	fatal("alu_add_b(): does not support mesa1");
-#endif
-
   BaseSource res;
 
 	if (add_nop()) return res;
@@ -1327,10 +1255,6 @@ BaseSource Instr::alu_add_b() const {
  *
  */
 BaseSource Instr::alu_mul_a() const {
-#if USE_MESA == 1
-	fatal("alu_mul_a(): does not support mesa1");
-#endif
-
   BaseSource res;
 
 	if (mul_nop()) return res;
@@ -1357,10 +1281,6 @@ BaseSource Instr::alu_mul_a() const {
  * Return the contents of alu mul b
  */
 BaseSource Instr::alu_mul_b() const {
-#if USE_MESA == 1
-	fatal("alu_mul_b(): does not support mesa1");
-#endif
-
   BaseSource res;
 
 	if (mul_nop()) return res;
@@ -1385,10 +1305,6 @@ BaseSource Instr::alu_mul_b() const {
 
 std::unique_ptr<Source> Instr::add_alu_b() const {
 	auto const &src = alu.add.b;
-
-#if USE_MESA == 1
-	return alu_src(src);
-#else
   std::unique_ptr<Source> res;
 
   if (sig.small_imm_b) { // add b, small imm
@@ -1399,16 +1315,11 @@ std::unique_ptr<Source> Instr::add_alu_b() const {
 
   assert(res);
   return res;
-#endif
 }
 
 
 std::unique_ptr<Source> Instr::mul_alu_a() const {
 	auto const &src = alu.mul.a;
-
-#if USE_MESA == 1
-	return alu_src(src);
-#else
   std::unique_ptr<Source> res;
 
   if (sig.small_imm_c) { // mul a, small imm
@@ -1419,16 +1330,11 @@ std::unique_ptr<Source> Instr::mul_alu_a() const {
 
   assert(res);
   return res;
-#endif
 }
 
 
 std::unique_ptr<Source> Instr::mul_alu_b() const {
 	auto const &src = alu.mul.b;
-
-#if USE_MESA == 1
-	return alu_src(src);
-#else
   std::unique_ptr<Source> res;
 
   if (sig.small_imm_d) { // mul b, small imm
@@ -1439,7 +1345,6 @@ std::unique_ptr<Source> Instr::mul_alu_b() const {
 
   assert(res);
   return res;
-#endif
 }
 
 

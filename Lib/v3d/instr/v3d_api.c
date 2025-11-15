@@ -29,31 +29,6 @@ uint8_t devinfo_ver() {
 #endif // QPU_MODE
 
 
-#if USE_MESA == 1
-static const struct v3d_qpu_alu_instr ALU_NOP = {
-    add: {
-      op: V3D_QPU_A_NOP,
-      a: V3D_QPU_MUX_R0,
-      b: V3D_QPU_MUX_R0,
-      waddr: 6,
-      magic_write: true,
-      output_pack: V3D_QPU_PACK_NONE,
-      a_unpack: V3D_QPU_UNPACK_NONE, 
-      b_unpack: V3D_QPU_UNPACK_NONE
-    },
-    mul: {
-      op: V3D_QPU_M_NOP,
-      a: V3D_QPU_MUX_R0,
-      b: V3D_QPU_MUX_R4,
-      waddr: 6,
-      magic_write: true,
-      output_pack: V3D_QPU_PACK_NONE,
-      a_unpack: V3D_QPU_UNPACK_NONE, 
-      b_unpack: V3D_QPU_UNPACK_NONE
-    }
-};
-#else
-
 static const struct v3d_qpu_alu_instr ALU_NOP = {
     add: {
       op: V3D_QPU_A_NOP,
@@ -86,22 +61,9 @@ static const struct v3d_qpu_alu_instr ALU_NOP = {
       }
     }
 };
-#endif
 
 
 static bool isNopAdd( const struct v3d_qpu_alu_instr *src) {
-#if USE_MESA == 1
-  return (
-      src->add.op == ALU_NOP.add.op &&
-      src->add.a == ALU_NOP.add.a &&
-      src->add.b == ALU_NOP.add.b &&
-      src->add.waddr == ALU_NOP.add.waddr &&
-      src->add.magic_write == ALU_NOP.add.magic_write &&
-      src->add.output_pack == ALU_NOP.add.output_pack &&
-      src->add.a_unpack == ALU_NOP.add.a_unpack &&
-      src->add.b_unpack == ALU_NOP.add.b_unpack
-  );
-#else
   return (
       src->add.op == ALU_NOP.add.op &&
       src->add.a.mux == ALU_NOP.add.a.mux &&
@@ -112,23 +74,10 @@ static bool isNopAdd( const struct v3d_qpu_alu_instr *src) {
       src->add.a.unpack == ALU_NOP.add.a.unpack &&
       src->add.b.unpack == ALU_NOP.add.b.unpack
   );
-#endif
 }
 
 
 static bool isNopMul( const struct v3d_qpu_alu_instr *src) {
-#if USE_MESA == 1
-  return (
-      src->mul.op == ALU_NOP.mul.op &&
-      src->mul.a == ALU_NOP.mul.a &&
-      src->mul.b == ALU_NOP.mul.b &&
-      src->mul.waddr == ALU_NOP.mul.waddr &&
-      src->mul.magic_write == ALU_NOP.mul.magic_write &&
-      src->mul.output_pack == ALU_NOP.mul.output_pack &&
-      src->mul.a_unpack == ALU_NOP.mul.a_unpack &&
-      src->mul.b_unpack == ALU_NOP.mul.b_unpack
-  );
-#else
   return (
       src->mul.op == ALU_NOP.mul.op &&
       src->mul.a.mux == ALU_NOP.mul.a.mux &&
@@ -139,7 +88,6 @@ static bool isNopMul( const struct v3d_qpu_alu_instr *src) {
       src->mul.a.unpack == ALU_NOP.mul.a.unpack &&
       src->mul.b.unpack == ALU_NOP.mul.b.unpack
   );
-#endif
 }
 
 #define CASE(l)  case V3D_QPU_##l: ret = #l; break;
@@ -314,9 +262,8 @@ static const char *dump_add_op(enum v3d_qpu_add_op val) {
     CASE(A_CLZ)
     CASE(A_UTOF)
 
-#if USE_MESA == 1
-#else
-    CASE(A_FLAFIRST)   // mesa2: added between vc6 opcodes; pehaps neglected vc6 opcodes
+		// Following added in mesa2
+    CASE(A_FLAFIRST)   // added between vc6 opcodes; pehaps neglected vc6 opcodes
     CASE(A_FLNAFIRST)  // idem
 
     /* V3D 7.x */
@@ -333,7 +280,6 @@ static const char *dump_add_op(enum v3d_qpu_add_op val) {
     CASE(A_ROTQ)
     CASE(A_ROT)
     CASE(A_SHUFFLE)
-#endif
   }
 
   assert(ret != 0);
@@ -341,12 +287,8 @@ static const char *dump_add_op(enum v3d_qpu_add_op val) {
 }
 
 
-#if USE_MESA == 1
-static const char *dump_mux(enum v3d_qpu_mux val) {
-#else
 static const char *dump_mux(struct v3d_qpu_input input) {
   enum v3d_qpu_mux val = input.mux;
-#endif
 	if (devinfo_ver() >= 71) {
 		return "<<No mux on vc7>>";
 	}
@@ -429,16 +371,13 @@ static const char *dump_mul_op(enum v3d_qpu_mul_op val) {
     CASE(M_NOP)
     CASE(M_FMUL)
 
-#if USE_MESA == 1
-#else
-    /* V3D 7.x */
+    /* added in mesa1; V3D 7.x */
     CASE(M_FTOUNORM16)
     CASE(M_FTOSNORM16)
     CASE(M_VFTOUNORM8)
     CASE(M_VFTOSNORM8)
     CASE(M_VFTOUNORM10LO)
     CASE(M_VFTOUNORM10HI)
-#endif
   }
 
   assert(ret != 0);
@@ -482,14 +421,10 @@ void instr_dump(char *buffer, struct v3d_qpu_instr *instr) {
   if (instr->sig.ucb)         strcat(buffer_sig, "ucb ");
   if (instr->sig.rotate)      strcat(buffer_sig, "rotate ");
   if (instr->sig.wrtmuc)      strcat(buffer_sig, "wrtmuc ");
-#if USE_MESA == 1
-  if (instr->sig.small_imm)   strcat(buffer_sig, "small_imm ");
-#else
   if (instr->sig.small_imm_a) strcat(buffer_sig, "small_imm_a ");
   if (instr->sig.small_imm_b) strcat(buffer_sig, "small_imm_b ");
   if (instr->sig.small_imm_c) strcat(buffer_sig, "small_imm_c ");
   if (instr->sig.small_imm_d) strcat(buffer_sig, "small_imm_d ");
-#endif
 
   char buffer_union[1024] = "\0";
   char buffer_alu_add[1024] = "\0";
@@ -525,13 +460,8 @@ void instr_dump(char *buffer, struct v3d_qpu_instr *instr) {
         instr->alu.add.waddr,
         TF(instr->alu.add.magic_write),
         dump_output_pack(instr->alu.add.output_pack),
-#if USE_MESA == 1
-        dump_input_unpack(instr->alu.add.a_unpack),
-        dump_input_unpack(instr->alu.add.b_unpack)
-#else
         dump_input_unpack(instr->alu.add.a.unpack),
         dump_input_unpack(instr->alu.add.b.unpack)
-#endif
       );
     }
 
@@ -545,13 +475,8 @@ void instr_dump(char *buffer, struct v3d_qpu_instr *instr) {
         instr->alu.mul.waddr,
         TF(instr->alu.mul.magic_write),
         dump_output_pack(instr->alu.mul.output_pack),
-#if USE_MESA == 1
-        dump_input_unpack(instr->alu.mul.a_unpack),
-        dump_input_unpack(instr->alu.mul.b_unpack)
-#else
         dump_input_unpack(instr->alu.mul.a.unpack),
         dump_input_unpack(instr->alu.mul.b.unpack)
-#endif
       );
     }
 
