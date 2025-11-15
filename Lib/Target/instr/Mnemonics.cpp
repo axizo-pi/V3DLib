@@ -75,7 +75,9 @@ Reg const None(NONE, 0);
  * general purpose accumulators.
  *
  * ACC1, ACC2, ACC3 do not appear to be used anywhere, removed.
- * ACC4 and ACC5 have special purposes
+ *  - ACC3 is not used on the Target level, but implicit in several
+ *    mathematical functions on v3d.
+ *  - ACC4 and ACC5 have special purposes
  *
  * Just remember that every call generates a new variable.
  * If you need to reuse a given ACC instance, keep a reference.

@@ -91,9 +91,9 @@ TEST_CASE("Test v3d opcodes [v3d][code][opcodes]") {
   // NOTE: Always uses rf(1) as dest ptr
   auto output = [] (Location const &src) -> Instructions {
     Instructions ret;
-    ret << mov(tmud, src).comment("Output to main mem") // write result to main mem
+    ret << mov(tmud, src).comment("Output to main mem")       // write result to main mem
         << mov(tmua, rf(1))
-        << tmuwt()
+        << tmuwt(rf(16))                                      // rf(16) used as devnull for return value of tmuwt
         << add(rf(1), rf(1), 4).comment("increment pointer");
     return ret;
   };
@@ -225,37 +225,48 @@ TEST_CASE("Test v3d opcodes [v3d][code][opcodes]") {
   SUBCASE("Test add/mov") {
     Instructions instrs;
 
+		// Use rf replacements for r2 and r3 on vc7
+		// Keep in mind that on vc7 rf's are used instead of acc's
+		auto a = rf(17);     // rf should be free
+		auto b = r2;
+		Location const &_r2 = V3DLib::Platform::compiling_for_vc7()?((Location const &) a):((Location const &) b);
+
+		auto c = rf(18);     // rf should be free
+		auto d = r3;
+
+		Location const &_r3 = V3DLib::Platform::compiling_for_vc7()?((Location const &) c):((Location const &) d);
+
     instrs << nop().ldunifrf(rf(0))       // value to operate on
            << nop().ldunifrf(rf(1))       // ptr to location to store
-           << mov(r2, 4)                  // Prepare ptr increment value
            << output(rf(0))               // Output original value
 
            << add(rf(0), rf(0), 4)        // add small imm
            << output(rf(0))
 
-           << add(rf(0), rf(0), r2)       // add via acc
+           << mov(_r2, 4)                  // Prepare ptr increment value
+           << add(rf(0), rf(0), _r2)       // add via acc
            << output(rf(0))
 
-           << add(r3, r2, rf(0))          // add first in acc, then move
-           << mov(rf(0), r3)
+           << add(_r3, _r2, rf(0))          // add first in acc, then move
+           << mov(rf(0), _r3)
            << output(rf(0))
 
-           << nop().mov(r2, 5)            // using mul alu for mov/add
-           << nop().add(rf(0), rf(0), r2)
+           << nop().mov(_r2, 5)            .comment("using mul alu for mov/add")
+           << nop().add(rf(0), rf(0), _r2)
            << output(rf(0))
 
-           << nop().add(r3, r2, rf(0))    // using mul alu for add/mov
-           << nop().mov(rf(0), r3)
+           << nop().add(_r3, _r2, rf(0))    // using mul alu for add/mov
+           << nop().mov(rf(0), _r3)
            << output(rf(0))
-
            << end_program();
 
-    //printf("%s\n", mnemonics(instrs, true).c_str());
 
     ByteCode bytecode;
     for (auto const &instrs : instrs) {
       bytecode << instrs.code(); 
     }
+
+    //printf("%s\n", Instr::mnemonics(bytecode).c_str());
 
     BufferObject heap;
     heap.alloc(1024);

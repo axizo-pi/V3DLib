@@ -357,11 +357,6 @@ std::string Instr::mnemonics(std::vector<uint64_t> const &in_code) {
 
 
 void Instr::init(uint64_t in_code) {
-  if (!instr_unpack(in_code, this)) {
-    warn << "Instr:init: call to instr_unpack failed.";
-    return;
-  }
-
   raddr_a = 0;
 
   // These do not always get initialized in unpack
@@ -371,6 +366,11 @@ void Instr::init(uint64_t in_code) {
 
 	alu.add.output_pack = V3D_QPU_PACK_NONE;
 	alu.mul.output_pack = V3D_QPU_PACK_NONE;
+
+  if (!instr_unpack(in_code, this)) {
+    warn << "Instr:init: call to instr_unpack failed.";
+    return;
+  }
 
 
   if (is_branch()) {
@@ -972,6 +972,28 @@ void Instr::alu_mul_b(BaseSource const &src) {
 			raddr_b = src.val();
 		}
 	}
+}
+
+/**
+ * TODO consolidate override with b param
+ */
+bool Instr::alu_mul_set(Location const &dst, Source const &a) {
+	alu_mul_dst(dst);
+
+	bool ret;
+
+	if (Platform::compiling_for_vc7()) {
+		ret = alu_mul_set_a(a);
+		assert(ret);
+	} else {
+  	ret = alu_set_src(a, alu.mul.a, CHECK_MUL_A);
+	}
+
+	if (ret) {
+  	alu.mul.a.unpack = a.input_unpack();
+	}
+
+	return ret;
 }
 
 

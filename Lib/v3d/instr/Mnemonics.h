@@ -209,6 +209,7 @@ Mnemonic flpop(RFAddress rf_addr1, RFAddress rf_addr2);
 Mnemonic fdx(Location const &dst, Location const &srca);
 Mnemonic vflb(Location const &dst);
 Mnemonic tmuwt();
+Mnemonic tmuwt(Location const &dst);
 
 Mnemonic ldvpmg_in(Location const &dst, Location const &a, Location const &b);
 Mnemonic stvpmv(SmallImm const &a, Location const &b);

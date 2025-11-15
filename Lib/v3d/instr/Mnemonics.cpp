@@ -135,7 +135,9 @@ void Mnemonic::mul_alu_set(v3d_qpu_mul_op op, Location const &dst, Source const 
 
 
 Mnemonic &Mnemonic::mov(Location const &dst, Source const &src) {
-  mul_alu_set(V3D_QPU_M_MOV, dst, src, src);
+  m_doing_add = false;
+  if (!alu_mul_set(dst, src)) assert(false);
+  alu.mul.op = V3D_QPU_M_MOV;
   return *this;
 }
 
@@ -144,6 +146,7 @@ Mnemonic &Mnemonic::mov(Location const &dst, Source const &src) {
  * Can't consolidate this yet, required for special register vpm
  */
 Mnemonic &Mnemonic::mov(uint8_t rf_addr, Register const &reg) {
+	assertq(Platform::compiling_for_vc7(), "Mnemonic::mov(): don't call this on vc7");
   m_doing_add = false;
 
   alu.mul.op    = V3D_QPU_M_MOV;
@@ -152,7 +155,6 @@ Mnemonic &Mnemonic::mov(uint8_t rf_addr, Register const &reg) {
 
   return *this;
 }
-
 
 Mnemonic &Mnemonic::fmov(Location const &dst, Source const &src) {
   mul_alu_set(V3D_QPU_M_FMOV, dst, src, src);
@@ -376,8 +378,21 @@ Mnemonic vflb(Location const &dst) {
 
 
 Mnemonic tmuwt() {
+	if (Platform::compiling_for_vc7()) {
+		Log::warn << "tmuwt(): using rf(63) as devnull";
+	}
+	return tmuwt(rf(63));
+}
+
+
+Mnemonic tmuwt(Location const &dst) {
   Mnemonic instr;
   instr.alu.add.op = V3D_QPU_A_TMUWT;
+
+	// Ignore dst for vc4, vc6
+	if (Platform::compiling_for_vc7()) {
+	  instr.alu_add_set_dst(dst);
+	}
   return instr;
 }
 

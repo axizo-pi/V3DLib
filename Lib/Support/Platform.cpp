@@ -197,6 +197,10 @@ PlatformInfo::PlatformInfo() {
 		vc4;
   }
 
+	// As default, select compiling for the platform you are on.
+	// If you want to compile to vc4, you need to explicitly set this.
+  m_compiling_for_vc4 = (vc_type == vc4);
+
 #ifndef QPU_MODE
   // Allow only emulator and interpreter modes, no hardware
   m_use_main_memory = true;
