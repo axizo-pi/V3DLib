@@ -1,6 +1,7 @@
-/***********************************
+/******************************************************************
+ * Version: 4  - Added thrw flag, option to suppres console output
  * Version: 3  - Added hex flag
- ***********************************/
+ ******************************************************************/
 #include "log.h"
 #include <iostream>
 #include <cstdlib>  // abort()
@@ -34,7 +35,7 @@ void log_to_cout(bool val) {
 
 
 LogItem::~LogItem() {
-	m_log.flush();
+	m_log.flush(m_throw);
 }
 
 
@@ -65,14 +66,13 @@ LogItem &LogItem::operator<<(int n) {
 
 
 LogItem &LogItem::operator<<(LogFlag f) {
-  if (f == hex) {
-    m_next_is_hex = true;
-  }
+  if (f == hex)  m_next_is_hex = true;
+  if (f == thrw) m_throw       = true;
 	return *this;
 }
 
 
-void Logger::flush() {
+void Logger::flush(bool do_throw) {
   if (!s_log_to_cout) return;  // TODO: adjustment needed when logging to file enabled
 
 
@@ -92,7 +92,7 @@ void Logger::flush() {
 			case FATAL:   prefix = "FATAL: ";   break;
 		}
 
-		if (m_level == FATAL) {
+		if (m_level == FATAL || do_throw) {
 			std::cerr << time_buf << prefix << m_buf.str() << "\n";
 			std::flush(std::cout);
 			std::flush(std::cerr);

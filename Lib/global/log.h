@@ -8,13 +8,15 @@ class Logger;
 
 enum LogFlag {
   none,
-  hex
+  hex,
+	thrw  // Can't use 'throw', reserved keyword
 };
 
 class LogItem {
 private:
 	Logger &m_log;
   bool    m_next_is_hex = false;
+  bool    m_throw       = false;  // Can be used with any logging form; logging is outputted before throw occurs
 
 public:	
 	LogItem(Logger &log) : m_log(log) {}
@@ -46,7 +48,7 @@ public:
 
 
 	std::stringstream &buf() { return m_buf; }
-	void flush();
+	void flush(bool do_throw);
 
 private:
 	Level m_level;
