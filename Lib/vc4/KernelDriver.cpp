@@ -14,7 +14,7 @@ namespace V3DLib {
 namespace vc4 {
 
 KernelDriver::KernelDriver() : V3DLib::KernelDriver(Vc4Buffer) {
-	assert(!Platform::compiling_for_vc4());
+	assert(Platform::compiling_for_vc4());
 	Log::warn << "selecting vc4 as kernel type";
 	m_type = vc4;
 }
