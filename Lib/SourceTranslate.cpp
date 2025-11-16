@@ -44,13 +44,15 @@ Instr::List ISourceTranslate::load_var(Var &in_dst, Expr &e) {
 		// Order important: TMUC needs to be after TMUAU to make a difference
 		//
 
+		// The src param does not appear to do anything.
+		// It matters that TMUAU is written to
 		debug("load_var(): adding TMUAU for vc7");
-  	ret << mov(TMUAU, src);
+  	//ret << mov(TMUAU, src);
+  	ret << mov(TMUA, 0);
 
 		//debug("load_var(): adding TMUL for vc7");
   	//ret << mov(TMUL, src);
 
-		debug("load_var(): adding TMUC for vc7");
 		//
 		// Small imm:
 	  //  * 0..15  : no effect, no output written
@@ -62,6 +64,7 @@ Instr::List ISourceTranslate::load_var(Var &in_dst, Expr &e) {
 	  //  * -15,-16: no effect, no output written
 		//  * -17    : encoding value fails
 		//
+		debug("load_var(): adding TMUC for vc7");
   	ret << mov(TMUC, ~0);
 	}
 

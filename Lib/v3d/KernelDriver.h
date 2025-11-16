@@ -28,7 +28,7 @@ public:
   KernelDriver(KernelDriver &&a) = default;
 
   void encode() override;
-  int kernel_size() const { return (int) instructions.size(); }
+  int kernel_size() const override { return (int) instructions.size(); }
 
 private:
   Instructions  instructions;

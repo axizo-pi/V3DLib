@@ -1353,7 +1353,17 @@ void invoke(int numQPUs, Data &devnull, Code &codeMem, IntList &params) {
 // Class KernelDriver
 ///////////////////////////////////////////////////////////////////////////////
 
-KernelDriver::KernelDriver() : V3DLib::KernelDriver(V3dBuffer), qpuCodeMem(code_bo)  {}
+KernelDriver::KernelDriver() : V3DLib::KernelDriver(V3dBuffer), qpuCodeMem(code_bo)  {
+	assert(!Platform::compiling_for_vc4());
+
+	if(Platform::compiling_for_vc7()) {
+		Log::warn << "selecting vc7 as kernel type";
+		m_type = vc7;
+	} else {
+		Log::warn << "selecting vc4 as kernel type";
+		m_type = vc4;
+	}
+}
 
 
 void KernelDriver::encode() {

@@ -11,6 +11,12 @@ namespace V3DLib {
 
 class KernelDriver {
 public:
+	enum KernelType {
+		vc4,
+		vc6,
+		vc7
+	};
+
   KernelDriver(BufferType in_buffer_type) : buffer_type(in_buffer_type) {}
   KernelDriver(KernelDriver &&k) = default;
   virtual ~KernelDriver();
@@ -29,8 +35,14 @@ public:
   std::string compile_info() const;
   void dump_compile_data(char const *filename) const;
 
+	bool        is_v3d()      const { return m_type == vc6 || m_type == vc7; }
+	KernelType  kernel_type() const { return m_type; }
+	std::string kernel_type_str() const;
+	virtual int kernel_size() const = 0; 
+
 protected:
-  Instr::List m_targetCode;           // Target code generated from AST
+	KernelType  m_type;
+  Instr::List m_targetCode;                // Target code generated from AST
   Stmts       m_body;
 
   int qpuCodeMemOffset = 0;
@@ -41,8 +53,8 @@ protected:
 
 private:
   BufferType const buffer_type;
-  StmtStack m_stmtStack;
-  int m_numVars = 0;                  // The number of variables in the source code for vc4
+  StmtStack        m_stmtStack;
+  int              m_numVars = 0;           // The number of variables in the source code for vc4
   CompileData m_compile_data;
 
   virtual void compile_intern() = 0;

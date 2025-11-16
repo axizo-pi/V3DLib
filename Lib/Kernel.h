@@ -90,19 +90,16 @@ public:
 	  }
 #endif
 
-    if (m_settings.run_type != 0 || Platform::run_vc4()) {
+    if (m_settings.run_type != 0 || Platform::run_vc4()) {   // Compile vc4
       compile_init(true);
-      vc4().compile([this, f] () {
-        f(mkArg<ts>()...);  // Construct the AST for vc4; see Note 2 in class header
-      });
-    } else {
-			// Compile v3d
+    } else {                                                 // Compile v3d
       compile_init(false);
 
-      v3d().compile([this, f] () {
-        f(mkArg<ts>()...);  // Construct the AST for v3d
-      });
     }
+
+    driver().compile([this, f] () {
+      f(mkArg<ts>()...);  // Construct the AST
+    });
   }
 
 

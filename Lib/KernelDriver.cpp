@@ -309,4 +309,14 @@ std::string KernelDriver::compile_info() const {
   return ret;
 }
 
+
+std::string KernelDriver::kernel_type_str() const {
+	switch(kernel_type()) {
+		case vc4: return "vc4";
+		case vc6: return "vc6";
+		case vc7: return "vc7";
+		default:  assert(false); return "none";  // Should never occur
+	}
+}
+
 }  // namespace V3DLib

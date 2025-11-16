@@ -1,8 +1,7 @@
 #ifndef _V3DLIB_BASEKERNEL_H_
 #define _V3DLIB_BASEKERNEL_H_
 #include <memory>
-#include "vc4/KernelDriver.h"
-#include "v3d/KernelDriver.h"
+#include "KernelDriver.h"
 #include "Support/BaseSettings.h"
 
 namespace V3DLib {
@@ -59,12 +58,9 @@ public:
   BaseKernel(BaseSettings const &settings);
   BaseKernel(BaseKernel &&k) = default;
 
-  bool has_vc4() const;
-  bool has_v3d() const;
-  V3DLib::KernelDriver &vc4();
-  V3DLib::KernelDriver &v3d();
-  V3DLib::KernelDriver const &vc4() const;
-  V3DLib::KernelDriver const &v3d() const;
+  bool has_driver() const;
+  V3DLib::KernelDriver &driver();
+  V3DLib::KernelDriver const &driver() const;
 
   void compile_init(bool do_vc4);
   void pretty(const char *filename = nullptr, bool output_qpu_code = true);
@@ -74,14 +70,12 @@ public:
 
   void run();
 
-  // TODO make private
   void emu();
   void interpret();
   void qpu();
 
   std::string compile_info() const;
-  void dump_compile_data(bool output_for_vc4, char const *filename);
-  int v3d_kernel_size() const;
+  void dump_compile_data(char const *filename);
   bool has_errors() const;
   std::string get_errors() const;
   std::string info() const;
@@ -90,10 +84,9 @@ protected:
   BaseSettings m_settings;
   IntList uniforms;                // Parameters to be passed to kernel
 
-  // Defined as unique pointers so that they easily survive the std::move
+  // Defined as unique pointer so that is easily survives std::move
   // (There are other reasons but this is the main one)
-  std::unique_ptr<vc4::KernelDriver> m_vc4_driver;
-  std::unique_ptr<v3d::KernelDriver> m_v3d_driver;
+  std::unique_ptr<KernelDriver> m_driver;
 };
 
 
