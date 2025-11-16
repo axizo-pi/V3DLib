@@ -109,8 +109,9 @@ CmdParameters numqpu_params = {
     "-n=",
     INTEGER,
     "Number of QPU's to use. The values depends on the platform being run on:\n"
-    "  - vc4 (Pi3+ and earlier), emulator: an integer value from 1 to 12 (inclusive)\n"
-    "  - v3d (Pi4)                       : 1 or 8\n",
+    "  - vc4 (Pi3+ and earlier), emulator: 1..12 (inclusive)\n"
+    "  - vc6 (Pi4)                       : 1 or 8\n"
+    "  - vc7 (Pi5)                       : 1..12 (inclusive)\n",
     1
   }}
 };
@@ -210,7 +211,6 @@ void Settings::check_params(CmdParameters &params, int argc, char const *argv[])
   } else {
     ret = params.handle_commandline(argc, argv, false);
 
-
     if (ret == CmdParameters::ALL_IS_WELL) {
       bool success = process() && init_params();
       if (!success) {
@@ -270,6 +270,7 @@ bool Settings::process() {
   if (run_type != 0) {
 		//printf("Settings: using main memory.\n");
     Platform::use_main_memory(true);
+    Platform::compiling_for_vc4(true);
   }
 
   return true;
