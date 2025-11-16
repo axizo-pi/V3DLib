@@ -1230,7 +1230,7 @@ TEST_CASE("FFT test with DFT [fft][test2][pass2]") {
       fft_context.num_qpus = 8;
       auto k = compile(fft_kernel);
       k.pretty("./obj/test/fft_v3d.txt", true);
-      k.dump_compile_data(false, "./obj/test/fft_dump_v3d.txt");
+      k.dump_compile_data("./obj/test/fft_dump_v3d.txt");
       //timer1.end();
       //std::cout << "FFT kernel size: " << k.v3d_kernel_size() << std::endl;
       //std::cout << "combined " << compile_data.num_instructions_combined << " instructions" << std::endl;

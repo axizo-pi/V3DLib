@@ -60,7 +60,6 @@ std::vector<uint64_t> qpu_disasm_kernel() {
   ret
     << nop().ldvary()
     << fadd(r1, r1, r5).thrsw()
-    //<< vpmsetup(r5).ldunif()  vpmsetup removed in V3D 4.1
     << nop().ldunifa()  // NB for version 33 this is `nop().ldvpm()`
     << bor(rf(0), r3, r3).mov(vpm, r3)
 

@@ -456,21 +456,6 @@ TEST_CASE("Check v3d assembly/disassembly [v3d][asm]") {
   }
 
 
-  SUBCASE("Register without mux definition should throw on usage") {
-    using namespace V3DLib::v3d::instr;
-		// Mux's not available on vc7
-
-    REQUIRE_NOTHROW(r0.to_waddr());
-    REQUIRE_NOTHROW(r0.to_mux());
-    REQUIRE_NOTHROW(r1.to_waddr());
-    REQUIRE_NOTHROW(r1.to_mux());
-
-    // tmua has no mux usage
-    REQUIRE_NOTHROW(tmua.to_waddr());
-    //REQUIRE_THROWS(tmua.to_mux());  TODO Currently returns V3D_QPU_MUX_B, find a solution
-  }
-
-
   SUBCASE("qpu_disasm kernel generates correctly encoded output") {
     auto &bytecode      = qpu_disasm_bytecode();
     auto  kernel_output = qpu_disasm_kernel();

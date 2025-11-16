@@ -378,21 +378,6 @@ Mnemonic barrierid(v3d_qpu_waddr waddr) {
 }
 
 
-/*
-Not used anywhere in the code, a test fails on it.
-By the looks of it, it has been removed in V3D 4.1
-
-Mnemonic vpmsetup(Register const &reg2) {
-  Mnemonic instr;
-
-  instr.alu.add.op    = V3D_QPU_A_VPMSETUP;
-  set_muxes_add(instr.alu, reg2.to_mux(), V3D_QPU_MUX_R3);
-
-  return instr;
-}
-*/
-
-
 Mnemonic ffloor(Location const &dst, Source const &srca) {
   Mnemonic instr(V3D_QPU_A_FFLOOR, dst, srca, r1);  // r1 apparently implicit
 

@@ -35,9 +35,6 @@ const tests_struct tests[] = {
         { 33, 0x3d003186bb800000ull, "nop                  ; nop               ; ldvary" },
         { 33, 0x3c20318105829000ull, "fadd  r1, r1, r5     ; nop               ; thrsw" },
 
-        // vpmsetup removed in V3D 4.1
-        //{ 33, 0x3c403186bb81d000ull, "vpmsetup  -, r5      ; nop               ; ldunif" },
-
         // WRI: for version 42, this is the opcode for `nop nop ldunifa`, not ldvpm
         { 33, 0x3f003186bb800000ull, "nop                  ; nop               ; ldvpm" },
         { 33, 0x3c002380b6edb000ull, "or  rf0, r3, r3      ; mov  vpm, r3" },
