@@ -114,7 +114,7 @@ void BaseKernel::emu() {
  */
 void BaseKernel::interpret() {
 	assert(!m_settings.compile_only);		// Paranoia
-	assert(!driver().is_v3d());
+	assertq(!driver().is_v3d(), "Can not run interpreter on v3d");
 
   if (driver().has_errors()) {
     warning("Not running interpreter, there were errors during compile.");

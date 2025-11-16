@@ -1,6 +1,7 @@
 #include "V3DLib.h"
 #include <CmdParameters.h>
 #include "Support/Settings.h"
+#include <iostream>
 
 using namespace V3DLib;
 
@@ -38,8 +39,8 @@ void tri_int(Int::Ptr p) {
   p += me()*16;
 
   Int n = *p;
-
   Int sum = 0;
+
   While (any(n > 0))
     Where (n > 0)
       sum = sum + n;

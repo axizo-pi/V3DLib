@@ -1478,7 +1478,7 @@ void KernelDriver::invoke_intern(int numQPUs, IntList &params) {
 
 
 void KernelDriver::emit_opcodes(FILE *f) {
-  fprintf(f, "Opcodes for v3d\n");
+  fprintf(f, "Opcodes for %s\n", kernel_type_str().c_str() );
   fprintf(f, "===============\n\n");
 
   if (instructions.empty()) {
