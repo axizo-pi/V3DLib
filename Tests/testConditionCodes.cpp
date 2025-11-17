@@ -67,11 +67,14 @@ ByteCode qpu_cond_push_a() {
   };
 
   // r2 = ptr + index*4 
-  ret << eidx(r0).ldunif()   // Loads uniform value in r5
+  ret << eidx(r0).ldunifrf(r5)
+		
       << mov(r2, r5)
       << shl(r0, r0, 2)
       << add(r2, r2, r0)
-      << shl(r1, 4, 4);      // r1 = 64 (offset)
+      << mov(r1, 4)              // r1 = 64 (offset; mov(r1, 4, 4) won't work with vc7)
+      << shl(r1, r1, 4)
+	;
 
   for (int index = 0; index < 3; ++ index) {
     ret << eidx(r0);
@@ -80,16 +83,15 @@ ByteCode qpu_cond_push_a() {
     set_cond_push(instr, index);
 
     ret << instr
-        << mov(r0, SmallImm(0));
+        << mov(r0, SmallImm(1));
 
     instr = mov(r0, SmallImm(1));
     set_cond_if(instr, index);
-
     ret << instr
         << mov(tmud, r0)
         << mov(tmua, r2)
         << tmuwt().add(r2, r2, r1)  // *ptr = val; ptr += 64
-        << mov(r0, SmallImm(0));
+        << mov(r0, SmallImm(1));
 
     instr = nop().mov(r0, SmallImm(1));
     set_cond_if(instr, index);
@@ -109,12 +111,41 @@ ByteCode qpu_cond_push_a() {
       << nop()
       << nop();
 
-  ByteCode bytecode;
-  for (auto const &instr : ret) {
-    bytecode << instr.code(); 
-  }
 
-  return bytecode;
+	Log::warn << "Pre:\n" << ret.dump();
+
+	if (ret.uses_acc()) {
+		auto acc = ret.acc_usage();
+		auto rf  = ret.rf_usage();
+		Log::warn 
+			<< "\n"
+			<< "  ret uses acc's : "  << acc.dump()       << "\n"
+			<< "  ret uses rf's  : "  << rf.dump()        << "\n"
+			<< "  First available: "  << rf.first_empty() << "\n"
+			//<< Log::thrw
+		;
+
+		int replaced = 0;
+		while (!acc.empty()) {
+			replaced += ret.replace_acc_with_rf(acc.first_filled(), rf.first_empty());
+			acc.clear(acc.first_filled());
+			rf.set(rf.first_empty());
+		}
+
+		Log::warn << "# replaced reg's: "  << replaced << "\n";
+
+		acc = ret.acc_usage();
+		rf  = ret.rf_usage();
+		Log::warn 
+			<< "\n"
+			<< "  acc after replace: "  << acc.dump()       << "\n"
+			<< "  ret after replace: "  << rf.dump()       << "\n"
+		;
+
+		Log::warn << "Post:\n" << ret.dump();
+	}
+
+  return ret.bytecode();
 }
 
 }  // anon namespace
@@ -128,7 +159,7 @@ TEST_CASE("Check v3d condition codes [v3d][cond]") {
     const int DATA_SIZE = 16;
 
     ByteCode bytecode = qpu_cond_push_a();
-    //std::cout << Instr::mnemonics(bytecode) << std::endl;
+    std::cout << Instr::mnemonics(bytecode) << std::endl;
 
     BufferObject heap;
     heap.alloc(10*1024);  // arbitrary size, large enough

@@ -16,6 +16,38 @@ namespace V3DLib {
 class ALUInstruction;
 
 namespace v3d {
+
+class RegSet {
+public:	
+	RegSet(int count);
+
+	unsigned size() const { return (unsigned) m_set.size(); }
+
+	void set(unsigned index);
+	void clear(unsigned index);
+	void add(RegSet const &rhs);
+	std::string dump() const;
+	bool empty() const;
+	unsigned first_filled() const;
+	unsigned first_empty() const;
+
+private:
+	std::vector<bool> m_set;
+};
+
+
+class ACCSet :public RegSet {
+public:	
+	ACCSet() : RegSet(6) {}
+};
+
+
+class RFSet :public RegSet {
+public:	
+	RFSet() : RegSet(64) {}
+};
+
+
 namespace instr {
 
 using rf = RFAddress;
@@ -69,18 +101,18 @@ public:
 
   std::string dump() const; 
   std::string mnemonic(bool with_comments = false) const;
-  uint64_t code() const;
+  uint64_t bytecode() const;
   static std::string dump(uint64_t in_code);
   static std::string mnemonic(uint64_t in_code);
   static std::string mnemonics(std::vector<uint64_t> const &in_code);
 
-  operator uint64_t() const { return code(); }
+  operator uint64_t() const { return bytecode(); }
 
   void set_branch_condition(V3DLib::BranchCond src_cond);
 
   bool add_nop()    const { return alu.add.op == V3D_QPU_A_NOP; }
   bool mul_nop()    const { return alu.mul.op == V3D_QPU_M_NOP; }
-  bool is_nop()     const { return add_nop() && mul_nop(); }  // This does not exclude signal having dst registers
+  bool is_nop()     const { return add_nop() && mul_nop(); }  // This does not include signals having sig_addr set 
   bool add_nocond() const { return flags.ac == V3D_QPU_COND_NONE; }
   bool mul_nocond() const { return flags.mc == V3D_QPU_COND_NONE; }
 
@@ -106,8 +138,8 @@ public:
   bool is_src(DestReg const &dst_reg) const;
   bool is_dst(DestReg const &dst_reg) const;
 
-  void alu_add_set_dst(Location const &dst); // public because needed in Mnemonics
-  bool alu_add_set_a(Source const &src);     // idem
+  void alu_add_dst(Location const &dst); // public because needed in Mnemonics
+  bool alu_add_a(Source const &src);     // idem
 
   bool alu_add_set(Location const &dst, Source const &a, Source const &b);
   bool alu_mul_set(Location const &dst, Source const &a);
@@ -127,7 +159,7 @@ public:
 
 private:
   bool alu_add_set_b(Source const &src);
-  bool alu_mul_set_a(Source const &src);
+  bool alu_mul_a(Source const &src);
   bool alu_mul_set_b(Source const &src);
 
   std::unique_ptr<Source> alu_src(v3d_qpu_mux src) const;  // < vc7
@@ -153,6 +185,8 @@ protected:
   void init(uint64_t in_code);
   void set_branch_condition(v3d_qpu_branch_cond cond);
 
+  void set_sig_addr(Location const &loc);
+
 private:
   bool m_skip = false;
 
@@ -172,14 +206,38 @@ private:
 
 	bool alu_set_src(Source const &src, v3d_qpu_input &input, CheckSrc check_src);
 	bool has_small_imm() const;
+
+//
+// vc7: support for converting acc's to rf'
+//	
+public:
+	bool uses_acc() const;
+	ACCSet acc_usage() const;
+	RFSet  rf_usage() const;
+	int replace_acc_with_rf(unsigned acc, unsigned rf);
+
+private:
+	bool add_a_is_acc() const;
+	bool add_b_is_acc() const;
+	bool add_dst_is_acc() const;
+	bool mul_a_is_acc() const;
+	bool mul_b_is_acc() const;
+	bool mul_dst_is_acc() const;
+	bool sig_is_acc() const;
+
+	bool m_add_a_is_reg   = false;
+	bool m_add_b_is_reg   = false;
+	bool m_add_dst_is_reg = false;
+	bool m_mul_a_is_reg   = false;
+	bool m_mul_b_is_reg   = false;
+	bool m_mul_dst_is_reg = false;
+	// sig_addr doesn't need a special bool, sig_magic does the job
 };
 
 }  // instr
 
-//
-// Some type definitions, for better understanding
-//
-using ByteCode = std::vector<uint64_t>; 
+
+using ByteCode = std::vector<uint64_t>;  // For better understanding
 
 class Instructions : public std::vector<instr::Instr> {
   using Parent = std::vector<instr::Instr>;
@@ -192,6 +250,14 @@ public:
   Instructions &comment(std::string msg, bool to_front = true);
   void set_cond_tag(AssignCond cond);
   bool check_consistent() const;
+
+	bool uses_acc() const;
+	ACCSet acc_usage() const;
+	RFSet  rf_usage() const;
+	int replace_acc_with_rf(unsigned acc, unsigned rf);
+
+	ByteCode bytecode() const;
+	std::string dump() const;
 };
 
 

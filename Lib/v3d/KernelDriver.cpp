@@ -1396,16 +1396,9 @@ void KernelDriver::encode() {
  *
  * The translation/removal of labels happens here somewhere 
  */
-std::vector<uint64_t> KernelDriver::to_opcodes() {
+ByteCode KernelDriver::to_opcodes() {
   assert(instructions.size() > 0);
-
-  std::vector<uint64_t> code;  // opcodes for v3d
-
-  for (auto const &inst : instructions) {
-    code << inst.code();
-  }
-
-  return code;
+  return instructions.bytecode();
 }
 
 

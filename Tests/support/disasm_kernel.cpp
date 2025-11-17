@@ -128,10 +128,5 @@ std::vector<uint64_t> qpu_disasm_kernel() {
 
   ret << nop();
 
-  std::vector<uint64_t> bytecode;
-  for (auto const &instr : ret) {
-    bytecode << instr.code(); 
-  }
-
-  return bytecode;
+  return ret.bytecode();
 }

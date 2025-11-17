@@ -40,7 +40,7 @@ private:
   void invoke_intern(int numQPUs, IntList &params) override;
 
   void allocate();
-  std::vector<uint64_t> to_opcodes();
+  ByteCode to_opcodes();
   void emit_opcodes(FILE *f) override;
 };
 

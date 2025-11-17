@@ -56,19 +56,25 @@ Mnemonic &Mnemonic::pushn() { set_pf(V3D_QPU_PF_PUSHN); return *this; }
 
 Mnemonic &Mnemonic::thrsw()   { sig.thrsw   = true; return *this; }
 Mnemonic &Mnemonic::ldvary()  { sig.ldvary  = true; return *this; }
-Mnemonic &Mnemonic::ldunif()  { sig.ldunif  = true; return *this; }
-Mnemonic &Mnemonic::ldunifa() { sig.ldunifa = true; return *this; }
 
+Mnemonic &Mnemonic::ldunif() {
+	if (Platform::compiling_for_vc7() ) {
+		Log::warn << "ldunif called on vc7.\n"
+			        << "  On vc6, this implicitly uses r5. r5 still exists on vc7 but is renamed to QUAD.\n"
+				      << "  Consider changing this call to ldunifrf."
+		;
 
-void Mnemonic::set_sig_addr(Location const &loc) {
-  sig_magic = !loc.is_rf();
-  sig_addr = loc.to_waddr();
+	}
+
+	sig.ldunif  = true; return *this;
 }
 
-
+Mnemonic &Mnemonic::ldunifa() { sig.ldunifa = true; return *this; }
 Mnemonic &Mnemonic::ldunifarf(Location const &dst) { sig.ldunifarf = true; set_sig_addr(dst); return *this; }
 Mnemonic &Mnemonic::ldunifrf(Location const &dst)  { sig.ldunifrf = true;  set_sig_addr(dst); return *this; }
 Mnemonic &Mnemonic::ldtmu(Location const &dst)     { sig.ldtmu = true;     set_sig_addr(dst); return *this; }
+
+
 
 
 Mnemonic &Mnemonic::ldvpm()   { sig.ldvpm   = true; return *this; }
@@ -272,6 +278,7 @@ Mnemonic &Mnemonic::rotate(Location const &dst, Location const &a, Location cons
 }
 
 
+
 ///////////////////////////////////////////////////////////////////////////////
 // Registers 
 ///////////////////////////////////////////////////////////////////////////////
@@ -316,7 +323,7 @@ Mnemonic nop() { return Mnemonic(); }
 
 Mnemonic tidx(Location const &reg) {
   Mnemonic instr;
-  instr.alu_add_set_dst(reg);
+  instr.alu_add_dst(reg);
 
   instr.sig_magic  = true;  // TODO is this really needed? Not present in eidx
   instr.alu.add.op = V3D_QPU_A_TIDX;
@@ -332,10 +339,10 @@ Mnemonic tidx(Location const &reg) {
  */
 Mnemonic eidx(Location const &reg) {
   Mnemonic instr;
-  instr.alu_add_set_dst(reg);
+  instr.alu_add_dst(reg);
 
   instr.alu.add.op = V3D_QPU_A_EIDX;
-  set_muxes_add(instr.alu, V3D_QPU_MUX_R2, V3D_QPU_MUX_R0);
+  set_muxes_add(instr.alu, V3D_QPU_MUX_R2, V3D_QPU_MUX_R0); // WHY IS THIS NECESSARY??
 
   return instr;
 }
@@ -359,8 +366,8 @@ Mnemonic mov(Location const &dst, Source const &a) {
 		return Mnemonic(V3D_QPU_A_OR, dst, a, a);
 	} else {
   	Mnemonic instr;
-  	instr.alu_add_set_dst(dst);
-	  instr.alu_add_set_a(a);
+  	instr.alu_add_dst(dst);
+	  instr.alu_add_a(a);
 	  instr.alu.add.op = V3D_QPU_A_MOV;
 		return instr;
 	}
@@ -407,8 +414,8 @@ Mnemonic flpop(RFAddress rf_addr1, RFAddress rf_addr2) {
 
 Mnemonic fdx(Location const &dst, Location const &srca) {
   Mnemonic instr;
-  instr.alu_add_set_dst(dst);
-  instr.alu_add_set_a(srca);
+  instr.alu_add_dst(dst);
+  instr.alu_add_a(srca);
 
   instr.alu.add.op = V3D_QPU_A_FDX;
   return instr;
@@ -417,7 +424,7 @@ Mnemonic fdx(Location const &dst, Location const &srca) {
 
 Mnemonic vflb(Location const &dst) {
   Mnemonic instr;
-  instr.alu_add_set_dst(dst);
+  instr.alu_add_dst(dst);
 
   instr.alu.add.op = V3D_QPU_A_VFLB;
   return instr;
@@ -438,7 +445,7 @@ Mnemonic tmuwt(Location const &dst) {
 
 	// Ignore dst for vc4, vc6
 	if (Platform::compiling_for_vc7()) {
-	  instr.alu_add_set_dst(dst);
+	  instr.alu_add_dst(dst);
 	}
   return instr;
 }
@@ -559,6 +566,7 @@ Mnemonic branch(int target, bool relative) {
 
   return instr;
 }
+
 
 /**
  * Actually called just 'b' in the mnemonics

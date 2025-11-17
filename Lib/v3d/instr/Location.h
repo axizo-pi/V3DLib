@@ -11,7 +11,13 @@ public:
   v3d_qpu_output_pack output_pack() const { return m_output_pack; }
   v3d_qpu_input_unpack input_unpack() const { return m_input_unpack; }
   bool is_rf() const  { return m_is_rf; }
-  bool is_acc() const { return !m_is_rf; }
+  bool is_reg() const { return !m_is_rf; }
+
+  bool is_acc() const {
+		// This should work for waddr as well as mux, because the enum values are the same
+		// Note that R5 is QUAD on vc7 and may have special uses
+		return !m_is_rf && to_waddr() <= V3D_QPU_WADDR_R5;
+	}
 
   virtual Location *clone() const = 0;
   virtual v3d_qpu_waddr to_waddr() const = 0;

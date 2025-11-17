@@ -20,6 +20,29 @@ using ::operator<<;  // C++ weirdness; come on c++, get a grip.
 
 namespace {
 
+/**
+ * The primary goal of this functions is to detect any other sig's 
+ * that could possibly use sig_addres on vc7.
+ *
+ * Known sig's are left out
+ */
+bool unknown_sig_is_set(struct v3d_qpu_sig const &sig) {
+	return
+    //sig.ldunif ||    - uses r5 implitly on vc6
+    sig.ldunifa ||
+    sig.ldunifarf ||
+    sig.ldtmu ||
+    sig.ldvary ||
+    sig.ldvpm ||
+    sig.ldtlb ||
+    sig.ldtlbu ||
+    sig.ucb ||
+    sig.rotate ||
+    sig.wrtmuc
+	;
+}
+
+
 #ifdef DEBUG
 std::string binaryValue(uint64_t num) {
   const int size = sizeof(num)*8;
@@ -65,6 +88,84 @@ v3d_qpu_cond translate_assign_cond(AssignCond cond) {
 }
 
 }  // anon namespace
+
+
+///////////////////////////////////
+// Class RegSet
+///////////////////////////////////
+
+RegSet::RegSet(int count) {
+	m_set.resize(count);
+
+	for (unsigned i = 0; i < m_set.size(); ++i) {
+		m_set[i] = false;
+	}
+}
+
+
+void RegSet::set(unsigned index) {
+	assert(index < m_set.size());
+	m_set[index] = true;
+}
+
+
+void RegSet::clear(unsigned index) {
+	assert(index < m_set.size());
+	m_set[index] = false;
+}
+
+
+void RegSet::add(RegSet const &rhs) {
+	for (unsigned i = 0; i < rhs.m_set.size(); ++i ) {
+		if (rhs.m_set[i]) m_set[i] = true;
+	}
+}
+
+std::string RegSet::dump() const {
+	std::string ret;
+
+	for (unsigned i = 0; i < m_set.size(); ++i ) {
+		if (m_set[i]) {
+			ret += "1";
+		} else {
+			ret += "0";
+		}
+	}
+
+	return ret;
+}
+
+
+bool RegSet::empty() const {
+	for (unsigned i = 0; i < m_set.size(); ++i ) {
+		if (m_set[i]) return false;
+	}
+
+	return true;
+}
+
+
+unsigned RegSet::first_filled() const {
+	for (unsigned i = 0; i < m_set.size(); ++i ) {
+		if (m_set[i]) return i;
+	}
+
+	Log::error << "first_filled: no values present" << Log::thrw;
+
+	return (unsigned) -1;
+}
+
+
+unsigned RegSet::first_empty() const {
+	for (unsigned i = 0; i < m_set.size(); ++i ) {
+		if (!m_set[i]) return i;
+	}
+
+	Log::error << "first_empty: no values available" << Log::thrw;
+
+	return (unsigned) -1;
+}
+
 
 namespace instr {
 
@@ -323,11 +424,31 @@ std::string Instr::mnemonic(bool with_comments) const {
     ret << emit_comment((int) out.size());
   }
 
+	if (with_comments && Platform::compiling_for_vc7()) {
+		std::string buf;
+
+		if (add_dst_is_acc()) buf << "add.waddr ";
+		if (add_a_is_acc())   buf << "add.a ";
+		if (add_b_is_acc())   buf << "add.b ";
+		if (mul_dst_is_acc()) buf << "mul.waddr ";
+		if (mul_a_is_acc())   buf << "mul.a ";
+		if (mul_b_is_acc())   buf << "mul.b ";
+		if (sig_is_acc())     buf << "sig_addr ";
+
+		if (!buf.empty()) {
+			int spaces = 80 - (int) ret.size();
+			for (int i = 0; i < spaces; ++i) ret << " ";
+
+			ret << "# Acc's: " << buf;
+		}
+
+	}
+
   return ret;
 }
 
 
-uint64_t Instr::code() const {
+uint64_t Instr::bytecode() const {
   uint64_t repack = instr_pack(const_cast<Instr *>(this));
   return repack;
 }
@@ -517,6 +638,12 @@ void Instr::set_branch_condition(v3d_qpu_branch_cond cond) {
 // End Conditions  branch instructions
 ///////////////////////////////////////////////////////////////////////////////
 
+void Instr::set_sig_addr(Location const &loc) {
+  sig_magic = !loc.is_rf();
+  sig_addr = loc.to_waddr();
+}
+
+
 DestReg Instr::sig_dest() const {
   if (uses_sig_dst()) {
     return DestReg(sig_addr, sig_magic);
@@ -602,11 +729,15 @@ bool Instr::is_dst(DestReg const &dst_reg) const {
 }
 
 
-void Instr::alu_add_set_dst(Location const &dst) {
+void Instr::alu_add_dst(Location const &dst) {
   if (dst.is_rf()) {
     alu.add.magic_write = false; // selects address in register file
   } else {
     alu.add.magic_write = true;  // selects register
+
+		assert(dst.is_reg());
+		//Log::warn << "alu_add_dst acc detected";
+		m_add_dst_is_reg = true;
   }
 
   alu.add.waddr = dst.to_waddr();
@@ -659,7 +790,7 @@ bool Instr::alu_set_src(Source const &src, v3d_qpu_input &input, CheckSrc check_
   if (src.is_location()) {
     Location const &loc = src.location();
 
-    if (loc.is_acc()) {
+    if (loc.is_reg()) {
       mux = loc.to_mux();
     } else if (raddr_a_is_safe(loc, check_src)) {
       raddr_a = loc.to_waddr(); 
@@ -699,19 +830,25 @@ bool Instr::alu_set_src(Source const &src, v3d_qpu_input &input, CheckSrc check_
 }
 
 
-bool Instr::alu_add_set_a(Source const &src) {
+bool Instr::alu_add_a(Source const &src) {
 	if (!Platform::compiling_for_vc7()) {
   	return alu_set_src(src, alu.add.a, CHECK_ADD_A);
 	}
 
  	if (src.is_location()) {
    	Location const &loc = src.location();
-     alu.add.a.raddr = loc.to_waddr(); 
+    alu.add.a.raddr = loc.to_waddr(); 
+
+		if (loc.is_reg()) {
+			//Log::warn << "alu_add_a reg detected";
+			m_add_a_is_reg = true;
+		}
+
 	} else {
 		// Small Imm on a for vc7
     auto imm = src.small_imm();
     alu.add.a.raddr = imm.to_raddr(); 
-		sig.small_imm_a = 1;
+		sig.small_imm_a = true;
 	}
 
   alu.add.a.unpack = src.input_unpack();
@@ -720,7 +857,7 @@ bool Instr::alu_add_set_a(Source const &src) {
 }
 
 
-bool Instr::alu_mul_set_a(Source const &src) {
+bool Instr::alu_mul_a(Source const &src) {
 	if (!Platform::compiling_for_vc7()) {
   	return alu_set_src(src, alu.mul.a, CHECK_MUL_A);
 	}
@@ -728,11 +865,13 @@ bool Instr::alu_mul_set_a(Source const &src) {
  	if (src.is_location()) {
    	Location const &loc = src.location();
     alu.mul.a.raddr = loc.to_waddr(); 
+
+		if (loc.is_reg()) m_mul_a_is_reg = true;
 	} else {
 		// Small Imm on a for vc7
     auto imm = src.small_imm();
     alu.mul.a.raddr = imm.to_raddr(); 
-		sig.small_imm_c = 1;
+		sig.small_imm_c = true;
 	}
 
   alu.mul.a.unpack = src.input_unpack();
@@ -749,6 +888,8 @@ bool Instr::alu_add_set_b(Source const &src) {
  	if (src.is_location()) {
    	Location const &loc = src.location();
     alu.add.b.raddr = loc.to_waddr(); 
+
+		if (loc.is_reg()) m_add_b_is_reg = true;
 	} else {
 		// Small Imm on b for vc7
     auto imm = src.small_imm();
@@ -770,11 +911,13 @@ bool Instr::alu_mul_set_b(Source const &src) {
  	if (src.is_location()) {
    	Location const &loc = src.location();
     alu.mul.b.raddr = loc.to_waddr(); 
+
+		if (loc.is_reg()) m_mul_b_is_reg = true;
 	} else {
 		// Small Imm on b for vc7
     auto imm = src.small_imm();
     alu.mul.b.raddr = imm.to_raddr(); 
-		sig.small_imm_d = 1;
+		sig.small_imm_d = true;
 	}
 
   alu.mul.b.unpack = src.input_unpack();
@@ -784,7 +927,7 @@ bool Instr::alu_mul_set_b(Source const &src) {
 
 
 bool Instr::alu_add_set(Location const &dst, Source const &a, Source const &b) {
-  alu_add_set_dst(dst);
+  alu_add_dst(dst);
 
 	bool ret = true;
 
@@ -795,7 +938,7 @@ bool Instr::alu_add_set(Location const &dst, Source const &a, Source const &b) {
 		}
 	}
 
-  ret = alu_add_set_a(a);
+  ret = alu_add_a(a);
 		
 	if (ret) {
  		ret = alu_add_set_b(b);
@@ -814,6 +957,10 @@ void Instr::alu_mul_dst(Location const &dst) {
     alu.mul.magic_write = false; // selects address in register file
   } else {
     alu.mul.magic_write = true;  // selects register
+
+		assert(dst.is_reg());
+		//Log::warn << "alu_add_dst acc detected";
+		m_mul_dst_is_reg = true;
   }
 
   alu.mul.waddr = dst.to_waddr();
@@ -972,7 +1119,7 @@ bool Instr::alu_mul_set(Location const &dst, Source const &a) {
 	bool ret;
 
 	if (Platform::compiling_for_vc7()) {
-		ret = alu_mul_set_a(a);
+		ret = alu_mul_a(a);
 		assert(ret);
 	} else {
   	ret = alu_set_src(a, alu.mul.a, CHECK_MUL_A);
@@ -1002,7 +1149,7 @@ bool Instr::alu_mul_set(Location const &dst, Source const &a, Source const &b) {
 	}
 
 	if (Platform::compiling_for_vc7()) {
-		ret = alu_mul_set_a(a);
+		ret = alu_mul_a(a);
 		assert(ret);
 	
 		ret = alu_mul_set_b(b);
@@ -1401,25 +1548,168 @@ std::unique_ptr<Source> Instr::alu_src(v3d_qpu_mux src) const {
   return res;
 }
 
-#if 0
 
-// mesa2
-std::unique_ptr<Source> Instr::alu_src(v3d_qpu_input input) const {
-  std::unique_ptr<Source> res;
+///////////////////////////////////////////////////////////////////////////////
+// vc7: support for converting acc's to rf'
+///////////////////////////////////////////////////////////////////////////////
 
-  if (sig.small_imm_b) {
-    // address b, small imm
-    res.reset(new Source(SmallImm((int) raddr_b, false)));
-  } else {
-    // address b, rf-reg
-    res.reset(new Source(RFAddress(raddr_b)));
-  }
-
-  assert(res);
-  return res;
+bool Instr::uses_acc() const {
+	return
+		add_a_is_acc() ||
+		add_b_is_acc() ||
+		add_dst_is_acc() ||
+		mul_a_is_acc() ||
+		mul_b_is_acc() ||
+		mul_dst_is_acc() ||
+		sig_is_acc()
+	;
 }
 
-#endif
+
+ACCSet Instr::acc_usage() const {
+	ACCSet ret;
+
+	if (add_a_is_acc()) ret.set(alu.add.a.raddr);  // You would expect mux here
+	if (add_b_is_acc()) ret.set(alu.add.b.raddr);
+
+	if (add_dst_is_acc()) {
+		assert(alu.add.magic_write);
+		ret.set(alu.add.waddr);
+	}
+
+	if (mul_a_is_acc()) ret.set(alu.mul.a.raddr);  // You would expect mux here
+	if (mul_b_is_acc()) ret.set(alu.mul.b.raddr);  // You would expect mux here
+
+	if (mul_dst_is_acc()) {
+		assert(alu.mul.magic_write);
+		ret.set(alu.mul.waddr);
+	}
+
+	if (sig_is_acc()) ret.set(sig_addr);
+
+	return ret;
+}
+
+
+RFSet Instr::rf_usage() const {
+	RFSet ret;
+
+  if (                                 // This is a list of opcodes which do not take add inputs
+		alu.add.op != V3D_QPU_A_NOP  && 
+		alu.add.op != V3D_QPU_A_EIDX &&
+		alu.add.op != V3D_QPU_A_TMUWT
+	) {
+		if (!m_add_a_is_reg && !sig.small_imm_a) {
+			ret.set(alu.add.a.raddr);
+		}
+
+	  if (                                 // This is a list of opcodes which take only add.a input
+			alu.add.op != V3D_QPU_A_MOV 
+		) {
+			if (!m_add_b_is_reg && !sig.small_imm_b) {
+				/*
+				if (alu.add.b.raddr == 0) {
+					breakpoint
+				}
+				*/
+				ret.set(alu.add.b.raddr);
+			}
+		}
+	}
+
+  if (alu.add.op != V3D_QPU_A_NOP) {
+		if (!m_add_dst_is_reg) {
+			assert(!alu.add.magic_write);
+	 		ret.set(alu.add.waddr);
+		}
+	}
+
+  if (alu.mul.op != V3D_QPU_M_NOP) {
+		if (!m_mul_a_is_reg && !sig.small_imm_c) ret.set(alu.mul.a.raddr);
+		if (!m_mul_b_is_reg && !sig.small_imm_d) ret.set(alu.mul.b.raddr);
+
+		if (!m_mul_dst_is_reg) {
+			assert(!alu.mul.magic_write);
+	 		ret.set(alu.mul.waddr);
+		}
+	}
+
+	// This depends on setting the sig values; prob need to check on all the sig's
+	if (!sig_magic) {
+		if (unknown_sig_is_set(sig)) {
+			Log::warn << "Some unknown sig is set; check it out";
+			breakpoint;
+		}
+
+		if (sig.ldunifrf) {
+			ret.set(sig_addr);
+		}
+	}
+	
+
+	return ret;
+}
+
+int Instr::replace_acc_with_rf(unsigned acc, unsigned rf) {
+	int count = 0;
+
+	if (m_add_a_is_reg && alu.add.a.raddr == acc) {
+		alu.add.a.raddr = (uint8_t) rf;
+		count++;
+		m_add_a_is_reg = false;
+	}
+
+	if (m_add_b_is_reg && alu.add.b.raddr == acc) {
+		alu.add.b.raddr = (uint8_t) rf;
+		count++;
+		m_add_b_is_reg = false;
+	}
+
+	if (m_add_dst_is_reg && alu.add.waddr == acc) {
+		assert(alu.add.magic_write);
+		alu.add.magic_write = false;
+		alu.add.waddr = (uint8_t) rf;
+		count++;
+		m_add_dst_is_reg = false;
+	}
+
+	if (m_mul_a_is_reg && alu.mul.a.raddr == acc) {
+		alu.mul.a.raddr = (uint8_t) rf;
+		count++;
+		m_mul_a_is_reg = false;
+	}
+
+	if (m_mul_b_is_reg && alu.mul.b.raddr == acc) {
+		alu.mul.b.raddr = (uint8_t) rf;
+		count++;
+		m_mul_b_is_reg = false;
+	}
+
+	if (m_mul_dst_is_reg && alu.mul.waddr == acc) {
+		assert(alu.mul.magic_write);
+		alu.mul.magic_write = false;
+		alu.mul.waddr = (uint8_t) rf;
+		count++;
+		m_mul_dst_is_reg = false;
+	}
+
+	if (sig_magic && sig_addr == acc) {
+		sig_addr = (uint8_t) rf;
+		sig_magic = false;
+		count++;
+	}
+
+	return count;
+}
+
+
+bool Instr::add_a_is_acc()   const { return (m_add_a_is_reg && alu.add.a.raddr <= V3D_QPU_WADDR_R5); }
+bool Instr::add_b_is_acc()   const { return (m_add_b_is_reg && alu.add.b.raddr <= V3D_QPU_WADDR_R5); }
+bool Instr::add_dst_is_acc() const { return (m_add_dst_is_reg && alu.add.waddr <= V3D_QPU_WADDR_R5); }
+bool Instr::mul_a_is_acc()   const { return (m_mul_a_is_reg && alu.mul.a.raddr <= V3D_QPU_WADDR_R5); }
+bool Instr::mul_b_is_acc()   const { return (m_mul_b_is_reg && alu.mul.b.raddr <= V3D_QPU_WADDR_R5); }
+bool Instr::mul_dst_is_acc() const { return (m_mul_dst_is_reg && alu.mul.waddr <= V3D_QPU_WADDR_R5); }
+bool Instr::sig_is_acc()     const { return (sig_magic && sig_addr <= V3D_QPU_WADDR_R5); }
 
 }  // namespace instr
 
@@ -1462,6 +1752,76 @@ bool Instructions::check_consistent() const {
   }
 
   return ret;
+}
+
+
+bool Instructions::uses_acc() const {
+  for (auto &instr : *this) {
+    if (instr.uses_acc()) return true;
+	}
+
+	return false;
+}
+
+
+ACCSet Instructions::acc_usage() const {
+	ACCSet ret;
+
+  for (auto &instr : *this) {
+		ret.add(instr.acc_usage());
+	}
+
+	return ret;
+}
+
+
+RFSet Instructions::rf_usage() const {
+	RFSet ret;
+
+  for (auto &instr : *this) {
+		ret.add(instr.rf_usage());
+	}
+
+	return ret;
+}
+
+
+/**
+ * @return number of src/dst values with acc's replaced with  rf's
+ */
+int Instructions::replace_acc_with_rf(unsigned acc, unsigned rf) {
+	int count = 0;
+
+	Log::warn << "replace_acc_with_rf: replacing acc" << acc << " with rf" << rf;
+
+  for (auto &instr : *this) {
+		count += instr.replace_acc_with_rf(acc, rf);
+	}
+
+	return count;
+}
+
+
+ByteCode Instructions::bytecode() const {
+  ByteCode ret;
+  for (auto const &instr : *this) {
+    ret << instr.bytecode(); 
+  }
+
+	return ret;
+}
+
+
+std::string Instructions::dump() const {
+	std::string ret;
+
+	int count = 0;
+  for (auto const &instr : *this) {
+    ret << count << "; " << instr.mnemonic(true) << "\n"; 
+		count++;
+  }
+
+	return ret;
 }
 
 }  // namespace v3d

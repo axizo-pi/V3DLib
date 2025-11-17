@@ -98,7 +98,6 @@ private:
   void set_c(v3d_qpu_cond val);
   void set_uf(v3d_qpu_uf val);
   void set_pf(v3d_qpu_pf val);
-  void set_sig_addr(Location const &loc);
 };
 
 }  // namespace instr
@@ -204,6 +203,7 @@ Mnemonic barrierid(v3d_qpu_waddr waddr);
 Mnemonic ffloor(Location const &dst, Source const &srca);
 Mnemonic flpop(RFAddress rf_addr1, RFAddress rf_addr2);
 
+Mnemonic fdx(Location const &dst, Location const &srca);
 Mnemonic fdx(Location const &dst, Location const &srca);
 Mnemonic vflb(Location const &dst);
 Mnemonic tmuwt();

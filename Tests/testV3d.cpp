@@ -186,15 +186,12 @@ TEST_CASE("Test v3d opcodes [v3d][code][opcodes]") {
 
            << end_program();
 
-    ByteCode bytecode;
-    for (auto const &instrs : instrs) {
-      bytecode << instrs.code(); 
-    }
+    ByteCode byte_code = instrs.bytecode();
 
     BufferObject heap;
     heap.alloc(1024);
-    Code codeMem((uint32_t) bytecode.size(), heap);
-    codeMem.copyFrom(bytecode);
+    Code codeMem((uint32_t) byte_code.size(), heap);
+    codeMem.copyFrom(byte_code);
     V3DLib::Float::Array result(16, heap);
     Data unif(2, heap);
 
@@ -261,17 +258,12 @@ TEST_CASE("Test v3d opcodes [v3d][code][opcodes]") {
            << end_program();
 
 
-    ByteCode bytecode;
-    for (auto const &instrs : instrs) {
-      bytecode << instrs.code(); 
-    }
-
-    //printf("%s\n", Instr::mnemonics(bytecode).c_str());
+    ByteCode byte_code = instrs.bytecode();
 
     BufferObject heap;
     heap.alloc(1024);
-    Code codeMem((uint32_t) bytecode.size(), heap);
-    codeMem.copyFrom(bytecode);
+    Code codeMem((uint32_t) byte_code.size(), heap);
+    codeMem.copyFrom(byte_code);
     V3DLib::Int::Array result(16, heap);
     Data unif(2, heap);
 

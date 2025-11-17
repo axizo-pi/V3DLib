@@ -901,12 +901,7 @@ ByteCode summation_kernel(uint8_t num_qpus, int unroll_shift, int code_offset) {
       << sync_tmu()
       << end_program();
 
-  ByteCode bytecode;
-  for (auto const &instr : ret) {
-    bytecode << instr.code(); 
-  }
-
-  return bytecode;
+  return ret.bytecode();
 }
 
 //
