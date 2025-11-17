@@ -45,7 +45,7 @@ DEBUG=1
 ifeq ($(QPU), 1)
 ifeq ($(DEBUG), 1)
 $(info Using default values QPU=1 and DEBUG=1)
-$(info To override, call make files with `make (-e) QPU=0` and/or `DEBUG=0`)
+$(info To override, call make with `make (-e) QPU=0` and/or `DEBUG=0`)
 endif
 endif
 

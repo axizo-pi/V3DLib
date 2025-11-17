@@ -7,20 +7,6 @@
 #include <string>
 #include <vector>
 
-struct WorkGroup {
-  uint32_t wg_x = 0;
-  uint32_t wg_y = 0;
-  uint32_t wg_z = 0;
-
-  WorkGroup(uint32_t x = 16, uint32_t y = 1, uint32_t z = 1) :
-    wg_x(x),
-    wg_y(y),
-    wg_z(z) {}
-
-  uint32_t wg_size() { return wg_x * wg_y * wg_z; }
-};
-
-
 struct st_v3d_submit_csd {
   uint32_t cfg[7];
   uint32_t coef[4];

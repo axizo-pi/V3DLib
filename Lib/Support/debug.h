@@ -37,6 +37,9 @@ inline void debug_break(const char *str) {}
 
 #endif  // DEBUG
 
+#define MAYBE_UNUSED __attribute__((unused))
+
+
 inline void debug(std::string const &str)   { return debug(str.c_str()); }
 inline void warning(std::string const &str) { return warning(str.c_str()); }
 

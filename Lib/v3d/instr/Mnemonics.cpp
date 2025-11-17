@@ -388,7 +388,6 @@ Mnemonic ffloor(Location const &dst, Source const &srca) {
 
 #pragma GCC diagnostic pop
 
-
   return instr;
 }
 

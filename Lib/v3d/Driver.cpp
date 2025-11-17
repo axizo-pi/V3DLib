@@ -5,7 +5,7 @@
 //
 // Note 1:
 //
-// TODO all the following in this not is wrong due to code issue, redo
+// TODO all the following in this is not wrong due to code issues, redo
 //
 // Setting workgroup value to non-zero has the effect that:
 //
@@ -21,7 +21,7 @@
 //  - consistently 1 qpu with only reg 0 filled, rest filled
 //
 // 1,1,2     0
-//  - consistently one QPU with first 4 re'gs filled, which QPU varies
+//  - consistently one QPU with first 4 reg's filled, which QPU varies
 //
 // 1,1,1     1
 //  - 4-6 QPU's return with only reg 0 filled, which QPU's vary
@@ -29,7 +29,7 @@
 // 1,1,2     1
 //  - 5-6 QPU's return with only reg 0 and 1 filled, which QPU's vary
 //
-//1,1,7     1
+// 1,1,7     1
 //  - >= 4 QPU's return with only reg's 0-6 filled, which QPU's vary
 // 
 // 1,7,2     3
@@ -46,13 +46,35 @@
 namespace V3DLib {
 namespace v3d {
 
+namespace {
+
+struct WorkGroup {
+  uint32_t wg_x = 0;
+  uint32_t wg_y = 0;
+  uint32_t wg_z = 0;
+
+  WorkGroup(uint32_t x = 16, uint32_t y = 1, uint32_t z = 1) :
+    wg_x(x),
+    wg_y(y),
+    wg_z(z) {}
+
+  uint32_t wg_size() { return wg_x * wg_y * wg_z; }
+};
+
+
+uint32_t roundup(uint32_t n, uint32_t d) {
+	return (n + d -1) /d ;
+}
+
+}  // anon namespace
+
+
 /**
  * Execute a kernel on v3d hardware
  *
- * @param thread number of baatches to run
+ * @param thread number of batches to run
  *
- * @return true if execution went well and no timeout,
- *         false otherwise
+ * @return true if execution went well and no timeout, false otherwise
  *
  * ============================================================================
  * NOTES
@@ -60,7 +82,7 @@ namespace v3d {
  *
  * 1. It doesn't appear to be necessary to add the code BO to the bo handles list.
  *    All unit tests pass without doing this.
- *    This is something to keep in mind; it might go awkwards later on.
+ *    This is something to keep in mind; it might go awkward later on.
  *
  * 2. Totally no clue what the workgroup if for and what it does.
  *    Can't find anything about it online, just what `py-videocore6` gives,
@@ -88,7 +110,7 @@ bool Driver::execute(Code &code, Data *uniforms, uint32_t thread) {
       workgroup.wg_y << 16,
       workgroup.wg_z << 16,
       (
-        ((((wgs_per_sg * workgroup.wg_size() + 16u - 1u) / 16u) - 1u) << 12) |
+			 ((roundup(wgs_per_sg * workgroup.wg_size(), 16u) - 1) << 12) |
         (wgs_per_sg << 8) |
         (workgroup.wg_size() & 0xff)
       ),
@@ -96,6 +118,7 @@ bool Driver::execute(Code &code, Data *uniforms, uint32_t thread) {
       code_phyaddr,         // Shader address, pnan, singleseg, threading
       unif_phyaddr
     },
+		// Not used in the driver
     {0,0,0,0},
     (uint64_t) m_bo_handles.data(),
     (uint32_t) m_bo_handles.size(),

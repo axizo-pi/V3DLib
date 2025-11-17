@@ -111,7 +111,7 @@ CmdParameters numqpu_params = {
     "Number of QPU's to use. The values depends on the platform being run on:\n"
     "  - vc4 (Pi3+ and earlier), emulator: 1..12 (inclusive)\n"
     "  - vc6 (Pi4)                       : 1 or 8\n"
-    "  - vc7 (Pi5)                       : 1..12 (inclusive)\n",
+    "  - vc7 (Pi5)                       : 1..16 (inclusive)\n",
     1
   }}
 };
@@ -196,6 +196,11 @@ void Settings::check_params(CmdParameters &params, int argc, char const *argv[])
     exit(CmdParameters::EXIT_ERROR);
   }
 
+	Args args;
+	for (int i = 1; i < argc; ++i) {  // Skip first param, which is the program name
+		args.push_back(argv[i]);
+	}
+
   int ret = CmdParameters::EXIT_ERROR;
 
   //
@@ -204,8 +209,8 @@ void Settings::check_params(CmdParameters &params, int argc, char const *argv[])
   // This skips the init() and reset() calls in handle_commandline();
   // TODO check if this is OK
   //
-  if (params.has_help(argc, argv)) {
-    assert(!params.scan_action(argc, argv));  // No actions expected for V3DLib examples
+  if (params.has_help(args)) {
+    assert(!params.scan_action(args));  // No actions expected for V3DLib examples
     show_help();
     ret = CmdParameters::EXIT_NO_ERROR;
   } else {
@@ -256,12 +261,12 @@ bool Settings::process() {
       }
 		}	else if (Platform::run_vc7()) {
       if (num_qpus < 0 || num_qpus > 16) {
-        printf("ERROR: For vc4 and emulator, the number of QPU's selected must be between 1 and 16 inclusive.\n");
+        printf("ERROR: For vc7, the number of QPU's selected must be between 1 and 16 inclusive.\n");
         return false;
       }
     } else {
       if (num_qpus != 1 && num_qpus != 8) {
-        printf("ERROR: For v3d, the number of QPU's selected must be 1 or 8.\n");
+        printf("ERROR: For vc6, the number of QPU's selected must be 1 or 8.\n");
         return false;
       }
     }
