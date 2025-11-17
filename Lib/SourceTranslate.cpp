@@ -33,6 +33,7 @@ Instr::List ISourceTranslate::load_var(Var &in_dst, Expr &e) {
   Reg dst(in_dst);
 
 	if (Platform::compiling_for_vc7()) {
+		//BRAINFART: TODO cleanup
 		//
 		// TODO: examine if this should be added for first call only
 		//
@@ -46,9 +47,9 @@ Instr::List ISourceTranslate::load_var(Var &in_dst, Expr &e) {
 
 		// The src param does not appear to do anything.
 		// It matters that TMUAU is written to
-		debug("load_var(): adding TMUAU for vc7");
+		//debug("load_var(): adding TMUAU for vc7");
   	//ret << mov(TMUAU, src);
-  	ret << mov(TMUA, 0);
+  	//ret << mov(TMUA, src);
 
 		//debug("load_var(): adding TMUL for vc7");
   	//ret << mov(TMUL, src);
@@ -64,8 +65,8 @@ Instr::List ISourceTranslate::load_var(Var &in_dst, Expr &e) {
 	  //  * -15,-16: no effect, no output written
 		//  * -17    : encoding value fails
 		//
-		debug("load_var(): adding TMUC for vc7");
-  	ret << mov(TMUC, ~0);
+		//debug("load_var(): adding TMUC for vc7");
+  	//ret << mov(TMUC, ~0);
 	}
 
   ret << mov(TMU0_S, src)

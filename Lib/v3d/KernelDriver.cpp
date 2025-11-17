@@ -197,11 +197,22 @@ bool translateOpcode(V3DLib::Instr const &src_instr, Instructions &ret) {
     assert(src_instr.ALU.noOperands());
     ret << eidx(*dst_reg);
     break;
-  case ALUOp::A_MOV:
-		//breakpoint;
+  case ALUOp::A_MOV: {
     assert(src_instr.ALU.oneOperand());
-    ret << mov(*dst_reg, reg_a);
-    break;
+
+    auto tmp = mov(*dst_reg, reg_a);
+
+		// BRAINFART: TODO cleanup. This solution is totally disgusting
+		if (*dst_reg == tmua) {
+			Log::warn << "tmua detected. A_MOV inst: " << src_instr.dump();
+			tmp.thrsw();
+
+			ret << tmp << nop() << nop();
+		} else {
+			ret << tmp;
+		}
+	}
+   break;
   default: {
     // Handle general case
     Instr instr;
@@ -717,6 +728,7 @@ Instructions encodeInstr(V3DLib::Instr instr) {
     case RECV: {
       auto dst_reg = encodeDestReg(instr);
       assert(dst_reg);
+
       ret << nop().ldtmu(*dst_reg);
     }
     break;
