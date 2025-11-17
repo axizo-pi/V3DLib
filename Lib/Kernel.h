@@ -87,8 +87,15 @@ public:
   	if (Platform::use_main_memory() && m_settings.run_type == 0) {
 	    debug("Main memory selected in QPU mode, running on emulator instead of QPU.");
 	    m_settings.run_type = 1;
+			Platform::compiling_for_vc4(true);
 	  }
 #endif
+  	if (m_settings.run_type != 0) {
+    	if (!Platform::compiling_for_vc4()) { 
+	    	warning("Kernel(): interpret or emulate selected, switching compile to vc4.");
+				Platform::compiling_for_vc4(true);
+			}
+	  }
 
     if (m_settings.run_type != 0 || Platform::run_vc4()) {   // Compile vc4
       compile_init(true);

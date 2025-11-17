@@ -710,7 +710,7 @@ TEST_CASE("Initialization with index() on uniform pointers should work as expect
 
   SUBCASE("Test with TMU") {
     auto k = compile(offsets_kernel<Int, Int::Ptr>);
-    //k.pretty("offsets_kernel_5.txt", true);
+    k.pretty("offsets_kernel.txt", true);
 		//k.dump_compile_data(false, "offsets_kernel_compile_data.txt");
     reset();
     k.load(&result, &a).run();

@@ -67,8 +67,8 @@ ByteCode qpu_cond_push_a() {
   };
 
   // r2 = ptr + index*4 
+	// This block up till for works
   ret << eidx(r0).ldunifrf(r5)
-		
       << mov(r2, r5)
       << shl(r0, r0, 2)
       << add(r2, r2, r0)
@@ -83,15 +83,16 @@ ByteCode qpu_cond_push_a() {
     set_cond_push(instr, index);
 
     ret << instr
-        << mov(r0, SmallImm(1));
+			  << mov(r0, 0);
 
     instr = mov(r0, SmallImm(1));
     set_cond_if(instr, index);
+
     ret << instr
         << mov(tmud, r0)
         << mov(tmua, r2)
         << tmuwt().add(r2, r2, r1)  // *ptr = val; ptr += 64
-        << mov(r0, SmallImm(1));
+        << mov(r0, SmallImm(0));
 
     instr = nop().mov(r0, SmallImm(1));
     set_cond_if(instr, index);
@@ -101,6 +102,7 @@ ByteCode qpu_cond_push_a() {
         << mov(tmua, r2)
         << tmuwt().add(r2, r2, r1);
   }
+	
 
   ret << nop().thrsw()
       << nop().thrsw()
@@ -112,7 +114,7 @@ ByteCode qpu_cond_push_a() {
       << nop();
 
 
-	Log::warn << "Pre:\n" << ret.dump();
+	//Log::warn << "Pre:\n" << ret.dump();
 
 	if (ret.uses_acc()) {
 		auto acc = ret.acc_usage();
@@ -142,7 +144,7 @@ ByteCode qpu_cond_push_a() {
 			<< "  ret after replace: "  << rf.dump()       << "\n"
 		;
 
-		Log::warn << "Post:\n" << ret.dump();
+		//Log::warn << "Post:\n" << ret.dump();
 	}
 
   return ret.bytecode();
@@ -159,7 +161,7 @@ TEST_CASE("Check v3d condition codes [v3d][cond]") {
     const int DATA_SIZE = 16;
 
     ByteCode bytecode = qpu_cond_push_a();
-    std::cout << Instr::mnemonics(bytecode) << std::endl;
+    //std::cout << Instr::mnemonics(bytecode) << std::endl;
 
     BufferObject heap;
     heap.alloc(10*1024);  // arbitrary size, large enough
@@ -442,6 +444,10 @@ TEST_CASE("Test Where blocks [where][cond]") {
   k1.load(&result).run();
   check_where_result(result);
 
+	// Following will switch to vc4 kernel
+	// Platform holds this information, we need to reset the compile value afterwards
+	bool prev = Platform::compiling_for_vc4();
+
   reset(result);
 	settings.run_type = 1;
   auto k2 = compile(where_kernel, settings);
@@ -453,6 +459,8 @@ TEST_CASE("Test Where blocks [where][cond]") {
   auto k3 = compile(where_kernel, settings);
   k3.load(&result).run();
   check_where_result(result);
+
+	Platform::compiling_for_vc4(prev);
 }
 
 
