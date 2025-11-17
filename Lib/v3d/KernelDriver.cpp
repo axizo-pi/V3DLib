@@ -1357,11 +1357,11 @@ KernelDriver::KernelDriver() : V3DLib::KernelDriver(V3dBuffer), qpuCodeMem(code_
 	assert(!Platform::compiling_for_vc4());
 
 	if(Platform::compiling_for_vc7()) {
-		Log::warn << "selecting vc7 as kernel type";
+		Log::debug << "selecting vc7 as kernel type";
 		m_type = vc7;
 	} else {
-		Log::warn << "selecting vc4 as kernel type";
-		m_type = vc4;
+		Log::debug << "selecting vc6 as kernel type";
+		m_type = vc6;
 	}
 }
 

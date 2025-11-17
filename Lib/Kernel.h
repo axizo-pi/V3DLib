@@ -83,6 +83,7 @@ public:
    * Construct kernel out of C++ function
    */
   Kernel(KernelFunction f, BaseSettings const &settings) : BaseKernel(settings) {
+		bool prev = Platform::compiling_for_vc4();
 #ifdef QPU_MODE
   	if (Platform::use_main_memory() && m_settings.run_type == 0) {
 	    debug("Main memory selected in QPU mode, running on emulator instead of QPU.");
@@ -90,6 +91,7 @@ public:
 			Platform::compiling_for_vc4(true);
 	  }
 #endif
+
   	if (m_settings.run_type != 0) {
     	if (!Platform::compiling_for_vc4()) { 
 	    	warning("Kernel(): interpret or emulate selected, switching compile to vc4.");
@@ -107,7 +109,9 @@ public:
     driver().compile([this, f] () {
       f(mkArg<ts>()...);  // Construct the AST
     });
-  }
+
+		Platform::compiling_for_vc4(prev);
+ }
 
 
   /**

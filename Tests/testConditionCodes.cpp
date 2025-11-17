@@ -33,6 +33,7 @@
 #include <unistd.h>  // sleep()
 #include "support/support.h"
 #include "Support/pgm.h"
+#include "Support/Platform.h"
 
 namespace {
 
@@ -116,7 +117,7 @@ ByteCode qpu_cond_push_a() {
 
 	//Log::warn << "Pre:\n" << ret.dump();
 
-	if (ret.uses_acc()) {
+	if (V3DLib::Platform::compiling_for_vc7() && ret.uses_acc()) {
 		auto acc = ret.acc_usage();
 		auto rf  = ret.rf_usage();
 		Log::warn 
@@ -444,10 +445,9 @@ TEST_CASE("Test Where blocks [where][cond]") {
   k1.load(&result).run();
   check_where_result(result);
 
-	// Following will switch to vc4 kernel
-	// Platform holds this information, we need to reset the compile value afterwards
-	bool prev = Platform::compiling_for_vc4();
-
+	// TODO:  compiling for vc4 on other platforms is messed up
+  //        Need to fix compile-time kernel compile before enabling this
+	warning("[where][cond] test emulator and interpreter");
   reset(result);
 	settings.run_type = 1;
   auto k2 = compile(where_kernel, settings);
@@ -459,8 +459,6 @@ TEST_CASE("Test Where blocks [where][cond]") {
   auto k3 = compile(where_kernel, settings);
   k3.load(&result).run();
   check_where_result(result);
-
-	Platform::compiling_for_vc4(prev);
 }
 
 
