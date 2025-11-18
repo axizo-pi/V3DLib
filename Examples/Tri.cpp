@@ -39,14 +39,24 @@ void tri_int(Int::Ptr p) {
   p += me()*16;
 
   Int n = *p;
-  Int sum = 0;
+  Int sum = 2*n;
 
-  While (any(n > 0))
-    Where (n > 0)
+//	For (Int i =0, i <0, i++)
+//	Int i =0;
+//	If ( i == 0)
+
+		Int b = 0;
+		sum += 1;
+
+ // While (any(n > 0))
+		Int j = 0;
+	
+    Where (n > 1)
       sum = sum + n;
       n = n - 1;
     End
-  End
+		
+  //End
 
   *p = sum;
 }

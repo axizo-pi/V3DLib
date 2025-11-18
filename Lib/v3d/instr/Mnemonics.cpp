@@ -1,6 +1,9 @@
 #include "Mnemonics.h"
 #include "Support/basics.h"
 #include "Support/Platform.h"
+#include "global/log.h"
+
+using namespace Log;
 
 namespace V3DLib {
 namespace v3d {
@@ -537,6 +540,7 @@ Mnemonic branch(int target, int current) {
  * Add conditions with the associated methods, eg. `na0()`
  */
 Mnemonic branch(int target, bool relative) {
+	warn << "here";
   Mnemonic instr;
   instr.type = V3D_QPU_INSTR_TYPE_BRANCH;
 
