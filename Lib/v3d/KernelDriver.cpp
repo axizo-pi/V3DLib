@@ -1218,11 +1218,14 @@ void combine(Instructions &instructions) {
 				if (a.is_small_imm() && a.val() == 0) ret = true; 
 			}
 
+			// add(dst,0,0) is actually useful! Like mov(dst, 0)
+/*
 			// Following is actually illegal to run on qpu (qpu encode flags this)
 			// However, before complete compile it's possible and seen in the wild
       if (a.is_small_imm() && b.is_small_imm()) {
 				if (a.val() == 0 && b.val() == 0) return true; 
 			}
+*/			
 
 			if (!ret) return false;
     }
