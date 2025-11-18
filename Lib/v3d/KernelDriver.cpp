@@ -207,7 +207,7 @@ bool translateOpcode(V3DLib::Instr const &src_instr, Instructions &ret) {
 
 		// BRAINFART: TODO cleanup. This solution is totally disgusting
 		if (*dst_reg == tmua) {
-			Log::warn << "tmua detected. A_MOV inst: " << src_instr.dump();
+			Log::debug << "tmua detected. A_MOV inst: " << src_instr.dump();
 			tmp.thrsw();
 
 			ret << tmp << nop() << nop();
@@ -952,10 +952,10 @@ bool can_combine(v3d::instr::Instr const &instr1, v3d::instr::Instr const &instr
 
 		bool small_imm_a = instr2.sig.small_imm_a == 1;
 		bool small_imm_b = instr2.sig.small_imm_b == 1;
-		assert(
-			(!small_imm_a && !small_imm_b) ||
-			(small_imm_a != small_imm_b)
-		);
+
+		if ( !( (!small_imm_a && !small_imm_b) || (small_imm_a != small_imm_b))) {
+			cerr << "can_combine immediate check fails, instr2: " << instr2.mnemonic(false) << thrw;
+		}
 	
 	  if (magic_write1) {
 			return false;
@@ -1152,7 +1152,8 @@ void combine(Instructions &instructions) {
   //
   // Detect useless moves, eg: or  rf2, rf2, rf2    ; nop
   //
-  auto check_assign_to_self = [] (Instr const &instr, int i) -> bool {
+  auto check_useless_moves = [] (Instr const &instr, int line_number) -> bool {
+		// Check assign to self
     if (
 			instr.is_branch() ||
 			instr.add_nop() ||
@@ -1165,15 +1166,18 @@ void combine(Instructions &instructions) {
 
 		// The only op's handled here
     if (
-			op != V3D_QPU_A_OR &&
-			op != V3D_QPU_A_MOV
+			op != V3D_QPU_A_OR  &&
+			op != V3D_QPU_A_MOV &&
+			op != V3D_QPU_A_ADD
 		) {
 			return false;
 		}
 
-    if (instr.has_signal(true)) return false; 
+
     if (instr.flag_push_set()) return false;
     if (instr.flag_cond_set()) return false;
+
+
 
     auto dst = instr.alu_add_dst();
     assert(dst.is_set());
@@ -1181,26 +1185,57 @@ void combine(Instructions &instructions) {
     assert(a.is_set());
 
     if (op == V3D_QPU_A_OR) {
+    	if (instr.has_signal(true)) return false; 
+
 			// a and b both used
       auto b = instr.alu_add_b();
       assert(b.is_set());
 
       if (!(a == b && dst == a)) return false; 
-
-		} if (op == V3D_QPU_A_MOV) {
+		}
+		
+		if (op == V3D_QPU_A_MOV) {
 			// Only add a is used
+    	if (instr.has_signal(true)) return false; 
       if (!(a == dst)) return false; 
     }
 
-    Log::debug
-			<< "Useless move at " << i << ": " << instr.mnemonic(false)
+
+		// eg add(dst, dst, 0), add(dst, 0, 0)
+		if (op == V3D_QPU_A_ADD) {
+    	if (instr.has_signal(false)) return false; 
+
+			bool ret = false;
+
+      auto b = instr.alu_add_b();
+      assert(b.is_set());
+
+      if (a == dst) {
+				if (b.is_small_imm() && b.val() == 0) ret = true; 
+			}
+
+      if (b == dst) {
+				if (a.is_small_imm() && a.val() == 0) ret = true; 
+			}
+
+			// Following is actually illegal to run on qpu (qpu encode flags this)
+			// However, before complete compile it's possible and seen in the wild
+      if (a.is_small_imm() && b.is_small_imm()) {
+				if (a.val() == 0 && b.val() == 0) return true; 
+			}
+
+			if (!ret) return false;
+    }
+
+    Log::warn
+			<< "Useless move at line " << line_number << ": " << instr.mnemonic(false)
 			<< " dst: " << dst.dump()
 		;
 
 		return true;
   };
 
-  assertq(!check_assign_to_self(instructions[0], 0), "First instruction is useless copy");
+  assertq(!check_useless_moves(instructions[0], 0), "First instruction is useless");
 
   int combine_count = 0;
 
@@ -1293,8 +1328,8 @@ void combine(Instructions &instructions) {
     //
     // Remove useless copies
     //
-    if (check_assign_to_self(instr2, i)) {
-			cdebug << "Skipping useless copy: " << instr2.mnemonic(false);
+    if (check_useless_moves(instr2, i)) {
+			cdebug << "Skipping useless move: " << instr2.mnemonic(false);
       instr2.skip(true);
       continue;
     }

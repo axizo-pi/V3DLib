@@ -11,6 +11,7 @@
 #include "Source/Functions.h"
 
 using namespace V3DLib;
+using namespace Log;
 
 namespace {
 
@@ -82,7 +83,7 @@ bool verify_step(std::vector<int> const &src, int step, int width) {
   }
 
   if (!verified) {
-    debug("verify_step() fail");
+    ::debug("verify_step() fail");
   }
 
   return verified;
@@ -421,11 +422,7 @@ struct CombinedOffsets {
 #endif  // DEBUG
     }
 /*
-    {
-      std::string msg;
-      msg << "step for j = " << j << ": " << m_step;
-      debug(msg);
-    }
+    cdebug << "step for j = " << j << ": " << m_step;
 */
   }
 
@@ -957,12 +954,10 @@ void fft_kernel(Complex::Ptr b, Complex::Ptr devnull, Int::Ptr signal) {
     int same_count_skipjs = fft_context.same_index_count(i, true);  // Always same per s for given log2n
 
     if (show) {
-      std::string msg;
-      msg << "s: " << item.s << ", j: " << item.j << ", k: " << item.k_count
-          << ", step: " << item.step
-          << ", same_count: " << same_count
-          << ", same_count skipjs: " << same_count_skipjs;
-      debug(msg);
+      warn << "s: " << item.s << ", j: " << item.j << ", k: " << item.k_count
+           << ", step: " << item.step
+           << ", same_count: " << same_count
+           << ", same_count skipjs: " << same_count_skipjs;
     }
     int j_count  = same_count_skipjs/same_count;
     int j_offset = item.k_count;
@@ -973,9 +968,7 @@ void fft_kernel(Complex::Ptr b, Complex::Ptr devnull, Int::Ptr signal) {
 
     int k_length = same_count/fft_context.num_qpus;
     if (show) {
-      std::string msg;
-      msg << "k_length: " << k_length;
-      debug(msg);
+      warn << "k_length: " << k_length;
     }
 
     bool final_k = (k_length == 0);

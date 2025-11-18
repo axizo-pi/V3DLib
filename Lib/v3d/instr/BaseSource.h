@@ -16,7 +16,8 @@ public:
   BaseSource(BaseSource &&k)               = default;
   BaseSource &operator=(const BaseSource&) = default;
 
-  bool operator==(const BaseSource&) const;
+  bool operator==(const BaseSource &rhs) const;
+  bool operator!=(const BaseSource &rhs) const {return !(*this == rhs); }
 
   std::string dump() const;
   void set_from_src(uint8_t val, bool is_small_imm, bool is_reg, bool is_rfa);

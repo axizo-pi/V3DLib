@@ -433,7 +433,7 @@ Mnemonic vflb(Location const &dst) {
 
 Mnemonic tmuwt() {
 	if (Platform::compiling_for_vc7()) {
-		Log::warn << "tmuwt(): using rf(63) as devnull";
+		Log::debug << "tmuwt(): using rf(63) as devnull";
 	}
 	return tmuwt(rf(63));
 }

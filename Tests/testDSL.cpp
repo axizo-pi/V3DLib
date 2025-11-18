@@ -946,6 +946,8 @@ void issues_kernel(Int::Ptr result, Int::Ptr src) {
   *result = *src;  comment("Check *dst = *src"); 
 }
 
+#pragma GCC diagnostic push                             // save the actual diag context
+#pragma GCC diagnostic ignored "-Wmaybe-uninitialized"  // disable maybe warnings
 
 //
 // Following should all generate errors during compile
@@ -953,6 +955,8 @@ void issues_kernel(Int::Ptr result, Int::Ptr src) {
 void init_self_1_kernel() { Int x = x; }
 void init_self_2_kernel() { Float x = x; }
 void init_self_3_kernel() { Complex y = y; }
+
+#pragma GCC diagnostic pop     
 
 }  // anon namespace
 
