@@ -1092,11 +1092,11 @@ void Instr::alu_mul_b(BaseSource const &src) {
 	assert(src.is_set());
 
 	if (src.is_small_imm()) {
-		assertq(Platform::compiling_for_vc7(), "alu_mul_a: can not use small imm on vc6");
+		assertq(Platform::compiling_for_vc7(), "alu_mul_b: can not use small imm on vc6");
 		sig.small_imm_d = true;
 		alu.mul.b.raddr = src.val();
 	} else if (src.is_reg()) {
-		assertq(!Platform::compiling_for_vc7(), "alu_mul_a: can not use registers on vc7");
+		assertq(!Platform::compiling_for_vc7(), "alu_mul_b: can not use registers on vc7");
 		// src.val() is a mux value
 		alu.mul.b.mux = (v3d_qpu_mux) src.val();
 	} else {

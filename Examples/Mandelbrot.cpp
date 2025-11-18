@@ -72,6 +72,7 @@ struct MandSettings : public Settings {
   const float topLeftIm       = 2.0f;
   const float bottomRightReal = 1.5f;
   const float bottomRightIm   = -2.0f;
+
 /*
   // Nice zoom-in range, used for testing
   const float topLeftReal     = -2.0f;
@@ -79,6 +80,7 @@ struct MandSettings : public Settings {
   const float bottomRightReal = -1.0f;
   const float bottomRightIm   = -0.25f;
 */
+
 
   int num_items() const { return numStepsWidth*numStepsHeight; }
   float offsetX() const { return (bottomRightReal - topLeftReal  )/((float) numStepsWidth  - 1); }
@@ -202,7 +204,9 @@ void mandelbrot_multi(
   Int numIterations,
   Int::Ptr result
 ) {
-  For (Int yStep = 0, yStep < numStepsHeight - numQPUs(), yStep += numQPUs())
+  Int yMax = numStepsHeight - numQPUs();
+
+  For (Int yStep = 0, yStep < yMax, yStep += numQPUs())
     Int yIndex = yStep + me();
     Int::Ptr dst = result + yIndex*numStepsWidth;
 

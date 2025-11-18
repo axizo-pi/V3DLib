@@ -6,6 +6,8 @@
 #include "Target/instr/ALUOp.h"
 #include "Source/Op.h"
 
+using namespace Log;
+
 namespace V3DLib {
 namespace {
 
@@ -259,7 +261,21 @@ bool Vec::apply(ALUOp const &op, Vec a, Vec b) {
     case ALUOp::A_BOR:   d = x|y;            break;
     case ALUOp::A_BXOR:  d = x^y;            break;
     case ALUOp::A_BNOT:  d = ~x; break;
-    case ALUOp::M_MUL24: d = (x&0xffffff)*(y&0xffffff); break; // Integer multiply (24-bit)
+    case ALUOp::M_MUL24: {                           // Integer multiply (24-bit)
+			int x2 = (x & 0xffffff);  // Clip to 24 bits
+			int y2 = (y & 0xffffff);
+
+			if (x != x2) {
+      	cerr << "EmuSupport MUL24: var x, clipped value "  << x2 << " is different from input value " << x;
+			}
+
+			if (y != y2) {
+      	cerr << "EmuSupport MUL24: var y, clipped value "  << y2 << " is different from input value " << y;
+			}
+
+			d = x2*y2;
+		}
+		break;
 
     case ALUOp::A_CLZ:    d = clz(x);         break; // Count leading zeros
 
@@ -270,9 +286,7 @@ bool Vec::apply(ALUOp const &op, Vec a, Vec b) {
     case ALUOp::M_V8MAX:
     case ALUOp::M_V8ADDS:
     case ALUOp::M_V8SUBS: {
-      std::string buf;
-      buf << "V3DLib: unsupported operator " << op.value();
-      assertq(false, buf);
+      cerr << "EmuSupport: unsupported operator " << op.value() << thrw;
     }
     break;
 

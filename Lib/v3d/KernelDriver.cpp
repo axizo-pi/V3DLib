@@ -531,10 +531,6 @@ bool encode_int(Instructions &ret, std::unique_ptr<Location> &dst, int value) {
     success = false;                                      // Conversion failed
   }
 
-	if (success) {
-		ret.back().comment("encode_int()");
-	}
-
   return success;
 }
 
@@ -852,16 +848,39 @@ void _encode(V3DLib::Instr::List const &instrs, Instructions &instructions) {
 }
 
 
+/**
+ * NOTE: small imm not checked, perhaps this gets fixed downstream
+ */
 template<typename AddAlu>
 bool can_be_mul_alu(AddAlu const &add_alu) {
-  bool is_move_1_source = (add_alu.op == V3D_QPU_A_OR && add_alu.a.mux == add_alu.b.mux);
 
-	// ORs with 1 source can be translated to mul alu MOV
-  return (is_move_1_source
-        || add_alu.op == V3D_QPU_A_ADD
-        || add_alu.op == V3D_QPU_A_SUB)
-       && (!add_alu.magic_write || add_alu.waddr < V3D_QPU_WADDR_NOP)  // Don't write to special registers in the mul alu
-  ;
+	if (Platform::compiling_for_vc7()) {
+		// Block write to special registers for now
+		// Actually, this should be possible (on vc7 at least), as long as the special registers aren't the same
+		// on add and mul. TODO examine
+	  if (add_alu.magic_write) return false;
+
+		// ORs with 1 source can be translated to mul alu MOV
+	  if (add_alu.op == V3D_QPU_A_OR && add_alu.a.raddr == add_alu.b.raddr) return true;
+
+	  return (
+	    add_alu.op == V3D_QPU_A_ADD ||
+	    add_alu.op == V3D_QPU_A_SUB ||
+	    add_alu.op == V3D_QPU_A_MOV
+		);
+
+	} else {
+		// Don't write to special registers in the mul alu
+    if (add_alu.magic_write && add_alu.waddr >= V3D_QPU_WADDR_NOP) return false;
+
+		// ORs with 1 source can be translated to mul alu MOV
+	  if (add_alu.op == V3D_QPU_A_OR && add_alu.a.mux == add_alu.b.mux) return true;
+
+	  return (
+	    add_alu.op == V3D_QPU_A_ADD ||
+	    add_alu.op == V3D_QPU_A_SUB
+		);
+	}
 }
 
 
@@ -942,7 +961,7 @@ bool can_combine(v3d::instr::Instr const &instr1, v3d::instr::Instr const &instr
 	    if (!small_imm_b && b2.raddr == waddr1) return false;
 	  }
 	} else {
-		// vc6 - same as mesa1 except for location mux's
+		// vc6 - same except for location mux's
 
 		bool small_imm_b = instr2.sig.small_imm_b == 1;
 
@@ -995,6 +1014,7 @@ bool can_combine(v3d::instr::Instr const &instr1, v3d::instr::Instr const &instr
 
 
 bool convert_alu_op_to_mul_op(v3d_qpu_mul_op &mul_op, v3d::instr::Instr const &add_instr) {
+	// Op's common to both vc6 and vc7
   switch (add_instr.alu.add.op) {
     case V3D_QPU_A_OR:
 			if ( add_instr.alu.add.a.mux == add_instr.alu.add.b.mux) {
@@ -1012,6 +1032,18 @@ bool convert_alu_op_to_mul_op(v3d_qpu_mul_op &mul_op, v3d::instr::Instr const &a
 
     default: break;
   }
+
+
+	if (Platform::compiling_for_vc7()) {
+  	switch (add_instr.alu.add.op) {
+	    case V3D_QPU_A_MOV:
+				mul_op = V3D_QPU_M_MOV;
+	      return true;
+
+    	default: break;
+  	}
+	} 
+
 
   return false;
 }
@@ -1081,8 +1113,6 @@ bool add_alu_to_mul_alu(Instr const &in_instr, Instr &dst) {
   	dst.alu_mul_b(alu_mul_b);
   }
 
-  Log::debug << "\n" << "  dst : " << dst.mnemonic(false);
-
   if (in_instr.mul_nop()) {
     dst.alu.mul.output_pack = in_instr.alu.add.output_pack;
     dst.alu.mul.a.unpack    = in_instr.alu.add.a.unpack;
@@ -1104,9 +1134,11 @@ bool add_alu_to_mul_alu(Instr const &in_instr, Instr &dst) {
   dst.header(in_instr.header());
   dst.comment(in_instr.comment());
 
-	Log::debug << "\n" << "  dst : " << dst.mnemonic(false);
-	Log::debug << alu_mul_b.dump();
-	Log::debug << "mul mux b:" << dst.alu.mul.b.mux  << ", raddr_b: " << dst.raddr_b;
+	Log::warn << "  dst : " << dst.mnemonic(false);
+	// Log::warn << alu_mul_b.dump();  - always 'Not set'
+	if (!Platform::compiling_for_vc7()) {
+		Log::warn << "mul mux b:" << dst.alu.mul.b.mux  << ", raddr_b: " << dst.raddr_b;
+	}
 
   return true;
 }
@@ -1118,34 +1150,49 @@ void combine(Instructions &instructions) {
   //
   auto check_assign_to_self = [] (Instr const &instr, int i) -> bool {
     if (
-			!instr.is_branch() &&
-			!instr.add_nop() && instr.mul_nop() &&
-			 instr.alu.add.op == V3D_QPU_A_OR
+			instr.is_branch() ||
+			instr.add_nop() ||
+			!instr.mul_nop()       // Note that mul is skipped here
 		) {
-      auto dst = instr.alu_add_dst();
-      assert(dst.is_set());
-      auto a = instr.alu_add_a();
-      assert(a.is_set());
+			return false;
+		}
+
+		auto op = instr.alu.add.op;
+
+		// The only op's handled here
+    if (
+			op != V3D_QPU_A_OR &&
+			op != V3D_QPU_A_MOV
+		) {
+			return false;
+		}
+
+    if (instr.has_signal(true)) return false; 
+    if (instr.flag_set()) return false;
+
+    auto dst = instr.alu_add_dst();
+    assert(dst.is_set());
+    auto a = instr.alu_add_a();
+    assert(a.is_set());
+
+    if (op == V3D_QPU_A_OR) {
+			// a and b both used
       auto b = instr.alu_add_b();
       assert(b.is_set());
 
       if (!(a == b && dst == a)) return false; 
 
-      if (instr.has_signal(true)) {
-        breakpoint // Deal with this when it happens
-      }
-
-      if (instr.flag_set()) return false;
-
-      //Log::debug
-			//	<< "Useless move at " << i << ": " << instr.mnemonic(false)
-			//	<< "dst: " << dst.dump()
-			//;
-
-      return true;
+		} if (op == V3D_QPU_A_MOV) {
+			// Only add a is used
+      if (!(a == dst)) return false; 
     }
 
-		return false;
+    Log::warn
+			<< "Useless move at " << i << ": " << instr.mnemonic(false)
+			<< " dst: " << dst.dump()
+		;
+
+		return true;
   };
 
   assertq(!check_assign_to_self(instructions[0], 0), "First instruction is useless copy");
@@ -1247,19 +1294,24 @@ void combine(Instructions &instructions) {
       continue;
     }
 
+     // Don't deal with conditions yet in the mul alu
+     // These need a bit of extra logic to set them for mul
+     // TODO examine this
+     if (instr1.flag_set() || instr2.flag_set()) continue;
+
 
     //
     // Combine add and mul instructions, if possible
     //
     bool do_converse;
     if (!can_combine(instr1, instr2, do_converse)) continue;
-/*
-		Log::debug << "combine() considering "
+
+		Log::warn  << "combine() considering "
     					 << "line " << i << ":\n"
         			 << "  " << instr1.mnemonic(false) << "\n"
                << "  " << instr2.mnemonic(false)
 		;
-*/
+
 
     // attempt the conversion
     {
@@ -1270,10 +1322,7 @@ void combine(Instructions &instructions) {
 
       v3d::instr::Instr dst = add_instr;
 
-      // First test: Don't deal with conditions yet in the mul alu
-      // These need a bit of extra logic to set them for mul
-      // TODO examine this
-      bool success = !mul_instr.flag_set() && add_alu_to_mul_alu(mul_instr, dst);
+      bool success = add_alu_to_mul_alu(mul_instr, dst);
 
       if (success) {
 				Log::debug << "\n  Possible conversion: " << dst.mnemonic(false);

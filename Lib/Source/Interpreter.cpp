@@ -73,29 +73,29 @@ struct InterpreterState : public EmuState {
 
 void CoreState::store_to_heap(Vec const &index, Vec &val) {
   assert(writeStride == 0);  // usage of writeStride is probably wrong!
-
+/*
   int const show_count = 3;
+*/	
 
   if (!index.is_uniform()) {
     // NOTE: This part will not work for vc4 DMA output!
     //       Better to get rid of it
 
     // Following warning triggers when running the interpreter on vc6/vc7
-    // It doesn't appear to do any harm at all.
-    // Disabling for vc6/vc7, keeping it in for vc4 because you never know
-    if (Platform::run_vc4()) {
-      std::string msg;
-      msg << "store_to_heap(): index does not have all same values:" << index.dump();
+    // It doesn't appear to do any harm at all. Happens on all vc's.
+/*
+    std::string msg;
+    msg << "store_to_heap(): index does not have all same values:" << index.dump();
 
-      if (store_show_count == (show_count - 1)) {
-        msg << "\n(this message not shown for further occurences)";
-      }
-      if (store_show_count < show_count) {
-        warning(msg);
-      }
-      store_show_count ++;
-      // The human has been warned, assume that she knows what she's doing
+    if (store_show_count == (show_count - 1)) {
+      msg << "\n(this message not shown for further occurences)";
     }
+    if (store_show_count < show_count) {
+      warning(msg);
+    }
+    store_show_count ++;
+    // The human has been warned, assume that she knows what she's doing
+*/
 
     for (int i = 0; i < NUM_LANES; i++) {
       uint32_t hp = (uint32_t) index[i].intVal + 4*i;  // TODO examine why '4*i' is necessary

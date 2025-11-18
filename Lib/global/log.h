@@ -66,7 +66,7 @@ void assert(bool condition, const std::string &msg);
 
 #pragma pop_macro("assert")
 
-
+// Duplicates of several instances to avoid error "reference to ‘error’ is ambiguous"
 extern Logger debug;
 extern Logger cout;  // same as info
 extern Logger info;
