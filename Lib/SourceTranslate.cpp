@@ -33,40 +33,6 @@ Instr::List ISourceTranslate::load_var(Var &in_dst, Expr &e) {
   Reg dst(in_dst);
 
 	if (Platform::compiling_for_vc7()) {
-		//BRAINFART: TODO cleanup
-		//
-		// TODO: examine if this should be added for first call only
-		//
-		// - TMUAU: Hypothesis: add result to src on output?
-		// - TMUC:
-		// 		It looks like TMUC performs some kind of rotate on output; It doesn't appear to be consistent though.
-		//    Also, the value appears to carry over to subsequent kernel calls; so global?
-		//
-		// Order important: TMUC needs to be after TMUAU to make a difference
-		//
-
-		// The src param does not appear to do anything.
-		// It matters that TMUAU is written to
-		//debug("load_var(): adding TMUAU for vc7");
-  	//ret << mov(TMUAU, src);
-  	//ret << mov(TMUA, src);
-
-		//debug("load_var(): adding TMUL for vc7");
-  	//ret << mov(TMUL, src);
-
-		//
-		// Small imm:
-	  //  * 0..15  : no effect, no output written
-		//  * 16     : encoding value fails
-		//  * ~0     : result added by original value
-		//  * -1..-3 : Same as ~0; takes some time for output to stabilize
-		//  * -4     : Variable output, something happens. Weird addition combined with output rotate?
-		//  * -5     : Idem previous, results different
-	  //  * -15,-16: no effect, no output written
-		//  * -17    : encoding value fails
-		//
-		//debug("load_var(): adding TMUC for vc7");
-  	//ret << mov(TMUC, ~0);
 	}
 
   ret << mov(TMU0_S, src)

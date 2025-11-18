@@ -117,9 +117,6 @@ Reg const UNIFORM_READ( SPECIAL, SPECIAL_UNIFORM);
 Reg const QPU_ID(       SPECIAL, SPECIAL_QPU_NUM);
 Reg const ELEM_ID(      SPECIAL, SPECIAL_ELEM_NUM);
 Reg const TMU0_S(       SPECIAL, SPECIAL_TMU0_S);
-Reg const TMUAU(        SPECIAL, SPECIAL_TMUAU);      // Perhaps needed for vc7, known in vc6, unknown for vc4
-Reg const TMUC(         SPECIAL, SPECIAL_TMUC);       // idem
-Reg const TMUL(         SPECIAL, SPECIAL_TMUL);       // idem
 Reg const VPM_WRITE(    SPECIAL, SPECIAL_VPM_WRITE);
 Reg const VPM_READ(     SPECIAL, SPECIAL_VPM_READ);
 Reg const WR_SETUP(     SPECIAL, SPECIAL_WR_SETUP);
@@ -136,6 +133,51 @@ Reg const SFU_LOG(      SPECIAL, SPECIAL_SFU_LOG);
 // Synonyms for v3d
 Reg const TMUD(SPECIAL, SPECIAL_VPM_WRITE);
 Reg const TMUA(SPECIAL, SPECIAL_DMA_ST_ADDR);
+
+
+/////////////////////////////////////////////////////////////
+// Perhaps needed for vc7, known in vc6, unknown for vc4
+/////////////////////////////////////////////////////////////
+
+/***********************************************************************************************************
+ * Added to examine reads from uniform ptr's on vc7.
+ * Here are notes from this examination:
+ *
+ * TODO: examine if these should be added for first call only
+ *
+ * Order important: TMUC needs to be after TMUAU to make a difference
+ *
+ * - TMUAU: 
+ *     Appears to add result to src on output
+ *     The src param does not appear to do anything. It matters that TMUAU is written to
+ * - TMUC:
+ * 		It looks like TMUC performs some kind of rotate on output; It doesn't appear to be consistent though.
+ *    Also, the value appears to carry over to subsequent kernel calls; so global?
+ *
+ *    Trying out various values for param to TMUC:
+ *
+ *    Small imm:
+ *      * 0..15  : no effect, no output written
+ *      * 16     : encoding value fails
+ *      * ~0     : result added by original value
+ *      * -1..-3 : Same as ~0; takes some time for output to stabilize
+ *      * -4     : Variable output, something happens. Weird addition combined with output rotate?
+ *      * -5     : Idem previous, results different
+ *      * -15,-16: no effect, no output written
+ *      * -17    : encoding value fails
+ *
+ * --------------------------------------------------------
+ *
+ * *NOTE* : It might be that I did this wrong. If I want
+ *          to be consistent about it, I will need to redo
+ *          with thrsw and 2 NOP's on mov(TMUA,src).
+ ***********************************************************************************************************/
+
+Reg const TMUAU(        SPECIAL, SPECIAL_TMUAU);
+Reg const TMUC(         SPECIAL, SPECIAL_TMUC);
+Reg const TMUL(         SPECIAL, SPECIAL_TMUL);
+
+// End perhaps needed for vc7
 
 Reg rf(uint8_t index) {
   return Reg(REG_A, index);

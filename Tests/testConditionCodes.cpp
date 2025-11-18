@@ -47,7 +47,7 @@ using Data         = V3DLib::Data;
 /**
  * `cond = 'push*'` sets the conditional flag A
  */
-ByteCode qpu_cond_push_a() {
+Instructions qpu_cond_push_a() {
   Instructions ret;
 
   auto set_cond_push = [] (Mnemonic &instr, int index) {
@@ -115,40 +115,8 @@ ByteCode qpu_cond_push_a() {
       << nop();
 
 
-	//Log::warn << "Pre:\n" << ret.dump();
 
-	if (V3DLib::Platform::compiling_for_vc7() && ret.uses_acc()) {
-		auto acc = ret.acc_usage();
-		auto rf  = ret.rf_usage();
-		Log::warn 
-			<< "\n"
-			<< "  ret uses acc's : "  << acc.dump()       << "\n"
-			<< "  ret uses rf's  : "  << rf.dump()        << "\n"
-			<< "  First available: "  << rf.first_empty() << "\n"
-			//<< Log::thrw
-		;
-
-		int replaced = 0;
-		while (!acc.empty()) {
-			replaced += ret.replace_acc_with_rf(acc.first_filled(), rf.first_empty());
-			acc.clear(acc.first_filled());
-			rf.set(rf.first_empty());
-		}
-
-		Log::warn << "# replaced reg's: "  << replaced << "\n";
-
-		acc = ret.acc_usage();
-		rf  = ret.rf_usage();
-		Log::warn 
-			<< "\n"
-			<< "  acc after replace: "  << acc.dump()       << "\n"
-			<< "  ret after replace: "  << rf.dump()       << "\n"
-		;
-
-		//Log::warn << "Post:\n" << ret.dump();
-	}
-
-  return ret.bytecode();
+  return ret;
 }
 
 }  // anon namespace
@@ -161,7 +129,10 @@ TEST_CASE("Check v3d condition codes [v3d][cond]") {
     if (!running_on_v3d()) return;
     const int DATA_SIZE = 16;
 
-    ByteCode bytecode = qpu_cond_push_a();
+    Instructions k = qpu_cond_push_a();
+		k.replace_acc_with_rf();
+
+    ByteCode bytecode = k.bytecode();
     //std::cout << Instr::mnemonics(bytecode) << std::endl;
 
     BufferObject heap;

@@ -1703,6 +1703,7 @@ int Instr::replace_acc_with_rf(unsigned acc, unsigned rf) {
 }
 
 
+
 bool Instr::add_a_is_acc()   const { return (m_add_a_is_reg && alu.add.a.raddr <= V3D_QPU_WADDR_R5); }
 bool Instr::add_b_is_acc()   const { return (m_add_b_is_reg && alu.add.b.raddr <= V3D_QPU_WADDR_R5); }
 bool Instr::add_dst_is_acc() const { return (m_add_dst_is_reg && alu.add.waddr <= V3D_QPU_WADDR_R5); }
@@ -1792,13 +1793,63 @@ RFSet Instructions::rf_usage() const {
 int Instructions::replace_acc_with_rf(unsigned acc, unsigned rf) {
 	int count = 0;
 
-	Log::warn << "replace_acc_with_rf: replacing acc" << acc << " with rf" << rf;
+	Log::debug << "replace_acc_with_rf: replacing acc" << acc << " with rf" << rf;
 
   for (auto &instr : *this) {
 		count += instr.replace_acc_with_rf(acc, rf);
 	}
 
 	return count;
+}
+
+
+/**
+ * Replace acc's with rf addresses.
+ *
+ * The idea is to adjust vc6 instruction code to run
+ * on vc7. It works fine, but has limited usage.
+ *
+ * This was not as useful as I hoped; there is more stuff
+ * to do for vc6->vc7 conversion.
+ * Accumulators is only part of the conversion, many 
+ * commands are different (eg. sin).
+ *
+ * @return Number of address locations that were converted
+ */
+void Instructions::replace_acc_with_rf() {
+	//Log::warn << "Pre:\n" << ret.dump();
+
+	if (V3DLib::Platform::compiling_for_vc7() && uses_acc()) {
+		auto acc = acc_usage();
+		auto rf  = rf_usage();
+
+		Log::debug 
+			<< "\n"
+			<< "  ret uses acc's : "  << acc.dump()       << "\n"
+			<< "  ret uses rf's  : "  << rf.dump()        << "\n"
+			<< "  First available: "  << rf.first_empty() << "\n"
+		;
+
+		int replaced = 0;
+		while (!acc.empty()) {
+			replaced += replace_acc_with_rf(acc.first_filled(), rf.first_empty());
+			acc.clear(acc.first_filled());
+			rf.set(rf.first_empty());
+		}
+
+		Log::debug << "# replaced reg's: "  << replaced << "\n";
+
+		acc = acc_usage();
+		rf  = rf_usage();
+
+		Log::debug 
+			<< "\n"
+			<< "  acc after replace: "  << acc.dump()       << "\n"
+			<< "  ret after replace: "  << rf.dump()       << "\n"
+		;
+
+		//Log::warn << "Post:\n" << ret.dump();
+	}
 }
 
 

@@ -251,13 +251,19 @@ public:
   void set_cond_tag(AssignCond cond);
   bool check_consistent() const;
 
+	ByteCode bytecode() const;
+	std::string dump() const;
+
+	//
+	// vc7: support for converting acc's to rf'
+	//	
+	void replace_acc_with_rf();
+
+private	:
 	bool uses_acc() const;
 	ACCSet acc_usage() const;
 	RFSet  rf_usage() const;
 	int replace_acc_with_rf(unsigned acc, unsigned rf);
-
-	ByteCode bytecode() const;
-	std::string dump() const;
 };
 
 
