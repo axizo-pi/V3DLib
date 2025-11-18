@@ -522,7 +522,7 @@ void writeReg(QPUState* s, State* g, bool setFlags, AssignCond cond, Reg dest, V
           return;
         }
 
-        case SPECIAL_TMU0_S: {
+        case SPECIAL_TMUA: {
           assert(s->loadBuffer.size() < 4);
           Vec val;
           for (int i = 0; i < NUM_LANES; i++) {

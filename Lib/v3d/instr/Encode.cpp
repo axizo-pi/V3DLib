@@ -159,6 +159,16 @@ std::unique_ptr<Location> encodeDestReg(V3DLib::Instr const &src_instr) {
   Reg reg = src_instr.dest();
   check_unhandled_registers(reg, false);
 
+	//
+	// Don't want this to appear here any more.
+	// Original code:
+	//
+  //      case SPECIAL_DMA_ST_ADDR  : ret = loc_ptr(tmua);  break; // Write TMU, to set memory address to write to
+	//
+	if (reg.tag == SPECIAL) {
+	  assertq(reg.regId != SPECIAL_DMA_ST_ADDR, "Get this tag out of my face");
+	}
+
   switch (reg.tag) {
     case REG_A:
       check_reg(reg);
@@ -175,8 +185,7 @@ std::unique_ptr<Location> encodeDestReg(V3DLib::Instr const &src_instr) {
         // They get translated to the corresponding v3d registers
         // TODO get VPM/DMA out of sight
         case SPECIAL_VPM_WRITE    : ret = loc_ptr(tmud);  break; // Write TMU, to set data to write
-        case SPECIAL_DMA_ST_ADDR  : ret = loc_ptr(tmua);  break; // Write TMU, to set memory address to write to
-        case SPECIAL_TMU0_S       : ret = loc_ptr(tmua);  break; // Read TMU
+        case SPECIAL_TMUA         : ret = loc_ptr(tmua);  break; // Read TMU, sets memory address to write to
         case SPECIAL_TMUAU        : ret = loc_ptr(tmuau); break;
         case SPECIAL_TMUC         : ret = loc_ptr(tmuc);  break;
         case SPECIAL_TMUL         : ret = loc_ptr(tmul);  break;

@@ -35,7 +35,7 @@ Instr::List ISourceTranslate::load_var(Var &in_dst, Expr &e) {
 	if (Platform::compiling_for_vc7()) {
 	}
 
-  ret << mov(TMU0_S, src)
+  ret << mov(TMUA, src)
       << recv(dst);
 
 	Log::debug << "\n" << ret.dump(true);

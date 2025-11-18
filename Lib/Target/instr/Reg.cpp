@@ -20,7 +20,7 @@ char const *specialStr(RegId rid) {
     case SPECIAL_VPM_READ:      return "VPM_READ";
     case SPECIAL_VPM_WRITE:     return "VPM_WRITE";
     case SPECIAL_HOST_INT:      return "HOST_INT";
-    case SPECIAL_TMU0_S:        return "TMU0_S";
+    case SPECIAL_TMUA:          return "TMUA";
     case SPECIAL_SFU_RECIP:     return "SFU_RECIP";
     case SPECIAL_SFU_RECIPSQRT: return "SFU_RECIPSQRT";
     case SPECIAL_SFU_EXP:       return "SFU_EXP";
@@ -67,7 +67,7 @@ void var_to_reg(Var var, Reg &r) {
       r = Target::instr::VPM_WRITE;
       break;
     case TMU0_ADDR:
-      r = Target::instr::TMU0_S;
+      r = Target::instr::TMUA;
       break;
     default:
       assertq(false, "srcReg(): Unhandled Var-tag");
@@ -142,7 +142,7 @@ bool Reg::can_read(bool check) const {
   if (tag == SPECIAL) {
     if (
 			regId == SPECIAL_VPM_WRITE ||
-			regId == SPECIAL_TMU0_S ||
+			regId == SPECIAL_TMUA ||
 			regId == SPECIAL_TMUC
 		) {
       ret = false;

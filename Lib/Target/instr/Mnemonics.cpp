@@ -116,7 +116,7 @@ Reg const ACC5(ACC, 5);
 Reg const UNIFORM_READ( SPECIAL, SPECIAL_UNIFORM);
 Reg const QPU_ID(       SPECIAL, SPECIAL_QPU_NUM);
 Reg const ELEM_ID(      SPECIAL, SPECIAL_ELEM_NUM);
-Reg const TMU0_S(       SPECIAL, SPECIAL_TMU0_S);
+Reg const TMUA(SPECIAL, SPECIAL_TMUA);
 Reg const VPM_WRITE(    SPECIAL, SPECIAL_VPM_WRITE);
 Reg const VPM_READ(     SPECIAL, SPECIAL_VPM_READ);
 Reg const WR_SETUP(     SPECIAL, SPECIAL_WR_SETUP);
@@ -132,7 +132,6 @@ Reg const SFU_LOG(      SPECIAL, SPECIAL_SFU_LOG);
 
 // Synonyms for v3d
 Reg const TMUD(SPECIAL, SPECIAL_VPM_WRITE);
-Reg const TMUA(SPECIAL, SPECIAL_DMA_ST_ADDR);
 
 
 /////////////////////////////////////////////////////////////

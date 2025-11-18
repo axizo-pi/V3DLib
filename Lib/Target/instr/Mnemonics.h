@@ -13,7 +13,6 @@ extern Reg const ACC5;
 extern Reg const UNIFORM_READ;
 extern Reg const QPU_ID;
 extern Reg const ELEM_ID;
-extern Reg const TMU0_S;
 extern Reg const TMUAU;
 extern Reg const TMUC;
 extern Reg const VPM_WRITE;

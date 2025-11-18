@@ -44,7 +44,7 @@ enum Special {
   // Write-only
   SPECIAL_DMA_ST_ADDR,
   SPECIAL_VPM_WRITE,
-  SPECIAL_TMU0_S,
+  SPECIAL_TMUA,
 
   // SFU registers
   SPECIAL_SFU_RECIP,

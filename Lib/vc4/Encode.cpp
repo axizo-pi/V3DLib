@@ -194,7 +194,7 @@ uint32_t encodeDestReg(Reg reg, RegTag* file) {
         case SPECIAL_DMA_ST_ADDR:   *file = REG_B; return 50;
         case SPECIAL_VPM_WRITE:     *file = AorB;  return 48;
         case SPECIAL_HOST_INT:      *file = AorB;  return 38;
-        case SPECIAL_TMU0_S:        *file = AorB;  return 56;
+        case SPECIAL_TMUA:          *file = AorB;  return 56;
         case SPECIAL_SFU_RECIP:     *file = AorB;  return 52;
         case SPECIAL_SFU_RECIPSQRT: *file = AorB;  return 53;
         case SPECIAL_SFU_EXP:       *file = AorB;  return 54;
