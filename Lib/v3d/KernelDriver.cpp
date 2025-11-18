@@ -1304,6 +1304,10 @@ void combine(Instructions &instructions) {
 			;
 		}
 
+    //if (instr1.flag_cond_set() || instr2.flag_cond_set()) { 
+		//	continue;
+		//}
+
     if (instr1.flag_push_set() || instr2.flag_push_set()) { 
 			// Can't push flags on both add and mul - in principle this is logical
 			// Apparently, this case occurs
@@ -1356,7 +1360,7 @@ void combine(Instructions &instructions) {
         combine_count++;
         i++;
       } else {
-				Log::warn  << "combine of following failed; "
+				Log::debug << "combine of following failed; "
 		    					 << "line " << i << ":\n"
 		        			 << "  " << instr1.mnemonic(false) << "\n"
 		               << "  " << instr2.mnemonic(false)
