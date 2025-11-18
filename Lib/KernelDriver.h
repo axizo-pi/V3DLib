@@ -66,8 +66,6 @@ private:
 };
 
 
-void compile_postprocess(Instr::List &targetCode);
-
 }  // namespace V3DLib
 
 #endif  // _LIB_vc4_KERNELDRIVER_H

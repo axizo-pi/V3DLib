@@ -14,6 +14,7 @@
 #include "instr/OpItems.h"
 #include "instr/BaseSource.h"
 #include "global/log.h"
+#include "Target/Satisfy.h"
 
 namespace V3DLib {
 namespace v3d {
@@ -44,16 +45,17 @@ Location const &acc_proxy(int which_acc) {
 
 	assert(which_acc == 0 || which_acc == 1 || which_acc == 2);
 
-	if (!Platform::compiling_for_vc7()) {
+	if (Platform::compiling_for_vc7()) {
+		// vc7
+		if (which_acc == 0) return rf63;
+		if (which_acc == 1) return rf62;
+		return rf61;
+	} else {
+		// vc6
 		if (which_acc == 0) return r0;
 		if (which_acc == 1) return r1;
 		return r2;
 	}
-
-	// vc7
-	if (which_acc == 0) return rf63;
-	if (which_acc == 1) return rf62;
-	return rf61;
 }
 
 
@@ -1356,6 +1358,20 @@ void invoke(int numQPUs, Data &devnull, Code &codeMem, IntList &params) {
   drv.add_bo(getBufferObject().getHandle());
   drv.execute(codeMem, &unif, numQPUs);
 #endif  // QPU_MODE
+}
+
+
+/**
+ * @param targetCode  output variable for the target code assembled from the AST and adjusted
+ */
+void compile_postprocess(V3DLib::Instr::List &targetCode) {
+  assertq(!targetCode.empty(), "compile_postprocess(): passed target code is empty");
+
+  // Perform register allocation
+  v3d_SourceTranslate().regAlloc(targetCode);
+
+  // Satisfy target code constraints
+  v3d_satisfy(targetCode);
 }
 
 }  // anon namespace

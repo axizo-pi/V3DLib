@@ -19,6 +19,9 @@ public:
 Instr::List add_uniform_pointer_offset(Instr::List &code);
 ISourceTranslate &getSourceTranslate();
 
+ISourceTranslate &vc4_SourceTranslate();
+ISourceTranslate &v3d_SourceTranslate();
+
 }  // namespace V3DLib
 
 #endif  // _V3DLIB_SOURCETRANSLATE_H_

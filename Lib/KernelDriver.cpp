@@ -6,8 +6,6 @@
 #include "Source/Pretty.h"
 #include "Source/Translate.h"
 #include "Source/Lang.h"       // initStmt
-#include "Target/Satisfy.h"
-#include "SourceTranslate.h"
 #include "Support/Timer.h"
 #include "Target/instr/Mnemonics.h"
 
@@ -74,65 +72,8 @@ void print_target_code(FILE *f, Instr::List const &code) {
   fflush(f);
 }
 
-
-/**
- * vc4 LDTMU implicitly writes to ACC4, take this into account
- */
-void loadStorePass(Instr::List &instrs) {
-  assert(Platform::compiling_for_vc4());
-  using namespace V3DLib::Target::instr;
-
-  Instr::List newInstrs(instrs.size()*2);
-
-  for (int i = 0; i < instrs.size(); i++) {
-    Instr instr = instrs[i];
-
-		auto acc4 = ACC4();   // Should not be converted to rf here
-
-    if (instr.tag == RECV && instr.dest() != acc4) {
-      Instr::List tmp(2);
-      tmp << recv(acc4)
-          << mov(instr.dest(), acc4);
-      tmp.front().transfer_comments(instr);
-
-      newInstrs << tmp;
-      continue;
-    }
-
-    newInstrs << instr;
-  }
-
-
-  // Update original instruction sequence
-  instrs.clear();
-  instrs << newInstrs;
-}
-
 }  // anon namespace
 
-
-///////////////////////////////////////////////////////////////////////////////
-// Compile kernel
-///////////////////////////////////////////////////////////////////////////////
-
-/**
- * @param targetCode  output variable for the target code assembled from the AST and adjusted
- */
-void compile_postprocess(Instr::List &targetCode) {
-  assertq(!targetCode.empty(), "compile_postprocess(): passed target code is empty");
-
-  if (Platform::compiling_for_vc4()) {
-    loadStorePass(targetCode);
-  }
-
-  //compile_data.target_code_before_regalloc = targetCode.dump();
-
-  // Perform register allocation
-  getSourceTranslate().regAlloc(targetCode);  // performance hog 32/33s
-
-  // Satisfy target code constraints
-  satisfy(targetCode);
-}
 
 
 /**

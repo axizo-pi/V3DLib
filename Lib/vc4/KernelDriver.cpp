@@ -9,9 +9,66 @@
 #include "dump_instr.h"
 #include "Target/instr/Mnemonics.h"
 #include "SourceTranslate.h"  // add_uniform_pointer_offset()
+#include "Target/Satisfy.h"
+#include "RegAlloc.h"
 
 namespace V3DLib {
 namespace vc4 {
+
+namespace {
+
+
+/**
+ * vc4 LDTMU implicitly writes to ACC4, take this into account
+ */
+void loadStorePass(Instr::List &instrs) {
+  using namespace V3DLib::Target::instr;
+
+  Instr::List newInstrs(instrs.size()*2);
+
+  for (int i = 0; i < instrs.size(); i++) {
+    Instr instr = instrs[i];
+
+		auto acc4 = ACC4();   // Should not be converted to rf here
+
+    if (instr.tag == RECV && instr.dest() != acc4) {
+      Instr::List tmp(2);
+      tmp << recv(acc4)
+          << mov(instr.dest(), acc4);
+      tmp.front().transfer_comments(instr);
+
+      newInstrs << tmp;
+      continue;
+    }
+
+    newInstrs << instr;
+  }
+
+  // Update original instruction sequence
+  instrs.clear();
+  instrs << newInstrs;
+}
+
+
+/**
+ * @param targetCode  output variable for the target code assembled from the AST and adjusted
+ */
+void compile_postprocess(Instr::List &targetCode) {
+  assertq(!targetCode.empty(), "compile_postprocess(): passed target code is empty");
+
+	loadStorePass(targetCode);
+  //compile_data.target_code_before_regalloc = targetCode.dump();
+
+  // Perform register allocation
+  regAlloc(targetCode);
+
+  // Satisfy target code constraints
+  vc4_satisfy(targetCode);
+}
+
+
+}  // anon namespace
+
 
 KernelDriver::KernelDriver() : V3DLib::KernelDriver(Vc4Buffer) {
 	assert(Platform::compiling_for_vc4());

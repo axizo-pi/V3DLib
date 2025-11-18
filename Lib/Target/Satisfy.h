@@ -4,7 +4,8 @@
 
 namespace V3DLib {
 
-void satisfy(Instr::List &instrs);
+void vc4_satisfy(Instr::List &instrs);
+void v3d_satisfy(Instr::List &instrs);
 
 }  // namespace V3DLib
 

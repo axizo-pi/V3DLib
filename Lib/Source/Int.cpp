@@ -1,6 +1,5 @@
 #include "Int.h"
 #include "Lang.h"       // only for assign()!
-#include "SourceTranslate.h"
 #include "Support/Platform.h"
 #include "Support/debug.h"
 #include "Functions.h"  // operator/

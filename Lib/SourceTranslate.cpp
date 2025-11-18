@@ -110,17 +110,27 @@ Instr::List add_uniform_pointer_offset(Instr::List &code) {
 }
 
 
+ISourceTranslate &vc4_SourceTranslate() {
+	if (_vc4_source_translate.get() == nullptr) {
+		_vc4_source_translate.reset(new vc4::SourceTranslate());
+	}
+	return *_vc4_source_translate.get();
+}
+
+
+ISourceTranslate &v3d_SourceTranslate() {
+	if (_v3d_source_translate.get() == nullptr) {
+		_v3d_source_translate.reset(new v3d::SourceTranslate());
+	}
+	return *_v3d_source_translate.get();
+}
+
+
 ISourceTranslate &getSourceTranslate() {
   if (Platform::compiling_for_vc4()) {
-    if (_vc4_source_translate.get() == nullptr) {
-      _vc4_source_translate.reset(new vc4::SourceTranslate());
-    }
-    return *_vc4_source_translate.get();
+		return vc4_SourceTranslate();
   } else {
-    if (_v3d_source_translate.get() == nullptr) {
-      _v3d_source_translate.reset(new v3d::SourceTranslate());
-    }
-    return *_v3d_source_translate.get();
+		return v3d_SourceTranslate();
   }
 }
 

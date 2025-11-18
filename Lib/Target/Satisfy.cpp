@@ -26,7 +26,7 @@ bool hasRegFileConflict(Instr const &instr) {
 /**
  * First pass for satisfy constraints: insert move-to-accumulator instructions
  */
-Instr::List insertMoves_vc4(Instr::List &instrs) {
+Instr::List insertMoves(Instr::List &instrs) {
   assert(Platform::compiling_for_vc4());  // Not an issue for v3d
 
   using namespace V3DLib::Target::instr;
@@ -68,34 +68,31 @@ Instr::List insertMoves_vc4(Instr::List &instrs) {
 }
 
 
-Instr::List insertMoves(Instr::List &instrs) {
+Instr::List translate_rot(Instr::List &instrs) {
+	assert(Platform::compiling_for_vc4());
+
   Instr::List newInstrs(instrs.size() * 2);
 
   for (int i = 0; i < instrs.size(); i++) {
     Instr instr = instrs[i];
 
     if (instr.isRot()) {
-			if (Platform::compiling_for_vc7()) {
-				debug("insertMoves(): skipping isRot handling for vc7, should not be necessary");
-      	newInstrs << instr;
-			} else {
-	      // Insert moves for horizontal rotate operations
-	      using namespace Target::instr;
+      // Insert moves for horizontal rotate operations
+      using namespace Target::instr;
 	
-				Reg acc = ACC0();
+			Reg acc = ACC0();
 
-	      newInstrs << mov(acc, instr.ALU.srcA);
+      newInstrs << mov(acc, instr.ALU.srcA);
 
-	      auto instr2 = instr.clone().src_a(acc);
+      auto instr2 = instr.clone().src_a(acc);
 
-  	    if (instr.ALU.srcB.is_reg()) {
-	        newInstrs << mov(ACC5, instr.ALU.srcB);
-  	      instr2.src_b(ACC5);
-    	  }
+ 	    if (instr.ALU.srcB.is_reg()) {
+        newInstrs << mov(ACC5, instr.ALU.srcB);
+ 	      instr2.src_b(ACC5);
+   	  }
 
-	      newInstrs << Instr::nop()
-  	              << instr2;
-			}
+      newInstrs << Instr::nop()
+ 	              << instr2;
  		} else {
       newInstrs << instr;
     }
@@ -210,13 +207,20 @@ Instr::List removeVPMStall(Instr::List &instrs) {
  *      register (assuming it's not an accumulator) cannot be read by
  *      the next instruction.
  */
-void satisfy(Instr::List &instrs) {
-  // Apply passes
-  Instr::List newInstrs = insertMoves(instrs);
+void vc4_satisfy(Instr::List &instrs) {
+  Instr::List newInstrs = translate_rot(instrs);
 
-  if (Platform::compiling_for_vc4()) {
-    newInstrs = insertMoves_vc4(newInstrs);
-  }
+  newInstrs = insertMoves(newInstrs);
+  newInstrs = insertNops(newInstrs);
+  instrs = removeVPMStall(newInstrs);
+}
+
+
+/**
+ * See header comment vc4_satisfy()
+ */
+void v3d_satisfy(Instr::List &instrs) {
+  Instr::List newInstrs = instrs;
 
   newInstrs = insertNops(newInstrs);
   instrs = removeVPMStall(newInstrs);

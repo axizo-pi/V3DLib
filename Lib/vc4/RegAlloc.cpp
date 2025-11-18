@@ -4,7 +4,6 @@
 #include "Support/basics.h"
 #include "Support/Timer.h"
 #include "Target/Subst.h"
-#include "SourceTranslate.h"
 #include "Common/CompileData.h"
 
 namespace V3DLib {
@@ -147,23 +146,15 @@ namespace vc4 {
  */
 void regAlloc(Instr::List &instrs) {
   assert(count_reg_types(instrs).safe_for_regalloc());
-  //Timer t1("vc4 regAlloc", true);
   //std::cout << count_reg_types(instrs).dump() << std::endl;
 
   int numVars = VarGen::count();
 
-//{
-//  Timer t("vc4 regAlloc optimize", true);
   Liveness::optimize(instrs, numVars);
-//}
 
   // Step 0 - Perform liveness analysis
   Liveness live(numVars);
-//{
-//  Timer t("vc4 regAlloc compute", true);
   live.compute(instrs);
-//}
-
 
   // Step 1 - For each variable, determine a preference for register file A or B.
   int *prefA = new int [numVars];
@@ -173,17 +164,11 @@ void regAlloc(Instr::List &instrs) {
 
   // Step 2 - For each variable, determine all variables ever live at same time
   LiveSets liveWith(numVars);
-//{
-//  Timer t("vc4 regAlloc liveWith", true);
   liveWith.init(instrs, live);
-//}
   //debug(liveWith.dump());
 
   // Step 3 - Allocate a register to each variable
   RegTag prevChosenRegFile = REG_B;
-
-//{
-//  Timer t("vc4 regAlloc allocate_reg", true);
 
   for (int i = 0; i < numVars; i++) {
     if (live.reg_usage()[i].reg.tag != NONE) continue;
@@ -213,17 +198,12 @@ void regAlloc(Instr::List &instrs) {
     // Finally, allocate a register to the variable
     live.reg_usage()[i].reg = Reg(chosenRegFile, (chosenRegFile == REG_A)? chosenA : chosenB);
   }
-//}
   
   compile_data.allocated_registers_dump = live.reg_usage().dump(true);
   //std::cout << count_reg_types(instrs).dump() << std::endl;
 
   // Step 4 - Apply the allocation to the code
-//{
-//  Timer t("vc4 regAlloc apply allocate_registers", true);
   allocate_registers(instrs, live.reg_usage());
-//}
-
   //std::cout << instrs.check_acc_usage() << std::endl;
 
   // Free memory
