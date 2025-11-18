@@ -252,7 +252,11 @@ void handle_condition_tags(V3DLib::Instr const &src_instr, Instructions &ret) {
   auto setCond = src_instr.set_cond();
 
   if (!setCond.flags_set()) {
-    ret.set_cond_tag(cond);
+		// Only set final instruction! This is the assignment of the result of the  preceding operations
+    ret.back().set_cond_tag(cond);
+
+    cdebug << "handle_condition_tags(): set_cond_tag: '"
+           << "v3d: \n" << ret.dump() << "'\n";
     return;
   }
 
@@ -277,7 +281,7 @@ void handle_condition_tags(V3DLib::Instr const &src_instr, Instructions &ret) {
   //
 
   if (false) {
-    cdebug << "handle_condition_tags(): detected final where condition: '"
+    warn << "handle_condition_tags(): detected final where condition: '"
            << src_instr.dump() << "'\n"
            << "v3d: " << ret.back().mnemonic() << "'\n";
   }
@@ -315,7 +319,7 @@ void handle_condition_tags(V3DLib::Instr const &src_instr, Instructions &ret) {
   ret << tmp_instr;
 
   if (false) {
-    cdebug << "handle_condition_tags() "
+    warn   << "handle_condition_tags() "
            << "v3d final: " << ret.back().mnemonic() << "'\n"
            << "v3d tmp: " << tmp_instr.mnemonic() << "'\n";
   }
@@ -1188,7 +1192,7 @@ void combine(Instructions &instructions) {
       if (!(a == dst)) return false; 
     }
 
-    Log::warn
+    Log::debug
 			<< "Useless move at " << i << ": " << instr.mnemonic(false)
 			<< " dst: " << dst.dump()
 		;
@@ -1352,7 +1356,7 @@ void combine(Instructions &instructions) {
       bool success = add_alu_to_mul_alu(mul_instr, dst);
 
       if (success) {
-				Log::warn << "Converted: " << dst.mnemonic(false);
+				Log::debug << "Converted: " << dst.mnemonic(false);
 
         instr1.skip(true);
         instr2 = dst;

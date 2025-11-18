@@ -450,7 +450,8 @@ Instr::List whereStmt(Stmt::Ptr s, Var condVar, AssignCond cond, bool saveRestor
       }
     }
 
-    return ret;
+    ret.back().comment("End Where");
+		return ret;
   }
 
   assertq(false, "V3DLib: only assignments and nested 'where' statements can occur in a 'where' statement", true);
