@@ -21,6 +21,7 @@ namespace v3d {
 
 using namespace V3DLib::v3d::instr;
 using Instructions = V3DLib::v3d::Instructions;
+using namespace Log;
 
 namespace {
 
@@ -276,10 +277,9 @@ void handle_condition_tags(V3DLib::Instr const &src_instr, Instructions &ret) {
   //
 
   if (false) {
-    std::string msg = "handle_condition_tags(): detected final where condition: '";
-    msg << src_instr.dump() << "'\n";
-    msg << "v3d: " << ret.back().mnemonic() << "'\n";
-    debug(msg);
+    cdebug << "handle_condition_tags(): detected final where condition: '"
+           << src_instr.dump() << "'\n"
+           << "v3d: " << ret.back().mnemonic() << "'\n";
   }
 
   ret.back().set_push_tag(setCond);
@@ -315,10 +315,9 @@ void handle_condition_tags(V3DLib::Instr const &src_instr, Instructions &ret) {
   ret << tmp_instr;
 
   if (false) {
-    std::string msg = "handle_condition_tags() ";
-    msg << "v3d final: " << ret.back().mnemonic() << "'\n";
-    msg << "v3d tmp: " << tmp_instr.mnemonic() << "'\n";
-    debug(msg);
+    cdebug << "handle_condition_tags() "
+           << "v3d final: " << ret.back().mnemonic() << "'\n"
+           << "v3d tmp: " << tmp_instr.mnemonic() << "'\n";
   }
 }
 
@@ -359,7 +358,7 @@ bool translateRotate(V3DLib::Instr const &instr, Instructions &ret) {
 		//  - Thing to rotate is in add a
 		//  - rot value is a small imm in add a
 		//  - nop not required after rotate
-		Log::debug << "translateRotate vc7 input instr: " << instr.dump();
+		cdebug << "translateRotate vc7 input instr: " << instr.dump();
 
 		assert(dst_reg->is_rf());
 		assert(src_a->is_rf());
@@ -371,7 +370,7 @@ bool translateRotate(V3DLib::Instr const &instr, Instructions &ret) {
 		dst_instr.alu.add.op = V3D_QPU_A_ROT;
   	dst_instr.alu_add_set(*dst_reg, *src_a, imm);
 
-		Log::debug << "translateRotate vc7 instruction: " << dst_instr.mnemonic(false);
+		cdebug << "translateRotate vc7 instruction: " << dst_instr.mnemonic(false);
 
 		ret << dst_instr;
 
@@ -942,7 +941,7 @@ bool can_combine(v3d::instr::Instr const &instr1, v3d::instr::Instr const &instr
   // Output instr1 should not be used as input instr2
 	if (Platform::compiling_for_vc7()) {
 		// vc7 - no mux's, add/mul.a can also be small imm, raddr's in different location
-		//debug("can_combine() - vc7");
+		//cdebug << "can_combine() - vc7";
 
 	  auto a2 = instr2.mul_nop()?instr2.alu.add.a:instr2.alu.mul.a;
 	  auto b2 = instr2.mul_nop()?instr2.alu.add.b:instr2.alu.mul.b;
@@ -1082,7 +1081,7 @@ bool add_alu_to_mul_alu(Instr const &in_instr, Instr &dst) {
 	BaseSource alu_mul_b = in_instr.alu_mul_b();
 
 /*
-	Log::debug
+	cdebug
  		<< "\n"
     << "  alu_add_a: " << alu_add_a.dump() << "\n"
     << "  alu_add_b: " << alu_add_b.dump() << "\n"
@@ -1134,11 +1133,12 @@ bool add_alu_to_mul_alu(Instr const &in_instr, Instr &dst) {
   dst.header(in_instr.header());
   dst.comment(in_instr.comment());
 
+/*
 	Log::warn << "  dst : " << dst.mnemonic(false);
-	// Log::warn << alu_mul_b.dump();  - always 'Not set'
 	if (!Platform::compiling_for_vc7()) {
 		Log::warn << "mul mux b:" << dst.alu.mul.b.mux  << ", raddr_b: " << dst.raddr_b;
 	}
+*/
 
   return true;
 }
@@ -1168,7 +1168,8 @@ void combine(Instructions &instructions) {
 		}
 
     if (instr.has_signal(true)) return false; 
-    if (instr.flag_set()) return false;
+    if (instr.flag_push_set()) return false;
+    if (instr.flag_cond_set()) return false;
 
     auto dst = instr.alu_add_dst();
     assert(dst.is_set());
@@ -1212,7 +1213,7 @@ void combine(Instructions &instructions) {
     //
     // Combine pure nop ldtmu instruction with next
     // 
-    if (false && instr1.is_ldtmu() && instr1.is_nop()) { // TODO: check reasong for false
+    if (false && instr1.is_ldtmu() && instr1.is_nop()) { // TODO: check reason for false
 
       // There can be multiple consecutive tmu loads, shift them all in reverse order
       int first = i - 1;
@@ -1289,28 +1290,50 @@ void combine(Instructions &instructions) {
     // Remove useless copies
     //
     if (check_assign_to_self(instr2, i)) {
-			Log::debug << "Skipping useless copy: " << instr2.mnemonic(false);
+			cdebug << "Skipping useless copy: " << instr2.mnemonic(false);
       instr2.skip(true);
       continue;
     }
 
-     // Don't deal with conditions yet in the mul alu
-     // These need a bit of extra logic to set them for mul
-     // TODO examine this
-     if (instr1.flag_set() || instr2.flag_set()) continue;
+		// auf/mf not used yet, but warn me if it happens
+		if (instr1.flag_uf_set() || instr2.flag_uf_set()) {
+			warn << "Flag uf set! "
+    			 << "line " << i << ":\n"
+        	 << "  " << instr1.mnemonic(false) << "\n"
+           << "  " << instr2.mnemonic(false)
+			;
+		}
 
+    if (instr1.flag_push_set() || instr2.flag_push_set()) { 
+			// Can't push flags on both add and mul - in principle this is logical
+			// Apparently, this case occurs
+			// The only way I can see this happen is if a instr is shifted up more than 1 slot.
+			continue;
+		}
+
+		//
+		// TODO: both the following can be done better by splitting add/mul flags
+		//
+
+	  // Avoid setting for both cond and push flag
+    if (instr1.flag_push_set() && instr2.flag_push_set()) continue;
+
+		// Don't combine cond and push
+		// Note that order is important - The other way should be OK (assuming that a push precedes)
+    if (instr1.flag_push_set() && instr2.flag_cond_set()) continue;
 
     //
     // Combine add and mul instructions, if possible
     //
     bool do_converse;
     if (!can_combine(instr1, instr2, do_converse)) continue;
-
+/*
 		Log::warn  << "combine() considering "
     					 << "line " << i << ":\n"
         			 << "  " << instr1.mnemonic(false) << "\n"
                << "  " << instr2.mnemonic(false)
 		;
+*/		
 
 
     // attempt the conversion
@@ -1325,14 +1348,20 @@ void combine(Instructions &instructions) {
       bool success = add_alu_to_mul_alu(mul_instr, dst);
 
       if (success) {
-				Log::debug << "\n  Possible conversion: " << dst.mnemonic(false);
+				Log::warn << "Converted: " << dst.mnemonic(false);
 
         instr1.skip(true);
         instr2 = dst;
 
         combine_count++;
         i++;
-      }
+      } else {
+				Log::warn  << "combine of following failed; "
+		    					 << "line " << i << ":\n"
+		        			 << "  " << instr1.mnemonic(false) << "\n"
+		               << "  " << instr2.mnemonic(false)
+				;
+			}
       continue;
     }
 
@@ -1342,9 +1371,7 @@ void combine(Instructions &instructions) {
   compile_data.num_instructions_combined += combine_count;
 
   if (combine_count > 0) {
-    std::string msg;
-    msg << "Combined " << combine_count << " v3d instructions";
-    debug(msg);
+    cdebug << "Combined " << combine_count << " v3d instructions";
   }
 
   //
@@ -1362,9 +1389,7 @@ void combine(Instructions &instructions) {
   }
 
   if (skip_count > 0) {
-    std::string msg;
-    msg << "Skipped " << skip_count << " instructions";
-    debug(msg);
+    cdebug << "Skipped " << skip_count << " instructions";
     instructions = ret;
   }
 }
@@ -1434,10 +1459,10 @@ KernelDriver::KernelDriver() : V3DLib::KernelDriver(V3dBuffer), qpuCodeMem(code_
 	assert(!Platform::compiling_for_vc4());
 
 	if(Platform::compiling_for_vc7()) {
-		Log::debug << "selecting vc7 as kernel type";
+		cdebug << "selecting vc7 as kernel type";
 		m_type = vc7;
 	} else {
-		Log::debug << "selecting vc6 as kernel type";
+		cdebug << "selecting vc6 as kernel type";
 		m_type = vc6;
 	}
 }
@@ -1521,16 +1546,16 @@ void KernelDriver::allocate() {
 
 void KernelDriver::invoke_intern(int numQPUs, IntList &params) {
 	if (numQPUs <= 0) {
-	    error("Zero or negative QPU's selected", true);
+	    cerr << "Zero or negative QPU's selected" << thrw;
 	}
 
 	if (Platform::compiling_for_vc7()) {
 	  if (numQPUs > 16) {
-	    error("Num QPU's exceeded; Max QPU's is 16 for vc7", true);
+	    cerr << "Num QPU's exceeded; Max QPU's is 16 for vc7" << thrw;
 		}
 	} else {
 	  if (numQPUs != 1 && numQPUs != 8) {
-	    error("Num QPU's must be 1 or 8 for vc6", true);
+	    cerr << "Num QPU's must be 1 or 8 for vc6" << thrw;
 	  }
 	}
 

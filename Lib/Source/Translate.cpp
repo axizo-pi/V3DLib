@@ -214,10 +214,19 @@ void cmpExp(Instr::List *seq, BExpr::Ptr bexpr, Var v) {
   instr.ALU.srcB     = operand(b.cmp_rhs());
   instr.dest(dummy);
 
+	auto mov1 = mov(v, 1);
+	assert(mov1.size() == 1);
+	mov1.back().cond(assign_cond);        // TODO: would be better if this used acc-reg
+
+	auto mov2 = mov(dummy2, v);
+	assert(mov2.size() == 1);
+	mov2.back().setCondFlag(Flag::ZC);  // Reset flags so that Z-flag is used
+
   *seq << li(v, 0).comment("Store condition as Bool var")
        << instr
-       << mov(v, 1).cond(assign_cond)            // TODO: would be better if this used acc-reg
-       << mov(dummy2, v).setCondFlag(Flag::ZC);  // Reset flags so that Z-flag is used
+			 << mov1
+			 << mov2
+	;
 
   seq->back().comment("End store condition as Bool var");
 }
@@ -595,8 +604,13 @@ Instr::List varAssign(AssignCond cond, Var v, Expr::Ptr expr) {
   Expr e = *expr;
 
   switch (e.tag()) {
-    case Expr::VAR:                                                   // 'v := w', where v and w are variables
-      ret << mov(v, e.var()).cond(cond);
+    case Expr::VAR: {                                                   // 'v := w', where v and w are variables
+      	auto tmp = mov(v, e.var());
+				assert(tmp.size() ==1);
+      	tmp.back().cond(cond);
+
+      	ret << tmp; 
+			}
       break;
     case Expr::INT_LIT:                                               // 'v := i', where i is an integer literal
       ret << li(v, e.intLit).cond(cond);

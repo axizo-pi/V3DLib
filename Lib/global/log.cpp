@@ -125,10 +125,11 @@ void assert(bool condition, const std::string &msg) {
 
 
 Logger debug(Logger::DDEBUG);
-Logger cout;                   // Same as info
+Logger cdebug(Logger::DDEBUG);
+Logger cout;
 Logger info;
 Logger warn(Logger::WARNING);
-Logger cerr(Logger::ERROR);    // same as error
+Logger cerr(Logger::ERROR);
 Logger error(Logger::ERROR);
 Logger fatal(Logger::FATAL);
 

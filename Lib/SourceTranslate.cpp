@@ -56,8 +56,10 @@ Instr::List add_uniform_pointer_offset(Instr::List &code) {
   Instr::List ret;
 
   // offset = 4 * vector_id;
-  ret << mov(acc, ELEM_ID).comment("Initialize uniform ptr offsets")
+  ret << mov(acc, ELEM_ID)
       << shl(acc, acc, 2);
+
+  ret.front().comment("Initialize uniform ptr offsets");
 
   // add the offset to all the uniform pointers
   for (int index = 0; index < code.size(); ++index) {

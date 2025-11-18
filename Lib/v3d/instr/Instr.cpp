@@ -243,9 +243,9 @@ bool Instr::uses_sig_dst() const {
 }
 
 
-bool Instr::flag_set() const {
-  return (flags.ac || flags.mc || flags.apf || flags.mpf || flags.auf || flags.muf);
-}
+bool Instr::flag_push_set() const { return (flags.apf || flags.mpf); }
+bool Instr::flag_cond_set() const { return (flags.ac  || flags.mc ); }
+bool Instr::flag_uf_set()   const { return (flags.auf || flags.muf); }
 
 
 /**

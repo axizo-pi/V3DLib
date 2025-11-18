@@ -67,11 +67,13 @@ void assert(bool condition, const std::string &msg);
 #pragma pop_macro("assert")
 
 // Duplicates of several instances to avoid error "reference to ‘error’ is ambiguous"
+// Eventually, these should be leading, but then we'll have to get rid of debug.h
 extern Logger debug;
-extern Logger cout;  // same as info
+extern Logger cdebug; // same as debug
+extern Logger cout;   // same as info
 extern Logger info;
 extern Logger warn;
-extern Logger cerr;  // same as error
+extern Logger cerr;   // same as error
 extern Logger error;
 extern Logger fatal;
 

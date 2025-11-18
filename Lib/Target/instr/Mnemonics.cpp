@@ -46,9 +46,12 @@ Instr::List sfu_function(Var dst, Var srcA, Reg const &sfu_reg, const char *labe
   cmt << label;
 
   Instr nop;
+  auto mov1 = mov(sfu_reg, srcA);
+	assert(mov1.size() == 1);
+	mov1.back().comment(cmt);
 
   Instr::List ret;
-  ret << mov(sfu_reg, srcA).comment(cmt)
+  ret << mov1
       << nop
       << nop
       << mov(dst, ACC4());
@@ -58,6 +61,11 @@ Instr::List sfu_function(Var dst, Var srcA, Reg const &sfu_reg, const char *labe
 
 Reg const ACC0_(ACC, 0);
 Reg const ACC4_(ACC, 4);
+
+
+Instr _mov(Reg dst, RegOrImm const &src) {
+	return genInstr(ALUOp::A_MOV, dst, src);
+}
 
 }  // anon namespace
 
@@ -183,27 +191,27 @@ Reg rf(uint8_t index) {
 }
 
 
-Instr _mov(Reg dst, RegOrImm const &src) {
-	return genInstr(ALUOp::A_MOV, dst, src);
-}
-
-
-Instr mov(Reg dst, RegOrImm const &src) {
+Instr::List mov(Reg dst, RegOrImm const &src) {
   dst.can_write(true);
+
+
+	Instr::List ret;
 
 	//Log::debug << "dst: " << dst.dump() << "; " << "tag: " << dst.tag;   
 
 	if (src.is_reg() && src.reg().tag == SPECIAL) {
 		// The logic for special reg's is under bor(), so we 
 		// need to redirect there
-    return bor(dst, src, src);
+    ret <<  bor(dst, src, src);
 	} else if (Platform::compiling_for_vc7()) {
-    return _mov(dst, src);
+    ret <<  _mov(dst, src);
 	} else if (src.is_imm()) {
-    return li(dst, src.imm().val);
+    ret << li(dst, src.imm().val);
   } else {
-    return bor(dst, src, src);
+    ret << bor(dst, src, src);
   }
+
+	return ret;
 }
 
 

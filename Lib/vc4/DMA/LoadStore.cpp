@@ -163,13 +163,19 @@ Instr::List genSetupDMALoad(int numRows, int rowLen, int hor, int vpitch, Reg vp
 
 
 Instr genStartDMALoad(Reg memAddr) {
-  return mov(DMA_LD_ADDR, memAddr);
+  return mov(DMA_LD_ADDR, memAddr).back();   // returns list, assuming 1 value
 }
 
 
 // TODO change var naming
 Instr genWaitDMALoad(bool might_be_end = false) {
-  Instr instr = mov(None, DMA_LD_WAIT).cond(never);
+	Instr::List ret = mov(None, DMA_LD_WAIT);
+
+	// Not expecting more than one instr here
+	assert(ret.size() == 1);
+
+	Instr &instr = ret.back();
+	instr.cond(never);
 
   if (might_be_end) {
     instr.comment("DMA load wait (likely start of program end)");
@@ -321,12 +327,12 @@ Instr::List genSetupDMAStore(int numRows, IntExpr rowLen, int hor, Reg vpmAddr) 
 
 
 Instr genStartDMAStore(Reg memAddr) {
-  return mov(DMA_ST_ADDR, memAddr);
+  return mov(DMA_ST_ADDR, memAddr).back();  // returns list, assuming 1 value
 }
 
 
 Instr genWaitDMAStore() {
-  return mov(None, DMA_ST_WAIT).cond(AssignCond::NEVER);
+  return mov(None, DMA_ST_WAIT).back().cond(AssignCond::NEVER);  // returns list, assuming 1 value
 }
 
 

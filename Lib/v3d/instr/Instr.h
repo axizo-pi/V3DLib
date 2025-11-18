@@ -95,7 +95,10 @@ public:
 
   bool is_branch()  const;
   bool has_signal(bool all_signals = false) const;
-  bool flag_set() const;
+
+  bool flag_push_set() const;
+  bool flag_cond_set() const;
+  bool flag_uf_set() const;
   void set_cond_tag(AssignCond cond);
   void set_push_tag(SetCond set_cond);
 

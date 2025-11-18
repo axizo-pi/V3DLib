@@ -162,9 +162,11 @@ void KernelDriver::compile_intern() {
     // and uniform ptr index offsets
 
     Instr::List ret;
-    ret << mov(VarGen::fresh(), Var(UNIFORM)).comment("Last uniform load is dummy value")
+    ret << mov(VarGen::fresh(), Var(UNIFORM))
         << add_uniform_pointer_offset(m_targetCode);  // !!! NOTE: doesn't take dummy in previous into account
                                                       // This should not be a problem
+
+		ret.front().comment("Last uniform load is dummy value");
 
     int index = m_targetCode.lastUniformOffset();
     assert(index > 0);
