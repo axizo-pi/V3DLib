@@ -1230,7 +1230,7 @@ void combine(Instructions &instructions) {
 			if (!ret) return false;
     }
 
-    Log::warn
+    Log::debug
 			<< "Useless move at line " << line_number << ": " << instr.mnemonic(false)
 			<< " dst: " << dst.dump()
 		;
