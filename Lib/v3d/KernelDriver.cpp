@@ -871,7 +871,6 @@ bool can_be_mul_alu(AddAlu const &add_alu) {
 	    add_alu.op == V3D_QPU_A_SUB ||
 	    add_alu.op == V3D_QPU_A_MOV
 		);
-
 	} else {
 		// Don't write to special registers in the mul alu
     if (add_alu.magic_write && add_alu.waddr >= V3D_QPU_WADDR_NOP) return false;
@@ -1036,7 +1035,8 @@ bool convert_alu_op_to_mul_op(v3d_qpu_mul_op &mul_op, v3d::instr::Instr const &a
     default: break;
   }
 
-
+	// This breaks Tri - absolutely confirmed
+/*	
 	if (Platform::compiling_for_vc7()) {
   	switch (add_instr.alu.add.op) {
 	    case V3D_QPU_A_MOV:
@@ -1046,7 +1046,7 @@ bool convert_alu_op_to_mul_op(v3d_qpu_mul_op &mul_op, v3d::instr::Instr const &a
     	default: break;
   	}
 	} 
-
+*/
 
   return false;
 }
@@ -1149,6 +1149,7 @@ bool add_alu_to_mul_alu(Instr const &in_instr, Instr &dst) {
 
 
 void combine(Instructions &instructions) {
+
   //
   // Detect useless moves, eg: or  rf2, rf2, rf2    ; nop
   //
@@ -1176,7 +1177,6 @@ void combine(Instructions &instructions) {
 
     if (instr.flag_push_set()) return false;
     if (instr.flag_cond_set()) return false;
-
 
 
     auto dst = instr.alu_add_dst();
@@ -1239,6 +1239,7 @@ void combine(Instructions &instructions) {
   };
 
   assertq(!check_useless_moves(instructions[0], 0), "First instruction is useless");
+
 
   int combine_count = 0;
 
@@ -1321,6 +1322,7 @@ void combine(Instructions &instructions) {
     }
 
 
+
     //
     // Skip instructions that have both add and mul alu
     //
@@ -1346,9 +1348,11 @@ void combine(Instructions &instructions) {
 			;
 		}
 
-    //if (instr1.flag_cond_set() || instr2.flag_cond_set()) { 
-		//	continue;
-		//}
+		// This is absolutely needed to make For/If in Tri work
+		// Not sure if second commented out part is absolutely necessary, till now it works
+    if (instr1.flag_cond_set()) { // || instr2.flag_cond_set()) { 
+			continue;
+		}
 
     if (instr1.flag_push_set() || instr2.flag_push_set()) { 
 			// Can't push flags on both add and mul - in principle this is logical
@@ -1367,6 +1371,10 @@ void combine(Instructions &instructions) {
 		// Don't combine cond and push
 		// Note that order is important - The other way should be OK (assuming that a push precedes)
     if (instr1.flag_push_set() && instr2.flag_cond_set()) continue;
+
+    if (instr1.flag_push_set() && instr2.flag_push_set()) continue;
+    if (instr1.flag_cond_set() && instr2.flag_cond_set()) continue;
+
 
     //
     // Combine add and mul instructions, if possible
