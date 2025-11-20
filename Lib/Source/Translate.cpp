@@ -305,8 +305,12 @@ AssignCond boolExp(Instr::List *seq, BExpr::Ptr bexpr, Var v) {
 // ============================================================================
 
 BranchCond condExp(Instr::List &seq, CExpr &c) {
+	Instr::List ret;
   Var v = VarGen::fresh();
-  AssignCond cond = boolExp(&seq, c.bexpr(), v);
+  AssignCond cond = boolExp(&ret, c.bexpr(), v);
+
+	//Log::warn << "condExp seq:\n" << ret.dump();
+	seq << ret;
 
   return cond.to_branch_cond(c.tag() == ALL);
 }
