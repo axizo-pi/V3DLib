@@ -156,6 +156,49 @@ void mandelbrotCore(
   FloatExpr condition = (4.0f - mag)*toFloat(numIterations - count);
   Float checkvar = condition;
 
+	/////////////////////////////////////
+	// Succeeds - all with -dim=768
+	/////////////////////////////////////
+/*	
+  For (Int i = 0, i < 128 , i++)  // als max = 64
+  End
+
+  For (Int i = 0, i < 128, i++)
+    Where (checkvar > 0.5f)
+      count++;
+    End
+  End
+*/		
+
+	/////////////////////////////////////
+	// Partial success
+	/////////////////////////////////////
+/*
+	// Default kernel is also partial success
+
+  For (Int i = 0, i < 1024, i++)  // also max = 512
+  End
+
+  For (Int i = 0, i < 128, i++)
+    Where (checkvar > 0.5f)
+      x = x*x + c;
+
+      mag = x.mag_square();
+      count++;
+      checkvar = condition; 
+    End
+  End
+*/	
+
+	/////////////////////////////////////
+	// Fails 
+	/////////////////////////////////////
+/*	
+  For (Int i = 0, i < 128, i++)
+      count++;
+  End
+*/	
+
   While (any(checkvar > 0.0f))
     Where (checkvar > 0.0f)
       x = x*x + c;
@@ -166,6 +209,7 @@ void mandelbrotCore(
     End
   End
 
+	
   *dst = count;
 }
 
@@ -179,8 +223,9 @@ void mandelbrot_single(
 ) {
   For (Int yStep = 0, yStep < numStepsHeight, yStep++)
     Int::Ptr dst = result + yStep*numStepsWidth;
+		Int xMax = (numStepsWidth - 16);
 
-    For (Int xStep = 0, xStep < numStepsWidth - 16, xStep += 16)
+    For (Int xStep = 0, xStep < xMax, xStep += 16)
       Int xIndex = xStep + index();
 
       mandelbrotCore(
@@ -188,9 +233,15 @@ void mandelbrot_single(
         numIterations,
         dst);
 
-      dst.inc();
+      dst.inc();  comment("dst increment");
     End
+
+    //Int::Ptr dst2 = result + yStep*numStepsWidth;
+		//*dst2 = 128;
   End
+
+  Int::Ptr dst3 = result + (numStepsHeight/2)*numStepsWidth;
+	*dst3 = 512;
 }
 
 
