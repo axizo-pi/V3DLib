@@ -82,7 +82,10 @@ endif
 
 INCLUDE_EXTERN+= \
  -I extern/mesa/include \
- -I extern/mesa/src
+ -I extern/mesa/src \
+ -I extern/mesa/src/gallium/include \
+ -I extern/mesa/src/gallium/auxiliary \
+ -I extern/mesa/build/src
 
 LIB_EXTERN+= \
  -Lobj/mesa/bin -lmesa
@@ -108,8 +111,17 @@ CXX_FLAGS = \
  -Wall \
  -Wconversion \
  -Wno-psabi \
+ -pthread \
  -I $(ROOT) $(INCLUDE_EXTERN) -MMD -MP -MF"$(@:%.o=%.d)" \
- -D VIDEOCORE_VERSION=$(VIDEOCORE_VERSION)
+ -D VIDEOCORE_VERSION=$(VIDEOCORE_VERSION) \
+ \
+ -D HAVE_ENDIAN_H \
+ -D HAVE_PTHREAD \
+ -D MESA_DEBUG=0 \
+ -D HAVE_SECURE_GETENV \
+ -D HAVE_STRUCT_TIMESPEC 
+
+# NOTE: Last items after single \ required in mesa lib include files
 
 # Compiler and default flags
 CXX= g++
@@ -270,7 +282,7 @@ $(UNIT_TESTS): $(TESTS_OBJ) $(V3DLIB) $(LIB_DEPEND)
 runTests: $(UNIT_TESTS)
 
 
-make_test: runTests ID Hello Rot3D ReqRecv GCD Tri detectPlatform OET Instruction
+make_test: runTests ID Hello Rot3D ReqRecv GCD Tri detectPlatform OET Instruction Counter
 
 #
 # Running unit test [fft][test2] in combination with the rest *sometimes* results in IO timeouts (Pi4 64bit).

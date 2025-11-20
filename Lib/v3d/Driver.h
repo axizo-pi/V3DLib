@@ -13,7 +13,6 @@ namespace v3d {
  *
  */
 class Driver {
-  using BoHandles  = std::vector<uint32_t>;
 
 public:
   void add_bo(uint32_t handle) {

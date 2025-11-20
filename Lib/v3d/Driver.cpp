@@ -95,7 +95,7 @@ bool Driver::execute(Code &code, Data *uniforms, uint32_t thread) {
   // If there are none, set the address to zero.
   uint32_t unif_phyaddr = (uniforms == nullptr)?0u:uniforms->getAddress();
 
-  assertq(m_bo_handles.size() >= 1, "v3d execute: Expecting least one buffer object on execution");  // See Note 1
+  assertq(m_bo_handles.size() >= 1, "v3d execute: Expecting at least one buffer object on execution");  // See Note 1
 
   WorkGroup workgroup;
   uint32_t wgs_per_sg = 16;

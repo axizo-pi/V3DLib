@@ -20,9 +20,7 @@ BufferObject::~BufferObject() {
  */
 void BufferObject::alloc_mem(uint32_t size_in_bytes) {
 	//debug("Called BufferObject::alloc_mem()");
-
-  if (Platform::run_vc4()) fatal("Trying to run v3d code on a vc4");
-  if (!v3d_open())         assert(false);  // Only open device if not already done so
+  assertq(!v3d_open(), "Device already open");
   assert(handle == 0);
 
   void    *tmp_addr = nullptr;
@@ -121,12 +119,12 @@ std::unique_ptr<BufferObject> mainHeap;
 
 
 BufferObject &BufferObject::getHeap() {
-  if (!Platform::run_vc4()) {
-    if (!mainHeap) {
-      //debug("Allocating main heap v3d\n");
-      mainHeap.reset(new BufferObject());
-      mainHeap->alloc(LibSettings::heap_size());
-    }
+  assertq(!Platform::run_vc4(), "Trying to run v3d code on a vc4");
+
+  if (!mainHeap) {
+    //debug("Allocating main heap v3d\n");
+    mainHeap.reset(new BufferObject());
+    mainHeap->alloc(LibSettings::heap_size());
   }
 
   return *mainHeap;
