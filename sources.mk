@@ -1,7 +1,7 @@
 #
 # This file is generated!  Editing it directly is a bad idea.
 #
-# Generated on: Thu Nov 20 11:05:35 AM CET 2025
+# Generated on: Thu Nov 20 04:53:23 PM CET 2025
 #
 ###############################################################################
 
@@ -103,6 +103,7 @@ OBJ := \
   v3d/SourceTranslate.o  \
   v3d/v3d.o  \
   v3d/PerformanceCounters.o  \
+  v3d/device_info.o  \
   v3d/RegisterMapping.o  \
   LibSettings.o  \
   vc4/dump_instr.o  \

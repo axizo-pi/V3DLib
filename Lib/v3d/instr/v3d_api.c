@@ -4,29 +4,6 @@
 #include <string.h>
 #include "broadcom/qpu/qpu_disasm.h"
 #include "util/ralloc.h"  // ralloc_free()
-#include "broadcom/common/v3d_device_info.h"
-
-#ifdef QPU_MODE
-uint8_t devinfo_ver() {
-  return devinfo()->ver;
-}
-#else
-
-/**
- * Empty call to satisfy linking in non-QPU mode.
- * 
- * v3d should never be used anyway in that case.
- */
-static struct v3d_device_info const *devinfo() { return NULL; }
-
-/**
- * Idem
- */
-uint8_t devinfo_ver() {
-  return 0;
-}
-
-#endif // QPU_MODE
 
 
 static const struct v3d_qpu_alu_instr ALU_NOP = {
@@ -554,7 +531,6 @@ bool instr_unpack(uint64_t packed_instr, struct v3d_qpu_instr *instr) {
 uint64_t instr_pack(struct v3d_qpu_instr const *instr) {
   uint64_t packed_instr;
   v3d_qpu_instr_pack(devinfo(), instr, &packed_instr);
-  //assert(packed_instr != 0);
   return packed_instr;
 }
 

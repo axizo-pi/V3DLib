@@ -8,13 +8,16 @@
 #include "v3d.h"
 #include "Support/basics.h"
 #include <sys/ioctl.h>
-#include <sstream>
 #include <stdio.h>
 #include "global/log.h"
 #include <fcntl.h>
+#include "broadcom/common/v3d_device_info.h"
+#include <cstring>    // errno, strerror()
+#include <sys/mman.h>
 
-//using namespace std;
 using namespace Log;
+
+namespace {
 
 // Derived from linux/include/uapi/drm/drm.h
 #define DRM_IOCTL_BASE   'd'
@@ -24,20 +27,26 @@ using namespace Log;
 #define IOCTL_V3D_SUBMIT_CSD _IOW(DRM_IOCTL_BASE, DRM_V3D_SUBMIT_CSD, st_v3d_submit_csd)
 
 
-#if USE_MESA_BUFMGR == 0
+void log_error(int ret, char const *prefix = "") {
+  if (ret == 0) return;
 
-#include "broadcom/common/v3d_device_info.h"
-#include "instr/v3d_api.h"
-#include <cassert>
-#include <cstddef>    // NULL
-#include <cstring>    // errno, strerror()
-#include <sys/mman.h>
-#include <unistd.h>   // close(), sysconf()
+  char buf[256];
+  sprintf(buf, "ERROR %s: %s\n", prefix, strerror(errno));
+  ::error(buf);
+}
 
-namespace {
 
-int fd = 0;
+void fd_close(int fd) {
+  if (fd > 0 ) {
+    assert(close(fd) >= 0);
+    close(fd);
+  }
+}
 
+
+//////////////////////////////////////
+// Support for alloc_intern
+//////////////////////////////////////
 
 typedef struct {
     uint32_t size   = 0;
@@ -54,48 +63,21 @@ typedef struct {
 } drm_v3d_mmap_bo;
 
 
-typedef struct {
-    uint32_t  handle;
-    uint32_t  pad;
-} gem_close;
-
-
-struct st_v3d_wait_bo {
-  uint32_t handle;
-  uint32_t pad;
-  uint64_t timeout_ns;
-};
-
-
-// Derived from linux/include/uapi/drm/drm.h
-#define DRM_GEM_CLOSE    0x09
-
-// Derived from linux/include/uapi/drm/v3d_drm.h
-#define DRM_V3D_WAIT_BO    (DRM_COMMAND_BASE + 0x01)
 #define DRM_V3D_CREATE_BO  (DRM_COMMAND_BASE + 0x02)
 #define DRM_V3D_MMAP_BO    (DRM_COMMAND_BASE + 0x03)
-#define DRM_V3D_GET_PARAM  (DRM_COMMAND_BASE + 0x04)
 
-#define IOCTL_GEM_CLOSE      _IOW(DRM_IOCTL_BASE, DRM_GEM_CLOSE, gem_close)
 #define IOCTL_V3D_CREATE_BO  _IOWR(DRM_IOCTL_BASE, DRM_V3D_CREATE_BO, drm_v3d_create_bo)
 #define IOCTL_V3D_MMAP_BO    _IOWR(DRM_IOCTL_BASE, DRM_V3D_MMAP_BO, drm_v3d_mmap_bo)
-#define IOCTL_V3D_WAIT_BO    _IOWR(DRM_IOCTL_BASE, DRM_V3D_WAIT_BO, st_v3d_wait_bo)
-
-const unsigned V3D_PARAM_V3D_UIFCFG = 0;
-const unsigned V3D_PARAM_V3D_HUB_IDENT1 = 1;
-const unsigned V3D_PARAM_V3D_HUB_IDENT2 = 2;
-const unsigned V3D_PARAM_V3D_HUB_IDENT3 = 3;
-const unsigned V3D_PARAM_V3D_CORE0_IDENT0 = 4;
-const unsigned V3D_PARAM_V3D_CORE0_IDENT1 = 5;
-const unsigned V3D_PARAM_V3D_CORE0_IDENT2 = 6;
-const unsigned V3D_PARAM_SUPPORTS_TFU = 7;
-const unsigned V3D_PARAM_SUPPORTS_CSD = 8;
 
 
 /**
  * Allocate and map a buffer object
  *
- * This function is also used to check availability of the GPU device
+ * NOTE: This is an old-style alloc call and ideally would not be used 
+ *       with the mesa alloc. However, it is used for testing a device in open()
+ *       and therefore needs to be available
+ *
+ * This function is used to check availability of the GPU device
  * via a given device driver (called 'card' in this code).
  * Parameter `show_perror` is used to suppress any errors if this check fails.
  *
@@ -166,10 +148,7 @@ bool alloc_intern(
     if (result == MAP_FAILED) {
       log_error(1, "alloc_intern() mmap");
 
-      std::string msg = "mmap() failure, size: ";
-      msg << size << ", offset: " << mmap_bo.offset;
-      error(msg);
-
+      cerr << "mmap() failure, size: " << size << ", offset: " << (int) mmap_bo.offset;
       return false;
     }
 
@@ -178,6 +157,53 @@ bool alloc_intern(
 
   return true;
 }
+
+}  // anon namespace
+
+#if USE_MESA_BUFMGR == 0
+
+#include "instr/v3d_api.h"
+#include <cassert>
+#include <cstddef>    // NULL
+#include <unistd.h>   // close(), sysconf()
+
+namespace {
+
+int fd = 0;
+
+
+typedef struct {
+    uint32_t  handle;
+    uint32_t  pad;
+} gem_close;
+
+
+struct st_v3d_wait_bo {
+  uint32_t handle;
+  uint32_t pad;
+  uint64_t timeout_ns;
+};
+
+
+// Derived from linux/include/uapi/drm/drm.h
+#define DRM_GEM_CLOSE    0x09
+
+// Derived from linux/include/uapi/drm/v3d_drm.h
+#define DRM_V3D_WAIT_BO    (DRM_COMMAND_BASE + 0x01)
+#define DRM_V3D_GET_PARAM  (DRM_COMMAND_BASE + 0x04)
+
+#define IOCTL_GEM_CLOSE      _IOW(DRM_IOCTL_BASE, DRM_GEM_CLOSE, gem_close)
+#define IOCTL_V3D_WAIT_BO    _IOWR(DRM_IOCTL_BASE, DRM_V3D_WAIT_BO, st_v3d_wait_bo)
+
+const unsigned V3D_PARAM_V3D_UIFCFG = 0;
+const unsigned V3D_PARAM_V3D_HUB_IDENT1 = 1;
+const unsigned V3D_PARAM_V3D_HUB_IDENT2 = 2;
+const unsigned V3D_PARAM_V3D_HUB_IDENT3 = 3;
+const unsigned V3D_PARAM_V3D_CORE0_IDENT0 = 4;
+const unsigned V3D_PARAM_V3D_CORE0_IDENT1 = 5;
+const unsigned V3D_PARAM_V3D_CORE0_IDENT2 = 6;
+const unsigned V3D_PARAM_SUPPORTS_TFU = 7;
+const unsigned V3D_PARAM_SUPPORTS_CSD = 8;
 
 
 bool v3d_wait_bo(uint32_t handle, uint64_t timeout_ns) {
@@ -198,20 +224,6 @@ bool v3d_wait_bo(uint32_t handle, uint64_t timeout_ns) {
 
 }  // anon namespace
 
-
-// Used in v3d/instr/v3d_api.c, hence the 'extern' brackets
-extern "C" {
-
-struct v3d_device_info const *devinfo() {
-	if(!_v3d_device_info()) {
-		error("devinfo: Call to _v3d_device_info() failed");
-		return nullptr;
-	}
-
-	return &s_devinfo;
-}
-
-}
 
 
 bool v3d_alloc(uint32_t size, uint32_t &handle, uint32_t &phyaddr, void **usraddr) {
@@ -239,26 +251,6 @@ bool v3d_unmap(uint32_t size, uint32_t handle,  void *usraddr) {
   return (ioctl(fd, IOCTL_GEM_CLOSE, &cl) == 0);
 }
 
-
-/**
- * @return true if all waits succeeded, false otherwise
- */
-bool v3d_wait_bo(BoHandles const &bo_handles, uint64_t timeout_ns) {
-  assert(bo_handles.size() > 0);
-  assert(timeout_ns > 0);
-
-  int ret = true;
-
-  for (auto handle : bo_handles) {
-    if (!v3d_wait_bo(handle, timeout_ns)) { 
-      ret = false;
-    }
-  }
-  //printf("Done calling v3d_wait_bo()\n");
-
-  return ret;
-}
-
 int  get_fd() { return fd; }
 void set_fd(int val) { fd = val; }
 
@@ -268,7 +260,9 @@ void set_fd(int val) { fd = val; }
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
 
+
 #include "gallium/drivers/v3d/v3d_bufmgr.h"  // For init s_screen
+
 
 #pragma GCC diagnostic pop
 
@@ -387,27 +381,6 @@ void set_fd(int val) { s_screen.fd = val; }
 
 namespace {
 
-bool did_devinfo = false;
-struct v3d_device_info s_devinfo = { .ver = 0 /* 0 signals no v3d */ };
-
-
-void log_error(int ret, char const *prefix = "") {
-  if (ret == 0) return;
-
-  char buf[256];
-  sprintf(buf, "ERROR %s: %s\n", prefix, strerror(errno));
-  ::error(buf);
-}
-
-
-void fd_close(int fd) {
-  if (fd > 0 ) {
-    assert(close(fd) >= 0);
-    close(fd);
-  }
-}
-
-
 /**
  * @return  > 0 if call succeeded,
  *            0 if call failed,
@@ -448,63 +421,8 @@ int open_card(char const *card) {
   return fd;
 }
 
-
-/**
- * Call ioctl, restarting if it is interrupted
- *
- * Source: mesa/src/drm/xf86drm.c
- */
-int drmIoctl(int fd, unsigned long request, void *arg)
-{
-    int ret;
-
-    do {
-				//(v3d_ioctl_fun)
-        ret = ioctl(fd, request, arg);
-    } while (ret == -1 && (errno == EINTR || errno == EAGAIN));
-    return ret;
-}
-
-
-/**
- * Retrieve the device info for the current v3d device.
- *
- * @return true if call succeeded, false otherwise
- */
-bool _v3d_device_info() {
-	//printf("Called _v3d_device_info\n");
-	if (did_devinfo) return true;  // run this exactly one
-	did_devinfo = true;
-
-	bool fd_is_open = (get_fd() != 0);
-
-	if (!fd_is_open) {
-		// open fd if not already open
-		//printf("_v3d_device_info opening fd\n");
-
-		if (!v3d_open()) {
-			cerr << "_v3d_device_info: Could not open fd.";
-			return false;
-		}
-	}
-
-	bool ret =  v3d_get_device_info(get_fd(), &s_devinfo, drmIoctl);
-
-	if (!fd_is_open) {
-		// Close fd again if not open previously
-		if (!v3d_close()) {
-			cerr << "_v3d_device_info: Could not close fd.";
-		}
-	}
-
-	if (!ret) {
-		warning("Could not get device_info");
-	}
-
-	return ret;
-}
-
 }  // anon namespace
+
 
 
 ////////////////////////////////////////////////////////
@@ -568,64 +486,23 @@ bool v3d_close() {
 }
 
 
-bool v3d_device_vc7() {
-	//warning("Called v3d_device_vc7()");
-	_v3d_device_info();
+/**
+ * @return true if all waits succeeded, false otherwise
+ */
+bool v3d_wait_bo(BoHandles const &bo_handles, uint64_t timeout_ns) {
+  assert(bo_handles.size() > 0);
+  assert(timeout_ns > 0);
 
-	// Paranoia - notify unknown version
-  if (!(s_devinfo.ver == 0 || s_devinfo.ver == 42 || s_devinfo.ver == 71)) {
-		warning("Unexpected device_info version");
-	}
+  int ret = true;
 
-	return (s_devinfo.ver == 71);
-}
+  for (auto handle : bo_handles) {
+    if (!v3d_wait_bo(handle, timeout_ns)) { 
+      ret = false;
+    }
+  }
+  //printf("Done calling v3d_wait_bo()\n");
 
-
-std::string v3d_device_info() {
-	std::stringstream buf;
-
-	if(!_v3d_device_info()) {
-		buf << "Call to _v3d_device_info() failed\n";
-		return buf.str();
-	}
-
-
-	auto &devinfo = s_devinfo;
-
-	buf << "v3d devinfo" << "\n"
-      << "===========" << "\n"
-      << "Version                   : " <<  (int) devinfo.ver                    << "\n"
-	    << "Revision number           : " <<  (int) devinfo.rev                    << "\n"
-			<< "Compatibility rev number  : " <<  (int) devinfo.compat_rev             << "\n"
-	    << "Max # performance counters: " <<  (int) devinfo.max_perfcnt            << "\n"
-	    << "VPM size                  : " <<  (int) devinfo.vpm_size  << " bytes"  << "\n"
-
- 			// NSLC*QUPS from the core's IDENT registers. 
-	    << "Num QPU's                 : " <<  (int) devinfo.qpu_count              << "\n"
-
-	    << "Has accumulators          : " <<  (devinfo.has_accumulators?  "yes":"no")  << "\n"
-	    << "Has reset counter         : " <<  (devinfo.has_reset_counter? "yes":"no")  << "\n"
-
-			// Granularity for the Clipper XY Scaling 
-	    << "Granularity               : " <<  devinfo.clipper_xy_granularity << "\n"
-
-			// WRI: Explanatory gobbledygook:
-      /** The Control List Executor (CLE) pre-fetches V3D_CLE_READAHEAD
-       *  bytes from the Control List buffer. The usage of these last bytes
-       *  should be avoided or the CLE would pre-fetch the data after the
-       *  end of the CL buffer, reporting the kernel "MMU error from client
-       *  CLE".
-       */
-	    << "CLE readahead             : " <<  (int) devinfo.cle_readahead << "\n"
-
-      // Minimum size for a buffer storing the Control List Executor (CLE)
-	    << "CLE buffer min size       : " <<  (int) devinfo.cle_buffer_min_size  << "\n"
-	;
-
-
-
-
-	return buf.str();
+  return ret;
 }
 
 #endif  // QPU_MODE

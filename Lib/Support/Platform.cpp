@@ -314,7 +314,6 @@ bool Platform::compiling_for_vc4() { return instance().m_compiling_for_vc4; }
 bool Platform::compiling_for_vc7() {
   if (instance().m_compiling_for_vc4) return false;  // This override any device selection, due to emulator and interpreter
   return instance().run_vc7();  // This option is way easier
-  // return v3d_device_vc7();
 }
 
 

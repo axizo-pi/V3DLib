@@ -25,10 +25,14 @@
 #define V3D_BUFMGR_H
 
 #include <stdint.h>
-#include "util/u_hash_table.h"
 #include "util/u_inlines.h"
-#include "util/list.h"
 #include "v3d_screen.h"
+#include "util/u_hash_table.h"
+#include "util/list.h"
+
+#ifdef __cplusplus   // WRI added guard
+extern "C" {
+#endif
 
 struct v3d_context;
 
@@ -53,7 +57,7 @@ struct v3d_bo {
          * Whether only our process has a reference to the BO (meaning that
          * it's safe to reuse it in the BO cache).
          */
-        bool private;
+        bool _private;  // WRI added prefix '_', is a C++ keyword
 };
 
 struct v3d_bo *v3d_bo_alloc(struct v3d_screen *screen, uint32_t size,
@@ -79,7 +83,7 @@ v3d_bo_unreference(struct v3d_bo **bo)
         if (!*bo)
                 return;
 
-        if ((*bo)->private) {
+        if ((*bo)->_private) {  // WRI
                 /* Avoid the mutex for private BOs */
                 if (pipe_reference(&(*bo)->reference, NULL))
                         v3d_bo_last_unreference(*bo);
@@ -113,6 +117,10 @@ v3d_bufmgr_destroy(struct pipe_screen *pscreen);
 
 // WRI addition
 void v3d_set_dump_stats(bool val);
+
+#ifdef __cplusplus   // WRI added guard
+}
+#endif
 
 #endif /* V3D_BUFMGR_H */
 

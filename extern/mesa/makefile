@@ -72,16 +72,16 @@ STRUCTURE := $(shell find $(SRCDIR) -type d)
 # Get All Files inside the STRUCTURE Variable
 CODEFILES := $(addsuffix /*,$(STRUCTURE))
 CODEFILES := $(wildcard $(CODEFILES))            
+#$(info codefiles: $(CODEFILES))
 
 # Filter Only Specific Files                                
 SRCFILES := $(filter %.c %.cpp,$(CODEFILES))
 #$(info  src: $(SRCFILES))
 HDRFILES := $(filter %.h,$(CODEFILES))
 OBJFILES := $(subst $(SRCDIR),$(OBJDIR)$(SRC_DIR),$(SRCFILES))
-OBJFILES := $(OBJFILES:%.cpp=%.o)
+#OBJFILES := $(OBJFILES:%.cpp=%.o)
 OBJFILES := $(OBJFILES:%.c=%.o)
-#OBJFILES := $(OBJDIR)/$(SRCFILES:%.c=%.o)
-#$(info  obj: $(OBJFILES))
+$(info  obj: $(OBJFILES))
 
 DEPEND_FILES := $(addprefix $(SRCDIR)/,%.c %.h)
 #$(info depend: $(DEPEND_FILES))

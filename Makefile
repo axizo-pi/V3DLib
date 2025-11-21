@@ -88,7 +88,8 @@ INCLUDE_EXTERN+= \
  -I extern/mesa/build/src
 
 LIB_EXTERN+= \
- -Lobj/mesa/bin -lmesa
+ -Lobj/mesa/bin -lmesa \
+ -l drm                           # Order important! This MUST be after mesa, because mesa has dependencies on drm
 
 
 # TODO: make a script determining with videocore version we're compiling on (6 or 7)

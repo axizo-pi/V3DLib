@@ -1,5 +1,5 @@
-#ifndef _V3D_V3D_h
-#define _V3D_V3D_h
+#ifndef _V3D_V3D_H
+#define _V3D_V3D_H
 
 #ifdef QPU_MODE
 
@@ -26,9 +26,8 @@ bool v3d_wait_bo(BoHandles const &bo_handles, uint64_t timeout_ns);
 bool v3d_alloc(uint32_t size, uint32_t &handle, uint32_t &phyaddr, void **usraddr);
 bool v3d_unmap(uint32_t size, uint32_t handle, void *usraddr);
 
-bool v3d_device_vc7();
 std::string v3d_device_info();
 
 #endif  // QPU_MODE
 
-#endif  // _V3D_V3D_h
+#endif  // _V3D_V3D_H

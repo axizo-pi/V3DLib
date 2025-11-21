@@ -151,7 +151,7 @@ v3d_bo_alloc(struct v3d_screen *screen, uint32_t size, const char *name)
         bo->screen = screen;
         bo->size = size;
         bo->name = name;
-        bo->private = true;
+        bo->_private = true;  // WRI
 
         struct drm_v3d_create_bo create = {
                 .size = size
@@ -284,7 +284,7 @@ v3d_bo_last_unreference_locked_timed(struct v3d_bo *bo, time_t time)
         struct v3d_bo_cache *cache = &screen->bo_cache;
         uint32_t page_index = bo->size / 4096 - 1;
 
-        if (!bo->private) {
+        if (!bo->_private) {  // WRI
                 v3d_bo_free(bo);
                 return;
         }
@@ -351,7 +351,7 @@ v3d_bo_open_handle(struct v3d_screen *screen,
         bo->handle = handle;
         bo->size = size;
         bo->name = "winsys";
-        bo->private = false;
+        bo->_private = false;   // WRI
 
 #if USE_V3D_SIMULATOR
         v3d_simulator_open_from_handle(screen->fd, bo->handle, bo->size);
@@ -441,7 +441,7 @@ v3d_bo_get_dmabuf(struct v3d_bo *bo)
         }
 
         mtx_lock(&bo->screen->bo_handles_mutex);
-        bo->private = false;
+        bo->_private = false;  // WRI
         _mesa_hash_table_insert(bo->screen->bo_handles, (void *)(uintptr_t)bo->handle, bo);
         mtx_unlock(&bo->screen->bo_handles_mutex);
 
@@ -462,7 +462,7 @@ v3d_bo_flink(struct v3d_bo *bo, uint32_t *name)
                 return false;
         }
 
-        bo->private = false;
+        bo->_private = false;  // WRI
         *name = flink.name;
 
         return true;
