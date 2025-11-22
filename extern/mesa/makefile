@@ -117,23 +117,23 @@ clean:
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.c
 	@echo Compiling $<
-	mkdir -p $(@D)
-	$(CC) $(CFLAGS) -c $< -o $@
+	@mkdir -p $(@D)
+	@$(CC) $(CFLAGS) -c $< -o $@
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 	@echo Compiling $<
-	mkdir -p $(@D)
-	g++ $(CFLAGS) -c $< -o $@
+	@mkdir -p $(@D)
+	@g++ $(CFLAGS) -c $< -o $@
 
 $(MESA_LIB): $(OBJFILES)
 	@echo Creating $@
-	mkdir -p $(@D)
+	@mkdir -p $(@D)
 	@ar rcs $@ $^
 
 
 $(MAINDIR)/%.o: main/%.c
 	@echo Compiling $<
-	mkdir -p $(@D)
+	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c $< -o $@
 
 $(BINDIR)/%: $(MAINDIR)/%.o $(MESA_LIB)
