@@ -118,7 +118,7 @@ bool Driver::execute(Code &code, Data *uniforms, uint32_t thread) {
 		thread--;   // This is what vc6 expects
 	}
 
-  st_v3d_submit_csd st = {
+  struct drm_v3d_submit_csd st = {
     {
       workgroup.wg_x << 16,
       workgroup.wg_y << 16,
@@ -133,12 +133,13 @@ bool Driver::execute(Code &code, Data *uniforms, uint32_t thread) {
       unif_phyaddr
     },
 
-		// Not used in the driver
-    {0,0,0,0},
-    (uint64_t) m_bo_handles.data(),
-    (uint32_t) m_bo_handles.size(),
-    .in_sync  = 0,
-    .out_sync = 0
+    .coef            = {0,0,0,0},
+    .bo_handles      = (uint64_t) m_bo_handles.data(),
+    .bo_handle_count = (uint32_t) m_bo_handles.size(),
+    .in_sync         = 0,
+    .out_sync        = 0,
+		.perfmon_id      = 0,
+		.flags           = 0
   };
 
   //warn << "Timeout: " << LibSettings::qpu_timeout();

@@ -21,14 +21,6 @@ using namespace Log;
 
 namespace {
 
-// Derived from linux/include/uapi/drm/drm.h
-#define DRM_IOCTL_BASE   'd'
-#define DRM_COMMAND_BASE 0x40
-#define DRM_V3D_SUBMIT_CSD (DRM_COMMAND_BASE + 0x07)
-
-#define IOCTL_V3D_SUBMIT_CSD _IOW(DRM_IOCTL_BASE, DRM_V3D_SUBMIT_CSD, st_v3d_submit_csd)
-
-
 void log_error(int ret, char const *prefix = "") {
   if (ret == 0) return;
 
@@ -58,65 +50,9 @@ namespace {
 int fd = 0;
 
 
-typedef struct {
-    uint32_t  handle;
-    uint32_t  pad;
-} gem_close;
-
-
-struct st_v3d_wait_bo {
-  uint32_t handle;
-  uint32_t pad;
-  uint64_t timeout_ns;
-};
-
-
-// Derived from linux/include/uapi/drm/drm.h
-#define DRM_GEM_CLOSE    0x09
-
-// Derived from linux/include/uapi/drm/v3d_drm.h
-#define DRM_V3D_WAIT_BO    (DRM_COMMAND_BASE + 0x01)
-#define DRM_V3D_GET_PARAM  (DRM_COMMAND_BASE + 0x04)
-
-#define IOCTL_GEM_CLOSE      _IOW(DRM_IOCTL_BASE, DRM_GEM_CLOSE, gem_close)
-#define IOCTL_V3D_WAIT_BO    _IOWR(DRM_IOCTL_BASE, DRM_V3D_WAIT_BO, st_v3d_wait_bo)
-
-const unsigned V3D_PARAM_V3D_UIFCFG = 0;
-const unsigned V3D_PARAM_V3D_HUB_IDENT1 = 1;
-const unsigned V3D_PARAM_V3D_HUB_IDENT2 = 2;
-const unsigned V3D_PARAM_V3D_HUB_IDENT3 = 3;
-const unsigned V3D_PARAM_V3D_CORE0_IDENT0 = 4;
-const unsigned V3D_PARAM_V3D_CORE0_IDENT1 = 5;
-const unsigned V3D_PARAM_V3D_CORE0_IDENT2 = 6;
-const unsigned V3D_PARAM_SUPPORTS_TFU = 7;
-const unsigned V3D_PARAM_SUPPORTS_CSD = 8;
-
-
 //////////////////////////////////////
 // Support for alloc_intern
 //////////////////////////////////////
-
-typedef struct {
-    uint32_t size   = 0;
-    uint32_t flags  = 0;
-    uint32_t handle = 0;
-    uint32_t offset = 0;
-} drm_v3d_create_bo;
-
-
-typedef struct {
-    uint32_t handle = 0;
-    uint32_t flags  = 0;
-    uint64_t offset = 0;
-} drm_v3d_mmap_bo;
-
-
-#define DRM_V3D_CREATE_BO  (DRM_COMMAND_BASE + 0x02)
-#define DRM_V3D_MMAP_BO    (DRM_COMMAND_BASE + 0x03)
-
-#define IOCTL_V3D_CREATE_BO  _IOWR(DRM_IOCTL_BASE, DRM_V3D_CREATE_BO, drm_v3d_create_bo)
-#define IOCTL_V3D_MMAP_BO    _IOWR(DRM_IOCTL_BASE, DRM_V3D_MMAP_BO, drm_v3d_mmap_bo)
-
 
 /**
  * Allocate and map a buffer object
@@ -167,7 +103,7 @@ bool alloc_intern(
   create_bo.flags = 0;
   {
     // Returns handle and offset in create_bo
-    int result = ioctl(fd, IOCTL_V3D_CREATE_BO, &create_bo);
+    int result = ioctl(fd, DRM_IOCTL_V3D_CREATE_BO, &create_bo);
     if (show_perror) {
       log_error(result, "alloc_intern() create bo");  // `show_perror` intentionally only used here
     }
@@ -186,7 +122,7 @@ bool alloc_intern(
   mmap_bo.flags = 0;
   {
     // Returns offset to use for mmap() in mmap_bo
-    int result = ioctl(fd, IOCTL_V3D_MMAP_BO, &mmap_bo);
+    int result = ioctl(fd, DRM_IOCTL_V3D_MMAP_BO, &mmap_bo);
     log_error(result, "alloc_intern() mmap bo");
     if (result != 0) return false;
   }
@@ -211,13 +147,13 @@ bool v3d_wait_bo(uint32_t handle, uint64_t timeout_ns) {
   assert(handle != 0);
   assert(timeout_ns > 0);
 
-  st_v3d_wait_bo st = {
+  drm_v3d_wait_bo st = {
     handle,
     0,
     timeout_ns,
   };
 
-  int ret = ioctl(fd, IOCTL_V3D_WAIT_BO, &st);
+  int ret = ioctl(fd, DRM_IOCTL_V3D_WAIT_BO, &st);
   log_error(ret, "v3d_wait_bo()");
   assertq(ret == 0, "v3d_wait_bo(): call iotctl failed");
   return (ret == 0);
@@ -247,10 +183,15 @@ bool v3d_unmap(uint32_t size, uint32_t handle,  void *usraddr) {
     return false;
   }
 
-  gem_close cl;
+  drm_gem_close cl;
   cl.handle = handle;
-  return (ioctl(fd, IOCTL_GEM_CLOSE, &cl) == 0);
+  return (ioctl(fd, DRM_IOCTL_GEM_CLOSE, &cl) == 0);
 }
+
+
+int  get_fd() { return fd; }
+void set_fd(int val) { fd = val; }
+bool fd_is_open() { return get_fd() > 0; }
 
 
 /**
@@ -292,11 +233,6 @@ int open_card(char const *card) {
 
   return fd;
 }
-
-
-int  get_fd() { return fd; }
-void set_fd(int val) { fd = val; }
-bool fd_is_open() { return get_fd() > 0; }
 
 
 #else  //  USE_MESA_BUFMGR == 1
@@ -600,8 +536,10 @@ bool v3d_unmap(uint32_t size, uint32_t handle, void *usraddr) {
 // Common calls
 ////////////////////////////////////////////////////////
 
-int v3d_submit_csd(st_v3d_submit_csd &st) {
-  int ret = ioctl(get_fd(), IOCTL_V3D_SUBMIT_CSD, &st);
+//int v3d_submit_csd(st_v3d_submit_csd &st) {
+int v3d_submit_csd(drm_v3d_submit_csd &st) {
+  //`int ret = ioctl(get_fd(), IOCTL_V3D_SUBMIT_CSD, &st);
+  int ret = ioctl(get_fd(), DRM_IOCTL_V3D_SUBMIT_CSD, &st);
   log_error(ret, "v3d_submit_csd()");
   return ret;
 }
