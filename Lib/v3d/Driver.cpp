@@ -94,11 +94,11 @@ uint32_t roundup(uint32_t n, uint32_t d) {
  */
 bool Driver::execute(Code &code, Data *uniforms, uint32_t thread) {
   uint32_t code_phyaddr = code.getAddress();
+	assert((code_phyaddr & 0x111) == 0);  // Check if there is space for the special flags
 
   // Technically, you are not required to pass in uniforms.
   // If there are none, set the address to zero.
   uint32_t unif_phyaddr = (uniforms == nullptr)?0u:uniforms->getAddress();
-	assert((code_phyaddr & 0x111) == 0);  // Check if there is space for the special flags
   assertq(m_bo_handles.size() >= 1, "v3d execute: Expecting at least one buffer object on execution");  // See Note 1
 
 	// Special flags
