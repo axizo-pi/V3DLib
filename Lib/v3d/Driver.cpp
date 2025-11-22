@@ -43,6 +43,8 @@
 #include "v3d.h"
 #include "LibSettings.h"
 
+using namespace Log;
+
 namespace V3DLib {
 namespace v3d {
 
@@ -94,14 +96,24 @@ bool Driver::execute(Code &code, Data *uniforms, uint32_t thread) {
   // Technically, you are not required to pass in uniforms.
   // If there are none, set the address to zero.
   uint32_t unif_phyaddr = (uniforms == nullptr)?0u:uniforms->getAddress();
-
+	assert((unif_phyaddr & 0x111) == 0);  // Check if there is space for the special flags
   assertq(m_bo_handles.size() >= 1, "v3d execute: Expecting at least one buffer object on execution");  // See Note 1
+
+	// Special flags
+  bool propagate_nan = false;
+	bool single_seg    = false;
+	bool threading     = false;
+
+	uint32_t special_flags = 0;
+	if (propagate_nan) special_flags += (1 << 2);
+	if (single_seg)    special_flags += (1 << 1);
+	if (threading)     special_flags += 1;
 
   WorkGroup workgroup;
   uint32_t wgs_per_sg = 16;
 
 	if (!Platform::compiling_for_vc7()) {
-		thread--;   // For some reason, this is required for vc6
+		thread--;   // This is what vc6 expects
 	}
 
   st_v3d_submit_csd st = {
@@ -110,22 +122,24 @@ bool Driver::execute(Code &code, Data *uniforms, uint32_t thread) {
       workgroup.wg_y << 16,
       workgroup.wg_z << 16,
       (
-			 ((roundup(wgs_per_sg * workgroup.wg_size(), 16u) - 1) << 12) |
-        (wgs_per_sg << 8) |
-        (workgroup.wg_size() & 0xff)
+			 ((roundup(wgs_per_sg * workgroup.wg_size(), 16u) - 1) << 12) | (wgs_per_sg << 8) | (workgroup.wg_size() & 0xff)
       ),
       thread,
-      code_phyaddr,         // Shader address, pnan, singleseg, threading
+
+			// Shader address, pnan, singleseg, threading
+      code_phyaddr | special_flags,
       unif_phyaddr
     },
+
 		// Not used in the driver
     {0,0,0,0},
     (uint64_t) m_bo_handles.data(),
     (uint32_t) m_bo_handles.size(),
-    0,   // in_sync
-    0    // out_sync
+    .in_sync  = 0,
+    .out_sync = 0
   };
 
+  //warn << "Timeout: " << LibSettings::qpu_timeout();
   uint64_t timeout_ns = 1000000000llu * LibSettings::qpu_timeout();
 
   bool ret = (0 == v3d_submit_csd(st));

@@ -390,7 +390,7 @@ class BOList : public std::vector<struct v3d_bo *> {
 public:
 	~BOList();
 
-	uint32_t       add_handle(uint32_t size);
+	uint32_t       add_handle(uint32_t size, bool warn_on_error = false);
 	struct v3d_bo *by_handle(uint32_t handle) const;
 	bool           delete_by_handle(uint32_t handle);
 
@@ -419,10 +419,11 @@ BOList::~BOList() {
 
 	clear();
 
-	assert(s_screen_initialized());
-
-	// Following call takes care of unmap. See v3d_bo_free() in v3d_bufmgr.c
-	v3d_bufmgr_destroy_w(s_screen);  // This method is one of the last things called on exit, reasonable place to do this
+	if (s_screen_initialized()) {
+		// This method is one of the last things called on exit, reasonable place to clean up screen 
+		// Following call takes care of unmap. See v3d_bo_free() in v3d_bufmgr.c
+		v3d_bufmgr_destroy_w(s_screen);
+	}
 
 	//v3d_set_dump_stats(false);
 }
@@ -434,24 +435,24 @@ BOList::~BOList() {
  *
  * @return handle of new bo, 0 if fail
  */
-uint32_t BOList::add_handle(uint32_t size) {
+uint32_t BOList::add_handle(uint32_t size, bool warn_on_error) {
 	assert(s_screen_initialized());
 
 	struct v3d_bo *bo = v3d_bo_alloc(s_screen, size, "bo_name");
 
 	if (bo == nullptr) {
-		warn << "BOList::add_handle: alloc failed";
+		if (warn_on_error) {
+			warn << "BOList::add_handle: alloc failed";
+		}
 		return 0;
 	}
 
 	// Pedantic: the returned bo might come from the cache in mesa bufmgr.
   // It might have been mapped already.
 	//
-	// I suspect that the bo should be unmapped when unreferenced. mesa bufmgr
-	// might do this internally.
-	//
+	// mesa bufmgr unmaps when it sees fit.
 	// Warn me if this happens.
-	assert(bo->map == nullptr);
+	if (bo->map != nullptr) warn << "BOList::add_handle: already mapped ";
 
 	push_back(bo);
 	return bo->handle;
@@ -511,7 +512,7 @@ int open_card(char const *card) {
   const uint32_t ALLOC_SIZE = 16;
 
   // Place a call on the card see if it works
-  uint32_t handle = s_bolist.add_handle(ALLOC_SIZE);
+  uint32_t handle = s_bolist.add_handle(ALLOC_SIZE, false);
 
   // Clean up bo
   if (handle != 0) {
@@ -521,7 +522,7 @@ int open_card(char const *card) {
     fd_close(fd);
 		set_fd(0);
     fd = -1;
-    cerr << "open_card(): alloc test FAILED for card " << card;
+    //cerr << "open_card(): alloc test FAILED for card " << card;
   }
 
   return fd;
@@ -593,13 +594,12 @@ bool v3d_unmap(uint32_t size, uint32_t handle, void *usraddr) {
 
 
 ////////////////////////////////////////////////////////
-// Common call
+// Common calls
 ////////////////////////////////////////////////////////
 
 int v3d_submit_csd(st_v3d_submit_csd &st) {
   int ret = ioctl(get_fd(), IOCTL_V3D_SUBMIT_CSD, &st);
   log_error(ret, "v3d_submit_csd()");
-  assert(ret == 0);
   return ret;
 }
 
@@ -623,11 +623,7 @@ bool v3d_open() {
   int fd1 = open_card("/dev/dri/card1");
 
   if (fd0 <= 0 && fd1 <= 0) {
-    std::string msg = "Could not open v3d device";
-
-    if (fd0 < 0 || fd1 < 0) {
-      msg << ", did you forget 'sudo'?";
-    }
+    std::string msg = "Could not open v3d device, did you forget 'sudo'?";
     assertq(false, msg);
     return false;
   }

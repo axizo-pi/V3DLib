@@ -167,7 +167,7 @@ v3d_bo_alloc(struct v3d_screen *screen, uint32_t size, const char *name)
                         goto retry;
                 }
 
-                mesa_loge("Failed to allocate device memory for BO\n");
+                //mesa_loge("Failed to allocate device memory for BO\n");  // WRI
                 free(bo);
                 return NULL;
         }
