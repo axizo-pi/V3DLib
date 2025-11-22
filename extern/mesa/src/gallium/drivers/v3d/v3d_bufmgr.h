@@ -115,6 +115,9 @@ v3d_bo_wait(struct v3d_bo *bo, uint64_t timeout_ns, const char *reason);
 void
 v3d_bufmgr_destroy(struct pipe_screen *pscreen);
 
+// WRI
+void v3d_bufmgr_destroy_w(struct v3d_screen *screen);
+
 // WRI addition
 void v3d_set_dump_stats(bool val);
 

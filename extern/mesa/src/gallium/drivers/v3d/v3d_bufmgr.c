@@ -567,3 +567,19 @@ v3d_bufmgr_destroy(struct pipe_screen *pscreen)
                 v3d_bo_dump_stats(screen);
         }
 }
+
+
+/**
+ * WRI Addition to get the param right
+ * TODO: examine if original call can be remove
+ */
+void v3d_bufmgr_destroy_w(struct v3d_screen *screen) {
+        struct v3d_bo_cache *cache = &screen->bo_cache;
+
+        v3d_bo_cache_free_all(cache);
+
+        if (dump_stats) {
+                fprintf(stderr, "BO stats after screen destroy:\n");
+                v3d_bo_dump_stats(screen);
+        }
+}

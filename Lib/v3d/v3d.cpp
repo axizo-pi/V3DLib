@@ -14,6 +14,7 @@
 #include "broadcom/common/v3d_device_info.h"
 #include <cstring>    // errno, strerror()
 #include <sys/mman.h>
+#include "util/ralloc.h"
 
 using namespace Log;
 
@@ -42,6 +43,53 @@ void fd_close(int fd) {
     close(fd);
   }
 }
+
+}  // anon namespace
+
+#if USE_MESA_BUFMGR == 0
+
+#include "instr/v3d_api.h"
+#include <cstddef>    // NULL
+#include <unistd.h>   // close(), sysconf()
+#include <cassert>
+
+namespace {
+
+int fd = 0;
+
+
+typedef struct {
+    uint32_t  handle;
+    uint32_t  pad;
+} gem_close;
+
+
+struct st_v3d_wait_bo {
+  uint32_t handle;
+  uint32_t pad;
+  uint64_t timeout_ns;
+};
+
+
+// Derived from linux/include/uapi/drm/drm.h
+#define DRM_GEM_CLOSE    0x09
+
+// Derived from linux/include/uapi/drm/v3d_drm.h
+#define DRM_V3D_WAIT_BO    (DRM_COMMAND_BASE + 0x01)
+#define DRM_V3D_GET_PARAM  (DRM_COMMAND_BASE + 0x04)
+
+#define IOCTL_GEM_CLOSE      _IOW(DRM_IOCTL_BASE, DRM_GEM_CLOSE, gem_close)
+#define IOCTL_V3D_WAIT_BO    _IOWR(DRM_IOCTL_BASE, DRM_V3D_WAIT_BO, st_v3d_wait_bo)
+
+const unsigned V3D_PARAM_V3D_UIFCFG = 0;
+const unsigned V3D_PARAM_V3D_HUB_IDENT1 = 1;
+const unsigned V3D_PARAM_V3D_HUB_IDENT2 = 2;
+const unsigned V3D_PARAM_V3D_HUB_IDENT3 = 3;
+const unsigned V3D_PARAM_V3D_CORE0_IDENT0 = 4;
+const unsigned V3D_PARAM_V3D_CORE0_IDENT1 = 5;
+const unsigned V3D_PARAM_V3D_CORE0_IDENT2 = 6;
+const unsigned V3D_PARAM_SUPPORTS_TFU = 7;
+const unsigned V3D_PARAM_SUPPORTS_CSD = 8;
 
 
 //////////////////////////////////////
@@ -158,53 +206,6 @@ bool alloc_intern(
   return true;
 }
 
-}  // anon namespace
-
-#if USE_MESA_BUFMGR == 0
-
-#include "instr/v3d_api.h"
-#include <cassert>
-#include <cstddef>    // NULL
-#include <unistd.h>   // close(), sysconf()
-
-namespace {
-
-int fd = 0;
-
-
-typedef struct {
-    uint32_t  handle;
-    uint32_t  pad;
-} gem_close;
-
-
-struct st_v3d_wait_bo {
-  uint32_t handle;
-  uint32_t pad;
-  uint64_t timeout_ns;
-};
-
-
-// Derived from linux/include/uapi/drm/drm.h
-#define DRM_GEM_CLOSE    0x09
-
-// Derived from linux/include/uapi/drm/v3d_drm.h
-#define DRM_V3D_WAIT_BO    (DRM_COMMAND_BASE + 0x01)
-#define DRM_V3D_GET_PARAM  (DRM_COMMAND_BASE + 0x04)
-
-#define IOCTL_GEM_CLOSE      _IOW(DRM_IOCTL_BASE, DRM_GEM_CLOSE, gem_close)
-#define IOCTL_V3D_WAIT_BO    _IOWR(DRM_IOCTL_BASE, DRM_V3D_WAIT_BO, st_v3d_wait_bo)
-
-const unsigned V3D_PARAM_V3D_UIFCFG = 0;
-const unsigned V3D_PARAM_V3D_HUB_IDENT1 = 1;
-const unsigned V3D_PARAM_V3D_HUB_IDENT2 = 2;
-const unsigned V3D_PARAM_V3D_HUB_IDENT3 = 3;
-const unsigned V3D_PARAM_V3D_CORE0_IDENT0 = 4;
-const unsigned V3D_PARAM_V3D_CORE0_IDENT1 = 5;
-const unsigned V3D_PARAM_V3D_CORE0_IDENT2 = 6;
-const unsigned V3D_PARAM_SUPPORTS_TFU = 7;
-const unsigned V3D_PARAM_SUPPORTS_CSD = 8;
-
 
 bool v3d_wait_bo(uint32_t handle, uint64_t timeout_ns) {
   assert(handle != 0);
@@ -232,7 +233,7 @@ bool v3d_alloc(uint32_t size, uint32_t &handle, uint32_t &phyaddr, void **usradd
   assert(phyaddr == 0);
   assert(*usraddr == nullptr);
 
-  return  alloc_intern(fd, size, handle, phyaddr, usraddr);
+  return alloc_intern(fd, size, handle, phyaddr, usraddr);
 }
 
 
@@ -251,135 +252,6 @@ bool v3d_unmap(uint32_t size, uint32_t handle,  void *usraddr) {
   return (ioctl(fd, IOCTL_GEM_CLOSE, &cl) == 0);
 }
 
-int  get_fd() { return fd; }
-void set_fd(int val) { fd = val; }
-
-
-#else  //  USE_MESA_BUFMGR == 1
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-
-
-#include "gallium/drivers/v3d/v3d_bufmgr.h"  // For init s_screen
-
-
-#pragma GCC diagnostic pop
-
-namespace {
-
-struct v3d_screen s_screen = {
-        //struct pipe_screen base;
-        //.renderonly = nullptr,  //  error: ‘v3d_screen’ has no non-static data member named ‘renderonly’
-        .fd = 0,
-        .name = "s_screen",
-        .perfcnt = nullptr,
-        //struct slab_parent_pool transfer_pool;
-
-        .bo_cache = {
-                //struct list_head time_list;
-                .size_list = nullptr,
-                .size_list_size = 0
-                //mtx_t lock;
-        },
-
-        .compiler = nullptr,
-        .bo_handles = nullptr,
-        //mtx_t bo_handles_mutex;
-        .bo_size = 0,
-        .bo_count = 0,
-        //uint32_t prim_types;
-
-        .has_csd = false,
-        .has_cache_flush = false,
-        .has_perfmon = false,
-        .nonmsaa_texture_size_limit = false,
-        .has_cpu_queue = false,
-        .has_multisync = false,
-};
-
-
-}  // anon namespace
-
-
-namespace {
-
-class BOList : public std::vector<struct v3d_bo *> {
-public:
-	~BOList();
-
-	struct v3d_bo *by_handle(uint32_t handle);
-};
-
-
-BOList::~BOList() {
-	assert("dtor BOList TODO");
-}
-
-
-struct v3d_bo *BOList::by_handle(uint32_t handle) {
-	for (auto ptr: *this) {
-		if (ptr->handle == handle) return ptr;
-	}
-
-	assert("by_handle: ptr not found");
-
-	return nullptr;
-}
-
-BOList s_bolist;
-
-}  // anon namespace
-
-
-bool v3d_wait_bo(uint32_t handle, uint64_t timeout_ns) {
-  assert(handle != 0);
-  assert(timeout_ns > 0);
-
-	struct v3d_bo *bo = s_bolist.by_handle(handle);
-	assert(bo != nullptr);
-
-	const char *reason = nullptr;
-	bool ret = v3d_bo_wait(bo, timeout_ns, reason);
-
-	if (!ret) {
-		cerr << "v3d_bo_wait failed. Reason: " << reason;
-	}
-
-	return ret;
-}
-
-bool v3d_alloc(uint32_t size, uint32_t &handle, uint32_t &phyaddr, void **usraddr) {
-  assert(size > 0);
-  assert(handle == 0);
-  assert(phyaddr == 0);
-  assert(*usraddr == nullptr);
-	v3d_set_dump_stats(true);
-
-	struct v3d_bo *bo_ptr = v3d_bo_alloc(&s_screen, size, "v3d_alloc some name");
-	assert(bo_ptr != nullptr);
-	s_bolist.push_back(bo_ptr);
-
-	handle   = bo_ptr->handle;
-	phyaddr =  bo_ptr->offset;
-	assert("Deal with usraddr!");
-
-	v3d_set_dump_stats(false);
-	return true;
-}
-
-
-bool v3d_unmap(uint32_t size, uint32_t handle, void *usraddr) {
-	assertq(false, "v3d_unmap TODO");
-	return false;
-}
-
-int  get_fd() { return s_screen.fd; }
-void set_fd(int val) { s_screen.fd = val; }
-
-#endif // USE_MESA_BUFMGR
-
-namespace {
 
 /**
  * @return  > 0 if call succeeded,
@@ -398,7 +270,7 @@ int open_card(char const *card) {
   //
   const uint32_t ALLOC_SIZE = 16;
 
-  // Place a call on ithe card see if it works
+  // Place a call on the card see if it works
   uint32_t handle = 0;
   uint32_t phyaddr = 0;
   void *usraddr = nullptr;
@@ -421,8 +293,303 @@ int open_card(char const *card) {
   return fd;
 }
 
+
+int  get_fd() { return fd; }
+void set_fd(int val) { fd = val; }
+bool fd_is_open() { return get_fd() > 0; }
+
+
+#else  //  USE_MESA_BUFMGR == 1
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+
+
+#include "gallium/drivers/v3d/v3d_bufmgr.h"  // For init s_screen
+
+
+#pragma GCC diagnostic pop
+
+namespace {
+
+struct v3d_screen screen_init = {
+        //struct pipe_screen base;
+        //.renderonly = nullptr,  //  error: ‘v3d_screen’ has no non-static data member named ‘renderonly’
+        .fd = 0,
+        .name = "s_screen",
+        .perfcnt = nullptr,
+        //struct slab_parent_pool transfer_pool;
+
+        .bo_cache = {
+                .size_list = nullptr,
+                .size_list_size = 0
+                //mtx_t lock
+				},
+
+        .compiler = nullptr,
+        .bo_handles = nullptr,
+        //mtx_t bo_handles_mutex;
+        .bo_size = 0,
+        .bo_count = 0,
+        //uint32_t prim_types;
+
+        .has_csd = false,
+        .has_cache_flush = false,
+        .has_perfmon = false,
+        .nonmsaa_texture_size_limit = false,
+        .has_cpu_queue = false,
+        .has_multisync = false,
+};
+
+
+struct v3d_screen *s_screen = nullptr; 
+
+
+void s_screen_init() {
+	s_screen = (struct v3d_screen *) ralloc_size(nullptr, sizeof(struct v3d_screen));
+	assert(s_screen != nullptr);	
+
+	memcpy( (void *) s_screen, &screen_init, sizeof(struct v3d_screen));
+
+	list_inithead(&(s_screen->bo_cache.time_list));
+
+	// NOTE: Not cleaned up
+	struct list_head *head = (struct list_head *) ralloc_size(nullptr, sizeof(struct list_head));
+	list_inithead(head);
+  s_screen->bo_cache.size_list = head;
+}
+
+
+bool s_screen_initialized() {
+  return (s_screen != nullptr);
+  // return s_screen.bo_cache.size_list != nullptr;
+}
+
+
 }  // anon namespace
 
+
+int  get_fd() {
+	if (s_screen == nullptr) return 0;
+	return s_screen->fd;
+}
+
+
+void set_fd(int val) {
+	assert(s_screen != nullptr);	
+	s_screen->fd = val;
+}
+
+
+bool fd_is_open() { return get_fd() > 0; }
+
+
+namespace {
+
+class BOList : public std::vector<struct v3d_bo *> {
+public:
+	~BOList();
+
+	uint32_t       add_handle(uint32_t size);
+	struct v3d_bo *by_handle(uint32_t handle) const;
+	bool           delete_by_handle(uint32_t handle);
+
+private:
+	void unreference(struct v3d_bo *ptr);
+};
+
+
+void BOList::unreference(struct v3d_bo *ptr) {
+	v3d_bo_unreference(&ptr);
+	FREE(ptr);
+}
+
+
+/**
+ * Confirmed: called on program exit
+ */
+BOList::~BOList() {
+	//warn << "~BOList() called";
+	//v3d_set_dump_stats(true);
+
+	// Delete all present items
+	for (auto ptr: *this) {
+		unreference(ptr);
+	}
+
+	clear();
+
+	assert(s_screen_initialized());
+
+	// Following call takes care of unmap. See v3d_bo_free() in v3d_bufmgr.c
+	v3d_bufmgr_destroy_w(s_screen);  // This method is one of the last things called on exit, reasonable place to do this
+
+	//v3d_set_dump_stats(false);
+}
+
+
+/**
+ * bo should not be mapped here, that should happen when the program actually
+ * wants to use a bo.
+ *
+ * @return handle of new bo, 0 if fail
+ */
+uint32_t BOList::add_handle(uint32_t size) {
+	assert(s_screen_initialized());
+
+	struct v3d_bo *bo = v3d_bo_alloc(s_screen, size, "bo_name");
+
+	if (bo == nullptr) {
+		warn << "BOList::add_handle: alloc failed";
+		return 0;
+	}
+
+	// Pedantic: the returned bo might come from the cache in mesa bufmgr.
+  // It might have been mapped already.
+	//
+	// I suspect that the bo should be unmapped when unreferenced. mesa bufmgr
+	// might do this internally.
+	//
+	// Warn me if this happens.
+	assert(bo->map == nullptr);
+
+	push_back(bo);
+	return bo->handle;
+}
+
+
+struct v3d_bo *BOList::by_handle(uint32_t handle) const {
+
+	for (auto ptr: *this) {
+		if (ptr->handle == handle) return ptr;
+	}
+
+	assertq(false, "by_handle: ptr not found");
+
+	return nullptr;
+}
+
+
+bool BOList::delete_by_handle(uint32_t handle) {
+
+	// Find index of given handle
+	int index = -1;
+	for (int i = 0; i < (int) size(); ++i) {
+		if (at(i)->handle == handle) {
+			index = i;
+			break;
+		}
+	}
+
+	if (index == -1) return false;
+
+	auto ptr = at(index);
+	unreference(ptr);
+	erase(begin() + index);
+	return true;
+}
+
+BOList s_bolist;
+
+
+/**
+ * @return  > 0 if call succeeded,
+ *            0 if call failed,
+ *           -1 if call failed and likely due to sudo
+ */
+int open_card(char const *card) {
+	s_screen_init();  // First thing that is called, good place to init
+
+  int fd = open(card , O_RDWR);  // This works without sudo
+  if (fd == 0) return 0;
+	set_fd(fd);  // NOTE: global fd set here, required by logic but not kosher
+
+  //
+  // Perform an operation on the device: allocate 16 bytes of memory.
+  // The 'wrong' card will fail here
+  //
+  const uint32_t ALLOC_SIZE = 16;
+
+  // Place a call on the card see if it works
+  uint32_t handle = s_bolist.add_handle(ALLOC_SIZE);
+
+  // Clean up bo
+  if (handle != 0) {
+  	bool ret = s_bolist.delete_by_handle(handle);
+		assert(ret);
+  } else {
+    fd_close(fd);
+		set_fd(0);
+    fd = -1;
+    cerr << "open_card(): alloc test FAILED for card " << card;
+  }
+
+  return fd;
+}
+
+}  // anon namespace
+
+
+bool v3d_wait_bo(uint32_t handle, uint64_t timeout_ns) {
+  assert(handle != 0);
+  assert(timeout_ns > 0);
+
+	struct v3d_bo *bo = s_bolist.by_handle(handle);
+	assert(bo != nullptr);
+
+	const char *reason = nullptr;
+	bool ret = v3d_bo_wait(bo, timeout_ns, reason);
+
+	if (!ret) {
+		cerr << "v3d_bo_wait failed. Reason: " << reason;
+	}
+
+	return ret;
+}
+
+
+bool v3d_alloc(uint32_t size, uint32_t &out_handle, uint32_t &phyaddr, void **usraddr) {
+	assert(fd_is_open());
+  assert(size > 0);
+  assert(out_handle == 0);
+  assert(phyaddr == 0);
+  assert(*usraddr == nullptr);
+	//v3d_set_dump_stats(true);
+
+	uint32_t handle = s_bolist.add_handle(size); 
+	assert(handle > 0);
+
+	auto bo = s_bolist.by_handle(handle);
+	assert(bo != nullptr);
+
+	// Call map to get the user address
+	auto map = v3d_bo_map(bo);  // sets member map in bo
+	assert(map != nullptr);
+
+	out_handle = handle;
+	phyaddr    = bo->offset;
+	*usraddr   = bo->map;
+
+	//v3d_set_dump_stats(false);
+	return true;
+}
+
+
+/**
+ * No need to explicitly unmap, mesa lib deals with it.
+ * It's kind of complicated to do it explicitly due to internal bo caching in mesa v3d_bufmgr.c
+ * Not dealing with this.
+ */ 
+bool v3d_unmap(uint32_t size, uint32_t handle, void *usraddr) {
+	assert(usraddr != nullptr);
+
+	// bo may already have been removed, let it happen
+	s_bolist.delete_by_handle(handle);
+
+	return true;
+}
+
+#endif // USE_MESA_BUFMGR
 
 
 ////////////////////////////////////////////////////////
@@ -473,9 +640,13 @@ bool v3d_open() {
 
 
 /**
+ * Not called anywhere
+ * TODO: Check if this is OK
+ *
  * @return true if close executed, false if already closed
  */
 bool v3d_close() {
+	breakpoint;
 	int fd = get_fd();
   if (fd == 0) { return false; }
 
@@ -497,10 +668,10 @@ bool v3d_wait_bo(BoHandles const &bo_handles, uint64_t timeout_ns) {
 
   for (auto handle : bo_handles) {
     if (!v3d_wait_bo(handle, timeout_ns)) { 
+			breakpoint;
       ret = false;
     }
   }
-  //printf("Done calling v3d_wait_bo()\n");
 
   return ret;
 }

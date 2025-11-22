@@ -81,7 +81,7 @@ HDRFILES := $(filter %.h,$(CODEFILES))
 OBJFILES := $(subst $(SRCDIR),$(OBJDIR)$(SRC_DIR),$(SRCFILES))
 #OBJFILES := $(OBJFILES:%.cpp=%.o)
 OBJFILES := $(OBJFILES:%.c=%.o)
-$(info  obj: $(OBJFILES))
+#$(info  obj: $(OBJFILES))
 
 DEPEND_FILES := $(addprefix $(SRCDIR)/,%.c %.h)
 #$(info depend: $(DEPEND_FILES))

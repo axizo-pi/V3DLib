@@ -20,7 +20,6 @@ BufferObject::~BufferObject() {
  */
 void BufferObject::alloc_mem(uint32_t size_in_bytes) {
 	//debug("Called BufferObject::alloc_mem()");
-  assertq(!v3d_open(), "Device already open");
   assert(handle == 0);
 
   void    *tmp_addr = nullptr;
@@ -40,19 +39,15 @@ void BufferObject::alloc_mem(uint32_t size_in_bytes) {
 }
 
 
+/**
+ * TODO: See if we can get rid of this. mesa lib handles unmap
+ */
 void BufferObject::dealloc_mem() {
   if (arm_base != nullptr) {
     assert(size() > 0);
     assert(handle > 0);
 
-    // Shouldn't allocs be handled in reverse order here???
-    // TODO: check
-
-    if (!v3d_unmap(size(), handle, arm_base)) {
-      assert(false);
-    }
-    //debug("v3d_unmap() called");
-
+    v3d_unmap(size(), handle, arm_base);
     clear();
     handle = 0;
     arm_base = nullptr;
