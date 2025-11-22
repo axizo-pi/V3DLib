@@ -21,7 +21,10 @@
 
 DISABLE_COMPILE_TIME_WARNINGS
 
+#ifndef HAVE_ENDIAN_H
 #define HAVE_ENDIAN_H
+#endif
+
 #include "gallium/drivers/vc4/vc4_qpu.h"  // vc4_qpu_disasm()
 
 ENABLE_COMPILE_TIME_WARNINGS

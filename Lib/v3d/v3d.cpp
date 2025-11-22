@@ -15,6 +15,7 @@
 #include <cstring>    // errno, strerror()
 #include <sys/mman.h>
 #include "util/ralloc.h"
+#include <unistd.h>   // close(), sysconf()
 
 using namespace Log;
 
@@ -50,7 +51,6 @@ void fd_close(int fd) {
 
 #include "instr/v3d_api.h"
 #include <cstddef>    // NULL
-#include <unistd.h>   // close(), sysconf()
 #include <cassert>
 
 namespace {
@@ -452,7 +452,7 @@ uint32_t BOList::add_handle(uint32_t size, bool warn_on_error) {
 	//
 	// mesa bufmgr unmaps when it sees fit.
 	// Warn me if this happens.
-	if (bo->map != nullptr) warn << "BOList::add_handle: already mapped ";
+	if (bo->map != nullptr) cdebug << "BOList::add_handle: already mapped ";
 
 	push_back(bo);
 	return bo->handle;
@@ -550,7 +550,10 @@ bool v3d_wait_bo(uint32_t handle, uint64_t timeout_ns) {
 
 
 bool v3d_alloc(uint32_t size, uint32_t &out_handle, uint32_t &phyaddr, void **usraddr) {
+	bool ret = v3d_open();  // ensure open
+	assert(ret);
 	assert(fd_is_open());
+
   assert(size > 0);
   assert(out_handle == 0);
   assert(phyaddr == 0);
@@ -613,9 +616,7 @@ int v3d_submit_csd(st_v3d_submit_csd &st) {
  * @return true if opening succeeded, false otherwise
  */
 bool v3d_open() {
-  if (get_fd() != 0) {
-    return true;  // Already open, all is well
-  }
+  if (fd_is_open()) return true;  // Already open, all is well
 
   // It appears to be a random crap shoot which device card0 and card1 address
   // So we try both, test them and pick the one that works (if any)
