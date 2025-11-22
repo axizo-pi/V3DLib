@@ -74,6 +74,8 @@ uint32_t roundup(uint32_t n, uint32_t d) {
 /**
  * Execute a kernel on v3d hardware
  *
+ * Source: https://github.com/Idein/py-videocore7/blob/dc4f91d34c428f2d64b10de1738b189abfdf98d9/src/_videocore7/driver.py#L134
+ *
  * @param thread number of batches to run
  *
  * @return true if execution went well and no timeout, false otherwise
@@ -96,7 +98,7 @@ bool Driver::execute(Code &code, Data *uniforms, uint32_t thread) {
   // Technically, you are not required to pass in uniforms.
   // If there are none, set the address to zero.
   uint32_t unif_phyaddr = (uniforms == nullptr)?0u:uniforms->getAddress();
-	assert((unif_phyaddr & 0x111) == 0);  // Check if there is space for the special flags
+	assert((code_phyaddr & 0x111) == 0);  // Check if there is space for the special flags
   assertq(m_bo_handles.size() >= 1, "v3d execute: Expecting at least one buffer object on execution");  // See Note 1
 
 	// Special flags

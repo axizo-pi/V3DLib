@@ -15,6 +15,7 @@
 #include <cstring>    // errno, strerror()
 #include <sys/mman.h>
 #include "util/ralloc.h"
+#include <unistd.h>   // close(), sysconf()
 
 using namespace Log;
 
@@ -50,7 +51,6 @@ void fd_close(int fd) {
 
 #include "instr/v3d_api.h"
 #include <cstddef>    // NULL
-#include <unistd.h>   // close(), sysconf()
 #include <cassert>
 
 namespace {
