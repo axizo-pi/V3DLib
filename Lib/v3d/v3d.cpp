@@ -41,6 +41,10 @@ namespace {
 int fd = 0;
 
 
+//////////////////////////////////////
+// Support for alloc_intern
+//////////////////////////////////////
+
 /**
  * Allocate and map a buffer object
  *
@@ -109,7 +113,7 @@ bool alloc_intern(
   mmap_bo.flags = 0;
   {
     // Returns offset to use for mmap() in mmap_bo
-    int result = ioctl(fd, IOCTL_V3D_MMAP_BO, &mmap_bo);
+    int result = ioctl(fd, DRM_IOCTL_V3D_MMAP_BO, &mmap_bo);
 		if (result != 0) {
      	cerr << "alloc_intern() mmap bo: " << strerror(errno);
 			return false;
@@ -135,13 +139,13 @@ bool v3d_wait_bo(uint32_t handle, uint64_t timeout_ns) {
   assert(handle != 0);
   assert(timeout_ns > 0);
 
-  st_v3d_wait_bo st = {
+  drm_v3d_wait_bo st = {
     handle,
     0,
     timeout_ns,
   };
 
-  int ret = ioctl(fd, IOCTL_V3D_WAIT_BO, &st);
+  int ret = ioctl(fd, DRM_IOCTL_V3D_WAIT_BO, &st);
 	if (ret != 0) {
   	cerr << "v3d_wait_bo(): " << strerror(errno); 
 	}
@@ -173,10 +177,15 @@ bool v3d_unmap(uint32_t size, uint32_t handle,  void *usraddr) {
     return false;
   }
 
-  gem_close cl;
+  drm_gem_close cl;
   cl.handle = handle;
-  return (ioctl(fd, IOCTL_GEM_CLOSE, &cl) == 0);
+  return (ioctl(fd, DRM_IOCTL_GEM_CLOSE, &cl) == 0);
 }
+
+
+int  get_fd() { return fd; }
+void set_fd(int val) { fd = val; }
+bool fd_is_open() { return get_fd() > 0; }
 
 
 /**
@@ -218,11 +227,6 @@ int open_card(char const *card) {
 
   return fd;
 }
-
-
-int  get_fd() { return fd; }
-void set_fd(int val) { fd = val; }
-bool fd_is_open() { return get_fd() > 0; }
 
 
 #else  //  USE_MESA_BUFMGR == 1

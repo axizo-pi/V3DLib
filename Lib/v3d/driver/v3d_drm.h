@@ -18,6 +18,8 @@ typedef struct {
   uint32_t bo_handle_count;
   uint32_t in_sync;
   uint32_t out_sync;
+  uint32_t flags;
+  uint32_t perfmon_id;
 } drm_v3d_submit_csd;
 
 
