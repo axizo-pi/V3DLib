@@ -22,9 +22,11 @@ void kernel(Int x_count, Int y_count, Int::Ptr result) {
 	//	Where(count >= 0)
 			count += 1;
 	//	End
+
 		*result = count;
   End
 
+	*result = count;   // This never returns a value???
 }
 
 
@@ -35,10 +37,16 @@ int main(int argc, const char *argv[]) {
   auto k = compile(kernel, settings);
   k.setNumQPUs(settings.num_qpus);
 
-	int x_count = 3000000;
+	// vc7 testing: 
+	//int x_count = 3529475;  // Ultimate limit, works once then fails
+	//int x_count = 3529400;  // Fails intermittently
+	//int x_count = 3529000;  // idem
+	//int x_count = 3520000;  // idem
+	//int x_count = 3500000;  // idem
+	int x_count = 3400000;    // Worked 10x in a row; between values not tested
 	Int::Array result(16);
 
-	k.load(x_count, 1 /*2280*/, &result);
+	k.load(x_count, 1, &result);
 
   Timer timer;
 	k.run();
