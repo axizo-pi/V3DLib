@@ -21,23 +21,6 @@ using namespace Log;
 
 namespace {
 
-// Derived from linux/include/uapi/drm/drm.h
-#define DRM_IOCTL_BASE   'd'
-#define DRM_COMMAND_BASE 0x40
-#define DRM_V3D_SUBMIT_CSD (DRM_COMMAND_BASE + 0x07)
-
-#define IOCTL_V3D_SUBMIT_CSD _IOW(DRM_IOCTL_BASE, DRM_V3D_SUBMIT_CSD, st_v3d_submit_csd)
-
-
-void log_error(int ret, char const *prefix = "") {
-  if (ret == 0) return;
-
-  char buf[256];
-  sprintf(buf, "ERROR %s: %s\n", prefix, strerror(errno));
-  ::error(buf);
-}
-
-
 void fd_close(int fd) {
   if (fd > 0 ) {
     assert(close(fd) >= 0);
@@ -56,66 +39,6 @@ void fd_close(int fd) {
 namespace {
 
 int fd = 0;
-
-
-typedef struct {
-    uint32_t  handle;
-    uint32_t  pad;
-} gem_close;
-
-
-struct st_v3d_wait_bo {
-  uint32_t handle;
-  uint32_t pad;
-  uint64_t timeout_ns;
-};
-
-
-// Derived from linux/include/uapi/drm/drm.h
-#define DRM_GEM_CLOSE    0x09
-
-// Derived from linux/include/uapi/drm/v3d_drm.h
-#define DRM_V3D_WAIT_BO    (DRM_COMMAND_BASE + 0x01)
-#define DRM_V3D_GET_PARAM  (DRM_COMMAND_BASE + 0x04)
-
-#define IOCTL_GEM_CLOSE      _IOW(DRM_IOCTL_BASE, DRM_GEM_CLOSE, gem_close)
-#define IOCTL_V3D_WAIT_BO    _IOWR(DRM_IOCTL_BASE, DRM_V3D_WAIT_BO, st_v3d_wait_bo)
-
-const unsigned V3D_PARAM_V3D_UIFCFG = 0;
-const unsigned V3D_PARAM_V3D_HUB_IDENT1 = 1;
-const unsigned V3D_PARAM_V3D_HUB_IDENT2 = 2;
-const unsigned V3D_PARAM_V3D_HUB_IDENT3 = 3;
-const unsigned V3D_PARAM_V3D_CORE0_IDENT0 = 4;
-const unsigned V3D_PARAM_V3D_CORE0_IDENT1 = 5;
-const unsigned V3D_PARAM_V3D_CORE0_IDENT2 = 6;
-const unsigned V3D_PARAM_SUPPORTS_TFU = 7;
-const unsigned V3D_PARAM_SUPPORTS_CSD = 8;
-
-
-//////////////////////////////////////
-// Support for alloc_intern
-//////////////////////////////////////
-
-typedef struct {
-    uint32_t size   = 0;
-    uint32_t flags  = 0;
-    uint32_t handle = 0;
-    uint32_t offset = 0;
-} drm_v3d_create_bo;
-
-
-typedef struct {
-    uint32_t handle = 0;
-    uint32_t flags  = 0;
-    uint64_t offset = 0;
-} drm_v3d_mmap_bo;
-
-
-#define DRM_V3D_CREATE_BO  (DRM_COMMAND_BASE + 0x02)
-#define DRM_V3D_MMAP_BO    (DRM_COMMAND_BASE + 0x03)
-
-#define IOCTL_V3D_CREATE_BO  _IOWR(DRM_IOCTL_BASE, DRM_V3D_CREATE_BO, drm_v3d_create_bo)
-#define IOCTL_V3D_MMAP_BO    _IOWR(DRM_IOCTL_BASE, DRM_V3D_MMAP_BO, drm_v3d_mmap_bo)
 
 
 /**
@@ -168,8 +91,8 @@ bool alloc_intern(
   {
     // Returns handle and offset in create_bo
     int result = ioctl(fd, IOCTL_V3D_CREATE_BO, &create_bo);
-    if (show_perror) {
-      log_error(result, "alloc_intern() create bo");  // `show_perror` intentionally only used here
+    if (show_perror && result != 0) {                              // `show_perror` intentionally only used here
+      cerr <<  "alloc_intern() create bo: " << strerror(errno); 
     }
 
     if (result != 0) {
@@ -187,15 +110,16 @@ bool alloc_intern(
   {
     // Returns offset to use for mmap() in mmap_bo
     int result = ioctl(fd, IOCTL_V3D_MMAP_BO, &mmap_bo);
-    log_error(result, "alloc_intern() mmap bo");
-    if (result != 0) return false;
+		if (result != 0) {
+     	cerr << "alloc_intern() mmap bo: " << strerror(errno);
+			return false;
+		}
   }
 
   {
     void *result = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, (__off_t) mmap_bo.offset);
     if (result == MAP_FAILED) {
-      log_error(1, "alloc_intern() mmap");
-
+     	cerr << "alloc_intern() mmap: " << strerror(errno); 
       cerr << "mmap() failure, size: " << size << ", offset: " << (int) mmap_bo.offset;
       return false;
     }
@@ -218,7 +142,9 @@ bool v3d_wait_bo(uint32_t handle, uint64_t timeout_ns) {
   };
 
   int ret = ioctl(fd, IOCTL_V3D_WAIT_BO, &st);
-  log_error(ret, "v3d_wait_bo()");
+	if (ret != 0) {
+  	cerr << "v3d_wait_bo(): " << strerror(errno); 
+	}
   assertq(ret == 0, "v3d_wait_bo(): call iotctl failed");
   return (ret == 0);
 }
@@ -600,9 +526,11 @@ bool v3d_unmap(uint32_t size, uint32_t handle, void *usraddr) {
 // Common calls
 ////////////////////////////////////////////////////////
 
-int v3d_submit_csd(st_v3d_submit_csd &st) {
-  int ret = ioctl(get_fd(), IOCTL_V3D_SUBMIT_CSD, &st);
-  log_error(ret, "v3d_submit_csd()");
+int v3d_submit_csd(drm_v3d_submit_csd &st) {
+  int ret = ioctl(get_fd(), DRM_IOCTL_V3D_SUBMIT_CSD, &st);
+	if (ret != 0) {
+  	cerr << "v3d_submit_csd(): " << strerror(errno); 
+	}
   return ret;
 }
 

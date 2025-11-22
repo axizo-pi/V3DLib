@@ -118,7 +118,7 @@ bool Driver::execute(Code &code, Data *uniforms, uint32_t thread) {
 		thread--;   // This is what vc6 expects
 	}
 
-  st_v3d_submit_csd st = {
+  drm_v3d_submit_csd st = {
     {
       workgroup.wg_x << 16,
       workgroup.wg_y << 16,
