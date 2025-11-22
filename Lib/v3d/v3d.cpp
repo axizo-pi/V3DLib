@@ -665,7 +665,6 @@ bool v3d_wait_bo(BoHandles const &bo_handles, uint64_t timeout_ns) {
 
   for (auto handle : bo_handles) {
     if (!v3d_wait_bo(handle, timeout_ns)) { 
-			breakpoint;
       ret = false;
     }
   }

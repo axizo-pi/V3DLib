@@ -23,7 +23,7 @@ void kernel(Int x_count, Int y_count, Int::Ptr result) {
 			count += 1;
 	//	End
 
-		*result = count;
+		//*result = count;
   End
 
 	*result = count;   // This never returns a value???
@@ -46,7 +46,13 @@ int main(int argc, const char *argv[]) {
 	int x_count = 3400000;    // Worked 10x in a row; between values not tested
 	Int::Array result(16);
 
-	k.load(x_count, 1, &result);
+	k.load(x_count, 1, &result); // vc7  with previous comments
+
+  // vc6 testing:
+  // y=100 times out
+  // y=50 ends without a returned reason but timer > 10
+  // y=30 hangs but works after reset
+	//k.load(x_count, 20, &result);
 
   Timer timer;
 	k.run();
