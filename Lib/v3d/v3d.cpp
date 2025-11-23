@@ -5,8 +5,8 @@
 
 #define USE_MESA_BUFMGR 1
 
+#include "Support/basics.h"  // Order important
 #include "v3d.h"
-#include "Support/basics.h"
 #include <sys/ioctl.h>
 #include <stdio.h>
 #include "global/log.h"

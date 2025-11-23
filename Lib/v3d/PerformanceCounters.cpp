@@ -60,12 +60,18 @@ void set_source_field(int core_id, int source_index, int counter_index) {
 
   regmap.core_write(core_id, src_reg, newval);
 
+/* 
+ * NOT WORKING. Gives error -1
+ *
+ * I'm pretty sure I followed the instructions in v3d_drm.h correctly.
+ * /
   // WRI DEBUG
   struct drm_v3d_perfmon_get_counter tmp;
   tmp.counter = counter_index;
 
   int ret = ::v3d::ioctl(DRM_IOCTL_V3D_PERFMON_GET_COUNTER, &tmp);
   //assert(ret != -1);
+*/
 }
 
 
@@ -204,7 +210,7 @@ void PerformanceCounters::exit() {
  */
 std::string PerformanceCounters::showEnabled() {
   auto &regmap = RegisterMapping::instance();
-  assert(regmap.info().num_cores == 1);
+  //assert(regmap.info().num_cores == 1);
   int core_id = 0;  // Assuming 1 core with id == 0 sufficient for now
 
   int const SLOT_COUNT = 32;

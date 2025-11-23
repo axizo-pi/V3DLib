@@ -37,10 +37,9 @@
 //  - 3-5 QPU's return with only reg's 0-5 filled, which QPU's vary
 //
 ///////////////////////////////////////////////////////////////////////////////
-#include <algorithm>  // find()
-#include "Support/debug.h"
 #include "Driver.h"
 #include "v3d.h"
+#include <algorithm>  // find()
 #include "LibSettings.h"
 
 using namespace Log;
