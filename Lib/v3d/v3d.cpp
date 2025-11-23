@@ -14,6 +14,8 @@
 #include <cstring>    // errno, strerror()
 #include <sys/mman.h>
 #include <unistd.h>   // close(), sysconf()
+#include <sys/ioctl.h>
+#include "string.h"  // strerror
 
 using namespace Log;
 
@@ -441,6 +443,19 @@ bool wait_bo(BoHandles const &bo_handles, uint64_t timeout_ns) {
   }
 
   return ret;
+}
+
+
+int ioctl(unsigned cmd, void *param) {
+  int fd = get_fd();
+  assert(fd != 0);
+
+  int ret = ::ioctl(fd, cmd, param);
+  if (ret != 0) {
+    warn << "ioctl failed, error: " << strerror(ret);
+  }
+
+	return ret;
 }
 
 } // namespace v3d

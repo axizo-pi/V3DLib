@@ -19,6 +19,7 @@ bool wait_bo(BoHandles const &bo_handles, uint64_t timeout_ns);
 bool alloc(uint32_t size, uint32_t &handle, uint32_t &phyaddr, void **usraddr);
 bool unmap(uint32_t size, uint32_t handle, void *usraddr);
 int get_fd();
+int ioctl(unsigned cmd, void *param);
 
 }
 

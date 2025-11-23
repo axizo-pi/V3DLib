@@ -8,8 +8,6 @@
 #include "driver/v3d_drm.h"
 #include "v3d.h"
 #include "global/log.h"
-#include <sys/ioctl.h>
-#include "string.h"  // strerror
 
 using namespace Log;
 
@@ -63,16 +61,11 @@ void set_source_field(int core_id, int source_index, int counter_index) {
   regmap.core_write(core_id, src_reg, newval);
 
   // WRI DEBUG
-  int fd = ::v3d::get_fd();
-  assert(fd != 0);
-
   struct drm_v3d_perfmon_get_counter tmp;
   tmp.counter = counter_index;
-  int ret = ioctl(fd, DRM_IOCTL_V3D_PERFMON_GET_COUNTER, &tmp);
-  if (ret != 0) {
-    warn << "ioctl failed, error: " << strerror(ret);
-  }
-  assert(ret != -1);
+
+  int ret = ::v3d::ioctl(DRM_IOCTL_V3D_PERFMON_GET_COUNTER, &tmp);
+  //assert(ret != -1);
 }
 
 
