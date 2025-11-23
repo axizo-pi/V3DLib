@@ -403,7 +403,7 @@ void instr_dump(char *buffer, struct v3d_qpu_instr *instr) {
   if (instr->sig.small_imm_c) strcat(buffer_sig, "small_imm_c ");
   if (instr->sig.small_imm_d) strcat(buffer_sig, "small_imm_d ");
 
-  char buffer_union[1024] = "\0";
+  char buffer_union[4096] = "\0";
   char buffer_alu_add[1024] = "\0";
   char buffer_alu_mul[1024] = "\0";
 

@@ -11,10 +11,8 @@
 #include <stdio.h>
 #include "global/log.h"
 #include <fcntl.h>
-#include "broadcom/common/v3d_device_info.h"
 #include <cstring>    // errno, strerror()
 #include <sys/mman.h>
-#include "util/ralloc.h"
 #include <unistd.h>   // close(), sysconf()
 
 using namespace Log;
@@ -94,7 +92,7 @@ bool alloc_intern(
   create_bo.flags = 0;
   {
     // Returns handle and offset in create_bo
-    int result = ioctl(fd, IOCTL_V3D_CREATE_BO, &create_bo);
+    int result = ioctl(fd, DRM_IOCTL_V3D_CREATE_BO, &create_bo);
     if (show_perror && result != 0) {                              // `show_perror` intentionally only used here
       cerr <<  "alloc_intern() create bo: " << strerror(errno); 
     }
@@ -228,197 +226,25 @@ int open_card(char const *card) {
   return fd;
 }
 
-
 #else  //  USE_MESA_BUFMGR == 1
 
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
+#include "driver/screen.h"
+#include "driver/BOList.h"
 
-
-#include "gallium/drivers/v3d/v3d_bufmgr.h"  // For init s_screen
-
-
-#pragma GCC diagnostic pop
-
-namespace {
-
-struct v3d_screen screen_init = {
-        //struct pipe_screen base;
-        //.renderonly = nullptr,  //  error: ‘v3d_screen’ has no non-static data member named ‘renderonly’
-        .fd = 0,
-        .name = "s_screen",
-        .perfcnt = nullptr,
-        //struct slab_parent_pool transfer_pool;
-
-        .bo_cache = {
-                .size_list = nullptr,
-                .size_list_size = 0
-                //mtx_t lock
-				},
-
-        .compiler = nullptr,
-        .bo_handles = nullptr,
-        //mtx_t bo_handles_mutex;
-        .bo_size = 0,
-        .bo_count = 0,
-        //uint32_t prim_types;
-
-        .has_csd = false,
-        .has_cache_flush = false,
-        .has_perfmon = false,
-        .nonmsaa_texture_size_limit = false,
-        .has_cpu_queue = false,
-        .has_multisync = false,
-};
-
-
-struct v3d_screen *s_screen = nullptr; 
-
-
-void s_screen_init() {
-	s_screen = (struct v3d_screen *) ralloc_size(nullptr, sizeof(struct v3d_screen));
-	assert(s_screen != nullptr);	
-
-	memcpy( (void *) s_screen, &screen_init, sizeof(struct v3d_screen));
-
-	list_inithead(&(s_screen->bo_cache.time_list));
-
-	// NOTE: Not cleaned up
-	struct list_head *head = (struct list_head *) ralloc_size(nullptr, sizeof(struct list_head));
-	list_inithead(head);
-  s_screen->bo_cache.size_list = head;
+int get_fd() {
+	return s_screen::get_fd();
 }
-
-
-bool s_screen_initialized() {
-  return (s_screen != nullptr);
-  // return s_screen.bo_cache.size_list != nullptr;
-}
-
-
-}  // anon namespace
-
-
-int  get_fd() {
-	if (s_screen == nullptr) return 0;
-	return s_screen->fd;
-}
-
 
 void set_fd(int val) {
-	assert(s_screen != nullptr);	
-	s_screen->fd = val;
+	return s_screen::set_fd(val);
 }
 
 
-bool fd_is_open() { return get_fd() > 0; }
-
+bool fd_is_open() {
+	return s_screen::fd_is_open();
+}
 
 namespace {
-
-class BOList : public std::vector<struct v3d_bo *> {
-public:
-	~BOList();
-
-	uint32_t       add_handle(uint32_t size, bool warn_on_error = false);
-	struct v3d_bo *by_handle(uint32_t handle) const;
-	bool           delete_by_handle(uint32_t handle);
-
-private:
-	void unreference(struct v3d_bo *ptr);
-};
-
-
-void BOList::unreference(struct v3d_bo *ptr) {
-	v3d_bo_unreference(&ptr);
-	FREE(ptr);
-}
-
-
-/**
- * Confirmed: called on program exit
- */
-BOList::~BOList() {
-	//warn << "~BOList() called";
-	//v3d_set_dump_stats(true);
-
-	// Delete all present items
-	for (auto ptr: *this) {
-		unreference(ptr);
-	}
-
-	clear();
-
-	if (s_screen_initialized()) {
-		// This method is one of the last things called on exit, reasonable place to clean up screen 
-		// Following call takes care of unmap. See v3d_bo_free() in v3d_bufmgr.c
-		v3d_bufmgr_destroy_w(s_screen);
-	}
-
-	//v3d_set_dump_stats(false);
-}
-
-
-/**
- * bo should not be mapped here, that should happen when the program actually
- * wants to use a bo.
- *
- * @return handle of new bo, 0 if fail
- */
-uint32_t BOList::add_handle(uint32_t size, bool warn_on_error) {
-	assert(s_screen_initialized());
-
-	struct v3d_bo *bo = v3d_bo_alloc(s_screen, size, "bo_name");
-
-	if (bo == nullptr) {
-		if (warn_on_error) {
-			warn << "BOList::add_handle: alloc failed";
-		}
-		return 0;
-	}
-
-	// Pedantic: the returned bo might come from the cache in mesa bufmgr.
-  // It might have been mapped already.
-	//
-	// mesa bufmgr unmaps when it sees fit.
-	// Warn me if this happens.
-	if (bo->map != nullptr) cdebug << "BOList::add_handle: already mapped ";
-
-	push_back(bo);
-	return bo->handle;
-}
-
-
-struct v3d_bo *BOList::by_handle(uint32_t handle) const {
-
-	for (auto ptr: *this) {
-		if (ptr->handle == handle) return ptr;
-	}
-
-	assertq(false, "by_handle: ptr not found");
-
-	return nullptr;
-}
-
-
-bool BOList::delete_by_handle(uint32_t handle) {
-
-	// Find index of given handle
-	int index = -1;
-	for (int i = 0; i < (int) size(); ++i) {
-		if (at(i)->handle == handle) {
-			index = i;
-			break;
-		}
-	}
-
-	if (index == -1) return false;
-
-	auto ptr = at(index);
-	unreference(ptr);
-	erase(begin() + index);
-	return true;
-}
 
 BOList s_bolist;
 
@@ -429,11 +255,11 @@ BOList s_bolist;
  *           -1 if call failed and likely due to sudo
  */
 int open_card(char const *card) {
-	s_screen_init();  // First thing that is called, good place to init
+	s_screen::init();  // First thing that is called, good place to init
 
   int fd = open(card , O_RDWR);  // This works without sudo
   if (fd == 0) return 0;
-	set_fd(fd);  // NOTE: global fd set here, required by logic but not kosher
+	set_fd(fd);
 
   //
   // Perform an operation on the device: allocate 16 bytes of memory.

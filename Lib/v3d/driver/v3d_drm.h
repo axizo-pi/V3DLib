@@ -26,7 +26,7 @@ typedef struct {
 typedef struct {
     uint32_t  handle;
     uint32_t  pad;
-} gem_close;
+} drm_gem_close;
 
 
 typedef struct {
@@ -67,7 +67,7 @@ typedef struct {
 
 #define DRM_GEM_CLOSE    0x09
 
-#define IOCTL_GEM_CLOSE      _IOW(DRM_IOCTL_BASE, DRM_GEM_CLOSE, gem_close)
+#define DRM_IOCTL_GEM_CLOSE      _IOW(DRM_IOCTL_BASE, DRM_GEM_CLOSE, drm_gem_close)
 
 
 // Following not in v3d_drm.h - I don't think they are used

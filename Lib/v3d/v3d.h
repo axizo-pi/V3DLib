@@ -6,7 +6,7 @@
 #include <stdint.h>
 #include <vector>
 #include <string>
-//#include <drm/v3d_drm.h> // What we will use eventualle in Debian 12
+//#include <drm/v3d_drm.h> // What we will use eventually on Debian 12
 #include "driver/v3d_drm.h"
 
 using BoHandles  = std::vector<uint32_t>;
