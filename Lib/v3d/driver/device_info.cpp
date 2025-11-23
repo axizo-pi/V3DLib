@@ -5,8 +5,10 @@
 #include <sys/ioctl.h>
 
 // imports from v3d.cpp
-extern int get_fd();
-extern bool v3d_open();
+namespace v3d {
+  extern int get_fd();
+  extern bool open();
+}
 
 
 using namespace Log;
@@ -48,19 +50,19 @@ bool _v3d_device_info() {
 	if (did_devinfo) return true;  // run this exactly one
 	did_devinfo = true;
 
-	bool fd_is_open = (get_fd() != 0);
+	bool fd_is_open = (::v3d::get_fd() != 0);
 
 	if (!fd_is_open) {
 		// open fd if not already open
 		//printf("_v3d_device_info opening fd\n");
 
-		if (!v3d_open()) {
+		if (!v3d::open()) {
 			cerr << "_v3d_device_info: Could not open fd.";
 			return false;
 		}
 	}
 
-	bool ret =  v3d_get_device_info(get_fd(), &s_devinfo, drmIoctl);
+	bool ret =  v3d_get_device_info(v3d::get_fd(), &s_devinfo, drmIoctl);
 
 	if (!ret) {
 		warn << "Could not get device_info";

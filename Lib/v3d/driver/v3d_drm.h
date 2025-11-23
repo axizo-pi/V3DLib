@@ -1,6 +1,25 @@
 #ifndef _V3DLIB_V3D_DRM_H
 #define _V3DLIB_V3D_DRM_H
 
+#include "/usr/include/asm-generic/ioctl.h"
+
+/////////////////////////////////////////////////////////
+// From /usr/include/drm/drm.h
+/////////////////////////////////////////////////////////
+
+#define DRM_IOCTL_BASE   'd'
+#define DRM_COMMAND_BASE 0x40
+
+typedef uint8_t  __u8;
+
+#define DRM_IOW(nr,type)    _IOW(DRM_IOCTL_BASE,nr,type)
+#define DRM_IOWR(nr,type)   _IOWR(DRM_IOCTL_BASE,nr,type)
+
+
+/////////////////////////////////////////////////////////
+// v3d_drm.h
+/////////////////////////////////////////////////////////
+
 /**
  * Isolate drm definitions in preparation of using /usr/include/v3d_drm.h
  *
@@ -51,8 +70,6 @@ typedef struct {
 } drm_v3d_mmap_bo;
 
 
-#define DRM_IOCTL_BASE   'd'
-#define DRM_COMMAND_BASE 0x40
 
 #define DRM_V3D_WAIT_BO    (DRM_COMMAND_BASE + 0x01)
 #define DRM_V3D_CREATE_BO  (DRM_COMMAND_BASE + 0x02)
@@ -70,6 +87,52 @@ typedef struct {
 #define DRM_IOCTL_GEM_CLOSE      _IOW(DRM_IOCTL_BASE, DRM_GEM_CLOSE, drm_gem_close)
 
 
+////////////////////////////////////////////////////////
+// Performance Counters
+////////////////////////////////////////////////////////
+
+#define DRM_V3D_PERFCNT_MAX_NAME 64
+#define DRM_V3D_PERFCNT_MAX_CATEGORY 32
+#define DRM_V3D_PERFCNT_MAX_DESCRIPTION 256
+
+/**
+ * struct drm_v3d_perfmon_get_counter - ioctl to get the description of a
+ * performance counter
+ *
+ * As userspace needs to retrieve information about the performance counters
+ * available, this IOCTL allows users to get information about a performance
+ * counter (name, category and description).
+ */
+struct drm_v3d_perfmon_get_counter {
+  /*
+   * Counter ID
+   *
+   * Must be smaller than the maximum number of performance counters, which
+   * can be retrieve through DRM_V3D_PARAM_MAX_PERF_COUNTERS.
+   */
+  __u8 counter;
+  
+  /* Name of the counter */
+  __u8 name[DRM_V3D_PERFCNT_MAX_NAME];
+
+  /* Category of the counter */
+  __u8 category[DRM_V3D_PERFCNT_MAX_CATEGORY];
+
+  /* Description of the counter */
+  __u8 description[DRM_V3D_PERFCNT_MAX_DESCRIPTION];
+  
+  /* mbz */
+  __u8 reserved[7];
+};
+
+
+#define DRM_V3D_PERFMON_GET_COUNTER               0x0c
+
+#define DRM_IOCTL_V3D_PERFMON_GET_COUNTER DRM_IOWR(DRM_COMMAND_BASE + DRM_V3D_PERFMON_GET_COUNTER, \
+               struct drm_v3d_perfmon_get_counter)
+
+
+/*
 // Following not in v3d_drm.h - I don't think they are used
 const unsigned V3D_PARAM_V3D_UIFCFG = 0;
 const unsigned V3D_PARAM_V3D_HUB_IDENT1 = 1;
@@ -80,5 +143,6 @@ const unsigned V3D_PARAM_V3D_CORE0_IDENT1 = 5;
 const unsigned V3D_PARAM_V3D_CORE0_IDENT2 = 6;
 const unsigned V3D_PARAM_SUPPORTS_TFU = 7;
 const unsigned V3D_PARAM_SUPPORTS_CSD = 8;
+*/
 
 #endif // _V3DLIB_V3D_DRM_H

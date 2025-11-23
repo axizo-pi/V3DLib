@@ -145,10 +145,10 @@ bool Driver::execute(Code &code, Data *uniforms, uint32_t thread) {
   //warn << "Timeout: " << LibSettings::qpu_timeout();
   uint64_t timeout_ns = 1000000000llu * LibSettings::qpu_timeout();
 
-  bool ret = (0 == v3d_submit_csd(st));
+  bool ret = (0 == ::v3d::submit_csd(st));
   assert(ret);
   if (ret) {
-    ret = v3d_wait_bo(m_bo_handles, timeout_ns);
+    ret = ::v3d::wait_bo(m_bo_handles, timeout_ns);
   }
   return ret;
 }

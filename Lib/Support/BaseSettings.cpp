@@ -54,22 +54,19 @@ void BaseSettings::startPerfCounters() {
     });
   } else {
     using PC3 = V3DLib::v3d::PerformanceCounters;
+    using pc = V3DLib::v3d::PerformanceCounters::vc6pc;
 
     PC3::enter({
-      // vc4 counters, check if same and working.
-      // They work, but overlap is hard to detect with vc4.
-      PC::QPU_INSTRUCTIONS,
-      PC::QPU_STALLED_TMU,
-      PC::L2C_CACHE_HITS,
-      PC::L2C_CACHE_MISSES,
-      PC::QPU_INSTRUCTION_CACHE_HITS,
-      PC::QPU_INSTRUCTION_CACHE_MISSES,
-      PC::QPU_CACHE_HITS,
-      PC::QPU_CACHE_MISSES,
-      PC::QPU_IDLE,
-
-      PC3::CORE_PCTR_CYCLE_COUNT,  // specific for v3d
-      // CHECKED for <= 40
+      pc::V3D_PERFCNT_QPU_CYCLES_VALID_INSTR,
+      pc::V3D_PERFCNT_QPU_CYCLES_TMU_STALL,
+      pc::V3D_PERFCNT_L2T_HITS,
+      pc::V3D_PERFCNT_L2T_MISSES,
+      pc::V3D_PERFCNT_QPU_IC_HIT,
+      pc::V3D_PERFCNT_QPU_IC_MISS,
+      pc::V3D_PERFCNT_QPU_UC_HIT,
+      pc::V3D_PERFCNT_QPU_UC_MISS,
+      pc::V3D_PERFCNT_CYCLE_COUNT,
+      pc::V3D_PERFCNT_QPU_IDLE_CYCLES,
     });
   }
 #endif
