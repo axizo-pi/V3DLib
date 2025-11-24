@@ -5,6 +5,11 @@
 #include <sstream>
 #include "RegisterMapping.h"
 #include "../Support/debug.h"
+#include "driver/v3d_drm.h"
+#include "v3d.h"
+#include "global/log.h"
+
+using namespace Log;
 
 namespace V3DLib {
 namespace {
@@ -54,6 +59,19 @@ void set_source_field(int core_id, int source_index, int counter_index) {
   uint32_t newval  = (val & ~mask) | (counter_index << offset);
 
   regmap.core_write(core_id, src_reg, newval);
+
+/* 
+ * NOT WORKING. Gives error -1
+ *
+ * I'm pretty sure I followed the instructions in v3d_drm.h correctly.
+ * /
+  // WRI DEBUG
+  struct drm_v3d_perfmon_get_counter tmp;
+  tmp.counter = counter_index;
+
+  int ret = ::v3d::ioctl(DRM_IOCTL_V3D_PERFMON_GET_COUNTER, &tmp);
+  //assert(ret != -1);
+*/
 }
 
 
@@ -126,26 +144,26 @@ const char *PerformanceCounters::Description[PerformanceCounters::NUM_PERF_COUNT
   "Unknown 10 maybe zero",
   "Unknown 11 maybe zero",
   "Unknown 12 maybe zero",
-  "Unknown 13 variable  ",
+  "Idle cycles          ",
   "Unknown 14 maybe zero",
   "Unknown 15 maybe zero",
-  "Unknown 16 variable  ",
-  "Unknown 17 same/app  ",
+  "Valid instr cycles   ",
+  "Stalls on TMU        ",
   "Unknown 18 maybe zero",
   "Unknown 19 maybe zero",
-  "Unknown 20 same/app  ",
-  "Unknown 21 same/app  ",
-  "Unknown 22 same      ",
-  "Unknown 23 same      ",
+  "Instr cache hits     ",
+  "Instr cache misses   ",
+  "UC (cache?) hits     ",
+  "UC (cache?) misses   ",
   "Unknown 24 same      ",
   "Unknown 25 same      ",
   "Unknown 26 maybe zero",
   "Unknown 27 maybe zero",
   "Unknown 28 maybe zero",
   "Unknown 29 maybe zero",
-  "Unknown 30 same      ",
-  "Unknown 31 same      ",
-  "CORE_PCTR_CYCLE_COUNT",
+  "L2T cache hits       ",
+  "L2T cache misses     ",
+  "Cycle count          ",
   "Unknown 33 maybe zero",
   "Unknown 34 maybe zero",
   "Unknown 35 maybe zero",
@@ -166,7 +184,6 @@ const char *PerformanceCounters::Description[PerformanceCounters::NUM_PERF_COUNT
  * @param srcs  list of counter labels to use in source registers
  */
 void PerformanceCounters::enter(std::vector<int> srcs) {
-  assert(srcs.size() <= NUM_SRC_REGS);
   auto &regmap = RegisterMapping::instance();
   assert(regmap.info().num_cores == 1);
   int core_id = 0;  // Assuming 1 core with id == 0 sufficient for now
@@ -193,7 +210,7 @@ void PerformanceCounters::exit() {
  */
 std::string PerformanceCounters::showEnabled() {
   auto &regmap = RegisterMapping::instance();
-  assert(regmap.info().num_cores == 1);
+  //assert(regmap.info().num_cores == 1);
   int core_id = 0;  // Assuming 1 core with id == 0 sufficient for now
 
   int const SLOT_COUNT = 32;

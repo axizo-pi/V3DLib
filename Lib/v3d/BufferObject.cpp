@@ -25,7 +25,7 @@ void BufferObject::alloc_mem(uint32_t size_in_bytes) {
   void    *tmp_addr = nullptr;
   uint32_t phy_addr = 0;
 
-  if (!v3d_alloc(size_in_bytes, handle, phy_addr, &tmp_addr)) {
+  if (!::v3d::alloc(size_in_bytes, handle, phy_addr, &tmp_addr)) {
     assertq(false, "Failed to allocate v3d shared memory");
   }
   arm_base = (uint8_t *) tmp_addr;
@@ -47,7 +47,7 @@ void BufferObject::dealloc_mem() {
     assert(size() > 0);
     assert(handle > 0);
 
-    v3d_unmap(size(), handle, arm_base);
+    ::v3d::unmap(size(), handle, arm_base);
     clear();
     handle = 0;
     arm_base = nullptr;

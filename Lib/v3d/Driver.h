@@ -4,7 +4,8 @@
 #ifdef QPU_MODE
 
 #include "Common/SharedArray.h"
-#include "v3d.h"
+
+using BoHandles  = std::vector<uint32_t>;
 
 namespace V3DLib {
 namespace v3d {

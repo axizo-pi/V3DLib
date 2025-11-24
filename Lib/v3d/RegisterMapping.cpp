@@ -20,7 +20,10 @@
 #include <memory>
 #include "../vc4/Mailbox.h"  // for mapmem()
 #include "Support/debug.h"
+#include "global/log.h"
+#include "v3d.h"
 
+using namespace Log;
 
 namespace {
 
@@ -208,9 +211,21 @@ RegisterMapping::~RegisterMapping() {
 
 
 unsigned RegisterMapping::num_cores() {
-  unsigned const HUB_IDENT1_NCORES = HubField(m_addr[V3D_HUB_IDENT1], 11, 8);
+  unsigned const ret = HubField(m_addr[V3D_HUB_IDENT1], 11, 8);
 
-  return HUB_IDENT1_NCORES;
+/*
+  NOT WORKING
+
+	struct drm_v3d_get_param val;
+	val.param = DRM_V3D_PARAM_V3D_HUB_IDENT1;
+
+  int ret2 = ::v3d::ioctl(DRM_IOCTL_V3D_GET_PARAM, &val);
+  assert(ret2 != -1);
+*/	
+
+	warn << "Got here, ret: " << ret;
+
+  return ret;
 }
 
 
@@ -623,20 +638,20 @@ void RegisterMapping::reset_v3d() {
      */
     ret = wait_for(!(v3d_read(V3D_MMU_CTL) & V3D_MMU_CTL_TLB_CLEARING), 100);
     if (ret)
-      error("TLB clear wait idle pre-wait failed");
+      cerr << "TLB clear wait idle pre-wait failed";
 
     v3d_write(V3D_MMU_CTL, v3d_read(V3D_MMU_CTL) | V3D_MMU_CTL_TLB_CLEAR);
     v3d_write(V3D_MMUC_CONTROL, V3D_MMUC_CONTROL_FLUSH | V3D_MMUC_CONTROL_ENABLE);
 
     ret = wait_for(!(v3d_read(V3D_MMU_CTL) & V3D_MMU_CTL_TLB_CLEARING), 100);
     if (ret) {
-      error("TLB clear wait idle failed");
+      cerr << "TLB clear wait idle failed";
       return;  // ret;
     }
 
     ret = wait_for(!(v3d_read(V3D_MMUC_CONTROL) & V3D_MMUC_CONTROL_FLUSHING), 100);
     if (ret)
-      error("MMUC flush wait idle failed");
+      cerr << "MMUC flush wait idle failed";
   }
 
   v3d_irq_enable();

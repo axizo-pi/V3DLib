@@ -5,8 +5,8 @@
 
 #define USE_MESA_BUFMGR 1
 
+#include "Support/basics.h"  // Order important
 #include "v3d.h"
-#include "Support/basics.h"
 #include <sys/ioctl.h>
 #include <stdio.h>
 #include "global/log.h"
@@ -14,6 +14,8 @@
 #include <cstring>    // errno, strerror()
 #include <sys/mman.h>
 #include <unistd.h>   // close(), sysconf()
+#include <sys/ioctl.h>
+#include "string.h"  // strerror
 
 using namespace Log;
 
@@ -154,8 +156,9 @@ bool v3d_wait_bo(uint32_t handle, uint64_t timeout_ns) {
 }  // anon namespace
 
 
+namespace v3d {
 
-bool v3d_alloc(uint32_t size, uint32_t &handle, uint32_t &phyaddr, void **usraddr) {
+bool alloc(uint32_t size, uint32_t &handle, uint32_t &phyaddr, void **usraddr) {
   assert(size > 0);
   assert(handle == 0);
   assert(phyaddr == 0);
@@ -165,7 +168,7 @@ bool v3d_alloc(uint32_t size, uint32_t &handle, uint32_t &phyaddr, void **usradd
 }
 
 
-bool v3d_unmap(uint32_t size, uint32_t handle,  void *usraddr) {
+bool unmap(uint32_t size, uint32_t handle,  void *usraddr) {
   assert(size > 0);
   assert(handle > 0);
   assert(usraddr != nullptr);
@@ -180,8 +183,11 @@ bool v3d_unmap(uint32_t size, uint32_t handle,  void *usraddr) {
   return (ioctl(fd, DRM_IOCTL_GEM_CLOSE, &cl) == 0);
 }
 
-
 int  get_fd() { return fd; }
+
+} // namespace v3d
+
+
 void set_fd(int val) { fd = val; }
 bool fd_is_open() { return get_fd() > 0; }
 
@@ -213,7 +219,7 @@ int open_card(char const *card) {
   // Clean up bo
   if (handle != 0) {
     assert(phyaddr != 0);
-    v3d_unmap(ALLOC_SIZE, handle, usraddr);
+    v3d::unmap(ALLOC_SIZE, handle, usraddr);
   }
 
   if (!success) {
@@ -231,9 +237,6 @@ int open_card(char const *card) {
 #include "driver/screen.h"
 #include "driver/BOList.h"
 
-int get_fd() {
-	return s_screen::get_fd();
-}
 
 void set_fd(int val) {
 	return s_screen::set_fd(val);
@@ -305,8 +308,14 @@ bool v3d_wait_bo(uint32_t handle, uint64_t timeout_ns) {
 }
 
 
-bool v3d_alloc(uint32_t size, uint32_t &out_handle, uint32_t &phyaddr, void **usraddr) {
-	bool ret = v3d_open();  // ensure open
+namespace v3d {
+
+int get_fd() {
+	return s_screen::get_fd();
+}
+
+bool alloc(uint32_t size, uint32_t &out_handle, uint32_t &phyaddr, void **usraddr) {
+	bool ret = v3d::open();  // ensure open
 	assert(ret);
 	assert(fd_is_open());
 
@@ -340,7 +349,7 @@ bool v3d_alloc(uint32_t size, uint32_t &out_handle, uint32_t &phyaddr, void **us
  * It's kind of complicated to do it explicitly due to internal bo caching in mesa v3d_bufmgr.c
  * Not dealing with this.
  */ 
-bool v3d_unmap(uint32_t size, uint32_t handle, void *usraddr) {
+bool unmap(uint32_t size, uint32_t handle, void *usraddr) {
 	assert(usraddr != nullptr);
 
 	// bo may already have been removed, let it happen
@@ -349,6 +358,9 @@ bool v3d_unmap(uint32_t size, uint32_t handle, void *usraddr) {
 	return true;
 }
 
+
+} // namespace v3d
+
 #endif // USE_MESA_BUFMGR
 
 
@@ -356,10 +368,12 @@ bool v3d_unmap(uint32_t size, uint32_t handle, void *usraddr) {
 // Common calls
 ////////////////////////////////////////////////////////
 
-int v3d_submit_csd(drm_v3d_submit_csd &st) {
+namespace v3d {
+
+int submit_csd(drm_v3d_submit_csd &st) {
   int ret = ioctl(get_fd(), DRM_IOCTL_V3D_SUBMIT_CSD, &st);
 	if (ret != 0) {
-  	cerr << "v3d_submit_csd(): " << strerror(errno); 
+  	cerr << "v3d::submit_csd(): " << strerror(errno); 
 	}
   return ret;
 }
@@ -373,7 +387,7 @@ int v3d_submit_csd(drm_v3d_submit_csd &st) {
  *
  * @return true if opening succeeded, false otherwise
  */
-bool v3d_open() {
+bool open() {
   if (fd_is_open()) return true;  // Already open, all is well
 
   // It appears to be a random crap shoot which device card0 and card1 address
@@ -394,13 +408,14 @@ bool v3d_open() {
 }
 
 
+
 /**
  * Not called anywhere
  * TODO: Check if this is OK
  *
  * @return true if close executed, false if already closed
  */
-bool v3d_close() {
+bool close() {
 	breakpoint;
 	int fd = get_fd();
   if (fd == 0) { return false; }
@@ -415,7 +430,7 @@ bool v3d_close() {
 /**
  * @return true if all waits succeeded, false otherwise
  */
-bool v3d_wait_bo(BoHandles const &bo_handles, uint64_t timeout_ns) {
+bool wait_bo(BoHandles const &bo_handles, uint64_t timeout_ns) {
   assert(bo_handles.size() > 0);
   assert(timeout_ns > 0);
 
@@ -429,5 +444,20 @@ bool v3d_wait_bo(BoHandles const &bo_handles, uint64_t timeout_ns) {
 
   return ret;
 }
+
+
+int ioctl(unsigned cmd, void *param) {
+  int fd = get_fd();
+  assert(fd != 0);
+
+  int ret = ::ioctl(fd, cmd, param);
+  if (ret != 0) {
+    warn << "ioctl failed, error: " << strerror(ret);
+  }
+
+	return ret;
+}
+
+} // namespace v3d
 
 #endif  // QPU_MODE

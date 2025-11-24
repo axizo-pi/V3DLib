@@ -11,12 +11,18 @@
 
 using BoHandles  = std::vector<uint32_t>;
 
-bool v3d_open();
-bool v3d_close();
-int v3d_submit_csd(drm_v3d_submit_csd &st);
-bool v3d_wait_bo(BoHandles const &bo_handles, uint64_t timeout_ns);
-bool v3d_alloc(uint32_t size, uint32_t &handle, uint32_t &phyaddr, void **usraddr);
-bool v3d_unmap(uint32_t size, uint32_t handle, void *usraddr);
+namespace v3d {
+
+bool open();
+int submit_csd(drm_v3d_submit_csd &st);
+bool wait_bo(BoHandles const &bo_handles, uint64_t timeout_ns);
+bool alloc(uint32_t size, uint32_t &handle, uint32_t &phyaddr, void **usraddr);
+bool unmap(uint32_t size, uint32_t handle, void *usraddr);
+int get_fd();
+int ioctl(unsigned cmd, void *param);
+
+}
+
 
 #endif  // QPU_MODE
 
