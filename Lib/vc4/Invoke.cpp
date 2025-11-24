@@ -1,13 +1,16 @@
 #include "Invoke.h"
+#include "../Invoke.h"
 #include "Mailbox.h"
 #include "vc4.h"
 #include "defines.h"
 #include "LibSettings.h"
 #include "Support/Platform.h"
 
-namespace V3DLib {
-namespace  {
+using namespace Log;
 
+namespace V3DLib {
+
+namespace {
 
 /**
  * Number of 32-bit words needed for the parameters (uniforms)
@@ -66,6 +69,41 @@ void load_uniforms(Data &uniforms, IntList const &params, int numQPUs) {
 }
 
 
+void load_uniforms(int &offset, int index, int qpu_count,  Data &uniforms, ScheduledJob &job) {
+  assert(uniforms.allocated());
+
+	job.params_offset = offset;
+	//warn << "load_uniforms jobs.params_offset: " << job.params_offset;
+
+  uniforms[offset++] = (uint32_t) index;            // Unique QPU ID
+  uniforms[offset++] = (uint32_t) qpu_count;        // QPU count
+
+  for (int j = 0; j < job.params.size(); j++) {
+    uniforms[offset++] = job.params[j];
+  }
+
+  uniforms[offset++] = 0;                           // Dummy final parameter, see Note 1.
+}
+
+
+void alloc_launch_messages(Data &launch_messages) {
+  if (!launch_messages.allocated()) {
+  	launch_messages.alloc(2*Platform::max_qpus());  // Go for the max size, irrespective of number of jobs
+	}
+}
+
+
+void add_launch_message(int index, Data &launch_messages, ScheduledJob const &job, Data const &uniforms) {
+  assertq(!uniforms.empty(), "add_launch_messages(): expecting values for uniforms");
+	assert(job.params_offset != -1);
+
+	alloc_launch_messages(launch_messages);
+
+	launch_messages[2*index]     = uniforms.getAddress() + 4*job.params_offset;
+	launch_messages[2*index + 1] = job.code.getAddress();
+}
+
+
 /**
  * Initialize launch messages, if not already done so
  *
@@ -73,9 +111,8 @@ void load_uniforms(Data &uniforms, IntList const &params, int numQPUs) {
  */
 void init_launch_messages(Data &launch_messages, Code const &code, IntList const &params, Data const &uniforms) {
   assertq(!uniforms.empty(), "init_launch_messages(): expecting values for uniforms");
-  if (launch_messages.allocated()) return;  // Already done, don't redo
 
-  launch_messages.alloc(2*Platform::max_qpus());
+	alloc_launch_messages(launch_messages);
 
   for (int i = 0; i < Platform::max_qpus(); i++) {
     launch_messages[2*i]     = uniforms.getAddress() + 4*i*num_params(params);  // 4* for uint32_t offset
@@ -84,15 +121,25 @@ void init_launch_messages(Data &launch_messages, Code const &code, IntList const
 }
 
 
+void check_platform() {
+#ifdef QPU_MODE
+  if (!Platform::is_pi_platform()) {
+  	cerr << "check_platform(): will not run on this platform, only on Raspberry Pi's.";
+	  cerr << "Can not run kernel on QPUs." << thrw;
+	}
+#else 
+ 	cerr << "check_platform(): will not run, QPU mode not enabled.";
+  cerr << "Can not run kernel on QPUs." << thrw;
+#endif
+}
+
+
 /**
  * Run the kernel on vc4 hardware
  */
-void invoke(int numQPUs, Data const &launch_messages) {
-#ifndef ARM32
-  error("invoke() will not run on this platform, only on ARM 32-bits");
-  error("Failed to invoke kernel on QPUs\n");
-  return;
-#else
+void invoke_jobs(int numQPUs, Data const &launch_messages) {
+	check_platform();
+
   enableQPUs();
 
   unsigned result = execute_qpu(
@@ -106,22 +153,62 @@ void invoke(int numQPUs, Data const &launch_messages) {
   disableQPUs();
 
   if (result != 0) {
-    error("Failed to invoke kernel on QPUs\n");
+    cerr << "invoke_jobs(): Failed to invoke kernel on QPUs";
   }
-#endif
 }
+
+
+/**
+ * Container for launch info per QPU to run
+ *
+ * Array consecutively containing two values per QPU to run:
+ *  - pointer to uniform parameters to pass per QPU
+ *  - Start of code block to run per QPU
+ */
+Data launch_messages;
 
 }  // anon namespace
 
 
+/**
+ * Load and run a single kernel on multiple QPU's.
+ */
 void MailBoxInvoke::invoke(int numQPUs, Code const &code, IntList const &params) {
-  //debug("Calling MailBoxInvoke::invoke()");
   assertq(!code.empty(), "MailBoxInvoke::invoke(): no code to invoke", true );
 
-  load_uniforms(m_uniforms, params, numQPUs);
-  init_launch_messages(launch_messages, code, params, m_uniforms);
+  Data uniforms;  // Memory region for QPU parameters
+  load_uniforms(uniforms, params, numQPUs);
 
-  V3DLib::invoke(numQPUs, launch_messages);
+  init_launch_messages(launch_messages, code, params, uniforms);
+
+  invoke_jobs(numQPUs, launch_messages);
 }
 
-}  // namespace V3DLib
+
+namespace vc4_invoke {
+
+/**
+ * Load and run the scheduled jobs, each on one QPU
+ */
+void run(ScheduledJobs &jobs) {
+  Data uniforms;                          // Memory region for QPU parameters
+  uniforms.alloc(jobs.num_params());
+
+	int index = 0;
+	int offset = 0;
+	for (auto &job: jobs) {
+  	load_uniforms(offset, index, jobs.size(), uniforms, job);
+		index++;
+	}
+
+	index = 0;
+	for (auto &job: jobs) {
+		add_launch_message(index, launch_messages, job, uniforms);
+		index++;
+	}
+
+	invoke_jobs((int) jobs.size(), launch_messages);
+}
+
+} // namespace vc4_invoke
+} // namespace V3DLib

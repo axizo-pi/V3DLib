@@ -273,7 +273,10 @@ unsigned qpu_enable(int file_desc, unsigned enable)
    return p[5];
 }
 
-unsigned execute_qpu(int file_desc, unsigned num_qpus, unsigned control, unsigned noflush, unsigned timeout) {
+/**
+ * @param fd file descriptor of the vc4 mailbox
+ */
+unsigned execute_qpu(int fd, unsigned num_qpus, unsigned control, unsigned noflush, unsigned timeout) {
    unsigned i=0;
    unsigned p[32];
 
@@ -290,7 +293,7 @@ unsigned execute_qpu(int file_desc, unsigned num_qpus, unsigned control, unsigne
    p[i++] = 0x00000000; // end tag
    p[0] = i * (unsigned) sizeof(*p); // actual size
 
-   mbox_property(file_desc, p);
+   mbox_property(fd, p);
    //printf("execute_qpu returns %d\n", p[5]);
    return p[5];
 }

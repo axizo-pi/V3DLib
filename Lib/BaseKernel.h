@@ -74,6 +74,9 @@ public:
   void interpret();
   void qpu();
 
+  Code const &code() const { return m_driver->code(); }
+  IntList const &params() const { return uniforms; }  // Can't name it uniforms because the data member is called that
+
   std::string compile_info() const;
   void dump_compile_data(char const *filename);
   bool has_errors() const;
@@ -83,6 +86,7 @@ public:
 protected:
   BaseSettings m_settings;
   IntList uniforms;                // Parameters to be passed to kernel
+
 
   // Defined as unique pointer so that is easily survives std::move
   // (There are other reasons but this is the main one)

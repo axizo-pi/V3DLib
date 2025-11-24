@@ -32,8 +32,7 @@ public:
 
 private:
   Instructions  instructions;
-  BufferObject  code_bo;
-  Code          qpuCodeMem;
+  //BufferObject  code_bo;
   Data          devnull;
 
   void compile_intern() override;

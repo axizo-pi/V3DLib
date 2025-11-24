@@ -14,25 +14,18 @@ namespace V3DLib {
 class MailBoxInvoke {
 public:
   void invoke(int numQPUs, Code const &code, IntList const &params);
-
-private:
-  Data m_uniforms;  // Memory region for QPU parameters
-
-
-  /**
-   * Container for launch info per QPU to run
-   *
-   * Array consecutively containing two values per QPU to run:
-   *  - pointer to uniform parameters to pass per QPU
-   *  - Start of code block to run per QPU
-   *
-   * The uniforms are essentially the same for all QPUs, *except* qpu id, the first parameter.
-   *
-   * It thus be possible to run different code per QPU.
-   * Haven't tried this yet, till now all the QPUs run the same code.
-   */
-  Data launch_messages;
+  void run();
+  void schedule(Code const &code, IntList const &params);
 };
+
+
+class ScheduledJobs;
+
+namespace vc4_invoke {
+
+void run(ScheduledJobs &jobs);
+
+} // vc4_invoke
 
 }  // namespace V3DLib
 

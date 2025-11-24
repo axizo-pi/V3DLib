@@ -1,7 +1,7 @@
 #ifndef _V3DLIB_KERNEL_H_
 #define _V3DLIB_KERNEL_H_
 #include <tuple>
-#include <algorithm>  // std::move
+//#include <algorithm>  // std::move
 #include "BaseKernel.h"
 #include "Source/Complex.h"
 
@@ -90,6 +90,12 @@ public:
 	    m_settings.run_type = 1;
 			Platform::compiling_for_vc4(true);
 	  }
+
+// Enable following when relevant - for now, we're good
+// #ifdef ARM32
+// 		Log::warn << "ARM 32-bits not supported any more. If it works, it works. You're on your own.";
+// #endif
+
 #endif
 
   	if (m_settings.run_type != 0) {

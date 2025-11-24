@@ -1509,7 +1509,7 @@ void compile_postprocess(V3DLib::Instr::List &targetCode) {
 // Class KernelDriver
 ///////////////////////////////////////////////////////////////////////////////
 
-KernelDriver::KernelDriver() : V3DLib::KernelDriver(V3dBuffer), qpuCodeMem(code_bo)  {
+KernelDriver::KernelDriver() : V3DLib::KernelDriver(V3dBuffer) { // Why is this here?, qpuCodeMem(code_bo)  {
 	assert(!Platform::compiling_for_vc4());
 
 	if(Platform::compiling_for_vc7()) {
@@ -1591,8 +1591,9 @@ void KernelDriver::allocate() {
 
     // Allocate memory for the QPU code
     uint32_t size_in_bytes = (uint32_t) (sizeof(uint64_t)*code.size());
-    code_bo.alloc(size_in_bytes);
-    qpuCodeMem.alloc((uint32_t) code.size());
+    //code_bo.alloc(size_in_bytes);
+    //qpuCodeMem.alloc((uint32_t) code.size());
+    qpuCodeMem.alloc(size_in_bytes);
     qpuCodeMem.copyFrom(code);  // Copy kernel to code memory
   }
 }

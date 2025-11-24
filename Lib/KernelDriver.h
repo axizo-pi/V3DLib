@@ -6,6 +6,7 @@
 #include "Common/BufferType.h"
 #include "Common/CompileData.h"
 #include "Source/StmtStack.h"
+#include "Invoke.h"
 
 namespace V3DLib {
 
@@ -31,6 +32,8 @@ public:
   Instr::List &targetCode() { return m_targetCode; }
   Stmts &sourceCode();
 
+  Code const &code() const { return qpuCodeMem; }
+
   void pretty(char const *filename = nullptr, bool output_qpu_code = true);
   std::string compile_info() const;
   void dump_compile_data(char const *filename) const;
@@ -44,6 +47,9 @@ protected:
 	KernelType  m_type;
   Instr::List m_targetCode;                // Target code generated from AST
   Stmts       m_body;
+
+  Code qpuCodeMem;     // Memory region for QPU code
+                       // Doesn't survive std::move, dtor gets called despite move ctor present
 
   int qpuCodeMemOffset = 0;
   std::vector<std::string> errors;

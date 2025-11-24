@@ -19,8 +19,6 @@ public:
   int kernel_size() const override;
 
 private:
-  Code qpuCodeMem;     // Memory region for QPU code
-                       // Doesn't survive std::move, dtor gets called despite move ctor present
 
   void kernelFinish();
   void compile_intern() override;
