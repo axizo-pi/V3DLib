@@ -10,6 +10,7 @@
 #include "vc4/RegisterMap.h"
 #include "v3d/RegisterMapping.h"
 #include "v3d/v3d.h"
+#include "v3d/driver/device_info.h"
 
 
 using namespace V3DLib;
@@ -163,7 +164,7 @@ void detect_v3d() {
     printf("WARNING: The reset scheduler flag doesn't do anything for v3d.\n\n");
   }
 
-  v3d::RegisterMapping map_v3d;
+  V3DLib::v3d::RegisterMapping map_v3d;
   map_v3d.init();
 
   if (settings.reset_gpu) {
