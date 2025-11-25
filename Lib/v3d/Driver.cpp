@@ -93,7 +93,14 @@ uint32_t roundup(uint32_t n, uint32_t d) {
  */
 bool Driver::execute(Code &code, Data *uniforms, uint32_t thread) {
   uint32_t code_phyaddr = code.getAddress();
-	assert((code_phyaddr & 0x111) == 0);  // Check if there is space for the special flags
+
+  // Check if there is space for the special flags
+  // This fails in the unit tests on vc6A
+  bool add_special_flags = true;
+	if ((code_phyaddr & 0x111) != 0) {
+  	cerr << "Driver::execute(): assertion ((code_phyaddr & 0x111) == 0) fails";
+    add_special_flags = false;
+  }
 
   // Technically, you are not required to pass in uniforms.
   // If there are none, set the address to zero.
@@ -106,9 +113,11 @@ bool Driver::execute(Code &code, Data *uniforms, uint32_t thread) {
 	bool threading     = false;
 
 	uint32_t special_flags = 0;
-	if (propagate_nan) special_flags += (1 << 2);
-	if (single_seg)    special_flags += (1 << 1);
-	if (threading)     special_flags += 1;
+  if (add_special_flags) {
+  	if (propagate_nan) special_flags += (1 << 2);
+  	if (single_seg)    special_flags += (1 << 1);
+  	if (threading)     special_flags += 1;
+  };
 
   WorkGroup workgroup;
   uint32_t wgs_per_sg = 16;

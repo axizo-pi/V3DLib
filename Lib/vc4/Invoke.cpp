@@ -197,7 +197,7 @@ void run(ScheduledJobs &jobs) {
 	int index = 0;
 	int offset = 0;
 	for (auto &job: jobs) {
-  	load_uniforms(offset, index, jobs.size(), uniforms, job);
+  	load_uniforms(offset, index, (int) jobs.size(), uniforms, job);
 		index++;
 	}
 

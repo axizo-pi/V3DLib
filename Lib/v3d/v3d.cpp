@@ -3,7 +3,7 @@
  */
 #ifdef QPU_MODE
 
-#define USE_MESA_BUFMGR 1
+#define USE_MESA_BUFMGR 0
 
 #include "Support/basics.h"  // Order important
 #include "v3d.h"
@@ -182,13 +182,14 @@ bool unmap(uint32_t size, uint32_t handle,  void *usraddr) {
   return (ioctl(fd, DRM_IOCTL_GEM_CLOSE, &cl) == 0);
 }
 
+
 int  get_fd() { return fd; }
 
 } // namespace v3d
 
 
 void set_fd(int val) { fd = val; }
-bool fd_is_open() { return get_fd() > 0; }
+bool fd_is_open() { return ::v3d::get_fd() > 0; }
 
 
 /**
@@ -296,11 +297,10 @@ bool v3d_wait_bo(uint32_t handle, uint64_t timeout_ns) {
 	struct v3d_bo *bo = s_bolist.by_handle(handle);
 	assert(bo != nullptr);
 
-	const char *reason = nullptr;
-	bool ret = v3d_bo_wait(bo, timeout_ns, reason);
+	bool ret = v3d_bo_wait(bo, timeout_ns, nullptr);
 
 	if (!ret) {
-		cerr << "v3d_bo_wait failed. Reason: " << reason;
+		cerr << "v3d_bo_wait failed.";
 	}
 
 	return ret;

@@ -4,8 +4,8 @@
  ******************************************************************/
 #include "log.h"
 #include <iostream>
-#include <cstdlib>  // abort()
-#include <time.h>   // strftime()
+#include <cstdlib>           // abort()
+#include <time.h>            // strftime()
 
 
 namespace Log {
@@ -91,6 +91,8 @@ void Logger::flush(bool do_throw) {
 			case ERROR:   prefix = "ERROR: ";   break;
 			case FATAL:   prefix = "FATAL: ";   break;
 		}
+
+    assert(!m_buf.str().empty(), "m_buf is empty!");
 
 		if (m_level == FATAL || do_throw) {
 			std::cerr << time_buf << prefix << m_buf.str() << "\n";

@@ -1583,7 +1583,11 @@ void KernelDriver::allocate() {
 
   // Assumption: code in a kernel, once allocated, doesn't change
   if (qpuCodeMem.allocated()) {
-    assert(instructions.size() >= qpuCodeMem.size());  // Tentative check, not perfect
+    if (instructions.size() > qpuCodeMem.size()) {
+			cerr << "KernelDriver::allocate(): Discrepancy between instruction size: " << (int) instructions.size()
+  	       << " and qpuCodeMem size: " << qpuCodeMem.size();
+		}
+    assert(instructions.size() <= qpuCodeMem.size());  // Tentative check, not perfect
                                                        // actual opcode seq can be smaller due to removal labels
   } else {
     std::vector<uint64_t> code = to_opcodes();
