@@ -39,8 +39,9 @@ typedef struct {
   uint32_t bo_handle_count;
   uint32_t in_sync;
   uint32_t out_sync;
-  uint32_t flags;
   uint32_t perfmon_id;
+	uint64_t extensions;
+  uint32_t flags;
 } drm_v3d_submit_csd;
 
 
@@ -83,7 +84,11 @@ typedef struct {
 #define DRM_IOCTL_V3D_CREATE_BO  _IOWR(DRM_IOCTL_BASE, DRM_V3D_CREATE_BO, drm_v3d_create_bo)
 #define DRM_IOCTL_V3D_MMAP_BO    _IOWR(DRM_IOCTL_BASE, DRM_V3D_MMAP_BO, drm_v3d_mmap_bo)
 #define DRM_IOCTL_V3D_SUBMIT_CSD _IOW(DRM_IOCTL_BASE, DRM_V3D_SUBMIT_CSD, drm_v3d_submit_csd)
-#define DRM_IOCTL_V3D_GET_PARAM           DRM_IOWR(DRM_COMMAND_BASE + DRM_V3D_GET_PARAM, struct drm_v3d_get_param)
+
+// Following is wrong; DRM_COMMAND_BASE added twice
+//#define DRM_IOCTL_V3D_GET_PARAM           DRM_IOWR(DRM_COMMAND_BASE + DRM_V3D_GET_PARAM, struct drm_v3d_get_param)
+//#define DRM_IOCTL_V3D_GET_PARAM           DRM_IOWR(DRM_V3D_GET_PARAM, struct drm_v3d_get_param)
+#define DRM_IOCTL_V3D_GET_PARAM           _IOWR(DRM_IOCTL_BASE, DRM_V3D_GET_PARAM, struct drm_v3d_get_param)
 
 #define DRM_GEM_CLOSE    0x09
 

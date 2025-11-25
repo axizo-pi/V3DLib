@@ -3,9 +3,9 @@
 #include "PerformanceCounters.h"
 #include <iostream>
 #include <sstream>
+#include <sys/ioctl.h>
 #include "RegisterMapping.h"
 #include "../Support/debug.h"
-#include "driver/v3d_drm.h"
 #include "v3d.h"
 #include "global/log.h"
 
@@ -185,7 +185,7 @@ const char *PerformanceCounters::Description[PerformanceCounters::NUM_PERF_COUNT
  */
 void PerformanceCounters::enter(std::vector<int> srcs) {
   auto &regmap = RegisterMapping::instance();
-  assert(regmap.info().num_cores == 1);
+  //assert(regmap.info().num_cores == 1);
   int core_id = 0;  // Assuming 1 core with id == 0 sufficient for now
 
   // assign counters to use to source registers
@@ -197,6 +197,20 @@ void PerformanceCounters::enter(std::vector<int> srcs) {
   regmap.core_write(core_id, RM::CORE_PCTR_0_CLR     , src_mask);  // Clear selected pctr registers
   regmap.core_write(core_id, RM::CORE_PCTR_0_OVERFLOW, src_mask);
   regmap.core_write(core_id, RM::CORE_PCTR_0_EN      , src_mask);
+
+	// WRI DEBUG - NOT WORKING vc7
+/*	
+	struct drm_v3d_get_param val;
+	val.param = DRM_V3D_PARAM_MAX_PERF_COUNTERS;
+	//val.param = DRM_V3D_PARAM_V3D_UIFCFG;
+	//val.param = DRM_V3D_PARAM_SUPPORTS_TFU;
+	//val.value = 0;
+
+  //warn << "ioctl using fd: " << ::v3d::get_fd();
+  int ret2 = ::v3d::ioctl(DRM_IOCTL_V3D_GET_PARAM, &val);
+  // int ret2 = ioctl(::v3d::get_fd(), DRM_IOCTL_V3D_GET_PARAM, &val);
+  assert(ret2 == 0);
+*/	
 }
 
 

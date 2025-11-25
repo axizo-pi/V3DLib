@@ -6,8 +6,8 @@
 #include <stdint.h>
 #include <vector>
 #include <string>
+#include "driver/v3d_drm.h"  
 //#include <drm/v3d_drm.h> // What we will use eventually on Debian 12
-#include "driver/v3d_drm.h"
 
 using BoHandles  = std::vector<uint32_t>;
 

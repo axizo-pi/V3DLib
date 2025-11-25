@@ -137,8 +137,10 @@ bool Driver::execute(Code &code, Data *uniforms, uint32_t thread) {
     .bo_handle_count = (uint32_t) m_bo_handles.size(),
     .in_sync         = 0,
     .out_sync        = 0,
+		.perfmon_id      = 0,
+			
+		.extensions      = 0,
 		.flags           = 0,
-		.perfmon_id      = 0
   };
 
   //warn << "Timeout: " << LibSettings::qpu_timeout();

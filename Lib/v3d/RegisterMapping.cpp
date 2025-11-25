@@ -211,10 +211,11 @@ RegisterMapping::~RegisterMapping() {
 
 
 unsigned RegisterMapping::num_cores() {
+	// DOES NOT WORK on vc7; returns 8 instead of expected 1
   unsigned const ret = HubField(m_addr[V3D_HUB_IDENT1], 11, 8);
 
 /*
-  NOT WORKING
+  NOT WORKING - expecting this to work on vc7
 
 	struct drm_v3d_get_param val;
 	val.param = DRM_V3D_PARAM_V3D_HUB_IDENT1;

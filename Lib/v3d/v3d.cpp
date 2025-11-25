@@ -14,7 +14,6 @@
 #include <cstring>    // errno, strerror()
 #include <sys/mman.h>
 #include <unistd.h>   // close(), sysconf()
-#include <sys/ioctl.h>
 #include "string.h"  // strerror
 
 using namespace Log;
@@ -311,6 +310,7 @@ bool v3d_wait_bo(uint32_t handle, uint64_t timeout_ns) {
 namespace v3d {
 
 int get_fd() {
+	//assert(s_screen::get_fd() != 0);
 	return s_screen::get_fd();
 }
 
@@ -403,6 +403,7 @@ bool open() {
 
   int fd = (fd1 <= 0)? fd0: fd1;
   assert(fd > 0);
+	warn << "Got fd: " << fd;
 	set_fd(fd);
   return true;
 }
@@ -449,6 +450,7 @@ bool wait_bo(BoHandles const &bo_handles, uint64_t timeout_ns) {
 int ioctl(unsigned cmd, void *param) {
   int fd = get_fd();
   assert(fd != 0);
+  warn << "ioctl using fd: " << fd;
 
   int ret = ::ioctl(fd, cmd, param);
   if (ret != 0) {
