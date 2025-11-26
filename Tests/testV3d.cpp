@@ -69,9 +69,8 @@ bool v3d_init() {
     return false;
   }
 
-  REQUIRE(::v3d::open());
+  REQUIRE(v3d_open());
   return true;
-
 }
 
 }  // anon namespace
