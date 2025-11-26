@@ -1,3 +1,5 @@
+The earliest Debian version supported is **Debian 10 Buster**.
+
 
 - Set locale to `en_US.UTF-8' using `sudo raspi-config`, Localization Options.
 
