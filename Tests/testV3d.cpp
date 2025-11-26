@@ -69,7 +69,7 @@ bool v3d_init() {
     return false;
   }
 
-  REQUIRE(v3d_open());
+  REQUIRE(::v3d::open());
   return true;
 }
 

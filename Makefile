@@ -296,10 +296,6 @@ test : make_test
 	@$(SUDO) $(UNIT_TESTS) -tc="*[pass2]*"
 
 
-#	@$(SUDO) $(UNIT_TESTS) -tc=*[fft][test2]*
-#	@$(SUDO) $(UNIT_TESTS) -tc="*[dsl][func]*"
-
-
 ###############################
 # Gen stuff
 ################################
