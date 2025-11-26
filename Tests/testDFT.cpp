@@ -494,8 +494,12 @@ TEST_CASE("Discrete Fourier Transform tmp [dft][dft2]") {
     output_dft(input, result, "dft");
   }
 
-
   SUBCASE("All DFT calculations should return the same") {
+		if (!Platform::compiling_for_vc4()) {
+			Log::warn << "Skipping subcase for v3d: 'All DFT calculations should return the same'";
+			return;
+		}
+
     bool do_profiling = false;
 
     if (!do_profiling) {

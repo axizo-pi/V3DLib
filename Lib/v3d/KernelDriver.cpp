@@ -280,11 +280,11 @@ void handle_condition_tags(V3DLib::Instr const &src_instr, Instructions &ret) {
   // In this case, condition flag must be pushed for both add and mul alu.
   //
 
-  if (false) {
+/*		
     warn << "handle_condition_tags(): detected final where condition: '"
            << src_instr.dump() << "'\n"
            << "v3d: " << ret.back().mnemonic() << "'\n";
-  }
+*/					 
 
   ret.back().set_push_tag(setCond);
 
@@ -1509,7 +1509,7 @@ void compile_postprocess(V3DLib::Instr::List &targetCode) {
 // Class KernelDriver
 ///////////////////////////////////////////////////////////////////////////////
 
-KernelDriver::KernelDriver() : V3DLib::KernelDriver(V3dBuffer) { // Why is this here?, qpuCodeMem(code_bo)  {
+KernelDriver::KernelDriver() : V3DLib::KernelDriver(V3dBuffer) { //, qpuCodeMem(code_bo)  { // Why is last item  here?
 	assert(!Platform::compiling_for_vc4());
 
 	if(Platform::compiling_for_vc7()) {
@@ -1594,10 +1594,9 @@ void KernelDriver::allocate() {
     assert(!code.empty());
 
     // Allocate memory for the QPU code
-    uint32_t size_in_bytes = (uint32_t) (sizeof(uint64_t)*code.size());
+    //uint32_t size_in_bytes = (uint32_t) (sizeof(uint64_t)*code.size());
     //code_bo.alloc(size_in_bytes);
-    //qpuCodeMem.alloc((uint32_t) code.size());
-    qpuCodeMem.alloc(size_in_bytes);
+    qpuCodeMem.alloc((uint32_t) code.size());
     qpuCodeMem.copyFrom(code);  // Copy kernel to code memory
   }
 }

@@ -7,6 +7,7 @@
 #include "support/support.h"
 #include "Source/Complex.h"
 #include "Source/Functions.h"
+#include "v3d/v3d.h"
 
 using namespace V3DLib;
 using namespace std;
@@ -334,6 +335,8 @@ void complex_kernel(Complex::Ptr input, Complex::Ptr result) {
 //=============================================================================
 
 TEST_CASE("Test correct working DSL [dsl]") {
+	REQUIRE(::v3d::open());
+
   SUBCASE("Test specific int instructions") {
     int const NUM = 1;
     vector<int> expected = {1,0,3,2,5,4,7,6,9,8,11,10,13,12,15,14};
@@ -785,6 +788,8 @@ float calc_max_diff(T1 &arr1, T2 &arr2, int size) {
  * separately
  */
 TEST_CASE("Test functions [dsl][func][pass2]") {
+	REQUIRE(::v3d::open());
+
   int const NumValues       = 15;
   int const SharedArraySize = (NumValues/16 +1)*16;
 
