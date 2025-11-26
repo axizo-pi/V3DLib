@@ -15,7 +15,9 @@
 #include <sys/mman.h>
 #include <unistd.h>   // close(), sysconf()
 #include "string.h"  // strerror
+#include "Support/Platform.h"
 
+using namespace V3DLib;
 using namespace Log;
 
 namespace {
@@ -388,6 +390,12 @@ int submit_csd(drm_v3d_submit_csd &st) {
  * @return true if opening succeeded, false otherwise
  */
 bool open() {
+	if (Platform::compiling_for_vc4()) {
+		cerr << "Running on vc4, not opening the v3d card.";
+		return true;
+	}
+
+
   if (fd_is_open()) return true;  // Already open, all is well
 
   // It appears to be a random crap shoot which device card0 and card1 address
@@ -402,8 +410,8 @@ bool open() {
   }
 
   int fd = (fd1 <= 0)? fd0: fd1;
+	cdebug << "Got fd: " << fd;
   assert(fd > 0);
-	warn << "Got fd: " << fd;
 	set_fd(fd);
   return true;
 }

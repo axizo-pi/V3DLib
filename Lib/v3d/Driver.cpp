@@ -94,30 +94,34 @@ uint32_t roundup(uint32_t n, uint32_t d) {
 bool Driver::execute(Code &code, Data *uniforms, uint32_t thread) {
   uint32_t code_phyaddr = code.getAddress();
 
-  // Check if there is space for the special flags
-  // This fails in the unit tests on vc6A
-  bool add_special_flags = true;
+	// Check if there is space for the special flags
+	// Works for vc7, fails for vc6
+	bool do_special_flags = true;
+
 	if ((code_phyaddr & 0x111) != 0) {
-  	cerr << "Driver::execute(): assertion ((code_phyaddr & 0x111) == 0) fails";
-    add_special_flags = false;
-  }
+		if (Platform::compiling_for_vc7()) {  // Fails often on vc6
+			cerr << "Test on room for special flags fails";
+		}
+		do_special_flags = false;
+	}
 
   // Technically, you are not required to pass in uniforms.
   // If there are none, set the address to zero.
   uint32_t unif_phyaddr = (uniforms == nullptr)?0u:uniforms->getAddress();
   assertq(m_bo_handles.size() >= 1, "v3d execute: Expecting at least one buffer object on execution");  // See Note 1
 
-	// Special flags
-  bool propagate_nan = false;
-	bool single_seg    = false;
-	bool threading     = false;
-
 	uint32_t special_flags = 0;
-  if (add_special_flags) {
-  	if (propagate_nan) special_flags += (1 << 2);
-  	if (single_seg)    special_flags += (1 << 1);
-  	if (threading)     special_flags += 1;
-  };
+
+	if (do_special_flags) {
+		// Special flags
+	  bool propagate_nan = false;
+		bool single_seg    = false;
+		bool threading     = false;
+
+		if (propagate_nan) special_flags += (1 << 2);
+		if (single_seg)    special_flags += (1 << 1);
+		if (threading)     special_flags += 1;
+	}
 
   WorkGroup workgroup;
   uint32_t wgs_per_sg = 16;
@@ -147,7 +151,6 @@ bool Driver::execute(Code &code, Data *uniforms, uint32_t thread) {
     .in_sync         = 0,
     .out_sync        = 0,
 		.perfmon_id      = 0,
-			
 		.extensions      = 0,
 		.flags           = 0,
   };

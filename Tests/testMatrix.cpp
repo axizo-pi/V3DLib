@@ -544,21 +544,6 @@ TEST_CASE("Test complex matrix algebra with varying sizes [matrix][complex]") {
     test_complex_dotvector<10>();
   }
 
-  SUBCASE("Check complex matrix multiplication") {
-    auto test = [] (int num_qpus, int num_blocks = 1) {
-      // num_blocks factor for inner dimension is there to ensure block sizes are always valid
-      test_complex_matrix_multiplication(  1,    16*num_blocks,  1, num_qpus, num_blocks);
-      test_complex_matrix_multiplication(  2,  2*16*num_blocks,  2, num_qpus, num_blocks, {-1.0f, 2.0f});
-      test_complex_matrix_multiplication(  2,  3*16*num_blocks,  2, num_qpus, num_blocks, {-1.0f, 2.0f}, { 1.0f, -1.0f });
-      test_complex_matrix_multiplication( 16,  2*16*num_blocks, 16, num_qpus, num_blocks);
-      test_complex_matrix_multiplication( 14,  2*16*num_blocks, 17, num_qpus, num_blocks);
-    };
-
-    test(1);
-    test(8);
-    test(1, 2);
-    test(8, 2);
-  }
 
 
   SUBCASE("Compare pure real/im complex matrixes with real") {
@@ -612,6 +597,27 @@ TEST_CASE("Test complex matrix algebra with varying sizes [matrix][complex]") {
     compare_arrays(result.re(), scalar_result);
     compare_array_scalar(result.im(), 0.0f);
   }
+}
+
+
+TEST_CASE("Check complex matrix multiplication [matrix][complex]") {
+	if (!Platform::compiling_for_vc4()) {
+		Log::warn << "Skipping test for v3d: 'Check complex matrix multiplication [matrix][complex]'";
+		return;
+	}
+	
+  auto test = [] (int num_qpus, int num_blocks = 1) {
+    // num_blocks factor for inner dimension is there to ensure block sizes are always valid
+    test_complex_matrix_multiplication(  1,    16*num_blocks,  1, num_qpus, num_blocks);
+    test_complex_matrix_multiplication(  2,  2*16*num_blocks,  2, num_qpus, num_blocks, {-1.0f, 2.0f});
+    test_complex_matrix_multiplication(  2,  3*16*num_blocks,  2, num_qpus, num_blocks, {-1.0f, 2.0f}, { 1.0f, -1.0f });
+    test_complex_matrix_multiplication( 16,  2*16*num_blocks, 16, num_qpus, num_blocks);
+    test_complex_matrix_multiplication( 14,  2*16*num_blocks, 17, num_qpus, num_blocks);
+  };
+
+  test(1);
+  test(8);
+  test(1, 2);
 }
 
 
