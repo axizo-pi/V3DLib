@@ -35,9 +35,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <sys/mman.h>
 #include <sys/ioctl.h>
 #include "Support/basics.h"  // fatal()
-
+#include <cstring>           // strerror()
 
 #define PAGE_SIZE (4*1024)
+
+using namespace Log;
 
 namespace V3DLib {
 
@@ -86,16 +88,12 @@ void unmapmem(void *addr, unsigned size)
  */
 static int mbox_property(int file_desc, void *buf)
 {
-   int ret_val = ioctl(file_desc, IOCTL_MBOX_PROPERTY, buf);
-
-   if (ret_val < 0) {
-
-//breakpoint
-
-      printf("ioctl_set_msg failed: %d\n", ret_val);
+   int ret = ioctl(file_desc, IOCTL_MBOX_PROPERTY, buf);
+   if (ret < 0) {
+		 cerr << "mbox_property() ioctl failed, ret: " << ret << ", error: " << strerror(ret);
    }
 
-   return ret_val;
+   return ret;
 }
 
 
@@ -118,7 +116,10 @@ unsigned get_version(int file_desc)
    p[i++] = 0x00000000; // end tag
    p[0] = i * (unsigned) sizeof(*p); // actual size
 
-   mbox_property(file_desc, p);
+   int ret = mbox_property(file_desc, p);
+   if (ret < 0) {
+		 cerr << "get_version(): mbox_property call failed";
+   }
    //printf("get_version returns %d\n", p[5]);
    return p[5];
 }
@@ -140,7 +141,10 @@ unsigned mem_alloc(int file_desc, unsigned size, unsigned align, unsigned flags)
    p[i++] = 0x00000000; // end tag
    p[0] = i * (unsigned) sizeof(*p); // actual size
 
-   mbox_property(file_desc, p);
+   int ret = mbox_property(file_desc, p);
+   if (ret < 0) {
+		 cerr << "mem_alloc(): mbox_property call failed";
+   }
    //printf("mem_alloc returns %d\n", p[5]);
    return p[5];
 }
@@ -162,6 +166,7 @@ unsigned mem_free(int file_desc, unsigned handle)
 
    int ret = mbox_property(file_desc, p);
    if (ret < 0) {
+		 cerr << "mem_free(): mbox_property call failed";
      return (uint32_t) -1;  // Failure
    } else {
      // printf("mem_free returns %d\n", p[5]);
@@ -184,7 +189,10 @@ unsigned mem_lock(int file_desc, unsigned handle)
    p[i++] = 0x00000000; // end tag
    p[0] = i * (unsigned) sizeof(*p); // actual size
 
-   mbox_property(file_desc, p);
+   int ret = mbox_property(file_desc, p);
+   if (ret < 0) {
+		 cerr << "mem_lock(): mbox_property call failed";
+   }
    //printf("mem_lock returns %d\n", p[5]);
    return p[5];
 }
@@ -210,6 +218,7 @@ unsigned mem_unlock(int file_desc, unsigned handle)
 
    int ret = mbox_property(file_desc, p);
    if (ret < 0) {
+		 cerr << "mem_unlock(): mbox_property call failed";
      return (uint32_t) -1;  // Failure
    } else {
      //printf("mem_unlock returns %d\n", p[5]);
@@ -246,13 +255,18 @@ unsigned execute_code(int file_desc, unsigned code, unsigned r0, unsigned r1, un
    p[i++] = 0x00000000; // end tag
    p[0] = i * (unsigned) sizeof(*p); // actual size
 
-   mbox_property(file_desc, p);
+   int ret = mbox_property(file_desc, p);
+   if (ret < 0) {
+		 cerr << "execute_code(): mbox_property call failed";
+   }
    //printf("execute_code returns %d\n", p[5]);
    return p[5];
 }
 
 unsigned qpu_enable(int file_desc, unsigned enable)
 {
+	 //warn << "Called qpu_enable(" << enable << ")";
+
    unsigned i=0;
    unsigned p[32];
 
@@ -267,7 +281,10 @@ unsigned qpu_enable(int file_desc, unsigned enable)
    p[i++] = 0x00000000; // end tag
    p[0] = i * (unsigned) sizeof(*p); // actual size
 
-   mbox_property(file_desc, p);
+   int ret = mbox_property(file_desc, p);
+   if (ret < 0) {
+		 cerr << "qpu_enable(): mbox_property call failed";
+   }
 
    //printf("qpu_enable returns %d\n", p[5]);
    return p[5];
@@ -277,6 +294,8 @@ unsigned qpu_enable(int file_desc, unsigned enable)
  * @param fd file descriptor of the vc4 mailbox
  */
 unsigned execute_qpu(int fd, unsigned num_qpus, unsigned control, unsigned noflush, unsigned timeout) {
+	 //warn << "Called execute_qpu()";
+
    unsigned i=0;
    unsigned p[32];
 
@@ -293,7 +312,10 @@ unsigned execute_qpu(int fd, unsigned num_qpus, unsigned control, unsigned noflu
    p[i++] = 0x00000000; // end tag
    p[0] = i * (unsigned) sizeof(*p); // actual size
 
-   mbox_property(fd, p);
+   int ret = mbox_property(fd, p);
+   if (ret < 0) {
+		 cerr << "execute_qpu(): mbox_property call failed";
+   }
    //printf("execute_qpu returns %d\n", p[5]);
    return p[5];
 }

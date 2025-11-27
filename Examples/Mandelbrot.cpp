@@ -20,7 +20,13 @@ CmdParameters params = {
   "Calculates Mandelbrot for a given region and outputs the result as a PGM bitmap file.\n"
   "The kernel is compute-bound, the calculation time dominates over the data transfer during execution.\n"
   "It is therefore an indicator of compute speed, "
-  "and is used for performance comparisons of platforms and configurations.\n",
+  "and is used for performance comparisons of platforms and configurations.\n"
+	"\n"
+	"NOTE: On vc4, ioctl errors occur on execute_qpu() and qpu_enable(0) for the single kernel and for\n"
+	"      the multi kernel with num QPU's <=3. However, the kernels run fine anyway.\n"
+	"      This mystery is unsolved but benign.\n"
+	"\n",
+
   {{
     "Kernel",
     "-k=",
