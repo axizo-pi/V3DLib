@@ -16,7 +16,10 @@ class LogItem {
 private:
 	Logger &m_log;
   bool    m_next_is_hex = false;
-  bool    m_throw       = false;  // Can be used with any logging form; logging is outputted before throw occurs
+
+  // Can be used with any logging form;
+  // logging is outputted before throw occurs
+  bool    m_throw       = false;
 
 public:	
 	LogItem(Logger &log) : m_log(log) {}
@@ -24,7 +27,9 @@ public:
 
 	LogItem &operator<<(const std::string &str);
 	LogItem &operator<<(const char *str);
-	LogItem &operator<<(int n);
+	LogItem &operator<<(const int n);
+	LogItem &operator<<(const unsigned n);
+	LogItem &operator<<(float n);
 	LogItem &operator<<(LogFlag f);
 };
 

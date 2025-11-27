@@ -51,7 +51,7 @@ LogItem &LogItem::operator<<(const char *str) {
 }
 
 
-LogItem &LogItem::operator<<(int n) {
+LogItem &LogItem::operator<<(const int n) {
   if (m_next_is_hex) {
     char buf[32];
     sprintf(buf, "0x%x", n);
@@ -61,6 +61,26 @@ LogItem &LogItem::operator<<(int n) {
   } else { 
 	  m_log.buf() << n;
   }
+	return *this;
+}
+
+
+LogItem &LogItem::operator<<(const unsigned n) {
+  if (m_next_is_hex) {
+    char buf[32];
+    sprintf(buf, "0x%x", n);
+    m_log.buf() << buf;
+
+    m_next_is_hex = false;
+  } else { 
+	  m_log.buf() << n;
+  }
+	return *this;
+}
+
+
+LogItem &LogItem::operator<<(float n) {
+  m_log.buf() << n;
 	return *this;
 }
 
