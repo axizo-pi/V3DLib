@@ -3,7 +3,7 @@
  */
 #ifdef QPU_MODE
 
-#define USE_MESA_BUFMGR 0
+#define USE_MESA_BUFMGR 1
 
 #include "Support/basics.h"  // Order important
 #include "v3d.h"
@@ -41,10 +41,6 @@ namespace {
 
 int fd = 0;
 
-
-//////////////////////////////////////
-// Support for alloc_intern
-//////////////////////////////////////
 
 /**
  * Allocate and map a buffer object
@@ -87,7 +83,8 @@ bool alloc_intern(
   uint32_t &handle,
   uint32_t &phyaddr,
   void **usraddr,
-  bool show_perror = true) {
+  bool show_perror = true
+) {
   assert(fd != 0);
 
   drm_v3d_create_bo create_bo;
@@ -165,6 +162,8 @@ bool alloc(uint32_t size, uint32_t &handle, uint32_t &phyaddr, void **usraddr) {
   assert(phyaddr == 0);
   assert(*usraddr == nullptr);
 
+	open();
+
   return alloc_intern(fd, size, handle, phyaddr, usraddr);
 }
 
@@ -200,6 +199,8 @@ bool fd_is_open() { return ::v3d::get_fd() > 0; }
  *           -1 if call failed and likely due to sudo
  */
 int open_card(char const *card) {
+	//warn << "open_card() called, card: " << card;
+
   int fd = open(card , O_RDWR);  // This works without sudo
   if (fd == 0) {
     return 0;
@@ -395,6 +396,7 @@ bool open() {
 		return true;
 	}
 
+	//warn << "v3d::open() called";
 
   if (fd_is_open()) return true;  // Already open, all is well
 
@@ -412,6 +414,8 @@ bool open() {
   int fd = (fd1 <= 0)? fd0: fd1;
 	cdebug << "Got fd: " << fd;
   assert(fd > 0);
+	//warn << "open() got fd: " << fd;
+
 	set_fd(fd);
   return true;
 }
