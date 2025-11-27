@@ -85,6 +85,12 @@ LogItem &LogItem::operator<<(float n) {
 }
 
 
+LogItem &LogItem::operator<<(double n) {
+  m_log.buf() << n;
+	return *this;
+}
+
+
 LogItem &LogItem::operator<<(LogFlag f) {
   if (f == hex)  m_next_is_hex = true;
   if (f == thrw) m_throw       = true;

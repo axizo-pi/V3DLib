@@ -15,6 +15,7 @@ public:
   std::string end(bool show_output = true);
   void start();
   void stop();
+  float diff() const { return m_diff; }
 
 private:
   bool m_disp_in_dtor = false;
@@ -23,6 +24,7 @@ private:
   timeval tvTotal = {0,0};
   int count = 0;
   bool started = false;
+  float m_diff;
 };
 
 }  // namespace

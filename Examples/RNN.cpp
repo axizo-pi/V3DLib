@@ -6,11 +6,13 @@
 #include "Support/basics.h"
 #include "Kernel.h"
 #include "Source/Functions.h"  // rotate
+#include "Support/Timer.h"
 
 using namespace V3DLib;
 using namespace Log;
 
-const int N = 16;
+const int N = 16;  // Width of matrix and length of vector
+const int M = 16;  // Num of rows in matrix
 
 Settings settings;
 
@@ -50,32 +52,59 @@ void frand_array(Float::Array &rhs) {
 
 
 
-void run_scalar(Float::Array const &a, Float::Array const &b, float &res) {
-  assert(a.size() == b.size());
+/**
+ * matrix width is assumed to be the same as the vector length
+ */
+void run_scalar(Float::Array const &mat, Float::Array const &vec, float *res) {
+  int height = mat.size()/vec.size();
+  assert(height*vec.size() == mat.size());
 
-  res = 0;
+  for (int h = 0; h < height; ++h) {
+    res[h] = 0;
 
-  for (int i = 0; i < (int) a.size(); ++i) {
-    res += a[i]*b[i];
+    int offset = h*vec.size();
+    for (int w = 0; w < (int) vec.size(); ++w) {
+      res[h] += mat[offset + w] * vec[w];
+    }
   }
 }
 
 
-template<int const N>
-void kernel(Float::Ptr ptr_a, Float::Ptr ptr_b, Float::Ptr result) {
+template<int const M, int const N>
+void kernel(Float::Ptr in_mat, Float::Ptr vec, Float::Ptr result) {
   assert(N > 0);
-  Float tmp = 0;
+  assert(M > 0);
 
-  tmp += (*ptr_a)*(*ptr_b);
-  for (int i = 1; i < N; ++i) {
-    ptr_a.inc();
-    ptr_b.inc();
-    tmp += (*ptr_a)*(*ptr_b);
+  Float tmp[M];
+  Float::Ptr row[M];
+
+  for (int h = 0; h < M; ++h) {
+    tmp[h] = 0;
+    row[h] = in_mat + h*16*N;
+  }
+
+  for (int i = 0; i < N; ++i) {
+    Float v = *vec;
+  
+    for (int h = 0; h < M; ++h) {
+      tmp[h] += (*row[h])*v;
+    }
+
+    if (i < (N-1)) {
+      for (int h = 0; h < M; ++h) {
+        row[h].inc();
+      }
+
+      vec.inc();
+    }
   }
 
   Float res = 0;
-  rotate_sum(tmp, tmp);
-  res.set_at(0, tmp);
+
+  for (int h = 0; h < M; ++h) {
+    rotate_sum(tmp[h], tmp[h]);
+    res.set_at(h, tmp[h]);
+  }
 
   *result = res;
 }
@@ -84,22 +113,38 @@ void kernel(Float::Ptr ptr_a, Float::Ptr ptr_b, Float::Ptr result) {
 int main(int argc, const char *argv[]) {
   settings.init(argc, argv);
 
-  Float::Array a(16*N);
-  Float::Array b(16*N);
-  frand_array(a);
-  frand_array(b);
+  Float::Array matrix(M*16*N);
+  Float::Array vector(16*N);
+  frand_array(matrix);
+  frand_array(vector);
 
-  float scalar_res = 0;
-  run_scalar(a, b, scalar_res);
-  warn << "run_scalar result: " << scalar_res;
+  float scalar_res[M] = {0};
+  run_scalar(matrix, vector, scalar_res);
+
+  std::string buf;
+  for (int h = 0; h < M; ++h) {
+    buf << scalar_res[h] << ", ";
+  }
+  warn << "scalar result: " << buf;
 
   Float::Array result(16);
 
-  auto k = compile(kernel<N>, settings);
-  k.load(&a, &b, &result).run();
+  auto k = compile(kernel<M, N>, settings);
+  k.load(&matrix, &vector, &result);
 
-  warn << "kernel result: " << result[0];
-  std::string buf;
+  {
+    Timer timer("Matrix mult");
+    k.run();
+
+    timer.end();
+
+    int flops = M*(16*N + 16*(N - 1));  // num_rows*(num_mults + num_adds);
+
+    warn << "MFLOPS: " << ((float) flops)/timer.diff()/1.0e6;
+    //warn << "Timer diff: " << timer.diff();
+  }
+
+  buf.clear();
   for (int i = 0; i < (int) result.size(); ++i) {
     buf << result[i] << ", ";
   }

@@ -30,6 +30,7 @@ public:
 	LogItem &operator<<(const int n);
 	LogItem &operator<<(const unsigned n);
 	LogItem &operator<<(float n);
+	LogItem &operator<<(double n);
 	LogItem &operator<<(LogFlag f);
 };
 
