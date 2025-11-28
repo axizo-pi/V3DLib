@@ -1,6 +1,7 @@
 #ifndef _LIB_SUPPORT_EXCEPTION_H
 #define _LIB_SUPPORT_EXCEPTION_H
 #include <string>
+#include <exception>
 
 namespace V3DLib {
 

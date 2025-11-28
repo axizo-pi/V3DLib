@@ -169,6 +169,63 @@ unsigned RegSet::first_empty() const {
 
 namespace instr {
 
+namespace {
+
+bool check_small_imm(Instr const &dst, BaseSource const &src) {
+	assert(!Platform::compiling_for_vc7());
+
+	if (dst.sig.small_imm_b) {
+		// If the src value is the same as the local small int, this is fine
+		return (dst.raddr_b == src.val());
+	} else {
+		// For the time being, assume OK
+		return true;
+	}
+}
+
+
+/**
+ * Note that the mul a can set the small imm before the mul b does it.
+ */
+void set_mul_small_imm(Instr &dst, BaseSource const &src, bool set_a) {
+	assert(!Platform::compiling_for_vc7());
+
+	if (dst.sig.small_imm_b) {
+		// If same value, all is well
+		assertq(dst.raddr_b == src.val(), "alu_mul_b: small imm different value on vc6");
+
+		if (set_a) {
+			dst.alu.mul.a.mux = V3D_QPU_MUX_B;
+		} else {
+			dst.alu.mul.b.mux = V3D_QPU_MUX_B;
+		}
+	} else {
+		// Reserve the small imm
+
+		// Check mux usage. This assumes that the src regs are filled in the appropriate order
+		bool mux_in_use =
+			(!dst.add_nop() &&
+				(dst.alu.add.a.mux == V3D_QPU_MUX_B ||
+				 dst.alu.add.b.mux == V3D_QPU_MUX_B)
+			) ||
+			(!dst.mul_nop() && dst.alu.mul.a.mux == V3D_QPU_MUX_B)
+		;
+
+		assertq(!mux_in_use, "MUX_B in use for non-small_imm");
+
+		dst.sig.small_imm_b = true;
+		dst.raddr_b = src.val();
+
+		if (set_a) {
+			dst.alu.mul.a.mux = V3D_QPU_MUX_B;
+		} else {
+			dst.alu.mul.b.mux = V3D_QPU_MUX_B;
+		}
+	}
+}
+
+}  // anon namespace
+
 uint64_t Instr::NOP() {
   if (devinfo_ver() == 42) {
 		return 0x3c003186bb800000;  // This is actually 'nop nop'
@@ -178,6 +235,10 @@ uint64_t Instr::NOP() {
 	}
 }
 
+
+Instr::Instr() {
+  init(NOP());
+}
 
 Instr::Instr(uint64_t in_code) {
   init(in_code);
@@ -779,15 +840,51 @@ bool Instr::raddr_b_is_safe(Location const &loc, CheckSrc check_src) const {
 
 
 /**
- * Following for vc4 and vc6
+ * Following for vc6
  */
 bool Instr::alu_set_src(Source const &src, v3d_qpu_input &input, CheckSrc check_src) {
 	assert(!Platform::compiling_for_vc7());
 
-	// vc6
+
 	auto &mux = input.mux;
 
-  if (src.is_location()) {
+	// TODO: There is another section here below which handles small imm's.
+  //       Check which section is better.
+	if (src.is_small_imm()) {
+		// warn << "alu_set_src small_imm";
+
+		if (sig.small_imm_b) {
+			// warn << "alu_set_a: small imm same value";
+
+			// If same value, all is well
+			assertq(raddr_b == src.small_imm().val(), "alu_mul_b: small imm different value on vc6");
+		  input.mux = V3D_QPU_MUX_B;
+		} else {
+			// Reserve the small imm
+			// warn << "small imm different value or not present";
+
+			// If possible! - This assumes that the src regs are filled in the appropriate order
+			bool mux_in_use = false;
+
+			if (!add_nop()) {
+				if (check_src == CHECK_ADD_A) mux_in_use = mux_in_use || (alu.add.a.mux == V3D_QPU_MUX_B);
+				if (check_src == CHECK_ADD_B) mux_in_use = mux_in_use || (alu.add.b.mux == V3D_QPU_MUX_B);
+			}
+
+			if (!mul_nop()) {
+				if (check_src == CHECK_MUL_A) mux_in_use = mux_in_use || (alu.mul.a.mux == V3D_QPU_MUX_B);
+				if (check_src == CHECK_MUL_B) mux_in_use = mux_in_use || (alu.mul.b.mux == V3D_QPU_MUX_B);
+			}
+
+			assertq(!mux_in_use, "MUX_B in use for non-small_imm");
+
+			sig.small_imm_b = true;
+			input.mux = V3D_QPU_MUX_B;
+			raddr_b = src.small_imm().val();
+		}
+  } else if (src.is_location()) {
+		// warn << "alu_set_src location";
+
     Location const &loc = src.location();
 
     if (loc.is_reg()) {
@@ -806,6 +903,8 @@ bool Instr::alu_set_src(Source const &src, v3d_qpu_input &input, CheckSrc check_
 		input.unpack = loc.input_unpack();
 
   } else {
+		//warn << "alu_set_src small_imm 2";
+
     // Handle small imm
     auto imm = src.small_imm();
 
@@ -988,9 +1087,13 @@ void Instr::alu_mul_a(BaseSource const &src) {
 	assert(src.is_set());
 
 	if (src.is_small_imm()) {
-		assertq(Platform::compiling_for_vc7(), "alu_mul_a: can not use small imm on vc6");
-		sig.small_imm_c = true;
-		alu.mul.a.raddr = src.val();
+		if (Platform::compiling_for_vc7()) {
+			sig.small_imm_c = true;
+			alu.mul.a.raddr = src.val();
+		} else {
+			set_mul_small_imm(*this, src, true);
+		}
+
 	} else if (src.is_reg()) {
 		assertq(!Platform::compiling_for_vc7(), "alu_mul_a: can not use registers on vc7");
 		// src.val() is a mux value
@@ -1018,12 +1121,11 @@ bool Instr::alu_mul_a_safe(BaseSource const &src) {
 
 	if (src.is_small_imm()) {
 		if (!Platform::compiling_for_vc7()) {
-			//warning("alu_mul_a_safe: can not use small imm on vc6");
-			return false;
+			return check_small_imm(*this, src);
 		}
 	} else if (src.is_reg()) {
 		if (Platform::compiling_for_vc7()) {
-			//warning("alu_mul_a_safe: can not use registers on vc7");
+			warning("alu_mul_a_safe: can not use registers on vc7");
 			return false;
 		}
 	} else {
@@ -1034,12 +1136,17 @@ bool Instr::alu_mul_a_safe(BaseSource const &src) {
 					return true;   // Can reuse raddr_a for mul.a
 				}
 			} else if (alu.add.a.mux == V3D_QPU_MUX_B) { 
-				if (raddr_b == src.val()) {
-					return true;  // Can reuse raddr_b for mul.a
+				if (sig.small_imm_b) {
+					//warn << "add a uses b, raddr_a should be safe";
+					return true;
+				} {
+					if (raddr_b == src.val()) {
+						return true;  // Can reuse raddr_b for mul.a
+					}
 				}
 			}
 
-			//warning("alu_mul_a_safe: vc6 add raddr_a/b do not match with mul a");
+			// warning("alu_mul_a_safe: vc6 add raddr_a/b do not match with mul a");
 			return false;
 		}
 	}
@@ -1058,8 +1165,7 @@ bool Instr::alu_mul_b_safe(BaseSource const &src) {
 
 	if (src.is_small_imm()) {
 		if (!Platform::compiling_for_vc7()) {
-			//warning("alu_mul_b_safe: can not use small imm on vc6");
-			return false;
+			return check_small_imm(*this, src);
 		}
 	} else if (src.is_reg()) {
 		if (Platform::compiling_for_vc7()) {
@@ -1092,15 +1198,24 @@ void Instr::alu_mul_b(BaseSource const &src) {
 	assert(src.is_set());
 
 	if (src.is_small_imm()) {
-		assertq(Platform::compiling_for_vc7(), "alu_mul_b: can not use small imm on vc6");
-		sig.small_imm_d = true;
-		alu.mul.b.raddr = src.val();
+		//warn << "src small imm";
+
+		if (Platform::compiling_for_vc7()) {
+			sig.small_imm_d = true;
+			alu.mul.b.raddr = src.val();
+		} else {
+			set_mul_small_imm(*this, src, false);
+		}
+
 	} else if (src.is_reg()) {
 		assertq(!Platform::compiling_for_vc7(), "alu_mul_b: can not use registers on vc7");
+		//warn << "src reg";
+
 		// src.val() is a mux value
 		alu.mul.b.mux = (v3d_qpu_mux) src.val();
 	} else {
-		// rf location
+		//warn << "src rf location";
+
 		if (Platform::compiling_for_vc7()) {
 			alu.mul.b.raddr = src.val();
 		} else {
@@ -1377,7 +1492,7 @@ BaseSource Instr::alu_add_a() const {
 		if (alu.add.a.mux == V3D_QPU_MUX_A) {
 	    res.set_from_src(raddr_a, false, false, true );
 		} else if (alu.add.a.mux == V3D_QPU_MUX_B) {
-	    res.set_from_src(raddr_b, false, false, false );
+	    res.set_from_src(raddr_b, sig.small_imm_b, false, false );
 		} else {
 	    res.set_from_src(alu.add.a.mux, false, true, false);
 		}
@@ -1400,12 +1515,10 @@ BaseSource Instr::alu_add_b() const {
 	  res.set_from_src(alu.add.b.raddr, sig.small_imm_b, false, false);
 	} else {
 		// vc6
-		if (sig.small_imm_b) {
-	    res.set_from_src(raddr_b, true, false, false );
-		} else if (alu.add.b.mux == V3D_QPU_MUX_A) {
+		if (alu.add.b.mux == V3D_QPU_MUX_A) {
 	    res.set_from_src(raddr_a, false, false, true );
 		} else if (alu.add.b.mux == V3D_QPU_MUX_B) {
-	    res.set_from_src(raddr_b, false, false, false );
+	    res.set_from_src(raddr_b, sig.small_imm_b, false, false );
 		} else {
 	    res.set_from_src(alu.add.b.mux, false, true, false);
 		}
@@ -1469,11 +1582,11 @@ BaseSource Instr::alu_mul_b() const {
 		// vc7 - no acc's
 	  res.set_from_src(alu.mul.b.raddr, sig.small_imm_d, false, false);
 	} else {
-		// vc6 - no small imm on mul b 
+		// vc6 - small imm only on raddr_b for mul b 
 		if (alu.mul.b.mux == V3D_QPU_MUX_A) {
 	    res.set_from_src(raddr_a, false, false, true );
 		} else if (alu.mul.b.mux == V3D_QPU_MUX_B) {
-	    res.set_from_src(raddr_b, false, false, false );
+	    res.set_from_src(raddr_b, sig.small_imm_b, false, false );
 		} else {
 	    res.set_from_src(alu.mul.b.mux, false, true, false);
 		}

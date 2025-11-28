@@ -15,6 +15,7 @@
 #include "instr/BaseSource.h"
 #include "global/log.h"
 #include "Target/Satisfy.h"
+#include "Combine.h"
 
 namespace V3DLib {
 namespace v3d {
@@ -1015,139 +1016,6 @@ bool can_combine(v3d::instr::Instr const &instr1, v3d::instr::Instr const &instr
 }
 
 
-bool convert_alu_op_to_mul_op(v3d_qpu_mul_op &mul_op, v3d::instr::Instr const &add_instr) {
-	// Op's common to both vc6 and vc7
-  switch (add_instr.alu.add.op) {
-    case V3D_QPU_A_OR:
-			if ( add_instr.alu.add.a.mux == add_instr.alu.add.b.mux) {
-        mul_op = V3D_QPU_M_MOV;
-        return true;
-      }
-
-    case V3D_QPU_A_ADD:
-      mul_op = V3D_QPU_M_ADD;
-      return true;
-
-    case V3D_QPU_A_SUB:
-      mul_op = V3D_QPU_M_SUB;
-      return true;
-
-    default: break;
-  }
-
-	// This breaks Tri - absolutely confirmed
-/*	
-	if (Platform::compiling_for_vc7()) {
-  	switch (add_instr.alu.add.op) {
-	    case V3D_QPU_A_MOV:
-				mul_op = V3D_QPU_M_MOV;
-	      return true;
-
-    	default: break;
-  	}
-	} 
-*/
-
-  return false;
-}
-
-
-/**
- * Combine two instructions to an add/mul instruction.
- *
- * The in_instr must either be an add or mul instruction, not both.
- * The dst must be and add instruction only.
- *
- * There are two options:
- *   1. the add instruction in in_instr can be translated to a mul instruction
- *   2. in_instr contains only a mul instruction which can be moved to dst
- *
- * There are pleny of limitations which are taken into account here.
- *
- * @param in_instr instruction that will be combined
- * @param dst      instruct that will contain the add and mul instruction (inshalla)
- *
- * @return true if combine succeeded, false otherwise
- */
-bool add_alu_to_mul_alu(Instr const &in_instr, Instr &dst) {
-	// Perhaps TODO: change these assert's int 'if () return false'
-  assert((!in_instr.add_nop() &&  in_instr.mul_nop()) 
-      || ( in_instr.add_nop() && !in_instr.mul_nop())); 
-  assert(dst.mul_nop()); 
-
-  //
-  // Get used dst and src
-  //
-  //std::unique_ptr<Location> dst_loc;
-	BaseSource alu_add_a = in_instr.alu_add_a();
-	BaseSource alu_add_b = in_instr.alu_add_b();
-	BaseSource alu_mul_a = in_instr.alu_mul_a();
-	BaseSource alu_mul_b = in_instr.alu_mul_b();
-
-/*
-	cdebug
- 		<< "\n"
-    << "  alu_add_a: " << alu_add_a.dump() << "\n"
-    << "  alu_add_b: " << alu_add_b.dump() << "\n"
-    << "  alu_mul_a: " << alu_mul_a.dump() << "\n"
-    << "  alu_mul_b: " << alu_mul_b.dump();
-*/
-
-  if (in_instr.mul_nop()) {  // Take the values from alu add
-    v3d_qpu_mul_op mul_op;
-    if (!convert_alu_op_to_mul_op(mul_op, in_instr)) return false;  // False if no applicable translation add -> mul
-
-		if (!dst.alu_mul_b_safe(alu_add_b)) return false;
-		if (!dst.alu_mul_a_safe(alu_add_a)) return false;
-
-  	dst.alu.mul.op = mul_op;
-		auto dst_loc = in_instr.add_alu_dst();
-  	dst.alu_mul_dst(*dst_loc);  // dst (waddr) is always safe
-  	dst.alu_mul_a(alu_add_a);
-  	dst.alu_mul_b(alu_add_b);
-  } else {                  // Take the values from alu mul
-		if (!dst.alu_mul_b_safe(alu_mul_b)) return false;
-		if (!dst.alu_mul_a_safe(alu_mul_a)) return false;
-
-    dst.alu.mul.op = in_instr.alu.mul.op;
-		auto dst_loc = in_instr.mul_alu_dst();
-  	dst.alu_mul_dst(*dst_loc);
-  	dst.alu_mul_a(alu_mul_a);
-  	dst.alu_mul_b(alu_mul_b);
-  }
-
-  if (in_instr.mul_nop()) {
-    dst.alu.mul.output_pack = in_instr.alu.add.output_pack;
-    dst.alu.mul.a.unpack    = in_instr.alu.add.a.unpack;
-    dst.alu.mul.b.unpack    = in_instr.alu.add.b.unpack;
-
-    dst.flags.mc  = in_instr.flags.ac;
-    dst.flags.mpf = in_instr.flags.apf;
-    dst.flags.muf = in_instr.flags.auf;
-  } else {
-    dst.alu.mul.output_pack = in_instr.alu.mul.output_pack;
-    dst.alu.mul.a.unpack    = in_instr.alu.mul.a.unpack;
-    dst.alu.mul.b.unpack    = in_instr.alu.mul.b.unpack;
-
-    dst.flags.mc  = in_instr.flags.mc;
-    dst.flags.mpf = in_instr.flags.mpf;
-    dst.flags.muf = in_instr.flags.muf;
-  }
-
-  dst.header(in_instr.header());
-  dst.comment(in_instr.comment());
-
-/*
-	Log::warn << "  dst : " << dst.mnemonic(false);
-	if (!Platform::compiling_for_vc7()) {
-		Log::warn << "mul mux b:" << dst.alu.mul.b.mux  << ", raddr_b: " << dst.raddr_b;
-	}
-*/
-
-  return true;
-}
-
-
 void combine(Instructions &instructions) {
 
   //
@@ -1399,7 +1267,7 @@ void combine(Instructions &instructions) {
 
       v3d::instr::Instr dst = add_instr;
 
-      bool success = add_alu_to_mul_alu(mul_instr, dst);
+      bool success = Combine::add_alu_to_mul_alu(mul_instr, dst);
 
       if (success) {
 				Log::debug << "Converted: " << dst.mnemonic(false);
@@ -1426,25 +1294,6 @@ void combine(Instructions &instructions) {
 
   if (combine_count > 0) {
     cdebug << "Combined " << combine_count << " v3d instructions";
-  }
-
-  //
-  // Combine skips
-  //
-  Instructions ret;
-  int skip_count = 0;
-  for (int i = 0; i < (int) instructions.size(); i++) {
-    auto const &instr = instructions[i];
-    if (instr.skip()) {
-      skip_count++;
-    } else {
-      ret << instr;
-    }
-  }
-
-  if (skip_count > 0) {
-    cdebug << "Skipped " << skip_count << " instructions";
-    instructions = ret;
   }
 }
 
@@ -1529,7 +1378,13 @@ void KernelDriver::encode() {
 
   // Encode target instructions
   _encode(m_targetCode, instructions);
+
+  Combine::combine(instructions);
+  Combine::remove_skips(instructions);
+
   combine(instructions);
+  Combine::remove_skips(instructions);
+
   removeLabels(instructions);
 
   if (!instructions.check_consistent()) {

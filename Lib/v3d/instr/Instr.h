@@ -82,7 +82,8 @@ public:
   // End Label support
 
 public:
-  Instr(uint64_t in_code = NOP());
+  Instr();
+  Instr(uint64_t in_code);
 
   bool skip() const { return m_skip; }
   void skip(bool val) { m_skip = val; }

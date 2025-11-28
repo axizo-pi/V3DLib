@@ -70,7 +70,8 @@ void BaseSource::set_from_dst(uint8_t val, bool is_magic) {
   m_val = val;
 
   if (is_magic && val <= V3D_QPU_MUX_R5) {
-    m_is_reg = true;
+    m_is_reg   = true;
+    m_is_magic = false;
   }
 }
 

@@ -1,7 +1,7 @@
 #
 # This file is generated!  Editing it directly is a bad idea.
 #
-# Generated on: Thu 27 Nov 2025 08:12:25 AM CET
+# Generated on: Thu 27 Nov 2025 05:33:50 PM CET
 #
 ###############################################################################
 
@@ -90,6 +90,7 @@ OBJ := \
   v3d/instr/Encode.o  \
   v3d/instr/SmallImm.o  \
   v3d/PerformanceCounters.o  \
+  v3d/Combine.o  \
   Common/SharedArray.o  \
   Common/BufferObject.o  \
   Common/CompileData.o  \

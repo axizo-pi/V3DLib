@@ -77,10 +77,11 @@ void kernel(Float::Ptr in_mat, Float::Ptr vec, Float::Ptr result) {
 
   Float tmp[M];
   Float::Ptr row[M];
+  //Int offset = 16*N;
 
   for (int h = 0; h < M; ++h) {
     tmp[h] = 0;
-    row[h] = in_mat + h*16*N;
+    row[h] = in_mat + h*16*N; //offset;
   }
 
   for (int i = 0; i < N; ++i) {
@@ -121,11 +122,6 @@ int main(int argc, const char *argv[]) {
   float scalar_res[M] = {0};
   run_scalar(matrix, vector, scalar_res);
 
-  std::string buf;
-  for (int h = 0; h < M; ++h) {
-    buf << scalar_res[h] << ", ";
-  }
-  warn << "scalar result: " << buf;
 
   Float::Array result(16);
 
@@ -143,6 +139,12 @@ int main(int argc, const char *argv[]) {
     warn << "MFLOPS: " << ((float) flops)/timer.diff()/1.0e6;
     //warn << "Timer diff: " << timer.diff();
   }
+
+  std::string buf;
+  for (int h = 0; h < M; ++h) {
+    buf << scalar_res[h] << ", ";
+  }
+  warn << "scalar result: " << buf;
 
   buf.clear();
   for (int i = 0; i < (int) result.size(); ++i) {

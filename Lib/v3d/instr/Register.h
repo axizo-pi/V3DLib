@@ -19,6 +19,8 @@ public:
     return (m_waddr == rhs.m_waddr && m_magic_write == rhs.m_magic_write);
   }
 
+  bool is_magic() const { return m_magic_write; }
+
 private:
   bool    m_used = false;
   uint8_t m_waddr;

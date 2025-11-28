@@ -343,11 +343,12 @@ int main(int argc, const char *argv[]) {
 			//.ldunifrf = 1
 			//.ldtmu = 1,
 			//.wrtmuc = 1
-			.small_imm_a = 1,
+			.small_imm_b = 1,
 	 	},
 		.sig_addr = 0,
 		.sig_magic = false,
-    //.raddr_b = 63,  // 4x
+    .raddr_a = 3,  // 4x
+    .raddr_b = 0,  // 4x
 		.flags = {
 		  //.ac = V3D_QPU_COND_IFA,
 		  //.mc = V3D_QPU_COND_IFA
@@ -356,30 +357,30 @@ int main(int argc, const char *argv[]) {
 		},
 		.alu = {
 			.add = {
-				  .op = V3D_QPU_A_NOT,
+				  .op = V3D_QPU_A_OR,
 			  	.a = {
-            //.mux = V3D_QPU_MUX_B,
-            .raddr = 2 
+            .mux = V3D_QPU_MUX_B,
+            //.raddr = 2 
           },
 			  	.b = {
-            //.mux = V3D_QPU_MUX_R4,
+            .mux = V3D_QPU_MUX_B,
           },
-		 	    .waddr = 0, //V3D_QPU_WADDR_NOP,
+		 	    .waddr = 13, //V3D_QPU_WADDR_NOP,
 					.magic_write = false,
 			},
 			.mul = {
-				  .op = V3D_QPU_M_NOP,
+				  .op = V3D_QPU_M_ADD,
 			  	.a = {
-            //.mux = V3D_QPU_MUX_B,
+            .mux = V3D_QPU_MUX_R4,
             //.raddr = 0
           },
 			  	.b = {
-            //.mux = V3D_QPU_MUX_R4,
+            .mux = V3D_QPU_MUX_B,
             //.raddr = 0
           },
 				  //.op = V3D_QPU_M_FMOV,
 					//.output_pack = V3D_QPU_PACK_NONE  // Other values fail disasm
-		 	    .waddr = 0, //V3D_QPU_WADDR_NOP,
+		 	    .waddr = 10, //V3D_QPU_WADDR_TMUA,
 					.magic_write = false,
 			},
 		},

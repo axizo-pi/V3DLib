@@ -118,9 +118,9 @@ uint8_t SmallImm::to_raddr() const {
 }
 
 
-int SmallImm::val() const {
+uint8_t SmallImm::val() const {
   assertq(m_val_is_set, "SmallImm::val(): val not set");
-  return m_val;
+  return (uint8_t) m_val;
 }
 
 

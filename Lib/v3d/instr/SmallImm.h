@@ -15,7 +15,7 @@ public:
 
   uint8_t to_raddr() const;
   v3d_qpu_input_unpack input_unpack() const { return m_input_unpack; }
-  int val() const;  // for assertions
+  uint8_t val() const;
   bool operator==(SmallImm const &rhs) const;
   bool operator!=(SmallImm const &rhs) const { return !(*this == rhs); }
 

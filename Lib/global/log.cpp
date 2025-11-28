@@ -6,6 +6,7 @@
 #include <iostream>
 #include <cstdlib>           // abort()
 #include <time.h>            // strftime()
+#include "Support/Exception.h"
 
 
 namespace Log {
@@ -126,12 +127,11 @@ void Logger::flush(bool do_throw) {
 			std::flush(std::cerr);
 
       //
-      // CATCH NOT WORKING
+      // CATCH NOT WORKING for std::runtime_error
       //
 
       // Throwing is better, since it allows to unroll the stack
-			//abort();
-      throw std::runtime_error(m_buf.str());
+      throw V3DLib::Exception(m_buf.str());
 		}
 
 		if (m_level == ERROR) {
