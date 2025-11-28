@@ -63,7 +63,14 @@ std::string Timer::end(bool show_output) {
   gettimeofday(&tvEnd, NULL);
   timersub(&tvEnd, &tvStart, &tvDiff);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+
   m_diff= 1.0f*tvDiff.tv_sec + (1.0f*tvDiff.tv_usec/1000000l);
+
+#pragma GCC diagnostic pop
+
+
 
   if (show_output) {
     if (count == 0) {
