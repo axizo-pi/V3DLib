@@ -36,32 +36,6 @@ std::vector<std::string> local_errors;
 
 
 /**
- * For vc7, replace r0/r1/r2 with rf63/62/61.
- * These have been reserverd for this specific purpose during compile
- * @see Platform::size_regfile()
- */
-Location const &acc_proxy(int which_acc) {
-	static RFAddress rf63(63);
-	static RFAddress rf62(62);
-	static RFAddress rf61(61);
-
-	assert(which_acc == 0 || which_acc == 1 || which_acc == 2);
-
-	if (Platform::compiling_for_vc7()) {
-		// vc7
-		if (which_acc == 0) return rf63;
-		if (which_acc == 1) return rf62;
-		return rf61;
-	} else {
-		// vc6
-		if (which_acc == 0) return r0;
-		if (which_acc == 1) return r1;
-		return r2;
-	}
-}
-
-
-/**
  * For v3d, the QPU and ELEM num are not special registers but instructions.
  *
  * In order to not disturb the code translation too much, they are derived from the target instructions:
@@ -256,8 +230,15 @@ void handle_condition_tags(V3DLib::Instr const &src_instr, Instructions &ret) {
 		// Only set final instruction! This is the assignment of the result of the  preceding operations
     ret.back().set_cond_tag(cond);
 
-    cdebug << "handle_condition_tags(): set_cond_tag: '"
-           << "v3d: \n" << ret.dump() << "'\n";
+    //
+    // Dump fails under some mysterious circumstances, even when flags not used.
+    // Eg. when doing '*int_result = -1;' in kernels.
+    //
+    // It happens elswhere as well. Not fighting it.
+    //
+    //cdebug << "handle_condition_tags(): set_cond_tag: '"
+    //       << "v3d: \n" << ret.dump() << "'\n";
+
     return;
   }
 
@@ -411,180 +392,6 @@ bool translateRotate(V3DLib::Instr const &instr, Instructions &ret) {
 }
 
 
-/**
- * Convert powers of 2 of direct small immediates
- */
-bool convert_int_powers(Instructions &output, int in_value) {
-  if (in_value < 0)  return false;  // only positive values for now
-  if (in_value < 16) return false;  // don't bother with values within range
-
-  int value = in_value;
-  int left_shift = 0;
-
-  while (value != 0 && (value & 1) == 0) {
-    left_shift++;
-    value >>= 1;
-  }
-
-  if (left_shift == 0) return false;
-  if (left_shift >= 16) return false;  // Must be positive small int
-
-  int rep_value;
-  if (!SmallImm::int_to_opcode_value(value, rep_value)) return false;
-
-  SmallImm imm(rep_value);
-
-  std::string cmt;
-  cmt << "Load immediate " << in_value;
-
-  Instructions ret;
-  ret << mov(acc_proxy(0), imm).comment(cmt);
-  ret << shl(acc_proxy(0), acc_proxy(0), SmallImm(left_shift));
-
-  output << ret;
-  return true;
-}
-
-
-/**
- * Blunt tool for converting all int's.
- *
- * **NOTE:** uses r0, r1 and r2 internally, register conflict possible
- *
- * @param output    output parameter, sequence of instructions to
- *                  add generated code to
- * @param in_value  value to encode
- *
- * @return  true if conversion successful, false otherwise
- */
-bool encode_int_immediate(Instructions &output, int in_value) {
-  Instructions ret;
-  uint32_t value = (uint32_t) in_value;
-  uint32_t nibbles[8];  // was 7 (idiot)
-
-  for (int i = 0; i < 8; ++i) {
-    nibbles[i] = (value  >> (4*i)) & 0xf;
-  }
-
-  bool did_first = false;
-  for (int i = 7; i >= 0; --i) {
-    if (nibbles[i] == 0) continue;
-
-    SmallImm imm(nibbles[i]);
-
-    // r0 is used as temp value,
-    // result is in r1
-
-    if (!did_first) {
-      ret << mov(r1, imm);  // TODO Gives segfault on p4-3 (arm32)
-                            //      No clue why, works fine on silke (arm64) and pi3
-
-      if (i > 0) {
-        if (convert_int_powers(ret, 4*i)) {
-          // r0 now contains value for left shift
-          ret << shl(acc_proxy(1), acc_proxy(1), acc_proxy(0)).comment("Here 1");
-        } else {
-          ret << shl(acc_proxy(1), acc_proxy(1), SmallImm(4*i)).comment("Here 2");;
-        }
-      }
-      did_first = true;
-    } else {
-      if (i > 0) {
-        if (convert_int_powers(ret, 4*i)) {
-          // r0 now contains value for left shift
-          ret << shl(r0, imm, r0).comment("Here 3");;
-        } else {
-          ret << mov(r0, imm);
-          ret << shl(r0, r0, SmallImm(4*i)).comment("Here 4");;
-        }
-
-        ret << bor(r1, r1, r0);
-      } else {
-        ret << bor(r1, r1, imm).comment("Here 5");
-      }
-    }
-  }
-
-  if (ret.empty()) return false;  // Not expected, but you never know
-
-  std::string cmt;
-  cmt << "Full load imm " << in_value;
-  ret.front().comment(cmt);
-
-  std::string cmt2;
-  cmt2 << "full load imm " << in_value;
-  ret.back().comment(cmt2);
-
-  output << ret;
-  return true;
-}
-
-
-bool encode_int(Instructions &ret, std::unique_ptr<Location> &dst, int value) {
-  bool success = true;
-  int rep_value;
-
-  if (SmallImm::int_to_opcode_value(value, rep_value)) {  // direct translation
-    SmallImm imm(rep_value);
-    ret << mov(*dst, imm);
-  } else if (convert_int_powers(ret, value)) {            // powers of 2 of basic small int's 
-    ret << mov(*dst, acc_proxy(0));
-  } else if (encode_int_immediate(ret, value)) {          // Use full blunt conversion (heavy but always works)
-    ret << mov(*dst, acc_proxy(1));
-  } else {
-    success = false;                                      // Conversion failed
-  }
-
-  return success;
-}
-
-
-bool encode_float(Instructions &ret, std::unique_ptr<Location> &dst, float value) {
-  bool success = true;
-  int rep_value;
-
-  auto load_float_as_int = [&ret, &dst] (float value) -> bool {
-    int int_value = (int) value;
-
-    if (encode_int(ret, dst, int_value)) {
-      std::string cmt;
-      cmt << "Load float imm " << value;
-
-      ret  << itof(*dst,*dst).comment(cmt);
-      return true;
-    } else {
-      assertq("Full-int float conversion failed", true);  // Actually has never failed
-      return false;
-    }
-  };
-
-  if (value < 0 && SmallImm::float_to_opcode_value(-value, rep_value)) {
-    std::string cmt;
-    cmt << "Load neg float small imm " << value;
-
-    ret << nop().fmov(*dst, rep_value).comment(cmt)
-        << fsub(*dst, 0, *dst);                   // Works because float zero is 0x0
-  } else if (SmallImm::float_to_opcode_value(value, rep_value)) {
-    ret << nop().fmov(*dst, rep_value);
-  } else if ((value == (float) ((int) value))) {  // Special case: float is encoded int, no fraction
-    success = load_float_as_int(value);
-  } else {
-    // Do the full blunt int conversion
-    int int_value = *((int *) &value);
-    if (encode_int_immediate(ret, int_value)) {
-      std::string cmt;
-      cmt << "Load full float imm " << value;
-
-      ret << mov(*dst, r1).comment(cmt);          // Result is int but will be handled as float downstream
-    } else {
-      success = false;
-    }
-  }
-
-  return success;
-}
-
-
 Instructions encodeLoadImmediate(V3DLib::Instr const full_instr) {
   assert(full_instr.tag == LI);
   auto &instr = full_instr.LI;
@@ -599,21 +406,29 @@ Instructions encodeLoadImmediate(V3DLib::Instr const full_instr) {
   case Imm::IMM_INT32: {
     int value = instr.imm.intVal();
 
-    if (!encode_int(ret, dst, value)) {
-      // Conversion failed, output error
-      err_label = "int";
-      err_value = std::to_string(value);
+ 	  if (!(-16 <= value && value <= 15)) {  // big int conversions should have been done beforehand
+      cerr << "Int out of expected range. int: " << value; // << ", float: " << instr.imm.floatVal();
     }
+
+    ret << mov(*dst, value);
   }
   break;
 
   case Imm::IMM_FLOAT32: {
+    int rep_value;
     float value = instr.imm.floatVal();
 
-    if (!encode_float(ret, dst, value)) {
-      // Conversion failed, output error
+    if (value < 0 && SmallImm::float_to_opcode_value(-value, rep_value)) {
+      std::string cmt;
+      cmt << "Load neg float small imm " << value;
+
+      ret << nop().fmov(*dst, rep_value).comment(cmt)
+          << fsub(*dst, 0, *dst);                   // Works because float zero is 0x0
+    } else if (SmallImm::float_to_opcode_value(value, rep_value)) {
+      ret << nop().fmov(*dst, rep_value);
+    } else {
       err_label = "float";
-      err_value = std::to_string(value);
+      err_value << value;
     }
   }
   break;
@@ -1424,6 +1239,7 @@ void KernelDriver::compile_intern() {
 
   insertInitBlock(m_targetCode);
   add_init(m_targetCode);
+	m_targetCode = adjust_immediates(m_targetCode);
 
   //Timer t5("compile_postprocess");
   compile_postprocess(m_targetCode);  // performance hog 1 31/45s

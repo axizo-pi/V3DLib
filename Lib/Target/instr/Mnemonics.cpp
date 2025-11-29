@@ -232,6 +232,11 @@ Instr shl(Reg dst, Reg srcA, int val) {
 }
 
 
+Instr shl(Reg dst, Reg srcA, Reg srcB) {
+  return genInstr(ALUOp::A_SHL, dst, srcA, srcB);
+}
+
+
 Instr shr(Reg dst, Reg srcA, int n) {
   assert(n >= 0 && n <= 15);
   return genInstr(ALUOp::A_SHR, dst, srcA, n);
@@ -255,6 +260,12 @@ Instr add(Reg dst, Reg srcA, int n) {
 Instr sub(Reg dst, Reg srcA, int n) {
   assert(n >= 0 && n <= 15);
   return genInstr(ALUOp::A_SUB, dst, srcA, n);
+}
+
+
+Instr sub(Reg dst, int n, Reg srcA) {
+  assert(n >= 0 && n <= 15);
+  return genInstr(ALUOp::A_SUB, dst, n, srcA);
 }
 
 

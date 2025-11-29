@@ -27,6 +27,7 @@ void immediate_kernel(Int::Ptr int_result, Float::Ptr float_result) {
   *float_result =   0.225f; float_result.inc();  // failed at one time
 
   // Other test values
+  *float_result = 3.14159f; float_result.inc();
   *float_result = 0.0f;
 }
 
@@ -34,16 +35,16 @@ void immediate_kernel(Int::Ptr int_result, Float::Ptr float_result) {
 
 
 TEST_CASE("Test loading of immediates [dsl][imm]") {
-  int const N = 3;  // Number of distinct results (1 more for float)
+  int const N = 3;  // Number of distinct results (2 more for float)
 
   Int::Array int_result(16*N);
   int_result.fill(0);
-  Float::Array float_result(16*(N + 1));
+  Float::Array float_result(16*(N + 2));
   float_result.fill(0.0f);
 
   auto k = compile(immediate_kernel);
   //k.dump_compile_data(true, "./obj/test/test_imm_vc4_data.txt");
-  //k.pretty(true, "./obj/test/test_imm_vc4.txt");
+  //k.pretty("test_imm.txt");
   REQUIRE(!k.has_errors());
   k.load(&int_result, &float_result).run();
 
@@ -53,5 +54,6 @@ TEST_CASE("Test loading of immediates [dsl][imm]") {
   REQUIRE(float_result[ 0]   ==  25.0f);
   REQUIRE(float_result[16]   == -25.0f);
   REQUIRE(float_result[16*2] ==   0.225f);
-  REQUIRE(float_result[16*3] ==   0.0f);
+  REQUIRE(float_result[16*3] ==   3.14159f);
+  REQUIRE(float_result[16*4] ==   0.0f);
 }

@@ -312,9 +312,10 @@ try {
 
   // TODO: better specify end program. This should be on barrierid
   int end = (int) instr.size();
+  if (end > (start + 50)) end = (start + 50);  // WRI DEBUG
 
   // Consider all instructions in main body
-  for (int i = start + 1; i < start + 50 /*end*/; ++i) {
+  for (int i = start + 1; i < end; ++i) {
     if (instr[i].add_nop()) continue; 
 
 
@@ -353,7 +354,8 @@ try {
     if (has_special_regs) {
       cerr << "magic write to special register set on instr:\n"
            << "  " << bottom.mnemonic() << "\n"
-           << "- Deal with this later on" << thrw;
+           << "- Deal with this later on";
+      break;
     }
 
     // Try to move instructions as far up as possible

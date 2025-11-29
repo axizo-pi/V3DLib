@@ -345,18 +345,7 @@ bool Platform::run_vc7()           { return instance().run_vc7(); }
  */
 int Platform::size_regfile() {
   if (compiling_for_vc4()) return 32;
-
-	//
-	// For vc7, the top elements in the regfile are reserved for
-	// replacements for r0 (ACC0), r1 (ACC1) and r2 (ACC2).
-	//
-	// It might be the case that only r0 is used.
-	//
-	// As stated repeatedly, there are no general purpose acc's in vc7.
-	//
-  if (compiling_for_vc7()) return 61;
-
-	return 64;  // vc6
+	return 64;  // v3d
 }
 
 
