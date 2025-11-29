@@ -35,7 +35,7 @@ void log_to_cout(bool val) {
 }
 
 
-LogItem::~LogItem() {
+LogItem::~LogItem() noexcept(false) {
 	m_log.flush(m_throw);
 }
 

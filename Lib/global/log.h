@@ -23,7 +23,7 @@ private:
 
 public:	
 	LogItem(Logger &log) : m_log(log) {}
-	~LogItem();
+	~LogItem() noexcept(false);
 
 	LogItem &operator<<(const std::string &str);
 	LogItem &operator<<(const char *str);

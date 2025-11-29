@@ -182,9 +182,8 @@ bool translateOpcode(V3DLib::Instr const &src_instr, Instructions &ret) {
 
 		// BRAINFART: TODO cleanup. This solution is totally disgusting
 		if (*dst_reg == tmua) {
-			Log::debug << "tmua detected. A_MOV inst: " << src_instr.dump();
+			// Following thrsw and nop's absolutely required on vc7, verified
 			tmp.thrsw();
-
 			ret << tmp << nop() << nop();
 		} else {
 			ret << tmp;
