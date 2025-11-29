@@ -468,43 +468,6 @@ Instr::List adjust_immediates(Instr::List const &instrs) {
 		}
 
 		res << encodeLoadImmediate(instr);
-
-/*
-		// int values only
-		if (instr.LI.imm.is_int()) {
-			int val = instr.LI.imm.intVal();
-
-			// Skip values which can be used immediately
-			if (-16 <= val && val <= 15) {
-				res << instr;
-				continue;
-			}
-
-			warn << "Load immediate at: " << i << ", value: " << instr.LI.imm.intVal() <<  ", op: " <<  instr.dump();
-
-			Instr::List list;
-
-			if (convert_int_powers(list, instr.dest(), val)) {
-				warn << "Supplementing ops:\n"
-						 <<  list.dump();
-
-				res << list;
-
-/ *
-				// Replace original op with the new sequence
-				// TODO: It might be more efficient to just write to a new list
-			  instrs[i]	= list[0];
-				for (int j = 1; j < list.size(); ++j) {
-					instrs.insert((i + j), list[j]);
-				}
-* /
-			}
-		} else if (instr.LI.imm.is_float())  {
-		} else {
-			assert(false);  // Not expecting here
-			res << instr;
-		}
-*/
 	}
 
 	return res;

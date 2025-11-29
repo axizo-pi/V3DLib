@@ -90,7 +90,8 @@ void add_init(Instr::List &code) {
   int insert_index = code.tag_index(INIT_BEGIN);
   assertq(insert_index >= 0, "Expecting init begin marker");
 
-	Reg acc = ACC0();
+	Reg acc  = ACC0();
+	Reg _r64 = _64();
 
   Instr::List ret;
 
@@ -125,6 +126,9 @@ void add_init(Instr::List &code) {
 	      << label(endifLabel)
 		;
 	}
+
+	ret << mov(_r64, 1)
+		  << shl(_r64, _r64, 6)   . comment("init global 64");
 
   ret << add_uniform_pointer_offset(code);
 

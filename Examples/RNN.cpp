@@ -78,10 +78,12 @@ void kernel(Float::Ptr in_mat, Float::Ptr vec, Float::Ptr result) {
   Float tmp[M];
   Float::Ptr row[M];
   //Int offset = 16*N;
+  Int offset2 = 4*16*N;
 
   for (int h = 0; h < M; ++h) {
     tmp[h] = 0;
-    row[h] = in_mat + h*16*N; //offset;
+    //row[h] = in_mat + (h*offset);
+    row[h] = in_mat.offset(h*offset2);
   }
 
   for (int i = 0; i < N; ++i) {

@@ -1015,9 +1015,11 @@ void combine(Instructions &instructions) {
 
     //
     // Remove useless copies
+		//
+		// For some reason, the first instr (index 1) does not get picked up
     //
     if (check_useless_moves(instr2, i)) {
-			cdebug << "Skipping useless move: " << instr2.mnemonic(false);
+			//warn << "Skipping useless move: " << instr2.mnemonic(false);
       instr2.skip(true);
       continue;
     }
@@ -1194,8 +1196,11 @@ void KernelDriver::encode() {
   // Encode target instructions
   _encode(m_targetCode, instructions);
 
+	// When disabled, RNN runs on vc7
+	//warn << instructions.dump();
   Combine::combine(instructions);
   Combine::remove_skips(instructions);
+
 
   combine(instructions);
   Combine::remove_skips(instructions);

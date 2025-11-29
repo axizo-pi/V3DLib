@@ -2,6 +2,7 @@
 #include "Support/basics.h"
 #include "Support/Platform.h"
 #include "global/log.h"
+#include <memory>
 
 namespace V3DLib {
 namespace {
@@ -64,7 +65,7 @@ Reg const ACC4_(ACC, 4);
 
 
 Instr _mov(Reg dst, RegOrImm const &src) {
-	return genInstr(ALUOp::A_MOV, dst, src);
+	return genInstr(ALUOp::A_MOV, dst, src); //.comment("_mov");
 }
 
 }  // anon namespace
@@ -98,6 +99,11 @@ Reg ACC0() {
 	} else {
 		return ACC0_;
 	}
+}
+
+
+Reg _64() {
+ 	return Reg(Var_64());
 }
 
 

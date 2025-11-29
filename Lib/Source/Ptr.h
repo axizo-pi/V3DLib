@@ -44,6 +44,7 @@ public:
   Pointer(PointerExpr rhs);
 
   void inc();
+	PointerExpr offset(IntExpr b);
   PointerExpr operator=(PointerExpr rhs);
   PointerExpr operator+(int b);
   PointerExpr operator+=(IntExpr b);

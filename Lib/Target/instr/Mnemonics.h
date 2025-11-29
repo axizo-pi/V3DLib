@@ -9,6 +9,7 @@ namespace instr {
 extern Reg const None;
 Reg ACC0();
 Reg ACC4();
+Reg _64();
 extern Reg const ACC5;
 extern Reg const UNIFORM_READ;
 extern Reg const QPU_ID;

@@ -24,20 +24,10 @@ PointerExpr PointerExpr::add(IntExpr b) {
 ///////////////////////////////////////////////////////////////////////////////
 
 namespace {
-/*
-std::unique_ptr<Int> increment;
 
-Int &get_increment() {
-  if (increment.get() == nullptr) {
-    int const INC = 16*4;  // for getting next block for a sequential pointer
-    increment.reset(new Int(INC));  comment("pointer increment");
-  }
-
-  return *increment;
+PointerExpr bare_addself(Pointer &self, IntExpr b) {
+	return mkApply(self.expr(), Op(ADD, INT32), b.expr());
 }
-*/
-
-PointerExpr bare_addself(Pointer &self, IntExpr b) { return mkApply(self.expr(), Op(ADD, INT32), b.expr()); }
 
 }  // anon namespace
 
@@ -80,11 +70,26 @@ void Pointer::reset_increment() {
 
 
 void Pointer::inc() {
-  std::unique_ptr<Int> increment;
+/*	
+  std::unique_ptr<Int> e;
   int const INC = 16*4;  // for getting next block for a sequential pointer
-  increment.reset(new Int(INC));  comment("pointer increment");
+  e.reset(new Int(INC));  comment("pointer increment");
+*/
+  Expr::Ptr e = std::make_shared<Expr>(Var_64());
 
-  self() = bare_addself(*this, *increment);  comment("increment pointer");
+  self() = bare_addself(*this, e);  comment("increment pointer");
+}
+
+
+/**
+ * Convenience function to get rid of the pesky '<<2' needed for ptr's.
+ * The factor 4 must now be in the offset.
+ *
+ * This, however does 'add tmp, ...; mov dst, tmp'. I would rather see it
+ * add directly.
+ */
+PointerExpr Pointer::offset(IntExpr b) {
+	return mkApply(expr(), Op(ADD, INT32), b.expr());
 }
 
 

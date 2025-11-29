@@ -49,9 +49,12 @@ private:
 class VarGen {
 public:
   static Var fresh(VarTag tag = STANDARD);
+  static int fresh_tag();
   static int count();
   static void reset(int val = 0);
 };
+
+Var Var_64();
 
 }  // namespace V3DLib
 

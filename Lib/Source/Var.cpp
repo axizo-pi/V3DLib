@@ -66,6 +66,10 @@ Var VarGen::fresh(VarTag tag) {
   return Var(tag, globalVarId++);
 }
 
+int VarGen::fresh_tag() {
+  return globalVarId++;
+}
+
 
 /**
  * Returns number of fresh vars used
@@ -81,6 +85,18 @@ int VarGen::count() {
 void VarGen::reset(int val) {
   assert(val >= 0);
   globalVarId = val;
+}
+
+
+Var Var_64() {
+	static bool did_it = false;
+  static int tag = -1;
+	if (!did_it) {
+ 		tag = V3DLib::VarGen::fresh_tag();
+		did_it = true;
+	}
+
+ 	return Var(STANDARD, tag);
 }
 
 }  // namespace V3DLib

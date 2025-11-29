@@ -180,8 +180,11 @@ public:
   BaseSource alu_add_dst() const;
   BaseSource alu_add_a() const;
   BaseSource alu_add_b() const;
+  BaseSource alu_mul_dst() const;
   BaseSource alu_mul_a() const;
   BaseSource alu_mul_b() const;
+
+	bool has_small_imm() const;
 
 protected:
   static uint64_t NOP();
@@ -209,7 +212,6 @@ private:
   bool raddr_b_is_safe(Location const &loc, CheckSrc check_src) const;
 
 	bool alu_set_src(Source const &src, v3d_qpu_input &input, CheckSrc check_src);
-	bool has_small_imm() const;
 
 //
 // vc7: support for converting acc's to rf'

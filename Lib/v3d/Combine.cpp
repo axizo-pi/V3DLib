@@ -20,7 +20,23 @@ namespace {
  * @return true if there are no conflicts with small imm, false otherwise.
  */
 bool check_small_imm_usage(Instr const &top, Instr const &bottom) {
-  assertq(!Platform::compiling_for_vc7(), "Small imm's currently only handled for vc6");
+  if (Platform::compiling_for_vc7()) {
+		// Small imm's currently only handled for vc6
+
+		// If I enable this, combine() catches the exception
+	  //	and the kernel actually runs on vc7
+		//assertq(false, "nope");
+
+		// Hypothesis: only 1 src field can be small imm.
+		// This comes from the way the sig fields are set, which are not disjunct.
+		// Note that a/b's are not checked against each other
+		//
+		// The hypothesis appears to be correct.
+		return !(top.has_small_imm() && bottom.has_small_imm());
+
+	}
+
+	// vc6
 
   int top_add_a_imm = -1;
   int top_add_b_imm = -1;
@@ -86,17 +102,14 @@ bool check_small_imm_usage(Instr const &top, Instr const &bottom) {
  *   only imm_b can be used.
  */
 bool register_conflict(Instr const &top, Instr const &bottom, bool check_surpass) {
-  // add alu only for now
+  assert(!bottom.add_nop());
 
   // warn << "dst top: " << top.alu_add_dst().dump() << ", bottom: " << bottom. alu_add_dst().dump();
+  if (!top.add_nop()) {
+  	if (top.alu_add_dst() == bottom.alu_add_dst()) return true;
 
-  if (top.alu_add_dst() == bottom.alu_add_dst()) {
-    // warn << "Dst's check out";
-    return true;
-  }
-
-  if (top.alu_add_dst() == bottom.alu_add_a()
-   || top.alu_add_dst() == bottom.alu_add_b()) return true;
+  	if (top.alu_add_dst() == bottom.alu_add_a()
+	   || top.alu_add_dst() == bottom.alu_add_b()) return true;
 
 /*
   warn << "\n"
@@ -108,10 +121,22 @@ bool register_conflict(Instr const &top, Instr const &bottom, bool check_surpass
   ;
 */
 
-  if (bottom.alu_add_dst() == top.alu_add_a() || bottom.alu_add_dst() == top.alu_add_b()) {
-    //warn << "register_conflicts: bottom dst same as top src; take this into account";
-    if (check_surpass) return true;
-  }
+  	if (bottom.alu_add_dst() == top.alu_add_a() || bottom.alu_add_dst() == top.alu_add_b()) {
+    	//warn << "register_conflicts: bottom dst same as top src; take this into account";
+    	if (check_surpass) return true;
+		}
+	}
+
+  if (!top.mul_nop()) {
+  	if (top.alu_mul_dst() == bottom.alu_add_dst()) return true;
+
+  	if (top.alu_mul_dst() == bottom.alu_add_a()
+	   || top.alu_mul_dst() == bottom.alu_add_b()) return true;
+
+  	if (bottom.alu_add_dst() == top.alu_mul_a() || bottom.alu_add_dst() == top.alu_mul_b()) {
+    	if (check_surpass) return true;
+		}
+	}
 
   // Assumption: all checks below are for small immediates
   if (check_surpass) return false;
@@ -312,7 +337,7 @@ try {
 
   // TODO: better specify end program. This should be on barrierid
   int end = (int) instr.size();
-  if (end > (start + 50)) end = (start + 50);  // WRI DEBUG
+  if (end > (start + 100)) end = (start + 100);  // WRI DEBUG
 
   // Consider all instructions in main body
   for (int i = start + 1; i < end; ++i) {
@@ -422,7 +447,7 @@ try {
         //i++;
         break;
       } else {
-      warn << "combine: Tried to combine bottom to top:\n" << buf;
+      	warn << "combine: Tried to combine bottom to top:\n" << buf;
       }
     }
   }

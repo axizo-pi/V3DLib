@@ -1467,11 +1467,18 @@ std::unique_ptr<Source> Instr::add_alu_a() const {
  */
 BaseSource Instr::alu_add_dst() const {
   BaseSource res;
-
 	if (add_nop()) return res;
 
 	res.set_from_dst(alu.add.waddr, alu.add.magic_write);
+	return res;
+}
 
+
+BaseSource Instr::alu_mul_dst() const {
+  BaseSource res;
+	if (mul_nop()) return res;
+
+	res.set_from_dst(alu.mul.waddr, alu.mul.magic_write);
 	return res;
 }
 
