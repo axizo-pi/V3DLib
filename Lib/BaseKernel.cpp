@@ -77,7 +77,9 @@ void BaseKernel::run() {
 
   m_settings.startPerfCounters();
 
-  if (!m_settings.compile_only) {
+	if (m_settings.compile_only) {
+    Log::warn << "BaseKernel::run(): Compile-only selected, not running.";
+  } else {
     switch (m_settings.run_type) {
       case 0: qpu(); break;
       case 1: emu(); break;

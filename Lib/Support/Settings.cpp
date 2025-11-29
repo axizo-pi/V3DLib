@@ -278,6 +278,11 @@ bool Settings::process() {
     Platform::compiling_for_vc4(true);
   }
 
+	if (compile_only) {
+		Log::warn << "Only compiling, using main memory.";
+ 		Platform::use_main_memory(true);
+	}
+
   return true;
 }
 
