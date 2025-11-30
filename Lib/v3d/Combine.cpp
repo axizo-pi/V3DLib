@@ -3,7 +3,7 @@
 #include "Support/basics.h"
 #include "instr/BaseSource.h"
 #include "instr/Mnemonics.h"  // instr::tmua
-#include <set>
+//#include <set>
 
 using namespace Log;
 
@@ -135,6 +135,10 @@ bool add_register_conflict(Instr const &top, Instr const &bottom, bool check_sur
 		}
 	}
 
+/*
+  This was a nice idea but doesn't work well.
+  It works better to attempt the conversion and just let it fail.
+
   // Specific for vc6: have only 2 raddr values for the whole instr
   if (!Platform::compiling_for_vc7()) {
     std::set<BaseSource> rf_set;
@@ -149,8 +153,8 @@ bool add_register_conflict(Instr const &top, Instr const &bottom, bool check_sur
     // Log::warn << "rf_set.size: " << (int) rf_set.size();
     if (rf_set.size() > 2) return true;
   }
-
-  if (bottom.sig_dst() == top.sig_dst()) {
+*/
+  if (bottom.sig_dst().is_set() && top.sig_dst().is_set()) {
     return true;
   }
 
@@ -262,14 +266,6 @@ bool add_alu_to_mul_alu(Instr const &src, Instr &dst) {
 	BaseSource alu_add_b = src.alu_add_b();
 	BaseSource alu_mul_a = src.alu_mul_a();
 	BaseSource alu_mul_b = src.alu_mul_b();
-/*
-	warn
- 		<< "\n"
-    << "  src alu_add_a: " << alu_add_a.dump() << "\n"
-    << "  src alu_add_b: " << alu_add_b.dump() << "\n"
-    << "  src alu_mul_a: " << alu_mul_a.dump() << "\n"
-    << "  src alu_mul_b: " << alu_mul_b.dump();
-*/
 
   if (src.mul_nop()) {  // Take the values from alu add
     v3d_qpu_mul_op mul_op;
@@ -323,6 +319,7 @@ bool add_alu_to_mul_alu(Instr const &src, Instr &dst) {
 */
   return true;
 }
+
 
 void remove_useless(Instructions &instr) {
 
@@ -472,7 +469,7 @@ try {
   int end = (int) instr.size();
   //if (end > (start + 133)) end = (start + 133);  // WRI DEBUG
   //if (end > (start + 350)) end = (start + 350);  // WRI DEBUG
-  if (end > (start + 450)) end = (start + 450);  // WRI DEBUG
+  //if (end > (start + 250)) end = (start + 250);  // WRI DEBUG
 
   // Consider all instructions in main body
   for (int i = start + 1; i < end; ++i) {
@@ -501,11 +498,16 @@ try {
     // Skipping the hard parts for later on
     assertq(!bottom.skip(), "Deal with skips later on");
     assertq(!bottom.has_signal(), "Deal with signals later on");
-    assertq(!(
+
+    if (
       bottom.flag_push_set() ||
       bottom.flag_cond_set() ||
       bottom.flag_uf_set() 
-    ), "Deal with flags later on");
+    ) {
+      //cerr << "Deal with flags later on. instr:\n"
+      //     <<  bottom.mnemonic() << thrw;
+      continue;
+    }
 
 
     if (bottom.alu_add_dst() == instr::tmua) {
@@ -592,7 +594,7 @@ try {
         bottom.skip(true);
         break;
       } else {
-      	warn << "combine: Tried to combine bottom to top:\n" << buf;
+//      	warn << "combine: Tried to combine bottom to top:\n" << buf;
       }
     }
   }

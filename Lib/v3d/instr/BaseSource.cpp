@@ -118,7 +118,7 @@ bool BaseSource::uses_global_raddr() const {
   if (!m_is_set)      return false;
   if (m_is_small_imm) return true;
   if (m_is_reg)       return false;
-  if (m_is_dst)       return false;
+//  if (m_is_dst)       return false;
   if (m_is_magic)     return false;
 
   return true;
