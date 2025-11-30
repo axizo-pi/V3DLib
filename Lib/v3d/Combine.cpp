@@ -497,7 +497,15 @@ try {
 
     // Skipping the hard parts for later on
     assertq(!bottom.skip(), "Deal with skips later on");
-    assertq(!bottom.has_signal(), "Deal with signals later on");
+
+
+    if (bottom.has_signal()) {
+			if (!bottom.sig.thrsw && !bottom.sig.ldtmu) {
+				// Warn me about any other signals
+				warn << "Deal with signals later on, instr:\n"
+  	         <<  i << "; " << bottom.mnemonic() << "\n" << thrw;
+			}
+		}
 
     if (
       bottom.flag_push_set() ||
@@ -561,10 +569,11 @@ try {
     }
 
     if (final_top == -1) continue;
-
+/*
     if (i - final_top > 1) {
       warn << "final top is " << (i - final_top) << " places above i";
     }
+*/
 
     //
     // Move forward again to find the best place

@@ -1098,9 +1098,10 @@ void KernelDriver::encode() {
   Combine::combine(instructions);
   Combine::remove_skips(instructions);
 
-
-  combine(instructions);
-  Combine::remove_skips(instructions);
+	if (!Platform::compiling_for_vc7()) {  // Doesn't work (any more) on vc7
+	  combine(instructions);
+	  Combine::remove_skips(instructions);
+	}
 
   removeLabels(instructions);
 
