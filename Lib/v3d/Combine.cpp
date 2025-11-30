@@ -183,11 +183,16 @@ bool add_register_conflict(Instr const &top, Instr const &bottom, bool check_sur
 bool convert_alu_op_to_mul_op(v3d_qpu_mul_op &mul_op, v3d::instr::Instr const &add_instr) {
 	// Op's common to both vc6 and vc7
   switch (add_instr.alu.add.op) {
-    case V3D_QPU_A_OR:
-			if ( add_instr.alu.add.a.mux == add_instr.alu.add.b.mux) {
-        mul_op = V3D_QPU_M_MOV;
-        return true;
-      }
+    case V3D_QPU_A_OR: {
+			if (Platform::compiling_for_vc7()) {
+				assert(add_instr.alu.add.a.mux == add_instr.alu.add.b.mux);
+			} else {
+				assert(add_instr.alu.add.a.raddr == add_instr.alu.add.b.raddr);
+			}
+
+      mul_op = V3D_QPU_M_MOV;
+      return true;
+		}
 
     case V3D_QPU_A_ADD:
       mul_op = V3D_QPU_M_ADD;
@@ -197,21 +202,13 @@ bool convert_alu_op_to_mul_op(v3d_qpu_mul_op &mul_op, v3d::instr::Instr const &a
       mul_op = V3D_QPU_M_SUB;
       return true;
 
+		// vc7 - This broke Tri previously
+    case V3D_QPU_A_MOV:
+      mul_op = V3D_QPU_M_MOV;
+      return true;
+
     default: break;
   }
-
-	// This breaks Tri - absolutely confirmed
-/*	
-	if (Platform::compiling_for_vc7()) {
-  	switch (add_instr.alu.add.op) {
-	    case V3D_QPU_A_MOV:
-				mul_op = V3D_QPU_M_MOV;
-	      return true;
-
-    	default: break;
-  	}
-	} 
-*/
 
   return false;
 }
@@ -219,13 +216,16 @@ bool convert_alu_op_to_mul_op(v3d_qpu_mul_op &mul_op, v3d::instr::Instr const &a
 
 bool can_equal(Instr const &top, Instr const &bottom) {
   if (add_register_conflict(top, bottom, false)) return false;
+/*
+	warn << "Here1, top,bottom:\n" 
+		   << top.mnemonic() << "\n"
+		   << bottom.mnemonic();
+*/
 
   v3d_qpu_mul_op tmp;
   if (!convert_alu_op_to_mul_op(tmp, bottom)) return false ;
 
-  //bool full_op =  !top.add_nop() && !top.mul_nop();
-  //return !full_op;
-  return !top.mul_nop();
+  return top.mul_nop();
 }
 
 
@@ -549,6 +549,7 @@ try {
              << thrw;
       }
 
+
       if (can_equal(top, bottom)) {
         //warn << "bottom can equal top";
         final_top = j;
@@ -561,9 +562,9 @@ try {
 
     if (final_top == -1) continue;
 
-    //if (i - final_top > 1) {
-    //  warn << "final top is " << (i - final_top) << " places above i";
-    //}
+    if (i - final_top > 1) {
+      warn << "final top is " << (i - final_top) << " places above i";
+    }
 
     //
     // Move forward again to find the best place
@@ -581,7 +582,7 @@ try {
           << "  " << i << ": " << bottom.mnemonic();
 
       if (add_alu_to_mul_alu(bottom, ftop)) {
-/*
+/*				
         warn << "combine: adding bottom to top succeeded.\n"
              << "Pre:\n"
              << buf << "\n"
@@ -589,12 +590,12 @@ try {
              << "  " << final_top << ": " << ftop.mnemonic() << "\n"
              << "== Combine SUCCESS =="
         ;
-*/
+*/				
 
         bottom.skip(true);
         break;
       } else {
-//      	warn << "combine: Tried to combine bottom to top:\n" << buf;
+      	warn << "combine: Tried to combine bottom to top:\n" << buf;
       }
     }
   }
