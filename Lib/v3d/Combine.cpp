@@ -2,6 +2,8 @@
 #include "Support/Platform.h"
 #include "Support/basics.h"
 #include "instr/BaseSource.h"
+#include "instr/Mnemonics.h"  // instr::tmua
+#include <set>
 
 using namespace Log;
 
@@ -101,25 +103,20 @@ bool check_small_imm_usage(Instr const &top, Instr const &bottom) {
  * - immediates must also be notes, especially for vc6 where
  *   only imm_b can be used.
  */
-bool register_conflict(Instr const &top, Instr const &bottom, bool check_surpass) {
+bool add_register_conflict(Instr const &top, Instr const &bottom, bool check_surpass) {
   assert(!bottom.add_nop());
 
   // warn << "dst top: " << top.alu_add_dst().dump() << ", bottom: " << bottom. alu_add_dst().dump();
+
+  //
+  // TODO: take empty reg's into account
+  //       eg. in a mov, the b src is not used
+  //
   if (!top.add_nop()) {
   	if (top.alu_add_dst() == bottom.alu_add_dst()) return true;
 
   	if (top.alu_add_dst() == bottom.alu_add_a()
 	   || top.alu_add_dst() == bottom.alu_add_b()) return true;
-
-/*
-  warn << "\n"
-    << "  top.alu_add_dst : " << top.alu_add_dst().dump()  << "\n"
-    << "  top.alu_add_a   : " << top.alu_add_a().dump()    << "\n"
-    << "  top.alu_add_b   : " << top.alu_add_b().dump()    << "\n"
-    << "  bottom.alu_add_a: " << bottom.alu_add_a().dump() << "\n"
-    << "  bottom.alu_add_b: " << bottom.alu_add_b().dump()
-  ;
-*/
 
   	if (bottom.alu_add_dst() == top.alu_add_a() || bottom.alu_add_dst() == top.alu_add_b()) {
     	//warn << "register_conflicts: bottom dst same as top src; take this into account";
@@ -138,12 +135,37 @@ bool register_conflict(Instr const &top, Instr const &bottom, bool check_surpass
 		}
 	}
 
+  // Specific for vc6: have only 2 raddr values for the whole instr
+  if (!Platform::compiling_for_vc7()) {
+    std::set<BaseSource> rf_set;
+
+    if (top.alu_add_a().uses_global_raddr()) rf_set.insert(top.alu_add_a()); 
+    if (top.alu_add_b().uses_global_raddr()) rf_set.insert(top.alu_add_b()); 
+    if (top.alu_mul_a().uses_global_raddr()) rf_set.insert(top.alu_mul_a()); 
+    if (top.alu_mul_b().uses_global_raddr()) rf_set.insert(top.alu_mul_b()); 
+    if (bottom.alu_add_a().uses_global_raddr()) rf_set.insert(bottom.alu_add_a()); 
+    if (bottom.alu_add_b().uses_global_raddr()) rf_set.insert(bottom.alu_add_b()); 
+
+    // Log::warn << "rf_set.size: " << (int) rf_set.size();
+    if (rf_set.size() > 2) return true;
+  }
+
+  if (bottom.sig_dst() == top.sig_dst()) {
+    return true;
+  }
+
+/*
+  } else {
+    // Warn for any other sig's
+    if (top.has_signal() || bottom.has_signal()) {
+      cerr << "register_conflicts: instructions have signals, not handling for now" << thrw;
+    }
+  }
+*/
+
   // Assumption: all checks below are for small immediates
   if (check_surpass) return false;
 
-  if (top.has_signal() || bottom.has_signal()) {
-    cerr << "register_conflicts: instructions have signals, not handling for now" << thrw;
-  }
 
   return !check_small_imm_usage(top, bottom);
 }
@@ -192,18 +214,19 @@ bool convert_alu_op_to_mul_op(v3d_qpu_mul_op &mul_op, v3d::instr::Instr const &a
 
 
 bool can_equal(Instr const &top, Instr const &bottom) {
-  if (register_conflict(top, bottom, false)) return false;
+  if (add_register_conflict(top, bottom, false)) return false;
 
   v3d_qpu_mul_op tmp;
   if (!convert_alu_op_to_mul_op(tmp, bottom)) return false ;
 
-  bool full_op =  !top.add_nop() && !top.mul_nop();
-  return !full_op;
+  //bool full_op =  !top.add_nop() && !top.mul_nop();
+  //return !full_op;
+  return !top.mul_nop();
 }
 
 
 bool can_surpass(Instr const &top, Instr const &bottom) {
-  return !register_conflict(top, bottom, true);
+  return !add_register_conflict(top, bottom, true);
 }
 
 } // anon namespace
@@ -301,6 +324,116 @@ bool add_alu_to_mul_alu(Instr const &src, Instr &dst) {
   return true;
 }
 
+void remove_useless(Instructions &instr) {
+
+  //
+  // Detect useless moves, eg: or  rf2, rf2, rf2    ; nop
+  //
+  auto check_useless_moves = [] (Instr const &instr, int line_number) -> bool {
+		// Check assign to self
+    if (
+			instr.is_branch() ||
+			instr.add_nop() ||
+			!instr.mul_nop()       // Note that mul is skipped here
+		) {
+			return false;
+		}
+
+		auto op = instr.alu.add.op;
+
+		// The only op's handled here
+    if (
+			op != V3D_QPU_A_OR  &&
+			op != V3D_QPU_A_MOV &&
+			op != V3D_QPU_A_ADD
+		) {
+			return false;
+		}
+
+
+    if (instr.flag_push_set()) return false;
+    if (instr.flag_cond_set()) return false;
+
+
+    auto dst = instr.alu_add_dst();
+    assert(dst.is_set());
+    auto a = instr.alu_add_a();
+    assert(a.is_set());
+
+    if (op == V3D_QPU_A_OR) {
+    	if (instr.has_signal(true)) return false; 
+
+			// a and b both used
+      auto b = instr.alu_add_b();
+      assert(b.is_set());
+
+      if (!(a == b && dst == a)) return false; 
+		}
+		
+		if (op == V3D_QPU_A_MOV) {
+			// Only add a is used
+    	if (instr.has_signal(true)) return false; 
+      if (!(a == dst)) return false; 
+    }
+
+
+		// eg add(dst, dst, 0), add(dst, 0, 0)
+		if (op == V3D_QPU_A_ADD) {
+    	if (instr.has_signal(false)) return false; 
+
+			bool ret = false;
+
+      auto b = instr.alu_add_b();
+      assert(b.is_set());
+
+      if (a == dst) {
+				if (b.is_small_imm() && b.val() == 0) ret = true; 
+			}
+
+      if (b == dst) {
+				if (a.is_small_imm() && a.val() == 0) ret = true; 
+			}
+
+			// add(dst,0,0) is actually useful! Like mov(dst, 0)
+/*
+			// Following is actually illegal to run on qpu (qpu encode flags this)
+			// However, before complete compile it's possible and seen in the wild
+      if (a.is_small_imm() && b.is_small_imm()) {
+				if (a.val() == 0 && b.val() == 0) return true; 
+			}
+*/			
+
+			if (!ret) return false;
+    }
+
+    Log::debug
+			<< "Useless move at line " << line_number << ": " << instr.mnemonic(false)
+			<< " dst: " << dst.dump()
+		;
+
+		return true;
+  };
+
+  assertq(!check_useless_moves(instr[0], 0), "First instruction is useless");
+
+  for (int i = 0; i < (int) instr.size(); i++) {
+    auto &cur = instr[i];
+
+    //
+    // Remove useless copies
+		//
+		// For some reason, the first instr (index 1) does not get picked up
+    //
+    if (check_useless_moves(cur, i)) {
+			//warn << "Skipping useless move: " << cur.mnemonic(false);
+      cur.skip(true);
+      continue;
+    }
+  }
+
+  remove_skips(instr);
+}
+
 
 void remove_skips(Instructions &instr) {
   Instructions ret;
@@ -337,11 +470,15 @@ try {
 
   // TODO: better specify end program. This should be on barrierid
   int end = (int) instr.size();
-  if (end > (start + 100)) end = (start + 100);  // WRI DEBUG
+  //if (end > (start + 133)) end = (start + 133);  // WRI DEBUG
+  //if (end > (start + 350)) end = (start + 350);  // WRI DEBUG
+  if (end > (start + 450)) end = (start + 450);  // WRI DEBUG
 
   // Consider all instructions in main body
   for (int i = start + 1; i < end; ++i) {
     if (instr[i].add_nop()) continue; 
+    if (!instr[i].mul_nop()) continue; 
+    if (instr[i].skip()) continue; 
 
 
     if (instr[i].is_branch()) {
@@ -370,10 +507,16 @@ try {
       bottom.flag_uf_set() 
     ), "Deal with flags later on");
 
+
+    if (bottom.alu_add_dst() == instr::tmua) {
+      //warn << "Skipping tmua mov";
+      continue;
+    }
+
     bool has_special_regs =
-      (bottom.has_signal() && bottom.sig_dest().is_magic()) || 
-      (!bottom.add_nop() && bottom.alu.add.magic_write && bottom.alu.add.waddr > V3D_QPU_WADDR_R5) ||
-      (!bottom.mul_nop() && bottom.alu.mul.magic_write && bottom.alu.mul.waddr > V3D_QPU_WADDR_R5)
+      bottom.sig_dst().is_magic() || 
+      bottom.alu_add_dst().is_magic() || 
+      bottom.alu_mul_dst().is_magic() 
     ;
 
     if (has_special_regs) {
@@ -425,16 +568,18 @@ try {
     //
     for (int k = final_top; k < i; ++ k) {
       auto &ftop    = instr[k];
+      if (ftop.skip()) continue;
   
-      bool full_op =  !ftop.add_nop() && !ftop.mul_nop();
-      if (full_op) continue;
+      //bool full_op =  !ftop.add_nop() && !ftop.mul_nop();
+      //if (full_op) continue;
+      if (!ftop.mul_nop()) continue;
 
       std::string buf;
       buf << "  " << k << ": " << ftop.mnemonic()    << "\n"
           << "  " << i << ": " << bottom.mnemonic();
 
-
       if (add_alu_to_mul_alu(bottom, ftop)) {
+/*
         warn << "combine: adding bottom to top succeeded.\n"
              << "Pre:\n"
              << buf << "\n"
@@ -442,9 +587,9 @@ try {
              << "  " << final_top << ": " << ftop.mnemonic() << "\n"
              << "== Combine SUCCESS =="
         ;
+*/
 
         bottom.skip(true);
-        //i++;
         break;
       } else {
       	warn << "combine: Tried to combine bottom to top:\n" << buf;
@@ -452,7 +597,6 @@ try {
     }
   }
 
-// TODO: NOT BEING CAUGHT
 } catch(V3DLib::Exception const &e) {
   cerr << "Runtime error during Combine::combine(). Aborting further combination. err:\n"
        << e.what();

@@ -1,6 +1,7 @@
 #ifndef _V3DLIB_V3D_INSTR_BASESOURCE_H
 #define _V3DLIB_V3D_INSTR_BASESOURCE_H
 #include <memory>  // uint8_t
+#include "Register.h"
 
 namespace V3DLib {
 namespace v3d {
@@ -13,11 +14,14 @@ namespace instr {
 class BaseSource {
 public:
   BaseSource()                             = default;
+  BaseSource(BaseSource const &k)          = default;
   BaseSource(BaseSource &&k)               = default;
   BaseSource &operator=(const BaseSource&) = default;
 
   bool operator==(const BaseSource &rhs) const;
   bool operator!=(const BaseSource &rhs) const {return !(*this == rhs); }
+  bool operator==(const Register &rhs) const;
+  bool operator<(const BaseSource &rhs) const;
 
   std::string dump() const;
   void set_from_src(uint8_t val, bool is_small_imm, bool is_reg, bool is_rfa);
@@ -28,7 +32,9 @@ public:
   bool is_small_imm() const { return m_is_small_imm; }
   bool is_reg()       const { return m_is_reg; }
   bool is_rfa()       const { return m_is_rfa; }
-  bool is_magic()     const { return m_is_magic; }
+  bool is_magic()     const;
+
+  bool uses_global_raddr() const;
 
 private:
   bool    m_is_set       = false;
