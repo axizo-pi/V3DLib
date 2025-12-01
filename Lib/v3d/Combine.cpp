@@ -480,20 +480,31 @@ void remove_useless(Instructions &instr) {
       cur.skip(true);
       continue;
     }
+  }
 
-    //  
-    // Detect combines moves to dst. eg:
-    //    or(tmp, src, src)
-    //    or(dst, tmp, tmp)
-    //
+
+  //  
+  // Detect combines moves to dst. eg:
+  //    or(tmp, src, src)
+  //    or(dst, tmp, tmp)
+	//
+	// Doing related moves works better if useless moves done first
+	//
+	// Crap. Nothing detected any more, for both vc6 and vc7.
+	//
+  for (int i = 0; i < (int) instr.size(); i++) {
+    auto &cur = instr[i];
+    if (cur.skip()) continue;
+
     if (i < (int) instr.size() - 1) {
       auto nxt = instr[i + 1];
+			if (nxt.skip()) continue;
       if (!filter_move(cur)) continue;
       if (!filter_move(nxt)) continue;
 
       if (is_move(cur) && is_move(nxt)) {
-      	if (cur.has_signal(true)) continue; 
-      	if (nxt.has_signal(true)) continue;
+      	if (cur.has_signal(false)) continue; 
+      	if (nxt.has_signal(false)) continue;
 
         if ((cur.alu_add_dst() != nxt.alu_add_a())) continue;
 
