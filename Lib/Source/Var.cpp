@@ -82,12 +82,20 @@ int VarGen::count() {
 }
 
 
+namespace {
+
+int tag_64 = -1;
+
+} // anon namespace
+
+
 /**
  * Reset fresh variable generator
  */
 void VarGen::reset(int val) {
   assert(val >= 0);
   globalVarId = val;
+	tag_64 = -1;  // Needs to be reset before each new kernel compile!
 }
 
 
@@ -104,14 +112,11 @@ Var Var_64() {
 		cerr << "Don't use the 64 global var on vc4" << thrw;
 	}
 
-	static bool did_it = false;
-  static int tag = -1;
-	if (!did_it) {
- 		tag = V3DLib::VarGen::fresh_tag();
-		did_it = true;
+	if (tag_64 == -1) {
+ 		tag_64 = V3DLib::VarGen::fresh_tag();
 	}
 
- 	return Var(STANDARD, tag);
+ 	return Var(STANDARD, tag_64);
 }
 
 }  // namespace V3DLib

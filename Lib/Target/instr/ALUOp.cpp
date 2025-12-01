@@ -54,14 +54,18 @@ std::string ALUOp::pretty() const {
     case M_V8ADDS:  return "m_addsatb";
     case M_V8SUBS:  return "m_subsatb";
     case M_ROTATE:  return "rotate";
+
     // v3d-specific
     case A_TIDX:    return "tidx";
     case A_EIDX:    return "eidx";
     case A_FFLOOR:  return "ffloor";
     case A_FSIN:    return "sin";
     case A_TMUWT:   return "tmuwt";
+
 		// vc7
     case A_MOV:     return "mov";
+    case A_EXP:     return "exp";
+
     default:
       assertq(false, "pretty(): Unknown ALU opcode", true);
       return "";

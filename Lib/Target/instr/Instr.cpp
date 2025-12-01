@@ -120,12 +120,9 @@ RegIdSet Instr::src_a_regs(bool set_use_where) const {
 
 
 bool Instr::is_dst_reg(Reg const &rhs) const {
+  assert(rhs.tag != NONE);
+
   Reg dst = dst_reg();
-
-  if (rhs.tag == NONE) {
-    breakpoint
-  }
-
   return (dst.tag != NONE && dst == rhs);
 }
 

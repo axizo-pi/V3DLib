@@ -270,6 +270,7 @@ RegUsageItem &RegUsage::get(int i) {
     Log::warn << "RegUsage::get(): resizing from " << (int) size() << " to " << (i + 1);
     resize(i + 1);
   }
+
 #ifdef DEBUG
   // at() is useful because it does bound checking, which
   // is also the reason it is inefficient
@@ -282,7 +283,7 @@ RegUsageItem &RegUsage::get(int i) {
 
 void RegUsage::set_used(Instr::List &instrs) {
 #ifdef DEBUG
-  //Log::warn << "RegUsage.set_used() size: " << size();
+  //Log::warn << "RegUsage.set_used() size: " << (int) size();
 
   for (auto &a : *this) {
     assert(a.empty());
@@ -301,7 +302,7 @@ void RegUsage::set_used(Instr::List &instrs) {
 
     for (auto r : out.use) {
       //assert(r < (int) size());
-      at(r).add_src(i);
+      get(r).add_src(i);
     }
   }
 }
@@ -360,9 +361,6 @@ void RegUsage::check() const {
     if (!tmp.empty()) {
       tmp << "\n  This can happen if the first assignment is in a conditional block (If, When, For etc).\n";
       ret << tmp;
-
-      //debug(dump(true));
-      //breakpoint
     }
   }
  

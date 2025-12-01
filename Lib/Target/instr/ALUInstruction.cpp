@@ -25,7 +25,10 @@ bool ALUInstruction::oneOperand() const {
 	  assert(                            // Pedantry: these should be the only operations with one operand
 			op.value() == ALUOp::A_FSIN   ||
 			op.value() == ALUOp::A_FFLOOR ||
-			op.value() == ALUOp::A_MOV       // vc7 
+
+			// vc7 
+			op.value() == ALUOp::A_MOV    ||
+			op.value() == ALUOp::A_EXP
 		);
 
   	return true;

@@ -88,7 +88,7 @@ protected:
   IntList uniforms;                // Parameters to be passed to kernel
 
 
-  // Defined as unique pointer so that is easily survives std::move
+  // Defined as unique pointer so that it easily survives std::move
   // (There are other reasons but this is the main one)
   std::unique_ptr<KernelDriver> m_driver;
 };

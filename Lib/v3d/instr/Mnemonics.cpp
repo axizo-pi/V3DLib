@@ -365,14 +365,14 @@ Mnemonic ftoi(Location const &dst, Location const &a) {
 
 
 Mnemonic mov(Location const &dst, Source const &a) {
-	if (!Platform::compiling_for_vc7()) {
-		return Mnemonic(V3D_QPU_A_OR, dst, a, a);
-	} else {
+	if (Platform::compiling_for_vc7()) {
   	Mnemonic instr;
   	instr.alu_add_dst(dst);
 	  instr.alu_add_a(a);
 	  instr.alu.add.op = V3D_QPU_A_MOV;
 		return instr;
+	} else {
+		return Mnemonic(V3D_QPU_A_OR, dst, a, a);
 	}
 }
 
@@ -705,8 +705,20 @@ Mnemonic brecip(Location const &dst, Location const &a) { return Mnemonic(V3D_QP
 Mnemonic brsqrt(Location const &dst, Location const &a) { return Mnemonic(V3D_QPU_A_RSQRT, dst, a, r3); } // r3 implicit
 Mnemonic brsqrt2(Location const &dst, Location const &a) { return Mnemonic(V3D_QPU_A_RSQRT2, dst, a, r3); } // r3 implicit
 Mnemonic bsin(Location const &dst, Location const &a) { return Mnemonic(V3D_QPU_A_SIN, dst, a, a); } // 2nd a implicit 
-Mnemonic bexp(Location const &dst, Location const &a) { return Mnemonic(V3D_QPU_A_EXP, dst, a, r4); } // r4 implicit
 Mnemonic blog(Location const &dst, Location const &a) { return Mnemonic(V3D_QPU_A_LOG, dst, a, r5); } // r5 implicit
+
+
+Mnemonic bexp(Location const &dst, Location const &a) { 
+	if (Platform::compiling_for_vc7()) {
+  	Mnemonic instr;
+  	instr.alu_add_dst(dst);
+	  instr.alu_add_a(a);
+	  instr.alu.add.op = V3D_QPU_A_EXP;
+		return instr;
+	} else {
+		return Mnemonic(V3D_QPU_A_EXP, dst, a, r4);  // r4 implicit
+	}
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////

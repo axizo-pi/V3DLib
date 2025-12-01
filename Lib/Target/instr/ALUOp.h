@@ -65,7 +65,8 @@ public:
     A_TMUWT,
 
 		// vc7
-		A_MOV
+		A_MOV,
+		A_EXP,
   };
 
   ALUOp() = default;
