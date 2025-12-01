@@ -1517,7 +1517,6 @@ BaseSource Instr::alu_add_a() const {
 		// vc7 - no acc's
 	  res.set_from_src(alu.add.a.raddr, sig.small_imm_a, false, false);
 	} else {
-		// vc6 - no small imm on a
 		if (alu.add.a.mux == V3D_QPU_MUX_A) {
 	    res.set_from_src(raddr_a, false, false, true );
 		} else if (alu.add.a.mux == V3D_QPU_MUX_B) {
@@ -1591,7 +1590,7 @@ BaseSource Instr::alu_mul_a() const {
 		} else if (alu.mul.a.mux == V3D_QPU_MUX_B) {
 	    res.set_from_src(raddr_b, false, false, false );
 		} else {
-	    res.set_from_src(alu.mul.b.mux, false, true, false);
+	    res.set_from_src(alu.mul.a.mux, false, true, false);
 		}
 	}
 

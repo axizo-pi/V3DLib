@@ -42,6 +42,7 @@ bool BaseSource::operator<(const BaseSource &rhs) const {
   if (m_is_set != rhs.m_is_set) return m_is_set < rhs.m_is_set;
   if (m_is_small_imm != rhs.m_is_small_imm) return m_is_small_imm < rhs.m_is_small_imm;
   if (m_is_reg != rhs.m_is_reg) return m_is_reg < rhs.m_is_reg;
+  if (m_is_magic != rhs.m_is_magic) return m_is_magic < rhs.m_is_magic;
 
   return (m_val < rhs.m_val);
 }

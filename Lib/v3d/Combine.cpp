@@ -3,7 +3,7 @@
 #include "Support/basics.h"
 #include "instr/BaseSource.h"
 #include "instr/Mnemonics.h"  // instr::tmua
-//#include <set>
+#include <set>
 
 using namespace Log;
 
@@ -135,27 +135,47 @@ bool add_register_conflict(Instr const &top, Instr const &bottom, bool check_sur
 		}
 	}
 
+
+	if (bottom.alu_add_a() == top.sig_dst()
+	 || bottom.alu_add_b() == top.sig_dst()
+	 || bottom.alu_add_dst() == top.sig_dst()
+  ) {
+    return true;
+  }
+
+
+  if (check_surpass) return false;
+
+  if (!check_small_imm_usage(top, bottom)) return true;
+
 /*
   This was a nice idea but doesn't work well.
   It works better to attempt the conversion and just let it fail.
-
+*/
   // Specific for vc6: have only 2 raddr values for the whole instr
   if (!Platform::compiling_for_vc7()) {
+    int count = 0;
     std::set<BaseSource> rf_set;
 
-    if (top.alu_add_a().uses_global_raddr()) rf_set.insert(top.alu_add_a()); 
-    if (top.alu_add_b().uses_global_raddr()) rf_set.insert(top.alu_add_b()); 
-    if (top.alu_mul_a().uses_global_raddr()) rf_set.insert(top.alu_mul_a()); 
-    if (top.alu_mul_b().uses_global_raddr()) rf_set.insert(top.alu_mul_b()); 
-    if (bottom.alu_add_a().uses_global_raddr()) rf_set.insert(bottom.alu_add_a()); 
-    if (bottom.alu_add_b().uses_global_raddr()) rf_set.insert(bottom.alu_add_b()); 
+    if (top.alu_add_a().uses_global_raddr()) { rf_set.insert(top.alu_add_a()); count++; }
+    if (top.alu_add_b().uses_global_raddr()) { rf_set.insert(top.alu_add_b()); count++; } 
+    if (top.alu_mul_a().uses_global_raddr()) { rf_set.insert(top.alu_mul_a()); count++; }
+    if (top.alu_mul_b().uses_global_raddr()) { rf_set.insert(top.alu_mul_b()); count++; } 
+    if (bottom.alu_add_a().uses_global_raddr()) { rf_set.insert(bottom.alu_add_a()); count++; } 
+    if (bottom.alu_add_b().uses_global_raddr()) { rf_set.insert(bottom.alu_add_b()); count++; } 
 
-    // Log::warn << "rf_set.size: " << (int) rf_set.size();
-    if (rf_set.size() > 2) return true;
-  }
-*/
-  if (bottom.sig_dst().is_set() && top.sig_dst().is_set()) {
-    return true;
+    if (count > 2 && ((int) rf_set.size() <= 2)) {
+      std::string buf;
+      for (auto &n: rf_set) {
+        buf << n.dump() << ", ";
+      }
+      warn << "rf_set: (" << buf << ")";
+    }
+
+    //Log::warn << "rf_set.size: " << (int) rf_set.size();
+    if (rf_set.size() > 2) {
+      return true;
+    }
   }
 
 /*
@@ -167,11 +187,7 @@ bool add_register_conflict(Instr const &top, Instr const &bottom, bool check_sur
   }
 */
 
-  // Assumption: all checks below are for small immediates
-  if (check_surpass) return false;
-
-
-  return !check_small_imm_usage(top, bottom);
+  return false;
 }
 
 
@@ -321,20 +337,62 @@ bool add_alu_to_mul_alu(Instr const &src, Instr &dst) {
 }
 
 
-void remove_useless(Instructions &instr) {
+namespace {
 
+//
+// Return true if instruction passes filter
+//
+bool filter_move(Instr const &instr) {
+  if (instr.skip()) return false;
+
+  if (
+		instr.is_branch() ||
+		instr.add_nop() ||
+		!instr.mul_nop()       // Note that mul is skipped here
+	) {
+		return false;
+	}
+
+  if (instr.flag_push_set()) return false;
+  if (instr.flag_cond_set()) return false;
+
+  return true;
+}
+
+
+bool is_move(Instr const &instr) {
+	auto op = instr.alu.add.op;
+
+  if (op == V3D_QPU_A_OR) {
+    auto a = instr.alu_add_a();
+    assert(a.is_set());
+    auto b = instr.alu_add_b();
+    assert(b.is_set());
+
+    return (a == b);
+  }
+
+  // vc7
+  if (op == V3D_QPU_A_MOV) {
+    auto a = instr.alu_add_a();
+    assert(a.is_set());  // Paranoia checking
+    return true;
+  }
+
+  return false;
+}
+
+} // anon namespace
+
+
+void remove_useless(Instructions &instr) {
   //
   // Detect useless moves, eg: or  rf2, rf2, rf2    ; nop
   //
   auto check_useless_moves = [] (Instr const &instr, int line_number) -> bool {
+    if (!filter_move(instr)) return false;
+
 		// Check assign to self
-    if (
-			instr.is_branch() ||
-			instr.add_nop() ||
-			!instr.mul_nop()       // Note that mul is skipped here
-		) {
-			return false;
-		}
 
 		auto op = instr.alu.add.op;
 
@@ -346,11 +404,6 @@ void remove_useless(Instructions &instr) {
 		) {
 			return false;
 		}
-
-
-    if (instr.flag_push_set()) return false;
-    if (instr.flag_cond_set()) return false;
-
 
     auto dst = instr.alu_add_dst();
     assert(dst.is_set());
@@ -415,6 +468,7 @@ void remove_useless(Instructions &instr) {
 
   for (int i = 0; i < (int) instr.size(); i++) {
     auto &cur = instr[i];
+    if (cur.skip()) continue;
 
     //
     // Remove useless copies
@@ -425,6 +479,28 @@ void remove_useless(Instructions &instr) {
 			//warn << "Skipping useless move: " << cur.mnemonic(false);
       cur.skip(true);
       continue;
+    }
+
+    //  
+    // Detect combines moves to dst. eg:
+    //    or(tmp, src, src)
+    //    or(dst, tmp, tmp)
+    //
+    if (i < (int) instr.size() - 1) {
+      auto nxt = instr[i + 1];
+      if (!filter_move(cur)) continue;
+      if (!filter_move(nxt)) continue;
+
+      if (is_move(cur) && is_move(nxt)) {
+      	if (cur.has_signal(true)) continue; 
+      	if (nxt.has_signal(true)) continue;
+
+        if ((cur.alu_add_dst() != nxt.alu_add_a())) continue;
+
+        warn << "remove_useless detected move OR:\n"
+             << "  cur: " << cur.mnemonic() << "\n"
+             << "  nxt: " << nxt.mnemonic();
+      }
     }
   }
 
