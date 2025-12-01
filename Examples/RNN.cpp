@@ -136,6 +136,28 @@ void kernel(Float::Ptr in_mat, Float::Ptr vec, Float::Ptr result) {
 }
 
 
+std::string vector_dump(Float::Array const &src) {
+	std::string buf;
+
+  for (int h = 0; h < (int) src.size(); ++h) {
+    buf << src[h] << ", ";
+  }
+
+	return buf;
+}
+
+
+std::string vector_dump(float const *src, int size) {
+	std::string buf;
+
+  for (int h = 0; h < size; ++h) {
+    buf << src[h] << ", ";
+  }
+
+	return buf;
+}
+
+
 int main(int argc, const char *argv[]) {
   settings.init(argc, argv);
 
@@ -147,18 +169,18 @@ int main(int argc, const char *argv[]) {
   Float::Array bias(16*N);
   frand_array(bias);
 
-  float scalar_res[M] = {0};
-  run_scalar(matrix, vector, scalar_res);
+  float scalar_layer1[M] = {0};
+  run_scalar(matrix, vector, scalar_layer1);
 
 
-  Float::Array result(M);
-  Float::Array sigmoid(M);
+  Float::Array layer_1(M);
+  Float::Array sigmoid_1(M);
 
   auto k = compile(kernel<M, N>, settings);
-  k.load(&matrix, &vector, &result);
+  k.load(&matrix, &vector, &layer_1);
 
 	auto k_sigmoid = compile(kernel_sigmoid, settings);
-	k_sigmoid.load(&result, &sigmoid);
+	k_sigmoid.load(&layer_1, &sigmoid_1);
 
 
   {
@@ -174,31 +196,13 @@ int main(int argc, const char *argv[]) {
     //warn << "Timer diff: " << timer.diff();
   }
 
-  std::string buf;
-  for (int h = 0; h < (int) result.size(); ++h) {
-    buf << scalar_res[h] << ", ";
-  }
-  warn << "scalar result: " << buf;
+  warn << "scalar layer_1: " << vector_dump(scalar_layer1, M);
+  warn << "kernel layer_1: " << vector_dump(layer_1);
 
-  buf.clear();
-  for (int i = 0; i < (int) result.size(); ++i) {
-    buf << result[i] << ", ";
-  }
-  warn << "kernel result: " << buf;
+	scalar_sigmoid(scalar_layer1, M, bias);
 
-	scalar_sigmoid(scalar_res, M, bias);
-
-  buf.clear();
-  for (int h = 0; h < M; ++h) {
-    buf << scalar_res[h] << ", ";
-  }
-  warn << "Scalar sigmoid: " << buf;
-
-  buf.clear();
-  for (int i = 0; i < (int) sigmoid.size(); ++i) {
-    buf << sigmoid[i] << ", ";
-  }
-  warn << "kernel sigmoid: " << buf;
+  warn << "Scalar sigmoid  : " << vector_dump(scalar_layer1, M);
+  warn << "kernel sigmoid_1: " << vector_dump(sigmoid_1);
 
   return 0;
 }
