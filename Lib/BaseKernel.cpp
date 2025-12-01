@@ -61,7 +61,9 @@ void BaseKernel::run() {
 #ifdef QPU_MODE
   if (Platform::use_main_memory()) {
 		if (m_driver->is_v3d()) {
-      fatal("Main memory selected in QPU mode and not compiled for vc4, can not run.");
+ 		  if (!m_settings.compile_only) {
+        fatal("Main memory selected in QPU mode and not compiled for vc4, can not run.");
+      }
 		} else {
       debug("Main memory selected in QPU mode, running on emulator instead of QPU.");
       m_settings.run_type = 1;

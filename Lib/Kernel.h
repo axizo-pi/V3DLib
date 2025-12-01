@@ -85,11 +85,13 @@ public:
   Kernel(KernelFunction f, BaseSettings const &settings) : BaseKernel(settings) {
 		bool prev = Platform::compiling_for_vc4();
 #ifdef QPU_MODE
-  	if (Platform::use_main_memory() && m_settings.run_type == 0) {
-			Log::cdebug << "Main memory selected in QPU mode, running on emulator instead of QPU.";
-	    m_settings.run_type = 1;
-			Platform::compiling_for_vc4(true);
-	  }
+ 		if (!m_settings.compile_only) {
+	  	if (Platform::use_main_memory() && m_settings.run_type == 0) {
+				Log::cdebug << "Main memory selected in QPU mode, running on emulator instead of QPU.";
+	  	  m_settings.run_type = 1;
+				Platform::compiling_for_vc4(true);
+	  	}
+		}
 
 
 // Enable following when relevant - for now, we're good
@@ -101,16 +103,16 @@ public:
 
   	if (m_settings.run_type != 0) {
     	if (!Platform::compiling_for_vc4()) { 
-				Log::cdebug << "Kernel(): interpret or emulate selected, switching compile to vc4.";
+				Log::warn << "Kernel(): interpret or emulate selected, switching compile to vc4.";
 				Platform::compiling_for_vc4(true);
 			}
 	  }
 
     if (m_settings.run_type != 0 || Platform::run_vc4()) {   // Compile vc4
+			Log::warn << "compile_init for vc4";
       compile_init(true);
     } else {                                                 // Compile v3d
       compile_init(false);
-
     }
 
     driver().compile([this, f] () {

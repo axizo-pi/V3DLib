@@ -1131,6 +1131,13 @@ bool Instr::alu_mul_a_safe(BaseSource const &src) {
 	} else {
 		// rf location - always possible for vc7
 		if (!Platform::compiling_for_vc7()) {
+/*
+			if (alu.add.a.mux < V3D_QPU_MUX_A && alu.add.a.mux < V3D_QPU_MUX_A) {
+				// Add a/b do not use raddr_a/b. This should be safe
+				return true;
+			}
+*/
+
 			if (alu.add.a.mux == V3D_QPU_MUX_A) {
 				if (raddr_a == src.val()) {
 					return true;   // Can reuse raddr_a for mul.a
@@ -1146,7 +1153,6 @@ bool Instr::alu_mul_a_safe(BaseSource const &src) {
 				}
 			}
 
-			// warning("alu_mul_a_safe: vc6 add raddr_a/b do not match with mul a");
 			return false;
 		}
 	}
@@ -1175,6 +1181,13 @@ bool Instr::alu_mul_b_safe(BaseSource const &src) {
 	} else {
 		// rf location - always possible for vc7
 		if (!Platform::compiling_for_vc7()) {
+/*
+			if (alu.add.a.mux < V3D_QPU_MUX_A && alu.add.a.mux < V3D_QPU_MUX_A) {
+				// Add a/b do not use raddr_a/b. This should be safe
+				return true;
+			}
+*/
+
 			if (alu.add.b.mux == V3D_QPU_MUX_A) {
 				if (raddr_a == src.val()) {
 					return true;  // Can reuse raddr_a for mul.b
@@ -1482,6 +1495,15 @@ BaseSource Instr::alu_mul_dst() const {
 	return res;
 }
 
+
+BaseSource Instr::sig_dst() const {
+  BaseSource res;
+
+  if (!uses_sig_dst()) return res;
+
+  res.set_from_dst(sig_addr, sig_magic);
+	return res;
+}
 
 /**
  * Return the contents of alu add a

@@ -12,45 +12,38 @@ namespace {
 
 const int V3D_QPU_MUX_R5 = 5;   // From qpu.instr.h. The mux values <= this one are the same
 
-bool compare_src_dst(BaseSource const &src, BaseSource const &dst) {
-  assert(src.is_set() && dst.is_set());
+}  // anon namespace
 
-  if (src.is_small_imm()) return false;
-  if (dst.is_magic())     return false;
-  if (src.is_reg() == dst.is_reg()) {  // for both rf and reg
-    return src.val() == dst.val();
-  }
+
+bool BaseSource::operator==(const Register &rhs) const {
+  if (!m_is_set) return false;  // Empty item can never be equal
+
+  if (m_is_small_imm) return false;
+  if (m_is_reg && rhs.to_waddr() <= V3D_QPU_WADDR_R5) return m_val == rhs.to_waddr();
+  if (m_is_magic) return m_val == rhs.to_waddr();
 
   return false;
 }
 
-
-}  // anon namespace
-
 bool BaseSource::operator==(const BaseSource &rhs) const {
-  assert(m_is_set && rhs.m_is_set);
+  if (!m_is_set || !rhs.m_is_set) return false;  // Empty items can never be equal
 
-  if (m_is_dst) {
-    if (rhs.m_is_dst) {
-      return (m_is_magic == rhs.m_is_magic && m_val == rhs.m_val);
-    } else {
-      return compare_src_dst(rhs, *this);
-    }
-  } {
-    // This is src
-    if (rhs.m_is_dst) {
-      return compare_src_dst(*this, rhs);
-    } else {
-      // Just compare all relevant fields
-      bool ret = (this->m_val          == rhs.m_val)
-              && (this->m_is_small_imm == rhs.m_is_small_imm)
-              && (this->m_is_reg       == rhs.m_is_reg)
-      ;
-      // m_rfa can be ignored on comparison
+  if (m_is_small_imm != rhs.m_is_small_imm) return false;
+  if (m_is_reg != rhs.m_is_reg) return false;
+  if (m_is_magic != rhs.m_is_magic) return false;
 
-      return ret;
-    }
-  }
+  return m_val == rhs.m_val;
+}
+
+/**
+ * Needed for std::set
+ */
+bool BaseSource::operator<(const BaseSource &rhs) const {
+  if (m_is_set != rhs.m_is_set) return m_is_set < rhs.m_is_set;
+  if (m_is_small_imm != rhs.m_is_small_imm) return m_is_small_imm < rhs.m_is_small_imm;
+  if (m_is_reg != rhs.m_is_reg) return m_is_reg < rhs.m_is_reg;
+
+  return (m_val < rhs.m_val);
 }
 
 
@@ -73,6 +66,12 @@ void BaseSource::set_from_dst(uint8_t val, bool is_magic) {
     m_is_reg   = true;
     m_is_magic = false;
   }
+}
+
+
+bool BaseSource::is_magic() const {
+  if (!m_is_set) return false;
+  return m_is_magic;
 }
 
 
@@ -110,6 +109,19 @@ std::string BaseSource::dump() const {
   }
 
   return ret;
+}
+
+
+bool BaseSource::uses_global_raddr() const {
+  if (Platform::compiling_for_vc7()) return false;
+
+  if (!m_is_set)      return false;
+  if (m_is_small_imm) return true;
+  if (m_is_reg)       return false;
+//  if (m_is_dst)       return false;
+  if (m_is_magic)     return false;
+
+  return true;
 }
 
 

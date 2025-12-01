@@ -282,7 +282,16 @@ bool Instr::isCondAssign() const {
 
 
 void Instr::assign_cond(AssignCond rhs) { assert(tag == InstrTag::LI || tag == InstrTag::ALU); m_assign_cond = rhs; }
-AssignCond Instr::assign_cond() const   { assert(tag == InstrTag::LI || tag == InstrTag::ALU); return m_assign_cond; }
+
+
+AssignCond Instr::assign_cond() const   { 
+  if(!(tag == InstrTag::LI || tag == InstrTag::ALU)) {
+    warn << "assign_cond unexpected tag: " << tag; //<< ", instr: " << dump();
+  }
+  assert(tag == InstrTag::LI || tag == InstrTag::ALU);
+
+  return m_assign_cond;
+}
 
 BranchTarget Instr::branch_target() const { assert(tag == V3DLib::BR); return m_branch_target; }
 

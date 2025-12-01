@@ -831,98 +831,6 @@ bool can_combine(v3d::instr::Instr const &instr1, v3d::instr::Instr const &instr
 
 
 void combine(Instructions &instructions) {
-
-  //
-  // Detect useless moves, eg: or  rf2, rf2, rf2    ; nop
-  //
-  auto check_useless_moves = [] (Instr const &instr, int line_number) -> bool {
-		// Check assign to self
-    if (
-			instr.is_branch() ||
-			instr.add_nop() ||
-			!instr.mul_nop()       // Note that mul is skipped here
-		) {
-			return false;
-		}
-
-		auto op = instr.alu.add.op;
-
-		// The only op's handled here
-    if (
-			op != V3D_QPU_A_OR  &&
-			op != V3D_QPU_A_MOV &&
-			op != V3D_QPU_A_ADD
-		) {
-			return false;
-		}
-
-
-    if (instr.flag_push_set()) return false;
-    if (instr.flag_cond_set()) return false;
-
-
-    auto dst = instr.alu_add_dst();
-    assert(dst.is_set());
-    auto a = instr.alu_add_a();
-    assert(a.is_set());
-
-    if (op == V3D_QPU_A_OR) {
-    	if (instr.has_signal(true)) return false; 
-
-			// a and b both used
-      auto b = instr.alu_add_b();
-      assert(b.is_set());
-
-      if (!(a == b && dst == a)) return false; 
-		}
-		
-		if (op == V3D_QPU_A_MOV) {
-			// Only add a is used
-    	if (instr.has_signal(true)) return false; 
-      if (!(a == dst)) return false; 
-    }
-
-
-		// eg add(dst, dst, 0), add(dst, 0, 0)
-		if (op == V3D_QPU_A_ADD) {
-    	if (instr.has_signal(false)) return false; 
-
-			bool ret = false;
-
-      auto b = instr.alu_add_b();
-      assert(b.is_set());
-
-      if (a == dst) {
-				if (b.is_small_imm() && b.val() == 0) ret = true; 
-			}
-
-      if (b == dst) {
-				if (a.is_small_imm() && a.val() == 0) ret = true; 
-			}
-
-			// add(dst,0,0) is actually useful! Like mov(dst, 0)
-/*
-			// Following is actually illegal to run on qpu (qpu encode flags this)
-			// However, before complete compile it's possible and seen in the wild
-      if (a.is_small_imm() && b.is_small_imm()) {
-				if (a.val() == 0 && b.val() == 0) return true; 
-			}
-*/			
-
-			if (!ret) return false;
-    }
-
-    Log::debug
-			<< "Useless move at line " << line_number << ": " << instr.mnemonic(false)
-			<< " dst: " << dst.dump()
-		;
-
-		return true;
-  };
-
-  assertq(!check_useless_moves(instructions[0], 0), "First instruction is useless");
-
-
   int combine_count = 0;
 
   for (int i = 1; i < (int) instructions.size(); i++) {
@@ -1004,24 +912,12 @@ void combine(Instructions &instructions) {
     }
 
 
-
     //
     // Skip instructions that have both add and mul alu
     //
     if (!instr1.add_nop() && !instr1.mul_nop()) continue;
     if (!instr2.add_nop() && !instr2.mul_nop()) continue;
 
-
-    //
-    // Remove useless copies
-		//
-		// For some reason, the first instr (index 1) does not get picked up
-    //
-    if (check_useless_moves(instr2, i)) {
-			//warn << "Skipping useless move: " << instr2.mnemonic(false);
-      instr2.skip(true);
-      continue;
-    }
 
 		// auf/mf not used yet, but warn me if it happens
 		if (instr1.flag_uf_set() || instr2.flag_uf_set()) {
@@ -1195,14 +1091,17 @@ void KernelDriver::encode() {
   // Encode target instructions
   _encode(m_targetCode, instructions);
 
+  Combine::remove_useless(instructions);
+
 	// When disabled, RNN runs on vc7
 	//warn << instructions.dump();
   Combine::combine(instructions);
   Combine::remove_skips(instructions);
 
-
-  combine(instructions);
-  Combine::remove_skips(instructions);
+	if (!Platform::compiling_for_vc7()) {  // Doesn't work (any more) on vc7
+	  combine(instructions);
+	  Combine::remove_skips(instructions);
+	}
 
   removeLabels(instructions);
 
