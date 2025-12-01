@@ -15,8 +15,8 @@ Source::Source(V3DLib::RegOrImm const &rhs) :
   m_location(rhs.is_reg()?encodeSrcReg(rhs.reg()):nullptr),
   m_small_imm(rhs.is_reg()?0:rhs.imm().val)
 {
-  assert(!m_is_location || (m_location && rhs.reg().tag != NONE));
 }
+
 
 Source::Source(Register const &rhs)  : m_is_location(true), m_location(new Register(rhs)) {}
 Source::Source(Location const &rhs)  : m_is_location(true), m_location(rhs.clone()) {}

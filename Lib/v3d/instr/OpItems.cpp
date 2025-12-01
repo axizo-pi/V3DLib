@@ -61,8 +61,11 @@ std::vector<op_item> op_items = {
   { ALUOp::A_FFLOOR, V3D_QPU_A_FFLOOR },
   { ALUOp::A_FSIN,   V3D_QPU_A_SIN    },                   // NOTE: Extra NOP's and read in generation
   { ALUOp::A_TMUWT,  V3D_QPU_A_TMUWT  },                   // NOTE: Extra NOP's and read in generation
+
 	// VC7
-  { ALUOp::A_MOV,    V3D_QPU_A_MOV    }
+  { ALUOp::A_MOV,    V3D_QPU_A_MOV    },
+  { ALUOp::A_EXP,    V3D_QPU_A_EXP    },
+  { ALUOp::A_RECIP,  V3D_QPU_A_RECIP  },
 };
 
 

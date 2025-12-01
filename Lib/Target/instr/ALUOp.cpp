@@ -65,6 +65,7 @@ std::string ALUOp::pretty() const {
 		// vc7
     case A_MOV:     return "mov";
     case A_EXP:     return "exp";
+    case A_RECIP:   return "recip";
 
     default:
       assertq(false, "pretty(): Unknown ALU opcode", true);

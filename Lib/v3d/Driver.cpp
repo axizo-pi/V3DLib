@@ -99,8 +99,8 @@ bool Driver::execute(Code &code, Data *uniforms, uint32_t thread) {
 	bool do_special_flags = true;
 
 	if ((code_phyaddr & 0x111) != 0) {
-		if (Platform::compiling_for_vc7()) {  // Fails often on vc6
-			cerr << "Test on room for special flags fails";
+		if (Platform::compiling_for_vc7()) {  // Fails often on vc6, now also on vc7
+			cdebug << "Test on room for special flags fails";
 		}
 		do_special_flags = false;
 	}

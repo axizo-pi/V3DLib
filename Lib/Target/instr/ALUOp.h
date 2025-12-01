@@ -67,6 +67,7 @@ public:
 		// vc7
 		A_MOV,
 		A_EXP,
+		A_RECIP,
   };
 
   ALUOp() = default;

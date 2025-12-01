@@ -19,14 +19,22 @@ void kernel(Int x_count, Int y_count, Int::Ptr result) {
   	For (Int y = 0, y < y_count, y++)
 		End
 
-	//	Where(count >= 0)
+		//Where (count >= 0)
 			count += 1;
-	//	End
+		//End
 
-		//*result = count;
+		// *(result + 16*(count % 10)) = count;
+		Int::Ptr r2 = result + 64;
+		 *r2  = count;
   End
 
-	*result = count;   // This never returns a value???
+	Int::Ptr r2 = result + 16;
+		*r2  = 10;
+
+	*result = count;   // vc7 This never returns a value? vc6 works
+
+	//Int dummy = 36;
+	//dummy = dummy*3;
 }
 
 
@@ -38,13 +46,15 @@ int main(int argc, const char *argv[]) {
   k.setNumQPUs(settings.num_qpus);
 
 	// vc7 testing: 
-	//int x_count = 3529475;  // Ultimate limit, works once then fails
+	//int x_count = 8000000;    // Always fails
+	//int x_count = 3529475;  // Fails intermittently 
 	//int x_count = 3529400;  // Fails intermittently
 	//int x_count = 3529000;  // idem
 	//int x_count = 3520000;  // idem
 	//int x_count = 3500000;  // idem
 	int x_count = 3400000;    // Worked 10x in a row; between values not tested
-	Int::Array result(16);
+
+	Int::Array result(10*16);
 
 	k.load(x_count, 1, &result); // vc7  with previous comments
 

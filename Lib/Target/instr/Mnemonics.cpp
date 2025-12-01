@@ -301,9 +301,19 @@ Instr branch(Label label) {
 }
 
 
-Instr::List recip(Var dst, Var srcA)     { return sfu_function(dst, srcA, SFU_RECIP    , "recip"); }
 Instr::List recipsqrt(Var dst, Var srcA) { return sfu_function(dst, srcA, SFU_RECIPSQRT, "recipsqrt"); }
 Instr::List blog(Var dst, Var srcA)      { return sfu_function(dst, srcA, SFU_LOG      , "log"); }
+
+Instr::List recip(Var dst, Var srcA) {
+	if (Platform::compiling_for_vc7()) {
+		Instr::List ret;
+  	ret << genInstr(ALUOp::A_RECIP, dst, srcA);
+		return ret;
+	} else {
+		return sfu_function(dst, srcA, SFU_RECIP    , "recip");
+	}
+}
+
 
 Instr::List bexp(Var dst, Var srcA) {
 	if (Platform::compiling_for_vc7()) {

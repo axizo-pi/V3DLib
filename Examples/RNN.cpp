@@ -7,6 +7,7 @@
 #include "Kernel.h"
 #include "Source/Functions.h"  // rotate
 #include "Support/Timer.h"
+#include <cmath>
 
 using namespace V3DLib;
 using namespace Log;
@@ -51,6 +52,21 @@ void frand_array(Float::Array &rhs) {
 }
 
 
+/**
+ * activation function
+ */
+float sigmoid(float x) {
+	return (float) (1.0/(1.0 + std::exp(-x)));
+}
+
+
+void scalar_sigmoid(float *vec, int size, Float::Array const &bias) {
+  for (int h = 0; h < size; ++h) {
+		vec[h] = sigmoid(vec[h] - bias[h]); 
+  }
+}
+
+
 
 /**
  * matrix width is assumed to be the same as the vector length
@@ -70,6 +86,15 @@ void run_scalar(Float::Array const &mat, Float::Array const &vec, float *res) {
 }
 
 
+void kernel_sigmoid(Float::Ptr in, Float::Ptr out) {
+	Float x = *in;
+
+	x = (1.0/(1.0 + exp(-1.0*x)));
+
+	*out = x;
+}
+
+
 template<int const M, int const N>
 void kernel(Float::Ptr in_mat, Float::Ptr vec, Float::Ptr result) {
   assert(N > 0);
@@ -77,12 +102,10 @@ void kernel(Float::Ptr in_mat, Float::Ptr vec, Float::Ptr result) {
 
   Float tmp[M];
   Float::Ptr row[M];
-  //Int offset = 16*N;
   Int offset2 = 4*16*N;
 
   for (int h = 0; h < M; ++h) {
     tmp[h] = 0;
-    //row[h] = in_mat + (h*offset);
     row[h] = in_mat.offset(h*offset2);
   }
 
@@ -93,7 +116,7 @@ void kernel(Float::Ptr in_mat, Float::Ptr vec, Float::Ptr result) {
       tmp[h] += (*row[h])*v;
     }
 
-    if (i < (N-1)) {
+    if (i < (N - 1)) {
       for (int h = 0; h < M; ++h) {
         row[h].inc();
       }
@@ -121,29 +144,38 @@ int main(int argc, const char *argv[]) {
   frand_array(matrix);
   frand_array(vector);
 
+  Float::Array bias(16*N);
+  frand_array(bias);
+
   float scalar_res[M] = {0};
   run_scalar(matrix, vector, scalar_res);
 
 
-  Float::Array result(16);
+  Float::Array result(M);
+  Float::Array sigmoid(M);
 
   auto k = compile(kernel<M, N>, settings);
   k.load(&matrix, &vector, &result);
 
+	auto k_sigmoid = compile(kernel_sigmoid, settings);
+	k_sigmoid.load(&result, &sigmoid);
+
+
   {
     Timer timer("Matrix mult");
     k.run();
-
+		k_sigmoid.run();
     timer.end();
 
     int flops = M*(16*N + 16*(N - 1));  // num_rows*(num_mults + num_adds);
+	  flops += M*5;                       // sigmoid (1.0/(1.0 + exp(-1.0*x)));
 
     warn << "MFLOPS: " << ((float) flops)/timer.diff()/1.0e6;
     //warn << "Timer diff: " << timer.diff();
   }
 
   std::string buf;
-  for (int h = 0; h < M; ++h) {
+  for (int h = 0; h < (int) result.size(); ++h) {
     buf << scalar_res[h] << ", ";
   }
   warn << "scalar result: " << buf;
@@ -153,6 +185,20 @@ int main(int argc, const char *argv[]) {
     buf << result[i] << ", ";
   }
   warn << "kernel result: " << buf;
+
+	scalar_sigmoid(scalar_res, M, bias);
+
+  buf.clear();
+  for (int h = 0; h < M; ++h) {
+    buf << scalar_res[h] << ", ";
+  }
+  warn << "Scalar sigmoid: " << buf;
+
+  buf.clear();
+  for (int i = 0; i < (int) sigmoid.size(); ++i) {
+    buf << sigmoid[i] << ", ";
+  }
+  warn << "kernel sigmoid: " << buf;
 
   return 0;
 }

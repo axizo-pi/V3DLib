@@ -121,7 +121,6 @@ void check_unhandled_registers(Reg reg, bool do_src_regs) {
 std::unique_ptr<Location> encodeSrcReg(Reg reg) {
   check_unhandled_registers(reg, true);
 
-  bool is_none = false;
   std::unique_ptr<Location> ret;
 
   switch (reg.tag) {
@@ -133,8 +132,13 @@ std::unique_ptr<Location> encodeSrcReg(Reg reg) {
       ret = loc_acc(reg.regId, 4);  // r5 not allowed here (?)
       break;
     case NONE:
-      is_none = true;
-      breakpoint;
+			// NONE is perfectly legal for the b src in instructions with one
+			// parameter. eg. mov, exp.
+			//
+			// We substitute rf0 as a dummy.
+			//
+			// Curiously, I first encountered this on exp for vc7
+      ret.reset(new RFAddress(0));
       break;
 
     default:
@@ -142,10 +146,7 @@ std::unique_ptr<Location> encodeSrcReg(Reg reg) {
       cerr << "encodeSrcReg(): unexpected register: " << reg.dump() << thrw;
   }
 
-  if (ret.get() == nullptr && !is_none) {
-    cerr << "V3DLib: missing case in encodeSrcReg()" << thrw;
-  }
-
+  assert(ret.get() != nullptr);
   return ret;
 }
 

@@ -90,9 +90,6 @@ void KernelDriver::init_compile() {
   initStack(m_stmtStack);
 
   VarGen::reset();
-	Log::warn << "Reset VarGen, count: " << VarGen::count(); //<< "\n"
-	//	        << "id _64: " << Var_64().id();
-
   resetFreshLabelGen();
   Pointer::reset_increment();
   compile_data.clear();

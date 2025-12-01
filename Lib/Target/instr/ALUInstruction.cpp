@@ -28,7 +28,8 @@ bool ALUInstruction::oneOperand() const {
 
 			// vc7 
 			op.value() == ALUOp::A_MOV    ||
-			op.value() == ALUOp::A_EXP
+			op.value() == ALUOp::A_EXP    ||
+			op.value() == ALUOp::A_RECIP
 		);
 
   	return true;
