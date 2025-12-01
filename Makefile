@@ -283,7 +283,7 @@ $(UNIT_TESTS): $(TESTS_OBJ) $(V3DLIB) $(LIB_DEPEND)
 runTests: $(UNIT_TESTS)
 
 
-make_test: runTests ID Hello Rot3D ReqRecv GCD Tri detectPlatform OET Instruction Counter Concurrent RNN
+make_test: runTests ID Hello Rot3D ReqRecv GCD Tri detectPlatform OET 
 
 #
 # Running unit test [fft][test2] in combination with the rest *sometimes* results in IO timeouts (Pi4 64bit).

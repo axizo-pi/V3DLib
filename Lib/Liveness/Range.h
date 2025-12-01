@@ -18,6 +18,7 @@ public:
   bool overlaps(Range const &rhs) const;
   bool is_embedded(Range const &rhs) const;
   std::string dump() const;
+  void reset();
 
 private:
   int m_first = -1;

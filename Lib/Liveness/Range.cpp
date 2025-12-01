@@ -41,6 +41,13 @@ int Range::range() const {
 }
 
 
+void Range::reset() {
+  m_first = -1;
+  m_last  = -1;
+  m_count =  0;
+}
+
+
 bool Range::empty() const {
   if (m_first == -1 && m_last == -1) {
     assert(m_count == 0);

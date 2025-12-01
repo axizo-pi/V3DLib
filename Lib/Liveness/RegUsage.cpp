@@ -92,7 +92,6 @@ std::string RegUsageItem::dump() const {
 
 void RegUsageItem::add_dst(int n, bool is_cond_assign) {
   assertq(use_dst.empty() || use_dst.back() < n, "RegUsageItem::add_dst() failed", true);
-
 /*
   // See disabled code where this is used
 
@@ -232,6 +231,22 @@ bool RegUsageItem::use_overlaps(RegUsageItem const &rhs) const {
 }
 
 
+void RegUsageItem::reset() {
+  reg.tag = NONE;
+  src_range.reset();
+  use_dst.clear();
+  m_live_range.reset();
+}
+
+
+bool RegUsageItem::empty() const {
+  return ( reg.tag == NONE
+        && src_range.empty()
+        && use_dst.empty()
+        && m_live_range.empty()
+  );
+}
+
 ///////////////////////////////////////////////////////////////////////////////
 // Class RegUsage
 ///////////////////////////////////////////////////////////////////////////////
@@ -244,26 +259,49 @@ RegUsage::RegUsage(int numVars) : Parent(numVars) {
 void RegUsage::reset() {
   assert(size() > 0);
 
-  for (int i = 0; i < (int) size(); i++) {
-    auto &item = (*this)[i];
-    item = RegUsageItem();
-    item.reg.tag = NONE;
+  for (auto &a : *this) {
+    a.reset();
   }
 }
 
 
+RegUsageItem &RegUsage::get(int i) {
+  if (i > (int) size()) {
+    Log::warn << "RegUsage::get(): resizing from " << (int) size() << " to " << (i + 1);
+    resize(i + 1);
+  }
+#ifdef DEBUG
+  // at() is useful because it does bound checking, which
+  // is also the reason it is inefficient
+  return at(i);
+#else
+  return (*this)[i];
+#endif
+}
+
+
 void RegUsage::set_used(Instr::List &instrs) {
+#ifdef DEBUG
+  //Log::warn << "RegUsage.set_used() size: " << size();
+
+  for (auto &a : *this) {
+    assert(a.empty());
+  }
+#endif
+
   for (int i = 0; i < instrs.size(); i++) {
     if (!instrs[i].has_registers()) continue;
 
     UseDef out(instrs[i]);
 
     if (out.def.tag != NONE) {
-      (*this)[out.def.regId].add_dst(i, instrs[i].isCondAssign());
+      //assert(out.def.regId < (int) size());
+      get(out.def.regId).add_dst(i, instrs[i].isCondAssign());
     }
 
     for (auto r : out.use) {
-      (*this)[r].add_src(i);
+      //assert(r < (int) size());
+      at(r).add_src(i);
     }
   }
 }

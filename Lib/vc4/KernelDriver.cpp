@@ -161,11 +161,19 @@ void KernelDriver::compile_intern() {
     // Add final dummy uniform handling - See Note 1, function `invoke()` in `vc4/Invoke.cpp`,
     // and uniform ptr index offsets
 
+    // _64 not working well on vc4
+    //Reg _r64 = _64();
+    Reg tmp1 = VarGen::fresh();
+    //Reg tmp2 = VarGen::fresh();
+
     Instr::List ret;
-    ret << mov(VarGen::fresh(), Var(UNIFORM))
+    ret << mov(tmp1, Var(UNIFORM))
         << add_uniform_pointer_offset(m_targetCode);  // !!! NOTE: doesn't take dummy in previous into account
                                                       // This should not be a problem
-
+/*
+        << mov(tmp2,1)                                // Init global 64
+        << shl(_r64, tmp2, 6);
+*/
 		ret.front().comment("Last uniform load is dummy value");
 
     int index = m_targetCode.lastUniformOffset();

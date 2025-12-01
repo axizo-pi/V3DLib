@@ -1,5 +1,8 @@
 #include "Var.h"
 #include "Support/basics.h"
+#include "Support/Platform.h"
+
+using namespace Log;
 
 namespace V3DLib {
 namespace {
@@ -88,7 +91,19 @@ void VarGen::reset(int val) {
 }
 
 
+/**
+ * Define a single global variable that contains the value 64.
+ * This is used mainly for incrementing pointers.
+ *
+ * Works great on v3d, on vc4 mostly and that's nog good enough.
+ *
+ * See also the _64 reg.
+ */
 Var Var_64() {
+	if (Platform::compiling_for_vc4()) {
+		cerr << "Don't use the 64 global var on vc4" << thrw;
+	}
+
 	static bool did_it = false;
   static int tag = -1;
 	if (!did_it) {

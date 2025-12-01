@@ -31,6 +31,9 @@ struct RegUsageItem {
     return !(unused() || only_assigned());
   }
 
+  void reset();
+  bool empty() const;
+
 private:
   Range src_range;           // First and last instructions where var is used as src
   std::vector<int> use_dst;  // List of line numbers where var is set
@@ -56,6 +59,7 @@ struct RegUsage : private std::vector<RegUsageItem> {
   void check_overlap_usage(Reg acc, RegUsageItem const &item) const;
 
 private:
+  RegUsageItem &get(int i);
   std::string allocated_registers_dump() const;
 };
 
