@@ -2,6 +2,7 @@
 #define _V3DLIB_TARGET_SYNTAX_INSTR_ALUOP_H_
 #include <string>
 #include "broadcom/qpu/qpu_instr.h"
+//#include "v3d/instr/v3d_api.h"
 
 namespace V3DLib {
 
@@ -115,6 +116,9 @@ bool oneOperand(ALUOp const &op);
 bool noOperands(ALUOp const &op);
 
 } // namespace Oper
+
+std::string dump_add_op(enum v3d_qpu_add_op val);
+std::string dump_mul_op(enum v3d_qpu_add_op val);
 
 }  // namespace V3DLib
 

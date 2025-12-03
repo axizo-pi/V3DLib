@@ -413,13 +413,6 @@ bool Instr::check_dst() const {
 }
 
 
-std::string Instr::dump() const {
-  char buffer[10*1024];
-  instr_dump(buffer, const_cast<Instr *>(this));
-  return std::string(buffer);
-}
-
-
 std::string Instr::pretty_instr() const {
 /*
 	Log::debug
@@ -512,12 +505,6 @@ std::string Instr::mnemonic(bool with_comments) const {
 uint64_t Instr::bytecode() const {
   uint64_t repack = instr_pack(const_cast<Instr *>(this));
   return repack;
-}
-
-
-std::string Instr::dump(uint64_t in_code) {
-  Instr instr(in_code);
-  return instr.dump();
 }
 
 
@@ -675,9 +662,7 @@ bool Instr::compare_codes(uint64_t code1, uint64_t code2) {
 #ifdef DEBUG
   printf("compare_codes diff: %s\n", binaryValue(code1 ^ code2).c_str());
   printf("code1: %s\n", mnemonic(code1).c_str());
-  printf("%s\n", dump(code1).c_str());
   printf("code2: %s\n", mnemonic(code2).c_str());
-  printf("%s\n", dump(code2).c_str());
 
   breakpoint
 #endif  // DEBUG
@@ -1958,7 +1943,6 @@ int Instructions::replace_acc_with_rf(unsigned acc, unsigned rf) {
  * @return Number of address locations that were converted
  */
 void Instructions::replace_acc_with_rf() {
-	//Log::warn << "Pre:\n" << ret.dump();
 
 	if (V3DLib::Platform::compiling_for_vc7() && uses_acc()) {
 		auto acc = acc_usage();
@@ -1988,8 +1972,6 @@ void Instructions::replace_acc_with_rf() {
 			<< "  acc after replace: "  << acc.dump()       << "\n"
 			<< "  ret after replace: "  << rf.dump()       << "\n"
 		;
-
-		//Log::warn << "Post:\n" << ret.dump();
 	}
 }
 

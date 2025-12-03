@@ -407,34 +407,6 @@ TEST_CASE("Check v3d assembly/disassembly [v3d][asm]") {
 		return;
 	}
 
-  SUBCASE("Correct output of dump program") {
-    const char *expected = "\n{\n\
-  type: INSTR_TYPE_ALU,\n\
-  sig: {ldunifrf },\n\
-  sig_addr: 0,\n\
-  sig_magic: false,\n\
-  raddr_a: 0 ,\n\
-  raddr_b: 0,\n\
-  flags: {ac: COND_NONE, mc: COND_NONE, apf: PF_NONE, mpf: PF_NONE, auf: UF_NONE, muf: UF_NONE},\n\
-  alu: {\n\
-    add: NOP,\n\
-    mul: NOP\n\
-  }\n\
-}\n";
-
-    uint64_t nop = 0x3d803186bb800000;  // nop                  ; nop               ; ldunifrf.rf0 
-
-    struct v3d_qpu_instr instr;
-    REQUIRE(instr_unpack(nop, &instr));
-
-    char buffer[10*1024];
-    instr_dump(buffer, &instr);
-
-    INFO("Expected:\n" << expected);
-    INFO("Output:\n" << buffer);
-    REQUIRE(!strcmp(expected, buffer));
-  }
-
 
   SUBCASE("Summation kernel generates correctly encoded output") {
     auto arr = summation_kernel(8, 5, 0);

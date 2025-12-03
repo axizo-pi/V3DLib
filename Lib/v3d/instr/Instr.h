@@ -103,10 +103,9 @@ public:
   void set_cond_tag(AssignCond cond);
   void set_push_tag(SetCond set_cond);
 
-  std::string dump() const; 
   std::string mnemonic(bool with_comments = false) const;
+  std::string dump() const { return mnemonic(); }
   uint64_t bytecode() const;
-  static std::string dump(uint64_t in_code);
   static std::string mnemonic(uint64_t in_code);
   static std::string mnemonics(std::vector<uint64_t> const &in_code);
 

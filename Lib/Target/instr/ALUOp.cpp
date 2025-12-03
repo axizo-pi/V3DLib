@@ -1,37 +1,12 @@
 #include "ALUOp.h"
 #include <stdint.h>
 #include "Support/basics.h"
+#include "Support/Platform.h"
 #include "Source/Op.h"
 
 using namespace Log;
 
 namespace V3DLib {
-
-op_item::op_item(ALUOp::Enum in_op, v3d_qpu_add_op in_add_op) :
-  op(in_op),
-  has_add_op(true),
-  add_op(in_add_op)
-{}
-
-
-op_item::op_item(ALUOp::Enum in_op, bool in_add_op, v3d_qpu_mul_op in_mul_op) :
-  op(in_op),
-  has_mul_op(true),
-  mul_op(in_mul_op)
-{
-  assert(!in_add_op);
-}
-
-
-op_item::op_item(ALUOp::Enum in_op, v3d_qpu_add_op in_add_op, v3d_qpu_mul_op in_mul_op) :
-  op(in_op),
-  has_add_op(true),
-  add_op(in_add_op),
-  has_mul_op(true),
-  mul_op(in_mul_op)
-{}
-
-
 namespace {
 
 std::vector<op_item> op_items = {
@@ -115,6 +90,7 @@ int op_items_binary_search(int left, int right, ALUOp::Enum needle) {
 }
 
 } // anon namespace
+
 
 ALUOp::ALUOp(Op const &op) : m_value(op.opcode()) {}
 
@@ -267,7 +243,34 @@ uint32_t ALUOp::vc4_encodeMulOp() const {
 }
 
 
+op_item::op_item(ALUOp::Enum in_op, v3d_qpu_add_op in_add_op) :
+  op(in_op),
+  has_add_op(true),
+  add_op(in_add_op)
+{}
+
+
+op_item::op_item(ALUOp::Enum in_op, bool in_add_op, v3d_qpu_mul_op in_mul_op) :
+  op(in_op),
+  has_mul_op(true),
+  mul_op(in_mul_op)
+{
+  assert(!in_add_op);
+}
+
+
+op_item::op_item(ALUOp::Enum in_op, v3d_qpu_add_op in_add_op, v3d_qpu_mul_op in_mul_op) :
+  op(in_op),
+  has_add_op(true),
+  add_op(in_add_op),
+  has_mul_op(true),
+  mul_op(in_mul_op)
+{}
+
+
 op_item const *op_items_find_by_op(ALUOp::Enum op, bool strict) {
+	assert(!Platform::compiling_for_vc4());
+
   op_items_check_sorted();
 
   int index = op_items_binary_search(0, (int) op_items.size() - 1, op);
@@ -327,5 +330,152 @@ bool noOperands(ALUOp const &op) {
 }
 
 } // namespace Oper
+
+#define CASE(l)  case V3D_QPU_##l: ret = #l; break;
+
+std::string dump_add_op(enum v3d_qpu_add_op val) {
+	std::string ret;
+
+  switch (val) {
+    CASE(A_FADD)
+    CASE(A_FADDNF)
+    CASE(A_VFPACK)
+    CASE(A_ADD)
+    CASE(A_SUB)
+    CASE(A_FSUB)
+    CASE(A_MIN)
+    CASE(A_MAX)
+    CASE(A_UMIN)
+    CASE(A_UMAX)
+    CASE(A_SHL)
+    CASE(A_SHR)
+    CASE(A_ASR)
+    CASE(A_ROR)
+    CASE(A_FMIN)
+    CASE(A_FMAX)
+    CASE(A_VFMIN)
+    CASE(A_AND)
+    CASE(A_OR)
+    CASE(A_XOR)
+    CASE(A_VADD)
+    CASE(A_VSUB)
+    CASE(A_NOT)
+    CASE(A_NEG)
+    CASE(A_FLAPUSH)
+    CASE(A_FLBPUSH)
+    CASE(A_FLPOP)
+    CASE(A_RECIP)
+    CASE(A_SETMSF)
+    CASE(A_SETREVF)
+    CASE(A_NOP)
+    CASE(A_TIDX)
+    CASE(A_EIDX)
+    CASE(A_LR)
+    CASE(A_VFLA)
+    CASE(A_VFLNA)
+    CASE(A_VFLB)
+    CASE(A_VFLNB)
+    CASE(A_FXCD)
+    CASE(A_XCD)
+    CASE(A_FYCD)
+    CASE(A_YCD)
+    CASE(A_MSF)
+    CASE(A_REVF)
+    CASE(A_VDWWT)
+    CASE(A_IID)
+    CASE(A_SAMPID)
+    CASE(A_BARRIERID)
+    CASE(A_TMUWT)
+    CASE(A_VPMSETUP)
+    CASE(A_VPMWT)
+    CASE(A_LDVPMV_IN)
+    CASE(A_LDVPMV_OUT)
+    CASE(A_LDVPMD_IN)
+    CASE(A_LDVPMD_OUT)
+    CASE(A_LDVPMP)
+    CASE(A_RSQRT)
+    CASE(A_EXP)
+    CASE(A_LOG)
+    CASE(A_SIN)
+    CASE(A_RSQRT2)
+    CASE(A_LDVPMG_IN)
+    CASE(A_LDVPMG_OUT)
+    CASE(A_FCMP)
+    CASE(A_VFMAX)
+    CASE(A_FROUND)
+    CASE(A_FTOIN)
+    CASE(A_FTRUNC)
+    CASE(A_FTOIZ)
+    CASE(A_FFLOOR)
+    CASE(A_FTOUZ)
+    CASE(A_FCEIL)
+    CASE(A_FTOC)
+    CASE(A_FDX)
+    CASE(A_FDY)
+    CASE(A_STVPMV)
+    CASE(A_STVPMD)
+    CASE(A_STVPMP)
+    CASE(A_ITOF)
+    CASE(A_CLZ)
+    CASE(A_UTOF)
+
+		// Following added in mesa2
+    CASE(A_FLAFIRST)   // added between vc6 opcodes; pehaps neglected vc6 opcodes
+    CASE(A_FLNAFIRST)  // idem
+
+    /* V3D 7.x */
+    CASE(A_FMOV)
+    CASE(A_MOV)
+    CASE(A_VPACK)
+    CASE(A_V8PACK)
+    CASE(A_V10PACK)
+    CASE(A_V11FPACK)
+    CASE(A_BALLOT)
+    CASE(A_BCASTF)
+    CASE(A_ALLEQ)
+    CASE(A_ALLFEQ)
+    CASE(A_ROTQ)
+    CASE(A_ROT)
+    CASE(A_SHUFFLE)
+  }
+
+  assert(!ret.empty());
+	if(ret.empty()) ret = "<<UNKNOWN>>";
+
+  return ret;
+}
+
+
+std::string dump_mul_op(enum v3d_qpu_mul_op val) {
+	std::string ret;
+
+  switch (val) {
+    CASE(M_ADD)
+    CASE(M_SUB)
+    CASE(M_UMUL24)
+    CASE(M_VFMUL)
+    CASE(M_SMUL24)
+    CASE(M_MULTOP)
+    CASE(M_FMOV)
+    CASE(M_MOV)
+    CASE(M_NOP)
+    CASE(M_FMUL)
+
+    /* added in mesa1; V3D 7.x */
+    CASE(M_FTOUNORM16)
+    CASE(M_FTOSNORM16)
+    CASE(M_VFTOUNORM8)
+    CASE(M_VFTOSNORM8)
+    CASE(M_VFTOUNORM10LO)
+    CASE(M_VFTOUNORM10HI)
+  }
+
+  assert(!ret.empty());
+	if(ret.empty()) ret = "<<UNKNOWN>>";
+
+  return ret;
+}
+
+#undef CASE
 
 }  // namespace V3DLib
