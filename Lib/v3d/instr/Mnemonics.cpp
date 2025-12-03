@@ -45,6 +45,16 @@ Mnemonic::Mnemonic(v3d_qpu_add_op op, Location const &dst, Source const &a, Sour
 	if (b.is_location()) Location::check_acc_usage(b.location());
 }
 
+Mnemonic::Mnemonic(v3d_qpu_add_op op, Location const &dst, Source const &a) {
+  assert(Oper::oneOperand(op));
+  init(NOP());
+  alu_add_set(dst, a, a);  // TODO remove second a param
+  alu.add.op = op;
+
+	Location::check_acc_usage(dst);
+	if (a.is_location()) Location::check_acc_usage(a.location());
+}
+
 
 Mnemonic &Mnemonic::nop() {
   m_doing_add = false;
@@ -162,11 +172,6 @@ Mnemonic &Mnemonic::mov(uint8_t rf_addr, Register const &reg) {
   set_muxes_mul(alu, reg.to_mux(), V3D_QPU_MUX_B);
   alu.mul.waddr = rf_addr;
 
-  return *this;
-}
-
-Mnemonic &Mnemonic::fmov(Location const &dst, Source const &src) {
-  mul_alu_set(V3D_QPU_M_FMOV, dst, src, src);
   return *this;
 }
 
@@ -374,6 +379,11 @@ Mnemonic mov(Location const &dst, Source const &a) {
 	} else {
 		return Mnemonic(V3D_QPU_A_OR, dst, a, a);
 	}
+}
+
+
+Mnemonic fmov(Location const &dst, Source const &src) {
+ 	return Mnemonic(V3D_QPU_A_FMOV, dst, src);
 }
 
 

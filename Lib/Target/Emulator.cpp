@@ -554,9 +554,9 @@ void writeReg(QPUState* s, State* g, bool setFlags, AssignCond cond, Reg dest, V
 // Interpret a small immediate operand
 // ============================================================================
 
-Vec evalSmallImm(QPUState* s, EncodedSmallImm imm) {
+Vec evalSmallImm(QPUState* s, uint32_t imm) {
   Vec v;
-  Word w = decodeSmallLit(imm.val);
+  Word w = decodeSmallLit(imm);
 
   for (int i = 0; i < NUM_LANES; i++) {
     v[i] = w;
@@ -570,7 +570,7 @@ Vec readRegOrImm(QPUState* s, State &state, RegOrImm const &src) {
   if (src.is_reg()) {
     return readReg(s, &state, src.reg());
   } else {
-    return evalSmallImm(s, src.imm());
+    return evalSmallImm(s, src.encode());
   }
 }
 

@@ -5,17 +5,52 @@
 #include "Imm.h"
 #include "v3d/instr/SmallImm.h"
 
+using namespace Log;
+
 namespace V3DLib {
 
-RegOrImm::RegOrImm(Imm const &rhs) { set_imm(rhs.encode_imm()); }
+RegOrImm::RegOrImm(Imm const &rhs) : m_is_reg(false), m_imm(rhs){
+  //   set_imm(rhs.encode_imm());
+}
+
+RegOrImm::RegOrImm(int rhs) : m_is_reg(false), m_imm(rhs){
+}
+
 RegOrImm::RegOrImm(Var const &rhs) { set_reg(rhs); }
 RegOrImm::RegOrImm(Reg const &rhs) { set_reg(rhs); }
 
 Reg &RegOrImm::reg()                  { assert(is_reg()); return m_reg; }
 Reg RegOrImm::reg() const             { assert(is_reg()); return m_reg; }
+Imm &RegOrImm::imm()                  { assert(is_imm()); return m_imm; }
+Imm RegOrImm::imm() const             { assert(is_imm()); return m_imm; }
+
+/*
 EncodedSmallImm &RegOrImm::imm()      { assert(is_imm()); return m_smallImm; }
 EncodedSmallImm RegOrImm::imm() const { assert(is_imm()); return m_smallImm; }
+*/
 
+uint32_t RegOrImm::encode() const {
+  assert(is_imm());
+
+  warn << "encode() imm: " << m_imm.dump();
+
+  int ret = m_imm.encode_imm();
+
+  warn << "encode() ret: " << hex << ret;
+
+  if (ret == -1) {
+    warn << "RegOrImm::encode() invalid encoding, imm: " << m_imm.dump();
+    breakpoint;
+    warn << "Aborting" << thrw;
+  }
+
+  // input should be in the encode range for target platforms
+  assert(v3d::instr::SmallImm::is_legal_encoded_value(ret));
+
+  return (uint32_t) ret;
+}
+
+/*
 void RegOrImm::set_imm(int rhs) {
   // input should be in the encode range for target platforms
   assert((Platform::compiling_for_vc4()  && 0 <= rhs && rhs <= 47)
@@ -25,6 +60,7 @@ void RegOrImm::set_imm(int rhs) {
   m_is_reg  = false;
   m_smallImm.val = rhs;
 }
+*/
 
 
 void RegOrImm::set_reg(Reg const &rhs) {
@@ -34,8 +70,19 @@ void RegOrImm::set_reg(Reg const &rhs) {
 }
 
 
-RegOrImm &RegOrImm::operator=(int rhs)        { set_imm(rhs); return *this; }
-RegOrImm &RegOrImm::operator=(Imm const &rhs) { set_imm(rhs.encode_imm()); return *this; }
+//RegOrImm &RegOrImm::operator=(int rhs)        { set_imm(rhs); return *this; }
+
+
+RegOrImm &RegOrImm::operator=(Imm const &rhs) {
+  //set_imm(rhs.encode_imm());
+
+  m_imm = rhs;
+  m_is_reg = false;
+
+  return *this;
+}
+
+
 RegOrImm &RegOrImm::operator=(Reg const &rhs) { set_reg(rhs); return *this; }
 
 
@@ -45,7 +92,7 @@ bool RegOrImm::operator==(RegOrImm const &rhs) const {
   if (m_is_reg) {
     return m_reg == rhs.m_reg;
   } else {
-    return m_smallImm == rhs.m_smallImm;
+    return m_imm == rhs.m_imm;
   }
 }
 
@@ -59,10 +106,7 @@ bool RegOrImm::operator==(Reg const &rhs) const {
 bool RegOrImm::operator==(Imm const &rhs) const {
   if (m_is_reg) return false;
 
-  int rhs_encoded = rhs.encode_imm();
-  if (rhs_encoded == Imm::INVALID_ENCODING) return false; 
-
-  return m_smallImm.val == rhs_encoded;
+  return m_imm == rhs;
 }
 
 
@@ -73,15 +117,18 @@ bool RegOrImm::can_read(bool check) const {
 }
 
 
-std::string RegOrImm::disp() const {
+std::string RegOrImm::dump() const {
   if (m_is_reg) {
     return m_reg.dump();
   } else {
+    return m_imm.dump();
+/*
     if (Platform::compiling_for_vc4()) {
       return printSmallLit(m_smallImm.val);
     } else {
       return v3d::instr::SmallImm::print_encoded_value(m_smallImm.val);
     }
+*/
   }
 }
 

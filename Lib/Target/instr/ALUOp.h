@@ -1,6 +1,7 @@
 #ifndef _V3DLIB_TARGET_SYNTAX_INSTR_ALUOP_H_
 #define _V3DLIB_TARGET_SYNTAX_INSTR_ALUOP_H_
 #include <string>
+#include "broadcom/qpu/qpu_instr.h"
 
 namespace V3DLib {
 
@@ -64,6 +65,9 @@ public:
     A_FSIN,
     A_TMUWT,
 
+		// v3d
+		A_FMOV,
+
 		// vc7
 		A_MOV,
 		A_EXP,
@@ -88,6 +92,29 @@ public:
 private:
   Enum m_value = NOP;
 };
+
+
+struct op_item {
+  op_item(ALUOp::Enum in_op, v3d_qpu_add_op in_add_op);
+  op_item(ALUOp::Enum in_op, bool in_add_op, v3d_qpu_mul_op in_mul_op);
+  op_item(ALUOp::Enum in_op, v3d_qpu_add_op in_add_op, v3d_qpu_mul_op in_mul_op);
+
+  ALUOp::Enum op;
+  bool has_add_op       = false;
+  v3d_qpu_add_op add_op = V3D_QPU_A_NOP;
+  bool has_mul_op       = false;
+  v3d_qpu_mul_op mul_op = V3D_QPU_M_NOP;
+};
+
+op_item const *op_items_find_by_op(ALUOp::Enum op, bool strict = true);
+
+namespace Oper {
+
+bool oneOperand(v3d_qpu_add_op op);
+bool oneOperand(ALUOp const &op);
+bool noOperands(ALUOp const &op);
+
+} // namespace Oper
 
 }  // namespace V3DLib
 

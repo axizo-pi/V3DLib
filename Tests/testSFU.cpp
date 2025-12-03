@@ -7,8 +7,16 @@ using namespace V3DLib;
 
 namespace {
 
+float PI = 3.14159f;
+
 void sfu(Float x, Float::Ptr r) {
-  *r = 2*x;                  r += 16;
+  *r = 0.0f;                 r += 16;
+  *r = 2.0f*x;               r += 16;  // Float mult
+  *r = 2*x;                  r += 16;  // Int mult
+
+  Float var = 2.0f;
+  *r = var*x;                r += 16;  // Float mult from var
+
   *r = V3DLib::exp(3.0f);    r += 16;
   *r = V3DLib::exp(x);       r += 16;
   *r = V3DLib::recip(x);     r += 16;
@@ -17,28 +25,41 @@ void sfu(Float x, Float::Ptr r) {
 }
 
 
-void check(Float::Array &results, double precision) {
-  float val = 1.1f;
-
-  REQUIRE(results[0] == 2*val);
-  REQUIRE(abs(results[16*1] - 8.0)           < precision);
-  REQUIRE(abs(results[16*2] - exp2(val))     < precision);  // Should be exact, but isn't
-  REQUIRE(abs(results[16*3] - 1/val)         < precision);
-  REQUIRE(abs(results[16*4] - (1/sqrt(val))) < precision);
-  REQUIRE(abs(results[16*5] - log2(val))     < precision);
+void check(float val, Float::Array &results, double precision) {
+  REQUIRE(results[0] == 0.0f);
+  REQUIRE(results[16] == 2*val);
+  REQUIRE(results[16*2] == 2*val);
+  REQUIRE(results[16*3] == 2*val);
+  REQUIRE(abs(results[16*4] - 8.0)           < precision);
+  REQUIRE(abs(results[16*5] - exp2(val))     < precision);  // Should be exact, but isn't
+  REQUIRE(abs(results[16*6] - 1/val)         < precision);
+  REQUIRE(abs(results[16*7] - (1/sqrt(val))) < precision);
+  REQUIRE(abs(results[16*8] - log2(val))     < precision);
 }
+
+/*
+std::string vector_dump(Float::Array const &src) {
+	std::string buf;
+
+  for (int h = 0; h < (int) src.size(); h += 16) {
+    buf << src[h] << ", ";
+  }
+
+	return buf;
+}
+*/
 
 }  // anon namespace
 
 
 TEST_CASE("Test SFU functions [sfu]") {
-  //Platform::use_main_memory(true);  // Remove this when testing on hardware QPUs
 
-  int N = 6;  // Number of results returned
+  int N = 9;  // Number of results returned
 
   Float::Array results(16*N);
 
   auto k = compile(sfu);
+  //k.pretty("SFU.txt");
 
   INFO("Running qpu");
   //
@@ -50,6 +71,21 @@ TEST_CASE("Test SFU functions [sfu]") {
   double precision = (Platform::run_vc4())?3e-4:1e-6;
 
   results.fill(0.0);
+
+  k.load(1.0f, &results).run();
+  //Log::warn << vector_dump(results);
+  check(1.0f, results, precision);
+
   k.load(1.1f, &results).run();
-  check(results, precision);
+  check(1.1f, results, precision);
+
+  k.load(2.5f, &results).run();
+  check(2.5f, results, precision);
+
+  k.load(PI, &results).run();
+  check(PI, results, precision);
+
+// Following generates nanf - for 1/x
+//  k.load(0.0f, &results).run();
+//  check(0.0f, results, precision);
 }

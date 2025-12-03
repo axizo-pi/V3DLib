@@ -200,10 +200,10 @@ Reg rf(uint8_t index) {
 Instr::List mov(Reg dst, RegOrImm const &src) {
   dst.can_write(true);
 
-
 	Instr::List ret;
 
 	//Log::debug << "dst: " << dst.dump() << "; " << "tag: " << dst.tag;   
+	//Log::warn << "mov src: " << src.dump();   
 
 	if (src.is_reg() && src.reg().tag == SPECIAL) {
 		// The logic for special reg's is under bor(), so we 
@@ -212,7 +212,7 @@ Instr::List mov(Reg dst, RegOrImm const &src) {
 	} else if (Platform::compiling_for_vc7()) {
     ret <<  _mov(dst, src);
 	} else if (src.is_imm()) {
-    ret << li(dst, src.imm().val);
+    ret << li(dst, src.imm());
   } else {
     ret << bor(dst, src, src);
   }
@@ -220,6 +220,12 @@ Instr::List mov(Reg dst, RegOrImm const &src) {
 	return ret;
 }
 
+
+Instr fmov(Reg dst, Imm const &src) {
+//	RegOrImm src(simple_float_code);
+	auto ret = genInstr(ALUOp::A_FMOV, dst, src)   .comment("fmov");
+  return ret;
+}
 
 
 // Generation of bitwise instructions
@@ -280,6 +286,8 @@ Instr sub(Reg dst, int n, Reg srcA) {
  */
 Instr li(Reg dst, Imm const &src) {
   dst.can_write(true);
+
+  //Log::warn << "li src: " << src.dump() << ", is float: " << src.is_float();
 
   Instr instr(LI);
   instr.LI.imm  = src;

@@ -15,7 +15,12 @@ FloatExpr unary_float_op(OpId op_id, FloatExpr a) {
 // Class FloatExpr
 // ============================================================================
 
-FloatExpr::FloatExpr(float x) { m_expr = std::make_shared<Expr>(x); }
+FloatExpr::FloatExpr(float x) {
+	//Log::warn << "FloatExpr ctor val: " << x;
+	m_expr = std::make_shared<Expr>(x);
+}
+
+
 FloatExpr::FloatExpr(Deref<Float> d) : BaseExpr(d.expr()) {}
 
 FloatExpr FloatExpr::operator-() { return (*this)*-1.0f; }
@@ -44,6 +49,7 @@ Float::Float() { assign_intern(); }
 
 
 Float::Float(float x) {
+	//Log::warn << "Float ctor val: " << x;
   auto a = std::make_shared<Expr>(x);
   assign_intern(a);
 }

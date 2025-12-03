@@ -8,7 +8,10 @@ namespace V3DLib {
 
 Imm::Imm(int i)      : m_tag(IMM_INT32),   m_intVal(i) {}
 Imm::Imm(unsigned i) : m_tag(IMM_INT32),   m_intVal((int) i) {}
-Imm::Imm(float f)    : m_tag(IMM_FLOAT32), m_floatVal(f) {}
+
+Imm::Imm(float f)    : m_tag(IMM_FLOAT32), m_floatVal(f) {
+	//Log::warn << "Imm ctor val: " << f;
+}
 
 int   Imm::intVal()   const { assert(m_tag == IMM_INT32);   return m_intVal; }
 int   Imm::mask()     const { assert(m_tag == IMM_MASK);    return m_intVal; }
@@ -22,52 +25,49 @@ bool Imm::is_zero() const { return m_tag == IMM_INT32 && m_intVal == 0; }
  * need to be constructed inline.
  */
 bool Imm::is_basic() const {
-  return INVALID_ENCODING != encode_imm();
+  return (encode_imm() != -1);
 }
 
 
 /**
  * Return encoded small value for immediate, if possible
  *
- * @return Encoded value if encoding possible, -17 otherwise
+ * @return Encoded value if encoding possible, -1 otherwise
  */
 int Imm::encode_imm() const {
-  assert(m_tag != IMM_MASK);  // Not dealing with this here
-  int dummy = INVALID_ENCODING;  // Invalid value for both v3d and vc4
+  assert(m_tag != IMM_MASK);  // Not dealing with this right now
+  int ret = -1; 
 
   if (Platform::compiling_for_vc4()) {
     if (is_int()) {
-      dummy = encodeSmallInt(m_intVal);
+      ret = encodeSmallInt(m_intVal);
     } else if (is_float()) {
-      dummy = encodeSmallFloat(m_floatVal);
+      ret = encodeSmallFloat(m_floatVal);
     }
-
-    if (dummy == -1) dummy = INVALID_ENCODING;
   } else {
     if (is_int()) {
-      if (!v3d::instr::SmallImm::int_to_opcode_value(m_intVal, dummy)) {
-        dummy = INVALID_ENCODING;
-      }
+      // Return value will be -1 if fails
+      v3d::instr::SmallImm::int_to_opcode_value(m_intVal, ret);
     } else if (is_float()) {
-      if (!v3d::instr::SmallImm::float_to_opcode_value(m_floatVal, dummy)) {
-        dummy = INVALID_ENCODING;
-      }
+      // Return value will be -1 if fails
+      v3d::instr::SmallImm::float_to_opcode_value(m_floatVal, ret);
     }
   }
 
-  return dummy;
+  return ret;
 }
 
 
-std::string Imm::pretty() const {
+std::string Imm::dump() const {
   std::string ret;
 
   switch (m_tag) {
-    case IMM_INT32:   ret << m_intVal;   break;
-    case IMM_FLOAT32: ret << m_floatVal; break;
+    case IMM_INT32:   ret << "int "   << m_intVal;   break;
+    case IMM_FLOAT32: ret << "float " <<m_floatVal; break;
 
     case IMM_MASK: {
         int b = m_intVal;
+        ret << "mask ";
 
         for (int i = 0; i < 16; i++) {
           ret << ((b & 1)? 1 : 0);

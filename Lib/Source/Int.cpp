@@ -13,10 +13,16 @@ using ::operator<<;  // C++ weirdness
 // ============================================================================
 
 Int::Int()              { assign_intern(); }
-Int::Int(int x)         { assign_intern(mkIntLit(x)); }
+
+Int::Int(int x)         {
+	//Log::warn << "Int ctor val: " << x;
+	assign_intern(mkIntLit(x));
+}
+
 Int::Int(Deref<Int> d)  { assign_intern(d.expr()); }
 Int::Int(IntExpr e)     { assign_intern(e.expr()); }
 Int::Int(Int const &x)  { assign_intern(x.expr());
+
 }
 
 

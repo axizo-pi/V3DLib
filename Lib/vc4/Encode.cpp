@@ -367,21 +367,21 @@ void encode_operands(vc4_Instr &vc4_instr, RegOrImm const &srcA, RegOrImm const 
     }
   } else if (srcA.is_imm() || srcB.is_imm()) {
     if (srcA.is_imm() && srcB.is_imm()) {
-      assertq(srcA.imm().val == srcB.imm().val,
+      assertq(srcA.imm() == srcB.imm(),
         "srcA and srcB can not both be immediates with different values", true);
 
-      raddrb = (uint32_t) srcA.imm().val;  // srcB is the same
+      raddrb = srcA.encode();  // srcB is the same
       muxa   = 7;
       muxb   = 7;
     } else if (srcB.is_imm()) {
       // Second operand is a small immediate
       raddra = encodeSrcReg(srcA.reg(), REG_A, &muxa);
-      raddrb = (uint32_t) srcB.imm().val;
+      raddrb = srcB.encode();
       muxb   = 7;
     } else if (srcA.is_imm()) {
       // First operand is a small immediate
       raddra = encodeSrcReg(srcB.reg(), REG_A, &muxb);
-      raddrb = (uint32_t) srcA.imm().val;
+      raddrb = srcA.encode();
       muxa   = 7;
     } else {
       assert(false);  // Not expecting this
@@ -458,7 +458,7 @@ uint64_t encodeInstr(Instr instr) {
         uint32_t raddrb = 48;
 
         if (!alu.srcB.is_reg()) {  // i.e. value is an imm
-          uint32_t n = (uint32_t) alu.srcB.imm().val;
+          uint32_t n = alu.srcB.encode();
           assert(n >= 1 || n <= 15);
           raddrb += n;
         }

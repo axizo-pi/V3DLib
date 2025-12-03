@@ -13,9 +13,6 @@ struct Imm {
     IMM_MASK     // 1 bit per vector element (0 to 0xffff)
   };
 
-  enum {
-    INVALID_ENCODING = -17
-  };
 
   Imm() = default;
   Imm(int i);
@@ -33,7 +30,7 @@ struct Imm {
 
   bool is_zero() const;
   bool is_basic() const;
-  std::string pretty() const;
+  std::string dump() const;
 
   bool operator==(Imm const &rhs) const;
   bool operator!=(Imm const &rhs) const { return !(*this == rhs); }

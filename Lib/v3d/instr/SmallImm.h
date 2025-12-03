@@ -5,6 +5,9 @@
 #include "v3d_api.h"
 
 namespace V3DLib {
+
+class Imm;
+
 namespace v3d {
 namespace instr {
 
@@ -12,6 +15,9 @@ namespace instr {
 class SmallImm {
 public:
   SmallImm(int val, bool is_val = true);
+  SmallImm(const Imm &val);
+
+  static const int INVALID_ENCODING = -1;
 
   uint8_t to_raddr() const;
   v3d_qpu_input_unpack input_unpack() const { return m_input_unpack; }

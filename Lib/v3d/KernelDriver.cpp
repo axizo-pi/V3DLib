@@ -188,8 +188,20 @@ bool translateOpcode(V3DLib::Instr const &src_instr, Instructions &ret) {
 		} else {
 			ret << tmp;
 		}
-	}
+	 }
    break;
+  case ALUOp::A_FMOV: {
+    assert(src_instr.ALU.oneOperand());
+
+    // fmov appears to return zero always, so we replace is with mov here
+    // TODO: remove A_FMOV usage.
+    warn << "using mov() for A_FMOV";
+    //auto tmp = fmov(*dst_reg, reg_a);
+    auto tmp = mov(*dst_reg, reg_a);
+
+    ret << tmp;
+  }
+  break;
   default: {
     // Handle general case
     Instr instr;
@@ -225,7 +237,7 @@ void handle_condition_tags(V3DLib::Instr const &src_instr, Instructions &ret) {
 
   auto setCond = src_instr.set_cond();
 
-  if (!setCond.flags_set()) {
+  if (!setCond.flags_set() && !ret.empty()) {
 		// Only set final instruction! This is the assignment of the result of the  preceding operations
     ret.back().set_cond_tag(cond);
 
@@ -349,7 +361,7 @@ bool translateRotate(V3DLib::Instr const &instr, Instructions &ret) {
 		assert(src_a->is_rf());
 		assert(reg_b.is_imm());  // rf not handled yet
 	
-    SmallImm imm(reg_b.imm().val); // Legal values small imm tested in rotate()
+    SmallImm imm(reg_b.encode()); // Legal values small imm tested in rotate()
 
 		Instr dst_instr;
 		dst_instr.alu.add.op = V3D_QPU_A_ROT;
@@ -380,7 +392,7 @@ bool translateRotate(V3DLib::Instr const &instr, Instructions &ret) {
 	    ret << rotate(r1, r0, *src_b);
 
 	  } else {
-	    SmallImm imm(reg_b.imm().val); // Legal values small imm tested in rotate()
+	    SmallImm imm(reg_b.encode()); // Legal values small imm tested in rotate()
 	    ret << rotate(r1, r0, imm);
 	  }
 
@@ -396,6 +408,9 @@ Instructions encodeLoadImmediate(V3DLib::Instr const full_instr) {
   auto &instr = full_instr.LI;
   auto dst = encodeDestReg(full_instr);
 
+  //warn << "encodeLoadImmediate instr: " << full_instr.dump() << "\n"
+  //     << "   imm: " << full_instr.LI.imm.dump();
+
   Instructions ret;
 
   std::string err_label;
@@ -406,7 +421,7 @@ Instructions encodeLoadImmediate(V3DLib::Instr const full_instr) {
     int value = instr.imm.intVal();
 
  	  if (!(-16 <= value && value <= 15)) {  // big int conversions should have been done beforehand
-      cerr << "Int out of expected range. int: " << value; // << ", float: " << instr.imm.floatVal();
+      cerr << "Int out of expected range. int: " << value << ", float: " << instr.imm.floatVal();
     }
 
     ret << mov(*dst, value);
@@ -418,13 +433,18 @@ Instructions encodeLoadImmediate(V3DLib::Instr const full_instr) {
     float value = instr.imm.floatVal();
 
     if (value < 0 && SmallImm::float_to_opcode_value(-value, rep_value)) {
+      breakpoint;  // deal with this when it happens
+
       std::string cmt;
       cmt << "Load neg float small imm " << value;
 
-      ret << nop().fmov(*dst, rep_value).comment(cmt)
+      ret << fmov(*dst, rep_value).comment(cmt)
           << fsub(*dst, 0, *dst);                   // Works because float zero is 0x0
     } else if (SmallImm::float_to_opcode_value(value, rep_value)) {
-      ret << nop().fmov(*dst, rep_value);
+      // Keep going as is, the value will be encoded downstream
+      //float val = instr.imm.floatVal();
+      Source src(RegOrImm(instr.imm));
+      ret << mov(*dst , src);
     } else {
       err_label = "float";
       err_value << value;

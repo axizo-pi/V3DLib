@@ -12,6 +12,7 @@ class Mnemonic : public Instr {
 public:
   Mnemonic() : Parent() {}
   Mnemonic(v3d_qpu_add_op op, Location const &dst, Source const &a, Source const &b);
+  Mnemonic(v3d_qpu_add_op op, Location const &dst, Source const &a);
 
   Mnemonic &pushz();
   Mnemonic &pushc();
@@ -86,7 +87,7 @@ Mnemonic &mnemonic(Location const &dst, Source const &srca, Source const &srcb) 
   Mnemonic &nop();
   Mnemonic &mov(Location const &dst, Source const &src);
   Mnemonic &mov(uint8_t rf_addr, Register const &reg);
-  Mnemonic &fmov(Location const &dst, Source const &src);
+  //Mnemonic &fmov(Location const &dst, Source const &src);
 
   Mnemonic &rotate(Location const &dst, Location const &a, SmallImm const &b);
   Mnemonic &rotate(Location const &dst, Location const &a, Location const &b);
@@ -195,6 +196,7 @@ Mnemonic itof(Location const &dst, Location const &a);
 Mnemonic ftoi(Location const &dst, Location const &a);
 
 Mnemonic mov(Location const &dst, Source const &a);
+Mnemonic fmov(Location const &dst, Source const &a);
 
 v3d_qpu_waddr const syncb = V3D_QPU_WADDR_SYNCB;  // Needed for barrierid()
 

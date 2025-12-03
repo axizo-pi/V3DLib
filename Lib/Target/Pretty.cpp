@@ -16,7 +16,7 @@ std::string pretty_instr(Instr const &instr) {
       buf << instr.assign_cond().to_string()
           << "LI " << instr.dest().dump()
           << " <-" << instr.set_cond().pretty() << " "
-          << instr.LI.imm.pretty();
+          << instr.LI.imm.dump();
     }
     break;
 
@@ -29,9 +29,9 @@ std::string pretty_instr(Instr const &instr) {
       if (instr.ALU.noOperands()) {
         buf << "()";
       } else if (instr.ALU.oneOperand()) {
-        buf << "(" << instr.ALU.srcA.disp() << ")";
+        buf << "(" << instr.ALU.srcA.dump() << ")";
       } else {
-        buf << "(" << instr.ALU.srcA.disp() << ", " << instr.ALU.srcB.disp() << ")";
+        buf << "(" << instr.ALU.srcA.dump() << ", " << instr.ALU.srcB.dump() << ")";
       }
     }
     break;

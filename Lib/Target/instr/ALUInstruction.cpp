@@ -4,38 +4,12 @@
 namespace V3DLib {
 
 bool ALUInstruction::noOperands() const {
-  if (srcA.is_none() && srcB.is_none())  {
-	  assert(                           // Pedantry: these should be the only operations with no operands
-			op.value() == ALUOp::A_TMUWT ||
-			op.value() == ALUOp::A_TIDX  ||
-			op.value() == ALUOp::A_EIDX
-		);
-
-	  return true;
-	} else {
-		return false;
-	}
+  return Oper::noOperands(op);
 }
 
 
 bool ALUInstruction::oneOperand() const {
-  if (srcA.is_none() && srcB.is_none()) return false;
-
-  if (srcB.is_none()) {
-	  assert(                            // Pedantry: these should be the only operations with one operand
-			op.value() == ALUOp::A_FSIN   ||
-			op.value() == ALUOp::A_FFLOOR ||
-
-			// vc7 
-			op.value() == ALUOp::A_MOV    ||
-			op.value() == ALUOp::A_EXP    ||
-			op.value() == ALUOp::A_RECIP
-		);
-
-  	return true;
-	} else {
-		return false;
-	}
+  return Oper::oneOperand(op);
 }
 
 

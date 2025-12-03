@@ -355,14 +355,14 @@ bool encode_float(Instr::List &ret, Reg dst, float value) {
     cmt << "Load neg float small imm " << value;
 
 		Instr::List tmp;
-    tmp << mov(dst, rep_value)
+    tmp << fmov(dst, rep_value)
         << sub(dst, 0, dst);                   // Works because float zero is 0x0
 
 		tmp.front().comment(cmt);
 		ret << tmp;
   } else if (SmallImm::float_to_opcode_value(value, rep_value)) {
 		//warn << "encode_float small float value: " << rep_value;
-    ret << mov(dst, rep_value);
+    ret << fmov(dst, rep_value);
   } else {
     // Do the full blunt int conversion
 		//warn << "encode_float doing blunt conversion: " << value;
@@ -397,6 +397,8 @@ Instr::List encodeLoadImmediate(V3DLib::Instr const full_instr) {
   std::string err_label;
   std::string err_value;
 
+	//warn << full_instr.mnemonic();
+
   switch (instr.imm.tag()) {
   case Imm::IMM_INT32: {
     int value = instr.imm.intVal();
@@ -412,7 +414,6 @@ Instr::List encodeLoadImmediate(V3DLib::Instr const full_instr) {
   case Imm::IMM_FLOAT32: {
     float value = instr.imm.floatVal();
   	//warn << "Handling case Imm::IMM_FLOAT32, value: " << value;
-
 
     if (!encode_float(ret, dst, value)) {
       // Conversion failed, output error
@@ -461,6 +462,8 @@ Instr::List adjust_immediates(Instr::List const &instrs) {
 
   for (int i = 0; i < instrs.size(); i++) {
 		Instr const &instr = instrs[i];
+
+		//warn << instr.mnemonic();
 
 		if (instr.tag != LI) {
 			res << instr;

@@ -1,28 +1,31 @@
 #ifndef _V3DLIB_TARGET_INSTR_REGORIMM_H_
 #define _V3DLIB_TARGET_INSTR_REGORIMM_H_
 #include "Reg.h"
+#include "Imm.h"
 
 namespace V3DLib {
 
 class Imm;
 
+/*
 struct EncodedSmallImm {
   int val;
 
   bool operator==(EncodedSmallImm const &rhs) const { return val == rhs.val;  }
   bool operator!=(EncodedSmallImm const &rhs) const { return !(*this == rhs); }
 };
+*/
 
 
 struct RegOrImm {
   RegOrImm() = default;
   RegOrImm(RegOrImm const &rhs) = default;
-  RegOrImm(int rhs) { set_imm(rhs); }
+  RegOrImm(int rhs); // { set_imm(rhs); }
   RegOrImm(Imm const &rhs);
   RegOrImm(Reg const &rhs);
   RegOrImm(Var const &rhs);
 
-  RegOrImm &operator=(int rhs);
+  //RegOrImm &operator=(int rhs);
   RegOrImm &operator=(Imm const &rhs);
   RegOrImm &operator=(Reg const &rhs);
 
@@ -36,12 +39,17 @@ struct RegOrImm {
   bool is_imm() const { return !m_is_reg; }
 	bool is_none() const { return is_reg() && m_reg.is_none(); } 
   bool can_read(bool check = false) const;
-  std::string disp() const;
+  std::string dump() const;
 
   Reg &reg();
   Reg reg() const;
+  Imm &imm();
+  Imm imm() const;
+  uint32_t encode() const;
+/*
   EncodedSmallImm &imm();
   EncodedSmallImm imm() const;
+*/
 
   bool is_transient() const;
   bool uses_src() const;
@@ -49,10 +57,12 @@ struct RegOrImm {
 private:
   bool m_is_reg;        // if false, is an imm
 
-  Reg m_reg;            // A register
-  EncodedSmallImm m_smallImm;  // A small immediate
+  Reg m_reg;
+  Imm m_imm;
 
-  void set_imm(int rhs);
+  //EncodedSmallImm m_smallImm;  // A small immediate
+
+  //void set_imm(int rhs);
   void set_reg(Reg const &rhs);
 };
 
