@@ -93,7 +93,6 @@ public:
     assert(src != nullptr);
     assert(in_size <= size());
 
-    // TODO: consider using memcpy() instead
     for (uint32_t offset = 0; offset < in_size; ++offset) {
       (*this)[offset] = src[offset];
     }
@@ -103,18 +102,36 @@ public:
     assert(!src.empty());
     assert(src.size() <= size());
 
-    // TODO: consider using memcpy() instead
     for (uint32_t offset = 0; offset < src.size(); ++offset) {
       (*this)[offset] = src[offset];
     }
   }
+
+  void copyFrom(SharedArray<T> const &src) {
+    assert(!src.empty());
+    assert(src.size() <= size());
+
+    for (uint32_t offset = 0; offset < src.size(); ++offset) {
+      (*this)[offset] = src[offset];
+    }
+
+    for (uint32_t offset = src.size(); offset < size(); ++offset) {
+      (*this)[offset] = src[offset];
+    }
+  }
+
+
+	SharedArray<T> &operator=(SharedArray<T> const &rhs) {
+  	copyFrom(rhs);
+		return *this;
+	}
+
 
   void copyTo(std::vector<T> &dst) {
     assert(!empty());
 
     dst.resize(size());
 
-    // TODO: consider using memcpy() instead
     for (uint32_t offset = 0; offset < size(); ++offset) {
       dst[offset] = (*this)[offset];
     }

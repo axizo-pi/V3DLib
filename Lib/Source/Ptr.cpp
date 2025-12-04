@@ -47,6 +47,8 @@ PointerExpr Pointer::operator+=(IntExpr b)  { return addself(b); }
 PointerExpr Pointer::operator+=(int b)      { return addself(b); }
 PointerExpr Pointer::operator+(IntExpr b)   { return add(b); }
 PointerExpr Pointer::operator-(IntExpr b)   { return sub(b); }
+Pointer    &Pointer::operator++()           { *this += 1; return *this; }
+Pointer     Pointer::operator++(int)        { Pointer ret(*this); *this += 1; return ret; }
 
 PointerExpr Pointer::add(int b)     const { return mkApply(expr(), Op(ADD, INT32), mkIntLit(4*b)); }
 PointerExpr Pointer::add(IntExpr b) const { return mkApply(expr(), Op(ADD, INT32), (b << 2).expr()); }

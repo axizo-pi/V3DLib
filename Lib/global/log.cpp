@@ -52,7 +52,7 @@ LogItem &LogItem::operator<<(const char *str) {
 }
 
 
-LogItem &LogItem::operator<<(const int n) {
+LogItem &LogItem::operator<<(int n) {
   if (m_next_is_hex) {
     char buf[32];
     sprintf(buf, "0x%x", n);
@@ -66,7 +66,7 @@ LogItem &LogItem::operator<<(const int n) {
 }
 
 
-LogItem &LogItem::operator<<(const unsigned n) {
+LogItem &LogItem::operator<<(unsigned n) {
   if (m_next_is_hex) {
     char buf[32];
     sprintf(buf, "0x%x", n);

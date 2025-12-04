@@ -1,5 +1,7 @@
 /**
- * Support for Revese Neural Networks
+ * Support for Reveirse Neural Networks.
+ *
+ * Adapted from: https://www.geeksforgeeks.org/numpy/implementation-of-neural-network-from-scratch-using-numpy/
  */
 #include "Support/Settings.h"
 #include "Source/Float.h"
@@ -12,10 +14,37 @@
 using namespace V3DLib;
 using namespace Log;
 
-const int N = 16;  // Width of matrix and length of vector
 const int M = 16;  // Num of rows in matrix
+const int N = 16;  // Width of matrix and length of vector
 
 Settings settings;
+
+float a[3][30] = {
+{	
+	0, 0, 1, 1, 0, 0,
+ 	0, 1, 0, 0, 1, 0,
+ 	1, 1, 1, 1, 1, 1,
+ 	1, 0, 0, 0, 0, 1,
+ 	1, 0, 0, 0, 0, 1,
+}, {
+			0, 1, 1, 1, 1, 0,
+   		0, 1, 0, 0, 1, 0,
+   		0, 1, 1, 1, 1, 0,
+   		0, 1, 0, 0, 1, 0,
+   		0, 1, 1, 1, 1, 0
+}, {				
+			0, 1, 1, 1, 1, 0,
+   		0, 1, 0, 0, 0, 0,
+   		0, 1, 0, 0, 0, 0,
+   		0, 1, 0, 0, 0, 0,
+   		0, 1, 1, 1, 1, 0
+}};
+
+float labels[3][3] = {
+			{1, 0, 0},
+   		{0, 1, 0},
+   		{0, 0, 1}
+};
 
 /**
  * Source: https://stackoverflow.com/questions/686353/random-float-number-generation
@@ -60,9 +89,9 @@ float sigmoid(float x) {
 }
 
 
-void scalar_sigmoid(float *vec, int size, Float::Array const &bias) {
-  for (int h = 0; h < size; ++h) {
-		vec[h] = sigmoid(vec[h] - bias[h]); 
+void scalar_sigmoid(Float::Array &vec, Float::Array const &bias, Float::Array &output) {
+  for (int h = 0; h < (int) vec.size(); ++h) {
+		output[h] = sigmoid(vec[h] + bias[h]); 
   }
 }
 
@@ -71,7 +100,7 @@ void scalar_sigmoid(float *vec, int size, Float::Array const &bias) {
 /**
  * matrix width is assumed to be the same as the vector length
  */
-void run_scalar(Float::Array const &mat, Float::Array const &vec, float *res) {
+void run_scalar(Float::Array const &vec, Float::Array const &mat, Float::Array &res) {
   int height = mat.size()/vec.size();
   assert(height*vec.size() == mat.size());
 
@@ -86,9 +115,10 @@ void run_scalar(Float::Array const &mat, Float::Array const &vec, float *res) {
 }
 
 
-void kernel_sigmoid(Float::Ptr in, Float::Ptr out) {
+void kernel_sigmoid(Float::Ptr in, Float::Ptr bias, Float::Ptr out) {
 	Float x = *in;
 
+	x += *bias;
 	x = (1.0/(1.0 + exp(-1.0*x)));
 
 	*out = x;
@@ -96,7 +126,7 @@ void kernel_sigmoid(Float::Ptr in, Float::Ptr out) {
 
 
 template<int const M, int const N>
-void kernel(Float::Ptr in_mat, Float::Ptr vec, Float::Ptr result) {
+void kernel(Float::Ptr input, Float::Ptr mat, Float::Ptr result) {
   assert(N > 0);
   assert(M > 0);
 
@@ -106,11 +136,11 @@ void kernel(Float::Ptr in_mat, Float::Ptr vec, Float::Ptr result) {
 
   for (int h = 0; h < M; ++h) {
     tmp[h] = 0;
-    row[h] = in_mat.offset(h*offset2);
+    row[h] = mat.offset(h*offset2);
   }
 
   for (int i = 0; i < N; ++i) {
-    Float v = *vec;
+    Float v = *input;
   
     for (int h = 0; h < M; ++h) {
       tmp[h] += (*row[h])*v;
@@ -121,7 +151,7 @@ void kernel(Float::Ptr in_mat, Float::Ptr vec, Float::Ptr result) {
         row[h].inc();
       }
 
-      vec.inc();
+      input.inc();
     }
   }
 
@@ -136,73 +166,168 @@ void kernel(Float::Ptr in_mat, Float::Ptr vec, Float::Ptr result) {
 }
 
 
-std::string vector_dump(Float::Array const &src) {
-	std::string buf;
+template<int const N> // length of input vectors, in blocks of 16
+void outer_product(Float::Ptr left, Float::Ptr right, Float::Ptr out_matrix) {
+	left -= index();
+	//Float right_out = toFloat(2*(1 + index()));
 
-  for (int h = 0; h < (int) src.size(); ++h) {
-    buf << src[h] << ", ";
-  }
+  for (int i = 0; i < 16*N; ++i) {
+		Float::Ptr start = right;
 
-	return buf;
+  	for (int j = 0; j < N; ++j) {
+			*out_matrix = *left * *start;
+			out_matrix.inc(); start.inc();
+		}
+
+		++left;
+	}
 }
 
 
-std::string vector_dump(float const *src, int size) {
+std::string vector_dump(Float::Array const &src, int size, int start_index = 0) {
+	assert(size <= (int) src.size());
 	std::string buf;
 
   for (int h = 0; h < size; ++h) {
-    buf << src[h] << ", ";
+    buf << src[start_index + h] << ", ";
   }
 
 	return buf;
 }
 
 
+void init_input(Float::Array &input, float *a,  int n) {
+  for (int h = 0; h < n; ++h) {
+		input[h] = a[h];
+	}
+}
+
+
+struct model {
+	model(int n_size, int m_size) :
+//		x(n_size*m_size),
+		w1(n_size*m_size),
+		bias1(n_size),
+		z1(n_size),
+		a1(n_size),
+
+	 	w2(n_size*m_size),
+		bias2(n_size),
+		z2(n_size),
+		a2(n_size)
+	{
+//  	frand_array(x);
+  	frand_array(w1);
+  	frand_array(bias1);
+  	frand_array(w2);
+  	frand_array(bias2);
+	}
+
+  Float::Array w1;
+  Float::Array bias1;
+	Float::Array z1;
+	Float::Array a1;
+
+  Float::Array w2;
+  Float::Array bias2;
+	Float::Array z2;
+	Float::Array a2;
+};
+
+
 int main(int argc, const char *argv[]) {
+	const int local_N = M;
+
   settings.init(argc, argv);
 
-  Float::Array matrix(M*16*N);
-  Float::Array vector(16*N);
-  frand_array(matrix);
-  frand_array(vector);
+	model s_model(16*N, M);
+	model k_model(16*N, M);
 
-  Float::Array bias(16*N);
-  frand_array(bias);
+//	s_model.x.copyFrom(k_model.x);
+	s_model.w1 = k_model.w1;
+	s_model.bias1 = k_model.bias1;
+	s_model.w2 = k_model.w2;
+	s_model.bias2 = k_model.bias2;
 
-  float scalar_layer1[M] = {0};
-  run_scalar(matrix, vector, scalar_layer1);
+  //warn << "scalar w2: " << vector_dump(s_model.w2, local_N);
+  //warn << "kernel w2: " << vector_dump(k_model.w2, local_N);
+
+	Float::Array input(16*N);
+	init_input(input, a[0], 30);
+	Float::Array label(16*N);
+	init_input(label, labels[0], 3);
 
 
-  Float::Array layer_1(M);
-  Float::Array sigmoid_1(M);
+	float primes[2*16]=
+	{ 2,	3,	5,	7,	11,	13,	17,	19,	23,	29,	31,	37,	41,	43,	47,	53,	59,	61,	67,	71,
+	 73,	79,	83,	89,	97,	101,	103,	107,	109,	113,	127,	131 //	137	139	149	151	157	163	167	173
+	};
+
+	Float::Array left_outer(2*16); 
+	init_input(left_outer, primes, 2*16);
+
+	Float::Array right_outer(2*16); 
+	Float::Array result_outer((2*16)*(2*16)); 
+
+	for (int i = 0; i < 2*16; ++i) {
+	  right_outer[i] = (float) (i + 1);
+	}
+
+	auto op = compile(outer_product<2>, settings);
+	op.load(&left_outer, &right_outer, &result_outer);
+	op.run();
+
+	std::string buf;
+	buf << "outer product:\n";
+	for (int i = 0; i < 2*16; ++i) {
+	  buf << i << ": " << vector_dump(result_outer, 2*16, 2*16*i) << "\n";
+	}
+	warn << buf;
 
   auto k = compile(kernel<M, N>, settings);
-  k.load(&matrix, &vector, &layer_1);
-
 	auto k_sigmoid = compile(kernel_sigmoid, settings);
-	k_sigmoid.load(&layer_1, &sigmoid_1);
 
 
+	// Forward
   {
     Timer timer("Matrix mult");
+
+  	k.load(&input, &k_model.w1, &k_model.z1);
     k.run();
+  	run_scalar(input, k_model.w1, k_model.z1);
+
+		k_sigmoid.load(&k_model.z1, &k_model.bias1, &k_model.a1);
 		k_sigmoid.run();
+		scalar_sigmoid(k_model.z1, k_model.bias1, s_model.a1);
+
+  	k.load(&k_model.a1, &k_model.w2, &k_model.z2);
+    k.run();
+  	run_scalar(k_model.a1, k_model.w2, s_model.z2);
+
+		k_sigmoid.load(&k_model.z2, &k_model.bias2, &k_model.a2);
+		k_sigmoid.run();
+		scalar_sigmoid(k_model.z2, k_model.bias2, s_model.a2);
+
     timer.end();
 
-    int flops = M*(16*N + 16*(N - 1));  // num_rows*(num_mults + num_adds);
-	  flops += M*5;                       // sigmoid (1.0/(1.0 + exp(-1.0*x)));
+		// TODO adjust
+    int flops = 2*M*(16*N + 16*(N - 1));  // matrix num_rows*(num_mults + num_adds);
+	  flops    += 2*M*6;                    // sigmoid (1.0/(1.0 + exp(-1.0*x + bias)));
 
     warn << "MFLOPS: " << ((float) flops)/timer.diff()/1.0e6;
     //warn << "Timer diff: " << timer.diff();
   }
 
-  warn << "scalar layer_1: " << vector_dump(scalar_layer1, M);
-  warn << "kernel layer_1: " << vector_dump(layer_1);
-
-	scalar_sigmoid(scalar_layer1, M, bias);
-
-  warn << "Scalar sigmoid  : " << vector_dump(scalar_layer1, M);
-  warn << "kernel sigmoid_1: " << vector_dump(sigmoid_1);
+	/*
+  warn << "scalar z1: " << vector_dump(s_model.z1, local_N);
+  warn << "kernel z1: " << vector_dump(k_model.z1, local_N);
+  warn << "Scalar a1: " << vector_dump(s_model.a1, local_N);
+  warn << "kernel a1: " << vector_dump(k_model.a1, local_N);
+  warn << "scalar z2: " << vector_dump(s_model.z2, local_N);
+  warn << "kernel z2: " << vector_dump(k_model.z2, local_N);
+	*/
+  warn << "Scalar a2: " << vector_dump(s_model.a2, local_N);
+  warn << "kernel a2: " << vector_dump(k_model.a2, local_N);
 
   return 0;
 }

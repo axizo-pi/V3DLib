@@ -27,8 +27,8 @@ public:
 
 	LogItem &operator<<(const std::string &str);
 	LogItem &operator<<(const char *str);
-	LogItem &operator<<(const int n);
-	LogItem &operator<<(const unsigned n);
+	LogItem &operator<<(int n);
+	LogItem &operator<<(unsigned n);
 	LogItem &operator<<(float n);
 	LogItem &operator<<(double n);
 	LogItem &operator<<(LogFlag f);
@@ -49,6 +49,11 @@ public:
 
 	LogItem operator<<(const std::string &str) {
 		m_buf << str;
+		return LogItem(*this);
+	};
+
+	LogItem operator<<(int rhs) {
+		m_buf << rhs;
 		return LogItem(*this);
 	};
 

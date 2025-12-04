@@ -51,6 +51,8 @@ public:
   PointerExpr operator+=(int b);
   PointerExpr operator+(IntExpr b);
   PointerExpr operator-(IntExpr b);
+	Pointer    &operator++ ();
+	Pointer     operator++(int);
 
   static void reset_increment();
   static bool passParam(IntList &uniforms, BaseSharedArray const *p);
