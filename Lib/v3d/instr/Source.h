@@ -18,6 +18,7 @@ public:
   Source(RFAddress const &rhs);
   Source(SmallImm const &rhs);
   Source(int rhs);
+  Source(float rhs);
 
   bool is_location()  const { return  m_is_location; }
   bool is_small_imm() const { return !m_is_location; }

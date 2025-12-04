@@ -34,9 +34,6 @@ std::vector<op_item> op_items = {
   { ALUOp::A_FSIN,   V3D_QPU_A_SIN    },                   // NOTE: Extra NOP's and read in generation
   { ALUOp::A_TMUWT,  V3D_QPU_A_TMUWT  },                   // NOTE: Extra NOP's and read in generation
 
-  // v3d
-  { ALUOp::A_FMOV,   V3D_QPU_A_FMOV   },
-
 	// VC7
   { ALUOp::A_MOV,    V3D_QPU_A_MOV    },
   { ALUOp::A_EXP,    V3D_QPU_A_EXP    },
@@ -148,7 +145,6 @@ std::string ALUOp::pretty() const {
     case A_FFLOOR:  return "ffloor";
     case A_FSIN:    return "sin";
     case A_TMUWT:   return "tmuwt";
-    case A_FMOV:    return "ifmov";
 
 		// vc7
     case A_MOV:     return "mov";
@@ -294,9 +290,6 @@ bool oneOperand(v3d_qpu_add_op op) {
 	  op == V3D_QPU_A_SIN   ||
 		op == V3D_QPU_A_FFLOOR ||
 
-    // v3d
-		op == V3D_QPU_A_FMOV    ||
-
 		// vc7 
 		op == V3D_QPU_A_MOV    ||
 		op == V3D_QPU_A_EXP    ||
@@ -309,9 +302,6 @@ bool oneOperand(ALUOp const &op) {
   return (       // these should be the only operations with one operand
 	  op.value() == ALUOp::A_FSIN   ||
 		op.value() == ALUOp::A_FFLOOR ||
-
-    // v3d
-		op.value() == ALUOp::A_FMOV    ||
 
 		// vc7 
 		op.value() == ALUOp::A_MOV    ||

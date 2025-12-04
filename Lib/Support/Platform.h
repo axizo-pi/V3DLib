@@ -4,8 +4,6 @@
 
 namespace V3DLib {
 
-
-
 class Platform {
 public:
   static bool is_pi_platform();
@@ -21,6 +19,8 @@ public:
   static int  size_regfile();
   static int  max_qpus();
   static int  gather_limit();
+  static void running_emulator(bool val);
+  static bool running_emulator();
 };
 
 }  // namespace V3DLib

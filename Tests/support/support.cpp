@@ -73,7 +73,6 @@ bool running_on_v3d() {
 
 
 #ifdef QPU_MODE
-//  #pragma message "QPU mode enabled"
 const char *SUDO = (V3DLib::Platform::run_vc4())? "sudo " : "";  // sudo needed for vc4
 #else
 const char *SUDO = "";

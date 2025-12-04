@@ -150,6 +150,23 @@ std::vector<int_encoding> int_encodings = {
   { 31,  -1 },
 };
 
+
+uint32_t pack(uint8_t val) {
+  uint32_t ret;
+
+  if (small_imm_pack(val, &ret)) {
+    assert(ret <= 0xff);  // to be sure conversion is OK
+  } else {
+    printf("SmallImm::pack(): Can not pack value %d\n", val);
+    breakpoint
+    assert(false);
+  }
+
+  assert(ret < 64);
+
+  return ret;
+}
+
 }  // anon namespace
 
 /**
@@ -194,28 +211,61 @@ bool SmallImm::float_to_opcode_value(float value, int &rep_value) {
 }
 
 
-SmallImm::SmallImm(int val, bool is_val) : m_val(val), m_val_is_set(is_val) {
+SmallImm::SmallImm(int val) {
+  int rep_value;
+
+  // pack calls a mesa function which does essentially the same thing
+  if (!int_to_opcode_value(val, rep_value)) {
+    cerr << "SmallImm ctor, int conversion to opcode failed. val: " << val;
+    breakpoint;
+  }
+
+  m_val = (uint8_t) rep_value;
+/*
+  assert(0 <= m_val && m_val < 64);
+
   if (is_val) pack();
   else m_index = (uint8_t) val;
+*/
 }
 
 
-SmallImm::SmallImm(const Imm &val) :  m_val_is_set(true) {
+SmallImm::SmallImm(float val) {
+  int rep_value;
+
+  if (!float_to_opcode_value(val, rep_value)) {
+    cerr << "SmallImm ctor, float conversion to opcode failed. val: " << val;
+    breakpoint;
+  }
+
+  m_val = (uint8_t) rep_value;
+}
+
+
+SmallImm::SmallImm(const Imm &val) {
+  // Assume that val is not encoded
+
+  int rep_value;
+
   if (val.is_int()) {
-    assert(is_legal_encoded_value(m_val));
-    m_val = val.intVal();
+    if (!int_to_opcode_value(val.intVal(), rep_value)) {
+      breakpoint;
+    }
+    //assert(is_legal_encoded_value(m_val));
+    m_val = (uint8_t) rep_value;
   } else {
     // Must be float
-    int rep_value;
     if (!float_to_opcode_value(val.floatVal(), rep_value)) {
       breakpoint;
     }
 
-    m_val = rep_value;
+    m_val = (uint8_t) rep_value;
     //warn << "SmallInt ctor float opcode: " << m_val;
   }
 
-  m_index = (uint8_t) m_val;
+  if (!(0 <= m_val && m_val < 64)) {
+    breakpoint;
+  }
 }
 
 
@@ -264,37 +314,16 @@ std::string SmallImm::print_encoded_value(int value) {
 }
 
 
-uint8_t SmallImm::to_raddr() const {
-  assertq(m_index != 0xff, "Incorrect index value", true);
-  return m_index;
-}
-
-
 uint8_t SmallImm::val() const {
-  assertq(m_val_is_set, "SmallImm::val(): val not set");
-  return (uint8_t) m_val;
+  assertq(m_val != 0xff, "Incorrect value", true);
+  return m_val;
 }
 
 
 bool SmallImm::operator==(SmallImm const &rhs) const {
-  assertq(m_index != 0xff, "Incorrect index value", true);
-  assertq(rhs.m_index != 0xff, "Incorrect index value rhs", true);
-  return m_index == rhs.m_index;
-}
-
-
-void SmallImm::pack() {
-  assert(m_val_is_set);
-  uint32_t packed_small_immediate;
-
-  if (small_imm_pack(m_val, &packed_small_immediate)) {
-    assert(packed_small_immediate <= 0xff);  // to be sure conversion is OK
-    m_index = (uint8_t) packed_small_immediate;
-  } else {
-    printf("SmallImm::pack(): Can not pack value %d\n", m_val);
-    breakpoint
-    assert(false);
-  }
+  assertq(m_val != 0xff, "Incorrect index value", true);
+  assertq(rhs.m_val != 0xff, "Incorrect index value rhs", true);
+  return m_val == rhs.m_val;
 }
 
 

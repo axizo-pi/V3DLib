@@ -29,7 +29,7 @@ struct Imm {
   int encode_imm() const;
 
   bool is_zero() const;
-  bool is_basic() const;
+  bool is_small_imm() const;
   std::string dump() const;
 
   bool operator==(Imm const &rhs) const;

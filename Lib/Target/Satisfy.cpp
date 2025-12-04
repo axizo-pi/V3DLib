@@ -220,25 +220,33 @@ bool convert_int_power(int in_value, int &value, int &left_shift) {
 
 
 bool convert_int_powers(Instr::List &output, Reg dst, int in_value) {
+	std::string comment;
+	comment << "Load immediate " << in_value;
+
+	//warn << "convert_int_powers in_value: " << in_value;
+
+	if  (-16 <= in_value && in_value <= 15) {
+		// No conversion necessary
+		output << li(dst, in_value).comment(comment);
+		return true;
+	}
+
 	int value;
 	int left_shift;
 
 	//warn << "convert_int_powers: " << in_value;
 
 	if (!convert_int_power(in_value, value, left_shift)) { 
-		//warn << "convert_int_power failed";
+		//warn << "convert_int_power failed for: " << in_value;
 		return false;
 	}
 
-	//warn <<  "Value is a power which can be defined as: " << value << " << " << left_shift;
-		
+	// warn <<  "convert_int_powers " << in_value << " : " << value << " << " << left_shift;
 	assert (-16 <= value && value <= 15);
 	assert (-16 <= left_shift && left_shift <= 15);
 
 	Reg tmp(VarGen::fresh());
 
-	std::string comment;
-	comment << "Load immediate " << in_value;
 
 	output << li(tmp, value).comment(comment)
          << shl(dst, tmp, left_shift)
@@ -326,26 +334,26 @@ bool encode_int_immediate(Instr::List &output, Reg dst, int in_value) {
 
 
 bool encode_int(Instr::List &ret, Reg dst, int value) {
-  bool success = true;
+	Instr::List tmp;
+
+	//warn << "encode_int value: " << value;
 
 	if (-16 <= value && value <= 15) {                      // direct translation
-    ret << mov(dst, value);
-  } else if (convert_int_powers(ret, dst, value)) {       // powers of 2 of basic small int's 
-		// Should not be necessary any more
-    //ret << mov(*dst, acc_proxy(0));
-  } else if (encode_int_immediate(ret, dst, value)) {     // Use full blunt conversion (heavy but always works)
-		// Should not be necessary any more
-    //ret << mov(*dst, acc_proxy(1));
+    tmp << mov(dst, value);
+  } else if (convert_int_powers(tmp, dst, value)) {       // powers of 2 of basic small int's 
+  } else if (encode_int_immediate(tmp, dst, value)) {     // Use full blunt conversion (heavy but always works)
   } else {
-    success = false;                                      // Conversion failed
-  }
+    return false;                                      // Conversion failed
+	}
 
-  return success;
+	//warn << "encode_int ret:\n" << tmp.dump();
+	ret << tmp;
+  return true;
 }
 
 
 bool encode_float(Instr::List &ret, Reg dst, float value) {
-  bool success = true;
+	Instr::List tmp;
   int rep_value;
 
 	Reg r1(VarGen::fresh());  // temp value
@@ -354,15 +362,21 @@ bool encode_float(Instr::List &ret, Reg dst, float value) {
     std::string cmt;
     cmt << "Load neg float small imm " << value;
 
-		Instr::List tmp;
-    tmp << fmov(dst, rep_value)
+		// Small Imm conversion happens downstream
+		tmp << li(dst, -value).comment(cmt)
+        << sub(dst, 0, dst);                   // Works because float zero is 0x0
+/*
+    tmp << mov(dst, -value)
         << sub(dst, 0, dst);                   // Works because float zero is 0x0
 
 		tmp.front().comment(cmt);
-		ret << tmp;
+*/
+
   } else if (SmallImm::float_to_opcode_value(value, rep_value)) {
 		//warn << "encode_float small float value: " << rep_value;
-    ret << fmov(dst, rep_value);
+		// Small Imm conversion happens downstream
+    tmp << li(dst, value);
+
   } else {
     // Do the full blunt int conversion
 		//warn << "encode_float doing blunt conversion: " << value;
@@ -372,22 +386,23 @@ bool encode_float(Instr::List &ret, Reg dst, float value) {
       std::string cmt;
       cmt << "Load full float imm " << value;
 
-			Instr::List tmp;
       tmp << mov(dst, r1);          // Result is int but will be handled as float downstream
 			tmp.front().comment(cmt);
-			ret << tmp;
+
     } else {
-      success = false;
+      return false;
     }
   }
 
-  return success;
+	// warn << "encode_float ret:\n" << tmp.dump();
+	ret << tmp;
+  return true;
 }
 
 }  // anon namespace
 
 
-Instr::List encodeLoadImmediate(V3DLib::Instr const full_instr) {
+Instr::List encode_imm(V3DLib::Instr const full_instr) {
   assert(full_instr.tag == LI);
   auto &instr = full_instr.LI;
   auto dst = full_instr.dest();
@@ -397,11 +412,11 @@ Instr::List encodeLoadImmediate(V3DLib::Instr const full_instr) {
   std::string err_label;
   std::string err_value;
 
-	//warn << full_instr.mnemonic();
 
   switch (instr.imm.tag()) {
   case Imm::IMM_INT32: {
     int value = instr.imm.intVal();
+		//warn << "encode_imm value: " << value; //full_instr.mnemonic();
 
     if (!encode_int(ret, dst, value)) {
       // Conversion failed, output error
@@ -424,11 +439,11 @@ Instr::List encodeLoadImmediate(V3DLib::Instr const full_instr) {
   break;
 
   case Imm::IMM_MASK:
-    debug_break("encodeLoadImmediate(): IMM_MASK not handled");
+    debug_break("encode_imm(): IMM_MASK not handled");
   break;
 
   default:
-    debug_break("encodeLoadImmediate(): unknown tag value");
+    debug_break("encode_imm(): unknown tag value");
   break;
   }
 
@@ -455,7 +470,7 @@ Instr::List encodeLoadImmediate(V3DLib::Instr const full_instr) {
 }
 
 
-Instr::List adjust_immediates(Instr::List const &instrs) {
+void adjust_immediates(Instr::List &instrs) {
   assert(!Platform::compiling_for_vc4());  // v3d only
 
 	Instr::List res;
@@ -463,17 +478,15 @@ Instr::List adjust_immediates(Instr::List const &instrs) {
   for (int i = 0; i < instrs.size(); i++) {
 		Instr const &instr = instrs[i];
 
-		//warn << instr.mnemonic();
-
 		if (instr.tag != LI) {
 			res << instr;
 			continue;
 		}
 
-		res << encodeLoadImmediate(instr);
+		res << encode_imm(instr);
 	}
 
-	return res;
+	instrs = res;
 }
 
 

@@ -190,18 +190,6 @@ bool translateOpcode(V3DLib::Instr const &src_instr, Instructions &ret) {
 		}
 	 }
    break;
-  case ALUOp::A_FMOV: {
-    assert(src_instr.ALU.oneOperand());
-
-    // fmov appears to return zero always, so we replace is with mov here
-    // TODO: remove A_FMOV usage.
-    warn << "using mov() for A_FMOV";
-    //auto tmp = fmov(*dst_reg, reg_a);
-    auto tmp = mov(*dst_reg, reg_a);
-
-    ret << tmp;
-  }
-  break;
   default: {
     // Handle general case
     Instr instr;
@@ -361,11 +349,9 @@ bool translateRotate(V3DLib::Instr const &instr, Instructions &ret) {
 		assert(src_a->is_rf());
 		assert(reg_b.is_imm());  // rf not handled yet
 	
-    SmallImm imm(reg_b.encode()); // Legal values small imm tested in rotate()
-
 		Instr dst_instr;
 		dst_instr.alu.add.op = V3D_QPU_A_ROT;
-  	dst_instr.alu_add_set(*dst_reg, *src_a, imm);
+  	dst_instr.alu_add_set(*dst_reg, *src_a, reg_b);
 
 		cdebug << "translateRotate vc7 instruction: " << dst_instr.mnemonic(false);
 
@@ -392,8 +378,7 @@ bool translateRotate(V3DLib::Instr const &instr, Instructions &ret) {
 	    ret << rotate(r1, r0, *src_b);
 
 	  } else {
-	    SmallImm imm(reg_b.encode()); // Legal values small imm tested in rotate()
-	    ret << rotate(r1, r0, imm);
+	    ret << rotate(r1, r0, reg_b.imm());
 	  }
 
 	  ret << bor(*dst_reg, r1, r1);
@@ -403,77 +388,37 @@ bool translateRotate(V3DLib::Instr const &instr, Instructions &ret) {
 }
 
 
-Instructions encodeLoadImmediate(V3DLib::Instr const full_instr) {
+Instructions encode_LI(V3DLib::Instr const full_instr) {
   assert(full_instr.tag == LI);
   auto &instr = full_instr.LI;
   auto dst = encodeDestReg(full_instr);
 
-  //warn << "encodeLoadImmediate instr: " << full_instr.dump() << "\n"
+  //warn << "encode_LI instr: " << full_instr.dump() << "\n"
   //     << "   imm: " << full_instr.LI.imm.dump();
 
   Instructions ret;
 
-  std::string err_label;
-  std::string err_value;
-
   switch (instr.imm.tag()) {
   case Imm::IMM_INT32: {
     int value = instr.imm.intVal();
-
- 	  if (!(-16 <= value && value <= 15)) {  // big int conversions should have been done beforehand
-      cerr << "Int out of expected range. int: " << value << ", float: " << instr.imm.floatVal();
-    }
-
-    ret << mov(*dst, value);
+    ret << mov(*dst , Source(value));
   }
   break;
 
   case Imm::IMM_FLOAT32: {
-    int rep_value;
     float value = instr.imm.floatVal();
-
-    if (value < 0 && SmallImm::float_to_opcode_value(-value, rep_value)) {
-      breakpoint;  // deal with this when it happens
-
-      std::string cmt;
-      cmt << "Load neg float small imm " << value;
-
-      ret << fmov(*dst, rep_value).comment(cmt)
-          << fsub(*dst, 0, *dst);                   // Works because float zero is 0x0
-    } else if (SmallImm::float_to_opcode_value(value, rep_value)) {
-      // Keep going as is, the value will be encoded downstream
-      //float val = instr.imm.floatVal();
-      Source src(RegOrImm(instr.imm));
-      ret << mov(*dst , src);
-    } else {
-      err_label = "float";
-      err_value << value;
-    }
+    ret << mov(*dst , Source(value));
   }
   break;
 
   case Imm::IMM_MASK:
-    debug_break("encodeLoadImmediate(): IMM_MASK not handled");
+    debug_break("encode_LI(): IMM_MASK not handled");
   break;
 
   default:
-    debug_break("encodeLoadImmediate(): unknown tag value");
+    debug_break("encode_LI(): unknown tag value");
   break;
   }
-
-  if (!err_value.empty()) {
-    assert(!err_label.empty());
-
-    std::string str = "LI: Can't handle ";
-    str += err_label + " value '" + err_value;
-    str += "' as small immediate";
-
-    breakpoint
-    local_errors << str;
-    ret << nop();
-    ret.back().comment(str);
-  }
-
 
   if (full_instr.set_cond().flags_set()) {
     breakpoint;  // to check what flags need to be set - case not handled yet
@@ -569,7 +514,7 @@ Instructions encodeInstr(V3DLib::Instr instr) {
     }
     break;
 
-    case LI:           ret << encodeLoadImmediate(instr);   break;
+    case LI:           ret << encode_LI(instr);   break;
     case ALU:          ret << encodeALUOp(instr);           break;
     case NO_OP:        ret << nop();                        break;
 
@@ -1069,20 +1014,6 @@ void invoke(int numQPUs, Data &devnull, Code &codeMem, IntList &params) {
 #endif  // QPU_MODE
 }
 
-
-/**
- * @param targetCode  output variable for the target code assembled from the AST and adjusted
- */
-void compile_postprocess(V3DLib::Instr::List &targetCode) {
-  assertq(!targetCode.empty(), "compile_postprocess(): passed target code is empty");
-
-  // Perform register allocation
-  v3d_SourceTranslate().regAlloc(targetCode);
-
-  // Satisfy target code constraints
-  v3d_satisfy(targetCode);
-}
-
 }  // anon namespace
 
 
@@ -1152,21 +1083,29 @@ ByteCode KernelDriver::to_opcodes() {
 
 
 void KernelDriver::compile_intern() {
-  //Timer t1("compile_intern", true);
-
   obtain_ast();
-
-  //Timer t3("translate_stmt");
-  translate_stmt(m_targetCode, m_body);  // performance hog 2 12/45s
-  //t3.end();
+  translate_stmt(m_targetCode, m_body);
+  assert(!m_targetCode.empty());
 
   insertInitBlock(m_targetCode);
   add_init(m_targetCode);
-	m_targetCode = adjust_immediates(m_targetCode);
 
-  //Timer t5("compile_postprocess");
-  compile_postprocess(m_targetCode);  // performance hog 1 31/45s
-  //t5.end();
+/*
+  for (int i = 0; i < m_targetCode.size(); i++) {
+		auto const &instr = m_targetCode[i];
+		if (instr.tag == LI && instr.LI.imm == 40) {
+      warn << "compile_intern pre: " << instr.mnemonic();
+    }
+  }
+*/
+
+	adjust_immediates(m_targetCode);
+
+  // Perform register allocation
+  v3d_SourceTranslate().regAlloc(m_targetCode);
+
+  // Satisfy target code constraints
+  v3d_satisfy(m_targetCode);
 
   encode();
 }

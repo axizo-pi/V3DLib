@@ -155,8 +155,8 @@ PGM &PGM::plot(float const *arr, int size, int color) {
   float max = MAX_START;
 
   for (int x = 0; x < size; ++x) {
-    assert(arr[x] < MIN_START);
-    assert(arr[x] > MAX_START);
+    //assert(arr[x] < MIN_START);
+    //assert(arr[x] > MAX_START);
 
     if (arr[x] < min) min = arr[x];
     if (arr[x] > max) max = arr[x];

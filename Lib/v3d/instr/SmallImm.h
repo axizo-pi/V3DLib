@@ -14,7 +14,8 @@ namespace instr {
 
 class SmallImm {
 public:
-  SmallImm(int val, bool is_val = true);
+  SmallImm(int val);
+  SmallImm(float val);
   SmallImm(const Imm &val);
 
   static const int INVALID_ENCODING = -1;
@@ -34,12 +35,8 @@ public:
   static std::string print_encoded_value(int value);
 
 private:
-  int m_val = 0;
-  bool m_val_is_set = false;
-  uint8_t m_index = 0xff;  // init to illegal value
+  uint8_t m_val = 0xff;  // init to illegal value
   v3d_qpu_input_unpack m_input_unpack = V3D_QPU_UNPACK_NONE;
-
-  void pack();
 };
 
 }  // instr

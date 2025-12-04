@@ -46,6 +46,7 @@ struct RegOrImm {
   Imm &imm();
   Imm imm() const;
   uint32_t encode() const;
+
 /*
   EncodedSmallImm &imm();
   EncodedSmallImm imm() const;

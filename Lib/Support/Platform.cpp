@@ -5,7 +5,6 @@
 #include <string.h>  // strstr()
 #include "defines.h"
 #include "basics.h"
-//#include "v3d/v3d.h"
 
 namespace V3DLib {
 namespace {
@@ -152,6 +151,13 @@ bool get_chip_version(std::string &model, std::string &revision) {
   return !model.empty();
 }
 
+enum VideoCoreType {
+	UNKNOWN,
+	vc4,
+	vc6,
+	vc7
+};
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // Class PlatformInfo
@@ -159,13 +165,6 @@ bool get_chip_version(std::string &model, std::string &revision) {
 
 class PlatformInfo {
 public:
-	enum VideoCoreType {
-		UNKNOWN,
-		vc4,
-		vc6,
-		vc7
-	};
-
   PlatformInfo();
 
   std::string model_number;
@@ -176,10 +175,8 @@ public:
   bool is_pi_platform;
   bool m_use_main_memory   = false;
   bool m_compiling_for_vc4 = true;
+  bool m_running_emulator  = false;
 
-  bool run_vc4() const { return vc_type == vc4; }
-  bool run_vc6() const { return vc_type == vc6; }
-  bool run_vc7() const { return vc_type == vc7; }
   int size_regfile() const;
   std::string output() const;
 	int max_qpus() const;
@@ -312,16 +309,17 @@ bool Platform::compiling_for_vc4() { return instance().m_compiling_for_vc4; }
  * platform.
  */
 bool Platform::compiling_for_vc7() {
-  if (instance().m_compiling_for_vc4) return false;  // This override any device selection, due to emulator and interpreter
-  return instance().run_vc7();  // This option is way easier
+  // This overrides any device selection, due to emulator and interpreter
+  if (instance().m_compiling_for_vc4) return false;
+  return (instance().vc_type == vc7);  // This option is way easier
 }
 
 
-bool Platform::use_main_memory()   { return instance().m_use_main_memory; }
+bool Platform::use_main_memory()      { return instance().m_use_main_memory; }
 std::string Platform::platform_info() { return instance().output(); }
-bool Platform::is_pi_platform()    { return instance().is_pi_platform; }
-bool Platform::run_vc4()           { return instance().run_vc4(); }
-bool Platform::run_vc7()           { return instance().run_vc7(); }
+bool Platform::is_pi_platform()       { return instance().is_pi_platform; }
+bool Platform::run_vc4()         { return instance().vc_type == vc4; }
+bool Platform::run_vc7()         { return instance().vc_type == vc7; }
 
 
 /**
@@ -403,5 +401,9 @@ std::string Platform::pi_version() {
 
   return ret;
 }
+
+
+void Platform::running_emulator(bool val) { instance().m_running_emulator = val; }
+bool Platform::running_emulator() { return instance().m_running_emulator; }
 
 }  // namespace V3DLib

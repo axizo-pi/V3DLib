@@ -30,13 +30,14 @@ EncodedSmallImm RegOrImm::imm() const { assert(is_imm()); return m_smallImm; }
 */
 
 uint32_t RegOrImm::encode() const {
+  assert(Platform::compiling_for_vc4() || Platform::running_emulator());
   assert(is_imm());
 
-  warn << "encode() imm: " << m_imm.dump();
+  //warn << "encode() imm: " << m_imm.dump();
 
   int ret = m_imm.encode_imm();
 
-  warn << "encode() ret: " << hex << ret;
+  //warn << "encode() ret: " << hex << ret;
 
   if (ret == -1) {
     warn << "RegOrImm::encode() invalid encoding, imm: " << m_imm.dump();
@@ -49,6 +50,7 @@ uint32_t RegOrImm::encode() const {
 
   return (uint32_t) ret;
 }
+
 
 /*
 void RegOrImm::set_imm(int rhs) {

@@ -109,7 +109,7 @@ public:
 	  }
 
     if (m_settings.run_type != 0 || Platform::run_vc4()) {   // Compile vc4
-			Log::warn << "compile_init for vc4";
+			// Log::warn << "compile_init for vc4";
       compile_init(true);
     } else {                                                 // Compile v3d
       compile_init(false);

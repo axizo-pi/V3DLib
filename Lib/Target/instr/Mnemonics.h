@@ -43,7 +43,6 @@ Instr band(Reg dst, Reg srcA, Reg srcB);
 Instr band(Reg dst, Reg srcA, int n);
 Instr bxor(Var dst, RegOrImm srcA, int n);
 Instr::List mov(Reg dst, RegOrImm const &src);
-Instr fmov(Reg dst, Imm const & src);
 Instr shl(Reg dst, Reg srcA, int val);
 Instr shl(Reg dst, Reg srcA, Reg srcB);
 Instr add(Reg dst, Reg srcA, Reg srcB);

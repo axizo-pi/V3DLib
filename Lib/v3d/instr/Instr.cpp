@@ -894,7 +894,7 @@ bool Instr::alu_set_src(Source const &src, v3d_qpu_input &input, CheckSrc check_
     auto imm = src.small_imm();
 
     if (raddr_in_use(check_src, V3D_QPU_MUX_B)) {
-      if (raddr_b != imm.to_raddr()) {
+      if (raddr_b != imm.val()) {
 				//warning("alu_set_src: imm not equal to raddr_b");
 				return false;
 			}
@@ -905,7 +905,7 @@ bool Instr::alu_set_src(Source const &src, v3d_qpu_input &input, CheckSrc check_
 
     // All is well
 		sig.small_imm_b  = true;
-    raddr_b          = imm.to_raddr(); 
+    raddr_b          = imm.val(); 
     mux              = V3D_QPU_MUX_B;
 		input.unpack     = imm.input_unpack();
 	}
@@ -931,7 +931,7 @@ bool Instr::alu_add_a(Source const &src) {
 	} else {
 		// Small Imm on a for vc7
     auto imm = src.small_imm();
-    alu.add.a.raddr = imm.to_raddr(); 
+    alu.add.a.raddr = imm.val(); 
 		sig.small_imm_a = true;
 	}
 
@@ -954,7 +954,7 @@ bool Instr::alu_mul_a(Source const &src) {
 	} else {
 		// Small Imm on a for vc7
     auto imm = src.small_imm();
-    alu.mul.a.raddr = imm.to_raddr(); 
+    alu.mul.a.raddr = imm.val(); 
 		sig.small_imm_c = true;
 	}
 
@@ -977,7 +977,7 @@ bool Instr::alu_add_set_b(Source const &src) {
 	} else {
 		// Small Imm on b for vc7
     auto imm = src.small_imm();
-    alu.add.b.raddr = imm.to_raddr(); 
+    alu.add.b.raddr = imm.val(); 
 		sig.small_imm_b = 1;
 	}
 
@@ -1000,7 +1000,7 @@ bool Instr::alu_mul_set_b(Source const &src) {
 	} else {
 		// Small Imm on b for vc7
     auto imm = src.small_imm();
-    alu.mul.b.raddr = imm.to_raddr(); 
+    alu.mul.b.raddr = imm.val(); 
 		sig.small_imm_d = true;
 	}
 
@@ -1440,7 +1440,7 @@ std::unique_ptr<Source> Instr::add_alu_a() const {
 
 	if (Platform::compiling_for_vc7()) {
 	  if (sig.small_imm_a) { // add a, small imm
-	    res.reset(new Source(SmallImm((int) src.raddr, false)));
+	    res.reset(new Source(src.raddr));
 	  } else {               // add a, rf
 	    res.reset(new Source(RFAddress(src.raddr)));
 	  }
@@ -1614,7 +1614,7 @@ std::unique_ptr<Source> Instr::add_alu_b() const {
   std::unique_ptr<Source> res;
 
   if (sig.small_imm_b) { // add b, small imm
-    res.reset(new Source(SmallImm((int) src.raddr, false)));
+    res.reset(new Source(SmallImm((int) src.raddr)));
   } else {               // add b, rf
     res.reset(new Source(RFAddress(src.raddr)));
   }
@@ -1629,7 +1629,7 @@ std::unique_ptr<Source> Instr::mul_alu_a() const {
   std::unique_ptr<Source> res;
 
   if (sig.small_imm_c) { // mul a, small imm
-    res.reset(new Source(SmallImm((int) src.raddr, false)));
+    res.reset(new Source(SmallImm((int) src.raddr)));
   } else {               // mul a, rf
     res.reset(new Source(RFAddress(src.raddr)));
   }
@@ -1644,7 +1644,7 @@ std::unique_ptr<Source> Instr::mul_alu_b() const {
   std::unique_ptr<Source> res;
 
   if (sig.small_imm_d) { // mul b, small imm
-    res.reset(new Source(SmallImm((int) src.raddr, false)));
+    res.reset(new Source(SmallImm((int) src.raddr)));
   } else {               // mul b, rf
     res.reset(new Source(RFAddress(src.raddr)));
   }
@@ -1664,7 +1664,7 @@ std::unique_ptr<Source> Instr::alu_src(v3d_qpu_mux src) const {
   } else if (src == V3D_QPU_MUX_A) { // address a, rf-reg
     res.reset(new Source(RFAddress(raddr_a)));
   } else if (sig.small_imm_b) {      // address b, small imm
-    res.reset(new Source(SmallImm((int) raddr_b, false)));
+    res.reset(new Source(SmallImm((int) raddr_b)));
   } else {
     // address b, rf-reg
     res.reset(new Source(RFAddress(raddr_b)));

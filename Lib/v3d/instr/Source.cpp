@@ -22,6 +22,7 @@ Source::Source(Register const &rhs)  : m_is_location(true), m_location(new Regis
 Source::Source(Location const &rhs)  : m_is_location(true), m_location(rhs.clone()) {}
 Source::Source(RFAddress const &rhs) : m_is_location(true), m_location(new RFAddress(rhs)) {}
 Source::Source(int rhs)              : m_is_location(false), m_small_imm(rhs) {}
+Source::Source(float rhs)              : m_is_location(false), m_small_imm(rhs) {}
 Source::Source(SmallImm const &rhs)  : m_is_location(false), m_small_imm(rhs) {}
 
 

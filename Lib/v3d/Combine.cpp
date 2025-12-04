@@ -169,7 +169,7 @@ bool add_register_conflict(Instr const &top, Instr const &bottom, bool check_sur
       for (auto &n: rf_set) {
         buf << n.dump() << ", ";
       }
-      warn << "rf_set: (" << buf << ")";
+      // warn << "rf_set: (" << buf << ")";
     }
 
     //Log::warn << "rf_set.size: " << (int) rf_set.size();

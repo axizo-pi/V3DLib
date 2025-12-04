@@ -587,6 +587,7 @@ Vec readRegOrImm(QPUState* s, State &state, RegOrImm const &src) {
  * @param heap
  */
 void emulate(int numQPUs, Instr::List &instrs, int maxReg, IntList &uniforms, BufferObject &heap) {
+  Platform::running_emulator(true);
   State state(numQPUs, uniforms);
   state.emuHeap.heap_view(heap);
 
@@ -695,6 +696,8 @@ void emulate(int numQPUs, Instr::List &instrs, int maxReg, IntList &uniforms, Bu
       }
     }
   }
+
+  Platform::running_emulator(false);
 }
 
 }  // namespace V3DLib

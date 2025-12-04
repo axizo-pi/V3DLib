@@ -220,43 +220,8 @@ int peephole_2(Liveness &live, Instr::List &instrs, RegUsage &allocated_vars) {
  * @return true if any replacements were made, false otherwise
  */
 bool combineImmediates(Liveness &live, Instr::List &instrs) {
-  //Timer t3("combineImmediates loop3", true);
-  //Timer t1("combineImmediates", true);
-
   bool found_something = false;
 
-/*
-  auto msg_stop_replace = [] (int k, Instr const &instr2, Instr const &instr3) {
-    std::string msg;
-    msg << "Stopping replacing same LIs: "
-        << "instrs[" << k << "] uses reg " << instr2.LI.dest.dump()
-        << " as dst"
-        << ": " << instr3.mnemonic(false);
-
-    if (instr3.isCondAssign()) {
-      msg << " (Conditional assign!)";
-    }
-    debug(msg);
-  };
-
-  auto msg_replace = [&live] (int k, Instr const &instr3, Reg current, Reg replace_with) {
-    std::string msg;
-    msg << "    instr[" << k << "] (block " << live.cfg().block_at(k) << "), "
-        << current.dump() << " -> " << replace_with.dump()
-        << ", result: " << instr3.mnemonic(false);
-    debug(msg);
-  };
-
-  auto msg_stop_forward_scan = [] (int j, Instr const &instr) {
-    std::string msg;
-    msg << "Stopping forward scan LIs: "
-        << "instrs[" << j << "] rewrites reg " << instr.LI.dest.dump()
-        << " as dst"
-        << ": " << instr.mnemonic(false);
-    debug(msg);
-  };
-*/
-  
   int const LAST_USE_LIMIT = 50;
 
   // Detect all LI instructions
@@ -264,7 +229,7 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
     Instr &instr = instrs[i];
     if (instr.tag != InstrTag::LI) continue;
 
-    if (instr.LI.imm.is_basic()) {
+    if (instr.LI.imm.is_small_imm()) {
       auto const &reg_usage = live.reg_usage()[instr.dest().regId];
 
       if (reg_usage.assigned_once()) {
@@ -275,19 +240,6 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
           auto &instr2 = instrs[j];
           if (instr2.tag != InstrTag::ALU) continue;
           if (!instr2.is_src_reg(instr.dest())) continue;
-/*
-          // Looks like following check is unnecessary.
-          // Figures; immediates (which are constant) in instruction do not depend on condtion.
-
-          if (instr2.assign_cond() != instr.assign_cond()) {
-            std::string msg;
-            msg << "  LI basic immediate at " << i << ": " << instr.dump() << "\n"
-                << "  dst usage: " << reg_usage.dump() << "\n"
-                << "  WARNING: instruction has differing cond assign, skipping for now: " << instr2.dump();
-            warning(msg);
-            continue;
-          }
-*/
 
           // Can't substitute if a differing immediate is already present
           if (instr2.ALU.srcA.is_imm() && instr2.ALU.srcA != instr.LI.imm) {
@@ -318,9 +270,6 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
       continue;
     }
 
-    //Log::debug << "LI at " << i << " (block " << live.cfg().block_at(i) << "): "   // conflict with debug()
-    //           << instr.mnemonic(false) << "\n";
-
     // Scan forward to find replaceable LI's (i.e. LI's with same value in same or child block)
     int last_use = i;
 
@@ -341,7 +290,6 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
 
 
       if (instr2.is_dst_reg(instr.dest())) {
-        //msg_stop_forward_scan(j, instr);
         break;
       }
 
@@ -380,7 +328,6 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
         if (!instr3.has_registers()) continue;
 
         if (instr3.is_dst_reg(current)) {
-          //msg_stop_replace(k, instr2, instr3);
           break;  // Stop if var to replace is rewritten
         }
 
@@ -392,7 +339,6 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
         ;
 
         if (renameUses(instr3, current, replace_with)) {
-          //msg_replace(k, instr3, current, replace_with);
           num_subsitutions++;
         }
       }

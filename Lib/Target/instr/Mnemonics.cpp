@@ -221,13 +221,6 @@ Instr::List mov(Reg dst, RegOrImm const &src) {
 }
 
 
-Instr fmov(Reg dst, Imm const &src) {
-//	RegOrImm src(simple_float_code);
-	auto ret = genInstr(ALUOp::A_FMOV, dst, src)   .comment("fmov");
-  return ret;
-}
-
-
 // Generation of bitwise instructions
 Instr bor(Reg dst, RegOrImm const &srcA, RegOrImm const &srcB)  { return genInstr(ALUOp::A_BOR, dst, srcA, srcB); }
 Instr band(Reg dst, Reg srcA, Reg srcB)   { return genInstr(ALUOp::A_BAND, dst, srcA, srcB); }

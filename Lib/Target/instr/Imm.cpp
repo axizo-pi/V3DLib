@@ -24,7 +24,7 @@ bool Imm::is_zero() const { return m_tag == IMM_INT32 && m_intVal == 0; }
  * Check if this is an immediate value which does not
  * need to be constructed inline.
  */
-bool Imm::is_basic() const {
+bool Imm::is_small_imm() const {
   return (encode_imm() != -1);
 }
 
@@ -36,6 +36,7 @@ bool Imm::is_basic() const {
  */
 int Imm::encode_imm() const {
   assert(m_tag != IMM_MASK);  // Not dealing with this right now
+
   int ret = -1; 
 
   if (Platform::compiling_for_vc4()) {
@@ -56,7 +57,6 @@ int Imm::encode_imm() const {
 
   return ret;
 }
-
 
 std::string Imm::dump() const {
   std::string ret;
