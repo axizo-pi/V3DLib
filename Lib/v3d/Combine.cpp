@@ -545,12 +545,25 @@ void combine(Instructions &instr) {
 
 try {
 
-  // Find the start of the main program
-  int k = 0;
-  while (instr[k].header() != "Main program") {
-    ++k;
+  //
+  // Find the start of the main program.
+  // This was a while-loop and sometimes resulted in error:
+  //
+	// Cannot create a lazy string with address 0x0, and a non-zero length.
+  //
+  // The hypothesis is that the search went over the end of the instructions list.
+  //
+  int start = -1;
+  for (int i = 0; i < (int) instr.size(); ++i) {
+    if (instr[i].header() != "Main program") {
+      start = i;
+    }
   }
-  int start = k;
+
+  if (start == -1) {
+    warn << "Could not find header 'Main program'";
+    start = 0;
+  }
 
   // TODO: better specify end program. This should be on barrierid
   int end = (int) instr.size();

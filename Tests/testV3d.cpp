@@ -424,7 +424,8 @@ TEST_CASE("Check v3d assembly/disassembly [v3d][asm]") {
     auto  kernel_output = qpu_disasm_kernel();
     REQUIRE(kernel_output.size() > 0);
 
-    match_kernel_outputs(bytecode, kernel_output, true);  // true: skip `nop` in kernel_output, can't generate
+		// true: skip `nop` in kernel_output, can't generate
+    match_kernel_outputs(bytecode, kernel_output, true);
   }
 }
 

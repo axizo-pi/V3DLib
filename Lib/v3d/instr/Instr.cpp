@@ -838,11 +838,13 @@ bool Instr::alu_set_src(Source const &src, v3d_qpu_input &input, CheckSrc check_
 	if (src.is_small_imm()) {
 		// warn << "alu_set_src small_imm";
 
+		auto const &imm	= src.small_imm();
+
 		if (sig.small_imm_b) {
 			// warn << "alu_set_a: small imm same value";
 
 			// If same value, all is well
-			assertq(raddr_b == src.small_imm().val(), "alu_mul_b: small imm different value on vc6");
+			assertq(raddr_b == imm.val(), "alu_mul_b: small imm different value on vc6");
 		  input.mux = V3D_QPU_MUX_B;
 		} else {
 			// Reserve the small imm
@@ -865,7 +867,8 @@ bool Instr::alu_set_src(Source const &src, v3d_qpu_input &input, CheckSrc check_
 
 			sig.small_imm_b = true;
 			input.mux = V3D_QPU_MUX_B;
-			raddr_b = src.small_imm().val();
+			raddr_b = imm.val();
+			input.unpack = imm.input_unpack();
 		}
   } else if (src.is_location()) {
 		// warn << "alu_set_src location";
@@ -978,7 +981,7 @@ bool Instr::alu_add_set_b(Source const &src) {
 		// Small Imm on b for vc7
     auto imm = src.small_imm();
     alu.add.b.raddr = imm.val(); 
-		sig.small_imm_b = 1;
+		sig.small_imm_b = true;
 	}
 
   alu.add.b.unpack = src.input_unpack();

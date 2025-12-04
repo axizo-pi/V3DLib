@@ -91,6 +91,7 @@ public:
   // Grumbl
   Instr &header(std::string const &msg) { InstructionComment::header(msg);  return *this; }
   Instr &comment(std::string msg)       { InstructionComment::comment(msg); return *this; }
+
   std::string const &header() const     { return InstructionComment::header();}
   std::string const &comment() const    { return InstructionComment::comment();}
 

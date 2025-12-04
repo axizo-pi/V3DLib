@@ -26,8 +26,10 @@ public:
   bool operator==(SmallImm const &rhs) const;
   bool operator!=(SmallImm const &rhs) const { return !(*this == rhs); }
 
-  SmallImm l() const;
-  SmallImm ff() const;
+  SmallImm &l();
+  SmallImm &ff();
+
+  std::string dump() const;
 
   static bool int_to_opcode_value(int value, int &rep_value);
   static bool float_to_opcode_value(float value, int &rep_value);

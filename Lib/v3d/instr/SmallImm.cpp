@@ -48,10 +48,15 @@ std::vector<float_encoding> float_encodings = {
 
 
 struct float_encoding {
-  float_encoding(int in_encoding, float in_val) : encoding(in_encoding), val(in_val) {}
+  float_encoding(int in_encoding, float in_val, uint32_t in_hex = 0) :
+    encoding(in_encoding),
+    val(in_val),
+    hex(in_hex)
+  {}
 
   int encoding;
   float val;
+  uint32_t hex;
 };
 
 std::vector<float_encoding> float_encodings = {
@@ -87,22 +92,23 @@ std::vector<float_encoding> float_encodings = {
 // Small imm encodings are different on v3d
 //
 std::vector<float_encoding> float_encodings_v3d = {
- {     0,   0.0f      }, // 0, same as int 0
- {    33, 1.0f/128.0f }, // 0x3c000000
- {    34, 1.0f/64.0f  },
- {    35, 1.0f/32.0f  },
- {    36, 1.0f/16.0f  },
- {    37, 1.0f/8.0f   },
- {    38, 1.0f/4.0f   }, // 0x3e800000
- {    39, 1.0f/2.0f   }, // 0x3f000000
- {    40,   1.0f      }, // 0x3f800000
- {    41,   2.0f      }, // 0x40000000
- {    42,   4.0f      },
- {    43,   8.0f      },
- {    44,  16.0f      },
- {    45,  32.0f      },
- {    46,  64.0f      }, // 0x42800000
- {    47, 128.0f      }, // 0x43000000
+ {  0,    0,   0x00000000 },      // 0, same as int 0
+ { 32,  0.00390625f, 0x3b800000 }, // 2.0^-8
+ { 33,  0.0078125f, 0x3c000000 },  // 2.0^-7
+ { 34,  0.015625f, 0x3c800000 },   // 2.0^-6
+ { 35,  0.03125f, 0x3d000000 },    // 2.0^-5
+ { 36,  0.0625f, 0x3d800000 },     // 2.0^-4
+ { 37,  0.125f, 0x3e000000 },      // 2.0^-3
+ { 38,  0.25f, 0x3e800000 },       // 2.0^-2
+ { 39,  0.5f, 0x3f000000 },       // 2.0^-1
+ { 40,    1,   0x3f800000 },      // 2.0^0
+ { 41,    2,   0x40000000 },      // 2.0^1
+ { 42,    4,   0x40800000 },      // 2.0^2
+ { 43,    8,   0x41000000 },      // 2.0^3
+ { 44,   16,   0x41800000 },      // 2.0^4
+ { 45,   32,   0x42000000 },      // 2.0^5
+ { 46,   64,   0x42800000 },      // 2.0^6
+ { 47,  128,   0x43000000 },      // 2.0^7
 };
 
 //
@@ -151,6 +157,7 @@ std::vector<int_encoding> int_encodings = {
 };
 
 
+/*
 uint32_t pack(uint8_t val) {
   uint32_t ret;
 
@@ -166,6 +173,7 @@ uint32_t pack(uint8_t val) {
 
   return ret;
 }
+*/
 
 }  // anon namespace
 
@@ -215,12 +223,26 @@ SmallImm::SmallImm(int val) {
   int rep_value;
 
   // pack calls a mesa function which does essentially the same thing
-  if (!int_to_opcode_value(val, rep_value)) {
-    cerr << "SmallImm ctor, int conversion to opcode failed. val: " << val;
-    breakpoint;
+  if (int_to_opcode_value(val, rep_value)) {
+    m_val = (uint8_t) rep_value;
+    return;
   }
 
-  m_val = (uint8_t) rep_value;
+
+  // It might be an int encoded float value
+  float val2 = *((float *) &val);
+  //warn << "SmallImm ctor, float from int val: 0x" << hex << val << " => float " << val2;
+
+  if (float_to_opcode_value(val2, rep_value)) {
+    warn << "SmallImm ctor, got float from int! val: 0x" << hex << val << " => float " << val2
+         << ", rep_value: " << rep_value;
+
+    m_val = (uint8_t) rep_value;
+    return;
+  }
+
+  cerr << "SmallImm ctor, int conversion to opcode failed. val: " << val << thrw;
+
 /*
   assert(0 <= m_val && m_val < 64);
 
@@ -315,7 +337,7 @@ std::string SmallImm::print_encoded_value(int value) {
 
 
 uint8_t SmallImm::val() const {
-  assertq(m_val != 0xff, "Incorrect value", true);
+  assertq(m_val != 0xff, "Value not set", true);
   return m_val;
 }
 
@@ -327,16 +349,22 @@ bool SmallImm::operator==(SmallImm const &rhs) const {
 }
 
 
-SmallImm SmallImm::l() const {
-  SmallImm ret(*this);
-  ret.m_input_unpack = V3D_QPU_UNPACK_L;
-  return ret;
+SmallImm &SmallImm::l() {
+  m_input_unpack = V3D_QPU_UNPACK_L;
+  return *this;
 }
 
 
-SmallImm SmallImm::ff() const {
-  SmallImm ret(*this);
-  ret.m_input_unpack = V3D_QPU_UNPACK_REPLICATE_32F_16;
+SmallImm &SmallImm::ff() {
+  m_input_unpack = V3D_QPU_UNPACK_REPLICATE_32F_16;
+  return *this;
+}
+
+
+std::string SmallImm::dump() const {
+  std::string ret;
+  ret << "val: " << m_val << ", input_unpack: " << m_input_unpack; 
+
   return ret;
 }
 

@@ -234,23 +234,25 @@ bool convert_int_powers(Instr::List &output, Reg dst, int in_value) {
 	int value;
 	int left_shift;
 
-	//warn << "convert_int_powers: " << in_value;
-
 	if (!convert_int_power(in_value, value, left_shift)) { 
 		//warn << "convert_int_power failed for: " << in_value;
+
+
 		return false;
 	}
 
 	// warn <<  "convert_int_powers " << in_value << " : " << value << " << " << left_shift;
-	assert (-16 <= value && value <= 15);
 	assert (-16 <= left_shift && left_shift <= 15);
+
+	// 42 = 21 << 1 fails, because 21 is not a small int.
+	if (!(-16 <= value && value <= 15)) {
+		return false;
+	}
 
 	Reg tmp(VarGen::fresh());
 
-
 	output << li(tmp, value).comment(comment)
-         << shl(dst, tmp, left_shift)
-  ;
+         << shl(dst, tmp, left_shift);
 
 	return true;
 }

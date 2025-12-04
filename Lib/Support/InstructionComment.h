@@ -9,6 +9,8 @@ namespace V3DLib {
  */
 class InstructionComment {
 public:
+	InstructionComment() : m_header(""), m_comment("") {}
+
   void transfer_comments(InstructionComment const &rhs);
   void clear_comments();
   std::string const &header() const { return m_header; }

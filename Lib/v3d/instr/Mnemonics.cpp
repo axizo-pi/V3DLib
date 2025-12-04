@@ -248,7 +248,6 @@ Mnemonic &Mnemonic::rotate(Location const &dst, Location const &a, SmallImm cons
 
   assertq(dst.to_mux()  == V3D_QPU_MUX_R1, "rotate dest can only be r1");
   assertq(a.to_mux() == V3D_QPU_MUX_R0,    "rotate src a can only be r0", true);
-  assertq(-15 <= b.val() && b.val() < 16,  "rotate: smallimm must be in proper range");
 
   m_doing_add = false;
   if (!alu_mul_set(r1, r0, b)) assert(false);

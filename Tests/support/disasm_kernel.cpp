@@ -55,6 +55,8 @@ std::vector<uint64_t> &qpu_disasm_bytecode() {
 std::vector<uint64_t> qpu_disasm_kernel() {
   using namespace V3DLib::v3d::instr;
 
+  //Log::warn << "si(): " <<  si(15).ff().dump();
+
   V3DLib::v3d::Instructions ret;
 
   ret
@@ -79,7 +81,10 @@ std::vector<uint64_t> qpu_disasm_kernel() {
     << fdx(rf(7).h(), r1.l()).ifnb().fmul(rf(46), r3.l(), r2.abs()).pushn()
 
     /* small immediates */
-    << vflb(rf(24)).andnn().fmul(rf(14), -8, rf(8).h())  // small imm index value '-8' is 24! This and 'rf(24)' confused me.
+
+    // small imm index value '-8' is 24! This and 'rf(24)' confused me.
+    << vflb(rf(24)).andnn().fmul(rf(14), -8, rf(8).h())
+
     << vfmin(rf(24), si(15).ff(), r5).pushn().smul24(rf(15), r1, r3).ifnb()
     << faddnf(rf(55), si(-16).l(), r3.abs()).pushc().fmul(rf(55).l(), rf(38).l(), r1.h()).ifb()
     << fsub(rf(58).h(), si(0x3b800000).l(), r3.l()).nornc().fmul(rf(39), r0.h(), r0.h()).ifnb()
