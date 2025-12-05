@@ -72,13 +72,13 @@ template <typename T> bool append(
 	T val
 ) {
 	bool ret = true;
-	std::cout << "Here t2 " << index << ": " << var_type(val) << "\n";
+	Log::debug << "Here t2 " << index << ": " << var_type(val) << "\n";
 
 	if (var_type(val) != typelist[index]) {
 		std::cout << "ERROR incorrect type for param at index " << index << "\n";
 		ret = false;
 	} else {
-		std::cout << "Param " << index << ": checks out.\n";
+		Log::debug << "Param " << index << ": checks out.\n";
 	}
 
   uniforms.append(param_value(val));
@@ -190,7 +190,24 @@ template <typename... ts> struct Kernel : public BaseKernel {
 
   // Construct an argument of QPU type 't'.
   template <typename T> inline T mkArg( std::vector<std::size_t> &typelist) {
-		typelist.push_back(typeid(typename T::Ptr).hash_code());
+		auto t_hash = typeid(T).hash_code(); //both T and T::Ptr return the same value: N6V3DLib7Complex3PtrE
+		//Log::warn << "mkArg t_hash: " << typeid(T).name();
+
+	  auto c_hash = typeid(typename Complex::Ptr).hash_code();
+
+	  if (t_hash == c_hash) {
+			//Log::warn << "mkArg: Complex::Ptr detected";
+
+			// Add two Float ptr's for Re and Im
+			auto p_hash = typeid(typename Float::Ptr).hash_code();
+			typelist.push_back(p_hash);
+			typelist.push_back(p_hash);
+		} else {
+			auto hash = typeid(typename T::Ptr).hash_code();
+			typelist.push_back(hash);
+		}
+
+
 		auto ret = T::mkArg();	
 		return ret;
 	}
@@ -239,13 +256,15 @@ public:
       f(mkArg<ts>(m_typelist)...);  // Construct the AST
     });
 
-
+/*
+		// DEBUG: show the detected types for the param's (uniforms)
 		std::string buf;
 		buf << "Types: ";
 		for (int i = 0; i < (int) m_typelist.size(); ++i) {
 			buf << m_typelist[i] << ", ";
 		}
 		Log::warn << buf;
+*/
 
 		Platform::compiling_for_vc4(prev);
  }
@@ -255,7 +274,7 @@ public:
    * Load uniform values.
    */
   template <typename... us>
-  Kernel &load(us... args) {
+  Kernel &load_k(us... args) {
     uniforms.clear();
 
     // Check arguments types of param us against types of ts
@@ -265,7 +284,7 @@ public:
   }
 
   template <typename... us>
-  Kernel &load_b(us... args) {
+  Kernel &load(us... args) {
     uniforms.clear();
 
     if (!ppassParam(uniforms, m_typelist, 0,  args...)) {

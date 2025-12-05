@@ -402,7 +402,6 @@ TEST_CASE("Discrete Fourier Transform [dft]") {
 
     float const precision2 = 2e-2f;
 
-    //INFO(result.dump());
 
     for (int r = 0; r < Dim; ++r) {
       for (int c = 0; c < Dim; ++c) {

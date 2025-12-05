@@ -12,7 +12,7 @@
 
 typedef uint8_t  __u8;
 typedef uint32_t __u32;
-//typedef uint64_t __u64;   // Conflict with system
+typedef uint64_t __u64;   // Conflict with system
 
 #define DRM_IOW(nr,type)    _IOW(DRM_IOCTL_BASE,nr,type)
 #define DRM_IOWR(nr,type)   _IOWR(DRM_IOCTL_BASE,nr,type)
