@@ -100,6 +100,11 @@ bool Int::passParam(IntList &uniforms, int val) {
 }
 
 
+uint32_t Int::param_value(int val) {
+  return (int32_t) val;
+}
+
+
 /**
  * A vector containing integers 0..15
  *

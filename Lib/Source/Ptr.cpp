@@ -110,6 +110,10 @@ bool Pointer::passParam(IntList &uniforms, BaseSharedArray const *p) {
   return true;
 }
 
+uint32_t Pointer::param_value(BaseSharedArray const *p) {
+  return p->getAddress();
+}
+
 
 PointerExpr devnull() {
   assertq(!Platform::compiling_for_vc4(), "devnull() is for v3d only", true);

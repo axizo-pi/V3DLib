@@ -6,7 +6,6 @@
 
 namespace V3DLib {
 
-
 /**
  * -------------------------
  * NOTES
@@ -85,8 +84,8 @@ public:
 
 protected:
   BaseSettings m_settings;
+	std::vector<std::size_t> m_typelist;
   IntList uniforms;                // Parameters to be passed to kernel
-
 
   // Defined as unique pointer so that it easily survives std::move
   // (There are other reasons but this is the main one)

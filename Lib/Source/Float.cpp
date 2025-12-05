@@ -67,6 +67,12 @@ bool Float::passParam(IntList &uniforms, float val) {
 }
 
 
+uint32_t Float::param_value(float val) {
+  int32_t* bits = (int32_t*) &val;
+	return *bits;
+}
+
+
 /**
  * Reinterpret the incoming integer expression as a float
  */

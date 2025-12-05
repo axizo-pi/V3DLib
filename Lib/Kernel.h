@@ -1,23 +1,137 @@
 #ifndef _V3DLIB_KERNEL_H_
 #define _V3DLIB_KERNEL_H_
 #include <tuple>
-//#include <algorithm>  // std::move
 #include "BaseKernel.h"
 #include "Source/Complex.h"
+#include <iostream>
+#include <typeinfo>
 
 namespace V3DLib {
+	using ::operator<<; // C++ weirdness
 
 // ============================================================================
 // Parameter passing
 // ============================================================================
 
-template <typename... ts> inline void nothing(ts... args) {}
 
+inline std::size_t var_type(Float::Array2D *p) {
+	return typeid(Float::Ptr).hash_code();
+}
+
+inline uint32_t param_value(Float::Array2D *p) {
+	return p->getAddress();
+}
+
+inline std::size_t var_type(Float::Array *p) {
+	return typeid(Float::Ptr).hash_code();
+}
+
+inline uint32_t param_value(Float::Array *p) {
+	return p->getAddress();
+}
+
+inline std::size_t var_type(Int::Array *p) {
+	return typeid(Int::Ptr).hash_code();
+}
+
+inline uint32_t param_value(Int::Array *p) {
+	return p->getAddress();
+}
+
+inline std::size_t var_type(int p) {
+	return typeid(Int::Ptr).hash_code();
+}
+
+inline uint32_t param_value(int p) {
+	return (uint32_t) p;
+}
+
+inline uint32_t param_value(float p) {
+  int32_t* bits = (int32_t*) &p;
+	return *bits;
+}
+
+inline std::size_t var_type(float p) {
+	return typeid(Float::Ptr).hash_code();
+}
+
+inline bool ppassParam(IntList &uniforms, std::vector<std::size_t> &typelist, int index) {
+	if (index != (int) typelist.size()) {
+		Log::cerr << "Kernel load(): incorrect number of parameters. "
+						  << "expected: " << (int) typelist.size() << ", got: " << index;
+		return false;
+	}
+
+	return true;
+}
+
+template <typename T> bool append(
+	IntList &uniforms,
+	std::vector<std::size_t> &typelist,
+	int &index,
+	T val
+) {
+	bool ret = true;
+	std::cout << "Here t2 " << index << ": " << var_type(val) << "\n";
+
+	if (var_type(val) != typelist[index]) {
+		std::cout << "ERROR incorrect type for param at index " << index << "\n";
+		ret = false;
+	} else {
+		std::cout << "Param " << index << ": checks out.\n";
+	}
+
+  uniforms.append(param_value(val));
+  //bool tmp = T::passParam(uniforms, val);
+	//assert(tmp);
+	++index;
+	return ret;
+}
+
+
+template <typename T, typename ...t> bool ppassParam(
+	IntList &uniforms,
+	std::vector<std::size_t> &typelist,
+	int index,
+	T val, t... x
+) {
+	bool ret = append(uniforms, typelist, index, val);
+
+	return ret & ppassParam(uniforms, typelist, index, x...);
+}
+
+
+template <typename ...t> bool ppassParam(
+	IntList &uniforms,
+	std::vector<std::size_t> &typelist,
+	int index,
+	Complex::Array *val, t... x
+) {
+	bool ret  = append(uniforms, typelist, index, &val->re());
+	     ret &= append(uniforms, typelist, index, &val->im());
+
+	return ret & ppassParam(uniforms, typelist, index, x...);
+}
+
+
+template <typename ...t> bool ppassParam(
+	IntList &uniforms,
+	std::vector<std::size_t> &typelist,
+	int index,
+	Complex::Array2D *val, t... x
+) {
+	bool ret  = append(uniforms, typelist, index, &val->re());
+	     ret &= append(uniforms, typelist, index, &val->im());
+
+	return ret & ppassParam(uniforms, typelist, index, x...);
+}
+
+
+template <typename... ts> inline void nothing(ts... args) {}
 
 template <typename T, typename t> inline bool passParam(IntList &uniforms, t x) {
   return T::passParam(uniforms, x);
 }
-
 
 /**
  * Grumbl still need special override for 2D shared array.
@@ -38,6 +152,7 @@ inline bool passParam< Complex::Ptr, Complex::Array2D * > (IntList &uniforms, Co
   passParam< Float::Ptr, Float::Array2D * > (uniforms, &p->im());
   return true;
 }
+
 
 
 /**
@@ -74,7 +189,12 @@ template <typename... ts> struct Kernel : public BaseKernel {
   using KernelFunction = void (*)(ts... params);
 
   // Construct an argument of QPU type 't'.
-  template <typename T> inline T mkArg() { return T::mkArg(); }
+  template <typename T> inline T mkArg( std::vector<std::size_t> &typelist) {
+		typelist.push_back(typeid(typename T::Ptr).hash_code());
+		auto ret = T::mkArg();	
+		return ret;
+	}
+
 public:
   Kernel(Kernel const &k) = delete;
   Kernel(Kernel &&k) = default;
@@ -116,8 +236,16 @@ public:
     }
 
     driver().compile([this, f] () {
-      f(mkArg<ts>()...);  // Construct the AST
+      f(mkArg<ts>(m_typelist)...);  // Construct the AST
     });
+
+
+		std::string buf;
+		buf << "Types: ";
+		for (int i = 0; i < (int) m_typelist.size(); ++i) {
+			buf << m_typelist[i] << ", ";
+		}
+		Log::warn << buf;
 
 		Platform::compiling_for_vc4(prev);
  }
@@ -132,6 +260,17 @@ public:
 
     // Check arguments types of param us against types of ts
     nothing(passParam<ts, us>(uniforms, args)...);
+
+    return *this;
+  }
+
+  template <typename... us>
+  Kernel &load_b(us... args) {
+    uniforms.clear();
+
+    if (!ppassParam(uniforms, m_typelist, 0,  args...)) {
+			Log::cerr << "Errors in params of load()\n" << Log::thrw;
+		}
 
     return *this;
   }

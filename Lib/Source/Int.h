@@ -40,6 +40,7 @@ struct Int : public BaseExpr {
 
   static Int mkArg();
   static bool passParam(IntList &uniforms, int val);
+  static uint32_t param_value(int val);
 
   operator IntExpr() const;
 
