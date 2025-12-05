@@ -4,7 +4,6 @@
 #include "Support/basics.h"
 #include "Source/Interpreter.h"
 #include "Target/Emulator.h"
-#include "Target/Pretty.h"
 
 namespace V3DLib {
 

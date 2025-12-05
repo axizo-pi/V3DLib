@@ -413,7 +413,7 @@ bool Instr::check_dst() const {
 }
 
 
-std::string Instr::pretty_instr() const {
+std::string Instr::dump_internal() const {
 /*
 	Log::debug
 		<< "output pack values:\n"
@@ -452,7 +452,7 @@ std::string Instr::pretty_instr() const {
 	      } else if (alu.mul.b.mux == V3D_QPU_MUX_B) {
 	        ret << ", " << raddr_b;
 	      } else {
-	        assertq(false, "pretty_instr(): unexpected mux value for mul b for rotate", true);
+	        assertq(false, "dump_internal(): unexpected mux value for mul b for rotate", true);
 	      }
 			}
 
@@ -471,7 +471,7 @@ std::string Instr::mnemonic(bool with_comments) const {
     ret << emit_header();
   }
 
-  std::string out = pretty_instr();
+  std::string out = dump_internal();
   ret << out;
 
   if (with_comments && !InstructionComment::comment().empty()) {

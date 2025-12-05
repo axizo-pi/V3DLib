@@ -2,7 +2,6 @@
 #define _V3DLIB_TARGET_SYNTAX_INSTR_ALUOP_H_
 #include <string>
 #include "broadcom/qpu/qpu_instr.h"
-//#include "v3d/instr/v3d_api.h"
 
 namespace V3DLib {
 
@@ -81,7 +80,7 @@ public:
   bool isNOP() const { return m_value == NOP; }
   bool isRot() const { return m_value == M_ROTATE; }
   bool isMul() const;
-  std::string pretty() const;
+  std::string dump() const;
 
   uint32_t vc4_encodeAddOp() const;
   uint32_t vc4_encodeMulOp() const;

@@ -104,7 +104,7 @@ bool ALUOp::isMul() const {
 }
 
 
-std::string ALUOp::pretty() const {
+std::string ALUOp::dump() const {
   switch (m_value) {
     case NOP:       return "nop";
     case A_FADD:    return "addf";

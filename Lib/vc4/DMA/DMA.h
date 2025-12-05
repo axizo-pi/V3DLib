@@ -22,7 +22,7 @@ public:
   Expr::Ptr stride_internal();
   bool address(int in_tag, Expr::Ptr e0);
   Expr::Ptr address_internal();
-  std::string pretty(int indent, int in_tag);
+  std::string dump(int indent, int in_tag);
 
   int  semaId() const { return m_semaId; }
   void semaId(int val) { m_semaId = val; }

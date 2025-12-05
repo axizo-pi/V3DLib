@@ -59,7 +59,7 @@ struct SetCond {
   void tag(Tag tag) { m_tag = tag; }
   Tag tag() const { return m_tag; }
   void clear() { tag(NO_COND); }
-  std::string pretty() const;
+  std::string dump() const;
   void setFlag(Flag flag);
 
 private:

@@ -103,25 +103,7 @@ void Expr::deref_ptr(Ptr p) {
 }
 
 
-std::string Expr::disp_apply() const { return apply_op().disp(lhs()?lhs()->pretty():"", rhs()?rhs()->pretty():""); }
-
-std::string Expr::pretty() const {
-  std::string ret;
-
-  switch (tag()) {
-    case INT_LIT:   ret << intLit;                       break;
-    case FLOAT_LIT: ret << floatLit;                     break;
-    case VAR:       ret << m_var.dump();                 break;
-    case APPLY:     ret << disp_apply();                 break;
-    case DEREF:     ret << "*" << deref_ptr()->pretty(); break;
-    default:
-      assert(false);
-    break;
-  }
-
-  return ret;
-}
-
+std::string Expr::disp_apply() const { return apply_op().disp(lhs()?lhs()->dump():"", rhs()?rhs()->dump():""); }
 
 std::string Expr::dump() const {
   std::string ret;

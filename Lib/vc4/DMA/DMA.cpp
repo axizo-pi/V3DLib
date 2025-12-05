@@ -73,17 +73,17 @@ Expr::Ptr Stmt::address_internal() {
 }
 
 
-std::string Stmt::pretty(int indent, int in_tag) {
+std::string Stmt::dump(int indent, int in_tag) {
   auto tag = to_tag(in_tag);
   std::string ret;
 
   switch (tag) {
     case V3DLib::Stmt::SET_READ_STRIDE:
-      ret << indentBy(indent) << "dmaSetReadPitch(" << stride_internal()->pretty() << ");";
+      ret << indentBy(indent) << "dmaSetReadPitch(" << stride_internal()->dump() << ");";
       break;
 
     case V3DLib::Stmt::SET_WRITE_STRIDE:
-      ret << indentBy(indent) << "dmaSetWriteStride(" << stride_internal()->pretty() << ")";
+      ret << indentBy(indent) << "dmaSetWriteStride(" << stride_internal()->dump() << ")";
       break;
 
     case V3DLib::Stmt::SEMA_INC:  // Increment semaphore
@@ -104,7 +104,7 @@ std::string Stmt::pretty(int indent, int in_tag) {
           << "numVecs=" << m_setupVPMRead.numVecs               << ","
           << "dir="     << (m_setupVPMRead.hor ? "HOR" : "VIR") << ","
           << "stride="  << m_setupVPMRead.stride                << ","
-          << address_internal()->pretty()
+          << address_internal()->dump()
           << ");";
       break;
 
@@ -113,7 +113,7 @@ std::string Stmt::pretty(int indent, int in_tag) {
           << "vpmSetupWrite("
           << "dir="    << (m_setupVPMWrite.hor ? "HOR" : "VIR") << ","
           << "stride=" << m_setupVPMWrite.stride                << ","
-          << address_internal()->pretty()
+          << address_internal()->dump()
           << ");";
       break;
 
@@ -127,12 +127,12 @@ std::string Stmt::pretty(int indent, int in_tag) {
 
     case V3DLib::Stmt::DMA_START_READ:
       ret << indentBy(indent)
-          << "dmaStartRead(" << address_internal()->pretty() << ");";
+          << "dmaStartRead(" << address_internal()->dump() << ");";
       break;
 
     case V3DLib::Stmt::DMA_START_WRITE:
       ret << indentBy(indent)
-          << "dmaStartWrite(" << address_internal()->pretty() << ");";
+          << "dmaStartWrite(" << address_internal()->dump() << ");";
       break;
 
     case V3DLib::Stmt::SETUP_DMA_READ:
@@ -142,7 +142,7 @@ std::string Stmt::pretty(int indent, int in_tag) {
           << "rowLen=%" << m_setupDMARead.rowLen                   << ","
           << "dir="     << (m_setupDMARead.hor ? "HORIZ" : "VERT") << ","
           << "vpitch="  <<  m_setupDMARead.vpitch                  << ","
-          << address_internal()->pretty()
+          << address_internal()->dump()
           << ");";
       break;
 
@@ -158,7 +158,7 @@ std::string Stmt::pretty(int indent, int in_tag) {
           << "numRows=" << m_setupDMAWrite.numRows                  << ","
           << "rowLen="  << rle->dump()                              << ","
           << "dir="     << (m_setupDMAWrite.hor ? "HORIZ" : "VERT") << ","
-          << address_internal()->pretty()
+          << address_internal()->dump()
           << ");";
       }
       break;

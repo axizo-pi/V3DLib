@@ -53,7 +53,7 @@ std::string pretty(int indent, Stmt::Ptr s) {
 
     case Stmt::ASSIGN:
       ret << indentBy(indent)
-          << s->assign_lhs()->pretty() << " = " << s->assign_rhs()->pretty() << ";";
+          << s->assign_lhs()->dump() << " = " << s->assign_rhs()->dump() << ";";
       break;
 
     case Stmt::SEQ: {  // Sequential composition
@@ -97,7 +97,7 @@ std::string pretty(int indent, Stmt::Ptr s) {
 
     case Stmt::LOAD_RECEIVE:
       ret << indentBy(indent)
-          << "receive(" << s->address()->pretty() << ")";
+          << "receive(" << s->address()->dump() << ")";
       break;
 
     case Stmt::GATHER_PREFETCH:
@@ -105,7 +105,7 @@ std::string pretty(int indent, Stmt::Ptr s) {
       break;
 
     default: {
-        std::string tmp = s->dma.pretty(indent, s->tag);
+        std::string tmp = s->dma.dump(indent, s->tag);
         if (tmp.empty()) {
           assertq(false, "Unknown statement tag in Source::pretty()");
         }

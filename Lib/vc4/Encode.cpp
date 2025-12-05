@@ -3,7 +3,6 @@
 #include <stdlib.h>
 #include "Support/basics.h"  // fatal()
 #include "Target/Satisfy.h"
-#include "Target/Pretty.h"
 
 namespace V3DLib {
 namespace vc4 {

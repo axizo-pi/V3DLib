@@ -23,7 +23,7 @@ Flag negFlag(Flag flag) {
 }
 
 
-const char *pretty(Flag flag) {
+const char *dump(Flag flag) {
   switch (flag) {
     case ZS: return "ZS";
     case ZC: return "ZC";
@@ -92,10 +92,10 @@ std::string BranchCond::to_string() const {
 
   switch (tag) {
     case COND_ALL:
-      ret << "all(" << pretty(flag) << ")";
+      ret << "all(" << dump(flag) << ")";
       break;
     case COND_ANY:
-      ret << "any(" << pretty(flag) << ")";
+      ret << "any(" << dump(flag) << ")";
       break;
     case COND_ALWAYS:
       ret = "always";
@@ -133,7 +133,7 @@ const char *SetCond::to_string() const {
 }
 
 
-std::string SetCond::pretty() const {
+std::string SetCond::dump() const {
   std::string ret;
   if (flags_set()) {
   	ret << "{sf-" << to_string() << "}";
@@ -169,13 +169,13 @@ void SetCond::setFlag(Flag flag) {
 
 namespace {
 
-std::string pretty(AssignCond cond) {
+std::string dump(AssignCond cond) {
   using Tag = AssignCond::Tag;
 
   switch (cond.tag) {
     case Tag::ALWAYS: return "always";
     case Tag::NEVER:  return "never";
-    case Tag::FLAG:   return pretty(cond.flag);
+    case Tag::FLAG:   return dump(cond.flag);
   	default: assert(false); return "";
   }
 }
@@ -213,7 +213,7 @@ std::string AssignCond::to_string() const {
   	return "";
   } else {
   	std::string ret;
-  	ret << "where " << pretty(*this) << ": ";
+  	ret << "where " << dump(*this) << ": ";
   	return ret;
   }
 }

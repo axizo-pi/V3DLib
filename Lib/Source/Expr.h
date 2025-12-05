@@ -43,7 +43,6 @@ struct Expr {
 
   Var var() const;
 
-  std::string pretty() const;
   std::string dump() const;
 
   union {

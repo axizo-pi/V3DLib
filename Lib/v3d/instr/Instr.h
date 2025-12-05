@@ -198,7 +198,7 @@ protected:
 private:
   bool m_skip = false;
 
-  std::string pretty_instr() const;
+  std::string dump_internal() const;
   int sig_dst_count() const;
 
   enum CheckSrc {
