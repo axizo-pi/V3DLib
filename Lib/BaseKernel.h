@@ -1,5 +1,6 @@
 #ifndef _V3DLIB_BASEKERNEL_H_
 #define _V3DLIB_BASEKERNEL_H_
+#include "Params.h"
 #include <memory>
 #include "KernelDriver.h"
 #include "Support/BaseSettings.h"
@@ -81,6 +82,23 @@ public:
   bool has_errors() const;
   std::string get_errors() const;
   std::string info() const;
+
+  /**
+   * Load uniform values.
+	 *
+	 * This version checks the args types at run time.
+   */
+  template <typename... us>
+  BaseKernel &load(us... args) {
+    uniforms.clear();
+
+    if (!ppassParam(uniforms, m_typelist, 0,  args...)) {
+			Log::cerr << "Errors in params of load()\n" << Log::thrw;
+		}
+
+    return *this;
+  }
+
 
 protected:
   BaseSettings m_settings;

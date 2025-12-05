@@ -13,120 +13,6 @@ namespace V3DLib {
 // Parameter passing
 // ============================================================================
 
-
-inline std::size_t var_type(Float::Array2D *p) {
-	return typeid(Float::Ptr).hash_code();
-}
-
-inline uint32_t param_value(Float::Array2D *p) {
-	return p->getAddress();
-}
-
-inline std::size_t var_type(Float::Array *p) {
-	return typeid(Float::Ptr).hash_code();
-}
-
-inline uint32_t param_value(Float::Array *p) {
-	return p->getAddress();
-}
-
-inline std::size_t var_type(Int::Array *p) {
-	return typeid(Int::Ptr).hash_code();
-}
-
-inline uint32_t param_value(Int::Array *p) {
-	return p->getAddress();
-}
-
-inline std::size_t var_type(int p) {
-	return typeid(Int::Ptr).hash_code();
-}
-
-inline uint32_t param_value(int p) {
-	return (uint32_t) p;
-}
-
-inline uint32_t param_value(float p) {
-  int32_t* bits = (int32_t*) &p;
-	return *bits;
-}
-
-inline std::size_t var_type(float p) {
-	return typeid(Float::Ptr).hash_code();
-}
-
-inline bool ppassParam(IntList &uniforms, std::vector<std::size_t> &typelist, int index) {
-	if (index != (int) typelist.size()) {
-		Log::cerr << "Kernel load(): incorrect number of parameters. "
-						  << "expected: " << (int) typelist.size() << ", got: " << index;
-		return false;
-	}
-
-	return true;
-}
-
-template <typename T> bool append(
-	IntList &uniforms,
-	std::vector<std::size_t> &typelist,
-	int &index,
-	T val
-) {
-	bool ret = true;
-	Log::debug << "Here t2 " << index << ": " << var_type(val) << "\n";
-
-	if (var_type(val) != typelist[index]) {
-		std::cout << "ERROR incorrect type for param at index " << index << "\n";
-		ret = false;
-	} else {
-		Log::debug << "Param " << index << ": checks out.\n";
-	}
-
-  uniforms.append(param_value(val));
-  //bool tmp = T::passParam(uniforms, val);
-	//assert(tmp);
-	++index;
-	return ret;
-}
-
-
-template <typename T, typename ...t> bool ppassParam(
-	IntList &uniforms,
-	std::vector<std::size_t> &typelist,
-	int index,
-	T val, t... x
-) {
-	bool ret = append(uniforms, typelist, index, val);
-
-	return ret & ppassParam(uniforms, typelist, index, x...);
-}
-
-
-template <typename ...t> bool ppassParam(
-	IntList &uniforms,
-	std::vector<std::size_t> &typelist,
-	int index,
-	Complex::Array *val, t... x
-) {
-	bool ret  = append(uniforms, typelist, index, &val->re());
-	     ret &= append(uniforms, typelist, index, &val->im());
-
-	return ret & ppassParam(uniforms, typelist, index, x...);
-}
-
-
-template <typename ...t> bool ppassParam(
-	IntList &uniforms,
-	std::vector<std::size_t> &typelist,
-	int index,
-	Complex::Array2D *val, t... x
-) {
-	bool ret  = append(uniforms, typelist, index, &val->re());
-	     ret &= append(uniforms, typelist, index, &val->im());
-
-	return ret & ppassParam(uniforms, typelist, index, x...);
-}
-
-
 template <typename... ts> inline void nothing(ts... args) {}
 
 template <typename T, typename t> inline bool passParam(IntList &uniforms, t x) {
@@ -272,6 +158,9 @@ public:
 
   /**
    * Load uniform values.
+	 *
+	 * This version checks the args types at compile time.
+	 * The version BaseKernel::load() checks types at run time.
    */
   template <typename... us>
   Kernel &load_k(us... args) {
@@ -279,17 +168,6 @@ public:
 
     // Check arguments types of param us against types of ts
     nothing(passParam<ts, us>(uniforms, args)...);
-
-    return *this;
-  }
-
-  template <typename... us>
-  Kernel &load(us... args) {
-    uniforms.clear();
-
-    if (!ppassParam(uniforms, m_typelist, 0,  args...)) {
-			Log::cerr << "Errors in params of load()\n" << Log::thrw;
-		}
 
     return *this;
   }
@@ -309,6 +187,19 @@ template <typename... ts>
 Kernel<ts...> compile(void (*f)(ts... params)) {
 	BaseSettings settings;
   return Kernel<ts...>(f, settings);
+}
+
+
+/**
+ * Compile and return a BaseKernel instance.
+ *
+ * This gets rid of the specific typing of the result
+ * of a kernel template, and should be more flexible
+ * in the calling code.
+ */ 
+template <typename... ts>
+BaseKernel compile_b(void (*f)(ts... params), BaseSettings const &settings) {
+  return (BaseKernel) Kernel<ts...>(f, settings);
 }
 
 }  // namespace V3DLib

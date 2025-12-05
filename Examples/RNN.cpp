@@ -203,9 +203,40 @@ void init_input(Float::Array &input, float *a,  int n) {
 }
 
 
+/**
+ * Separate test for outer product
+ */
+void test_outer_product(BaseKernel &op) {
+
+	float primes[2*16]=
+	{ 2,	3,	5,	7,	11,	13,	17,	19,	23,	29,	31,	37,	41,	43,	47,	53,	59,	61,	67,	71,
+	 73,	79,	83,	89,	97,	101,	103,	107,	109,	113,	127,	131 //	137	139	149	151	157	163	167	173
+	};
+
+	Float::Array left_outer(2*16); 
+	init_input(left_outer, primes, 2*16);
+
+	Float::Array right_outer(2*16); 
+	Float::Array result_outer((2*16)*(2*16)); 
+
+	for (int i = 0; i < 2*16; ++i) {
+	  right_outer[i] = (float) (i + 1);
+	}
+
+	op.load(&left_outer, &right_outer, &result_outer);
+	op.run();
+
+	std::string buf;
+	buf << "outer product:\n";
+	for (int i = 0; i < 2*16; ++i) {
+	  buf << i << ": " << vector_dump(result_outer, 2*16, 2*16*i) << "\n";
+	}
+	warn << buf;
+}
+
+
 struct model {
 	model(int n_size, int m_size) :
-//		x(n_size*m_size),
 		w1(n_size*m_size),
 		bias1(n_size),
 		z1(n_size),
@@ -214,9 +245,12 @@ struct model {
 	 	w2(n_size*m_size),
 		bias2(n_size),
 		z2(n_size),
-		a2(n_size)
+		a2(n_size),
+
+  	k(compile(kernel<M, N>, settings)),
+		sigmoid(compile_b(kernel_sigmoid, settings)),
+		op(compile(outer_product<2>, settings))
 	{
-//  	frand_array(x);
   	frand_array(w1);
   	frand_array(bias1);
   	frand_array(w2);
@@ -232,6 +266,39 @@ struct model {
   Float::Array bias2;
 	Float::Array z2;
 	Float::Array a2;
+
+	BaseKernel k;
+	BaseKernel sigmoid;
+	BaseKernel op;
+
+	void forward(Float::Array &input) {
+    Timer timer("Matrix mult");
+
+  	k.load(&input, &w1, &z1);
+    k.run();
+  	//run_scalar(input, k_model.w1, k_model.z1);
+
+		sigmoid.load(&z1, &bias1, &a1);
+		sigmoid.run();
+		//scalar_sigmoid(k_model.z1, k_model.bias1, s_model.a1);
+
+  	k.load(&a1, &w2, &z2);
+    k.run();
+  	//run_scalar(k_model.a1, k_model.w2, s_model.z2);
+
+		sigmoid.load(&z2, &bias2, &a2);
+		sigmoid.run();
+		//scalar_sigmoid(k_model.z2, k_model.bias2, s_model.a2);
+
+    timer.end();
+
+		// TODO adjust
+    int flops = 2*M*(16*N + 16*(N - 1));  // matrix num_rows*(num_mults + num_adds);
+	  flops    += 2*M*6;                    // sigmoid (1.0/(1.0 + exp(-1.0*x + bias)));
+
+    warn << "MFLOPS: " << ((float) flops)/timer.diff()/1.0e6;
+    //warn << "Timer diff: " << timer.diff();
+	}
 };
 
 
@@ -257,66 +324,9 @@ int main(int argc, const char *argv[]) {
 	Float::Array label(16*N);
 	init_input(label, labels[0], 3);
 
+	//test_outer_product(k_model.op);
 
-	float primes[2*16]=
-	{ 2,	3,	5,	7,	11,	13,	17,	19,	23,	29,	31,	37,	41,	43,	47,	53,	59,	61,	67,	71,
-	 73,	79,	83,	89,	97,	101,	103,	107,	109,	113,	127,	131 //	137	139	149	151	157	163	167	173
-	};
-
-	Float::Array left_outer(2*16); 
-	init_input(left_outer, primes, 2*16);
-
-	Float::Array right_outer(2*16); 
-	Float::Array result_outer((2*16)*(2*16)); 
-
-	for (int i = 0; i < 2*16; ++i) {
-	  right_outer[i] = (float) (i + 1);
-	}
-
-	auto op = compile(outer_product<2>, settings);
-	op.load(&left_outer, &right_outer, &result_outer);
-	op.run();
-
-	std::string buf;
-	buf << "outer product:\n";
-	for (int i = 0; i < 2*16; ++i) {
-	  buf << i << ": " << vector_dump(result_outer, 2*16, 2*16*i) << "\n";
-	}
-	warn << buf;
-
-  auto k = compile(kernel<M, N>, settings);
-	auto k_sigmoid = compile(kernel_sigmoid, settings);
-
-
-	// Forward
-  {
-    Timer timer("Matrix mult");
-
-  	k.load(&input, &k_model.w1, &k_model.z1);
-    k.run();
-  	run_scalar(input, k_model.w1, k_model.z1);
-
-		k_sigmoid.load(&k_model.z1, &k_model.bias1, &k_model.a1);
-		k_sigmoid.run();
-		scalar_sigmoid(k_model.z1, k_model.bias1, s_model.a1);
-
-  	k.load(&k_model.a1, &k_model.w2, &k_model.z2);
-    k.run();
-  	run_scalar(k_model.a1, k_model.w2, s_model.z2);
-
-		k_sigmoid.load(&k_model.z2, &k_model.bias2, &k_model.a2);
-		k_sigmoid.run();
-		scalar_sigmoid(k_model.z2, k_model.bias2, s_model.a2);
-
-    timer.end();
-
-		// TODO adjust
-    int flops = 2*M*(16*N + 16*(N - 1));  // matrix num_rows*(num_mults + num_adds);
-	  flops    += 2*M*6;                    // sigmoid (1.0/(1.0 + exp(-1.0*x + bias)));
-
-    warn << "MFLOPS: " << ((float) flops)/timer.diff()/1.0e6;
-    //warn << "Timer diff: " << timer.diff();
-  }
+	k_model.forward(input);
 
 	/*
   warn << "scalar z1: " << vector_dump(s_model.z1, local_N);
