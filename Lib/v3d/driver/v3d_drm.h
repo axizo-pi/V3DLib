@@ -12,7 +12,10 @@
 
 typedef uint8_t  __u8;
 typedef uint32_t __u32;
-//typedef uint64_t __u64;   // Conflict with system
+
+namespace local {
+typedef uint64_t __u64;   // Conflict with system
+}
 
 #define DRM_IOW(nr,type)    _IOW(DRM_IOCTL_BASE,nr,type)
 #define DRM_IOWR(nr,type)   _IOWR(DRM_IOCTL_BASE,nr,type)
@@ -117,7 +120,7 @@ enum drm_v3d_param {
 struct drm_v3d_get_param {
 	__u32 param;
 	__u32 pad;
-	__u64 value;
+	local::__u64 value;
 };
 
 
