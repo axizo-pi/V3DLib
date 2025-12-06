@@ -64,6 +64,7 @@ public:
     A_FFLOOR,
     A_FSIN,
     A_TMUWT,
+    A_RSQRT,
 
 		// vc7
 		// A_FMOV intentionally not added to the list; it is useless, appears to always assign 0
@@ -111,8 +112,6 @@ op_item const *op_items_find_by_op(ALUOp::Enum op, bool strict = true);
 namespace Oper {
 
 bool oneOperand(v3d_qpu_add_op op);
-bool oneOperand(ALUOp const &op);
-bool noOperands(ALUOp const &op);
 
 } // namespace Oper
 

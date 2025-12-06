@@ -335,15 +335,43 @@ bool encode_int_immediate(Instr::List &output, Reg dst, int in_value) {
 }
 
 
+bool can_encode(Imm const &imm) {
+  int rep_value;
+
+  switch (imm.tag()) {
+  case Imm::IMM_INT32: {
+    int value = imm.intVal();
+  	if (SmallImm::int_to_opcode_value(value, rep_value)) return true;
+	}
+  break;
+
+  case Imm::IMM_FLOAT32: {
+    float value = imm.floatVal();
+  	if (SmallImm::float_to_opcode_value(value, rep_value)) return true;
+	}
+  break;
+
+  case Imm::IMM_MASK:
+    debug_break("can_encode: IMM_MASK not handled");
+  break;
+
+  default:
+    debug_break("can_encode: unknown tag value");
+  break;
+	}
+
+	return false;
+}
+
+
+
 bool encode_int(Instr::List &ret, Reg dst, int value) {
 	Instr::List tmp;
 
 	//warn << "encode_int value: " << value;
 
-	if (-16 <= value && value <= 15) {                      // direct translation
-    tmp << mov(dst, value);
-  } else if (convert_int_powers(tmp, dst, value)) {       // powers of 2 of basic small int's 
-  } else if (encode_int_immediate(tmp, dst, value)) {     // Use full blunt conversion (heavy but always works)
+  if (convert_int_powers(tmp, dst, value)) {           // powers of 2 of basic small int's 
+  } else if (encode_int_immediate(tmp, dst, value)) {  // Use full blunt conversion (heavy but always works)
   } else {
     return false;                                      // Conversion failed
 	}
@@ -367,17 +395,6 @@ bool encode_float(Instr::List &ret, Reg dst, float value) {
 		// Small Imm conversion happens downstream
 		tmp << li(dst, -value).comment(cmt)
         << sub(dst, 0, dst);                   // Works because float zero is 0x0
-/*
-    tmp << mov(dst, -value)
-        << sub(dst, 0, dst);                   // Works because float zero is 0x0
-
-		tmp.front().comment(cmt);
-*/
-
-  } else if (SmallImm::float_to_opcode_value(value, rep_value)) {
-		//warn << "encode_float small float value: " << rep_value;
-		// Small Imm conversion happens downstream
-    tmp << li(dst, value);
 
   } else {
     // Do the full blunt int conversion
@@ -401,35 +418,28 @@ bool encode_float(Instr::List &ret, Reg dst, float value) {
   return true;
 }
 
-}  // anon namespace
 
+Instr::List _encode_imm(Reg dst, Imm imm) {
+	assert(!can_encode(imm));
 
-Instr::List encode_imm(V3DLib::Instr const full_instr) {
-  assert(full_instr.tag == LI);
-  auto &instr = full_instr.LI;
-  auto dst = full_instr.dest();
-
-  Instr::List ret;
+	Instr::List ret;
 
   std::string err_label;
   std::string err_value;
 
 
-  switch (instr.imm.tag()) {
-  case Imm::IMM_INT32: {
-    int value = instr.imm.intVal();
-		//warn << "encode_imm value: " << value; //full_instr.mnemonic();
+  if (imm.tag() == Imm::IMM_INT32) {
+    int value = imm.intVal();
 
     if (!encode_int(ret, dst, value)) {
       // Conversion failed, output error
       err_label = "int";
       err_value = std::to_string(value);
     }
-  }
-  break;
+  } else {
+  	assert(imm.tag() == Imm::IMM_FLOAT32);
 
-  case Imm::IMM_FLOAT32: {
-    float value = instr.imm.floatVal();
+    float value = imm.floatVal();
   	//warn << "Handling case Imm::IMM_FLOAT32, value: " << value;
 
     if (!encode_float(ret, dst, value)) {
@@ -437,16 +447,6 @@ Instr::List encode_imm(V3DLib::Instr const full_instr) {
       err_label = "float";
       err_value = std::to_string(value);
     }
-  }
-  break;
-
-  case Imm::IMM_MASK:
-    debug_break("encode_imm(): IMM_MASK not handled");
-  break;
-
-  default:
-    debug_break("encode_imm(): unknown tag value");
-  break;
   }
 
   if (!err_value.empty()) {
@@ -459,16 +459,84 @@ Instr::List encode_imm(V3DLib::Instr const full_instr) {
     breakpoint
   }
 
+  return ret;
+}
 
-  if (full_instr.set_cond().flags_set()) {
+}  // anon namespace
+
+
+Instr::List encode_imm(V3DLib::Instr const &instr) {
+  Instr::List ret;
+
+	bool do_li = false;
+	Imm imm;
+	Reg dst;
+
+  if (instr.tag == LI) {
+		do_li = true;
+  	imm = instr.LI.imm;
+  	dst  = instr.dest();
+	} else {
+    int num_ops = instr.ALU.num_operands();
+
+    if (num_ops == 0) {
+			if (instr.ALU.op.value() != V3DLib::ALUOp::A_TMUWT) {
+				breakpoint;
+			}
+			ret << instr;
+			return ret;
+		}
+
+    if (num_ops == 2) {
+			if (instr.ALU.srcA.is_imm() && instr.ALU.srcB.is_imm()) {
+				cerr << "encode_imm: not handling case of two imm operands yet" << thrw;
+			}
+
+			ret << instr;
+			return ret;
+		}
+
+		if (!instr.ALU.srcA.is_imm()) { 
+			ret << instr;
+			return ret;
+		} else {
+			do_li = false;
+  		imm = instr.ALU.srcA.imm();
+  		dst = VarGen::fresh();
+		}
+	}
+
+	if (can_encode(imm)) {
+		// Will be handled correctly downstream
+		ret << instr;
+		return ret;
+	}
+
+  ret = _encode_imm(dst, imm);
+	assert(!ret.empty());
+
+	if (ret.size() == 1 && ret[0] == instr) {
+		// No conversion
+		breakpoint;  // Shouldn't really happen, warn me
+		return ret;
+	}
+
+	if (!do_li) {
+		auto new_instr = instr;
+		new_instr.ALU.srcA = dst;
+		ret << new_instr;
+	}
+
+
+  if (instr.set_cond().flags_set()) {
     breakpoint;  // to check what flags need to be set - case not handled yet
   }
 
 	for (int i = 0; i < ret.size(); ++i) {
-	  ret.get(i).cond(full_instr.assign_cond());
+	  ret.get(i).cond(instr.assign_cond());
 	}
 
-  return ret;
+	return ret;
 }
 
 
@@ -480,10 +548,20 @@ void adjust_immediates(Instr::List &instrs) {
   for (int i = 0; i < instrs.size(); i++) {
 		Instr const &instr = instrs[i];
 
+		if (
+			instr.tag == INIT_BEGIN ||
+			instr.tag == INIT_END   ||
+			instr.tag == NO_OP
+		) {
+			res << instr;
+			continue;
+		}
+/*
 		if (instr.tag != LI) {
 			res << instr;
 			continue;
 		}
+*/
 
 		res << encode_imm(instr);
 	}

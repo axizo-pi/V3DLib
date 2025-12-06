@@ -34,10 +34,15 @@ std::vector<op_item> op_items = {
   { ALUOp::A_FSIN,   V3D_QPU_A_SIN    },                   // NOTE: Extra NOP's and read in generation
   { ALUOp::A_TMUWT,  V3D_QPU_A_TMUWT  },                   // NOTE: Extra NOP's and read in generation
 
+	// v3d
+  { ALUOp::A_RSQRT,  V3D_QPU_A_RSQRT  },
+
 	// VC7
   { ALUOp::A_MOV,    V3D_QPU_A_MOV    },
   { ALUOp::A_EXP,    V3D_QPU_A_EXP    },
-  { ALUOp::A_RECIP,  V3D_QPU_A_RECIP  },
+  {	ALUOp::A_RECIP,  V3D_QPU_A_RECIP  },
+
+  { ALUOp::A_LOG,    V3D_QPU_A_LOG    },
 };
 
 
@@ -152,6 +157,7 @@ std::string ALUOp::dump() const {
     case A_MOV:     return "mov";
     case A_EXP:     return "exp";
     case A_RECIP:   return "recip";
+    case A_RSQRT:   return "rsqrt";
 
     default:
       assertq(false, "ALUOp::dump(): Unknown ALU opcode", true);
@@ -286,7 +292,7 @@ op_item const *op_items_find_by_op(ALUOp::Enum op, bool strict) {
 
 namespace Oper {
 
-// TODO Consolidate this with next call
+// TODO Consolidate this with OpItems 
 bool oneOperand(v3d_qpu_add_op op) {
   return (       // these should be the only operations with one operand
 	  op == V3D_QPU_A_SIN   ||
@@ -298,29 +304,6 @@ bool oneOperand(v3d_qpu_add_op op) {
 		op == V3D_QPU_A_RECIP
 	);
 }
-
-
-bool oneOperand(ALUOp const &op) {
-  return (       // these should be the only operations with one operand
-	  op.value() == ALUOp::A_FSIN   ||
-		op.value() == ALUOp::A_FFLOOR ||
-
-		// vc7 
-		op.value() == ALUOp::A_MOV    ||
-		op.value() == ALUOp::A_EXP    ||
-		op.value() == ALUOp::A_RECIP
-	);
-}
-
-
-bool noOperands(ALUOp const &op) {
-  return (        // These should be the only operations with no operands
-	  op.value() == ALUOp::A_TMUWT ||
-		op.value() == ALUOp::A_TIDX  ||
-		op.value() == ALUOp::A_EIDX
-  );
-}
-
 } // namespace Oper
 
 #define CASE(l)  case V3D_QPU_##l: ret = #l; break;

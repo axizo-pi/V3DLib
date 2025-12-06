@@ -7,16 +7,6 @@ namespace V3DLib {
 
 class Imm;
 
-/*
-struct EncodedSmallImm {
-  int val;
-
-  bool operator==(EncodedSmallImm const &rhs) const { return val == rhs.val;  }
-  bool operator!=(EncodedSmallImm const &rhs) const { return !(*this == rhs); }
-};
-*/
-
-
 struct RegOrImm {
   RegOrImm() = default;
   RegOrImm(RegOrImm const &rhs) = default;

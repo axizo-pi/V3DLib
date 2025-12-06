@@ -56,9 +56,11 @@ std::string dump_instr(Instr const &instr) {
           << " <-" << instr.set_cond().dump() << " "
           << instr.ALU.op.dump();
 
-      if (instr.ALU.noOperands()) {
+      int num_ops = instr.ALU.num_operands();
+
+      if (num_ops == 0) {
         buf << "()";
-      } else if (instr.ALU.oneOperand()) {
+      } else if (num_ops == 1) {
         buf << "(" << instr.ALU.srcA.dump() << ")";
       } else {
         buf << "(" << instr.ALU.srcA.dump() << ", " << instr.ALU.srcB.dump() << ")";

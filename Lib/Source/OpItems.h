@@ -40,6 +40,7 @@ namespace OpItems {
 
 ALUOp::Enum opcode(Op const &op);
 OpItem const &get(OpId id);
+int num_operands_by_op(ALUOp::Enum op);
 
 } // namespace OpItems
 

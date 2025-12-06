@@ -31,13 +31,21 @@ std::vector<OpItem> m_list = {
   {EIDX,   "eidx",     false, ALUOp::NONE,     ALUOp::A_EIDX, true, 0},
 
   // SFU functions
-  {RECIP,     "recip",     true, ALUOp::NONE,  ALUOp::NONE, false, 1},
-  {RECIPSQRT, "recipsqrt", true, ALUOp::NONE,    ALUOp::NONE},
+  {RECIP,     "recip",     true, ALUOp::A_RECIP, ALUOp::NONE, false, 1},
+  {RECIPSQRT, "recipsqrt", true, ALUOp::A_RSQRT, ALUOp::NONE, false, 1},
   {EXP,       "exp",       true, ALUOp::A_EXP,   ALUOp::NONE, false, 1},
-  {LOG,       "log",       true, ALUOp::NONE,   ALUOp::NONE, false, 1},
+  {LOG,       "log",       true, ALUOp::A_LOG,   ALUOp::NONE, false, 1},
 
 	// Derived instructions
   {EXP_E,     "exp_e",     true, ALUOp::NONE,    ALUOp::NONE, false, 1},
+
+	//
+	// Following are not direct instructions in the source language
+	//
+  {_DUMMY,    "",         false, ALUOp::A_TMUWT, ALUOp::NONE, false, 0},
+  {_DUMMY,    "",         false, ALUOp::A_TIDX,  ALUOp::NONE, false, 0},
+  {_DUMMY,    "",         false, ALUOp::A_EIDX,  ALUOp::NONE, false, 0},
+  {_DUMMY,    "",         false, ALUOp::A_MOV,   ALUOp::NONE, false, 1},
 };
 
 }  // anon namespace
@@ -72,13 +80,11 @@ int OpItem::num_params() const {
 
 
 ALUOp::Enum OpItem::aluop_float() const {
-  assertq(m_aluop_float != ALUOp::NONE, "ALU Op float not defined for OpItem", true);
   return m_aluop_float;
 }
 
 
 ALUOp::Enum OpItem::aluop_int() const {
-  assertq(m_aluop_int != ALUOp::NONE, "ALU Op int not defined for OpItem");
   return m_aluop_int;
 }
 
@@ -161,6 +167,23 @@ ALUOp::Enum opcode(Op const &op) {
   } else {
     return item->aluop_int();
   }
+}
+
+
+int num_operands_by_op(ALUOp::Enum op) {
+	assert(op != ALUOp::NONE);
+	assert(op != ALUOp::NOP);
+
+	int num = -1;
+  for (auto &it : m_list) {
+  	if (it.aluop_float() == op) { num = it.num_params(); break; }
+  	if (it.aluop_int()   == op) { num = it.num_params(); break; }
+  }
+
+	if (num == -1) {
+		breakpoint;
+	}
+	return num;
 }
 
 } // namespace OpItems

@@ -307,14 +307,24 @@ Instr branch(Label label) {
 }
 
 
-Instr::List recipsqrt(Var dst, Var srcA) { return sfu_function(dst, srcA, SFU_RECIPSQRT, "recipsqrt"); }
+Instr::List recipsqrt(Var dst, Var srcA) {
+	if (Platform::compiling_for_vc7()) {
+		Instr::List ret;
+
+ 		// We also have ALUOp::A_RSQRT2d
+ 		ret << genInstr(ALUOp::A_RSQRT, dst, srcA);
+
+		return ret;
+	} else {
+		return sfu_function(dst, srcA, SFU_RECIPSQRT, "recipsqrt");
+	}
+}
 
 
 /**
  * This returns the log2 of the given value
  */
 Instr::List blog(Reg dst, RegOrImm const &srcA) {
-
 	if (Platform::compiling_for_vc7()) {
 		Instr::List ret;
  		ret << genInstr(ALUOp::A_LOG, dst, srcA);
@@ -325,7 +335,7 @@ Instr::List blog(Reg dst, RegOrImm const &srcA) {
 }
 
 
-Instr::List recip(Var dst, Var srcA) {
+Instr::List recip(Reg dst, RegOrImm const &srcA) {
 	if (Platform::compiling_for_vc7()) {
 		Instr::List ret;
   	ret << genInstr(ALUOp::A_RECIP, dst, srcA);

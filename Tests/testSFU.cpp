@@ -17,11 +17,15 @@ void sfu(Float x, Float::Ptr r) {
   Float var = 2.0f;
   *r = var*x;                r += 16;  // Float mult from var
 
+	// Prefixes to avoid conflicts with lib functions
   *r = V3DLib::exp(3.0f);    r += 16;
   *r = V3DLib::exp(x);       r += 16;
+
   *r = V3DLib::recip(x);     r += 16;
   *r = V3DLib::recipsqrt(x); r += 16;
-  *r = V3DLib::log(x);
+  *r = V3DLib::log(x);       r += 16;
+  *r = V3DLib::exp_e(1);     r += 16;
+  *r = V3DLib::exp_e(x);
 }
 
 
@@ -30,11 +34,13 @@ void check(float val, Float::Array &results, double precision) {
   REQUIRE(results[16] == 2*val);
   REQUIRE(results[16*2] == 2*val);
   REQUIRE(results[16*3] == 2*val);
-  REQUIRE(abs(results[16*4] - 8.0)           < precision);
-  REQUIRE(abs(results[16*5] - exp2(val))     < precision);  // Should be exact, but isn't
-  REQUIRE(abs(results[16*6] - 1/val)         < precision);
-  REQUIRE(abs(results[16*7] - (1/sqrt(val))) < precision);
-  REQUIRE(abs(results[16*8] - log2(val))     < precision);
+  REQUIRE(abs(results[ 16*4] - 8.0)           <   precision);
+  REQUIRE(abs(results[ 16*5] - exp2(val))     <   precision);  // Should be exact, but isn't
+  REQUIRE(abs(results[ 16*6] - 1/val)         <   precision);
+  REQUIRE(abs(results[ 16*7] - (1/sqrt(val))) <   precision);
+  REQUIRE(abs(results[ 16*8] - log2(val))     <   precision);
+  REQUIRE(abs(results[ 16*9] - exp(1))        < 2*precision);  // A bit less precise, is a calc
+  REQUIRE(abs(results[16*10] - exp(val))     <  50*precision);
 }
 
 /*
@@ -54,7 +60,7 @@ std::string vector_dump(Float::Array const &src) {
 
 TEST_CASE("Test SFU functions [sfu]") {
 
-  int N = 9;  // Number of results returned
+  int N = 11;  // Number of results returned
 
   Float::Array results(16*N);
 

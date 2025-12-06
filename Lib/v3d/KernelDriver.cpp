@@ -153,30 +153,32 @@ bool translateOpcode(V3DLib::Instr const &src_instr, Instructions &ret) {
   auto dst_reg = encodeDestReg(src_instr);
   assert(dst_reg);
 
+  int num_ops = src_instr.ALU.num_operands();
+
   switch (src_instr.ALU.op.value()) {
   case ALUOp::A_FSIN:
-    assert(src_instr.ALU.oneOperand());
+    assert(num_ops == 1);
     ret << fsin(*dst_reg, reg_a);
     break;
   case ALUOp::A_FFLOOR:
-    assert(src_instr.ALU.oneOperand());
+    assert(num_ops == 1);
     ret << ffloor(*dst_reg, reg_a);
     break;
   case ALUOp::A_TMUWT:
-    assert(src_instr.ALU.noOperands());
+    assert(num_ops == 0);
     ret << tmuwt();
     break;
   case ALUOp::A_TIDX:
     breakpoint  // Apparently never called?
-    assert(src_instr.ALU.noOperands());
+    assert(num_ops == 0);
     ret << tidx(*dst_reg);
     break;
   case ALUOp::A_EIDX:
-    assert(src_instr.ALU.noOperands());
+    assert(num_ops == 0);
     ret << eidx(*dst_reg);
     break;
   case ALUOp::A_MOV: {
-    assert(src_instr.ALU.oneOperand());
+    assert(num_ops == 1);
 
     auto tmp = mov(*dst_reg, reg_a);
 
@@ -1089,15 +1091,6 @@ void KernelDriver::compile_intern() {
 
   insertInitBlock(m_targetCode);
   add_init(m_targetCode);
-
-/*
-  for (int i = 0; i < m_targetCode.size(); i++) {
-		auto const &instr = m_targetCode[i];
-		if (instr.tag == LI && instr.LI.imm == 40) {
-      warn << "compile_intern pre: " << instr.mnemonic();
-    }
-  }
-*/
 
 	adjust_immediates(m_targetCode);
 

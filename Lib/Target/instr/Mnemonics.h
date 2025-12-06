@@ -58,7 +58,7 @@ Instr label(Label in_label);
 //
 // SFU functions
 //
-Instr::List recip(Var dst, Var srcA);
+Instr::List recip(Reg dst, RegOrImm const &srcA);
 Instr::List recipsqrt(Var dst, Var srcA);
 Instr::List bexp(Var dst, RegOrImm const &srcA);
 Instr::List bexp_e(Var dst, RegOrImm const &srcA);

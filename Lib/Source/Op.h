@@ -39,6 +39,8 @@ enum OpId {
   TIDX,
   EIDX,
   FFLOOR,
+
+	_DUMMY  // Indicates not an instruction 
 };
 
 
