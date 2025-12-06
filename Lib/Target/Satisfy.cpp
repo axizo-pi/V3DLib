@@ -545,23 +545,11 @@ void adjust_immediates(Instr::List &instrs) {
   for (int i = 0; i < instrs.size(); i++) {
 		Instr const &instr = instrs[i];
 
-		if (
-			instr.tag == INIT_BEGIN ||
-			instr.tag == INIT_END   ||
-			instr.tag == NO_OP      ||
-			instr.tag == END_VC4_ONLY   // WHY did this appear on vc7?
-		) {
+		if ( instr.tag == LI || instr.tag == ALU) {
+			res << encode_imm(instr);
+		} else {
 			res << instr;
-			continue;
 		}
-/*
-		if (instr.tag != LI) {
-			res << instr;
-			continue;
-		}
-*/
-
-		res << encode_imm(instr);
 	}
 
 	instrs = res;

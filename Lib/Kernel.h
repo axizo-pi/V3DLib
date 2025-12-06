@@ -82,7 +82,7 @@ template <typename... ts> struct Kernel : public BaseKernel {
 	  auto c_hash = typeid(typename Complex::Ptr).hash_code();
 
 	  if (t_hash == c_hash) {
-			Log::warn << "mkArg: Complex::Ptr detected";
+			//Log::warn << "mkArg: Complex::Ptr detected";
 
 			// Add two Float ptr's for Re and Im
 			auto p_hash = typeid(typename Float::Ptr).hash_code();
