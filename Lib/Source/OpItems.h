@@ -36,12 +36,12 @@ private:
 };
 
 
-class OpItems {
-public:
-  static ALUOp::Enum opcode(Op const &op);
-  static OpItem const *find(OpId id);
-  static OpItem const &get(OpId id);
-};
+namespace OpItems {
+
+ALUOp::Enum opcode(Op const &op);
+OpItem const &get(OpId id);
+
+} // namespace OpItems
 
 
 }  // namespace V3DLib

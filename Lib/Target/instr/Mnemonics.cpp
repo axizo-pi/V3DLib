@@ -40,7 +40,7 @@ Instr genInstr(ALUOp::Enum op, Reg dst, RegOrImm const &src) {
  * SFU functions always write to ACC4
  * Also 2 NOP's required; TODO see this can be optimized
  */
-Instr::List sfu_function(Var dst, Var srcA, Reg const &sfu_reg, const char *label) {
+Instr::List sfu_function(Reg dst, RegOrImm const &srcA, Reg const &sfu_reg, const char *label) {
   using namespace V3DLib::Target::instr;
 
   std::string cmt = "SFU function ";
@@ -274,6 +274,11 @@ Instr sub(Reg dst, int n, Reg srcA) {
 }
 
 
+Instr fmul(Reg dst, RegOrImm const &srcA, RegOrImm const &srcB) {
+  return genInstr(ALUOp::M_FMUL, dst, srcA, srcB);
+}
+
+
 /**
  * Generate load-immediate instruction.
  */
@@ -303,7 +308,22 @@ Instr branch(Label label) {
 
 
 Instr::List recipsqrt(Var dst, Var srcA) { return sfu_function(dst, srcA, SFU_RECIPSQRT, "recipsqrt"); }
-Instr::List blog(Var dst, Var srcA)      { return sfu_function(dst, srcA, SFU_LOG      , "log"); }
+
+
+/**
+ * This returns the log2 of the given value
+ */
+Instr::List blog(Reg dst, RegOrImm const &srcA) {
+
+	if (Platform::compiling_for_vc7()) {
+		Instr::List ret;
+ 		ret << genInstr(ALUOp::A_LOG, dst, srcA);
+		return ret;
+	} else {
+		return sfu_function(dst, srcA, SFU_LOG, "log");
+	}
+}
+
 
 Instr::List recip(Var dst, Var srcA) {
 	if (Platform::compiling_for_vc7()) {
@@ -316,14 +336,32 @@ Instr::List recip(Var dst, Var srcA) {
 }
 
 
-Instr::List bexp(Var dst, Var srcA) {
+/**
+ * This returns 2 to the power of srA.
+ */
+Instr::List bexp(Var dst, RegOrImm const &srcA) {
 	if (Platform::compiling_for_vc7()) {
 		Instr::List ret;
-  	ret << genInstr(ALUOp::A_EXP, dst, srcA);
+ 		ret << genInstr(ALUOp::A_EXP, dst, srcA);
 		return ret;
 	} else {
 		return sfu_function(dst, srcA, SFU_EXP      , "exp");
 	}
+}
+
+
+Instr::List bexp_e(Var dst, RegOrImm const &srcA) {
+	const float e_const = 2.71828f;
+
+	Imm e(e_const);
+	Reg tmp(V3DLib::VarGen::fresh());
+
+	Instr::List ret;
+	ret << blog(tmp, e);
+	ret << fmul(tmp, srcA, tmp)
+	    << bexp(dst, tmp);
+
+	return ret;
 }
 
 

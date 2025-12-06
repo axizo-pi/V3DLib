@@ -639,6 +639,7 @@ Instr::List varAssign(AssignCond cond, Var v, Expr::Ptr expr) {
       case RECIP:     ret << recip(v, e.lhs()->var());     break;
       case RECIPSQRT: ret << recipsqrt(v, e.lhs()->var()); break;
       case EXP:       ret << bexp(v, e.lhs()->var());      break;
+      case EXP_E:     ret << bexp_e(v, e.lhs()->var());    break;
       case LOG:       ret << blog(v, e.lhs()->var());      break;
       default:
         // Everything else is considered to be a single binary operation

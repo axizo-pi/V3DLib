@@ -47,6 +47,7 @@ Instr shl(Reg dst, Reg srcA, int val);
 Instr shl(Reg dst, Reg srcA, Reg srcB);
 Instr add(Reg dst, Reg srcA, Reg srcB);
 Instr add(Reg dst, Reg srcA, int n);
+Instr fmul(Reg dst, RegOrImm const &srcA, RegOrImm const &srcB);
 Instr sub(Reg dst, Reg srcA, int n);
 Instr sub(Reg dst, int n, Reg srcA);
 Instr shr(Reg dst, Reg srcA, int n);
@@ -59,8 +60,9 @@ Instr label(Label in_label);
 //
 Instr::List recip(Var dst, Var srcA);
 Instr::List recipsqrt(Var dst, Var srcA);
-Instr::List bexp(Var dst, Var srcA);
-Instr::List blog(Var dst, Var srcA);
+Instr::List bexp(Var dst, RegOrImm const &srcA);
+Instr::List bexp_e(Var dst, RegOrImm const &srcA);
+Instr::List blog(Reg dst, RegOrImm const &srcA);
 
 Instr recv(Reg dst);
 

@@ -70,6 +70,8 @@ public:
 		A_MOV,
 		A_EXP,
 		A_RECIP,
+
+		A_LOG
   };
 
   ALUOp() = default;

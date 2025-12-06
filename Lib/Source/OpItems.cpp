@@ -25,16 +25,19 @@ std::vector<OpItem> m_list = {
   {BNOT,   "~",        false, ALUOp::NONE,     ALUOp::A_BNOT, false, 1},
 
   // v3d-specific
-  {FFLOOR, "ffloor",    true, ALUOp::A_FFLOOR, ALUOp::NONE,   true},
-  {SIN,    "sin",       true, ALUOp::A_FSIN,   ALUOp::NONE,   true},  // also SFU function
+  {FFLOOR, "ffloor",    true, ALUOp::A_FFLOOR, ALUOp::NONE,   true, 1},
+  {SIN,    "sin",       true, ALUOp::A_FSIN,   ALUOp::NONE,   true, 1},  // also SFU function
   {TIDX,   "tidx",     false, ALUOp::NONE,     ALUOp::A_TIDX, true, 0},
   {EIDX,   "eidx",     false, ALUOp::NONE,     ALUOp::A_EIDX, true, 0},
 
   // SFU functions
-  {RECIP,     "recip",     true, ALUOp::NONE,     ALUOp::NONE},
-  {RECIPSQRT, "recipsqrt", true, ALUOp::NONE,     ALUOp::NONE},
-  {EXP,       "exp",       true, ALUOp::NONE,     ALUOp::NONE},
-  {LOG,       "log",       true, ALUOp::NONE,     ALUOp::NONE}
+  {RECIP,     "recip",     true, ALUOp::NONE,  ALUOp::NONE, false, 1},
+  {RECIPSQRT, "recipsqrt", true, ALUOp::NONE,    ALUOp::NONE},
+  {EXP,       "exp",       true, ALUOp::A_EXP,   ALUOp::NONE, false, 1},
+  {LOG,       "log",       true, ALUOp::NONE,   ALUOp::NONE, false, 1},
+
+	// Derived instructions
+  {EXP_E,     "exp_e",     true, ALUOp::NONE,    ALUOp::NONE, false, 1},
 };
 
 }  // anon namespace
@@ -69,7 +72,7 @@ int OpItem::num_params() const {
 
 
 ALUOp::Enum OpItem::aluop_float() const {
-  assertq(m_aluop_float != ALUOp::NONE, "ALU Op float not defined for OpItem");
+  assertq(m_aluop_float != ALUOp::NONE, "ALU Op float not defined for OpItem", true);
   return m_aluop_float;
 }
 
@@ -109,19 +112,21 @@ std::string OpItem::dump() const {
 }
 
 
-///////////////////////////////////////////////////////////////////////////////
-// Class OpItems
-///////////////////////////////////////////////////////////////////////////////
+namespace {
 
-OpItem const *OpItems::find(OpId id) {
+OpItem const *find(OpId id) {
   for (auto &it : m_list) {
     if (it.tag == id) return &it;
   }
   return nullptr;
 }
 
+} // anon namespace
 
-OpItem const &OpItems::get(OpId id) {
+
+namespace OpItems {
+
+OpItem const &get(OpId id) {
   OpItem const *item = find(id);
   assert(item != nullptr);
   return *item;
@@ -131,8 +136,8 @@ OpItem const &OpItems::get(OpId id) {
 /**
  * Translate source operator to target opcode
  */
-ALUOp::Enum OpItems::opcode(Op const &op) {
-  auto const *item = OpItems::find(op.op);
+ALUOp::Enum opcode(Op const &op) {
+  auto const *item = find(op.op);
 
   if (item == nullptr) {
     if (op.type == BaseType::FLOAT) {
@@ -157,6 +162,8 @@ ALUOp::Enum OpItems::opcode(Op const &op) {
     return item->aluop_int();
   }
 }
+
+} // namespace OpItems
 
 }  // namespace V3DLib
 

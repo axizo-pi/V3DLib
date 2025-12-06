@@ -29,6 +29,7 @@ enum OpId {
   RECIP,
   RECIPSQRT,
   EXP,
+  EXP_E,
   LOG,
 
   // Other combined operators

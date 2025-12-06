@@ -139,6 +139,8 @@ std::string ALUOp::dump() const {
     case M_V8SUBS:  return "m_subsatb";
     case M_ROTATE:  return "rotate";
 
+    case A_LOG:     return "log";
+
     // v3d-specific
     case A_TIDX:    return "tidx";
     case A_EIDX:    return "eidx";
@@ -152,7 +154,7 @@ std::string ALUOp::dump() const {
     case A_RECIP:   return "recip";
 
     default:
-      assertq(false, "pretty(): Unknown ALU opcode", true);
+      assertq(false, "ALUOp::dump(): Unknown ALU opcode", true);
       return "";
   }
 }

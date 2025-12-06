@@ -221,6 +221,7 @@ FloatExpr max(FloatExpr a, FloatExpr b)       { return mkFloatApply(a, Op(MAX, F
 FloatExpr recip(FloatExpr x)     { return mkFloatApply(x, Op(RECIP, FLOAT)); }
 FloatExpr recipsqrt(FloatExpr x) { return mkFloatApply(x, Op(RECIPSQRT, FLOAT)); }
 FloatExpr exp(FloatExpr x)       { return mkFloatApply(x, Op(EXP, FLOAT)); }
+FloatExpr exp_e(FloatExpr x)     { return mkFloatApply(x, Op(EXP_E, FLOAT)); }
 FloatExpr log(FloatExpr x)       { return mkFloatApply(x, Op(LOG, FLOAT)); }
 
 
