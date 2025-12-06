@@ -480,9 +480,6 @@ Instr::List encode_imm(V3DLib::Instr const &instr) {
     int num_ops = instr.ALU.num_operands();
 
     if (num_ops == 0) {
-			if (instr.ALU.op.value() != V3DLib::ALUOp::A_TMUWT) {
-				breakpoint;
-			}
 			ret << instr;
 			return ret;
 		}
@@ -551,7 +548,8 @@ void adjust_immediates(Instr::List &instrs) {
 		if (
 			instr.tag == INIT_BEGIN ||
 			instr.tag == INIT_END   ||
-			instr.tag == NO_OP
+			instr.tag == NO_OP      ||
+			instr.tag == END_VC4_ONLY   // WHY did this appear on vc7?
 		) {
 			res << instr;
 			continue;

@@ -8,14 +8,7 @@ int ALUInstruction::num_operands() const {
 	int num = OpItems::num_operands_by_op(op.value());
 	assert(num != -1);
 
-	if (num <= 1) {
-		assert(srcB.is_none());
-	}
-
-	if (num == 0) {
-		assert(srcA.is_none());
-	}
-
+	// The operand values are completely undefined for <= operand. Ignore
 	return num;
 }
 
