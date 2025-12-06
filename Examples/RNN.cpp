@@ -55,20 +55,19 @@ float frand() {
     srand (static_cast <unsigned> (time(0)));
     did_init = true;
   }
-
+/*
   // Generate a number from 0.0 to 1.0, inclusive.
   float r = static_cast <float> (rand()) / static_cast <float> (RAND_MAX);
 
-/*
   // Generate a number from 0.0 to some arbitrary float, X
   const float X = 1.0f;
-  float r2 = static_cast <float> (rand()) / (static_cast <float> (((float) RAND_MAX)/X));
+  float r = static_cast <float> (rand()) / (static_cast <float> (((float) RAND_MAX)/X));
+*/
 
   // Generate a number from some arbitrary LO to some arbitrary HI:
-  const float LO = 0.0f;
-  const float HI = 1.0f;
-  float r3 = LO + static_cast <float> (rand()) /( static_cast <float> (((float) RAND_MAX)/(HI-LO)));
-*/
+  const float LO = -1.0f;
+  const float HI =  1.0f;
+  float r = LO + static_cast <float> (rand()) /( static_cast <float> (((float) RAND_MAX)/(HI-LO)));
 
   return r;
 }
@@ -91,7 +90,8 @@ float sigmoid(float x) {
 
 void scalar_sigmoid(Float::Array &vec, Float::Array const &bias, Float::Array &output) {
   for (int h = 0; h < (int) vec.size(); ++h) {
-		output[h] = sigmoid(vec[h] + bias[h]); 
+		//output[h] = sigmoid(vec[h] + bias[h]); 
+		output[h] = std::exp(bias[h]);
   }
 }
 
@@ -115,13 +115,22 @@ void run_scalar(Float::Array const &vec, Float::Array const &mat, Float::Array &
 }
 
 
+template<int const N>
 void kernel_sigmoid(Float::Ptr in, Float::Ptr bias, Float::Ptr out) {
-	Float x = *in;
 
-	x += *bias;
-	x = (1.0/(1.0 + exp(-1.0*x)));
+  for (int h = 0; h < N; ++h) {
+		Float x = *in;
 
-	*out = x;
+		x = *bias;
+		//x = (1.0/(1.0 + exp(-1.0*x)));
+		Float ret = exp(x);
+
+		*out = ret;
+
+		in.inc();
+		bias.inc();
+		out.inc();
+	}
 }
 
 
@@ -184,6 +193,21 @@ void outer_product(Float::Ptr left, Float::Ptr right, Float::Ptr out_matrix) {
 }
 
 
+template<int const N> // length of input vectors, in blocks of 16
+void vector_sub(Float::Ptr left, Float::Ptr right, Float::Ptr out) {
+	Float tmp;
+
+  for (int i = 0; i < N; ++i) {
+		tmp = *left - *right; 
+		*out = tmp;
+
+		left.inc();
+		right.inc();
+		out.inc();
+	}
+}
+
+
 std::string vector_dump(Float::Array const &src, int size, int start_index = 0) {
 	assert(size <= (int) src.size());
 	std::string buf;
@@ -235,30 +259,144 @@ void test_outer_product(BaseKernel &op) {
 }
 
 
+
+/**
+ * size is in multiples of 16
+ */
+template<int const size>
+struct vector {
+	vector(vector &rhs) {
+		*this = rhs;
+
+		init_static();
+	}
+
+	vector() : 
+		m_size(16*size)
+	{
+		if (m_size < 0) {
+			cerr << "vector ctor: size must be positive" << thrw;
+		}
+		m_arr.reset(new Float::Array(m_size));
+
+		init_static();
+	}
+
+
+	Float::Array &arr() {
+		assert(m_arr != nullptr);
+		return *m_arr;
+	}
+
+	Float::Array const &arr() const {
+		assert(m_arr != nullptr);
+		return *m_arr;
+	}
+
+
+	void rand() {
+  	frand_array(arr());
+	}
+
+	void set(float init_val) {
+		auto &r = arr();
+
+		for (int i =0; i < m_size; ++i) {
+			r[i] = init_val;
+		}
+	}
+
+
+	Float::Array &operator &() {
+		assert(m_arr != nullptr);
+		return (*m_arr);
+	}
+
+	vector operator-(vector &rhs) {
+		assert(m_size == rhs.m_size);
+		assert(m_arr != nullptr);
+		assert(rhs.m_arr != nullptr);
+
+		vector ret;
+		assert(ret.m_size == m_size);
+
+		m_sub->load(&arr(), &rhs.arr(), &ret.arr()).run();
+
+		return ret;
+	}
+
+
+	vector &operator=(vector &rhs) {
+		assert(rhs.m_arr != nullptr);
+
+		m_size = rhs.m_size;
+		m_arr.reset(rhs.m_arr.release());
+
+		assert(rhs.m_arr == nullptr);
+		return *this;
+	}
+
+
+	std::string dump() const {
+	 	return vector_dump(arr(), m_size);
+	}
+
+
+private:
+	int m_size = 0;
+	std::unique_ptr<Float::Array> m_arr;
+
+	// TODO: should probably clean this up
+	// For now, it works
+	static BaseKernel *m_sub;
+
+	void init_static() {
+		if (m_sub == nullptr) {
+			m_sub = new BaseKernel(compile_b(vector_sub<size>, settings));
+		}
+	}
+
+};
+
+template<int const size>
+BaseKernel *vector<size>::m_sub = nullptr;
+
+
+void test_vector() {
+	vector<2> a_vec; a_vec.set(3);
+	vector<2> b_vec; b_vec.set(-7);
+	auto c_vec = a_vec - b_vec;
+ 	warn << "a_vec: " << a_vec.dump();
+ 	warn << "sub: " << c_vec.dump();
+}
+
+
+template<int const n_size>
 struct model {
-	model(int n_size, int m_size) :
-		w1(n_size*m_size),
-		bias1(n_size),
-		z1(n_size),
-		a1(n_size),
+	model(int m_size) :
+		w1(16*n_size*m_size),
+		z1(16*n_size),
+		a1(16*n_size),
 
-	 	w2(n_size*m_size),
-		bias2(n_size),
-		z2(n_size),
-		a2(n_size),
+	 	w2(16*n_size*m_size),
+		bias2(16*n_size),
+		z2(16*n_size),
+		a2(16*n_size),
+		s_tmp(16*n_size),
+		s_a2(16*n_size),
 
-  	k(compile(kernel<M, N>, settings)),
-		sigmoid(compile_b(kernel_sigmoid, settings)),
-		op(compile(outer_product<2>, settings))
+  	k(compile(kernel<M, n_size>, settings)),
+		sigmoid(compile(kernel_sigmoid<n_size>, settings)),
+		op(compile(outer_product<n_size>, settings))
 	{
   	frand_array(w1);
-  	frand_array(bias1);
   	frand_array(w2);
   	frand_array(bias2);
+		//bias1.rand();
+		bias1.set(3);
 	}
 
   Float::Array w1;
-  Float::Array bias1;
 	Float::Array z1;
 	Float::Array a1;
 
@@ -267,28 +405,40 @@ struct model {
 	Float::Array z2;
 	Float::Array a2;
 
+	// Values for scalar output
+	Float::Array s_tmp;
+	Float::Array s_a2;
+
+  vector<n_size> bias1;
+
 	BaseKernel k;
 	BaseKernel sigmoid;
 	BaseKernel op;
 
 	void forward(Float::Array &input) {
+		const int local_N = 32;
+
     Timer timer("Matrix mult");
 
-  	k.load(&input, &w1, &z1);
-    k.run();
-  	//run_scalar(input, k_model.w1, k_model.z1);
 
-		sigmoid.load(&z1, &bias1, &a1);
-		sigmoid.run();
-		//scalar_sigmoid(k_model.z1, k_model.bias1, s_model.a1);
 
-  	k.load(&a1, &w2, &z2);
-    k.run();
+  	k.load(&input, &w1, &z1).run();
+  	// run_scalar(input, w1, s_tmp);
+  	// warn << "scalar z1: " << vector_dump(s_tmp, local_N);
+  	// warn << "kernel z1: " << vector_dump(z1, local_N);
+
+  	// warn << "bias: " << bias1.dump();
+
+		sigmoid.load(&z1, &bias1.arr(), &a1).run();
+		scalar_sigmoid(z1, bias1.arr(), s_tmp);
+  	warn << "scalar sigmoid: " << vector_dump(s_tmp, local_N);
+  	warn << "kernel sigmoid: " << vector_dump(a1, local_N);
+
+  	k.load(&a1, &w2, &z2).run();
   	//run_scalar(k_model.a1, k_model.w2, s_model.z2);
 
-		sigmoid.load(&z2, &bias2, &a2);
-		sigmoid.run();
-		//scalar_sigmoid(k_model.z2, k_model.bias2, s_model.a2);
+		sigmoid.load(&z2, &bias2, &a2).run();
+		scalar_sigmoid(z2, bias2, s_a2);
 
     timer.end();
 
@@ -307,14 +457,8 @@ int main(int argc, const char *argv[]) {
 
   settings.init(argc, argv);
 
-	model s_model(16*N, M);
-	model k_model(16*N, M);
-
-//	s_model.x.copyFrom(k_model.x);
-	s_model.w1 = k_model.w1;
-	s_model.bias1 = k_model.bias1;
-	s_model.w2 = k_model.w2;
-	s_model.bias2 = k_model.bias2;
+	//model s_model(16*N, M);
+	model<16> k_model(M);
 
   //warn << "scalar w2: " << vector_dump(s_model.w2, local_N);
   //warn << "kernel w2: " << vector_dump(k_model.w2, local_N);
@@ -324,19 +468,19 @@ int main(int argc, const char *argv[]) {
 	Float::Array label(16*N);
 	init_input(label, labels[0], 3);
 
-	//test_outer_product(k_model.op);
+	// test_outer_product(k_model.op);
+	// test_vector();
 
 	k_model.forward(input);
 
 	/*
-  warn << "scalar z1: " << vector_dump(s_model.z1, local_N);
   warn << "kernel z1: " << vector_dump(k_model.z1, local_N);
   warn << "Scalar a1: " << vector_dump(s_model.a1, local_N);
   warn << "kernel a1: " << vector_dump(k_model.a1, local_N);
   warn << "scalar z2: " << vector_dump(s_model.z2, local_N);
   warn << "kernel z2: " << vector_dump(k_model.z2, local_N);
 	*/
-  warn << "Scalar a2: " << vector_dump(s_model.a2, local_N);
+  warn << "Scalar a2: " << vector_dump(k_model.s_a2, local_N);
   warn << "kernel a2: " << vector_dump(k_model.a2, local_N);
 
   return 0;

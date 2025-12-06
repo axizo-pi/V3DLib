@@ -1,6 +1,7 @@
 #ifndef _V3D_KERNEL_PARAMS_H_
 #define _V3D_KERNEL_PARAMS_H_
 
+#include "Source/Complex.h"
 #include "Source/Float.h"
 
 namespace V3DLib {
@@ -91,7 +92,6 @@ template <typename T, typename ...t> bool ppassParam(
 	return ret & ppassParam(uniforms, typelist, index, x...);
 }
 
-/*
 template <typename ...t> bool ppassParam(
 	IntList &uniforms,
 	std::vector<std::size_t> &typelist,
@@ -116,7 +116,6 @@ template <typename ...t> bool ppassParam(
 
 	return ret & ppassParam(uniforms, typelist, index, x...);
 }
-*/
 
 }  // namespace V3DLib
 
