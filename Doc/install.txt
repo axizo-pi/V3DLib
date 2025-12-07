@@ -1,0 +1,71 @@
+Pre: Debian 12 Boookworm on SD card
+
+NOTE: Debian 13 Trixie doesn't start up!
+
+============================================
+
+# From pi5-1:
+
+ssh-copy-id wim@silke
+ssh silke
+
+# on silke:
+
+sudo raspi-config
+# Select 5. Localization Options
+# Select Locale
+# Unselect en_GB.UTF-8 UTF-8
+# Select en_US.UTF-8 UTF-8
+# <Ok>
+# Again select en_US.UTF-8
+# <Ok>
+# <Finish>
+
+
+ssh-keygen
+ssh-copy-id wim@backup
+
+sudo apt-get update
+sudo apt-get upgrade
+sudo apt-get install -y git libraspberrypi-dev raspberrypi-kernel-headers expat libexpat1-dev libz-dev ruby mc vim cmake libdrm-dev
+
+mkdir ~/projects
+mkdir ~/tmp
+
+cd projects
+git clone ssh://backup/home/git_masters/V3DLib
+
+# for al git own repo's (previous list)
+cd V3DLib
+git config --global user.email wrijnders@gmail.com
+git config --global user.name  "Wim Rijnders"
+git config pull.rebase false
+git config --global core.editor "vim"
+git push --set-upstream origin master
+
+cd extern/userland
+cmake
+make
+cd ../../
+
+make all runTests
+
+============================================
+
+# Check distro
+lsb_release -a
+
+# Check 32/64 bits
+getconf LONG_BIT
+
+============================================
+NOTES
+=====
+
+Woodworm 32-bits gives following error:
+
+sudo ./obj/qpu-debug/bin/Hello
+
+mmap of bo 2 (offset 0x0000000100001000, size 8388608) failed
+Aborted
+
