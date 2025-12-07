@@ -223,6 +223,7 @@ Instr::List mov(Reg dst, RegOrImm const &src) {
 
 // Generation of bitwise instructions
 Instr bor(Reg dst, RegOrImm const &srcA, RegOrImm const &srcB)  { return genInstr(ALUOp::A_BOR, dst, srcA, srcB); }
+Instr bor(Reg dst, RegOrImm const &src)   { return genInstr(ALUOp::A_BOR, dst, src, src); }
 Instr band(Reg dst, Reg srcA, Reg srcB)   { return genInstr(ALUOp::A_BAND, dst, srcA, srcB); }
 Instr band(Reg dst, Reg srcA, int n)      { return genInstr(ALUOp::A_BAND, dst, srcA, n); }
 Instr bxor(Var dst, RegOrImm srcA, int n) { return genInstr(ALUOp::A_BXOR, dst, srcA, n); }
@@ -298,6 +299,9 @@ Instr li(Reg dst, Imm const &src) {
  
   return instr;
 }
+
+
+Instr itof(Reg dst, RegOrImm const &src) { return genInstr(ALUOp::A_ItoF, dst, src); }
 
 
 /**

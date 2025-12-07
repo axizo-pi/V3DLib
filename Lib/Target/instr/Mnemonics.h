@@ -39,6 +39,7 @@ extern Reg const TMUA;
 Reg rf(uint8_t index);
 
 Instr bor(Reg dst, RegOrImm const &srcA, RegOrImm const &srcB);
+Instr bor(Reg dst, RegOrImm const &src);
 Instr band(Reg dst, Reg srcA, Reg srcB);
 Instr band(Reg dst, Reg srcA, int n);
 Instr bxor(Var dst, RegOrImm srcA, int n);
@@ -53,6 +54,7 @@ Instr sub(Reg dst, Reg srcA, int n);
 Instr sub(Reg dst, int n, Reg srcA);
 Instr shr(Reg dst, Reg srcA, int n);
 Instr li(Reg dst, Imm const &src);
+Instr itof(Reg dst, RegOrImm const &src);
 Instr branch(Label label);
 Instr label(Label in_label);
 

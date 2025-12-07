@@ -142,8 +142,6 @@ public:
   bool is_src(DestReg const &dst_reg) const;
   bool is_dst(DestReg const &dst_reg) const;
 
-  void alu_add_dst(Location const &dst); // public because needed in Mnemonics
-  bool alu_add_a(Source const &src);     // idem
 
   bool alu_add_set(Location const &dst, Source const &a, Source const &b);
   bool alu_mul_set(Location const &dst, Source const &a);
@@ -154,15 +152,20 @@ public:
 
   bool alu_set(V3DLib::Instr const &src_instr);
 
+  void alu_add_dst(Location const &dst);
+  bool alu_add_a(Source const &src);
+  bool alu_add_b(Source const &src);
+
+	//
 	// BaseSource implementation
+	//
   void alu_mul_dst(Location const &dst);
-  void alu_mul_a(BaseSource const &src);
-  void alu_mul_b(BaseSource const &src);
 	bool alu_mul_a_safe(BaseSource const &src);
 	bool alu_mul_b_safe(BaseSource const &src);
+  void alu_mul_a(BaseSource const &src);
+  void alu_mul_b(BaseSource const &src);
 
 private:
-  bool alu_add_set_b(Source const &src);
   bool alu_mul_a(Source const &src);
   bool alu_mul_set_b(Source const &src);
 
@@ -212,7 +215,7 @@ private:
   bool raddr_a_is_safe(Location const &loc, CheckSrc check_src) const;
   bool raddr_b_is_safe(Location const &loc, CheckSrc check_src) const;
 
-	bool alu_set_src(Source const &src, v3d_qpu_input &input, CheckSrc check_src);
+	bool alu_set_src(Source const &src, v3d_qpu_input &dst, CheckSrc check_src);
 
 //
 // vc7: support for converting acc's to rf'
@@ -240,6 +243,11 @@ private:
 	bool m_mul_dst_is_reg = false;
 	// sig_addr doesn't need a special bool, sig_magic does the job
 };
+
+
+bool transfer_alu_add_sources(Instr const &src, Instr &dst);
+bool convert_alu_op_to_mul_op(v3d_qpu_mul_op &mul_op, Instr const &add_instr);
+bool alu_to_mul_alu(Instr const &src, Instr &dst);
 
 }  // instr
 

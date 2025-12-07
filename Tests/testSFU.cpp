@@ -10,28 +10,28 @@ namespace {
 float PI = 3.14159f;
 
 void sfu(Float x, Float::Ptr r) {
-  *r = 0.0f;                 r += 16;
-  *r = 2.0f*x;               r += 16;  // Float mult
-  *r = 2*x;                  r += 16;  // Int mult
+  *r = 0.0f;                 r.inc();
+  *r = 2.0f*x;               r.inc();  // Float mult
+  *r = 2*x;                  r.inc();  // Int mult
 
   Float var = -2.0f;
-  *r = var*x;                r += 16;  // Float mult from var
+  *r = var*x;                r.inc();  // Float mult from var
 
 	// Prefixes to avoid conflicts with lib functions
-  *r = V3DLib::exp(3.0f);    r += 16;
-  *r = V3DLib::exp(x);       r += 16;
+  *r = V3DLib::exp(3.0f);    r.inc();
+  *r = V3DLib::exp(x);       r.inc();
 
-  *r = V3DLib::recip(x);     r += 16;
-  *r = V3DLib::recipsqrt(x); r += 16;
-  *r = V3DLib::log(x);       r += 16;
-  *r = V3DLib::exp_e(1);     r += 16;
+  *r = V3DLib::recip(x);     r.inc();
+  *r = V3DLib::recipsqrt(x); r.inc();
+  *r = V3DLib::log(x);       r.inc();
+  *r = V3DLib::exp_e(1);     r.inc();
   *r = V3DLib::exp_e(x);
 }
 
 
 void check(float val, Float::Array &results, double precision) {
-  REQUIRE(results[0] == 0.0f);
-  REQUIRE(results[16] == 2*val);
+  REQUIRE(results[0]    == 0.0f);
+  REQUIRE(results[16]   == 2*val);
   REQUIRE(results[16*2] == 2*val);
   REQUIRE(results[16*3] == -2*val);
   REQUIRE(abs(results[ 16*4] - 8.0)           <   precision);
@@ -65,7 +65,7 @@ TEST_CASE("Test SFU functions [sfu]") {
   Float::Array results(16*N);
 
   auto k = compile(sfu);
-  //k.pretty("SFU.txt");
+  k.dump("SFU.txt");
 
   INFO("Running qpu");
   //

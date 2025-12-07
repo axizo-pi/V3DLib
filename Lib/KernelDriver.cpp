@@ -38,40 +38,6 @@ void title(FILE *f, std::string const &in_title) {
   fprintf(f, ::title(in_title).c_str());
 }
 
-
-/**
- * Emit source code
- */
-void print_source_code(FILE *f, Stmts const &body) {
-  if (f == nullptr) {
-    f = stdout;
-  }
-
-  title(f, "Source code");
-
-  if (body.empty()) {
-    fprintf(f, "<No source code to print>\n");
-  } else {
-    fprintf(f, pretty(body).c_str());
-  }
-
-  fprintf(f, "\n");
-  fflush(f);
-}
-
-
-void print_target_code(FILE *f, Instr::List const &code) {
-  title(f, "Target code");
-
-  if (code.empty()) {
-    fprintf(f, "<No target code to print>\n");
-  } else {
-    fprintf(f, code.mnemonics(true).c_str());
-  }
-  fprintf(f, "\n");
-  fflush(f);
-}
-
 }  // anon namespace
 
 
@@ -189,28 +155,31 @@ Stmts &KernelDriver::sourceCode() {
 *
 * @param filename  if specified, print the output to this file. Otherwise, print to stdout
 */
-void KernelDriver::dump(char const *filename, bool output_qpu_code) {
-  FILE *f = open_file(filename, "pretty");
-  if (f == nullptr) return;
+std::string KernelDriver::dump(bool output_qpu_code) {
+	std::string ret;
 
   if (has_errors()) {
-    fprintf(f, "=== There were errors during compilation, the output here is likely incorrect or incomplete  ===\n");
-    fprintf(f, "=== Encoding and displaying output as best as possible                                       ===\n");
-    fprintf(f, "\n\n");
+    ret << "=== There were errors during compilation, the output here is likely incorrect or incomplete  ===\n"
+        << "=== Encoding and displaying output as best as possible                                       ===\n"
+        << "\n\n";
   }
-
-  print_source_code(f, m_body);
-  print_target_code(f, m_targetCode);
 
   if (output_qpu_code) {
-    emit_opcodes(f);
+  	ret << "Opcodes for " << kernel_type_str() << "\n"
+    	  << "===============\n"
+        << emit_opcodes()
+  			<< "\n";
   }
 
-  if (filename != nullptr) {
-    assert(f != nullptr);
-    assert(f != stdout);
-    fclose(f);
-  }
+  ret << "Source for " << kernel_type_str() << "\n"
+      << "===============\n"
+			<< m_body.dump()
+      << "\n"
+  		<< "Target for " << kernel_type_str() << "\n"
+      << "===============\n"
+      << m_targetCode.mnemonics(true);
+
+	return ret;
 }
 
 

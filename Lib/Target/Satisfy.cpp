@@ -386,8 +386,7 @@ bool encode_float(Instr::List &ret, Reg dst, float value) {
 	Instr::List tmp;
   int rep_value;
 
-	Reg r1(VarGen::fresh());  // temp value
-
+	// Do known negative small imm values
   if (value < 0 && SmallImm::float_to_opcode_value(-value, rep_value)) {
     std::string cmt;
     cmt << "Load neg float small imm " << value;
@@ -396,26 +395,42 @@ bool encode_float(Instr::List &ret, Reg dst, float value) {
 		tmp << li(dst, -value).comment(cmt)
         << fsub(dst, 0, dst);                  // Works because float zero is 0x0
 
-  } else {
-    // Do the full blunt int conversion
-		//warn << "encode_float doing blunt conversion: " << value;
-
-    int int_value = *((int *) &value);
-    if (encode_int_immediate(ret, r1, int_value)) {
-      std::string cmt;
-      cmt << "Load full float imm " << value;
-
-      tmp << mov(dst, r1);          // Result is int but will be handled as float downstream
-			tmp.front().comment(cmt);
-
-    } else {
-      return false;
-    }
+		ret << tmp;
+  	return true;
   }
 
-	// warn << "encode_float ret:\n" << tmp.dump();
-	ret << tmp;
-  return true;
+	// Try to convert from int
+	if ((float) ((int) value) == value) {
+  	if (SmallImm::int_to_opcode_value((int) value, rep_value)) {
+			warn << "encode_float: can load " << value << " as integer";
+    
+			std::string cmt;
+    	cmt << "Load float from int " << value;
+
+			tmp << li(dst, (int) value).comment(cmt)
+      	  << itof(dst, dst);
+
+			ret << tmp;
+	  	return true;
+		}
+	}
+
+  // Do the full blunt int conversion
+	Reg r1(VarGen::fresh());  // temp value
+
+  int int_value = *((int *) &value);
+  if (encode_int_immediate(ret, r1, int_value)) {
+    std::string cmt;
+    cmt << "Load full float imm " << value;
+
+    tmp << mov(dst, r1);          // Result is int but will be handled as float downstream
+	  tmp.front().comment(cmt);
+
+	  ret << tmp;
+  	return true;
+  }
+
+  return false;
 }
 
 

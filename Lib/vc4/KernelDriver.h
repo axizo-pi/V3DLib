@@ -24,7 +24,7 @@ private:
   void compile_intern() override;
   void invoke_intern(int numQPUs, IntList &params) override;
 
-  void emit_opcodes(FILE *f) override;
+	std::string emit_opcodes() override;
 };
 
 }  // namespace vc4

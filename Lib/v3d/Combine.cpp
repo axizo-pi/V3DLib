@@ -191,45 +191,6 @@ bool add_register_conflict(Instr const &top, Instr const &bottom, bool check_sur
 }
 
 
-/**
- * Find corresponding mul op for a given add op
- *
- * @return true if found, false otherwise
- */
-bool convert_alu_op_to_mul_op(v3d_qpu_mul_op &mul_op, v3d::instr::Instr const &add_instr) {
-	// Op's common to both vc6 and vc7
-  switch (add_instr.alu.add.op) {
-    case V3D_QPU_A_OR: {
-			if (Platform::compiling_for_vc7()) {
-				assert(add_instr.alu.add.a.mux == add_instr.alu.add.b.mux);
-			} else {
-				assert(add_instr.alu.add.a.raddr == add_instr.alu.add.b.raddr);
-			}
-
-      mul_op = V3D_QPU_M_MOV;
-      return true;
-		}
-
-    case V3D_QPU_A_ADD:
-      mul_op = V3D_QPU_M_ADD;
-      return true;
-
-    case V3D_QPU_A_SUB:
-      mul_op = V3D_QPU_M_SUB;
-      return true;
-
-		// vc7 - This broke Tri previously
-    case V3D_QPU_A_MOV:
-      mul_op = V3D_QPU_M_MOV;
-      return true;
-
-    default: break;
-  }
-
-  return false;
-}
-
-
 bool can_equal(Instr const &top, Instr const &bottom) {
   if (add_register_conflict(top, bottom, false)) return false;
 /*
@@ -250,91 +211,6 @@ bool can_surpass(Instr const &top, Instr const &bottom) {
 }
 
 } // anon namespace
-
-
-/**
- * Combine two instructions to an add/mul instruction.
- *
- * The in_instr must either be an add or mul instruction, not both.
- * The dst must be an add instruction only.
- *
- * There are two options:
- *   1. the add instruction in in_instr can be translated to a mul instruction
- *   2. in_instr contains only a mul instruction which can be moved to dst
- *
- * There are pleny of limitations which are taken into account here.
- *
- * @param in_instr instruction that will be combined
- * @param dst      instruct that will contain the add and mul instruction (inshalla)
- *
- * @return true if combine succeeded, false otherwise
- */
-bool add_alu_to_mul_alu(Instr const &src, Instr &dst) {
-	// Perhaps TODO: change these assert's int 'if () return false'
-  assert((!src.add_nop() &&  src.mul_nop()) || (src.add_nop() && !src.mul_nop())); 
-
-  if (!dst.mul_nop()) return false; 
-
-  //
-  // Get used dst and src
-  //
-	BaseSource alu_add_a = src.alu_add_a();
-	BaseSource alu_add_b = src.alu_add_b();
-	BaseSource alu_mul_a = src.alu_mul_a();
-	BaseSource alu_mul_b = src.alu_mul_b();
-
-  if (src.mul_nop()) {  // Take the values from alu add
-    v3d_qpu_mul_op mul_op;
-    if (!convert_alu_op_to_mul_op(mul_op, src)) return false;  // False if no applicable translation add -> mul
-
-		if (!dst.alu_mul_b_safe(alu_add_b)) return false;
-		if (!dst.alu_mul_a_safe(alu_add_a)) return false;
-
-  	dst.alu.mul.op = mul_op;
-		auto dst_loc = src.add_alu_dst();
-  	dst.alu_mul_dst(*dst_loc);  // dst (waddr) is always safe
-  	dst.alu_mul_a(alu_add_a);
-  	dst.alu_mul_b(alu_add_b);
-  } else {                  // Take the values from alu mul
-		if (!dst.alu_mul_b_safe(alu_mul_b)) return false;
-		if (!dst.alu_mul_a_safe(alu_mul_a)) return false;
-
-    dst.alu.mul.op = src.alu.mul.op;
-		auto dst_loc = src.mul_alu_dst();
-  	dst.alu_mul_dst(*dst_loc);
-  	dst.alu_mul_a(alu_mul_a);
-  	dst.alu_mul_b(alu_mul_b);
-  }
-
-  if (src.mul_nop()) {
-    dst.alu.mul.output_pack = src.alu.add.output_pack;
-    dst.alu.mul.a.unpack    = src.alu.add.a.unpack;
-    dst.alu.mul.b.unpack    = src.alu.add.b.unpack;
-
-    dst.flags.mc  = src.flags.ac;
-    dst.flags.mpf = src.flags.apf;
-    dst.flags.muf = src.flags.auf;
-  } else {
-    dst.alu.mul.output_pack = src.alu.mul.output_pack;
-    dst.alu.mul.a.unpack    = src.alu.mul.a.unpack;
-    dst.alu.mul.b.unpack    = src.alu.mul.b.unpack;
-
-    dst.flags.mc  = src.flags.mc;
-    dst.flags.mpf = src.flags.mpf;
-    dst.flags.muf = src.flags.muf;
-  }
-
-  dst.header(src.header());
-  dst.comment(src.comment());
-
-/*
-	Log::warn << "  dst : " << dst.mnemonic(false);
-	if (!Platform::compiling_for_vc7()) {
-		Log::warn << "mul mux b:" << dst.alu.mul.b.mux  << ", raddr_b: " << dst.raddr_b;
-	}
-*/
-  return true;
-}
 
 
 namespace {
@@ -511,6 +387,20 @@ void remove_useless(Instructions &instr) {
         warn << "remove_useless detected move OR:\n"
              << "  cur: " << cur.mnemonic() << "\n"
              << "  nxt: " << nxt.mnemonic();
+
+				Instr tmp = nxt;
+				bool ret = transfer_alu_add_sources(cur, tmp);
+
+				if (ret) {
+					nxt = tmp;
+
+        	warn << "remove_useless combine move OR SUCCESS.\n"
+               << "  nxt: " << nxt.mnemonic();
+
+					cur.skip();
+				} else {
+        	warn << "remove_useless combine move OR FAIL\n";
+				}
       }
     }
   }
@@ -690,7 +580,7 @@ try {
       buf << "  " << k << ": " << ftop.mnemonic()    << "\n"
           << "  " << i << ": " << bottom.mnemonic();
 
-      if (add_alu_to_mul_alu(bottom, ftop)) {
+      if (alu_to_mul_alu(bottom, ftop)) {
 /*				
         warn << "combine: adding bottom to top succeeded.\n"
              << "Pre:\n"
