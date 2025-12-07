@@ -224,17 +224,23 @@ void init_input(Float::Array &input, float *a,  int n) {
 	}
 }
 
+namespace {
+	// Values for testing purposes
+
+	const int primes_size = 2*16;
+
+	float primes[primes_size]=
+	{ 2,	3,	5,	7,	11,	13,	17,	19,	23,	29,	31,	37,	41,	43,	47,	53,	59,	61,	67,	71,
+	 73,	79,	83,	89,	97,	101,	103,	107,	109,	113,	127,	131 //	137	139	149	151	157	163	167	173
+	};
+
+} // anon namespace
+
 
 /**
  * Separate test for outer product
  */
 void test_outer_product(BaseKernel &op) {
-
-	float primes[2*16]=
-	{ 2,	3,	5,	7,	11,	13,	17,	19,	23,	29,	31,	37,	41,	43,	47,	53,	59,	61,	67,	71,
-	 73,	79,	83,	89,	97,	101,	103,	107,	109,	113,	127,	131 //	137	139	149	151	157	163	167	173
-	};
-
 	Float::Array left_outer(2*16); 
 	init_input(left_outer, primes, 2*16);
 
@@ -257,27 +263,42 @@ void test_outer_product(BaseKernel &op) {
 }
 
 
-
 /**
- * size is in multiples of 16
+ * width is in multiples of 16
  */
-template<int const size>
-struct vector {
-	vector(vector &rhs) {
-		*this = rhs;
+template<int const Width, int const Height>
+struct matrix {
+	using Class = matrix<Width, Height>;
+
+	matrix() : 
+		m_width(16*Width),
+		m_height(Height)
+	{
+		if (m_width < 0) {
+			cerr << "vector ctor: width must be positive" << thrw;
+		}
+		if (m_height < 0) {
+			cerr << "vector ctor: height must be positive" << thrw;
+		}
+
+		m_arr.reset(new Float::Array(m_width*m_height));
 
 		init_static();
 	}
 
-	vector() : 
-		m_size(16*size)
-	{
-		if (m_size < 0) {
-			cerr << "vector ctor: size must be positive" << thrw;
-		}
-		m_arr.reset(new Float::Array(m_size));
 
+	matrix(matrix &rhs) {
+		*this = rhs;
 		init_static();
+	}
+
+
+	int width() const  { return m_width; }
+	int height() const { return m_height; }
+
+	Float::Array &operator &() {
+		assert(m_arr != nullptr);
+		return (*m_arr);
 	}
 
 
@@ -291,81 +312,209 @@ struct vector {
 		return *m_arr;
 	}
 
-
 	void rand() {
   	frand_array(arr());
 	}
 
+
 	void set(float init_val) {
 		auto &r = arr();
 
-		for (int i =0; i < m_size; ++i) {
+		for (int i = 0; i < m_width*m_height; ++i) {
 			r[i] = init_val;
 		}
 	}
 
 
-	Float::Array &operator &() {
-		assert(m_arr != nullptr);
-		return (*m_arr);
-	}
-
-	vector operator-(vector &rhs) {
-		assert(m_size == rhs.m_size);
-		assert(m_arr != nullptr);
-		assert(rhs.m_arr != nullptr);
-
-		vector ret;
-		assert(ret.m_size == m_size);
-
-		m_sub->load(&arr(), &rhs.arr(), &ret.arr()).run();
-
-		return ret;
-	}
-
-
-	vector &operator=(vector &rhs) {
-		assert(rhs.m_arr != nullptr);
-
-		m_size = rhs.m_size;
-		m_arr.reset(rhs.m_arr.release());
-
-		assert(rhs.m_arr == nullptr);
+	Class &operator=(Class &rhs) {
+		transfer(rhs);
 		return *this;
 	}
 
 
 	std::string dump() const {
-	 	return vector_dump(arr(), m_size);
+		assert(m_arr != nullptr);
+		std::string ret;
+
+		for (int h = 0; h < m_height; ++h) {
+		 	ret << h << ": " << vector_dump(*m_arr, m_width, h*m_width) << "\n";
+		}
+
+		return ret;
+	}
+
+protected:
+	void width(int rhs) { m_width = rhs; }
+
+	void transfer(Class &rhs) {
+		assert(rhs.m_arr != nullptr);
+
+		m_width  = rhs.m_width;
+		m_height = rhs.m_height;
+
+		m_arr.reset(rhs.m_arr.release());
+		assert(rhs.m_arr == nullptr);
+	}
+
+	std::unique_ptr<Float::Array> m_arr;
+
+private:
+	int m_width = 0;
+	int m_height = 0;
+
+	void init_static() {
+	}
+};
+
+
+/**
+ * size is in multiples of 16
+ */
+template<int const Size>
+struct vector : public matrix<Size,1> {
+	using Class = vector<Size>;
+	using Parent = matrix<Size,1>;
+
+	vector(vector &rhs) : Parent() {
+		*this = rhs;
+		init_static();
+	}
+
+	vector() : Parent() {
+		init_static();
+	}
+
+	//
+	// It's unfortunate that these are required
+	//
+	void set(float rhs) { Parent::set(rhs); }
+
+	
+	Float::Array &arr() {
+		assert(Parent::m_arr != nullptr);
+		return *Parent::m_arr;
+	}
+
+
+	// Would have really appreciated having the deleted out const in
+	Float::Array /*const*/ &arr() const {
+		assert(Parent::m_arr != nullptr);
+		return *Parent::m_arr;
+	}
+
+	// End unfortunate
+
+	void set(float *rhs, int in_size) {
+		assert(Parent::width() >= in_size);
+
+		auto &r = Parent::arr();
+
+		for (int i = 0; i < in_size; ++i) {
+			r[i] = rhs[i];
+		}
+
+		for (int i = in_size; i < Parent::width(); ++i) {
+			r[i] = 0;
+		}
+	}
+
+
+	float &operator[] (int index) {
+		assert(Parent::width() > index);
+
+		auto &r = Parent::arr();
+		return r[index];
+	}
+
+
+	vector operator-(vector &rhs) {
+		assert(Parent::width() == rhs.width());
+		assert(Parent::height() == 1);
+		assert(Parent::height() == rhs.height());
+
+		vector ret;
+		assert(ret.width() == Parent::width());
+
+		m_sub->load(&Parent::arr(), &rhs.arr(), &ret.arr()).run();
+
+		return ret;
+	}
+
+
+
+	vector &operator=(vector &rhs) {
+		Parent::transfer(rhs);
+		return *this;
+	}
+
+
+	std::string dump() const {
+	 	return vector_dump(Parent::arr(), Parent::width());
+	}
+
+
+	matrix<Size, 16*Size> outer(vector const &rhs) {
+		matrix<Size, 16*Size> ret;
+
+		m_op->load(&Parent::arr(), &rhs.arr(), &ret.arr()).run();
+
+		return ret;	
+	}
+
+
+	static BaseKernel &op_kernel() {
+		init_static();
+		return *m_op;
 	}
 
 
 private:
-	int m_size = 0;
-	std::unique_ptr<Float::Array> m_arr;
 
 	// TODO: should probably clean this up
 	// For now, it works
 	static BaseKernel *m_sub;
+	static BaseKernel *m_op;
 
-	void init_static() {
+	static void init_static() {
 		if (m_sub == nullptr) {
-			m_sub = new BaseKernel(compile_b(vector_sub<size>, settings));
+			m_sub = new BaseKernel(compile_b(vector_sub<Size>, settings));
+		}
+		if (m_op == nullptr) {
+			m_op = new BaseKernel(compile(outer_product<Size>, settings));
 		}
 	}
-
 };
+
 
 template<int const size>
 BaseKernel *vector<size>::m_sub = nullptr;
 
+template<int const size>
+BaseKernel *vector<size>::m_op = nullptr;
+
 
 void test_vector() {
+/*	
 	vector<2> a_vec; a_vec.set(3);
 	vector<2> b_vec; b_vec.set(-7);
 	auto c_vec = a_vec - b_vec;
  	warn << "a_vec: " << a_vec.dump();
  	warn << "sub: " << c_vec.dump();
+*/	
+	vector<2> a_vec; a_vec.set(primes, primes_size);
+	//warn << "a_vec: " << a_vec.dump();
+
+	vector<2> b_vec;
+
+	for (int i = 0; i < 2*16; ++i) {
+	  b_vec[i] = (float) (i + 1);
+	}
+
+	//warn << "b_vec: " << b_vec.dump();
+
+	auto result = a_vec.outer(b_vec);
+
+	warn << "result: " << result.dump();
 }
 
 
@@ -384,8 +533,7 @@ struct model {
 		s_a2(16*n_size),
 
   	k(compile(kernel<M, n_size>, settings)),
-		sigmoid(compile(kernel_sigmoid<n_size>, settings)),
-		op(compile(outer_product<n_size>, settings))
+		sigmoid(compile(kernel_sigmoid<n_size>, settings))
 	{
   	frand_array(w1);
   	frand_array(w2);
@@ -413,14 +561,11 @@ struct model {
 
 	BaseKernel k;
 	BaseKernel sigmoid;
-	BaseKernel op;
 
 	void forward(Float::Array &input) {
 		const int local_N = 32;
 
     Timer timer("Matrix mult");
-
-
 
   	k.load(&input, &w1, &z1).run();
   	// run_scalar(input, w1, s_tmp);
@@ -468,8 +613,8 @@ int main(int argc, const char *argv[]) {
 	Float::Array label(16*N);
 	init_input(label, labels[0], 3);
 
-	// test_outer_product(k_model.op);
-	// test_vector();
+	//test_outer_product(vector<2>::op_kernel());
+	//test_vector();
 
 	k_model.forward(input);
 
