@@ -426,7 +426,7 @@ void test_complex_dotvector() {
   REQUIRE(a.size() == b.size());
 
   auto k = compile(check_complex_dotvector<N>);
-  k.pretty("check_complex_dotvector.txt");
+  k.dump("check_complex_dotvector.txt");
   k.load(&b, &a, &result).run();
 
   for (int i = 0; i < (int) a.size(); i++) {
@@ -516,7 +516,7 @@ void test_complex_matrix_multiplication(
   }
 
   auto k = compile(kernels::matrix_mult_decorator(a, b, result), settings);
-  k.pretty("mult_complex_vc4.txt");
+  k.dump("mult_complex_vc4.txt");
   k.setNumQPUs(num_qpus);
   result.fill({-1.0f, -1.0f});
 
@@ -564,7 +564,7 @@ TEST_CASE("Test complex matrix algebra with varying sizes [matrix][complex]") {
     Complex::Array2D result(Dim);
 
     auto k = compile(kernels::matrix_mult_decorator(a, a, result));
-    k.pretty("obj/test/real_im_v3d.txt");
+    k.dump("obj/test/real_im_v3d.txt");
 
     //
     // Compare real only

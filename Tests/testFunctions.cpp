@@ -109,7 +109,7 @@ TEST_CASE("Test qpu sync [funcs][sync]") {
   signal.fill(0);
 
   auto k = compile(sync_kernel);
-  k.pretty("./obj/test/sync_kernel_v3d.txt");
+  k.dump("./obj/test/sync_kernel_v3d.txt");
   k.setNumQPUs(8);
   k.load(&result, &signal);
 

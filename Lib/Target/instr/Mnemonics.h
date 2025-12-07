@@ -48,6 +48,7 @@ Instr shl(Reg dst, Reg srcA, Reg srcB);
 Instr add(Reg dst, Reg srcA, Reg srcB);
 Instr add(Reg dst, Reg srcA, int n);
 Instr fmul(Reg dst, RegOrImm const &srcA, RegOrImm const &srcB);
+Instr fsub(Reg dst, RegOrImm const &srcA, RegOrImm const &srcB);
 Instr sub(Reg dst, Reg srcA, int n);
 Instr sub(Reg dst, int n, Reg srcA);
 Instr shr(Reg dst, Reg srcA, int n);

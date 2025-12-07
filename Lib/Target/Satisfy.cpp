@@ -394,7 +394,7 @@ bool encode_float(Instr::List &ret, Reg dst, float value) {
 
 		// Small Imm conversion happens downstream
 		tmp << li(dst, -value).comment(cmt)
-        << sub(dst, 0, dst);                   // Works because float zero is 0x0
+        << fsub(dst, 0, dst);                  // Works because float zero is 0x0
 
   } else {
     // Do the full blunt int conversion

@@ -1193,7 +1193,7 @@ TEST_CASE("FFT test with DFT [fft][test2][pass2]") {
       Complex::Array2D result_dft;
       Timer timer1("DFT compile time");
       auto k = compile(kernels::dft_decorator(a, result_dft));
-      k.pretty("obj/test/dft_compare_v3d.txt");
+      k.dump("obj/test/dft_compare_v3d.txt");
       timer1.end();
       //std::cout << "DFT kernel size: " << k.v3d_kernel_size() << std::endl;
       //std::cout << "combined " << compile_data.num_instructions_combined << " instructions" << std::endl;
@@ -1222,7 +1222,7 @@ TEST_CASE("FFT test with DFT [fft][test2][pass2]") {
       //Timer timer1("FFT compile time");
       fft_context.num_qpus = 8;
       auto k = compile(fft_kernel);
-      k.pretty("./obj/test/fft_v3d.txt", true);
+      k.dump("./obj/test/fft_v3d.txt", true);
       k.dump_compile_data("./obj/test/fft_dump_v3d.txt");
       //timer1.end();
       //std::cout << "FFT kernel size: " << k.v3d_kernel_size() << std::endl;

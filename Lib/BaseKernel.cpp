@@ -47,9 +47,9 @@ bool BaseKernel::has_errors() const {
 }
 
 
-void BaseKernel::pretty(const char *filename, bool output_qpu_code) {
+void BaseKernel::dump(const char *filename, bool output_qpu_code) {
   if (has_driver()) {
-    driver().pretty(filename, output_qpu_code);
+    driver().dump(filename, output_qpu_code);
   }
 }
 

@@ -279,6 +279,11 @@ Instr fmul(Reg dst, RegOrImm const &srcA, RegOrImm const &srcB) {
 }
 
 
+Instr fsub(Reg dst, RegOrImm const &srcA, RegOrImm const &srcB) {
+  return genInstr(ALUOp::A_FSUB, dst, srcA, srcB);
+}
+
+
 /**
  * Generate load-immediate instruction.
  */

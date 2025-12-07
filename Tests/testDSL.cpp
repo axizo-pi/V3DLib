@@ -516,7 +516,7 @@ TEST_CASE("Test specific operations in DSL [dsl][ops]") {
     k.load(&result);
 
     //k.dump_compile_data(false, "obj/test/int_ops_kernel_compile_data_v3d.txt");
-    k.pretty("obj/test/int_ops_kernel_v3d.txt", true);
+    k.dump("obj/test/int_ops_kernel_v3d.txt", true);
 
     k.run();
 
@@ -729,7 +729,7 @@ TEST_CASE("Initialization with index() on uniform pointers should work as expect
 
   SUBCASE("Test with TMU") {
     auto k = compile(offsets_kernel<Int, Int::Ptr>);
-    k.pretty("offsets_kernel.txt", true);
+    k.dump("offsets_kernel.txt", true);
 		//k.dump_compile_data(false, "offsets_kernel_compile_data.txt");
     reset();
     k.load(&result, &a).run();
@@ -1194,7 +1194,7 @@ TEST_CASE("Test sin/cos instructions [dsl][sincos]") {
   auto lib_neg_sin = lib_neg_sin_values(N);
 
   auto k = compile(sincos_kernel);
-  // k.pretty("sincos_kernel.txt");
+  // k.dump("sincos_kernel.txt");
   k.load(&result, N).run();
 
   float const hi_precision = 1.2e-3f;

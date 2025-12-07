@@ -437,7 +437,7 @@ TEST_CASE("Discrete Fourier Transform [dft]") {
     {
       Complex::Array2D result_tmp;  // Will be Dimx16, columns padded to 16 and only 1st relevant
       auto k = compile(kernels::matrix_mult_decorator(dft_matrix, input, result_tmp));
-      k.pretty("obj/test/dft_matrix_v3d.txt");
+      k.dump("obj/test/dft_matrix_v3d.txt");
 
       //std::cout << "result dimensions: (" << result_tmp.rows() << ", " << result_tmp.columns() << ")" << std::endl;
 

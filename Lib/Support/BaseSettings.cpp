@@ -18,7 +18,7 @@ void BaseSettings::process(BaseKernel &k) {
       assert(!name.empty());
       std::string code_filename = name + "_code.txt";
 
-      k.pretty(code_filename.c_str());
+      k.dump(code_filename.c_str());
     } else if (output_count == 1) {
       warning("Not outputting code more than once");
     }

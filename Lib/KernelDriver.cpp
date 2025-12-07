@@ -189,7 +189,7 @@ Stmts &KernelDriver::sourceCode() {
 *
 * @param filename  if specified, print the output to this file. Otherwise, print to stdout
 */
-void KernelDriver::pretty(char const *filename, bool output_qpu_code) {
+void KernelDriver::dump(char const *filename, bool output_qpu_code) {
   FILE *f = open_file(filename, "pretty");
   if (f == nullptr) return;
 

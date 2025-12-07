@@ -14,7 +14,7 @@ void sfu(Float x, Float::Ptr r) {
   *r = 2.0f*x;               r += 16;  // Float mult
   *r = 2*x;                  r += 16;  // Int mult
 
-  Float var = 2.0f;
+  Float var = -2.0f;
   *r = var*x;                r += 16;  // Float mult from var
 
 	// Prefixes to avoid conflicts with lib functions
@@ -33,7 +33,7 @@ void check(float val, Float::Array &results, double precision) {
   REQUIRE(results[0] == 0.0f);
   REQUIRE(results[16] == 2*val);
   REQUIRE(results[16*2] == 2*val);
-  REQUIRE(results[16*3] == 2*val);
+  REQUIRE(results[16*3] == -2*val);
   REQUIRE(abs(results[ 16*4] - 8.0)           <   precision);
   REQUIRE(abs(results[ 16*5] - exp2(val))     <   precision);  // Should be exact, but isn't
   REQUIRE(abs(results[ 16*6] - 1/val)         <   precision);

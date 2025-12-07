@@ -90,8 +90,7 @@ float sigmoid(float x) {
 
 void scalar_sigmoid(Float::Array &vec, Float::Array const &bias, Float::Array &output) {
   for (int h = 0; h < (int) vec.size(); ++h) {
-		//output[h] = sigmoid(vec[h] + bias[h]); 
-		output[h] = std::exp(bias[h]);
+		output[h] = sigmoid(vec[h] + bias[h]); 
   }
 }
 
@@ -121,11 +120,10 @@ void kernel_sigmoid(Float::Ptr in, Float::Ptr bias, Float::Ptr out) {
   for (int h = 0; h < N; ++h) {
 		Float x = *in;
 
-		x = *bias;
-		//x = (1.0/(1.0 + exp(-1.0*x)));
-		Float ret = exp(x);
+		x += *bias;
+		x = (1.0/(1.0 + exp_e(-1.0*x)));
 
-		*out = ret;
+		*out = x;
 
 		in.inc();
 		bias.inc();
@@ -394,6 +392,8 @@ struct model {
   	frand_array(bias2);
 		//bias1.rand();
 		bias1.set(3);
+
+		//sigmoid.dump("sigmoid.txt");
 	}
 
   Float::Array w1;

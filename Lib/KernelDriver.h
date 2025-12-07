@@ -34,7 +34,7 @@ public:
 
   Code const &code() const { return qpuCodeMem; }
 
-  void pretty(char const *filename = nullptr, bool output_qpu_code = true);
+  void dump(char const *filename = nullptr, bool output_qpu_code = true);
   std::string compile_info() const;
   void dump_compile_data(char const *filename) const;
 

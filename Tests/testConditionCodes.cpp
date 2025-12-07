@@ -484,9 +484,9 @@ TEST_CASE("Test if/where without loop [noloop][cond]") {
     Int::Array result(VEC_SIZE);
 
     auto k3 = compile(noloop_multif_kernel);
-    k3.pretty("obj/test/noloop_multif_v3d.txt");  // Keep enabled to avoid failing assertions, see below
+    k3.dump("obj/test/noloop_multif_v3d.txt");  // Keep enabled to avoid failing assertions, see below
 
-    // Fickle! Works always if k3.pretty(...) called above, otherwise *may* assert
+    // Fickle! Works always if k3.dump(...) called above, otherwise *may* assert
     // TODO examine this
     k3.load(&result, 0, 0);   run_qpu(result, k3, 6, expected_1);
 
@@ -516,7 +516,7 @@ TEST_CASE("Test multiple and/or [andor][cond]") {
 
     auto k = compile(andor_kernel);
     k.load(&result).run();
-    k.pretty("andor_kernel_v3d.txt");
+    k.dump("andor_kernel_v3d.txt");
     check_andor_result(result);
   }
 
@@ -525,7 +525,7 @@ TEST_CASE("Test multiple and/or [andor][cond]") {
     Float::Array result(width*height);
 
     auto k1 = compile(andor_where_kernel);
-    k1.pretty("obj/test/andor_where_kernel.txt");
+    k1.dump("obj/test/andor_where_kernel.txt");
     k1.load(&result, width, height).run();
     check_output(result, "where_qpu");
   }
