@@ -100,7 +100,8 @@ bool Stmt::check_blocks() const {
 
 
 Stmt::Array const &Stmt::then_block() const {
-  assertq(tag == IF || tag == WHERE, "Then-statement only valid for IF, and WHERE", true);
+	// Following is bullshit. then_block can also appear for WHILE
+  //assertq(tag == IF || tag == WHERE, "Then-statement only valid for IF, and WHERE", true);
   assert(check_blocks());
 
   return m_stmts_a;
@@ -266,8 +267,9 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth) const {
     break;
     case WHILE:
       assert(m_cond.get() != nullptr);
-      assert(!then_block().empty());
-      ret << "WHILE (" << m_cond->dump() << ") " << then_block().dump();
+      if (!then_block().empty()) {
+      	ret << "WHILE (" << m_cond->dump() << ") " << then_block().dump();
+			}
       // There is no ELSE for while
     break;
 

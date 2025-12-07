@@ -138,9 +138,6 @@ void KernelDriver::encode() {
 std::string KernelDriver::emit_opcodes() {
 	std::string ret;
 
-  ret << "Opcodes for vc4\n"
-  		<< "===============\n\n";
-
   encode();
 
   if (qpuCodeMem.empty()) {
@@ -148,29 +145,29 @@ std::string KernelDriver::emit_opcodes() {
 		return ret;
 	}
 
-		// dump_instr() is redirected to a file, make it first
-		char filename[256] = "V3DLib";
-		int fd =  mkstemp(filename);
-  	assert (fd != -1);
+  std::string filename = "vc4_code_tmp.txt";
 
-		FILE *f = fdopen(fd, "w");
-  	assert (f != nullptr);
+  //
+	// dump_instr() is redirected to a file, make it first
+  //
+  FILE *f = fopen(filename.c_str(), "w");
+ 	assert (f != nullptr);
 
-    dump_instr(f, qpuCodeMem.ptr(), qpuCodeMem.size());
+  dump_instr(f, qpuCodeMem.ptr(), qpuCodeMem.size());
 
-  	fclose(f);
+  fclose(f);
 
-		// Load redirected file int ret
-		std::ifstream file(filename);
-    assert(file.is_open());
+	// Load redirected file int ret
+	std::ifstream file(filename);
+  assert(file.is_open());
 
-    // Read the file line by line into a string
-    string line;
-    while (getline(file, line)) {
-        ret << line << "\n";
-    }
+  // Read the file line by line into a string
+  string line;
+  while (getline(file, line)) {
+    ret << line << "\n";
+  }
 
-    file.close();
+  file.close();
 
 	return ret;
 }
