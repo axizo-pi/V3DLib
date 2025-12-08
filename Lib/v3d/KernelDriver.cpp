@@ -946,7 +946,7 @@ void combine(Instructions &instructions) {
 
       v3d::instr::Instr dst = add_instr;
 
-      bool success = Combine::add_alu_to_mul_alu(mul_instr, dst);
+      bool success = Combine::alu_to_mul_alu(mul_instr, dst);
 
       if (success) {
 				Log::debug << "Converted: " << dst.mnemonic(false);
@@ -1156,22 +1156,18 @@ void KernelDriver::invoke_intern(int numQPUs, IntList &params) {
 }
 
 
-void KernelDriver::emit_opcodes(FILE *f) {
-  fprintf(f, "Opcodes for %s\n", kernel_type_str().c_str() );
-  fprintf(f, "===============\n\n");
+std::string KernelDriver::emit_opcodes() {
+	std::string ret;
 
   if (instructions.empty()) {
-    fprintf(f, "<No opcodes to print>\n");
+    ret << "<No opcodes to print>\n";
   } else {
-    // You could also print from the code SharedArray,
-    // but then you lose the comments.
     for (auto const &instr : instructions) {
-      fprintf(f, "%s\n", instr.mnemonic(true).c_str());
+      ret << instr.mnemonic(true) << "\n";
     }
   }
 
-  fprintf(f, "\n");
-  fflush(f);
+	return ret;
 }
 
 }  // namespace v3d

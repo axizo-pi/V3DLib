@@ -78,16 +78,20 @@ TEST_CASE("Test SFU functions [sfu]") {
 
   results.fill(0.0);
 
+	INFO("Testing 1.0f");
   k.load(1.0f, &results).run();
   //Log::warn << vector_dump(results);
   check(1.0f, results, precision);
 
+	INFO("Testing 1.1f");
   k.load(1.1f, &results).run();
   check(1.1f, results, precision);
 
+	INFO("Testing 2.5f");
   k.load(2.5f, &results).run();
   check(2.5f, results, precision);
 
+	INFO("Testing PI");
   k.load(PI, &results).run();
   check(PI, results, precision);
 

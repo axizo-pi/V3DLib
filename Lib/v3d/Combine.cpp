@@ -249,6 +249,20 @@ bool can_surpass(Instr const &top, Instr const &bottom) {
   return !add_register_conflict(top, bottom, true);
 }
 
+
+/**
+ * This can't fail as long as both instructions are alu add
+ */
+void alu_add_copy_src(Instr const &src, Instr &dst) {
+	assert(!src.add_nop());
+  assert(!dst.add_nop());
+	assert(src.mul_nop());  // Paranoia
+  assert(dst.mul_nop());
+
+  dst.alu_add_a(src.alu_add_a());
+  dst.alu_add_b(src.alu_add_b());
+}
+
 } // anon namespace
 
 
@@ -269,7 +283,7 @@ bool can_surpass(Instr const &top, Instr const &bottom) {
  *
  * @return true if combine succeeded, false otherwise
  */
-bool add_alu_to_mul_alu(Instr const &src, Instr &dst) {
+bool alu_to_mul_alu(Instr const &src, Instr &dst) {
 	// Perhaps TODO: change these assert's int 'if () return false'
   assert((!src.add_nop() &&  src.mul_nop()) || (src.add_nop() && !src.mul_nop())); 
 
@@ -490,14 +504,14 @@ void remove_useless(Instructions &instr) {
 	//
 	// Doing related moves works better if useless moves done first
 	//
-	// Crap. Nothing detected any more, for both vc6 and vc7.
+	// Does something useful on vc6.
 	//
   for (int i = 0; i < (int) instr.size(); i++) {
     auto &cur = instr[i];
     if (cur.skip()) continue;
 
     if (i < (int) instr.size() - 1) {
-      auto nxt = instr[i + 1];
+      auto &nxt = instr[i + 1];
 			if (nxt.skip()) continue;
       if (!filter_move(cur)) continue;
       if (!filter_move(nxt)) continue;
@@ -510,6 +524,13 @@ void remove_useless(Instructions &instr) {
 
         warn << "remove_useless detected move OR:\n"
              << "  cur: " << cur.mnemonic() << "\n"
+             << "  nxt: " << nxt.mnemonic();
+
+				alu_add_copy_src(cur, nxt);
+
+				cur.skip(true);
+
+        warn << "Combined move OR:\n"
              << "  nxt: " << nxt.mnemonic();
       }
     }
@@ -690,7 +711,7 @@ try {
       buf << "  " << k << ": " << ftop.mnemonic()    << "\n"
           << "  " << i << ": " << bottom.mnemonic();
 
-      if (add_alu_to_mul_alu(bottom, ftop)) {
+      if (alu_to_mul_alu(bottom, ftop)) {
 /*				
         warn << "combine: adding bottom to top succeeded.\n"
              << "Pre:\n"

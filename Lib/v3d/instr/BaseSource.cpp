@@ -1,18 +1,74 @@
 #include "BaseSource.h"
 #include "Support/basics.h"
 #include "Support/Platform.h"
-
-
+#include "Instr.h"
 
 namespace V3DLib {
 namespace v3d {
 namespace instr {
+
+using ::operator<<;  // C++ weirdness; come on c++, get a grip.
 
 namespace {
 
 const int V3D_QPU_MUX_R5 = 5;   // From qpu.instr.h. The mux values <= this one are the same
 
 }  // anon namespace
+
+
+BaseSource::BaseSource(Source const &rhs) {
+	//breakpoint;
+
+	if (rhs.is_small_imm()) {
+  	m_is_small_imm = true;
+		m_val = rhs.small_imm().val();
+	} else {
+		// It's a location
+		auto &loc = rhs.location();
+
+		m_val = loc.to_waddr();
+
+		if (loc.is_reg()) {
+			assert(!Platform::compiling_for_vc7());
+  		m_is_reg = true;
+		}
+	}
+
+  m_is_set   = true;
+  m_is_dst   = false;
+  m_is_magic = false;   // For dst only
+  m_is_rfa    = false;  // Unknown at this stage, probably not important
+  unpack(rhs.input_unpack());
+}
+
+
+BaseSource::BaseSource(Instr const &instr, int check_src) {
+	assert(check_src <= CheckSrc::CHECK_MUL_B);
+
+	if (instr.add_nop()) return;
+
+	auto &input = 
+		(check_src == CHECK_ADD_A)? instr.alu.add.a:
+		(check_src == CHECK_ADD_B)? instr.alu.add.b:
+		(check_src == CHECK_MUL_A)? instr.alu.mul.a:
+		/*(check_src == CHECK_MUL_B)?*/ instr.alu.mul.b;
+
+	if (Platform::compiling_for_vc7()) {
+		// vc7 - no acc's
+	  set_from_src(input.raddr, instr.sig.small_imm_b, false, false);
+	} else {
+		// 
+		if (input.mux == V3D_QPU_MUX_A) {
+	    set_from_src(instr.raddr_a, false, false, true );
+		} else if (input.mux == V3D_QPU_MUX_B) {
+	    set_from_src(instr.raddr_b, instr.sig.small_imm_b, false, false );
+		} else {
+	    set_from_src(input.mux, false, true, false);
+		}
+	}
+
+	unpack(input.unpack);
+}
 
 
 bool BaseSource::operator==(const Register &rhs) const {

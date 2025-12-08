@@ -2,10 +2,15 @@
 #define _V3DLIB_V3D_INSTR_BASESOURCE_H
 #include <memory>  // uint8_t
 #include "Register.h"
+#include "Source.h"
 
 namespace V3DLib {
 namespace v3d {
 namespace instr {
+
+// Forward declaration
+struct Instr;
+
 
 /**
  * TODO: Name is a misnomer; it is also used for dest registers.
@@ -17,6 +22,9 @@ public:
   BaseSource(BaseSource const &k)          = default;
   BaseSource(BaseSource &&k)               = default;
   BaseSource &operator=(const BaseSource&) = default;
+
+  BaseSource(Source const &rhs);
+	BaseSource(Instr const &instr, int check_src);
 
   bool operator==(const BaseSource &rhs) const;
   bool operator!=(const BaseSource &rhs) const {return !(*this == rhs); }
@@ -36,6 +44,9 @@ public:
 
   bool uses_global_raddr() const;
 
+	void unpack(v3d_qpu_input_unpack rhs) { m_unpack = rhs; }
+	v3d_qpu_input_unpack unpack() const { return m_unpack; }
+
 private:
   bool    m_is_set       = false;
   uint8_t m_val          = 0;      // Depending on bool's, rf or mux or small imm
@@ -45,6 +56,7 @@ private:
   bool    m_is_dst       = false;
   bool    m_is_magic     = false;
 
+	v3d_qpu_input_unpack m_unpack;
 };
 
 
