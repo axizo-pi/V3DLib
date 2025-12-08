@@ -116,11 +116,9 @@ public:
 	  	}
 		}
 
-
-// Enable following when relevant - for now, we're good
-// #ifdef ARM32
-// 		Log::warn << "ARM 32-bits not supported any more. If it works, it works. You're on your own.";
-// #endif
+ #ifdef ARM32
+ 		Log::warn << "ARM 32-bits not supported any more. If it works, it works. You're on your own.";
+ #endif
 
 #endif
 
