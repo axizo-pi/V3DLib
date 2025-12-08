@@ -414,6 +414,7 @@ bool encode_float(Instr::List &ret, Reg dst, float value) {
 	  	return true;
 		}
 	}
+	
 
   // Do the full blunt int conversion
 	Reg r1(VarGen::fresh());  // temp value

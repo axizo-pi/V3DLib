@@ -48,16 +48,11 @@ bool BaseKernel::has_errors() const {
 
 
 void BaseKernel::dump(const char *filename, bool output_qpu_code) {
-  assert(filename != nullptr);
-  if (!has_driver()) return;
+	Log::cerr << "TODO Fix BaseKernel::dump()" << Log::thrw;
 
-	FILE *f = fopen(filename, "w");
-  assert (f != nullptr);
-  if (f == nullptr) return;
-
-  fprintf(f, driver().dump(output_qpu_code).c_str());
-
-  fclose(f);
+  if (has_driver()) {
+    driver().dump(/*filename,*/ output_qpu_code);
+  }
 }
 
 
