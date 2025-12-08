@@ -5,12 +5,14 @@ Pre: Debian 12 Bookworm on SD card
   * The active led flickers coninuously
   * I can **NOT** ssh into the installed Pi.
 
-- 32-bits Bookworm:
-  * 64-bits appears to respond **much** faster
+- 32-bits Debian 12 Bookworm:
+  * 64-bits appears to respond **much** faster. Debian 10 Buster 32-bits is fine BTW.
 	* gives following error:
      > sudo ./obj/qpu-debug/bin/Hello
 		 'mmap of bo 2 (offset 0x0000000100001000, size 8388608) failed
       Aborted'
+	* Debian 10 Buster 32-bits works
+	* Debian 12 Bookworm 32-bits doesn't. see above comment.
 	* From now on, we do not support 32-bits
 
 ============================================
@@ -24,7 +26,6 @@ getconf LONG_BIT
 ============================================
 
 # From pi5-1:
-
 ssh-copy-id wim@silke
 ssh silke
 
