@@ -53,6 +53,13 @@ namespace instr {
 using rf = RFAddress;
 using si = SmallImm;
 
+enum CheckSrc {
+  CHECK_ADD_A,
+  CHECK_ADD_B,
+  CHECK_MUL_A,
+  CHECK_MUL_B,
+};
+
 
 /**
  * NOTE: branch condition is distinct from add/mul alu assign condition tags.
@@ -142,8 +149,6 @@ public:
   bool is_src(DestReg const &dst_reg) const;
   bool is_dst(DestReg const &dst_reg) const;
 
-  void alu_add_dst(Location const &dst); // public because needed in Mnemonics
-  bool alu_add_a(Source const &src);     // idem
 
   bool alu_add_set(Location const &dst, Source const &a, Source const &b);
   bool alu_mul_set(Location const &dst, Source const &a);
@@ -155,16 +160,30 @@ public:
   bool alu_set(V3DLib::Instr const &src_instr);
 
 	// BaseSource implementation
+  void alu_add_a(BaseSource const &src);
+	void alu_add_b(BaseSource const &src);
   void alu_mul_dst(Location const &dst);
   void alu_mul_a(BaseSource const &src);
   void alu_mul_b(BaseSource const &src);
 	bool alu_mul_a_safe(BaseSource const &src);
 	bool alu_mul_b_safe(BaseSource const &src);
 
+	BaseSource sig_dst() const;
+  BaseSource alu_add_dst() const;
+  BaseSource alu_add_a() const;
+  BaseSource alu_add_b() const;
+  BaseSource alu_mul_dst() const;
+  BaseSource alu_mul_a() const;
+  BaseSource alu_mul_b() const;
+
+	// Source implementation
+  void alu_add_dst(Location const &dst);
+  bool alu_add_a(Source const &src);
+  bool alu_add_b(Source const &src);
+
 private:
-  bool alu_add_set_b(Source const &src);
   bool alu_mul_a(Source const &src);
-  bool alu_mul_set_b(Source const &src);
+  bool alu_mul_b(Source const &src);
 
   std::unique_ptr<Source> alu_src(v3d_qpu_mux src) const;  // < vc7
 
@@ -177,15 +196,18 @@ public:
   std::unique_ptr<Source> mul_alu_a() const;
   std::unique_ptr<Source> mul_alu_b() const;
 
-	BaseSource sig_dst() const;
-  BaseSource alu_add_dst() const;
-  BaseSource alu_add_a() const;
-  BaseSource alu_add_b() const;
-  BaseSource alu_mul_dst() const;
-  BaseSource alu_mul_a() const;
-  BaseSource alu_mul_b() const;
 
 	bool has_small_imm() const;
+
+  bool mux_in_use(CheckSrc check_src, v3d_qpu_mux mux) const;
+	bool check_safe(BaseSource const &src, CheckSrc check_src) const;
+
+private:
+	bool m_external_init = false;
+	bool m_alu_add_a_set = false;
+	bool m_alu_add_b_set = false;
+	bool m_alu_mul_a_set = false;
+	bool m_alu_mul_b_set = false;
 
 protected:
   static uint64_t NOP();
@@ -201,16 +223,8 @@ private:
   std::string dump_internal() const;
   int sig_dst_count() const;
 
-  enum CheckSrc {
-    CHECK_ADD_A,
-    CHECK_ADD_B,
-    CHECK_MUL_A,
-    CHECK_MUL_B,
-  };
-
-  bool raddr_in_use(CheckSrc check_src, v3d_qpu_mux mux) const;
-  bool raddr_a_is_safe(Location const &loc, CheckSrc check_src) const;
-  bool raddr_b_is_safe(Location const &loc, CheckSrc check_src) const;
+  bool raddr_a_is_safe(uint8_t raddr, CheckSrc check_src) const;
+  bool raddr_b_is_safe(uint8_t raddr, CheckSrc check_src) const;
 
 	bool alu_set_src(Source const &src, v3d_qpu_input &input, CheckSrc check_src);
 

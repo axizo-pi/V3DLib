@@ -122,9 +122,7 @@ Instr::List insertNops(Instr::List &instrs) {
 
     // 
     // For vc4, if an rf-register is set, you must wait one cycle before the value is available.
-    //
     // If an rf-register is set, and used immediately in the next instruction, insert a NOP in between.
-    //
     // v3d does not have this restriction.
     //
     if (Platform::compiling_for_vc4()) {

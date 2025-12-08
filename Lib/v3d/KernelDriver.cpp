@@ -946,7 +946,7 @@ void combine(Instructions &instructions) {
 
       v3d::instr::Instr dst = add_instr;
 
-      bool success = Combine::add_alu_to_mul_alu(mul_instr, dst);
+      bool success = Combine::alu_to_mul_alu(mul_instr, dst);
 
       if (success) {
 				Log::debug << "Converted: " << dst.mnemonic(false);
