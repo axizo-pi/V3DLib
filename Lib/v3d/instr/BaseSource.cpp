@@ -17,27 +17,27 @@ const int V3D_QPU_MUX_R5 = 5;   // From qpu.instr.h. The mux values <= this one 
 
 
 BaseSource::BaseSource(Source const &rhs) {
-	//breakpoint;
+	// Not expecting dst register right now
+  m_is_rfa   = false;
 
 	if (rhs.is_small_imm()) {
   	m_is_small_imm = true;
 		m_val = rhs.small_imm().val();
 	} else {
+		//breakpoint;
+
 		// It's a location
 		auto &loc = rhs.location();
+		assert (!Platform::compiling_for_vc7() || loc.is_rf());
 
-		m_val = loc.to_waddr();
-
-		if (loc.is_reg()) {
-			assert(!Platform::compiling_for_vc7());
-  		m_is_reg = true;
-		}
+		m_val    = loc.to_waddr();
+ 		m_is_rfa = loc.is_rf();
+		m_is_reg = loc.is_reg();
 	}
 
   m_is_set   = true;
   m_is_dst   = false;
   m_is_magic = false;   // For dst only
-  m_is_rfa    = false;  // Unknown at this stage, probably not important
   unpack(rhs.input_unpack());
 }
 
@@ -45,13 +45,26 @@ BaseSource::BaseSource(Source const &rhs) {
 BaseSource::BaseSource(Instr const &instr, int check_src) {
 	assert(check_src <= CheckSrc::CHECK_MUL_B);
 
-	if (instr.add_nop()) return;
+	v3d_qpu_input input;
 
-	auto &input = 
-		(check_src == CHECK_ADD_A)? instr.alu.add.a:
-		(check_src == CHECK_ADD_B)? instr.alu.add.b:
-		(check_src == CHECK_MUL_A)? instr.alu.mul.a:
-		/*(check_src == CHECK_MUL_B)?*/ instr.alu.mul.b;
+	// Ugly but necessary
+	if (check_src == CHECK_ADD_A) {
+		if (instr.add_nop()) return;
+		if (!instr.alu_add_a_set()) return;
+		input = instr.alu.add.a;
+	} else if (check_src == CHECK_ADD_B) {
+		if (instr.add_nop()) return;
+		if (!instr.alu_add_b_set()) return;
+		input = instr.alu.add.b;
+	} else if (check_src == CHECK_MUL_A) {
+		if (instr.mul_nop()) return;
+		if (!instr.alu_mul_a_set()) return;
+		input = instr.alu.mul.a;
+	} else if (check_src == CHECK_MUL_B) {
+		if (instr.mul_nop()) return;
+		if (!instr.alu_mul_b_set()) return;
+		input = instr.alu.mul.b;
+	}
 
 	if (Platform::compiling_for_vc7()) {
 		// vc7 - no acc's
@@ -180,7 +193,6 @@ bool BaseSource::uses_global_raddr() const {
 
   return true;
 }
-
 
 }  // namespace instr
 }  // namespace v3d

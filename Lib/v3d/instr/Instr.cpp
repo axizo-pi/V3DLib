@@ -855,7 +855,7 @@ bool Instr::alu_set_src(Source const &src, v3d_qpu_input &input, CheckSrc check_
       raddr_b = loc.to_waddr(); 
       mux = V3D_QPU_MUX_B;
     } else {
-			//warning("alu_set_src: raddr_a and raddr_b both in use");
+			warning("alu_set_src: raddr_a and raddr_b both in use");
       return false;
     }
 
@@ -991,29 +991,23 @@ bool Instr::alu_mul_b(Source const &src) {
 }
 
 
-bool Instr::alu_add_set(Location const &dst, Source const &a, Source const &b) {
+bool Instr::alu_add_set(Location const &dst, Source const &in_a, Source const &in_b) {
   alu_add_dst(dst);
 
-	bool ret = true;
+	BaseSource a(in_a);
+	BaseSource b(in_b);
 
 	// Following applies to vc6 AND vc7
-	if (!a.is_location() && !b.is_location()) {
-		if (a.small_imm().val() != b.small_imm().val()) {
-    	throw Exception("alu_add_set: can not pass two different small immediates.");
+	if (a.is_small_imm() && b.is_small_imm()) {
+		if (a.val() != b.val()) {
+    	cerr << "alu_add_set: can not pass two different small immediates." << thrw;
 		}
 	}
 
-  ret = alu_add_a(a);
-		
-	if (ret) {
- 		ret = alu_add_b(b);
-	}
+  alu_add_a(a);
+ 	alu_add_b(b);
 
-	if (!ret) {
-    throw Exception("alu_add_set failed");
-	}
-
-  return ret;
+  return true;  // Dummy value. TODO cleanup
 }
 
 
@@ -1224,7 +1218,7 @@ void Instr::alu_mul_b(BaseSource const &src) {
 bool Instr::alu_mul_set(Location const &dst, Source const &a) {
 	alu_mul_dst(dst);
 
-	bool ret;
+	bool ret = true;
 
 	if (Platform::compiling_for_vc7()) {
 		ret = alu_mul_a(a);
@@ -1245,33 +1239,22 @@ bool Instr::alu_mul_set(Location const &dst, Source const &a) {
  * Apparently you *can* pass small imm's.
  * if alu.add.b is available, it can be used for mul.
  */
-bool Instr::alu_mul_set(Location const &dst, Source const &a, Source const &b) {
+bool Instr::alu_mul_set(Location const &dst, Source const &in_a, Source const &in_b) { 
 	alu_mul_dst(dst);
 
-	bool ret;
+	BaseSource a(in_a);
+	BaseSource b(in_b);
 
 	if (a.is_small_imm() && b.is_small_imm()) {
-		if (a.small_imm() != b.small_imm()) {
-	   	throw Exception("alu_mul_set: can not pass two different small immediates on vc7.");
+		if (a.val() != b.val()) {
+    	cerr << "alu_mul_set: can not pass two different small immediates." << thrw;
 		}
 	}
 
-	if (Platform::compiling_for_vc7()) {
-		ret = alu_mul_a(a);
-		assert(ret);
-	
-		ret = alu_mul_b(b);
-		assert(ret);
-	} else {
-  	ret = alu_set_src(a, alu.mul.a, CHECK_MUL_A) && alu_set_src(b, alu.mul.b, CHECK_MUL_B);
-	}
+  alu_mul_a(a);
+ 	alu_mul_b(b);
 
-	if (ret) {
-  	alu.mul.a.unpack = a.input_unpack();
-  	alu.mul.b.unpack = b.input_unpack();
-	}
-
-	return ret;
+	return true;  // Dummy return value. TODO cleanup
 }
 
 

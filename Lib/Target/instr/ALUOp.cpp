@@ -292,18 +292,36 @@ op_item const *op_items_find_by_op(ALUOp::Enum op, bool strict) {
 
 namespace Oper {
 
-// TODO Consolidate this with OpItems 
-bool oneOperand(v3d_qpu_add_op op) {
-  return (       // these should be the only operations with one operand
-	  op == V3D_QPU_A_SIN   ||
+/**
+ * Return the number of inputs for the given operand
+ *
+ * TODO Consolidate this with OpItems 
+ */
+int num_operands(v3d_qpu_add_op op) {
+  if (
+		op == V3D_QPU_A_TIDX      ||
+		op == V3D_QPU_A_EIDX      ||
+		op == V3D_QPU_A_TMUWT     ||
+		op == V3D_QPU_A_BARRIERID
+	) {
+		return 0;
+	}
+
+  if (                         // these should be the only operations with one operand
+	  op == V3D_QPU_A_SIN    ||
 		op == V3D_QPU_A_FFLOOR ||
 
 		// vc7 
 		op == V3D_QPU_A_MOV    ||
 		op == V3D_QPU_A_EXP    ||
 		op == V3D_QPU_A_RECIP
-	);
+	) {
+		return 1;
+	}
+
+	return 2;
 }
+
 } // namespace Oper
 
 #define CASE(l)  case V3D_QPU_##l: ret = #l; break;

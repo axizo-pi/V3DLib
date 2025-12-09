@@ -150,9 +150,9 @@ public:
   bool is_dst(DestReg const &dst_reg) const;
 
 
-  bool alu_add_set(Location const &dst, Source const &a, Source const &b);
+  bool alu_add_set(Location const &dst, Source const &in_a, Source const &in_b);
   bool alu_mul_set(Location const &dst, Source const &a);
-  bool alu_mul_set(Location const &dst, Source const &a, Source const &b);
+  bool alu_mul_set(Location const &dst, Source const &in_a, Source const &in_b);
 
   bool alu_add_set(V3DLib::Instr const &src_instr);
   bool alu_mul_set(V3DLib::Instr const &src_instr);
@@ -201,6 +201,11 @@ public:
 
   bool mux_in_use(CheckSrc check_src, v3d_qpu_mux mux) const;
 	bool check_safe(BaseSource const &src, CheckSrc check_src) const;
+
+	bool alu_add_a_set() const { assert(!m_external_init); return m_alu_add_a_set; }
+	bool alu_add_b_set() const { assert(!m_external_init); return m_alu_add_b_set; }
+	bool alu_mul_a_set() const { assert(!m_external_init); return m_alu_mul_a_set; }
+	bool alu_mul_b_set() const { assert(!m_external_init); return m_alu_mul_b_set; }
 
 private:
 	bool m_external_init = false;

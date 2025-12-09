@@ -36,6 +36,8 @@ public:
     }
   }
 
+	std::string dump() const;
+
 private:
   bool m_is_location = false;
   std::unique_ptr<Location> m_location;
