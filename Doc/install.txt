@@ -26,6 +26,7 @@ getconf LONG_BIT
 # From pi5-1:
 
 ssh-copy-id wim@silke
+scp .vimrc wim@silke:~
 ssh silke
 
 # on silke:
