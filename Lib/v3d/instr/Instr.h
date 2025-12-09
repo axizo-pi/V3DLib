@@ -160,8 +160,8 @@ public:
   bool alu_set(V3DLib::Instr const &src_instr);
 
 	// BaseSource implementation
-  void alu_add_a(BaseSource const &src);
-	void alu_add_b(BaseSource const &src);
+  void alu_add_a(BaseSource const &src, bool overwrite = false);
+  void alu_add_b(BaseSource const &src, bool overwrite = false);
   void alu_mul_dst(Location const &dst);
   void alu_mul_a(BaseSource const &src);
   void alu_mul_b(BaseSource const &src);

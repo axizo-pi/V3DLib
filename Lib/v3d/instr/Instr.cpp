@@ -1011,10 +1011,13 @@ bool Instr::alu_add_set(Location const &dst, Source const &in_a, Source const &i
 }
 
 
-void Instr::alu_add_a(BaseSource const &src) {
+/**
+ * @param overwrite If true, overwrite of existing value is intentional
+ */
+void Instr::alu_add_a(BaseSource const &src, bool overwrite) {
 	assert(src.is_set());
 	assert(!m_external_init);
-	if (m_alu_add_a_set) {
+	if (m_alu_add_a_set && !overwrite) {
 		warn << "alu_add_a overwriting existing src value";
 	}
 
@@ -1051,7 +1054,10 @@ void Instr::alu_add_a(BaseSource const &src) {
 }
 
 
-void Instr::alu_add_b(BaseSource const &src) {
+/**
+ * @param overwrite If true, overwrite of existing value is intentional
+ */
+void Instr::alu_add_b(BaseSource const &src, bool overwrite) {
 	assert(src.is_set());
 	assert(!m_external_init);
 	if (m_alu_add_b_set) {
@@ -1225,7 +1231,11 @@ void Instr::alu_mul_b(BaseSource const &src) {
 				alu.mul.b.mux = V3D_QPU_MUX_B;
 				raddr_b = src.val();
 			} else {
-				cerr << "alu_mul_b: can not assign rf location to raddra/b" << thrw;
+				cerr << "alu_mul_b: can not assign rf location to raddra/b.\n"
+					   << "Src  : " << src.dump() << "\n"
+					   << "Instr: " << mnemonic() << "\n";
+
+				cerr << "alu_mul_b: can not assign rf location to raddra/b\n" << thrw;
 			}
 		}
 	}

@@ -259,8 +259,8 @@ void alu_add_copy_src(Instr const &src, Instr &dst) {
 	assert(src.mul_nop());  // Paranoia
   assert(dst.mul_nop());
 
-  dst.alu_add_a(src.alu_add_a());
-  dst.alu_add_b(src.alu_add_b());
+  dst.alu_add_a(src.alu_add_a(), true);
+  dst.alu_add_b(src.alu_add_b(), true);
 }
 
 } // anon namespace
@@ -521,17 +521,17 @@ void remove_useless(Instructions &instr) {
       	if (nxt.has_signal(false)) continue;
 
         if ((cur.alu_add_dst() != nxt.alu_add_a())) continue;
-
+/*
         warn << "remove_useless detected move OR:\n"
              << "  cur: " << cur.mnemonic() << "\n"
              << "  nxt: " << nxt.mnemonic();
-
+*/
 				alu_add_copy_src(cur, nxt);
-
 				cur.skip(true);
-
+/*
         warn << "Combined move OR:\n"
              << "  nxt: " << nxt.mnemonic();
+*/						 
       }
     }
   }
