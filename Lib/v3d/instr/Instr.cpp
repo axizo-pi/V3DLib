@@ -1034,9 +1034,15 @@ void Instr::alu_add_a(BaseSource const &src) {
 		if (Platform::compiling_for_vc7()) {
 			alu.add.a.raddr = src.val();
 		} else {
-			// TODO : there can be a conflict here with raddr_a for add
-			alu.add.a.mux = V3D_QPU_MUX_A;
-			raddr_a = src.val();
+			if (raddr_a_is_safe(src.val(), CHECK_ADD_A)) {
+				alu.add.a.mux = V3D_QPU_MUX_A;
+				raddr_a = src.val();
+			}	else if (raddr_b_is_safe(src.val(), CHECK_ADD_A)) {
+				alu.add.a.mux = V3D_QPU_MUX_B;
+				raddr_b = src.val();
+			} else {
+				cerr << "alu_add_a: can not assign rf location to raddra/b" << thrw;
+			}
 		}
 	}
 
@@ -1069,9 +1075,15 @@ void Instr::alu_add_b(BaseSource const &src) {
 		if (Platform::compiling_for_vc7()) {
 			alu.add.b.raddr = src.val();
 		} else {
-			// TODO : there can be a conflict here with raddr_a for add
-			alu.add.b.mux = V3D_QPU_MUX_A;
-			raddr_a = src.val();
+			if (raddr_a_is_safe(src.val(), CHECK_ADD_B)) {
+				alu.add.b.mux = V3D_QPU_MUX_A;
+				raddr_a = src.val();
+			}	else if (raddr_b_is_safe(src.val(), CHECK_ADD_B)) {
+				alu.add.b.mux = V3D_QPU_MUX_B;
+				raddr_b = src.val();
+			} else {
+				cerr << "alu_add_b: can not assign rf location to raddra/b" << thrw;
+			}
 		}
 	}
 
@@ -1136,9 +1148,15 @@ void Instr::alu_mul_a(BaseSource const &src) {
 		if (Platform::compiling_for_vc7()) {
 			alu.mul.a.raddr = src.val();
 		} else {
-			// TODO : there can be a conflict here with raddr_a for add
-			alu.mul.a.mux = V3D_QPU_MUX_A;
-			raddr_a = src.val();
+			if (raddr_a_is_safe(src.val(), CHECK_MUL_A)) {
+				alu.mul.a.mux = V3D_QPU_MUX_A;
+				raddr_a = src.val();
+			}	else if (raddr_b_is_safe(src.val(), CHECK_MUL_A)) {
+				alu.mul.a.mux = V3D_QPU_MUX_B;
+				raddr_b = src.val();
+			} else {
+				cerr << "alu_mul_a: can not assign rf location to raddra/b" << thrw;
+			}
 		}
 	}
 
@@ -1197,14 +1215,18 @@ void Instr::alu_mul_b(BaseSource const &src) {
 		// src.val() is a mux value
 		alu.mul.b.mux = (v3d_qpu_mux) src.val();
 	} else {
-		//warn << "src rf location";
-
 		if (Platform::compiling_for_vc7()) {
 			alu.mul.b.raddr = src.val();
 		} else {
-			// TODO : there can be a conflict here with raddr_b for add
-			alu.mul.b.mux = V3D_QPU_MUX_B;
-			raddr_b = src.val();
+			if (raddr_a_is_safe(src.val(), CHECK_MUL_B)) {
+				alu.mul.b.mux = V3D_QPU_MUX_A;
+				raddr_a = src.val();
+			}	else if (raddr_b_is_safe(src.val(), CHECK_MUL_B)) {
+				alu.mul.b.mux = V3D_QPU_MUX_B;
+				raddr_b = src.val();
+			} else {
+				cerr << "alu_mul_b: can not assign rf location to raddra/b" << thrw;
+			}
 		}
 	}
 

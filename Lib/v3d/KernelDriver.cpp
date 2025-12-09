@@ -148,6 +148,8 @@ bool translateOpcode(V3DLib::Instr const &src_instr, Instructions &ret) {
   auto reg_a = src_instr.ALU.srcA;
   auto reg_b = src_instr.ALU.srcB;
 
+	//breakpoint;
+
   assertq(src_instr.ALU.op.value() != ALUOp::A_FSIN || (reg_a.is_reg() && reg_b.is_reg()), "sin has smallims");
 
   auto dst_reg = encodeDestReg(src_instr);
@@ -935,7 +937,6 @@ void combine(Instructions &instructions) {
                << "  " << instr2.mnemonic(false)
 		;
 */		
-
 
     // attempt the conversion
     {
