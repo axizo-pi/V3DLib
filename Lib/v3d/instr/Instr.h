@@ -16,38 +16,6 @@ namespace V3DLib {
 class ALUInstruction;
 
 namespace v3d {
-
-class RegSet {
-public:	
-	RegSet(int count);
-
-	unsigned size() const { return (unsigned) m_set.size(); }
-
-	void set(unsigned index);
-	void clear(unsigned index);
-	void add(RegSet const &rhs);
-	std::string dump() const;
-	bool empty() const;
-	unsigned first_filled() const;
-	unsigned first_empty() const;
-
-private:
-	std::vector<bool> m_set;
-};
-
-
-class ACCSet :public RegSet {
-public:	
-	ACCSet() : RegSet(6) {}
-};
-
-
-class RFSet :public RegSet {
-public:	
-	RFSet() : RegSet(64) {}
-};
-
-
 namespace instr {
 
 using rf = RFAddress;
@@ -220,32 +188,6 @@ private:
   bool raddr_b_is_safe(uint8_t raddr, CheckSrc check_src) const;
 
 	bool alu_set_src(Source const &src, v3d_qpu_input &input, CheckSrc check_src);
-
-//
-// vc7: support for converting acc's to rf'
-//	
-public:
-	bool uses_acc() const;
-	ACCSet acc_usage() const;
-	RFSet  rf_usage() const;
-	int replace_acc_with_rf(unsigned acc, unsigned rf);
-
-private:
-	bool add_a_is_acc() const;
-	bool add_b_is_acc() const;
-	bool add_dst_is_acc() const;
-	bool mul_a_is_acc() const;
-	bool mul_b_is_acc() const;
-	bool mul_dst_is_acc() const;
-	bool sig_is_acc() const;
-
-	bool m_add_a_is_reg   = false;
-	bool m_add_b_is_reg   = false;
-	bool m_add_dst_is_reg = false;
-	bool m_mul_a_is_reg   = false;
-	bool m_mul_b_is_reg   = false;
-	bool m_mul_dst_is_reg = false;
-	// sig_addr doesn't need a special bool, sig_magic does the job
 };
 
 }  // instr
@@ -268,16 +210,8 @@ public:
 	ByteCode bytecode() const;
 	std::string dump() const;
 
-	//
-	// vc7: support for converting acc's to rf'
-	//	
-	void replace_acc_with_rf();
-
 private	:
 	bool uses_acc() const;
-	ACCSet acc_usage() const;
-	RFSet  rf_usage() const;
-	int replace_acc_with_rf(unsigned acc, unsigned rf);
 };
 
 
