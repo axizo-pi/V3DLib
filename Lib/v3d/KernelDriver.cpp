@@ -958,7 +958,7 @@ void combine(Instructions &instructions) {
         combine_count++;
         i++;
       } else {
-				Log::debug << "combine of following failed; "
+				Log::warn << "Combine of following failed; "
 		    					 << "line " << i << ":\n"
 		        			 << "  " << instr1.mnemonic(false) << "\n"
 		               << "  " << instr2.mnemonic(false)

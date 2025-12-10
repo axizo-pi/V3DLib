@@ -289,6 +289,8 @@ bool alu_to_mul_alu(Instr const &src, Instr &dst) {
 
   if (!dst.mul_nop()) return false; 
 
+	Instr ret = dst;
+
   //
   // Get used dst and src
   //
@@ -301,46 +303,54 @@ bool alu_to_mul_alu(Instr const &src, Instr &dst) {
     v3d_qpu_mul_op mul_op;
     if (!convert_alu_op_to_mul_op(mul_op, src)) return false;  // False if no applicable translation add -> mul
 
-		if (!dst.alu_mul_b_safe(alu_add_b)) return false;
-		if (!dst.alu_mul_a_safe(alu_add_a)) return false;
-
-  	dst.alu.mul.op = mul_op;
+  	ret.alu.mul.op = mul_op;
 		auto dst_loc = src.add_alu_dst();
-  	dst.alu_mul_dst(*dst_loc);  // dst (waddr) is always safe
-  	dst.alu_mul_a(alu_add_a);
-  	dst.alu_mul_b(alu_add_b);
-  } else {                  // Take the values from alu mul
-		if (!dst.alu_mul_b_safe(alu_mul_b)) return false;
-		if (!dst.alu_mul_a_safe(alu_mul_a)) return false;
+  	ret.alu_mul_dst(*dst_loc);  // dst (waddr) is always safe
 
-    dst.alu.mul.op = src.alu.mul.op;
+  	if (!ret.alu_mul_a(alu_add_a)) {
+			return false;
+		}
+
+  	if (!ret.alu_mul_b(alu_add_b)) {
+			return false;
+		}
+  } else {                  // Take the values from alu mul
+    ret.alu.mul.op = src.alu.mul.op;
 		auto dst_loc = src.mul_alu_dst();
-  	dst.alu_mul_dst(*dst_loc);
-  	dst.alu_mul_a(alu_mul_a);
-  	dst.alu_mul_b(alu_mul_b);
+  	ret.alu_mul_dst(*dst_loc);
+
+  	if (!ret.alu_mul_a(alu_mul_a)) {
+			return false;
+		}
+
+  	if (!ret.alu_mul_b(alu_mul_b)) {
+			return false;
+		}
+  	ret.alu_mul_b(alu_mul_b);
   }
 
   if (src.mul_nop()) {
-    dst.alu.mul.output_pack = src.alu.add.output_pack;
-    dst.alu.mul.a.unpack    = src.alu.add.a.unpack;
-    dst.alu.mul.b.unpack    = src.alu.add.b.unpack;
+    ret.alu.mul.output_pack = src.alu.add.output_pack;
+    ret.alu.mul.a.unpack    = src.alu.add.a.unpack;
+    ret.alu.mul.b.unpack    = src.alu.add.b.unpack;
 
-    dst.flags.mc  = src.flags.ac;
-    dst.flags.mpf = src.flags.apf;
-    dst.flags.muf = src.flags.auf;
+    ret.flags.mc  = src.flags.ac;
+    ret.flags.mpf = src.flags.apf;
+    ret.flags.muf = src.flags.auf;
   } else {
-    dst.alu.mul.output_pack = src.alu.mul.output_pack;
-    dst.alu.mul.a.unpack    = src.alu.mul.a.unpack;
-    dst.alu.mul.b.unpack    = src.alu.mul.b.unpack;
+    ret.alu.mul.output_pack = src.alu.mul.output_pack;
+    ret.alu.mul.a.unpack    = src.alu.mul.a.unpack;
+    ret.alu.mul.b.unpack    = src.alu.mul.b.unpack;
 
-    dst.flags.mc  = src.flags.mc;
-    dst.flags.mpf = src.flags.mpf;
-    dst.flags.muf = src.flags.muf;
+    ret.flags.mc  = src.flags.mc;
+    ret.flags.mpf = src.flags.mpf;
+    ret.flags.muf = src.flags.muf;
   }
 
-  dst.header(src.header());
-  dst.comment(src.comment());
+  ret.header(src.header());
+  ret.comment(src.comment());
 
+	dst = ret;
 /*
 	Log::warn << "  dst : " << dst.mnemonic(false);
 	if (!Platform::compiling_for_vc7()) {

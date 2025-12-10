@@ -215,6 +215,7 @@ void set_mul_small_imm(
 
 }  // anon namespace
 
+
 uint64_t Instr::NOP() {
   if (devinfo_ver() == 42) {
 		return 0x3c003186bb800000;  // This is actually 'nop nop'
@@ -866,131 +867,6 @@ bool Instr::alu_set_src(Source const &src, v3d_qpu_input &input, CheckSrc check_
 }
 
 
-bool Instr::alu_add_a(Source const &src) {
-	assert(!m_external_init);
-	if (m_alu_add_a_set) {
-		warn << "alu_add_a overwriting existing src value";
-	}
-
-	if (!Platform::compiling_for_vc7()) {
-  	bool ret = alu_set_src(src, alu.add.a, CHECK_ADD_A);
-		if (ret) m_alu_add_a_set  = true;
-		return ret;
-	}
-
- 	if (src.is_location()) {
-   	Location const &loc = src.location();
-    alu.add.a.raddr = loc.to_waddr(); 
-
-		if (loc.is_reg()) m_add_a_is_reg = true;
-
-	} else {
-		// Small Imm on a for vc7
-    auto imm = src.small_imm();
-    alu.add.a.raddr = imm.val(); 
-		sig.small_imm_a = true;
-	}
-
-  alu.add.a.unpack = src.input_unpack();
-
-	m_alu_add_a_set  = true;
-  return true;
-}
-
-
-bool Instr::alu_add_b(Source const &src) {
-	assert(!m_external_init);
-	if (m_alu_add_b_set) {
-		warn << "alu_add_b overwriting existing src value";
-	}
-
-	if (!Platform::compiling_for_vc7()) {
-  	bool ret = alu_set_src(src, alu.add.b, CHECK_ADD_B);
-		if (ret) m_alu_add_b_set  = true;
-		return ret;
-	}
-
- 	if (src.is_location()) {
-   	Location const &loc = src.location();
-    alu.add.b.raddr = loc.to_waddr(); 
-
-		if (loc.is_reg()) m_add_b_is_reg = true;
-
-	} else {
-		// Small Imm on a for vc7
-    auto imm = src.small_imm();
-    alu.add.b.raddr = imm.val(); 
-		sig.small_imm_b = true;
-	}
-
-  alu.add.b.unpack = src.input_unpack();
-
-	m_alu_add_b_set  = true;
-  return true;
-}
-
-
-bool Instr::alu_mul_a(Source const &src) {
-	assert(!m_external_init);
-	if (m_alu_mul_a_set) {
-		warn << "alu_mul_a overwriting existing src value";
-	}
-
-	if (!Platform::compiling_for_vc7()) {
-  	bool ret = alu_set_src(src, alu.mul.a, CHECK_MUL_A);
-		if (ret) m_alu_mul_a_set  = true;
-		return ret;
-	}
-
- 	if (src.is_location()) {
-   	Location const &loc = src.location();
-    alu.mul.a.raddr = loc.to_waddr(); 
-
-		if (loc.is_reg()) m_mul_a_is_reg = true;
-	} else {
-		// Small Imm on a for vc7
-    auto imm = src.small_imm();
-    alu.mul.a.raddr = imm.val(); 
-		sig.small_imm_c = true;
-	}
-
-  alu.mul.a.unpack = src.input_unpack();
-	m_alu_mul_a_set  = true;
-  return true; 
-}
-
-
-bool Instr::alu_mul_b(Source const &src) {
-	assert(!m_external_init);
-	if (m_alu_mul_b_set) {
-		warn << "alu_mul_b overwriting existing src value";
-	}
-
-	if (!Platform::compiling_for_vc7()) {
-  	bool ret = alu_set_src(src, alu.mul.b, CHECK_MUL_B);
-		if (ret) m_alu_mul_b_set  = true;
-		return ret;
-	}
-
- 	if (src.is_location()) {
-   	Location const &loc = src.location();
-    alu.mul.b.raddr = loc.to_waddr(); 
-
-		if (loc.is_reg()) m_mul_b_is_reg = true;
-	} else {
-		// Small Imm on b for vc7
-    auto imm = src.small_imm();
-    alu.mul.b.raddr = imm.val(); 
-		sig.small_imm_d = true;
-	}
-
-  alu.mul.b.unpack = src.input_unpack();
-
-	m_alu_mul_b_set  = true;
-  return true;
-}
-
-
 bool Instr::alu_add_set(Location const &dst, Source const &in_a, Source const &in_b) {
   alu_add_dst(dst);
 
@@ -1000,21 +876,25 @@ bool Instr::alu_add_set(Location const &dst, Source const &in_a, Source const &i
 	// Following applies to vc6 AND vc7
 	if (a.is_small_imm() && b.is_small_imm()) {
 		if (a.val() != b.val()) {
-    	cerr << "alu_add_set: can not pass two different small immediates." << thrw;
+    	cerr << "alu_add_set: can not pass two different small immediates.";
+			return false;
 		}
 	}
 
-  alu_add_a(a);
- 	alu_add_b(b);
+  bool ret = alu_add_a(a) && alu_add_b(b);
 
-  return true;  // Dummy value. TODO cleanup
+	if (!ret) {
+		breakpoint;  // Warn me when this happens
+	}
+
+	return ret;
 }
 
 
 /**
  * @param overwrite If true, overwrite of existing value is intentional
  */
-void Instr::alu_add_a(BaseSource const &src, bool overwrite) {
+bool Instr::alu_add_a(BaseSource const &src, bool overwrite) {
 	assert(src.is_set());
 	assert(!m_external_init);
 	if (m_alu_add_a_set && !overwrite) {
@@ -1029,35 +909,20 @@ void Instr::alu_add_a(BaseSource const &src, bool overwrite) {
 			set_mul_small_imm(*this, src, alu.add.a, CHECK_ADD_A);
 		}
 
-	} else if (src.is_reg()) {
-		assertq(!Platform::compiling_for_vc7(), "alu_adda: can not use registers on vc7");
-		alu.add.a.mux = (v3d_qpu_mux) src.val();
-	} else {
-		// rf location
-		if (Platform::compiling_for_vc7()) {
-			alu.add.a.raddr = src.val();
-		} else {
-			if (raddr_a_is_safe(src.val(), CHECK_ADD_A)) {
-				alu.add.a.mux = V3D_QPU_MUX_A;
-				raddr_a = src.val();
-			}	else if (raddr_b_is_safe(src.val(), CHECK_ADD_A)) {
-				alu.add.a.mux = V3D_QPU_MUX_B;
-				raddr_b = src.val();
-			} else {
-				cerr << "alu_add_a: can not assign rf location to raddra/b" << thrw;
-			}
-		}
+	} else if (!alu_set_src(src, alu.add.a, CHECK_ADD_A)) {
+		return false;
 	}
 
   alu.add.a.unpack = src.unpack();
 	m_alu_add_a_set  = true;
+	return true;
 }
 
 
 /**
  * @param overwrite If true, overwrite of existing value is intentional
  */
-void Instr::alu_add_b(BaseSource const &src, bool overwrite) {
+bool Instr::alu_add_b(BaseSource const &src, bool overwrite) {
 	assert(src.is_set());
 	assert(!m_external_init);
 	if (m_alu_add_b_set) {
@@ -1072,29 +937,13 @@ void Instr::alu_add_b(BaseSource const &src, bool overwrite) {
 			set_mul_small_imm(*this, src, alu.add.b, CHECK_ADD_B);
 		}
 
-	} else if (src.is_reg()) {
-		assertq(!Platform::compiling_for_vc7(), "alu_mul_a: can not use registers on vc7");
-		// src.val() is a mux value
-		alu.add.b.mux = (v3d_qpu_mux) src.val();
-	} else {
-		// rf location
-		if (Platform::compiling_for_vc7()) {
-			alu.add.b.raddr = src.val();
-		} else {
-			if (raddr_a_is_safe(src.val(), CHECK_ADD_B)) {
-				alu.add.b.mux = V3D_QPU_MUX_A;
-				raddr_a = src.val();
-			}	else if (raddr_b_is_safe(src.val(), CHECK_ADD_B)) {
-				alu.add.b.mux = V3D_QPU_MUX_B;
-				raddr_b = src.val();
-			} else {
-				cerr << "alu_add_b: can not assign rf location to raddra/b" << thrw;
-			}
-		}
+	} else if (!alu_set_src(src, alu.add.b, CHECK_ADD_B)) {
+		return false;
 	}
 
   alu.add.b.unpack = src.unpack();
 	m_alu_add_b_set  = true;
+	return true;
 }
 
 
@@ -1130,7 +979,7 @@ void Instr::alu_mul_dst(Location const &dst) {
  *
  * This is different from vc4, where the values indicate using rfA or rfB.
  */
-void Instr::alu_mul_a(BaseSource const &src) {
+bool Instr::alu_mul_a(BaseSource const &src) {
 	assert(src.is_set());
 	assert(!m_external_init);
 	if (m_alu_mul_a_set) {
@@ -1145,29 +994,13 @@ void Instr::alu_mul_a(BaseSource const &src) {
 			set_mul_small_imm(*this, src, alu.mul.a, CHECK_MUL_A);
 		}
 
-	} else if (src.is_reg()) {
-		assertq(!Platform::compiling_for_vc7(), "alu_mul_a: can not use registers on vc7");
-		// src.val() is a mux value
-		alu.mul.a.mux = (v3d_qpu_mux) src.val();
-	} else {
-		// rf location
-		if (Platform::compiling_for_vc7()) {
-			alu.mul.a.raddr = src.val();
-		} else {
-			if (raddr_a_is_safe(src.val(), CHECK_MUL_A)) {
-				alu.mul.a.mux = V3D_QPU_MUX_A;
-				raddr_a = src.val();
-			}	else if (raddr_b_is_safe(src.val(), CHECK_MUL_A)) {
-				alu.mul.a.mux = V3D_QPU_MUX_B;
-				raddr_b = src.val();
-			} else {
-				cerr << "alu_mul_a: can not assign rf location to raddra/b" << thrw;
-			}
-		}
+	} else if (!alu_set_src(src, alu.mul.a, CHECK_MUL_A)) {
+		return false;
 	}
 
   alu.mul.a.unpack = src.unpack();
 	m_alu_mul_a_set  = true;
+	return true;
 }
 
 
@@ -1197,11 +1030,36 @@ bool Instr::check_safe(BaseSource const &src, CheckSrc check_src) const {
 }
 
 
-bool Instr::alu_mul_a_safe(BaseSource const &src) { return check_safe(src, CHECK_MUL_A); }
-bool Instr::alu_mul_b_safe(BaseSource const &src) { return check_safe(src, CHECK_MUL_B); }
+bool Instr::alu_set_src(BaseSource const &src, v3d_qpu_input &input, CheckSrc check_src) {
+	if (src.is_reg()) {
+		assertq(!Platform::compiling_for_vc7(), "alu_mul_b: can not use registers on vc7");
+		// src.val() is a mux value
+		input.mux = (v3d_qpu_mux) src.val();
+	} else {
+		if (Platform::compiling_for_vc7()) {
+			input.raddr = src.val();
+		} else {
+			if (raddr_a_is_safe(src.val(), CHECK_MUL_B)) {
+				input.mux = V3D_QPU_MUX_A;
+				raddr_a = src.val();
+			}	else if (raddr_b_is_safe(src.val(), CHECK_MUL_B)) {
+				input.mux = V3D_QPU_MUX_B;
+				raddr_b = src.val();
+			} else {
+				cerr << "alu_set_src: can not assign rf location to raddra/b.\n"
+					   << "Src  : " << src.dump()     << "\n"
+					   << "Instr: " << mnemonic()     << "\n";
+
+				return false;
+			}
+		}
+	}
+
+	return true;
+}	
 
 
-void Instr::alu_mul_b(BaseSource const &src) {
+bool Instr::alu_mul_b(BaseSource const &src) {
 	assert(src.is_set());
 	assert(!m_external_init);
 	if (m_alu_mul_b_set) {
@@ -1216,32 +1074,13 @@ void Instr::alu_mul_b(BaseSource const &src) {
 			set_mul_small_imm(*this, src, alu.mul.b, CHECK_MUL_B);
 		}
 
-	} else if (src.is_reg()) {
-		assertq(!Platform::compiling_for_vc7(), "alu_mul_b: can not use registers on vc7");
-		// src.val() is a mux value
-		alu.mul.b.mux = (v3d_qpu_mux) src.val();
-	} else {
-		if (Platform::compiling_for_vc7()) {
-			alu.mul.b.raddr = src.val();
-		} else {
-			if (raddr_a_is_safe(src.val(), CHECK_MUL_B)) {
-				alu.mul.b.mux = V3D_QPU_MUX_A;
-				raddr_a = src.val();
-			}	else if (raddr_b_is_safe(src.val(), CHECK_MUL_B)) {
-				alu.mul.b.mux = V3D_QPU_MUX_B;
-				raddr_b = src.val();
-			} else {
-				cerr << "alu_mul_b: can not assign rf location to raddra/b.\n"
-					   << "Src  : " << src.dump() << "\n"
-					   << "Instr: " << mnemonic() << "\n";
-
-				cerr << "alu_mul_b: can not assign rf location to raddra/b\n" << thrw;
-			}
-		}
+	} else if (!alu_set_src(src, alu.mul.b, CHECK_MUL_B)) {
+		return false;
 	}
-
+		
   alu.mul.b.unpack = src.unpack();
 	m_alu_mul_b_set  = true;
+	return true;
 }
 
 /**
@@ -1444,32 +1283,6 @@ std::unique_ptr<Location> Instr::mul_alu_dst() const {
 }
 
 
-std::unique_ptr<Source> Instr::add_alu_a() const {
-	auto const &src = alu.add.a;
-  std::unique_ptr<Source> res;
-
-	if (Platform::compiling_for_vc7()) {
-	  if (sig.small_imm_a) { // add a, small imm
-	    res.reset(new Source(src.raddr));
-	  } else {               // add a, rf
-	    res.reset(new Source(RFAddress(src.raddr)));
-	  }
-	} else {
-		// vc6 - no small imm on a
-		if (alu.add.a.mux == V3D_QPU_MUX_A) {
-	    res.reset(new Source(RFAddress(raddr_a)));
-		} else {
-	    // Doesn't work: 
-			// res.reset(new Source(Register(raddr_a)));
-	    res.reset(new Source(RFAddress(raddr_a)));  // Use this for the time being
-		}
-	}
-
-  assert(res);
-  return res;
-}
-
-
 /**
  * Return the contents of alu add a
  */
@@ -1524,72 +1337,6 @@ BaseSource Instr::alu_add_a() const { return BaseSource(*this, CHECK_ADD_A); }
 BaseSource Instr::alu_add_b() const { return BaseSource(*this, CHECK_ADD_B); }
 BaseSource Instr::alu_mul_a() const { return BaseSource(*this, CHECK_MUL_A); }
 BaseSource Instr::alu_mul_b() const { return BaseSource(*this, CHECK_MUL_B); }
-
-
-std::unique_ptr<Source> Instr::add_alu_b() const {
-	auto const &src = alu.add.b;
-  std::unique_ptr<Source> res;
-
-  if (sig.small_imm_b) { // add b, small imm
-    res.reset(new Source(SmallImm((int) src.raddr)));
-  } else {               // add b, rf
-    res.reset(new Source(RFAddress(src.raddr)));
-  }
-
-  assert(res);
-  return res;
-}
-
-
-std::unique_ptr<Source> Instr::mul_alu_a() const {
-	auto const &src = alu.mul.a;
-  std::unique_ptr<Source> res;
-
-  if (sig.small_imm_c) { // mul a, small imm
-    res.reset(new Source(SmallImm((int) src.raddr)));
-  } else {               // mul a, rf
-    res.reset(new Source(RFAddress(src.raddr)));
-  }
-
-  assert(res);
-  return res;
-}
-
-
-std::unique_ptr<Source> Instr::mul_alu_b() const {
-	auto const &src = alu.mul.b;
-  std::unique_ptr<Source> res;
-
-  if (sig.small_imm_d) { // mul b, small imm
-    res.reset(new Source(SmallImm((int) src.raddr)));
-  } else {               // mul b, rf
-    res.reset(new Source(RFAddress(src.raddr)));
-  }
-
-  assert(res);
-  return res;
-}
-
-
-std::unique_ptr<Source> Instr::alu_src(v3d_qpu_mux src) const {
-	assert(!Platform::compiling_for_vc7());
-  std::unique_ptr<Source> res;
-
-  if (src < V3D_QPU_MUX_A) {
-    // Accumulator
-    res.reset(new Source(Register("", (v3d_qpu_waddr) src, src)));
-  } else if (src == V3D_QPU_MUX_A) { // address a, rf-reg
-    res.reset(new Source(RFAddress(raddr_a)));
-  } else if (sig.small_imm_b) {      // address b, small imm
-    res.reset(new Source(SmallImm((int) raddr_b)));
-  } else {
-    // address b, rf-reg
-    res.reset(new Source(RFAddress(raddr_b)));
-  }
-
-  assert(res);
-  return res;
-}
 
 
 ///////////////////////////////////////////////////////////////////////////////

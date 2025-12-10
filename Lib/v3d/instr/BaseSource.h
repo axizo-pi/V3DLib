@@ -24,6 +24,7 @@ public:
   BaseSource &operator=(const BaseSource&) = default;
 
   BaseSource(Source const &rhs);
+  BaseSource(Location const &rhs);
 	BaseSource(Instr const &instr, int check_src);
 
   bool operator==(const BaseSource &rhs) const;
@@ -32,14 +33,14 @@ public:
   bool operator<(const BaseSource &rhs) const;
 
   std::string dump() const;
-  void set_from_src(uint8_t val, bool is_small_imm, bool is_reg, bool is_rfa);
+  void set_from_src(uint8_t val, bool is_small_imm, bool is_reg, bool is_rf);
   void set_from_dst(uint8_t val, bool is_magic);
 
   uint8_t val()       const { return m_val; }
   bool is_set()       const { return m_is_set; }
   bool is_small_imm() const { return m_is_small_imm; }
   bool is_reg()       const { return m_is_reg; }
-  bool is_rfa()       const { return m_is_rfa; }
+  bool is_rf()        const { return m_is_rf; }
   bool is_magic()     const;
 
   bool uses_global_raddr() const;
@@ -52,11 +53,13 @@ private:
   uint8_t m_val          = 0;      // Depending on bool's, rf or mux or small imm
   bool    m_is_small_imm = false;
   bool    m_is_reg       = false;
-  bool    m_is_rfa       = false;  // false means rfb
+  bool    m_is_rf        = false;
   bool    m_is_dst       = false;
   bool    m_is_magic     = false;
 
 	v3d_qpu_input_unpack m_unpack;
+
+  void _init(Location const &rhs);
 };
 
 

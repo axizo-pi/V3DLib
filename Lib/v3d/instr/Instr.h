@@ -160,13 +160,11 @@ public:
   bool alu_set(V3DLib::Instr const &src_instr);
 
 	// BaseSource implementation
-  void alu_add_a(BaseSource const &src, bool overwrite = false);
-  void alu_add_b(BaseSource const &src, bool overwrite = false);
+  bool alu_add_a(BaseSource const &src, bool overwrite = false);
+  bool alu_add_b(BaseSource const &src, bool overwrite = false);
   void alu_mul_dst(Location const &dst);
-  void alu_mul_a(BaseSource const &src);
-  void alu_mul_b(BaseSource const &src);
-	bool alu_mul_a_safe(BaseSource const &src);
-	bool alu_mul_b_safe(BaseSource const &src);
+  bool alu_mul_a(BaseSource const &src);
+  bool alu_mul_b(BaseSource const &src);
 
 	BaseSource sig_dst() const;
   BaseSource alu_add_dst() const;
@@ -176,25 +174,15 @@ public:
   BaseSource alu_mul_a() const;
   BaseSource alu_mul_b() const;
 
-	// Source implementation
   void alu_add_dst(Location const &dst);
-  bool alu_add_a(Source const &src);
-  bool alu_add_b(Source const &src);
 
 private:
-  bool alu_mul_a(Source const &src);
-  bool alu_mul_b(Source const &src);
-
-  std::unique_ptr<Source> alu_src(v3d_qpu_mux src) const;  // < vc7
+	bool alu_set_src(BaseSource const &src, v3d_qpu_input &input, CheckSrc check_src);
 
 public:
   // TODO see if this can be cleaned up;  could be replaced by DestReg, but I prefer BaseSource
   std::unique_ptr<Location> add_alu_dst() const;
   std::unique_ptr<Location> mul_alu_dst() const;
-  std::unique_ptr<Source> add_alu_a() const;
-  std::unique_ptr<Source> add_alu_b() const;
-  std::unique_ptr<Source> mul_alu_a() const;
-  std::unique_ptr<Source> mul_alu_b() const;
 
 
 	bool has_small_imm() const;

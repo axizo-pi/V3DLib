@@ -18,26 +18,33 @@ const int V3D_QPU_MUX_R5 = 5;   // From qpu.instr.h. The mux values <= this one 
 
 BaseSource::BaseSource(Source const &rhs) {
 	// Not expecting dst register right now
-  m_is_rfa   = false;
 
 	if (rhs.is_small_imm()) {
   	m_is_small_imm = true;
 		m_val = rhs.small_imm().val();
 	} else {
-		//breakpoint;
-
 		// It's a location
-		auto &loc = rhs.location();
-		assert (!Platform::compiling_for_vc7() || loc.is_rf());
-
-		m_val    = loc.to_waddr();
- 		m_is_rfa = loc.is_rf();
-		m_is_reg = loc.is_reg();
+		_init(rhs.location());
 	}
 
   m_is_set   = true;
-  m_is_dst   = false;
-  m_is_magic = false;   // For dst only
+  unpack(rhs.input_unpack());
+}
+
+
+BaseSource::BaseSource(Location const &rhs) {
+	_init(rhs);
+  m_is_set   = true;
+}
+
+
+void BaseSource::_init(Location const &rhs) {
+	assert (!Platform::compiling_for_vc7() || rhs.is_rf());
+
+	m_val    = rhs.to_waddr();
+ 	m_is_rf  = rhs.is_rf();
+	m_is_reg = rhs.is_reg();
+
   unpack(rhs.input_unpack());
 }
 
@@ -68,13 +75,13 @@ BaseSource::BaseSource(Instr const &instr, int check_src) {
 
 	if (Platform::compiling_for_vc7()) {
 		// vc7 - no acc's
-	  set_from_src(input.raddr, instr.sig.small_imm_b, false, false);
+	  set_from_src(input.raddr, instr.sig.small_imm_b, false, true);
 	} else {
 		// 
 		if (input.mux == V3D_QPU_MUX_A) {
 	    set_from_src(instr.raddr_a, false, false, true );
 		} else if (input.mux == V3D_QPU_MUX_B) {
-	    set_from_src(instr.raddr_b, instr.sig.small_imm_b, false, false );
+	    set_from_src(instr.raddr_b, instr.sig.small_imm_b, false, true );
 		} else {
 	    set_from_src(input.mux, false, true, false);
 		}
@@ -117,12 +124,17 @@ bool BaseSource::operator<(const BaseSource &rhs) const {
 }
 
 
-void BaseSource::set_from_src(uint8_t val, bool is_small_imm, bool is_reg, bool is_rfa) {
+void BaseSource::set_from_src(uint8_t val, bool is_small_imm, bool is_reg, bool is_rf) {
   m_is_set       = true;
   m_val          = val;
   m_is_small_imm = is_small_imm;
   m_is_reg       = is_reg;
-  m_is_rfa       = is_rfa;
+
+  if (!is_small_imm) {
+	  m_is_rf        = is_rf;
+	} else {
+		assert(!m_is_rf);
+	}
 }
 
 
@@ -164,15 +176,12 @@ std::string BaseSource::dump() const {
 
     if (m_is_small_imm) {
       ret << "Small imm: ";
-    } else if (!Platform::compiling_for_vc7()) {
-			// vc6
-			if (m_is_reg) {
-      	ret << "Reg: ";
-	    } else if (m_is_rfa) {
-	      ret << "rfa: ";
-	    } else {
-	      ret << "rfb: ";
-	    }
+		}	else if (m_is_reg) {
+     	ret << "r";
+    } else if (m_is_rf) {
+      ret << "rf";
+    } else {
+			ret << "unknown ";
 		}
 
   	ret << m_val;
