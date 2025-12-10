@@ -4,6 +4,8 @@
 #include "global/log.h"
 #include <memory>
 
+using namespace Log;
+
 namespace V3DLib {
 namespace {
 

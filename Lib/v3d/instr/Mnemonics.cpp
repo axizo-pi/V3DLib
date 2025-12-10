@@ -43,6 +43,7 @@ Mnemonic::Mnemonic(v3d_qpu_add_op op, Location const &dst, Source const &a, Sour
 	Location::check_acc_usage(dst);
 	if (a.is_location()) Location::check_acc_usage(a.location());
 	if (b.is_location()) Location::check_acc_usage(b.location());
+
 }
 
 Mnemonic::Mnemonic(v3d_qpu_add_op op, Location const &dst, Source const &a) {

@@ -750,11 +750,20 @@ bool Instr::alu_add_set(Location const &dst, Source const &in_a, Source const &i
 	BaseSource a(in_a);
 	BaseSource b(in_b);
 
-	// Following applies to vc6 AND vc7
-	if (a.is_small_imm() && b.is_small_imm()) {
-		if (a.val() != b.val()) {
-    	cerr << "alu_add_set: can not pass two different small immediates.";
-			return false;
+	// TODO: Likely need this on alu_mul_set as well
+	//       Better would be to test alu/mul together
+	if (Platform::compiling_for_vc7()) {
+		// TODO: I *think* this is correct, but need to research further
+		if (a.is_small_imm() && b.is_small_imm()) {
+				cerr << "shl(): can not pass in two immediates: " 
+					   << a.dump() << ", " << b.dump() << "\n" << thrw;
+		}
+	} else {
+		if (a.is_small_imm() && b.is_small_imm()) {
+			if (a != b) {
+				cerr << "shl(): can not pass in two different immediates: " 
+					   << a.dump() << " != " << b.dump() << "\n" << thrw;
+			}
 		}
 	}
 
