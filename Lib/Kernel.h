@@ -115,11 +115,6 @@ public:
 				Platform::compiling_for_vc4(true);
 	  	}
 		}
-
- #ifdef ARM32
- 		Log::warn << "ARM 32-bits not supported any more. If it works, it works. You're on your own.";
- #endif
-
 #endif
 
   	if (m_settings.run_type != 0) {
