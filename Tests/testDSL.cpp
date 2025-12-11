@@ -95,7 +95,7 @@ string showResult(Array &result, int index, int size = 16) {
 
   buf << "result  : ";
   for (int j = 0; j < size; j++) {
-    buf << result[size*index + j] << " ";
+    buf << result[size*index + j] << ", ";
   }
   buf << "\n";
 
@@ -107,9 +107,9 @@ template<typename T>
 string showExpected(const std::vector<T> &expected) {
   ostringstream buf;
 
-  buf << "expected: ";
+  buf << "          expected: ";
   for (int j = 0; j < 16; j++) {
-    buf << expected[j] << " ";
+    buf << expected[j] << ", ";
   }
   buf << "\n";
 
@@ -156,9 +156,13 @@ void check_vector(SharedArray<T> &result, int index, int expected, float precisi
 
 
 template<typename T>
-void check_vectors(SharedArray<T> &result, std::vector<std::vector<T>> const &expected) {
+void check_vectors(
+	SharedArray<T> &result,
+	std::vector<std::vector<T>> const &expected,
+	float precision = 0.0f
+) {
   for (int index = 0; index < (int) expected.size(); ++index) {
-    check_vector(result, index, expected[index]);
+    check_vector(result, index, expected[index], precision);
   }
 }
 
@@ -498,12 +502,36 @@ void int_ops_kernel(Int::Ptr result) {
 }
 
 
+/**
+ * This tests the various ways of converting floats for small imm's
+ */
 void float_ops_kernel(Float::Ptr result) {
-  Float a = toFloat(index());
-  a += 3.0f;
-  a += 0.25f;
+  auto store = [&result] (Float const &val) {
+    *result = val;
+    result.inc();
+  };
 
-  *result = a;
+  Float ndx = toFloat(index());
+	Float a;
+  a = ndx + 3.0f;
+  a += 0.25f;
+	store(a);
+
+	a = ndx*47.0f;
+	store(a);
+
+	a = ndx + (-0.25f);
+	store(a);
+
+	//
+	// NOTE; slight differences in results between scalar and QPU
+	//
+
+	a = ndx*1.1215f;
+	store(a);
+
+	a = -3.27f*ndx + 1.0f;  // without add, actually literally returns '-0'
+	store(a);
 }
 
 
@@ -549,17 +577,24 @@ TEST_CASE("Test specific operations in DSL [dsl][ops]") {
 
 
   SUBCASE("Test float operations") {
-    int const N = 1;  // Number of expected results
+    int const N = 5;  // Number of expected results
 
     auto k = compile(float_ops_kernel);
+		k.dump("float_ops_kernel.txt");
 
-    Float::Array result(16*N);
+    Float::Array results(16*N);
 
-    k.load(&result).run();
+    k.load(&results).run();
 
-    vector<float> expected = { 3.25,  4.25,  5.25,  6.25,  7.25,  8.25,  9.25, 10.25,
-                              11.25, 12.25, 13.25, 14.25, 15.25, 16.25, 17.25, 18.25};
-    check_vector(result, 0, expected);
+    vector<vector<float>> expected = {
+			{ 3.25,  4.25,  5.25,  6.25,  7.25,  8.25,  9.25, 10.25, 11.25, 12.25, 13.25, 14.25, 15.25, 16.25, 17.25, 18.25},
+			{ 0, 47, 94, 141, 188, 235, 282, 329, 376, 423, 470, 517, 564, 611, 658, 705},
+			{ -0.25, 0.75, 1.75, 2.75, 3.75, 4.75, 5.75, 6.75, 7.75, 8.75, 9.75, 10.75, 11.75, 12.75, 13.75, 14.75},
+			{ 0, 1.1215, 2.243, 3.3645, 4.486, 5.6075, 6.729, 7.8505, 8.972, 10.0935, 11.215, 12.3365, 13.458, 14.5795, 15.701, 16.8225},
+			{ 1, -2.27, -5.54, -8.81, -12.08, -15.35, -18.62, -21.89, -25.16, -28.43, -31.7, -34.97, -38.24, -41.51, -44.78, -48.05},
+		};
+
+    check_vectors(results, expected, 1e-4f);
   }
 }
 
