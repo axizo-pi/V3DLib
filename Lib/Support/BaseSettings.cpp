@@ -11,6 +11,21 @@
 namespace V3DLib {
 
 void BaseSettings::process(BaseKernel &k) {
+#ifdef ARM32
+  //
+  // TODO: differentiate on platforms
+  //
+  // - Debian 10 Buster 32-bits works fine
+  // - Debian 12 Woodworm  32-bits fails
+  //
+  static bool showed_msg = false;
+
+  if (!showed_msg) {
+  	Log::warn << "ARM 32-bits not supported any more. If it works, it works. You're on your own.";
+    showed_msg = true;
+  }
+#endif
+
   // NOTE: For multiple calls here (entirely possible, HeatMap does this),
   //       this will prevent dumping the v3d code (mnemonics, actually) on every call.
   if (output_code) {
