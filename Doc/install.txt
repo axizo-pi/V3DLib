@@ -15,6 +15,12 @@ Pre: Debian 12 Bookworm on SD card
 
 ============================================
 
+Pi1:
+- 32-bits only
+- no wifi
+
+============================================
+
 # Check distro
 lsb_release -a
 
