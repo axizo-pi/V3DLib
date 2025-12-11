@@ -7,6 +7,29 @@ namespace V3DLib {
 namespace v3d {
 namespace instr {
 
+std::string DestReg::dump() const {
+	std::string ret;
+
+	if (m_used) {
+ 		if (m_magic_write) {
+      if (m_waddr <= V3D_QPU_WADDR_R5) {
+				ret << "r";
+			} else {
+				ret << "magic ";
+			}
+		} else {
+			ret << "rf";
+		}
+
+ 		ret << m_waddr;
+	} else {
+		ret << "Not used";
+	}
+
+	return ret;
+}
+
+
 Register::Register(const char *name, v3d_qpu_waddr waddr_val) :
   m_name(name),
   m_waddr_val(waddr_val),

@@ -535,9 +535,43 @@ void remove_useless(Instructions &instr) {
         warn << "remove_useless detected move OR:\n"
              << "  cur: " << cur.mnemonic() << "\n"
              << "  nxt: " << nxt.mnemonic();
-*/
+*/						 
+
+				// Scan forward to see if cur dst is used somewhere
+				bool dst_is_src = false;
+				instr::DestReg dst =  cur.add_dest();
+
+				for (int j = i + 2; j < (int) instr.size(); ++j) {  // Skip nxt, this one is known
+					auto tmp = instr[j];
+
+					if (dst == tmp.add_dest() || dst == tmp.sig_dest()) {
+						//warn << "Found cur dst '" << dst.dump() << "' as dst at " << j << "; " << tmp.mnemonic();
+						// This is OK
+						break;
+					}
+
+					if (dst == tmp.add_src_a() || dst == tmp.add_src_b()) {
+						//warn << "Found cur dst '" << dst.dump() << "' as src at " << j << "; " << tmp.mnemonic();
+						dst_is_src = true;
+						break;
+					}
+				}
+
+				if (dst_is_src) {
+					//warn << "Cur dst in use as src, can not combine";
+					continue;
+				}
+
+
 				alu_add_copy_src(cur, nxt);
 				cur.skip(true);
+
+        if (check_useless_moves(nxt, i + 1)) {
+        	warn << "Result is useless!:\n"
+               << "  nxt: " << nxt.mnemonic();
+
+					nxt.skip(true);
+				}
 /*
         warn << "Combined move OR:\n"
              << "  nxt: " << nxt.mnemonic();

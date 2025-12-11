@@ -571,6 +571,7 @@ DestReg Instr::sig_dest() const {
 
 DestReg Instr::add_dest() const {
   if (alu.add.op != V3D_QPU_A_NOP) {
+		//breakpoint;
     return DestReg(alu.add.waddr, alu.add.magic_write);
   }
 
@@ -601,13 +602,17 @@ DestReg Instr::add_src_dest(v3d_qpu_input src) const {
 
 
 DestReg Instr::add_src_a() const {
+	if (Oper::num_operands(alu.add.op) == 0) return DestReg();
   if (alu.add.op == V3D_QPU_A_NOP) return DestReg();
+
   return add_src_dest(alu.add.a);
 }
 
 
 DestReg Instr::add_src_b() const {
+	if (Oper::num_operands(alu.add.op) < 2) return DestReg();
   if (alu.add.op == V3D_QPU_A_NOP) return DestReg();
+
   return add_src_dest(alu.add.b);
 }
 
