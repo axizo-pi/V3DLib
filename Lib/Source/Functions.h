@@ -14,9 +14,11 @@ IntExpr create_function_snippet(StackCallback f);
 FloatExpr create_float_function_snippet(StackCallback f);
 
 IntExpr two_complement(IntExpr a);
+IntExpr _INF();
 IntExpr abs(IntExpr a);
 IntExpr topmost_bit(IntExpr in_a);
 void integer_division(Int &quotient, Int &remainder, IntExpr in_a, IntExpr in_b);
+IntExpr integer_division_f(IntExpr in_a, IntExpr in_b);
 
 inline IntExpr operator-(IntExpr a) { return two_complement(a); }
 

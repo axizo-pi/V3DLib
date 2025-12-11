@@ -111,7 +111,7 @@ op_item const *op_items_find_by_op(ALUOp::Enum op, bool strict = true);
 
 namespace Oper {
 
-bool oneOperand(v3d_qpu_add_op op);
+int num_operands(v3d_qpu_add_op op);
 
 } // namespace Oper
 

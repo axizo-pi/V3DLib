@@ -14,9 +14,6 @@
 using namespace V3DLib;
 using namespace Log;
 
-const int M = 16;  // Num of rows in matrix
-const int N = 16;  // Width of matrix and length of vector
-
 Settings settings;
 
 float a[3][30] = {
@@ -263,8 +260,15 @@ void test_outer_product(BaseKernel &op) {
 }
 
 
+template<int const Size>
+struct vector;
+
 /**
- * width is in multiples of 16
+ * width is in multiples of 16.
+ *
+ * width x height = 16*16 x 16:
+ * - has been shown to work
+ * - are dimension which I consider to efficiently use the QPU
  */
 template<int const Width, int const Height>
 struct matrix {
@@ -326,6 +330,23 @@ struct matrix {
 	}
 
 
+	void frand() {
+		assert(arr().size() > 0);
+
+  	for (int i = 0; i < (int) arr().size(); ++i) {
+	    arr()[i] = ::frand();
+  	}
+	}
+
+	void set(Float::Array const &rhs) {
+		assert(arr().size() == rhs.size());
+
+		for (int i = 0; i < (int) arr().size(); ++i) {
+			arr()[i] = rhs[i];
+		}
+	}
+
+
 	Class &operator=(Class &rhs) {
 		transfer(rhs);
 		return *this;
@@ -343,35 +364,53 @@ struct matrix {
 		return ret;
 	}
 
+
+	vector<Height/16> operator*(vector<Width> const &rhs) {
+		vector<Height/16> ret;
+
+  	m_mult->load(&rhs.arr(), &arr(), &ret.arr()).run();
+		return ret;
+	}
+
 protected:
 	void width(int rhs) { m_width = rhs; }
 
-	void transfer(Class &rhs) {
+	void transfer(Class const &rhs) {
 		assert(rhs.m_arr != nullptr);
 
 		m_width  = rhs.m_width;
 		m_height = rhs.m_height;
 
-		m_arr.reset(rhs.m_arr.release());
-		assert(rhs.m_arr == nullptr);
+		//m_arr.reset(rhs.m_arr.release());
+		m_arr = rhs.m_arr;
+		//assert(rhs.m_arr == nullptr);
 	}
 
-	std::unique_ptr<Float::Array> m_arr;
+	std::shared_ptr<Float::Array> m_arr;
 
 private:
 	int m_width = 0;
 	int m_height = 0;
 
+	static BaseKernel *m_mult;
+
 	void init_static() {
+		if (m_mult == nullptr) {
+			m_mult = new BaseKernel(compile(kernel<Height, Width>, settings));
+		}
 	}
 };
+
+
+template<int const Width, int const Height>
+BaseKernel *matrix<Width, Height>::m_mult = nullptr;
 
 
 /**
  * size is in multiples of 16
  */
 template<int const Size>
-struct vector : public matrix<Size,1> {
+struct vector : public matrix<Size, 1> {
 	using Class = vector<Size>;
 	using Parent = matrix<Size,1>;
 
@@ -379,6 +418,7 @@ struct vector : public matrix<Size,1> {
 		*this = rhs;
 		init_static();
 	}
+	
 
 	vector() : Parent() {
 		init_static();
@@ -436,13 +476,11 @@ struct vector : public matrix<Size,1> {
 		assert(ret.width() == Parent::width());
 
 		m_sub->load(&Parent::arr(), &rhs.arr(), &ret.arr()).run();
-
 		return ret;
 	}
 
 
-
-	vector &operator=(vector &rhs) {
+	vector &operator=(vector const &rhs) {
 		Parent::transfer(rhs);
 		return *this;
 	}
@@ -462,6 +500,14 @@ struct vector : public matrix<Size,1> {
 	}
 
 
+	vector sigmoid(vector const &bias) {
+		vector ret;
+
+		m_sigmoid->load(&Parent::arr(), &bias.arr(), &ret.arr()).run();
+		return ret;	
+	}
+
+
 	static BaseKernel &op_kernel() {
 		init_static();
 		return *m_op;
@@ -474,6 +520,7 @@ private:
 	// For now, it works
 	static BaseKernel *m_sub;
 	static BaseKernel *m_op;
+	static BaseKernel *m_sigmoid;
 
 	static void init_static() {
 		if (m_sub == nullptr) {
@@ -482,15 +529,16 @@ private:
 		if (m_op == nullptr) {
 			m_op = new BaseKernel(compile(outer_product<Size>, settings));
 		}
+		if (m_sigmoid == nullptr) {
+			m_sigmoid = new BaseKernel(compile(kernel_sigmoid<Size>, settings));
+		}
 	}
 };
 
 
-template<int const size>
-BaseKernel *vector<size>::m_sub = nullptr;
-
-template<int const size>
-BaseKernel *vector<size>::m_op = nullptr;
+template<int const size> BaseKernel *vector<size>::m_sub     = nullptr;
+template<int const size> BaseKernel *vector<size>::m_op      = nullptr;
+template<int const size> BaseKernel *vector<size>::m_sigmoid = nullptr;
 
 
 void test_vector() {
@@ -501,132 +549,137 @@ void test_vector() {
  	warn << "a_vec: " << a_vec.dump();
  	warn << "sub: " << c_vec.dump();
 */	
-	vector<2> a_vec; a_vec.set(primes, primes_size);
-	//warn << "a_vec: " << a_vec.dump();
+	vector<2> d_vec; d_vec.set(primes, primes_size);
+	//warn << "d_vec: " << d_vec.dump();
 
-	vector<2> b_vec;
+	vector<2> e_vec;
 
 	for (int i = 0; i < 2*16; ++i) {
-	  b_vec[i] = (float) (i + 1);
+	  e_vec[i] = (float) (i + 1);
 	}
 
-	//warn << "b_vec: " << b_vec.dump();
+	warn << "e_vec: " << e_vec.dump();
 
-	auto result = a_vec.outer(b_vec);
+	auto result = d_vec.outer(e_vec);
 
 	warn << "result: " << result.dump();
 }
 
+////////////////////////////////////////////////////
 
+const int M = 16; // Num of rows in matrix
+const int N = 2;  // Width of matrix and length of vector
+
+/**
+ * The layer sizes of the example models are:
+ *
+ * input : hidden : output = 30 : 5 : 3
+ *
+ * The kernel(s) however work with array sizes of multiples
+ * of 16. We should the smallest 16-item increments that
+ * encompass the original size.
+ */
 template<int const n_size>
 struct model {
 	model(int m_size) :
-		w1(16*n_size*m_size),
-		z1(16*n_size),
-		a1(16*n_size),
-
-	 	w2(16*n_size*m_size),
-		bias2(16*n_size),
-		z2(16*n_size),
-		a2(16*n_size),
 		s_tmp(16*n_size),
-		s_a2(16*n_size),
 
   	k(compile(kernel<M, n_size>, settings)),
 		sigmoid(compile(kernel_sigmoid<n_size>, settings))
 	{
-  	frand_array(w1);
-  	frand_array(w2);
-  	frand_array(bias2);
-		//bias1.rand();
-		bias1.set(3);
-
-		//sigmoid.dump("sigmoid.txt");
+		w1_v.frand();
+		bias1.frand();
+		w2_v.frand();
+		bias2.frand();
 	}
 
-  Float::Array w1;
-	Float::Array z1;
-	Float::Array a1;
+	matrix<N, M> w1_v;
+	vector<1> z1_v;
+  vector<1> bias1;
+  vector<1> a1;
 
-  Float::Array w2;
-  Float::Array bias2;
-	Float::Array z2;
-	Float::Array a2;
+  //Float::Array w2;
+	matrix<1, 16> w2_v;
+  vector<1> bias2;
+  vector<1> z2_v;
+  vector<1> a2;
 
-	// Values for scalar output
-	Float::Array s_tmp;
-	Float::Array s_a2;
-
-  vector<n_size> bias1;
+	Float::Array s_tmp; // For scalar output
 
 	BaseKernel k;
 	BaseKernel sigmoid;
 
-	void forward(Float::Array &input) {
-		const int local_N = 32;
+	vector<1> forward(vector<2> const &input_v) {
+    //Timer timer("Matrix mult");
 
-    Timer timer("Matrix mult");
+  	z1_v = w1_v * input_v;
+ 		//warn << "z1_v: " << z1_v.dump();
 
-  	k.load(&input, &w1, &z1).run();
-  	// run_scalar(input, w1, s_tmp);
-  	// warn << "scalar z1: " << vector_dump(s_tmp, local_N);
-  	// warn << "kernel z1: " << vector_dump(z1, local_N);
+  	//run_scalar(input_v.arr(), w1_v.arr(), s_tmp);
+  	//warn << "scalar z1: " << vector_dump(s_tmp, 16);
+  	//warn << "kernel z1: " << z1_v.dump();
 
-  	// warn << "bias: " << bias1.dump();
+  	//warn << "bias1: " << bias1.dump();
 
-		sigmoid.load(&z1, &bias1.arr(), &a1).run();
-		scalar_sigmoid(z1, bias1.arr(), s_tmp);
-  	warn << "scalar sigmoid: " << vector_dump(s_tmp, local_N);
-  	warn << "kernel sigmoid: " << vector_dump(a1, local_N);
+		a1 = z1_v.sigmoid(bias1);
 
-  	k.load(&a1, &w2, &z2).run();
-  	//run_scalar(k_model.a1, k_model.w2, s_model.z2);
+		//scalar_sigmoid(z1_v.arr(), bias1.arr(), s_tmp);
+  	//warn << "scalar sigmoid: " << vector_dump(s_tmp, 16);
+  	//warn << "kernel sigmoid: " << a1.dump();
 
-		sigmoid.load(&z2, &bias2, &a2).run();
-		scalar_sigmoid(z2, bias2, s_a2);
+  	z2_v = w2_v * a1;
 
+  	k.load(&a1.arr(), &w2_v.arr(), &s_tmp).run();
+
+  	//run_scalar(a1.arr(), w2_v.arr(), s_tmp);
+  	//warn << "scalar z2: " << vector_dump(s_tmp, 16);
+  	//warn << "kernel z2: " << z2_v.dump();
+
+		a2 = z2_v.sigmoid(bias2);
+		scalar_sigmoid(z2_v.arr(), bias2.arr(), s_tmp);
+
+/*
+		// TODO adjust
     timer.end();
 
-		// TODO adjust
     int flops = 2*M*(16*N + 16*(N - 1));  // matrix num_rows*(num_mults + num_adds);
 	  flops    += 2*M*6;                    // sigmoid (1.0/(1.0 + exp(-1.0*x + bias)));
 
-    warn << "MFLOPS: " << ((float) flops)/timer.diff()/1.0e6;
+    //warn << "MFLOPS: " << ((float) flops)/timer.diff()/1.0e6;
     //warn << "Timer diff: " << timer.diff();
+*/		
+
+		return a2;
+	}
+
+	void back_prop(vector<2> &input, vector<1> &result) {
+  	warn << "Pre  a2: " << a2.dump();
+		auto la2 = forward(input);  // This does not change the value of a2!
+  	warn << "Post a2: " << la2.dump();
+
+		auto d2 = la2 - result; 
 	}
 };
 
 
 int main(int argc, const char *argv[]) {
-	const int local_N = M;
-
   settings.init(argc, argv);
 
-	//model s_model(16*N, M);
-	model<16> k_model(M);
-
-  //warn << "scalar w2: " << vector_dump(s_model.w2, local_N);
-  //warn << "kernel w2: " << vector_dump(k_model.w2, local_N);
-
-	Float::Array input(16*N);
-	init_input(input, a[0], 30);
-	Float::Array label(16*N);
-	init_input(label, labels[0], 3);
+	model<2> k_model(M);
 
 	//test_outer_product(vector<2>::op_kernel());
 	//test_vector();
 
-	k_model.forward(input);
+	vector<N> input;
+	input.set(a[0], 30);
 
-	/*
-  warn << "kernel z1: " << vector_dump(k_model.z1, local_N);
-  warn << "Scalar a1: " << vector_dump(s_model.a1, local_N);
-  warn << "kernel a1: " << vector_dump(k_model.a1, local_N);
-  warn << "scalar z2: " << vector_dump(s_model.z2, local_N);
-  warn << "kernel z2: " << vector_dump(k_model.z2, local_N);
-	*/
-  warn << "Scalar a2: " << vector_dump(k_model.s_a2, local_N);
-  warn << "kernel a2: " << vector_dump(k_model.a2, local_N);
+
+	auto result = k_model.forward(input);
+
+ // warn << "Scalar a2 : " << vector_dump(k_model.s_tmp, 16);
+ // warn << "kernel res: " << result.dump();
+
+	k_model.back_prop(input, result);
 
   return 0;
 }

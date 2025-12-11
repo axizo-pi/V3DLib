@@ -60,11 +60,17 @@ bool Source::operator==(Location const &rhs) const {
 }
 
 
-/////////////////////////////////////////////////
-// Class BaseSource
-/////////////////////////////////////////////////
+std::string Source::dump() const {
+	std::string ret;
 
+	if (is_small_imm()) {
+		ret << "imm " << small_imm().dump();
+	} else {
+		ret << "loc " << location().dump();
+	}
 
+	return ret;
+}
 
 }  // namespace instr
 }  // namespace v3d

@@ -184,6 +184,8 @@ void Liveness::compute_liveness(Instr::List &instrs) {
             //
             AssignCond assign_cond = instr.assign_cond();
             for (int j = item.first_usage(); j <= item.last_usage(); j++) {
+							if (instrs[j].isNop()) continue;
+
               assertq((assign_cond == instrs[j].assign_cond())            // expected usage
                    || (instrs[j].is_always() && !instrs[j].is_branch()),  // Interim basic usage allowed (happens)
                 "Expected variable to be in condition assign block only", true

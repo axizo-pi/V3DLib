@@ -259,8 +259,8 @@ void alu_add_copy_src(Instr const &src, Instr &dst) {
 	assert(src.mul_nop());  // Paranoia
   assert(dst.mul_nop());
 
-  dst.alu_add_a(src.alu_add_a());
-  dst.alu_add_b(src.alu_add_b());
+  dst.alu_add_a(src.alu_add_a(), true);
+  dst.alu_add_b(src.alu_add_b(), true);
 }
 
 } // anon namespace
@@ -289,6 +289,8 @@ bool alu_to_mul_alu(Instr const &src, Instr &dst) {
 
   if (!dst.mul_nop()) return false; 
 
+	Instr ret = dst;
+
   //
   // Get used dst and src
   //
@@ -301,46 +303,54 @@ bool alu_to_mul_alu(Instr const &src, Instr &dst) {
     v3d_qpu_mul_op mul_op;
     if (!convert_alu_op_to_mul_op(mul_op, src)) return false;  // False if no applicable translation add -> mul
 
-		if (!dst.alu_mul_b_safe(alu_add_b)) return false;
-		if (!dst.alu_mul_a_safe(alu_add_a)) return false;
-
-  	dst.alu.mul.op = mul_op;
+  	ret.alu.mul.op = mul_op;
 		auto dst_loc = src.add_alu_dst();
-  	dst.alu_mul_dst(*dst_loc);  // dst (waddr) is always safe
-  	dst.alu_mul_a(alu_add_a);
-  	dst.alu_mul_b(alu_add_b);
-  } else {                  // Take the values from alu mul
-		if (!dst.alu_mul_b_safe(alu_mul_b)) return false;
-		if (!dst.alu_mul_a_safe(alu_mul_a)) return false;
+  	ret.alu_mul_dst(*dst_loc);  // dst (waddr) is always safe
 
-    dst.alu.mul.op = src.alu.mul.op;
+  	if (!ret.alu_mul_a(alu_add_a)) {
+			return false;
+		}
+
+  	if (!ret.alu_mul_b(alu_add_b)) {
+			return false;
+		}
+  } else {                  // Take the values from alu mul
+    ret.alu.mul.op = src.alu.mul.op;
 		auto dst_loc = src.mul_alu_dst();
-  	dst.alu_mul_dst(*dst_loc);
-  	dst.alu_mul_a(alu_mul_a);
-  	dst.alu_mul_b(alu_mul_b);
+  	ret.alu_mul_dst(*dst_loc);
+
+  	if (!ret.alu_mul_a(alu_mul_a)) {
+			return false;
+		}
+
+  	if (!ret.alu_mul_b(alu_mul_b)) {
+			return false;
+		}
+  	ret.alu_mul_b(alu_mul_b);
   }
 
   if (src.mul_nop()) {
-    dst.alu.mul.output_pack = src.alu.add.output_pack;
-    dst.alu.mul.a.unpack    = src.alu.add.a.unpack;
-    dst.alu.mul.b.unpack    = src.alu.add.b.unpack;
+    ret.alu.mul.output_pack = src.alu.add.output_pack;
+    ret.alu.mul.a.unpack    = src.alu.add.a.unpack;
+    ret.alu.mul.b.unpack    = src.alu.add.b.unpack;
 
-    dst.flags.mc  = src.flags.ac;
-    dst.flags.mpf = src.flags.apf;
-    dst.flags.muf = src.flags.auf;
+    ret.flags.mc  = src.flags.ac;
+    ret.flags.mpf = src.flags.apf;
+    ret.flags.muf = src.flags.auf;
   } else {
-    dst.alu.mul.output_pack = src.alu.mul.output_pack;
-    dst.alu.mul.a.unpack    = src.alu.mul.a.unpack;
-    dst.alu.mul.b.unpack    = src.alu.mul.b.unpack;
+    ret.alu.mul.output_pack = src.alu.mul.output_pack;
+    ret.alu.mul.a.unpack    = src.alu.mul.a.unpack;
+    ret.alu.mul.b.unpack    = src.alu.mul.b.unpack;
 
-    dst.flags.mc  = src.flags.mc;
-    dst.flags.mpf = src.flags.mpf;
-    dst.flags.muf = src.flags.muf;
+    ret.flags.mc  = src.flags.mc;
+    ret.flags.mpf = src.flags.mpf;
+    ret.flags.muf = src.flags.muf;
   }
 
-  dst.header(src.header());
-  dst.comment(src.comment());
+  ret.header(src.header());
+  ret.comment(src.comment());
 
+	dst = ret;
 /*
 	Log::warn << "  dst : " << dst.mnemonic(false);
 	if (!Platform::compiling_for_vc7()) {
@@ -521,17 +531,51 @@ void remove_useless(Instructions &instr) {
       	if (nxt.has_signal(false)) continue;
 
         if ((cur.alu_add_dst() != nxt.alu_add_a())) continue;
-
+/*
         warn << "remove_useless detected move OR:\n"
              << "  cur: " << cur.mnemonic() << "\n"
              << "  nxt: " << nxt.mnemonic();
+*/						 
+
+				// Scan forward to see if cur dst is used somewhere
+				bool dst_is_src = false;
+				instr::DestReg dst =  cur.add_dest();
+
+				for (int j = i + 2; j < (int) instr.size(); ++j) {  // Skip nxt, this one is known
+					auto tmp = instr[j];
+
+					if (dst == tmp.add_dest() || dst == tmp.sig_dest()) {
+						//warn << "Found cur dst '" << dst.dump() << "' as dst at " << j << "; " << tmp.mnemonic();
+						// This is OK
+						break;
+					}
+
+					if (dst == tmp.add_src_a() || dst == tmp.add_src_b()) {
+						//warn << "Found cur dst '" << dst.dump() << "' as src at " << j << "; " << tmp.mnemonic();
+						dst_is_src = true;
+						break;
+					}
+				}
+
+				if (dst_is_src) {
+					//warn << "Cur dst in use as src, can not combine";
+					continue;
+				}
+
 
 				alu_add_copy_src(cur, nxt);
-
 				cur.skip(true);
 
+        if (check_useless_moves(nxt, i + 1)) {
+        	warn << "Result is useless!:\n"
+               << "  nxt: " << nxt.mnemonic();
+
+					nxt.skip(true);
+				}
+/*
         warn << "Combined move OR:\n"
              << "  nxt: " << nxt.mnemonic();
+*/						 
       }
     }
   }

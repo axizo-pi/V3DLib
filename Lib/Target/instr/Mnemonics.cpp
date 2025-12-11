@@ -4,6 +4,8 @@
 #include "global/log.h"
 #include <memory>
 
+using namespace Log;
+
 namespace V3DLib {
 namespace {
 
@@ -414,6 +416,8 @@ Instr recv(Reg dst) {
 Instr tmuwt() {
   return genInstr(ALUOp::A_TMUWT, None, None, None);
 }
+
+
 
 }  // namespace instr
 }  // namespace Target

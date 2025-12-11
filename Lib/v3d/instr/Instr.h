@@ -16,38 +16,6 @@ namespace V3DLib {
 class ALUInstruction;
 
 namespace v3d {
-
-class RegSet {
-public:	
-	RegSet(int count);
-
-	unsigned size() const { return (unsigned) m_set.size(); }
-
-	void set(unsigned index);
-	void clear(unsigned index);
-	void add(RegSet const &rhs);
-	std::string dump() const;
-	bool empty() const;
-	unsigned first_filled() const;
-	unsigned first_empty() const;
-
-private:
-	std::vector<bool> m_set;
-};
-
-
-class ACCSet :public RegSet {
-public:	
-	ACCSet() : RegSet(6) {}
-};
-
-
-class RFSet :public RegSet {
-public:	
-	RFSet() : RegSet(64) {}
-};
-
-
 namespace instr {
 
 using rf = RFAddress;
@@ -150,9 +118,9 @@ public:
   bool is_dst(DestReg const &dst_reg) const;
 
 
-  bool alu_add_set(Location const &dst, Source const &a, Source const &b);
+  bool alu_add_set(Location const &dst, Source const &in_a, Source const &in_b);
   bool alu_mul_set(Location const &dst, Source const &a);
-  bool alu_mul_set(Location const &dst, Source const &a, Source const &b);
+  bool alu_mul_set(Location const &dst, Source const &in_a, Source const &in_b);
 
   bool alu_add_set(V3DLib::Instr const &src_instr);
   bool alu_mul_set(V3DLib::Instr const &src_instr);
@@ -160,13 +128,11 @@ public:
   bool alu_set(V3DLib::Instr const &src_instr);
 
 	// BaseSource implementation
-  void alu_add_a(BaseSource const &src);
-	void alu_add_b(BaseSource const &src);
+  bool alu_add_a(BaseSource const &src, bool overwrite = false);
+  bool alu_add_b(BaseSource const &src, bool overwrite = false);
   void alu_mul_dst(Location const &dst);
-  void alu_mul_a(BaseSource const &src);
-  void alu_mul_b(BaseSource const &src);
-	bool alu_mul_a_safe(BaseSource const &src);
-	bool alu_mul_b_safe(BaseSource const &src);
+  bool alu_mul_a(BaseSource const &src);
+  bool alu_mul_b(BaseSource const &src);
 
 	BaseSource sig_dst() const;
   BaseSource alu_add_dst() const;
@@ -176,31 +142,26 @@ public:
   BaseSource alu_mul_a() const;
   BaseSource alu_mul_b() const;
 
-	// Source implementation
   void alu_add_dst(Location const &dst);
-  bool alu_add_a(Source const &src);
-  bool alu_add_b(Source const &src);
 
 private:
-  bool alu_mul_a(Source const &src);
-  bool alu_mul_b(Source const &src);
-
-  std::unique_ptr<Source> alu_src(v3d_qpu_mux src) const;  // < vc7
+	bool alu_set_src(BaseSource const &src, v3d_qpu_input &input, CheckSrc check_src);
 
 public:
   // TODO see if this can be cleaned up;  could be replaced by DestReg, but I prefer BaseSource
   std::unique_ptr<Location> add_alu_dst() const;
   std::unique_ptr<Location> mul_alu_dst() const;
-  std::unique_ptr<Source> add_alu_a() const;
-  std::unique_ptr<Source> add_alu_b() const;
-  std::unique_ptr<Source> mul_alu_a() const;
-  std::unique_ptr<Source> mul_alu_b() const;
 
 
 	bool has_small_imm() const;
 
   bool mux_in_use(CheckSrc check_src, v3d_qpu_mux mux) const;
 	bool check_safe(BaseSource const &src, CheckSrc check_src) const;
+
+	bool alu_add_a_set() const { assert(!m_external_init); return m_alu_add_a_set; }
+	bool alu_add_b_set() const { assert(!m_external_init); return m_alu_add_b_set; }
+	bool alu_mul_a_set() const { assert(!m_external_init); return m_alu_mul_a_set; }
+	bool alu_mul_b_set() const { assert(!m_external_init); return m_alu_mul_b_set; }
 
 private:
 	bool m_external_init = false;
@@ -227,32 +188,6 @@ private:
   bool raddr_b_is_safe(uint8_t raddr, CheckSrc check_src) const;
 
 	bool alu_set_src(Source const &src, v3d_qpu_input &input, CheckSrc check_src);
-
-//
-// vc7: support for converting acc's to rf'
-//	
-public:
-	bool uses_acc() const;
-	ACCSet acc_usage() const;
-	RFSet  rf_usage() const;
-	int replace_acc_with_rf(unsigned acc, unsigned rf);
-
-private:
-	bool add_a_is_acc() const;
-	bool add_b_is_acc() const;
-	bool add_dst_is_acc() const;
-	bool mul_a_is_acc() const;
-	bool mul_b_is_acc() const;
-	bool mul_dst_is_acc() const;
-	bool sig_is_acc() const;
-
-	bool m_add_a_is_reg   = false;
-	bool m_add_b_is_reg   = false;
-	bool m_add_dst_is_reg = false;
-	bool m_mul_a_is_reg   = false;
-	bool m_mul_b_is_reg   = false;
-	bool m_mul_dst_is_reg = false;
-	// sig_addr doesn't need a special bool, sig_magic does the job
 };
 
 }  // instr
@@ -275,16 +210,8 @@ public:
 	ByteCode bytecode() const;
 	std::string dump() const;
 
-	//
-	// vc7: support for converting acc's to rf'
-	//	
-	void replace_acc_with_rf();
-
 private	:
 	bool uses_acc() const;
-	ACCSet acc_usage() const;
-	RFSet  rf_usage() const;
-	int replace_acc_with_rf(unsigned acc, unsigned rf);
 };
 
 

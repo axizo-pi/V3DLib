@@ -65,7 +65,7 @@ TEST_CASE("Test SFU functions [sfu]") {
   Float::Array results(16*N);
 
   auto k = compile(sfu);
-  k.dump("SFU.txt");
+  //k.dump("SFU.txt");
 
   INFO("Running qpu");
   //

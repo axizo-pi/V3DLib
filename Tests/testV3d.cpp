@@ -437,6 +437,8 @@ TEST_CASE("Check v3d opcodes [v3d][opcodes]") {
   SUBCASE("For opcode with two small immediates values, value should be the same") {
     REQUIRE_THROWS(shl(r0, 1, 5));
     REQUIRE_NOTHROW(shl(r3, 4, 4));
+    REQUIRE_THROWS(shr(r0, 2, 4));
+    REQUIRE_NOTHROW(shr(r3, 3, 3));
 	
 		if (V3DLib::Platform::compiling_for_vc7()) {
    	 	REQUIRE_THROWS(nop().add(r0, 1, 5));

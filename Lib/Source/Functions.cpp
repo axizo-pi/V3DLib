@@ -98,7 +98,23 @@ FloatExpr create_float_function_snippet(StackCallback f) {
 IntExpr two_complement(IntExpr a) {
   return create_function_snippet([a] {
     Int tmp = a;
-    tmp = (tmp ^ 0xffffffff) + 1;  // take the 1's complement
+    tmp = (tmp ^ -1) + 1;  // take the 1's complement
+
+    Return(tmp);
+  });
+}
+
+
+/**
+ * Return the biggest possible integer. This is 0x7fffff.
+ */
+IntExpr _INF() {
+  return create_function_snippet([] {
+
+    Int tmp = 4;   comment("Load INF");  // Important that comment is AFTER first statement
+    tmp = tmp << 15;
+    tmp = tmp << 14;
+	 	tmp = (tmp ^ -1);  // -1 = 0xffffffff
 
     Return(tmp);
   });
@@ -171,7 +187,8 @@ void integer_division(Int &Q, Int &R, IntExpr in_a, IntExpr in_b) {
 
   For (Int i = 30, i >= 0, i--)
     Where (D == 0)
-      Q = MAX_INT;                   // Indicates infinity
+      //Q = MAX_INT;                   // Indicates infinity
+      Q = _INF();
     Else
       Where (top_bit >= i)
         R = R << 1;                  // Left-shift R by 1 bit (lsb == 0)
@@ -190,6 +207,29 @@ void integer_division(Int &Q, Int &R, IntExpr in_a, IntExpr in_b) {
  
   comment("End long integer division");  // For some reason, phantom instances of this comment can pop up elsewhere
                                          // in code dumps. Not bothering with correcting this.
+}
+
+
+/**
+ * Do integer division by converting to and from float.
+ *
+ * This is not always precise (confirmed) but more concise than the full integer calculation
+ */
+IntExpr integer_division_f(IntExpr in_a, IntExpr in_b) {
+  	Float a = toFloat(in_a);    comment("Start integer division by float");
+	  Float b	= toFloat(in_b);
+
+		Int res;
+
+		Where (in_b == 0)
+			res = _INF();
+		Else
+		  res = toInt(functions::ffloor(a / b));  // ffloor() fixes rounding up 
+		End
+
+  	comment("End integer division by float");
+
+		return res;
 }
 
 

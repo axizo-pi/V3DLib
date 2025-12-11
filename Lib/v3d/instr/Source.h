@@ -26,6 +26,7 @@ public:
   SmallImm const &small_imm() const;
 
   bool operator==(Source const &rhs) const;
+  bool operator!=(Source const &rhs) const { return !(*this == rhs); }
   bool operator==(Location const &rhs) const;
 
   v3d_qpu_input_unpack input_unpack() const {
@@ -35,6 +36,8 @@ public:
       return small_imm().input_unpack();
     }
   }
+
+	std::string dump() const;
 
 private:
   bool m_is_location = false;

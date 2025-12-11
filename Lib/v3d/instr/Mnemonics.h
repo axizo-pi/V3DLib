@@ -163,8 +163,7 @@ const uint32_t zero_addr = 0;
 #define REGULAR_INSTR(mnemonic, op) \
 inline Mnemonic mnemonic(Location const &dst, Source const &a, Source const &b) { return Mnemonic(op, dst, a, b); }
 
-
-REGULAR_INSTR(shl,    V3D_QPU_A_SHL)
+REGULAR_INSTR(shl,    V3D_QPU_A_SHR)
 REGULAR_INSTR(shr,    V3D_QPU_A_SHR)
 REGULAR_INSTR(asr,    V3D_QPU_A_ASR)
 REGULAR_INSTR(add,    V3D_QPU_A_ADD)
