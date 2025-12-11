@@ -43,10 +43,11 @@ Mnemonic::Mnemonic(v3d_qpu_add_op op, Location const &dst, Source const &a, Sour
 	Location::check_acc_usage(dst);
 	if (a.is_location()) Location::check_acc_usage(a.location());
 	if (b.is_location()) Location::check_acc_usage(b.location());
+
 }
 
 Mnemonic::Mnemonic(v3d_qpu_add_op op, Location const &dst, Source const &a) {
-  assert(Oper::oneOperand(op));
+  assert(Oper::num_operands(op) == 1);
   init(NOP());
   alu_add_set(dst, a, a);  // TODO remove second a param
   alu.add.op = op;

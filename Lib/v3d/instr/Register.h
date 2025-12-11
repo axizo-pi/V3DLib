@@ -21,6 +21,8 @@ public:
 
   bool is_magic() const { return m_magic_write; }
 
+	std::string dump() const;
+
 private:
   bool    m_used = false;
   uint8_t m_waddr;

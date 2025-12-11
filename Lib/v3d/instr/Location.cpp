@@ -1,12 +1,15 @@
 #include "Location.h"
-#include "global/log.h"
+//#include "global/log.h"
 #include "Support/Platform.h"
+#include "Support/basics.h"
 
 using namespace Log;
+//using ::operator<<; // C++ weirdness
 
 namespace V3DLib {
 namespace v3d {
 namespace instr {
+
 
 /**
  * General purpose acc's not present on vc7; block usage in this case.
@@ -16,7 +19,7 @@ bool Location::check_acc_usage(Location const &loc) {
 
 	if (loc.is_rf()) return true;
 
-	debug << "Checking Location with mux '" << loc.to_mux() << "'";
+	Log::debug << "Checking Location with mux '" << loc.to_mux() << "'";
 
 	auto mux = loc.to_mux();
 
@@ -32,6 +35,23 @@ bool Location::check_acc_usage(Location const &loc) {
 
 	return true;
 }	
+
+
+std::string Location::dump() const {
+	std::string ret;
+
+  if (is_rf()) {
+		ret << "rf  ";
+	} else if (is_acc()) {
+		ret << " ";
+	} else {
+		// Must be reg
+		ret << "reg ";
+	}
+
+  ret << to_waddr();
+	return ret;
+}
 
 }  // instr
 }  // v3d

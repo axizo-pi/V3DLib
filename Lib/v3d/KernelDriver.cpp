@@ -148,6 +148,8 @@ bool translateOpcode(V3DLib::Instr const &src_instr, Instructions &ret) {
   auto reg_a = src_instr.ALU.srcA;
   auto reg_b = src_instr.ALU.srcB;
 
+	//breakpoint;
+
   assertq(src_instr.ALU.op.value() != ALUOp::A_FSIN || (reg_a.is_reg() && reg_b.is_reg()), "sin has smallims");
 
   auto dst_reg = encodeDestReg(src_instr);
@@ -859,8 +861,8 @@ void combine(Instructions &instructions) {
             // Apparently, can't combine setting flags with TMU loads
             || (instr2.flags.ac != V3D_QPU_COND_NONE || instr2.flags.mc != V3D_QPU_COND_NONE)
             ) {
-            break;
-          }
+            	break;
+          	}
           
           shift_to = m;
         }
@@ -936,7 +938,6 @@ void combine(Instructions &instructions) {
 		;
 */		
 
-
     // attempt the conversion
     {
       auto const &add_instr = do_converse?instr2:instr1;
@@ -957,7 +958,7 @@ void combine(Instructions &instructions) {
         combine_count++;
         i++;
       } else {
-				Log::debug << "combine of following failed; "
+				Log::warn << "Combine of following failed; "
 		    					 << "line " << i << ":\n"
 		        			 << "  " << instr1.mnemonic(false) << "\n"
 		               << "  " << instr2.mnemonic(false)
@@ -1043,6 +1044,33 @@ void KernelDriver::encode() {
 
   // Encode target instructions
   _encode(m_targetCode, instructions);
+
+#ifdef DEBUG
+	// Check if src's are set for the instructions we expect
+	for (int i = 0; i < (int) instructions.size(); ++i) {
+		auto const &instr = instructions[i];
+
+		if (instr.is_branch()) continue;
+  	if (instr.add_nop() && instr.mul_nop()) continue;
+
+  	if (!instr.add_nop()) {
+			int num_oper = Oper::num_operands(instr.alu.add.op);
+			if (num_oper > 0) {
+				assert(instr.alu_add_a_set());
+			}
+
+			if (num_oper > 1) {
+				assert(instr.alu_add_b_set());
+			}
+		}
+
+  	if (!instr.mul_nop()) {  // Assumption: always 2 operands
+			assert(instr.alu_mul_a_set());
+			assert(instr.alu_mul_b_set());
+		}
+
+	}
+#endif // DEBUG
 
   Combine::remove_useless(instructions);
 

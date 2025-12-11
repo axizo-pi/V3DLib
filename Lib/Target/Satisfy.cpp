@@ -277,6 +277,60 @@ bool encode_int_immediate(Instr::List &output, Reg dst, int in_value) {
     nibbles[i] = (value  >> (4*i)) & 0xf;
   }
 
+	int n_first = 7;
+	int n_next  = -1;
+
+	Reg r0(VarGen::fresh());  // temp value
+
+	ret << mov(r0, 0);
+
+	while (n_first >= 0) {
+		bool found_it = false;
+
+		// first first non-zero
+  	for (int i = n_first; i >= 0; --i) {
+    	if (nibbles[i] != 0) {
+				n_first = i;
+				found_it = true;
+				break;
+			}
+		}
+
+		if (!found_it) break;
+
+		// find next non-zero
+		n_next = -1;
+  	for (int i = n_first - 1; i >= 0; --i) {
+    	if (nibbles[i] != 0) {
+				n_next = i;
+				break;
+			}
+		}
+
+		ret << add(r0, r0, nibbles[n_first]);
+
+		int shift = n_first;
+		if (n_next != -1) {
+			shift -= n_next;
+		}
+		shift*= 4;
+
+		while (shift > 0) {
+			if (shift >= 15) {
+				ret << shl(r0, r0, 15); 
+				shift -= 15;
+			} else {
+				ret << shl(r0, r0, shift); 
+				shift = 0;
+			}
+		}
+
+		n_first = n_next;
+	}
+
+	ret << mov(dst, r0);
+
+/*
 	Reg r0(VarGen::fresh());  // temp value
 	Reg r1(VarGen::fresh());  // temp value
 
@@ -316,16 +370,16 @@ bool encode_int_immediate(Instr::List &output, Reg dst, int in_value) {
       }
     }
   }
-
+*/
   assert(!ret.empty());
   if (ret.empty()) return false;  // Not expected, but you never know
 
   std::string cmt;
-  cmt << "Full load imm " << in_value;
+  cmt << "Start full load imm " << in_value;
   ret.front().comment(cmt);
 
   std::string cmt2;
-  cmt2 << "full load imm " << in_value;
+  cmt2 << "End full load imm " << in_value;
   ret.back().comment(cmt2);
 
   output << ret;
@@ -368,11 +422,30 @@ bool encode_int(Instr::List &ret, Reg dst, int value) {
 
 	//warn << "encode_int value: " << value;
 
+	bool is_neg = (value < 0);
+
+	if (is_neg) {
+		value = -value;
+	}
+
+  if (!encode_int_immediate(tmp, dst, value)) {
+    return false;                                      // Conversion failed
+	}
+
+	if (is_neg) {
+		std::string cmt;
+		cmt << "Load neg small int " << -value;
+
+		tmp << sub(dst, 0, dst) .comment(cmt);
+	}
+
+/*
   if (convert_int_powers(tmp, dst, value)) {           // powers of 2 of basic small int's 
   } else if (encode_int_immediate(tmp, dst, value)) {  // Use full blunt conversion (heavy but always works)
   } else {
     return false;                                      // Conversion failed
 	}
+*/	
 
 	//warn << "encode_int ret:\n" << tmp.dump();
 	ret << tmp;
@@ -389,6 +462,8 @@ bool encode_float(Instr::List &ret, Reg dst, float value) {
     std::string cmt;
     cmt << "Load neg float small imm " << value;
 
+		// warn << "encode_float: " <<  cmt;
+
 		// Small Imm conversion happens downstream
 		tmp << li(dst, -value).comment(cmt)
         << fsub(dst, 0, dst);                  // Works because float zero is 0x0
@@ -399,14 +474,13 @@ bool encode_float(Instr::List &ret, Reg dst, float value) {
 
 	// Try to convert from int
 	if ((float) ((int) value) == value) {
-  	if (SmallImm::int_to_opcode_value((int) value, rep_value)) {
-			warn << "encode_float: can load " << value << " as integer";
-    
+		if (encode_int(tmp, dst, (int) value)) {
+			// warn << "encode_float: load " << value << " as integer";
+
 			std::string cmt;
     	cmt << "Load float from int " << value;
 
-			tmp << li(dst, (int) value).comment(cmt)
-      	  << itof(dst, dst);
+			tmp << itof(dst, dst) .comment(cmt);
 
 			ret << tmp;
 	  	return true;
@@ -421,6 +495,8 @@ bool encode_float(Instr::List &ret, Reg dst, float value) {
   if (encode_int_immediate(ret, r1, int_value)) {
     std::string cmt;
     cmt << "Load full float imm " << value;
+
+		// warn << "encode_float: " <<  cmt;
 
     tmp << mov(dst, r1);          // Result is int but will be handled as float downstream
 	  tmp.front().comment(cmt);
@@ -466,9 +542,9 @@ Instr::List _encode_imm(Reg dst, Imm imm) {
   if (!err_value.empty()) {
     assert(!err_label.empty());
 
-    cerr << "LI: Can't handle "
+    cerr << "_encode_imm(): can't convert "
          << err_label << " value '" << err_value
-         << "' as small immediate";
+         << "' to small immediate";
 
     breakpoint
   }

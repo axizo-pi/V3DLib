@@ -1,6 +1,7 @@
 #ifndef _V3DLIB_V3D_INSTR_LOCATION_H
 #define _V3DLIB_V3D_INSTR_LOCATION_H
 #include "broadcom/qpu/qpu_instr.h"
+#include <string>
 
 namespace V3DLib {
 namespace v3d {
@@ -23,6 +24,8 @@ public:
   virtual v3d_qpu_waddr to_waddr() const = 0;
   virtual v3d_qpu_mux to_mux() const = 0;
   virtual bool operator==(Location const &rhs) const = 0;
+
+	std::string dump() const;
 
 	static bool check_acc_usage(Location const &loc);
 
