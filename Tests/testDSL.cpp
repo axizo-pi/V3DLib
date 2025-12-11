@@ -462,7 +462,7 @@ void int_ops_kernel(Int::Ptr result) {
   auto store = [&result] (Int const &val) {
     comment("store starts next"); 
     *result = val;
-    result += 16;
+    result.inc();
   };
 
 	comment("add 3");
@@ -486,6 +486,9 @@ void int_ops_kernel(Int::Ptr result) {
   comment("First division test starts next");
   store(16*16/index());
 
+  comment("Integer division by float");
+	store(integer_division_f(16*16, index()));
+
   comment("First usage -index() starts next");
   store((-16*16)/(-index()));
 
@@ -506,18 +509,15 @@ void float_ops_kernel(Float::Ptr result) {
 
 TEST_CASE("Test specific operations in DSL [dsl][ops]") {
   SUBCASE("Test integer operations") {
-    int const N = 11;  // Number of expected results
+    int const N = 12;  // Number of expected results
 
     auto k = compile(int_ops_kernel);
+		k.dump("int_ops_kernel.txt");
 
     Int::Array result(16*N);
     result.fill(-1);
 
     k.load(&result);
-
-    //k.dump_compile_data(false, "obj/test/int_ops_kernel_compile_data_v3d.txt");
-    k.dump("obj/test/int_ops_kernel_v3d.txt", true);
-
     k.run();
 
     vector<vector<int>> expected = {
@@ -525,10 +525,19 @@ TEST_CASE("Test specific operations in DSL [dsl][ops]") {
       {-8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7},                     // -=
       {8, 7, 6, 5, 4, 3, 2, 1, 0, 1, 2, 3, 4, 5, 6, 7},                             // abs
       {8, 7, 6, 5, 4, 3, 2, 1, 0, -1, -2, -3, -4, -5, -6, -7},                      // 2-s complement
-      {3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18},                    // topmost_bi 
+      {3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18},                    // topmost_bit
       {-256, -256, -256, -256, -256, -256, -256, -256, -256, -256, -256, -256, -256, -256, -256, -256}, // b = -256 
+
+			//
       // integer division
-      {2147483647, 256, 128, 85, 64, 51, 42, 36, 32, 28, 25, 23, 21, 19, 18, 17},   // First value is 'infinity'
+			//
+
+			// First value is 'infinity'
+      {2147483647, 256, 128, 85, 64, 51, 42, 36, 32, 28, 25, 23, 21, 19, 18, 17},
+
+			// integer division by float
+      {2147483647, 256, 128, 85, 64, 51, 42, 36, 32, 28, 25, 23, 21, 19, 18, 17},
+
       {-2147483647, 256, 128, 85, 64, 51, 42, 36, 32, 28, 25, 23, 21, 19, 18, 17},  // NB -0 == 0
       {-2147483647, -256, -128, -85, -64, -51, -42, -36, -32, -28, -25, -23, -21, -19, -18, -17},
       {2147483647, -256, -128, -85, -64, -51, -42, -36, -32, -28, -25, -23, -21, -19, -18, -17},
