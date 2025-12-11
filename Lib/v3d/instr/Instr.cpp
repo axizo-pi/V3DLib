@@ -70,6 +70,20 @@ namespace instr {
 
 namespace {
 
+MAYBE_UNUSED std::string dump_check(CheckSrc val) {
+	std::string ret;
+
+	switch (val) {
+  	case CHECK_ADD_A: ret << "addr.a"; break;
+  	case CHECK_ADD_B: ret << "addr.b"; break;
+  	case CHECK_MUL_A: ret << "mul.a"; break;
+		case CHECK_MUL_B: ret << "mul.b"; break;
+	}
+
+	return ret;
+}
+
+
 bool check_small_imm(Instr const &dst, BaseSource const &src) {
 	assert(!Platform::compiling_for_vc7());
 
@@ -929,17 +943,20 @@ bool Instr::alu_set_src(BaseSource const &src, v3d_qpu_input &input, CheckSrc ch
 		if (Platform::compiling_for_vc7()) {
 			input.raddr = src.val();
 		} else {
-			if (raddr_a_is_safe(src.val(), CHECK_MUL_B)) {
+			if (raddr_a_is_safe(src.val(), check_src)) {
 				input.mux = V3D_QPU_MUX_A;
 				raddr_a = src.val();
-			}	else if (raddr_b_is_safe(src.val(), CHECK_MUL_B)) {
+			}	else if (raddr_b_is_safe(src.val(), check_src)) {
 				input.mux = V3D_QPU_MUX_B;
 				raddr_b = src.val();
 			} else {
-				cerr << "alu_set_src: can not assign rf location to raddra/b.\n"
-					   << "Src  : " << src.dump()     << "\n"
-					   << "Instr: " << mnemonic()     << "\n";
+				/*
+				   Did extensive research, the test was valid for 100% of the cases.
 
+				cerr << "alu_set_src: rf fails raddr_a/b check:\n"
+					   << "Src  : " << src.dump() << ", can not assign to " << dump_check(check_src) << "\n"
+					   << "Instr: " << mnemonic() << "\n";
+				*/
 				return false;
 			}
 		}

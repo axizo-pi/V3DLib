@@ -958,11 +958,15 @@ void combine(Instructions &instructions) {
         combine_count++;
         i++;
       } else {
+				/*
+				 This test is working nicely for vc6: trying to fill in >= 3 values in raddr_a/b
+
 				Log::warn << "Combine of following failed; "
 		    					 << "line " << i << ":\n"
 		        			 << "  " << instr1.mnemonic(false) << "\n"
 		               << "  " << instr2.mnemonic(false)
 				;
+				*/
 			}
       continue;
     }
