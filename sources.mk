@@ -1,7 +1,7 @@
 #
 # This file is generated!  Editing it directly is a bad idea.
 #
-# Generated on: Fri Dec 12 04:26:03 AM CET 2025
+# Generated on: Fri Dec 12 07:22:12 AM CET 2025
 #
 ###############################################################################
 
@@ -165,7 +165,7 @@ SUB_PROJECTS := \
 
 
 Mandelbrot:
-	cd Examples/Mandelbrot && make DEBUG=${DEBUG} QPU=${QPU}
+	@cd Examples/Mandelbrot && make DEBUG=${DEBUG} QPU=${QPU}
 
 	
 

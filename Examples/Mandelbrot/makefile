@@ -1,33 +1,53 @@
 NAME=Mandelbrot
 
+SRCDIR=./
 
 -include /home/wim/projects/V3DLib/script/mak/config.mak
 
+COMPILE := $(CXX) -std=c++17 -c $(CXX_FLAGS) $(INCLUDE)
 TARGET=${OBJDIR}/bin/${NAME}
 
-OBJ_LOCAL=$(OBJDIR)/$(NAME)
+OBJ_LOCAL=${OBJDIR}/${NAME}
 
--include /home/wim/projects/V3DLib/script/mak/subproject.mak
+STRUCTURE := $(shell ls -r)     
+#$(info structure: $(STRUCTURE))
+SRCFILES := $(filter %.c %.cpp,$(STRUCTURE))
+#$(info  src: $(SRCFILES))
+OBJFILES := $(subst .cpp,.o,$(SRCFILES))
+OBJFILES := $(subst .c,.o,$(OBJFILES))
+#$(info  obj: $(OBJFILES))
+OBJFILES := $(addprefix $(OBJ_LOCAL)/,$(OBJFILES))
+#$(info  obj: $(OBJFILES))
+
+HEADERFILES := $(filter %.h ,$(STRUCTURE))
+
 
 .PRECIOUS: $(OBJ_LOCAL)/%.o
 
 all: init ${TARGET}
-	echo "Here ${DEBUG} ${QPU}"
 
+#	echo "Here ${DEBUG} ${QPU}"
+
+$(TARGET) : $(OBJFILES)
 
 init:
-	mkdir -p $(OBJ_LOCAL)
+	@mkdir -p ${OBJ_LOCAL}
 
+#
+# Haven't figured out yet how to compile on header change
+# Following is a bit overkill.
+#
 
-# From general rule
-$(OBJ_LOCAL)/%.o: %.cpp
+$(OBJ_LOCAL)/$(NAME).o: $(NAME).cpp  $(HEADERFILES)
 	@echo Compiling $<
-	@mkdir -p $(@D)
-	@$(CXX) -std=c++17 -c -o $@ $< $(CXX_FLAGS)
+	@$(COMPILE) -o $@ $<
+
+$(OBJ_LOCAL)/%.o: %.cpp %.h
+	@echo Compiling $<
+	@$(COMPILE) -o $@ $<
 
 
 # From general rule
 $(OBJDIR)/bin/%: $(OBJ_LOCAL)/%.o $(V3DLIB) $(LIB_DEPEND)
 	@echo Linking $@...
-	@mkdir -p $(@D)
 	@$(LINK) $^ $(LIBS) -o $@

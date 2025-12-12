@@ -1,3 +1,5 @@
+Interesting: I ran Mandelbrot on pi5-1 and it worked, in spite of GUI
+
 Pre: Debian 12 Bookworm on SD card
 
 - Debian 13 Trixie doesn't start up!

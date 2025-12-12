@@ -96,7 +96,7 @@ help:
 all: $(V3DLIB) $(EXAMPLES) ${SUB_PROJECTS}
 
 clean:
-	rm -rf obj/emu obj/emu-debug obj/qpu obj/qpu-debug obj/test
+	@rm -rf obj/emu obj/emu-debug obj/qpu obj/qpu-debug obj/test
 
 init:
 	@./script/install.sh

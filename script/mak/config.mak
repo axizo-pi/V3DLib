@@ -1,4 +1,5 @@
 BASE=~/projects/V3DLib
+WRI=1
 
 ROOT=$(BASE)/Lib
 
@@ -20,8 +21,11 @@ LIB_EXTERN= \
 # NOTE: Last items after single \ required in mesa lib include files
 
 # Compiler and default flags
+CXX_FLAGS = -MMD -MP -MF"$(@:%.o=%.d)"
 CXX= g++
-LINK= $(CXX) $(CXX_FLAGS)
+#LINK= $(CXX) $(CXX_FLAGS)
+
+LINK= g++
 
 
 
@@ -74,6 +78,11 @@ INCLUDE_EXTERN+= \
  -I ${BASE}/extern/mesa/src/gallium/auxiliary \
  -I ${BASE}/extern/mesa/build/src
 
+INCLUDE= \
+ -I ${BASE}/Lib \
+ $(INCLUDE_EXTERN)
+
+
 # NOTE: Spaces betwee line and comment is taken into the generation!
 # Order important! drm MUST be after mesa, because mesa has dependencies on drm
 LIB_EXTERN+= \
@@ -93,14 +102,14 @@ LIBS += -L $(OBJDIR) -lv3dlib $(LIB_EXTERN)
 $(OBJDIR)/%.o: %.cpp | init
 	@echo Compiling $<
 	@mkdir -p $(@D)
-	@$(CXX) -std=c++17 -c -o $@ $< $(CXX_FLAGS)
+	@$(CXX) -std=c++17 -c -o $@ $< $(CXX_FLAGS) $(INCLUDE)
 
 
 # Same thing for C-files
 $(OBJDIR)/%.o: %.c | init
 	@echo Compiling $<
 	@mkdir -p $(@D)
-	@$(CXX) -x c -c -o $@ $< $(CXX_FLAGS)
+	@$(CXX) -x c -c -o $@ $< $(CXX_FLAGS) $(INCLUDE)
 
 $(OBJDIR)/bin/%: $(OBJDIR)/Examples/%.o $(V3DLIB) $(LIB_DEPEND)
 	@echo Linking $@...
