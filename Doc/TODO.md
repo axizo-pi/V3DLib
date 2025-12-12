@@ -167,7 +167,7 @@ Error(s) on command line:
 - [x] Add method to determine RPi hardware revision number via mailbox
 - [x] Add code for using the `Special Functions Unit (SFU)`, operations: `RECIP`, `RECIPSQRT`, `LOG`, `EXP`
 - [x] Add performance counters to interface of `RegisterMap`
-- [ ] Add Logging class
+- [x] Add Logging class
 - [ ] Add method for build/platform info, for display on startup of an application
 - [x] Make QPU execution timeout a runtime setting
 
@@ -224,3 +224,4 @@ Error(s) on command line:
       This is only useful if there are a sufficient number of header comments.
       Will be using the Javadoc style; it might be necessary to set `JAVADOC_AUTOBRIEF to YES` in the config.
 - [ ] Scheduling of kernels - see VideoCore `fft` project.
+      Done for vc4. v3d is trickier.
