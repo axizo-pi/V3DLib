@@ -1,6 +1,8 @@
 BASE=~/projects/V3DLib
 WRI=1
 
+#VIDEOCORE_VERSION=6
+
 ROOT=$(BASE)/Lib
 
 # Object directory
@@ -20,8 +22,33 @@ LIB_EXTERN= \
 
 # NOTE: Last items after single \ required in mesa lib include files
 
-# Compiler and default flags
-CXX_FLAGS = -std=c++17 -c 
+#
+# -I is for access to bcm functionality
+#
+# -Wno-psabi avoids following note (happens in unit tests):
+#
+#    note: parameter passing for argument of type ‘std::move_iterator<Catch::SectionEndInfo*>’ changed in GCC 7.1
+#
+#    It is benign: https://stackoverflow.com/a/48149400
+#
+CXX_FLAGS = \
+ -Wall \
+ -Wconversion \
+ -Wno-psabi \
+ -pthread \
+ -I $(ROOT) $(INCLUDE_EXTERN) \
+ \
+ -D HAVE_ENDIAN_H \
+ -D HAVE_PTHREAD \
+ -D MESA_DEBUG=0 \
+ -D HAVE_SECURE_GETENV \
+ -D HAVE_STRUCT_TIMESPEC
+
+ #-D VIDEOCORE_VERSION=$(VIDEOCORE_VERSION) \
+ # -MMD -MP -MF"$(@:%.o=%.d)" \
+
+# NOTE: Last items after single \ required in mesa lib include files
+
 
 CXX= g++
 LINK= g++
@@ -101,7 +128,7 @@ LIBS += -L $(OBJDIR) -lv3dlib $(LIB_EXTERN)
 $(OBJDIR)/%.o: %.cpp | init
 	@echo Compiling $<
 	@mkdir -p $(@D)
-	@$(CXX) -o $@ $< $(CXX_FLAGS) -MMD -MP -MF"$(@:%.o=%.d)" $(INCLUDE) 
+	@$(CXX) -std=c++17 -c -o $@ $< $(CXX_FLAGS) -MMD -MP -MF"$(@:%.o=%.d)" $(INCLUDE) 
 
 
 # Same thing for C-files

@@ -54,4 +54,4 @@ $(OBJ_LOCAL)/%.o: %.cpp %.h
 # From general rule
 $(OBJDIR)/bin/%: $(OBJ_LOCAL)/%.o $(V3DLIB) $(LIB_DEPEND)
 	@echo Linking $@...
-	@$(LINK) $^ $(LIBS) -o $@
+	@$(LINK) $^ $(CXX_FLAGS) $(LIBS) -o $@

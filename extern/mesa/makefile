@@ -16,15 +16,14 @@
 #   See `v3d_launch_grid()` in `gallium/drivers/v3d/v3dX_draw.c`
 #
 ################################################################################
-
-LINK= g++
-XX_FLAGS = -MMD -MP -MF"$(@:%.o=%.d)"
-
 SRCDIR = src
 BASEDIR = ../../obj/mesa
 OBJDIR = $(BASEDIR)/src
 BINDIR = $(BASEDIR)/bin
 MAINDIR = $(BASEDIR)/main
+
+XX_FLAGS = -MMD -MP -MF"$(@:%.o=%.d)"
+
 MESA_LIB=$(BINDIR)/libmesa.a
 
 INCLUDES = \
@@ -41,26 +40,6 @@ INCLUDES = \
 -I ./include/drm-uapi \
 -I ./src/gallium/drivers/vc4 \
 
-#
-# -I is for access to bcm functionality
-#
-# -Wno-psabi avoids following note (happens in unit tests):
-#
-#    note: parameter passing for argument of type ‘std::move_iterator<Catch::SectionEndInfo*>’ changed in GCC 7.1
-#
-#    It is benign: https://stackoverflow.com/a/48149400 
-#
-CXX_FLAGS = \
- -Wall \
- -Wconversion \
- -Wno-psabi \
- -pthread \
- -I $(ROOT) $(INCLUDE_EXTERN) -MMD -MP -MF"$(@:%.o=%.d)" \
- -D HAVE_ENDIAN_H \
- -D HAVE_PTHREAD \
- -D MESA_DEBUG=0 \
- -D HAVE_SECURE_GETENV \
- -D HAVE_STRUCT_TIMESPEC 
 
 CFLAGS = -g -Wall -Wno-unused-function -O3 -pthread \
 -D V3D_VERSION=71 \
@@ -77,6 +56,9 @@ CFLAGS = -g -Wall -Wno-unused-function -O3 -pthread \
 -D HAVE_SECURE_GETENV \
 $(INCLUDES) \
 $(XX_FLAGS)
+
+
+LINK= g++
 
 
 ################################################################################
@@ -97,7 +79,7 @@ SRCFILES := $(filter %.c %.cpp,$(CODEFILES))
 #$(info  src: $(SRCFILES))
 HDRFILES := $(filter %.h,$(CODEFILES))
 OBJFILES := $(subst $(SRCDIR),$(OBJDIR)$(SRC_DIR),$(SRCFILES))
-OBJFILES := $(OBJFILES:%.cpp=%.o)
+#OBJFILES := $(OBJFILES:%.cpp=%.o)
 OBJFILES := $(OBJFILES:%.c=%.o)
 #$(info  obj: $(OBJFILES))
 
@@ -111,7 +93,7 @@ LIB = $(OBJFILES)
 
 # Dependencies from list of object files
 DEPS := $(LIB:.o=.d)
-$(info deps:  $(DEPS))
+#$(info deps:  $(DEPS))
 -include $(DEPS)
 
 
@@ -119,20 +101,7 @@ $(info deps:  $(DEPS))
 # Rules
 ################################################################################
 
-$(OBJDIR)/%.o: $(SRCDIR)/%.c
-	@echo Compiling $<
-	@mkdir -p $(@D)
-	@$(CC) $(CFLAGS) -c $< -o $@
-
-$(OBJDIR)/%.o: $(SRCDIR)/%.cpp
-	@echo Compiling $<
-	@mkdir -p $(@D)
-	@g++ $(CFLAGS) -c $< -o $@
-
-################################################################################
-# Rules
-################################################################################
-
+#compile: init $(BINDIR)/qpu_disasm
 compile: init $(MESA_LIB)
 
 init:
@@ -145,6 +114,16 @@ clean:
 	rm -rf $(BINDIR)/*
 	rm -rf $(MAINDIR)/*
 
+
+$(OBJDIR)/%.o: $(SRCDIR)/%.c
+	@echo Compiling $<
+	@mkdir -p $(@D)
+	@$(CC) $(CFLAGS) -c $< -o $@
+
+$(OBJDIR)/%.o: $(SRCDIR)/%.cpp
+	@echo Compiling $<
+	@mkdir -p $(@D)
+	@g++ $(CFLAGS) -c $< -o $@
 
 $(MESA_LIB): $(OBJFILES)
 	@echo Creating $@

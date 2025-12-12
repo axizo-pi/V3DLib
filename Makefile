@@ -137,7 +137,8 @@ UNIT_TESTS := $(OBJDIR)/bin/runTests
 $(UNIT_TESTS): $(TESTS_OBJ) $(V3DLIB) $(LIB_DEPEND)
 	@echo Linking unit tests
 	@mkdir -p $(@D)
-	@$(CXX) $(CXX_FLAGS) $(TESTS_OBJ) -L$(OBJDIR) -o $@
+	@$(LINK) $^ -o $@ $(LIBS)
+
 
 runTests: $(UNIT_TESTS)
 
