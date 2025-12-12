@@ -55,7 +55,7 @@ ssh-copy-id wim@backup
 
 sudo apt-get update
 sudo apt-get -y upgrade
-sudo apt-get install -y git libraspberrypi-dev raspberrypi-kernel-headers expat libexpat1-dev libz-dev ruby mc vim cmake libdrm-dev
+sudo apt-get install -y git libraspberrypi-dev raspberrypi-kernel-headers expat libexpat1-dev libz-dev ruby mc vim cmake libdrm-dev raspi-config
 
 mkdir ~/projects
 mkdir ~/tmp
