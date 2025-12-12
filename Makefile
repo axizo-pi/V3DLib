@@ -56,119 +56,13 @@ else
 	SUDO :=
 endif
 
-
-VCSM_DIR=extern/userland/build/lib
-
-#
-# Stuff for external libraries
-#
-INCLUDE_EXTERN= \
- -I ../CmdParameter/Lib
-
-LIB_EXTERN= \
- -L$(VCSM_DIR) -lvcsm \
- -l pthread
-
-LIB_DEPEND=
-
-ifeq ($(DEBUG), 1)
-	LIB_EXTERN += -L ../CmdParameter/obj-debug -lCmdParameter
-	LIB_DEPEND += ../CmdParameter/obj-debug/libCmdParameter.a
-else
-	LIB_EXTERN += -L ../CmdParameter/obj -lCmdParameter
-	LIB_DEPEND += ../CmdParameter/obj/libCmdParameter.a
-endif
-
-
-INCLUDE_EXTERN+= \
- -I extern/mesa/include \
- -I extern/mesa/src \
- -I extern/mesa/src/gallium/include \
- -I extern/mesa/src/gallium/auxiliary \
- -I extern/mesa/build/src
-
-LIB_EXTERN+= \
- -Lobj/mesa/bin -lmesa \
- -l drm                           # Order important! This MUST be after mesa, because mesa has dependencies on drm
-
-
-# TODO: make a script determining with videocore version we're compiling on (6 or 7)
-VIDEOCORE_VERSION=6
-
-ROOT= Lib
-
-LIBS := $(LIB_EXTERN)
-
-#
-# -I is for access to bcm functionality
-#
-# -Wno-psabi avoids following note (happens in unit tests):
-#
-#    note: parameter passing for argument of type ‘std::move_iterator<Catch::SectionEndInfo*>’ changed in GCC 7.1
-#
-#    It is benign: https://stackoverflow.com/a/48149400 
-#
-CXX_FLAGS = \
- -Wall \
- -Wconversion \
- -Wno-psabi \
- -pthread \
- -I $(ROOT) $(INCLUDE_EXTERN) -MMD -MP -MF"$(@:%.o=%.d)" \
- -D VIDEOCORE_VERSION=$(VIDEOCORE_VERSION) \
- \
- -D HAVE_ENDIAN_H \
- -D HAVE_PTHREAD \
- -D MESA_DEBUG=0 \
- -D HAVE_SECURE_GETENV \
- -D HAVE_STRUCT_TIMESPEC 
-
-# NOTE: Last items after single \ required in mesa lib include files
-
-# Compiler and default flags
-CXX= g++
-LINK= $(CXX) $(CXX_FLAGS)
-
-# Object directory
-OBJ_DIR := obj
-
-
-# QPU or emulation mode
-ifeq ($(QPU), 1)
-$(info Building for QPU)
-
-# Check platform before building.
-# Can't be indented, otherwise make complains.
-RET := $(shell Tools/detectPlatform.sh 1>/dev/null && echo "yes" || echo "no")
-#$(info  info: '$(RET)')
-ifneq ($(RET), yes)
-$(error QPU-mode specified on a non-Pi platform; aborting)
-else
-$(info Building on a Pi platform)
-endif
-
-  CXX_FLAGS += -DQPU_MODE -I /opt/vc/include
-  OBJ_DIR := $(OBJ_DIR)/qpu
-	LIBS += -L /opt/vc/lib -l bcm_host
-else
-  OBJ_DIR := $(OBJ_DIR)/emu
-endif
-
-# Debug mode
-ifeq ($(DEBUG), 1)
-  CXX_FLAGS += -DDEBUG -g
-  OBJ_DIR := $(OBJ_DIR)-debug
-else
-  # -DNDEBUG	disables assertions
-  # -g0 still adds debug info, using -s instead
-  CXX_FLAGS += -DNDEBUG -s
-endif
-
+-include script/mak/config.mak
 -include sources.mk
 
-LIB = $(patsubst %,$(OBJ_DIR)/Lib/%,$(OBJ))
+LIB = $(patsubst %,$(OBJDIR)/Lib/%,$(OBJ))
 
-EXAMPLE_TARGETS = $(patsubst %,$(OBJ_DIR)/bin/%,$(EXAMPLES))
-TESTS_OBJ = $(patsubst %,$(OBJ_DIR)/%,$(TESTS_FILES))
+EXAMPLE_TARGETS = $(patsubst %,$(OBJDIR)/bin/%,$(EXAMPLES))
+TESTS_OBJ = $(patsubst %,$(OBJDIR)/%,$(TESTS_FILES))
 
 #
 # Dependencies from list of object files
@@ -176,20 +70,7 @@ TESTS_OBJ = $(patsubst %,$(OBJ_DIR)/%,$(TESTS_FILES))
 -include $(LIB:.o=.d)
 -include $(TESTS_OBJ:.o=.d)
 
-
-V3DLIB=$(OBJ_DIR)/libv3dlib.a
-MESA_LIB=obj/mesa/bin/libmesa.a
-VCSM_LIB=$(VCSM_DIR)/libvcsm.a
-
-
-# Top-level targets
-
 .PHONY: help clean all lib test $(EXAMPLES) init
-
-# Following prevents deletion of object files after linking
-# Otherwise, deletion happens for targets of the form '%.o'
-.PRECIOUS: $(OBJ_DIR)/%.o
-
 
 help:
 	@echo 'Usage:'
@@ -212,7 +93,7 @@ help:
 	@echo '    DEBUG=1       - If specified, the source code and target code is shown on stdout when running a test'
 	@echo
 
-all: $(V3DLIB) $(EXAMPLES)
+all: $(V3DLIB) $(EXAMPLES) ${SUB_PROJECTS}
 
 clean:
 	rm -rf obj/emu obj/emu-debug obj/qpu obj/qpu-debug obj/test
@@ -238,47 +119,25 @@ $(MESA_LIB):
 $(VCSM_LIB):
 	cd extern/userland/ && make
 
-  # vc4
-	#cd extern/userland/host_applications/linux/libs/sm && make
-
-
-# Rule for creating object files
-$(OBJ_DIR)/%.o: %.cpp | init
-	@echo Compiling $<
-	@mkdir -p $(@D)
-	@$(CXX) -std=c++17 -c -o $@ $< $(CXX_FLAGS)
-
-# Same thing for C-files
-$(OBJ_DIR)/%.o: %.c | init
-	@echo Compiling $<
-	@mkdir -p $(@D)
-	@$(CXX) -x c -c -o $@ $< $(CXX_FLAGS)
-
-
-$(OBJ_DIR)/bin/%: $(OBJ_DIR)/Examples/%.o $(V3DLIB) $(LIB_DEPEND)
+$(OBJDIR)/bin/%: $(OBJDIR)/Tools/%.o $(V3DLIB) $(LIB_DEPEND)
 	@echo Linking $@...
 	@mkdir -p $(@D)
-	@$(LINK) $^ $(LIBS) -o $@
-
-$(OBJ_DIR)/bin/%: $(OBJ_DIR)/Tools/%.o $(V3DLIB) $(LIB_DEPEND)
-	@echo Linking $@...
-	@mkdir -p $(@D)
-	@$(LINK) $^ $(LIBS) -o $@
+	@$(LINK) $^ -o $@ $(LIBS)
 
 
-$(EXAMPLES) :% : $(OBJ_DIR)/bin/%
+$(EXAMPLES) :% : $(OBJDIR)/bin/%
 
 
 #
 # Targets for Unit Tests
 #
 
-UNIT_TESTS := $(OBJ_DIR)/bin/runTests
+UNIT_TESTS := $(OBJDIR)/bin/runTests
 
 $(UNIT_TESTS): $(TESTS_OBJ) $(V3DLIB) $(LIB_DEPEND)
 	@echo Linking unit tests
 	@mkdir -p $(@D)
-	@$(CXX) $(CXX_FLAGS) $(TESTS_OBJ) -L$(OBJ_DIR) -lv3dlib $(LIBS) -o $@
+	@$(CXX) $(CXX_FLAGS) $(TESTS_OBJ) -L$(OBJDIR) -o $@
 
 runTests: $(UNIT_TESTS)
 
@@ -300,8 +159,8 @@ test : make_test
 # Gen stuff
 ################################
 
-gen : $(OBJ_DIR)/sources.mk
+gen : $(OBJDIR)/sources.mk
 
-$(OBJ_DIR)/sources.mk :
+$(OBJDIR)/sources.mk :
 	@mkdir -p $(@D)
 	@script/gen.sh

@@ -48,9 +48,29 @@ OBJ_TEST=$(echo "$OBJ_TEST_TMP" | sed "s/^/  /g")
 
 # Get list of executables
 # NOTE: grepping on 'main(' is not fool-proof, of course.
-EXE1=$(grep -rl "main(" Examples/ Tools/)
+EXE1=$(grep -l "main(" Examples/* Tools/* --directories=skip)
 EXE2=$(echo "$EXE1" | sed "s/\\.cpp$/  \\\\/g")
 EXAMPLES=$(echo "$EXE2" | sed "s/^.*\//  /g")
+
+
+# Get list of example makefiles
+MAKEFILES=$(find Examples -name 'makefile')
+makelist=""
+projects=""
+for item in "${MAKEFILES[@]}"; do
+	basedir=$(echo "$item" | awk -F '/' '{print $1}')
+	name=$(echo "$item" | awk -F '/' '{print $2}')
+
+	projects="${projects}  ${name} \\
+"
+
+	makelist="$makelist
+$name:
+	cd "$basedir/$name" && make DEBUG=\${DEBUG} QPU=\${QPU}
+
+	"
+
+done
 
 mkdir -p obj
 
@@ -73,5 +93,13 @@ $EXAMPLES
 # support files for tests
 TESTS_FILES := \\
 $OBJ_TEST
+
+#
+# sub-projects
+#
+SUB_PROJECTS := \\
+${projects}
+
+$makelist
 
 END

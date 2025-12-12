@@ -21,6 +21,7 @@
  * IN THE SOFTWARE.
  */
 
+
 #include <string.h>
 #include "util/macros.h"
 #include "util/bitscan.h"

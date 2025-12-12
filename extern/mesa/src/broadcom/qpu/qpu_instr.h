@@ -30,6 +30,7 @@
  * instruction.
  */
 
+
 #ifndef QPU_INSTR_H
 #define QPU_INSTR_H
 
