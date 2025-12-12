@@ -85,7 +85,7 @@ $(XX_FLAGS)
 
 # Get Only the Internal Structure of SRCDIR Recursively
 STRUCTURE := $(shell find $(SRCDIR) -type d)     
-$(info structure: $(STRUCTURE))
+#$(info structure: $(STRUCTURE))
 
 # Get All Files inside the STRUCTURE Variable
 CODEFILES := $(addsuffix /*,$(STRUCTURE))
@@ -94,12 +94,12 @@ CODEFILES := $(wildcard $(CODEFILES))
 
 # Filter Only Specific Files                                
 SRCFILES := $(filter %.c %.cpp,$(CODEFILES))
-$(info  src: $(SRCFILES))
+#$(info  src: $(SRCFILES))
 HDRFILES := $(filter %.h,$(CODEFILES))
 OBJFILES := $(subst $(SRCDIR),$(OBJDIR)$(SRC_DIR),$(SRCFILES))
 OBJFILES := $(OBJFILES:%.cpp=%.o)
 OBJFILES := $(OBJFILES:%.c=%.o)
-$(info  obj: $(OBJFILES))
+#$(info  obj: $(OBJFILES))
 
 DEPEND_FILES := $(addprefix $(SRCDIR)/,%.c %.h)
 #$(info depend: $(DEPEND_FILES))

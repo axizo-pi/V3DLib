@@ -21,10 +21,9 @@ LIB_EXTERN= \
 # NOTE: Last items after single \ required in mesa lib include files
 
 # Compiler and default flags
-CXX_FLAGS = -MMD -MP -MF"$(@:%.o=%.d)"
-CXX= g++
-#LINK= $(CXX) $(CXX_FLAGS)
+CXX_FLAGS = -std=c++17 -c 
 
+CXX= g++
 LINK= g++
 
 
@@ -102,7 +101,7 @@ LIBS += -L $(OBJDIR) -lv3dlib $(LIB_EXTERN)
 $(OBJDIR)/%.o: %.cpp | init
 	@echo Compiling $<
 	@mkdir -p $(@D)
-	@$(CXX) -std=c++17 -c -o $@ $< $(CXX_FLAGS) $(INCLUDE)
+	@$(CXX) -o $@ $< $(CXX_FLAGS) -MMD -MP -MF"$(@:%.o=%.d)" $(INCLUDE) 
 
 
 # Same thing for C-files

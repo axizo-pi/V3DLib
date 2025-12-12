@@ -65,7 +65,7 @@ for item in "${MAKEFILES[@]}"; do
 "
 
 	makelist="$makelist
-$name:
+$name: \$(V3DLIB)
 	@cd "$basedir/$name" && make DEBUG=\${DEBUG} QPU=\${QPU}
 
 	"

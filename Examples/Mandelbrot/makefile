@@ -21,6 +21,10 @@ OBJFILES := $(addprefix $(OBJ_LOCAL)/,$(OBJFILES))
 
 HEADERFILES := $(filter %.h ,$(STRUCTURE))
 
+# Dependencies from list of object files
+#DEPS := $(OBJFILES:.o=.d)
+#$(info deps:  $(DEPS))
+#-include $(DEPS)
 
 .PRECIOUS: $(OBJ_LOCAL)/%.o
 
@@ -40,11 +44,11 @@ init:
 
 $(OBJ_LOCAL)/$(NAME).o: $(NAME).cpp  $(HEADERFILES)
 	@echo Compiling $<
-	@$(COMPILE) -o $@ $<
+	@$(COMPILE) -o $@ $< -MMD -MP -MF"$(@:%.o=%.d)" $(INCLUDE) 
 
 $(OBJ_LOCAL)/%.o: %.cpp %.h
 	@echo Compiling $<
-	@$(COMPILE) -o $@ $<
+	@$(COMPILE) -o $@ $< -MMD -MP -MF"$(@:%.o=%.d)" $(INCLUDE) 
 
 
 # From general rule

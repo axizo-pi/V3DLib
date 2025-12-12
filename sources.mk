@@ -1,7 +1,7 @@
 #
 # This file is generated!  Editing it directly is a bad idea.
 #
-# Generated on: Fri Dec 12 07:22:12 AM CET 2025
+# Generated on: Fri Dec 12 07:26:38 AM CET 2025
 #
 ###############################################################################
 
@@ -164,7 +164,7 @@ SUB_PROJECTS := \
 
 
 
-Mandelbrot:
+Mandelbrot: $(V3DLIB)
 	@cd Examples/Mandelbrot && make DEBUG=${DEBUG} QPU=${QPU}
 
 	
