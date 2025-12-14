@@ -17,14 +17,18 @@ namespace V3DLib {
 uint32_t BufferObject::alloc_array(uint32_t size_in_bytes, uint8_t *&array_start_address) {
   int new_offset = HeapManager::alloc_array(size_in_bytes);
   assert(new_offset >= 0);
+  assert(phy_address() >= 0);
   array_start_address = arm_base + (uint32_t) new_offset;
-  return phy_address() + (uint32_t) new_offset;
+  uint32_t ret = phy_address() + (uint32_t) new_offset;
+  return ret;
 }
 
 
 void BufferObject::dealloc_array(uint32_t in_phyaddr, uint32_t in_size) {
-  assert(phy_address() <= in_phyaddr && in_phyaddr < (phy_address() + size()));
-  HeapManager::dealloc_array(in_phyaddr - phy_address(), in_size);
+  //assert(phy_address() <= in_phyaddr && in_phyaddr < (phy_address() + size()));
+  if (!is_cleared()) {
+    HeapManager::dealloc_array(in_phyaddr - phy_address(), in_size);
+  }
 }
 
 
@@ -36,7 +40,7 @@ uint32_t BufferObject::getHandle() const {
 
 
 void BufferObject::set_phy_address(uint32_t val) {
-  assert(val > 0);
+  assert(val != 0);
   assert(phyaddr == 0);  // Only allow initial size setting for now
   phyaddr = val;
 }

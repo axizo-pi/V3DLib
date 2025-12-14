@@ -208,12 +208,50 @@ int RegUsageItem::first_dst() const {
 
 
 /**
+ * Get first dst after given line number
+ *
+ * @return line number if present, -1 if not found
+ */
+int RegUsageItem::first_dst_after(int line) const {
+   int ret = -1;
+
+  for (int dst: use_dst) {
+    if (dst > line) {
+      ret = dst;
+      break;
+    }
+  }
+
+  return ret;
+}
+
+
+/**
  * Return the first line in which this variable is used (either as src or dst)
+ *
+ * It is possible that a variable is written to multiple times.
+ * For a given src range, only the dst directly before it is relevant.
  */
 int RegUsageItem::first_usage() const {
-  assert(src_range.first() == -1 || src_range.first() >= first_dst());
+  int first_src = src_range.first();
+
+  // It is possible that a variable is only written to, so no src
+  if (first_src == -1) return use_dst[0];
+
+  // Find the assignment to this variable directly before src usage
   assert(!use_dst.empty());
-  return use_dst[0];
+
+  int prev_dst = -1;
+
+  for(int dst : use_dst) {
+    if (dst >= first_src) continue;
+    if (dst > prev_dst) prev_dst = dst;
+  }
+  
+  assert(prev_dst != -1);
+  assert(prev_dst < first_src);
+
+  return prev_dst;
 }
 
 
@@ -353,8 +391,11 @@ void RegUsage::check() const {
       if (!item.regular_use())   continue;
       if (item.never_assigned()) continue;  // Tested in previous block
 
-      if (item.first_live() <= item.first_dst()) {
-        tmp << "  Variable " << i << " is live before first assignment" << "\n";
+      if (item.first_src() <= item.first_dst()) {
+        breakpoint;
+
+        tmp << "  Variable " << i << " is live before first assignment" << "\n"
+            << item.dump() << "\n";
       }
     }
 

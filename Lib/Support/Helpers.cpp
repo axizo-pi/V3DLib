@@ -1,4 +1,5 @@
 #include "Helpers.h"
+#include "Support/basics.h"
 
 namespace V3DLib {
 
@@ -14,6 +15,17 @@ std::string indentBy(int indent) {
   std::string ret;
   for (int i = 0; i < indent; i++) ret += " ";
   return ret;
+}
+
+
+void to_file(std::string const &filename, std::string const &content) {
+  assert(!filename.empty());
+  assert(!content.empty());
+
+  FILE *f = fopen(filename.c_str(), "w");
+ 	assert (f != nullptr);
+	fprintf(f, content.c_str());
+	fclose(f);
 }
 
 }  // namespace V3DLib

@@ -10,6 +10,7 @@
 #include "Common/CompileData.h"
 #include "Optimizations.h"
 #include "Support/Timer.h"
+#include "Support/Helpers.h"  // to_file()
 #include "UseDef.h"
 
 namespace V3DLib {
@@ -132,8 +133,6 @@ Instr::List  remove_replaced_instructions(Instr::List &instrs) {
  * Determine the liveness sets for each instruction.
  */
 void Liveness::compute_liveness(Instr::List &instrs) {
-  //Timer t("compute_liveness", true);
-
   // Initialise live mapping to have one entry per instruction
   setSize(instrs.size());
 /*
@@ -150,11 +149,6 @@ void Liveness::compute_liveness(Instr::List &instrs) {
   bool changed = true;
   int count = 0;
 
-  //Timer t2("compute_liveness loop intern");
-  //Timer t3("compute liveOut");
-  //Timer t4("compute use/def rest");
-  //Timer t5("compute insert");
-
   // Iterate until no change, i.e. fixed point
   while (changed) {
     changed = false;
@@ -162,76 +156,61 @@ void Liveness::compute_liveness(Instr::List &instrs) {
     // Propagate live variables backwards
     for (int i = instrs.size() - 1; i >= 0; i--) {
       auto &instr = instrs[i];
+      if (!instr.isCondAssign()) continue;
 
-      bool also_set_used = false;
+      Reg dst = instr.dst_a_reg();
+      if (dst.tag == NONE) continue;
+ 
+      auto &item = m_reg_usage[dst.regId];
 
-      if (instr.isCondAssign()) {  // no performance impact ~ 1.5%
-        Reg dst = instr.dst_a_reg();
+      // If the dst variable is not used before, it should not be set as used as well
+      assert(item.first_dst() <= i);
 
-        if (dst.tag != NONE) {
-          auto &item = m_reg_usage[dst.regId];
+      bool also_set_used = (item.first_dst() < i);
+      if (also_set_used) continue;
 
-          // If the dst variable is not used before, it should not be set as used as well
-          assert(item.first_dst() <= i);
-          also_set_used = (item.first_dst() < i);
+/*
+ I believe that this check is garbage; testing without it.
+ 
+      //
+      // Sanity check: in this case, we expect the variable to be in the condition assign block only
+      //
+      // Notably, this assertion fails for init of variables without an explicit init value.
+      // This can be extremely confusing, hence this comment.
+      //
+      AssignCond assign_cond = instr.assign_cond();
+      for (int j = item.first_usage(); j <= item.last_usage(); j++) {
+        auto &instr2 = instrs[j];
 
-          if (!also_set_used) {
-            //
-            // Sanity check: in this case, we expect the variable to be in the condition assign block only
-            //
-            // Notably, this assertion fails for init of variables without an explicit init value.
-            // This can be extremely confusing, hence this comment.
-            //
-            AssignCond assign_cond = instr.assign_cond();
-            for (int j = item.first_usage(); j <= item.last_usage(); j++) {
-							if (instrs[j].isNop()) continue;
+				if (instr2.isNop()) continue;
 
-              assertq((assign_cond == instrs[j].assign_cond())            // expected usage
-                   || (instrs[j].is_always() && !instrs[j].is_branch()),  // Interim basic usage allowed (happens)
-                "Expected variable to be in condition assign block only", true
-              );
-            }
-          }
-        }
+        assertq((
+               (assign_cond == instr2.assign_cond())        // expected usage
+            || (instr2.is_always() && !instr2.is_branch())  // Interim basic usage allowed (happens)
+          ),
+          "Expected variable to be in condition assign block only", true
+        );
       }
+*/
 
-      //t2.start();
       // Compute 'use' and 'def' sets
       UseDef useDef(instr, also_set_used);
 
-      //t3.start();
       computeLiveOut(i, liveOut);
-      //t3.stop();
 
-      //t4.start();
       liveIn = liveOut;
       if (useDef.def.tag != NONE) {
         liveIn.remove(useDef.def.regId);  // Remove the 'def' set from the live-out set to give live-in set
       }
       liveIn.add(useDef.use);
-      //t4.stop();
 
-      //t5.start();
       if (insert(i, liveIn)) {
         changed = true;
       }
-      //t5.stop();
-      //t2.stop();
     }
 
     count++;
   }
-
-  //t2.end();
-  //t3.end();
-  //t4.end();
-  //t5.end();
-
-/*
-  std::string msg;
-  msg << "compute_liveness num iterations: " << count;
-  debug(msg);
-*/
 }
 
 
@@ -248,9 +227,9 @@ void Liveness::compute(Instr::List &instrs) {
   m_cfg.build(instrs);
   m_reg_usage.set_used(instrs);
 
-  //Timer t3("compute liveness", false);
-  compute_liveness(instrs); // performance hog 23/28s
-  //t3.end();
+  to_file("before_liveness.txt", instrs.dump(true));
+
+  compute_liveness(instrs);
   assert(instrs.size() == size());
 
   m_reg_usage.set_live(*this);
@@ -336,19 +315,11 @@ void Liveness::optimize(Instr::List &instrs, int numVars) {
   assertq(count_skips(instrs) == 0, "optimize(): SKIPs detected in instruction list");
   compile_data.target_code_before_optimization = instrs.dump();
 
-  //Timer t1("live compute");
   Liveness live(numVars);
   live.compute(instrs);
-  //std::cout << live.dump() << std::endl;
-  //t1.end();
 
   if (combineImmediates(live, instrs)) {
-    //std::cout << "After combineImmediates:\n"; 
-    //std::cout << instrs.dump(true) << std::endl;  // Useful sometimes for debug
-
-    //Timer t3("combine immediates compute", true);
     live.compute(instrs);  // instructions have changed, redo liveness
-    //std::cout << live.dump() << std::endl;
   }
 
 	//
@@ -356,19 +327,14 @@ void Liveness::optimize(Instr::List &instrs, int numVars) {
 	// So we won't bother replacing variables with them
 	//
 	if (!Platform::compiling_for_vc7()) {
-	  //Timer t3("introduceAccum");
 	  int prev_count_skips = count_skips(instrs);
 	  compile_data.num_accs_introduced = introduceAccum(live, instrs);
 	  assertq(prev_count_skips == count_skips(instrs), "SKIP count changed after introduceAccum()");
-	  //t3.end();
 	}
-
-  // Times for following (now) insignificant
 
   instrs = remove_replaced_instructions(instrs);
   assertq(count_skips(instrs) == 0, "optimize(): SKIPs detected in instruction list after cleanup");
 
-  //std::cout << count_reg_types(instrs).dump() << std::endl;
   compile_data.target_code_before_liveness = instrs.dump();
 }
 

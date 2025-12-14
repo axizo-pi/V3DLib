@@ -197,6 +197,24 @@ Reg Instr::dst_a_reg() const {
 }
 
 
+Reg Instr::src_a_reg() const {
+  if (ALU.srcA.is_reg()) {
+    return ALU.srcA.reg();
+  }
+
+  return Reg(NONE, 0);
+}
+
+
+Reg Instr::src_b_reg() const {
+  if (ALU.srcB.is_reg()) {
+    return ALU.srcB.reg();
+  }
+
+  return Reg(NONE, 0);
+}
+
+
 RegIdSet Instr::src_a_regs(bool set_use_where) const {
   RegIdSet ret;
 

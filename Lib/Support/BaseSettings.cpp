@@ -11,6 +11,10 @@
 namespace V3DLib {
 
 void BaseSettings::process(BaseKernel &k) {
+#if 0
+
+// Pi1 is 32-bits only; we thus need to support 32-bits.
+
 #ifdef ARM32
   //
   // TODO: differentiate on platforms
@@ -24,6 +28,7 @@ void BaseSettings::process(BaseKernel &k) {
   	Log::warn << "ARM 32-bits not supported any more. If it works, it works. You're on your own.";
     showed_msg = true;
   }
+#endif
 #endif
 
   // NOTE: For multiple calls here (entirely possible, HeatMap does this),
