@@ -161,6 +161,25 @@ int peephole_1(Liveness &live, Instr::List &instrs, RegUsage &allocated_vars) {
       continue;
     }
 
+    // If 'instr' is not last usage of the found var, skip
+    live.computeLiveOut(i, liveOut);  // Compute vars live-out of instr
+    if (!(instr.src_a_regs().member(def) && !liveOut.member(def))) continue;
+
+    // Can't remove this test.
+    // Reason: There may be a preceding instruction which sets the var to be replaced.
+    //         If 'prev' is conditional, replacing the var with an acc will ignore the previously set value.
+    if (!prev.is_always()) {
+/*
+      std::string msg;
+      msg << "peephole_1(): Skipping replacement for line " << i << " because prev.is_always() == false\n"
+          << "prev : " << prev.dump()  << "\n"
+          << "instr: " << instr.dump() << "\n";
+
+      warning(msg);
+*/
+      continue;
+    }
+
 
     //
     // Do the actual converions
