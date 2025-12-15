@@ -21,9 +21,6 @@ struct RegUsageItem {
   int live_range() const;
   int use_range() const;
   int first_dst() const;
-  int first_dst_after(int line) const;
-  int first_src() const       { return src_range.first(); }
-  int last_src() const        { return src_range.last(); }
   int first_live() const      { return m_live_range.first(); }
   int last_live() const       { return m_live_range.last(); }
   int first_usage() const;

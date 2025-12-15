@@ -36,7 +36,6 @@ void BaseSharedArray::alloc(uint32_t n) {
   }
 
   m_phyaddr = m_heap->alloc_array((uint32_t) (m_element_size*n), m_usraddr);
-  assert(m_phyaddr != 0);
   m_size = n;
   assert(allocated());
 }

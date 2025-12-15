@@ -2,7 +2,6 @@
 #include <iostream>
 #include "Liveness.h"
 #include "Support/Platform.h"
-#include "Support/Helpers.h"   // to_file()
 #include "Target/Subst.h"
 #include "Support/Timer.h"
 #include "Support/basics.h"
@@ -118,41 +117,15 @@ int peephole_1(Liveness &live, Instr::List &instrs, RegUsage &allocated_vars) {
   RegIdSet liveOut;
   int subst_count = 0;
 
-  //to_file("before_peephole1.txt", instrs.dump(true));
-
-  // Something could be won by redoing the loop if code changed.
-  // but then liveness would need to be recomputed.
-
   for (int i = 1; i < instrs.size(); i++) {
     Instr prev  = instrs[i-1];
     if (!prev.has_registers()) continue;  // Doesn't help much
 
     Instr instr = instrs[i];
 
-    Reg dst = prev.dst_reg();
+    Reg dst = prev.dst_a_reg();
     if (dst.tag == NONE) continue;
-
-    // if dst already acc, no point
-    if (!dst.is_rf_reg()) continue;
-
-    // No point if prev dst not used in next line
-    if (dst != instr.src_a_reg() && dst != instr.src_b_reg()) continue;
-
     RegId def = dst.regId;
-
-    auto const &reg_item = live.reg_usage()[def];
-    int first_src = reg_item.first_src();
-
-    if (first_src == -1) {
-      // dst never used, no point in continuing
-      continue;
-    }
-
-    if (reg_item.last_src() > i) {
-      // dst used further on, can't replace
-      // Note that this is conservatie, there may be assignments in between
-      continue;
-    }
 
     // Guard for this special case for the time being.
     // It should actually be possible to load a uniform in an accumulator,
@@ -161,8 +134,9 @@ int peephole_1(Liveness &live, Instr::List &instrs, RegUsage &allocated_vars) {
       continue;
     }
 
-    // If 'instr' is not last usage of the found var, skip
     live.computeLiveOut(i, liveOut);  // Compute vars live-out of instr
+
+    // If 'instr' is not last usage of the found var, skip
     if (!(instr.src_a_regs().member(def) && !liveOut.member(def))) continue;
 
     // Can't remove this test.
@@ -180,25 +154,12 @@ int peephole_1(Liveness &live, Instr::List &instrs, RegUsage &allocated_vars) {
       continue;
     }
 
-
-    //
-    // Do the actual converions
-    //
     Reg current(REG_A, def);
     Reg replace_with(ACC, instrs.get_free_acc(i - 1, i));
     assert(replace_with.regId != -1);
 
     prev.rename_dest(current, replace_with);
     renameUses(instr, current, replace_with);
-
-    warn << "peephole1 conversion. Before:\n"
-         << "  " << instrs[i-1].dump() << "\n"
-         << "  " << instrs[i].dump()   << "\n"
-         << "After: \n"
-         << "  " << prev.dump()  << "\n"
-         << "  " << instr.dump() << "\n"
-    ;
-
     instrs[i-1] = prev;
     instrs[i]   = instr;
 
@@ -428,7 +389,9 @@ int introduceAccum(Liveness &live, Instr::List &instrs) {
   int subst_count = 0;
   int const MAX_RANGE_SIZE = 15;  // 10 -> so that tmp var in sin_v3d() gets replaced
 
+  //debug(allocated_vars.dump_use_ranges());
   // Picks up a lot usually, but range_size > 1 seldom results in something
+  //Timer t("peephole_0");
   for (int range_size = 1; range_size <= MAX_RANGE_SIZE; range_size++) {
     int count = peephole_0(range_size, instrs, allocated_vars);
 
@@ -442,22 +405,33 @@ int introduceAccum(Liveness &live, Instr::List &instrs) {
 
     subst_count += count;
   }
-
+  //t.end();
 
   // This peephole still does a lot of useful stuff
   {
+    //Timer t("peephole_1", true);
     int count = peephole_1(live, instrs, allocated_vars);
-    // debug << "peephole_1, num substs: " << count;
+
+/*
+    {
+      std::string msg;
+      msg << "peephole_1, num substs: " << count;
+      debug(msg);
+    }
+*/
 
     subst_count += count;
   }
 
   // And some things still get done with this peephole, regularly 1 or 2 per compile
   {
+    //Timer t("peephole_2", true);
     int count = peephole_2(live, instrs, allocated_vars);
 /*
     if (count > 0) {
-      debug  << "peephole_2, num substs: " << count;
+      std::string msg;
+      msg << "peephole_2, num substs: " << count;
+      debug(msg);
     }
 */
 
