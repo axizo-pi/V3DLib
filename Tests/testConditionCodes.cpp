@@ -419,7 +419,7 @@ TEST_CASE("Test Where blocks [where][cond]") {
 
 	// TODO:  compiling for vc4 on other platforms is messed up
   //        Need to fix compile-time kernel compile before enabling this
-	warning("[where][cond] test emulator and interpreter");
+	//warning("[where][cond] test emulator and interpreter");
   reset(result);
 	settings.run_type = 1;
   auto k2 = compile(where_kernel, settings);

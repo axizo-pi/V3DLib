@@ -216,6 +216,7 @@ void integer_division(Int &Q, Int &R, IntExpr in_a, IntExpr in_b) {
  * This is not always precise (confirmed) but more concise than the full integer calculation
  */
 IntExpr integer_division_f(IntExpr in_a, IntExpr in_b) {
+  return create_function_snippet([in_a, in_b] {
   	Float a = toFloat(in_a);    comment("Start integer division by float");
 	  Float b	= toFloat(in_b);
 
@@ -229,7 +230,9 @@ IntExpr integer_division_f(IntExpr in_a, IntExpr in_b) {
 
   	comment("End integer division by float");
 
-		return res;
+		//return res;
+		return Return(res);
+  });
 }
 
 
@@ -246,7 +249,8 @@ IntExpr integer_division_f(IntExpr in_a, IntExpr in_b) {
  * Source: https://stackoverflow.com/questions/18662261/fastest-implementation-of-sine-cosine-and-square-root-in-c-doesnt-need-to-b/28050328#28050328
  */
 float cos(float x_in, bool extra_precision) noexcept {
-  extra_precision |= LibSettings::use_high_precision_sincos(); // setting to true in param overrides lib setting
+  // setting to true in param overrides lib setting
+  extra_precision |= LibSettings::use_high_precision_sincos();
 
   double x = x_in;
 
@@ -272,7 +276,8 @@ float sin(float x_in, bool extra_precision) noexcept {
 
 
 FloatExpr cos(FloatExpr x_in, bool extra_precision) {
-  extra_precision |= LibSettings::use_high_precision_sincos(); // setting to true in param overrides lib setting
+  // setting to true in param overrides lib setting
+  extra_precision |= LibSettings::use_high_precision_sincos();
 
   Float x = x_in;
 
