@@ -126,10 +126,6 @@ void Logger::flush(bool do_throw) {
 			std::flush(std::cout);
 			std::flush(std::cerr);
 
-      //
-      // CATCH NOT WORKING for std::runtime_error
-      //
-
       // Throwing is better, since it allows to unroll the stack
       throw V3DLib::Exception(m_buf.str());
 		}
