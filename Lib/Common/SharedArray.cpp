@@ -1,5 +1,7 @@
 #include "SharedArray.h"
 
+using namespace Log;
+
 namespace V3DLib {
 
 BaseSharedArray::BaseSharedArray(BufferObject *heap, uint32_t element_size) :
@@ -27,14 +29,24 @@ bool BaseSharedArray::allocated() const {
  * @param n number of 4-byte elements to allocate (so NOT memory size!)
  */
 void BaseSharedArray::alloc(uint32_t n) {
-  assert(!allocated());
   assert(n > 0);
   assert(m_element_size > 0);
+
+  if (allocated()) {
+  	if (m_size >= n) {
+			// Current is large enough already
+			return;
+		}
+
+		warn << "alloc(): reallocating shared array";
+		dealloc();
+	}
 
   if (m_heap == nullptr) {
     m_heap = &getBufferObject();
   }
 
+	assert(m_phyaddr == 0);
   m_phyaddr = m_heap->alloc_array((uint32_t) (m_element_size*n), m_usraddr);
   m_size = n;
   assert(allocated());
