@@ -47,13 +47,8 @@ bool BaseKernel::has_errors() const {
 }
 
 
-void BaseKernel::dump(const char *filename, bool output_qpu_code) {
-  if (!has_driver()) return; 
-
-  FILE *f = fopen(filename, "w");
- 	assert (f != nullptr);
-	fprintf(f, driver().dump(output_qpu_code).c_str());
-	fclose(f);
+std::string BaseKernel::dump() const {
+	return driver().dump();
 }
 
 

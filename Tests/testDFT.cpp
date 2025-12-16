@@ -4,6 +4,7 @@
 #include <iostream>
 #include "Support/Timer.h"
 #include "Source/Complex.h"
+#include "Support/Helpers.h"
 #include "support/support.h"
 #include "support/matrix_support.h"
 #include "support/dft_support.h"
@@ -437,7 +438,6 @@ TEST_CASE("Discrete Fourier Transform [dft]") {
     {
       Complex::Array2D result_tmp;  // Will be Dimx16, columns padded to 16 and only 1st relevant
       auto k = compile(kernels::matrix_mult_decorator(dft_matrix, input, result_tmp));
-      k.dump("obj/test/dft_matrix_v3d.txt");
 
       //std::cout << "result dimensions: (" << result_tmp.rows() << ", " << result_tmp.columns() << ")" << std::endl;
 
@@ -452,13 +452,13 @@ TEST_CASE("Discrete Fourier Transform [dft]") {
       }
     }
 
-
     // Switching input and matrix around should have same result, but transposed compared to previous
     // No need to transpose dft_matrix due to symmetry
     Complex::Array2D result_switched;  // Will be Dimx1
 
     {
       auto k = compile(kernels::matrix_mult_decorator(input, dft_matrix, result_switched));
+      to_file("obj/test/matrix_mul_decorator.txt", k.dump());
 
       k.setNumQPUs(8);  // Running with multi-QPU gives very limited performance improvement
       k.load(&result_switched, &input, &dft_matrix).run();

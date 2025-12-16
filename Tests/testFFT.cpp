@@ -3,6 +3,7 @@
 #include <cmath>
 #include <V3DLib.h>
 #include "Support/Platform.h"
+#include "Support/Helpers.h"
 #include "Support/Timer.h"
 #include "Support/pgm.h"
 #include "support/dft_support.h"
@@ -1097,7 +1098,6 @@ TEST_CASE("FFT test with scalar [fft]") {
     auto k = compile(fft_kernel);
     k.load(&result, &devnull, &signal);
     k.run();
-    //std::cout << "Kernel output: " << result.dump() << std::endl;
 
     float precision = 5.0e-5f;
     for (int i = 0; i < Dim; ++i) {
@@ -1175,9 +1175,7 @@ TEST_CASE("FFT test with DFT [fft][test2][pass2]") {
         a_scalar[c] = cx(a[c], 0.0f);
       }
 
-      //Timer timer1("scalar FFT run time");
       fft(a_scalar, scalar_result, log2n);
-      //timer1.end();
       //scalar_dump(scalar_result, Dim);
     }
 
@@ -1193,14 +1191,13 @@ TEST_CASE("FFT test with DFT [fft][test2][pass2]") {
       Complex::Array2D result_dft;
       Timer timer1("DFT compile time");
       auto k = compile(kernels::dft_decorator(a, result_dft));
-      k.dump("obj/test/dft_compare_v3d.txt");
+      //to_file("obj/test/dft_compare_v3d.txt", k.dump());
       timer1.end();
       //std::cout << "DFT kernel size: " << k.v3d_kernel_size() << std::endl;
       //std::cout << "combined " << compile_data.num_instructions_combined << " instructions" << std::endl;
 
       Timer timer2("DFT run time");
       k.load(&result_dft, &a);
-      //k.setNumQPUs(1);
       k.run();
       timer2.end();
 
@@ -1219,20 +1216,14 @@ TEST_CASE("FFT test with DFT [fft][test2][pass2]") {
 
       fft_context.init(log2n);
 
-      //Timer timer1("FFT compile time");
       fft_context.num_qpus = 8;
       auto k = compile(fft_kernel);
-      k.dump("./obj/test/fft_v3d.txt", true);
-      k.dump_compile_data("./obj/test/fft_dump_v3d.txt");
-      //timer1.end();
-      //std::cout << "FFT kernel size: " << k.v3d_kernel_size() << std::endl;
-      //std::cout << "combined " << compile_data.num_instructions_combined << " instructions" << std::endl;
+      //to_file("./obj/test/fft_v3d.txt", k.dump());
+      //k.dump_compile_data("./obj/test/fft_dump_v3d.txt");
 
-      //Timer timer2("FFT run time");
       k.setNumQPUs(fft_context.num_qpus);
       k.load(&result_fft, &devnull, &signal);
       k.run();
-      //timer2.end();
 
       INFO("comparing FFT with scalar");
       check_result2(scalar_result, result_fft, Dim, precision);

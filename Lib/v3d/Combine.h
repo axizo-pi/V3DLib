@@ -8,11 +8,7 @@ namespace Combine {
 
 using V3DLib::v3d::instr::Instr;
 
-void remove_useless(Instructions &instr);
-void remove_skips(Instructions &instr);
-
-bool alu_to_mul_alu(Instr const &in_instr, Instr &dst);
-void combine(Instructions &instr);
+int optimize(Instructions &instrs);
 
 }  // namespace Combine
 }  // namespace v3d

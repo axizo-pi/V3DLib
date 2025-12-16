@@ -155,7 +155,7 @@ Stmts &KernelDriver::sourceCode() {
 *
 * @param filename  if specified, print the output to this file. Otherwise, print to stdout
 */
-std::string KernelDriver::dump(bool output_qpu_code) {
+std::string KernelDriver::dump() const {
 	std::string ret;
 
   if (has_errors()) {
@@ -164,12 +164,10 @@ std::string KernelDriver::dump(bool output_qpu_code) {
         << "\n\n";
   }
 
-  if (output_qpu_code) {
-  	ret << "Opcodes for " << kernel_type_str() << "\n"
-    	  << "===============\n"
-        << emit_opcodes()
-  			<< "\n";
-  }
+	ret << "Opcodes for " << kernel_type_str() << "\n"
+   	  << "===============\n"
+      << emit_opcodes()
+ 			<< "\n";
 
   ret << "Source for " << kernel_type_str() << "\n"
       << "===============\n"

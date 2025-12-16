@@ -34,6 +34,7 @@
 #include "support/support.h"
 #include "Support/pgm.h"
 #include "Support/Platform.h"
+#include "Support/Helpers.h"
 
 namespace {
 
@@ -153,8 +154,6 @@ TEST_CASE("Check v3d condition codes [v3d][cond]") {
     V3DLib::v3d::Driver drv;
     drv.add_bo(heap.getHandle());
     REQUIRE(drv.execute(code, &unif));
-
-    //dump_data(data, true); 
 
     uint32_t pushz_if_expected[DATA_SIZE]  = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0 };
     uint32_t pushz_ifn_expected[DATA_SIZE] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1 };
@@ -463,7 +462,6 @@ TEST_CASE("Test if/where without loop [noloop][cond]") {
     Int::Array result(VEC_SIZE);
 
     auto k1 = compile(noloop_where_kernel);
-    //k1.dump_compile_data(true, "obj/test/noloop_where_compile_data_vc4.txt");
 
     k1.load(&result, 0, 0);   run_qpu(result, k1, 0, expected_1);
     k1.load(&result, 12, 15); run_qpu(result, k1, 1, expected_2);
@@ -485,7 +483,7 @@ TEST_CASE("Test if/where without loop [noloop][cond]") {
     Int::Array result(VEC_SIZE);
 
     auto k3 = compile(noloop_multif_kernel);
-    k3.dump("obj/test/noloop_multif_v3d.txt");  // Keep enabled to avoid failing assertions, see below
+    //to_file("obj/test/noloop_multif_v3d.txt", k3.dump());  // Keep enabled to avoid failing assertions, see below
 
     // Fickle! Works always if k3.dump(...) called above, otherwise *may* assert
     // TODO examine this
@@ -517,7 +515,7 @@ TEST_CASE("Test multiple and/or [andor][cond]") {
 
     auto k = compile(andor_kernel);
     k.load(&result).run();
-    k.dump("andor_kernel_v3d.txt");
+    //to_file("andor_kernel_v3d.txt", k.dump());
     check_andor_result(result);
   }
 
@@ -526,7 +524,7 @@ TEST_CASE("Test multiple and/or [andor][cond]") {
     Float::Array result(width*height);
 
     auto k1 = compile(andor_where_kernel);
-    k1.dump("obj/test/andor_where_kernel.txt");
+    //to_file("obj/test/andor_where_kernel.txt", k1.dump());
     k1.load(&result, width, height).run();
     check_output(result, "where_qpu");
   }
