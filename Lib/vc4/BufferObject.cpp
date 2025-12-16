@@ -37,6 +37,7 @@ void BufferObject::alloc_mem(uint32_t size_in_bytes) {
   }
 
   uint32_t phyaddr = mem_lock(mb, handle);
+  assert(phyaddr > 0);
   arm_base =  (uint8_t *) mapmem(BUS_TO_PHYS(phyaddr + GPU_MEM_MAP), size_in_bytes);
 
   set_size(size_in_bytes);

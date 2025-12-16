@@ -10,6 +10,7 @@
 #include "Common/CompileData.h"
 #include "Optimizations.h"
 #include "Support/Timer.h"
+#include "Support/Helpers.h"  // to_file()
 #include "UseDef.h"
 
 namespace V3DLib {
@@ -110,6 +111,14 @@ Instr::List  remove_replaced_instructions(Instr::List &instrs) {
     cur++;
   }
 
+/*
+  if (count > 0) {
+    std::string msg;
+    msg << "remove_replaced_instructions() removed " << count << " SKIPs";
+    debug(msg);
+  }
+*/
+
   return ret;
 }
 
@@ -124,7 +133,6 @@ Instr::List  remove_replaced_instructions(Instr::List &instrs) {
  * Determine the liveness sets for each instruction.
  */
 void Liveness::compute_liveness(Instr::List &instrs) {
-
   // Initialise live mapping to have one entry per instruction
   setSize(instrs.size());
 /*
@@ -148,41 +156,42 @@ void Liveness::compute_liveness(Instr::List &instrs) {
     // Propagate live variables backwards
     for (int i = instrs.size() - 1; i >= 0; i--) {
       auto &instr = instrs[i];
+      if (!instr.isCondAssign()) continue;
 
-      bool also_set_used = false;
+      Reg dst = instr.dst_a_reg();
+      if (dst.tag == NONE) continue;
+ 
+      auto &item = m_reg_usage[dst.regId];
 
-      if (instr.isCondAssign()) {  // no performance impact ~ 1.5%
-        Reg dst = instr.dst_a_reg();
+      // If the dst variable is not used before, it should not be set as used as well
+      assert(item.first_dst() <= i);
 
-        if (dst.tag != NONE) {
-          auto &item = m_reg_usage[dst.regId];
+      bool also_set_used = (item.first_dst() < i);
+      if (also_set_used) continue;
 
-          // If the dst variable is not used before, it should not be set as used as well
-          assert(item.first_dst() <= i);
-          also_set_used = (item.first_dst() < i);
 /*
-  Fails on Pi3 unit test - I actually don't think it is necessary
+ I believe that this check is garbage; testing without it.
+ 
+      //
+      // Sanity check: in this case, we expect the variable to be in the condition assign block only
+      //
+      // Notably, this assertion fails for init of variables without an explicit init value.
+      // This can be extremely confusing, hence this comment.
+      //
+      AssignCond assign_cond = instr.assign_cond();
+      for (int j = item.first_usage(); j <= item.last_usage(); j++) {
+        auto &instr2 = instrs[j];
 
-          if (!also_set_used) {
-            //
-            // Sanity check: in this case, we expect the variable to be in the condition assign block only
-            //
-            // Notably, this assertion fails for init of variables without an explicit init value.
-            // This can be extremely confusing, hence this comment.
-            //
-            AssignCond assign_cond = instr.assign_cond();
-            for (int j = item.first_usage(); j <= item.last_usage(); j++) {
-							if (instrs[j].isNop()) continue;
+				if (instr2.isNop()) continue;
 
-              assertq((assign_cond == instrs[j].assign_cond())            // expected usage
-                   || (instrs[j].is_always() && !instrs[j].is_branch()),  // Interim basic usage allowed (happens)
-                "Expected variable to be in condition assign block only", true
-              );
-            }
-          }
-*/
-        }
+        assertq((
+               (assign_cond == instr2.assign_cond())        // expected usage
+            || (instr2.is_always() && !instr2.is_branch())  // Interim basic usage allowed (happens)
+          ),
+          "Expected variable to be in condition assign block only", true
+        );
       }
+*/
 
       // Compute 'use' and 'def' sets
       UseDef useDef(instr, also_set_used);
@@ -218,7 +227,9 @@ void Liveness::compute(Instr::List &instrs) {
   m_cfg.build(instrs);
   m_reg_usage.set_used(instrs);
 
-  compute_liveness(instrs); // performance hog 23/28s
+  to_file("before_liveness.txt", instrs.dump(true));
+
+  compute_liveness(instrs);
   assert(instrs.size() == size());
 
   m_reg_usage.set_live(*this);
@@ -320,8 +331,6 @@ void Liveness::optimize(Instr::List &instrs, int numVars) {
 	  compile_data.num_accs_introduced = introduceAccum(live, instrs);
 	  assertq(prev_count_skips == count_skips(instrs), "SKIP count changed after introduceAccum()");
 	}
-
-  // Times for following (now) insignificant
 
   instrs = remove_replaced_instructions(instrs);
   assertq(count_skips(instrs) == 0, "optimize(): SKIPs detected in instruction list after cleanup");

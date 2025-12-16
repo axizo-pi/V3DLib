@@ -158,6 +158,8 @@ struct Instr : public InstructionComment {
   Reg dest() const;
   void dest(Reg const &rhs);
   Reg dst_reg() const;
+  Reg src_a_reg() const;
+  Reg src_b_reg() const;
   std::set<Reg> src_regs(bool set_use_where = false) const;
   Reg dst_a_reg() const;
   RegIdSet src_a_regs(bool set_use_where = false) const;

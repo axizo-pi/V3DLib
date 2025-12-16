@@ -40,7 +40,7 @@ private:
 
   void allocate();
   ByteCode to_opcodes();
-	std::string emit_opcodes() override;
+	std::string emit_opcodes() const override;
 };
 
 }  // namespace v3d

@@ -75,7 +75,7 @@ TESTS_OBJ = $(patsubst %,$(OBJDIR)/%,$(TESTS_FILES))
 help:
 	@echo 'Usage:'
 	@echo
-	@echo '    make [target]* [QPU=1] [DEBUG=1]
+	@echo '    make [target]* [QPU=1] [DEBUG=1]'
 	@echo
 	@echo 'Where target:'
 	@echo
@@ -83,7 +83,7 @@ help:
 	@echo '    all           - Build all example programs'
 	@echo '    clean         - Delete all interim and target files'
 	@echo '    test          - Run the unit tests'
-	@echo '    gen           - Create source dependencies for the makefile
+	@echo '    gen           - Create source dependencies for the makefile'
 	@echo
 	@echo '    one of the example programs - $(EXAMPLES)'
 	@echo

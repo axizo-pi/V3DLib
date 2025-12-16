@@ -193,71 +193,7 @@ Instr::List removeVPMStall(Instr::List &instrs) {
 
 
 /**
- * @param value      output; if conversion succeeds, the value to shift.
- * @param left_shift output; if conversion succeeds, the amount to shift the value with.
- *
- * @return true if conversion succeeds, false otherwise.
- */
-bool convert_int_power(int in_value, int &value, int &left_shift) {
-  if (in_value < 0)  return false;  // only positive values for now
-  if (in_value < 16) return false;  // don't bother with values within range
-
-  value = in_value;
-  left_shift = 0;
-
-  while (value != 0 && (value & 1) == 0) {
-    left_shift++;
-    value >>= 1;
-  }
-
-  if (left_shift == 0) return false;
-  if (left_shift >= 16) return false;  // Must be positive small int
-
-	return true;
-}
-
-
-bool convert_int_powers(Instr::List &output, Reg dst, int in_value) {
-	std::string comment;
-	comment << "Load immediate " << in_value;
-
-	//warn << "convert_int_powers in_value: " << in_value;
-
-	if  (-16 <= in_value && in_value <= 15) {
-		// No conversion necessary
-		output << li(dst, in_value).comment(comment);
-		return true;
-	}
-
-	int value;
-	int left_shift;
-
-	if (!convert_int_power(in_value, value, left_shift)) { 
-		//warn << "convert_int_power failed for: " << in_value;
-
-
-		return false;
-	}
-
-	// warn <<  "convert_int_powers " << in_value << " : " << value << " << " << left_shift;
-	assert (-16 <= left_shift && left_shift <= 15);
-
-	// 42 = 21 << 1 fails, because 21 is not a small int.
-	if (!(-16 <= value && value <= 15)) {
-		return false;
-	}
-
-	Reg tmp(VarGen::fresh());
-
-	output << li(tmp, value).comment(comment)
-         << shl(dst, tmp, left_shift);
-
-	return true;
-}
-
-
-/**
- * Blunt tool for converting all int's.
+ * Convert all integers.
  *
  * @param output    output parameter, sequence of instructions to
  *                  add generated code to
@@ -330,47 +266,6 @@ bool encode_int_immediate(Instr::List &output, Reg dst, int in_value) {
 
 	ret << mov(dst, r0);
 
-/*
-	Reg r0(VarGen::fresh());  // temp value
-	Reg r1(VarGen::fresh());  // temp value
-
-  bool did_first = false;
-  for (int i = 7; i >= 0; --i) {
-    if (nibbles[i] == 0) continue;
-
-    int imm = nibbles[i];
-
-    if (!did_first) {
-      ret << mov(dst, imm);  // Gives segfault on p4-3 (arm32)
-                            // No clue why, works fine on silke (arm64) and pi3
-
-      if (i > 0) {
-        if (convert_int_powers(ret, r0, 4*i)) {
-          // r0 now contains value for left shift
-          ret << shl(dst, dst, r0).comment("Here 1");
-        } else {
-          ret << shl(dst, dst, 4*i).comment("Here 2");;
-        }
-      }
-      did_first = true;
-    } else {
-      if (i > 0) {
-        ret << mov(r1, imm);
-
-        if (convert_int_powers(ret, r0, 4*i)) {
-          // r0 now contains value for left shift
-          ret << shl(r1, r1, r0).comment("Here 3");;
-        } else {
-          ret << shl(r1, r1, 4*i).comment("Here 4");;
-        }
-
-        ret << bor(dst, dst, r1);
-      } else {
-        ret << bor(dst, dst, imm).comment("Here 5");
-      }
-    }
-  }
-*/
   assert(!ret.empty());
   if (ret.empty()) return false;  // Not expected, but you never know
 
@@ -439,15 +334,6 @@ bool encode_int(Instr::List &ret, Reg dst, int value) {
 		tmp << sub(dst, 0, dst) .comment(cmt);
 	}
 
-/*
-  if (convert_int_powers(tmp, dst, value)) {           // powers of 2 of basic small int's 
-  } else if (encode_int_immediate(tmp, dst, value)) {  // Use full blunt conversion (heavy but always works)
-  } else {
-    return false;                                      // Conversion failed
-	}
-*/	
-
-	//warn << "encode_int ret:\n" << tmp.dump();
 	ret << tmp;
   return true;
 }

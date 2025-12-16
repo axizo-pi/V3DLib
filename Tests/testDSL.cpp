@@ -5,6 +5,7 @@
 #include "LibSettings.h"
 #include "Support/pgm.h"
 #include "support/support.h"
+#include "Support/Helpers.h"
 #include "Source/Complex.h"
 #include "Source/Functions.h"
 #include "v3d/v3d.h"
@@ -540,7 +541,7 @@ TEST_CASE("Test specific operations in DSL [dsl][ops]") {
     int const N = 12;  // Number of expected results
 
     auto k = compile(int_ops_kernel);
-		k.dump("int_ops_kernel.txt");
+		//to_file("int_ops_kernel.txt", k.dump());
 
     Int::Array result(16*N);
     result.fill(-1);
@@ -580,7 +581,7 @@ TEST_CASE("Test specific operations in DSL [dsl][ops]") {
     int const N = 5;  // Number of expected results
 
     auto k = compile(float_ops_kernel);
-		k.dump("float_ops_kernel.txt");
+		//to_file("float_ops_kernel.txt", k.dump());
 
     Float::Array results(16*N);
 
@@ -773,7 +774,7 @@ TEST_CASE("Initialization with index() on uniform pointers should work as expect
 
   SUBCASE("Test with TMU") {
     auto k = compile(offsets_kernel<Int, Int::Ptr>);
-    k.dump("offsets_kernel.txt", true);
+    //to_file("offsets_kernel.txt", k.dump());
 		//k.dump_compile_data(false, "offsets_kernel_compile_data.txt");
     reset();
     k.load(&result, &a).run();
@@ -1238,7 +1239,6 @@ TEST_CASE("Test sin/cos instructions [dsl][sincos]") {
   auto lib_neg_sin = lib_neg_sin_values(N);
 
   auto k = compile(sincos_kernel);
-  // k.dump("sincos_kernel.txt");
   k.load(&result, N).run();
 
   float const hi_precision = 1.2e-3f;

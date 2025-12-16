@@ -131,8 +131,8 @@ public:
   bool alu_add_a(BaseSource const &src, bool overwrite = false);
   bool alu_add_b(BaseSource const &src, bool overwrite = false);
   void alu_mul_dst(Location const &dst);
-  bool alu_mul_a(BaseSource const &src);
-  bool alu_mul_b(BaseSource const &src);
+  bool alu_mul_a(BaseSource const &src, bool overwrite = false);
+  bool alu_mul_b(BaseSource const &src, bool overwrite = false);
 
 	BaseSource sig_dst() const;
   BaseSource alu_add_dst() const;

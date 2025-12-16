@@ -63,7 +63,7 @@ public:
   V3DLib::KernelDriver const &driver() const;
 
   void compile_init(bool do_vc4);
-  void dump(const char *filename = nullptr, bool output_qpu_code = true);
+	std::string dump() const;
 
   BaseKernel &setNumQPUs(int n) { m_settings.num_qpus = n; return *this; }
   int numQPUs() const { return m_settings.num_qpus; }
@@ -78,7 +78,7 @@ public:
   IntList const &params() const { return uniforms; }  // Can't name it uniforms because the data member is called that
 
   std::string compile_info() const;
-  void dump_compile_data(char const *filename);
+	std::string dump_compile_data();
   bool has_errors() const;
   std::string get_errors() const;
   std::string info() const;

@@ -23,8 +23,20 @@ std::unique_ptr<BufferObject> emuHeap;
 void BufferObject::alloc_mem(uint32_t size_in_bytes) {
   assert(arm_base  == nullptr);
 
-  arm_base = new uint8_t [size_in_bytes];
+  //
+  // phyaddr can not be zero, even though it is perfectly legal for this BufferObject,
+  // which resides in main memory.  Zero screws up logic elsewhere.
+  //
+  // (Multiple of) 16 to mimic alignment of the vc4/v3d phyaddr values.
+  //
+  // I am quite amazed that this ever worked with zero. Did I switch universes?
+  // Unit tests were passing.
+  //
+  uint32_t OFFSET = 16;
+
+  arm_base = new uint8_t [OFFSET + size_in_bytes];
   set_size(size_in_bytes);
+  set_phy_address(OFFSET);  // Not 0, other code start complaining
 }
 
 

@@ -830,7 +830,7 @@ bool Instr::alu_add_a(BaseSource const &src, bool overwrite) {
 bool Instr::alu_add_b(BaseSource const &src, bool overwrite) {
 	assert(src.is_set());
 	assert(!m_external_init);
-	if (m_alu_add_b_set) {
+	if (m_alu_add_b_set && !overwrite) {
 		warn << "alu_add_b overwriting existing src value";
 	}
 
@@ -883,10 +883,10 @@ void Instr::alu_mul_dst(Location const &dst) {
  *
  * This is different from vc4, where the values indicate using rfA or rfB.
  */
-bool Instr::alu_mul_a(BaseSource const &src) {
+bool Instr::alu_mul_a(BaseSource const &src, bool overwrite) {
 	assert(src.is_set());
 	assert(!m_external_init);
-	if (m_alu_mul_a_set) {
+	if (m_alu_mul_a_set && !overwrite) {
 		warn << "alu_mul_a overwriting existing src value";
 	}
 
@@ -936,7 +936,7 @@ bool Instr::check_safe(BaseSource const &src, CheckSrc check_src) const {
 
 bool Instr::alu_set_src(BaseSource const &src, v3d_qpu_input &input, CheckSrc check_src) {
 	if (src.is_reg()) {
-		assertq(!Platform::compiling_for_vc7(), "alu_mul_b: can not use registers on vc7");
+		assertq(!Platform::compiling_for_vc7(), "alu_set_src: can not use registers on vc7");
 		// src.val() is a mux value
 		input.mux = (v3d_qpu_mux) src.val();
 	} else {
@@ -966,10 +966,10 @@ bool Instr::alu_set_src(BaseSource const &src, v3d_qpu_input &input, CheckSrc ch
 }	
 
 
-bool Instr::alu_mul_b(BaseSource const &src) {
+bool Instr::alu_mul_b(BaseSource const &src, bool overwrite) {
 	assert(src.is_set());
 	assert(!m_external_init);
-	if (m_alu_mul_b_set) {
+	if (m_alu_mul_b_set && !overwrite) {
 		warn << "alu_mul_b overwriting existing src value";
 	}
 

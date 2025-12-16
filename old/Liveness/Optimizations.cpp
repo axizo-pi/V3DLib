@@ -2,6 +2,7 @@
 #include <iostream>
 #include "Liveness.h"
 #include "Support/Platform.h"
+#include "Support/Helpers.h"   // to_file()
 #include "Target/Subst.h"
 #include "Support/Timer.h"
 #include "Support/basics.h"
@@ -66,10 +67,26 @@ int peephole_0(int range_size, Instr::List &instrs, RegUsage &allocated_vars) {
     int acc_id = instrs.get_free_acc(item.first_usage(), item.last_usage());
 
     if (acc_id == -1) {
+/*
+      warning("No free acc!");
+
+      std::string msg;
+      msg << "range_size: " << range_size << ", Var " << var_id << ", "
+          << "lines " << item.first_usage()  << "-" << item.last_usage() << "\n"
+          << instrs.check_acc_usage(item.first_usage(), item.last_usage()) << "\n";
+
+      debug(msg);
+*/
       continue;
     }
 
     Reg replace_with(ACC, acc_id);
+
+/*
+    // This call is an extreme performance hog and has not failed in recent memory
+    // Enable if you're totally paranoid
+    allocated_vars.check_overlap_usage(replace_with, item);
+*/
 
     replace_acc(instrs, item, var_id, acc_id);
 
@@ -101,15 +118,41 @@ int peephole_1(Liveness &live, Instr::List &instrs, RegUsage &allocated_vars) {
   RegIdSet liveOut;
   int subst_count = 0;
 
+  //to_file("before_peephole1.txt", instrs.dump(true));
+
+  // Something could be won by redoing the loop if code changed.
+  // but then liveness would need to be recomputed.
+
   for (int i = 1; i < instrs.size(); i++) {
     Instr prev  = instrs[i-1];
     if (!prev.has_registers()) continue;  // Doesn't help much
 
     Instr instr = instrs[i];
 
-    Reg dst = prev.dst_a_reg();
+    Reg dst = prev.dst_reg();
     if (dst.tag == NONE) continue;
+
+    // if dst already acc, no point
+    if (!dst.is_rf_reg()) continue;
+
+    // No point if prev dst not used in next line
+    if (dst != instr.src_a_reg() && dst != instr.src_b_reg()) continue;
+
     RegId def = dst.regId;
+
+    auto const &reg_item = live.reg_usage()[def];
+    int first_src = reg_item.first_src();
+
+    if (first_src == -1) {
+      // dst never used, no point in continuing
+      continue;
+    }
+
+    if (reg_item.last_src() > i) {
+      // dst used further on, can't replace
+      // Note that this is conservatie, there may be assignments in between
+      continue;
+    }
 
     // Guard for this special case for the time being.
     // It should actually be possible to load a uniform in an accumulator,
@@ -118,24 +161,44 @@ int peephole_1(Liveness &live, Instr::List &instrs, RegUsage &allocated_vars) {
       continue;
     }
 
-    live.computeLiveOut(i, liveOut);  // Compute vars live-out of instr
-
     // If 'instr' is not last usage of the found var, skip
+    live.computeLiveOut(i, liveOut);  // Compute vars live-out of instr
     if (!(instr.src_a_regs().member(def) && !liveOut.member(def))) continue;
 
     // Can't remove this test.
     // Reason: There may be a preceding instruction which sets the var to be replaced.
     //         If 'prev' is conditional, replacing the var with an acc will ignore the previously set value.
     if (!prev.is_always()) {
+/*
+      std::string msg;
+      msg << "peephole_1(): Skipping replacement for line " << i << " because prev.is_always() == false\n"
+          << "prev : " << prev.dump()  << "\n"
+          << "instr: " << instr.dump() << "\n";
+
+      warning(msg);
+*/
       continue;
     }
 
+
+    //
+    // Do the actual converions
+    //
     Reg current(REG_A, def);
     Reg replace_with(ACC, instrs.get_free_acc(i - 1, i));
     assert(replace_with.regId != -1);
 
     prev.rename_dest(current, replace_with);
     renameUses(instr, current, replace_with);
+
+    warn << "peephole1 conversion. Before:\n"
+         << "  " << instrs[i-1].dump() << "\n"
+         << "  " << instrs[i].dump()   << "\n"
+         << "After: \n"
+         << "  " << prev.dump()  << "\n"
+         << "  " << instr.dump() << "\n"
+    ;
+
     instrs[i-1] = prev;
     instrs[i]   = instr;
 
@@ -259,6 +322,7 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
 
       if (last_use + LAST_USE_LIMIT < j) {  // This is here for performance reasons, to avoid fully scanning
                                             // huge kernels.
+        //debug("Hit last use limit, stopping forward scan");
         break;
       }
 
@@ -272,12 +336,21 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
       if (instr2.LI.imm != instr.LI.imm) continue;
       if (!live.cfg().is_parent_block(j, live.cfg().block_at(i))) continue;
 
+      //Log::debug << "Could replace LI at " << j << " (block " << live.cfg().block_at(j) << "): "
+      //     << instr2.mnemonic(false) << "\n"
+      //     << "  Scanning for dest reg: " << instr2.dest().dump() << "\n"
+      //;
+
       //
       // Find and replace all occurences of the second LI with the first LI instruction
       //
       int num_subsitutions = 0;
       Reg current      = instr2.dest();
       Reg replace_with = instr.dest();
+
+      // The bulk of the time (99%) in this function goes into the following part, 
+      // last init + loop.
+      //t3.start();
 
       // Limit search range to reg usage, or until end of block
       int last = live.cfg().block_end(j);
@@ -308,6 +381,7 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
           num_subsitutions++;
         }
       }
+      //t3.stop();
 
       if (num_subsitutions > 0) {
         last_use = j;
@@ -357,18 +431,36 @@ int introduceAccum(Liveness &live, Instr::List &instrs) {
   // Picks up a lot usually, but range_size > 1 seldom results in something
   for (int range_size = 1; range_size <= MAX_RANGE_SIZE; range_size++) {
     int count = peephole_0(range_size, instrs, allocated_vars);
+
+/*
+    if (count > 0 && range_size > 1) {
+      std::string msg = "peephole_0 for range size ";
+      msg << range_size << ", num substs: " << count;
+      debug(msg);
+    }
+*/
+
     subst_count += count;
   }
+
 
   // This peephole still does a lot of useful stuff
   {
     int count = peephole_1(live, instrs, allocated_vars);
+    // debug << "peephole_1, num substs: " << count;
+
     subst_count += count;
   }
 
   // And some things still get done with this peephole, regularly 1 or 2 per compile
   {
     int count = peephole_2(live, instrs, allocated_vars);
+/*
+    if (count > 0) {
+      debug  << "peephole_2, num substs: " << count;
+    }
+*/
+
     subst_count += count;
   }
 

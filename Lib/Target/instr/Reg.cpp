@@ -83,6 +83,9 @@ Reg::Reg(Var var) { var_to_reg(var, *this); }
 
 
 bool Reg::operator==(Reg const &rhs) const {
+  // NONE never equals
+  if (tag == NONE || rhs.tag == NONE) return false;
+
   // Comparison field isUniformPtr intentionially skipped here 
   return tag == rhs.tag && regId == rhs.regId;
 }

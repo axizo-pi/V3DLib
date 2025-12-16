@@ -216,6 +216,7 @@ void integer_division(Int &Q, Int &R, IntExpr in_a, IntExpr in_b) {
  * This is not always precise (confirmed) but more concise than the full integer calculation
  */
 IntExpr integer_division_f(IntExpr in_a, IntExpr in_b) {
+  return create_function_snippet([in_a, in_b] {
   	Float a = toFloat(in_a);    comment("Start integer division by float");
 	  Float b	= toFloat(in_b);
 
@@ -224,12 +225,21 @@ IntExpr integer_division_f(IntExpr in_a, IntExpr in_b) {
 		Where (in_b == 0)
 			res = _INF();
 		Else
-		  res = toInt(functions::ffloor(a / b));  // ffloor() fixes rounding up 
+      // Doing it like this (all in one line) leads to multiple generations of
+      // this function in the output. No clue why.
+		  // res = toInt(functions::ffloor(a / b));  // ffloor() fixes rounding up 
+
+      // This works as expected
+		  Float tmp = a/b;
+		  tmp = functions::ffloor(tmp);  // ffloor() fixes rounding up 
+		  res = toInt(tmp);
 		End
 
   	comment("End integer division by float");
 
-		return res;
+		//return res;
+		return Return(res);
+  });
 }
 
 
@@ -246,7 +256,8 @@ IntExpr integer_division_f(IntExpr in_a, IntExpr in_b) {
  * Source: https://stackoverflow.com/questions/18662261/fastest-implementation-of-sine-cosine-and-square-root-in-c-doesnt-need-to-b/28050328#28050328
  */
 float cos(float x_in, bool extra_precision) noexcept {
-  extra_precision |= LibSettings::use_high_precision_sincos(); // setting to true in param overrides lib setting
+  // setting to true in param overrides lib setting
+  extra_precision |= LibSettings::use_high_precision_sincos();
 
   double x = x_in;
 
@@ -272,7 +283,8 @@ float sin(float x_in, bool extra_precision) noexcept {
 
 
 FloatExpr cos(FloatExpr x_in, bool extra_precision) {
-  extra_precision |= LibSettings::use_high_precision_sincos(); // setting to true in param overrides lib setting
+  // setting to true in param overrides lib setting
+  extra_precision |= LibSettings::use_high_precision_sincos();
 
   Float x = x_in;
 
@@ -375,46 +387,49 @@ FloatExpr sin_v3d(FloatExpr x_in) {
  * Special values (Nan's, Inf's) are ignored
  */
 FloatExpr ffloor(FloatExpr x) {
-  Float ret;
+  return create_float_function_snippet([x] {
+    Float ret;
 
-  if (Platform::compiling_for_vc4()) {
-    int const SIZE_MANTISSA = 23;
+    if (Platform::compiling_for_vc4()) {
+      int const SIZE_MANTISSA = 23;
 
-    Int exp           = ((x.as_int() >> SIZE_MANTISSA) & ((1 << 8) - 1)) - 127;  comment("Calc exponent"); 
-    Int fraction_mask = (1 << (SIZE_MANTISSA - exp)) - 1;
-    Int frac          = x.as_int() & fraction_mask;                              comment("Calc fraction"); 
+      Int exp = ((x.as_int() >> SIZE_MANTISSA) & ((1 << 8) - 1)) - 127;  comment("Calc exponent"); 
+      Int fraction_mask = (1 << (SIZE_MANTISSA - exp)) - 1;
+      Int frac = x.as_int() & fraction_mask;                             comment("Calc fraction"); 
 
-    //
-    // Clear the fractional part of the mantissa
-    //
-    // Helper for better readability
-    //
-    auto zap_mantissa  = [&fraction_mask] (FloatExpr x) -> FloatExpr {
-      Float ret;
-      ret.as_float(x.as_int() & ~(fraction_mask + 0));
-      return ret;
-    };
+      //
+      // Clear the fractional part of the mantissa
+      //
+      // Helper for better readability
+      //
+      auto zap_mantissa  = [&fraction_mask] (FloatExpr x) -> FloatExpr {
+        Float ret;
+        ret.as_float(x.as_int() & ~(fraction_mask + 0));
+        return ret;
+      };
 
-    ret = x;  // result same as input for exp > 23 bits and whole-integer negative values
-    comment("Start ffloor()");
+      ret = x;  // result same as input for exp > 23 bits and whole-integer negative values
+      comment("Start ffloor()");
 
-    Where (exp <= 23)                               // Doesn't work, expecting SEQ: comment("Start ffloor()");
-      Where (x >= 1)
-        ret = zap_mantissa(x);
-      Else Where (x >= 0)
-        ret = 0.0f;
-      Else Where (x >= -1.0f)
-        ret = -1.0f;
-      Else Where (x < -1.0f && (frac != 0))
-        ret = zap_mantissa(x) - 1;
-      End End End End
-    End
-  } else {
-    // v3d
-    ret = V3DLib::ffloor(x);  comment("ffloor() v3d");
-  }
+      Where (exp <= 23)                      // Doesn't work, expecting SEQ: comment("Start ffloor()");
+        Where (x >= 1)
+          ret = zap_mantissa(x);
+        Else Where (x >= 0)
+          ret = 0.0f;
+        Else Where (x >= -1.0f)
+          ret = -1.0f;
+        Else Where (x < -1.0f && (frac != 0))
+          ret = zap_mantissa(x) - 1;
+        End End End End
+      End
+    } else {
+      // v3d
+      ret = V3DLib::ffloor(x);  comment("ffloor() v3d");
+    }
 
-  return ret;
+    //return ret;
+		return Return(ret);
+  });
 }
 
 

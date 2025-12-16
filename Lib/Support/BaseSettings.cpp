@@ -1,6 +1,7 @@
 #include "BaseSettings.h"
 #include "Kernel.h"
 #include "debug.h"
+#include "Helpers.h"
 
 #ifdef QPU_MODE
 #include "Support/Platform.h"
@@ -11,6 +12,10 @@
 namespace V3DLib {
 
 void BaseSettings::process(BaseKernel &k) {
+#if 0
+
+// Pi1 is 32-bits only; we thus need to support 32-bits.
+
 #ifdef ARM32
   //
   // TODO: differentiate on platforms
@@ -25,6 +30,7 @@ void BaseSettings::process(BaseKernel &k) {
     showed_msg = true;
   }
 #endif
+#endif
 
   // NOTE: For multiple calls here (entirely possible, HeatMap does this),
   //       this will prevent dumping the v3d code (mnemonics, actually) on every call.
@@ -33,7 +39,7 @@ void BaseSettings::process(BaseKernel &k) {
       assert(!name.empty());
       std::string code_filename = name + "_code.txt";
 
-      k.dump(code_filename.c_str());
+      to_file(code_filename.c_str(), k.dump());
     } else if (output_count == 1) {
       warning("Not outputting code more than once");
     }

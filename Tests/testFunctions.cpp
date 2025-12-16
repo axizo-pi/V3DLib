@@ -1,6 +1,7 @@
 #include "doctest.h"
 #include <iostream>
 #include <V3DLib.h>
+#include "Support/Helpers.h"
 
 using namespace V3DLib;
 
@@ -109,7 +110,7 @@ TEST_CASE("Test qpu sync [funcs][sync]") {
   signal.fill(0);
 
   auto k = compile(sync_kernel);
-  k.dump("./obj/test/sync_kernel_v3d.txt");
+  //to_file("./obj/test/sync_kernel_v3d.txt", k.dump());
   k.setNumQPUs(8);
   k.load(&result, &signal);
 
