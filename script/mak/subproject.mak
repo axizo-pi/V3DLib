@@ -31,6 +31,7 @@ all: init ${TARGET}
 $(TARGET) : $(OBJFILES)
 
 init:
+	@mkdir -p $(OBJDIR)/bin 
 	@mkdir -p ${OBJ_LOCAL}
 
 #
