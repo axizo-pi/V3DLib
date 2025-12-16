@@ -6,14 +6,14 @@ OBJ_LOCAL=${OBJDIR}/${NAME}
 $(info OBJ_LOCAL: $(OBJ_LOCAL))
 
 STRUCTURE := $(shell ls -r)     
-$(info structure: $(STRUCTURE))
+#$(info structure: $(STRUCTURE))
 SRCFILES := $(filter %.c %.cpp,$(STRUCTURE))
-$(info  src: $(SRCFILES))
+#$(info  src: $(SRCFILES))
 OBJFILES := $(subst .cpp,.o,$(SRCFILES))
 OBJFILES := $(subst .c,.o,$(OBJFILES))
-$(info  obj: $(OBJFILES))
+#$(info  obj: $(OBJFILES))
 OBJFILES := $(addprefix $(OBJ_LOCAL)/,$(OBJFILES))
-$(info  obj: $(OBJFILES))
+#$(info  obj: $(OBJFILES))
 
 HEADERFILES := $(filter %.h ,$(STRUCTURE))
 
