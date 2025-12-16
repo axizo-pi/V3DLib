@@ -100,7 +100,7 @@ clean:
 
 init:
 	@./script/install.sh
-	@mkdir -p ./obj/test
+	@mkdir -p $(OBJDIR)/bin 
 
 # Part of init:
 #@./script/detect_tabs.sh   - This is for github, which has awkward tabs for displaying source code
