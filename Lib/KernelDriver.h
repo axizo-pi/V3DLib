@@ -36,7 +36,7 @@ public:
 
 	std::string dump() const;
   std::string compile_info() const;
-  void dump_compile_data(char const *filename) const;
+	std::string dump_compile_data() const;
 
 	bool        is_v3d()      const { return m_type == vc6 || m_type == vc7; }
 	KernelType  kernel_type() const { return m_type; }

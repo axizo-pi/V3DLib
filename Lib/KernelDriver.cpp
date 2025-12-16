@@ -13,35 +13,6 @@ namespace V3DLib {
 
 using ::operator<<;  // C++ weirdness
 
-namespace {
-
-FILE *open_file(char const *filename, char const *label) {
-  assert(label != nullptr);
-
-  FILE *f = nullptr;
-
-  if (filename == nullptr)
-    f = stdout;
-  else {
-    f = fopen(filename, "w");
-    if (f == nullptr) {
-      fprintf(stderr, "ERROR: could not open file '%s' for %s output\n", filename, label);
-    }
-  }
-
-  return f;
-}
-
-
-void title(FILE *f, std::string const &in_title) {
-  assert(f != nullptr);
-  fprintf(f, ::title(in_title).c_str());
-}
-
-}  // anon namespace
-
-
-
 /**
  * NOTE: Don't clean up `body` here, it's a pointer to the top of the AST.
  */
@@ -181,18 +152,10 @@ std::string KernelDriver::dump() const {
 }
 
 
-void KernelDriver::dump_compile_data(char const *filename) const {
-  FILE *f = open_file(filename, "compile_data");
-  if (f == nullptr) return;
-
-  fprintf(f, m_compile_data.dump().c_str());
-
-  title(f, "ACC usage");
-  fprintf(f, m_targetCode.check_acc_usage().c_str());
-
-  if (filename != nullptr) {
-    fclose(f);
-  }
+std::string KernelDriver::dump_compile_data() const {
+  return m_compile_data.dump()
+  	+ ::title("ACC usage")
+  	+ m_targetCode.check_acc_usage();
 }
 
 

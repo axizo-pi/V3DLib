@@ -78,7 +78,7 @@ public:
   IntList const &params() const { return uniforms; }  // Can't name it uniforms because the data member is called that
 
   std::string compile_info() const;
-  void dump_compile_data(char const *filename);
+	std::string dump_compile_data();
   bool has_errors() const;
   std::string get_errors() const;
   std::string info() const;

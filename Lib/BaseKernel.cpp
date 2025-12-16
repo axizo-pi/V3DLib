@@ -160,8 +160,8 @@ std::string BaseKernel::compile_info() const {
 }
 
 
-void BaseKernel::dump_compile_data(char const *filename) {
-	driver().dump_compile_data(filename);
+std::string BaseKernel::dump_compile_data() {
+	return driver().dump_compile_data();
 }
 
 
