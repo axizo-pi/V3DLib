@@ -1,7 +1,7 @@
 #
 # This file is generated!  Editing it directly is a bad idea.
 #
-# Generated on: Tue Dec 16 07:25:24 AM CET 2025
+# Generated on: Tue Dec 16 02:56:01 PM CET 2025
 #
 ###############################################################################
 
@@ -124,7 +124,6 @@ EXAMPLES := \
   Matrix  \
   OET  \
   ReqRecv  \
-  RNN  \
   Rot3D  \
   Tri  \
   Counter  \
@@ -162,11 +161,13 @@ TESTS_FILES := \
 #
 SUB_PROJECTS := \
   Mandelbrot \
-
+  RNN \
 
 
 Mandelbrot: $(V3DLIB)
 	@cd Examples/Mandelbrot && make DEBUG=${DEBUG} QPU=${QPU} 
-
+	
+RNN: $(V3DLIB)
+	@cd Examples/RNN && make DEBUG=${DEBUG} QPU=${QPU} 
 	
 
