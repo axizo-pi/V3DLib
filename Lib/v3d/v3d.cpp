@@ -132,29 +132,13 @@ bool alloc_intern(
   return true;
 }
 
-
-bool v3d_wait_bo(uint32_t handle, uint64_t timeout_ns) {
-  assert(handle != 0);
-  assert(timeout_ns > 0);
-
-  drm_v3d_wait_bo st = {
-    handle,
-    0,
-    timeout_ns,
-  };
-
-  int ret = ioctl(fd, DRM_IOCTL_V3D_WAIT_BO, &st);
-	if (ret != 0) {
-  	cerr << "v3d_wait_bo(): " << strerror(errno); 
-	}
-  assertq(ret == 0, "v3d_wait_bo(): call iotctl failed");
-  return (ret == 0);
-}
-
 }  // anon namespace
 
 
 namespace v3d {
+
+
+
 
 bool alloc(uint32_t size, uint32_t &handle, uint32_t &phyaddr, void **usraddr) {
   assert(size > 0);
@@ -185,6 +169,25 @@ bool unmap(uint32_t size, uint32_t handle,  void *usraddr) {
 
 
 int  get_fd() { return fd; }
+
+
+bool wait_bo(uint32_t handle, uint64_t timeout_ns) {
+  assert(handle != 0);
+  assert(timeout_ns > 0);
+
+  drm_v3d_wait_bo st = {
+    handle,
+    0,
+    timeout_ns,
+  };
+
+  int ret = ioctl(fd, DRM_IOCTL_V3D_WAIT_BO, &st);
+	if (ret != 0) {
+  	cerr << "wait_bo(): " << strerror(errno); 
+	}
+  assertq(ret == 0, "wait_bo(): call iotctl failed");
+  return (ret == 0);
+}
 
 } // namespace v3d
 
@@ -293,7 +296,9 @@ int open_card(char const *card) {
 }  // anon namespace
 
 
-bool v3d_wait_bo(uint32_t handle, uint64_t timeout_ns) {
+namespace v3d {
+
+bool wait_bo(uint32_t handle, uint64_t timeout_ns) {
   assert(handle != 0);
   assert(timeout_ns > 0);
 
@@ -308,9 +313,6 @@ bool v3d_wait_bo(uint32_t handle, uint64_t timeout_ns) {
 
 	return ret;
 }
-
-
-namespace v3d {
 
 int get_fd() {
 	//assert(s_screen::get_fd() != 0);
@@ -360,7 +362,6 @@ bool unmap(uint32_t size, uint32_t handle, void *usraddr) {
 
 	return true;
 }
-
 
 } // namespace v3d
 
@@ -440,25 +441,6 @@ bool close() {
 }
 
 
-/**
- * @return true if all waits succeeded, false otherwise
- */
-bool wait_bo(BoHandles const &bo_handles, uint64_t timeout_ns) {
-  assert(bo_handles.size() > 0);
-  assert(timeout_ns > 0);
-
-  int ret = true;
-
-  for (auto handle : bo_handles) {
-    if (!v3d_wait_bo(handle, timeout_ns)) { 
-      ret = false;
-    }
-  }
-
-  return ret;
-}
-
-
 int ioctl(unsigned cmd, void *param) {
   int fd = get_fd();
   assert(fd != 0);
@@ -471,6 +453,8 @@ int ioctl(unsigned cmd, void *param) {
 
 	return ret;
 }
+
+
 
 } // namespace v3d
 

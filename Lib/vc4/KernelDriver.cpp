@@ -14,6 +14,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <fstream>
+#include "global/log.h"
+
+using namespace Log;
 
 namespace V3DLib {
 
@@ -220,7 +223,17 @@ void KernelDriver::compile_intern() {
 }
 
 
-void KernelDriver::invoke_intern(int numQPUs, IntList &params) {
+void KernelDriver::invoke(int numQPUs, IntList &params, bool wait_complete) {
+  assert(params.size() != 0);
+
+  if (handle_errors()) {
+    fatal("Errors during kernel compilation/encoding, can't continue.");
+  }
+
+	if (!wait_complete) {
+		warn << "run(): disabling wait completion only works for v3d. Ignoring for vc4.";
+	}
+
   MailBoxInvoke::invoke(numQPUs, qpuCodeMem, params);
 }
 

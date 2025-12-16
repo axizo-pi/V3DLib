@@ -5,26 +5,22 @@
 
 #include "Common/SharedArray.h"
 
-using BoHandles  = std::vector<uint32_t>;
-
 namespace V3DLib {
 namespace v3d {
 
-/**
- *
- */
 class Driver {
+	using BoHandles  = std::vector<uint32_t>;
 
 public:
-  void add_bo(uint32_t handle) {
-    m_bo_handles.push_back(handle);
-  }
+  void add_bo(uint32_t handle) { m_bo_handles.push_back(handle); }
+	int num_handles() { return (int) m_bo_handles.size(); }
 
-  bool execute(Code &code, Data *uniforms = nullptr, uint32_t thread = 1);
+  bool execute(Code &code, Data *uniforms = nullptr, uint32_t thread = 1, bool wait_complete = true);
+	bool wait_bo();
 
 private:
   BoHandles m_bo_handles;
-};  // class Driver
+};
 
 }  // v3d
 }  // V3DLib

@@ -25,7 +25,7 @@ public:
   void init_compile();
   void compile(std::function<void()> create_ast);
   virtual void encode() = 0;
-  void invoke(int numQPUs, IntList &params);
+  virtual void invoke(int numQPUs, IntList &params, bool wait_complete = true) = 0;
   bool has_errors() const { return !errors.empty(); }
   std::string get_errors() const;
   int numVars() const { return m_numVars; }
@@ -42,6 +42,7 @@ public:
 	KernelType  kernel_type() const { return m_type; }
 	std::string kernel_type_str() const;
 	virtual int kernel_size() const = 0; 
+	virtual void wait_complete();
 
 protected:
 	KernelType  m_type;
@@ -56,6 +57,7 @@ protected:
 
   virtual std::string emit_opcodes() const { return ""; } 
   void obtain_ast();
+  bool handle_errors();
 
 private:
   BufferType const buffer_type;
@@ -64,11 +66,8 @@ private:
   CompileData m_compile_data;
 
   virtual void compile_intern() = 0;
-  virtual void invoke_intern(int numQPUs, IntList &params) = 0;
 
   int numAccs() const { return m_compile_data.num_accs_introduced; }
-
-  bool handle_errors();
 };
 
 

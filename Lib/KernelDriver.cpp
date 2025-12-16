@@ -159,18 +159,6 @@ std::string KernelDriver::dump_compile_data() const {
 }
 
 
-void KernelDriver::invoke(int numQPUs, IntList &params) {
-  assert(params.size() != 0);
-
-  if (handle_errors()) {
-    fatal("Errors during kernel compilation/encoding, can't continue.");
-  }
-
-   // Invoke kernel on QPUs
-  invoke_intern(numQPUs, params);
-}
-
-
 std::string KernelDriver::compile_info() const {
   std::string ret;
 
@@ -189,6 +177,11 @@ std::string KernelDriver::kernel_type_str() const {
 		case vc7: return "vc7";
 		default:  assert(false); return "none";  // Should never occur
 	}
+}
+
+
+void KernelDriver::wait_complete() {
+	/* Intentionally left blank */
 }
 
 }  // namespace V3DLib

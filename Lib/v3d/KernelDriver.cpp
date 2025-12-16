@@ -1,7 +1,6 @@
 #include "KernelDriver.h"
 #include <iostream>
 #include <memory>
-#include "Driver.h"
 #include "Source/Translate.h"
 #include "Target/SmallLiteral.h"  // decodeSmallLit()
 #include "Target/RemoveLabels.h"
@@ -656,23 +655,6 @@ void load_uniforms(Data &unif, int numQPUs, Data const &devnull, Data const &don
 #endif  // QPU_MODE
 
 
-void invoke(int numQPUs, Data &devnull, Code &codeMem, IntList &params) {
-#ifndef QPU_MODE
-  assertq(false, "Cannot run v3d invoke(), QPU_MODE not enabled");
-#else
-  assert(!codeMem.empty());
-
-  Data unif(params.size() + 4);
-  Data done(1);
-  done[0] = 0;
-
-  load_uniforms(unif, numQPUs, devnull, done, params);
-
-  Driver drv;
-  drv.add_bo(getBufferObject().getHandle());
-  drv.execute(codeMem, &unif, numQPUs);
-#endif  // QPU_MODE
-}
 
 }  // anon namespace
 
@@ -803,7 +785,20 @@ void KernelDriver::allocate() {
 }
 
 
-void KernelDriver::invoke_intern(int numQPUs, IntList &params) {
+/**
+ * Invoke kernel on QPUs
+ */
+void KernelDriver::invoke(int numQPUs, IntList &params, bool wait_complete) {
+#ifndef QPU_MODE
+  assertq(false, "Cannot run v3d invoke(), QPU_MODE not enabled");
+#else
+  assert(params.size() != 0);
+
+  if (handle_errors()) {
+    fatal("Errors during kernel compilation/encoding, can't continue.");
+  }
+
+
 	if (numQPUs <= 0) {
 	    cerr << "Zero or negative QPU's selected" << thrw;
 	}
@@ -822,12 +817,21 @@ void KernelDriver::invoke_intern(int numQPUs, IntList &params) {
 
   allocate();
   assert(qpuCodeMem.allocated());
+  assert(!qpuCodeMem.empty());
 
   if (!devnull.allocated()) {
     devnull.alloc(16);
   }
 
-  v3d::invoke(numQPUs, devnull, qpuCodeMem, params);
+  uniforms.alloc(params.size() + 4);
+	done.alloc(1);
+  done[0] = 0;
+
+	load_uniforms(uniforms, numQPUs, devnull, done, params);
+
+  drv.add_bo(getBufferObject().getHandle());
+  drv.execute(qpuCodeMem, &uniforms, numQPUs, wait_complete);
+#endif  // QPU_MODE
 }
 
 
@@ -845,6 +849,19 @@ std::string KernelDriver::emit_opcodes() const {
   }
 
 	return ret;
+}
+
+
+void KernelDriver::wait_complete() {
+	if (drv.num_handles() == 0) {
+		warn << "wait_complete(): nothing to wait for";
+		return;
+	}
+
+	warn << "wait_complete done: " << done[0];
+
+	warn << "wait_complete(): waiting for completion.";
+	drv.wait_bo();
 }
 
 }  // namespace v3d

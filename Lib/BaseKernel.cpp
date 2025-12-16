@@ -5,6 +5,8 @@
 #include "Source/Interpreter.h"
 #include "Target/Emulator.h"
 
+using namespace Log;
+
 namespace V3DLib {
 
 using ::operator<<;  // C++ weirdness
@@ -52,7 +54,7 @@ std::string BaseKernel::dump() const {
 }
 
 
-void BaseKernel::run() {
+void BaseKernel::run(bool wait_complete) {
 	assert(m_driver.get() != nullptr);
 
 #ifdef QPU_MODE
@@ -62,7 +64,7 @@ void BaseKernel::run() {
         fatal("Main memory selected in QPU mode and not compiled for vc4, can not run.");
       }
 		} else {
-      debug("Main memory selected in QPU mode, running on emulator instead of QPU.");
+      cdebug << "Main memory selected in QPU mode, running on emulator instead of QPU.";
       m_settings.run_type = 1;
 		}
   }
@@ -79,8 +81,9 @@ void BaseKernel::run() {
 	if (m_settings.compile_only) {
     Log::warn << "BaseKernel::run(): Compile-only selected, not running.";
   } else {
+
     switch (m_settings.run_type) {
-      case 0: qpu(); break;
+      case 0: qpu(wait_complete); break;
       case 1: emu(); break;
       case 2: interpret(); break;
     }
@@ -130,11 +133,11 @@ void BaseKernel::interpret() {
 /**
  * Invoke kernel on physical QPU hardware
  */
-void BaseKernel::qpu() {
+void BaseKernel::qpu(bool wait_complete) {
 	assert(!m_settings.compile_only);		// Paranoia
 
 #ifdef QPU_MODE
-  driver().invoke(numQPUs(), uniforms);
+  driver().invoke(numQPUs(), uniforms, wait_complete);
 #else
   fatal("qpu(): QPU mode not enabled, can not run on hardware.");
 #endif  // QPU_MODE

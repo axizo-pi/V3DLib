@@ -68,11 +68,12 @@ public:
   BaseKernel &setNumQPUs(int n) { m_settings.num_qpus = n; return *this; }
   int numQPUs() const { return m_settings.num_qpus; }
 
-  void run();
+  void run(bool wait_complete = true);
 
   void emu();
   void interpret();
-  void qpu();
+  void qpu(bool wait_complete = true);
+	void wait_complete() { driver().wait_complete(); }
 
   Code const &code() const { return m_driver->code(); }
   IntList const &params() const { return uniforms; }  // Can't name it uniforms because the data member is called that

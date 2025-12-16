@@ -91,7 +91,7 @@ uint32_t roundup(uint32_t n, uint32_t d) {
  *    Can't find anything about it online, just what `py-videocore6` gives,
  *    which I plain took over.
  */
-bool Driver::execute(Code &code, Data *uniforms, uint32_t thread) {
+bool Driver::execute(Code &code, Data *uniforms, uint32_t thread, bool wait_complete) {
   uint32_t code_phyaddr = code.getAddress();
 
 	// Check if there is space for the special flags
@@ -155,14 +155,35 @@ bool Driver::execute(Code &code, Data *uniforms, uint32_t thread) {
 		.flags           = 0,
   };
 
-  //warn << "Timeout: " << LibSettings::qpu_timeout();
-  uint64_t timeout_ns = 1000000000llu * LibSettings::qpu_timeout();
 
   bool ret = (0 == ::v3d::submit_csd(st));
   assert(ret);
-  if (ret) {
-    ret = ::v3d::wait_bo(m_bo_handles, timeout_ns);
+  if (ret && wait_complete) {
+    ret = wait_bo();
   }
+  return ret;
+}
+
+
+/**
+ * @return true if all waits succeeded, false otherwise
+ */
+bool Driver::wait_bo() {
+  assert(m_bo_handles.size() > 0);
+
+  //warn << "Timeout: " << LibSettings::qpu_timeout();
+  uint64_t timeout_ns = 1000000000llu * LibSettings::qpu_timeout();
+
+  int ret = true;
+
+  for (auto handle : m_bo_handles) {
+    if (!::v3d::wait_bo(handle, timeout_ns)) { 
+      ret = false;
+    }
+  }
+
+	m_bo_handles.clear();
+
   return ret;
 }
 

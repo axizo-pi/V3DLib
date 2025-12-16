@@ -15,6 +15,7 @@ public:
   KernelDriver();
   KernelDriver(KernelDriver &&k) = default;
 
+  void invoke(int numQPUs, IntList &params, bool wait_complete = true) override;
   void encode() override;
   int kernel_size() const override;
 
@@ -22,7 +23,6 @@ private:
 
   void kernelFinish();
   void compile_intern() override;
-  void invoke_intern(int numQPUs, IntList &params) override;
 
 	std::string emit_opcodes(); // override;
 };

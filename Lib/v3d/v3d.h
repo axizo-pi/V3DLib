@@ -9,13 +9,11 @@
 #include "driver/v3d_drm.h"  
 //#include <drm/v3d_drm.h> // What we will use eventually on Debian 12
 
-using BoHandles  = std::vector<uint32_t>;
-
 namespace v3d {
 
 bool open();
 int submit_csd(drm_v3d_submit_csd &st);
-bool wait_bo(BoHandles const &bo_handles, uint64_t timeout_ns);
+bool wait_bo(uint32_t handle, uint64_t timeout_ns);
 bool alloc(uint32_t size, uint32_t &handle, uint32_t &phyaddr, void **usraddr);
 bool unmap(uint32_t size, uint32_t handle, void *usraddr);
 int get_fd();

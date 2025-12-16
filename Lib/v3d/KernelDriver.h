@@ -4,6 +4,7 @@
 #include "Common/SharedArray.h"
 #include "instr/Instr.h"
 #include "BufferObject.h"
+#include "Driver.h"
 
 namespace V3DLib {
 namespace v3d {
@@ -27,16 +28,20 @@ public:
   KernelDriver();
   KernelDriver(KernelDriver &&a) = default;
 
+  void invoke(int numQPUs, IntList &params, bool wait_complete = true) override;
   void encode() override;
   int kernel_size() const override { return (int) instructions.size(); }
+	void wait_complete() override;
 
 private:
   Instructions  instructions;
-  //BufferObject  code_bo;
-  Data          devnull;
+
+  Data   uniforms;
+  Data   devnull;
+  Data   done;
+  Driver drv;
 
   void compile_intern() override;
-  void invoke_intern(int numQPUs, IntList &params) override;
 
   void allocate();
   ByteCode to_opcodes();
