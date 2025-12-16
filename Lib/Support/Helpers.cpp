@@ -1,5 +1,10 @@
 #include "Helpers.h"
 #include "Support/basics.h"
+#include <chrono>
+#include <thread>
+
+using namespace std::this_thread; // sleep_for, sleep_until
+using namespace std::chrono;      // nanoseconds, system_clock, seconds
 
 namespace V3DLib {
 
@@ -26,6 +31,11 @@ void to_file(std::string const &filename, std::string const &content) {
  	assert (f != nullptr);
 	fprintf(f, content.c_str());
 	fclose(f);
+}
+
+
+void sleep(int sec) {
+  sleep_for(seconds(sec));
 }
 
 }  // namespace V3DLib

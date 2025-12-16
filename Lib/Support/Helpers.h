@@ -7,6 +7,7 @@ namespace V3DLib {
 float random_float();
 std::string indentBy(int indent);
 void to_file(std::string const &filename, std::string const &content);
+void sleep(int sec);
 
 }  // namespace V3DLib
 

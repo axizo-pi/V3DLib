@@ -1,7 +1,7 @@
 #
 # This file is generated!  Editing it directly is a bad idea.
 #
-# Generated on: Tue Dec 16 07:16:09 AM CET 2025
+# Generated on: Tue Dec 16 07:25:24 AM CET 2025
 #
 ###############################################################################
 
@@ -115,6 +115,7 @@ OBJ := \
 # All programs in the Examples *and Tools* directory
 EXAMPLES := \
   Concurrent  \
+  DirectQPU  \
   DMA  \
   GCD  \
   HeatMap  \
