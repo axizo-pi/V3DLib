@@ -1076,17 +1076,17 @@ void KernelDriver::encode() {
 	}
 #endif // DEBUG
 
-  Combine::remove_useless(instructions);
+//  Combine::remove_useless(instructions);
 
 	// When disabled, RNN runs on vc7
 	//warn << instructions.dump();
-  Combine::combine(instructions);
-  Combine::remove_skips(instructions);
+//  Combine::combine(instructions);
+//  Combine::remove_skips(instructions);
 
-	if (!Platform::compiling_for_vc7()) {  // Doesn't work (any more) on vc7
-	  combine(instructions);
-	  Combine::remove_skips(instructions);
-	}
+//	if (!Platform::compiling_for_vc7()) {  // Doesn't work (any more) on vc7
+//	  combine(instructions);
+//	  Combine::remove_skips(instructions);
+//	}
 
   removeLabels(instructions);
 

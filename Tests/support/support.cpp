@@ -45,7 +45,14 @@ void match_kernel_outputs(
 												 << " " << std::dec << Instr(received[n]).dump()
       );
 
-      REQUIRE(Instr::compare_codes(expected[n], received[n]));
+      if(!Instr::compare_codes(expected[n], received[n])) {
+				// There are different binary representationsi possible of a given instructions.
+				// Double-check with string representation.
+				Instr exp(expected[n]);
+				Instr rec(received[n]);
+				bool equal = (exp.dump() == rec.dump());
+				REQUIRE(equal);
+			}
     }
 }
 

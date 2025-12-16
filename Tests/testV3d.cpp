@@ -384,7 +384,7 @@ TEST_CASE("Check v3d rotate assembly/disassembly [v3d][asm]") {
 
   if (!v3d_init()) return;
 	if (V3DLib::Platform::compiling_for_vc7()) {
-		Log::debug << "Precompiled kernels are for vc6, will not run (correctly) on vc7";
+		//Log::debug << "Precompiled kernels are for vc6, will not run (correctly) on vc7";
 		return;
 	}
 
@@ -403,7 +403,7 @@ TEST_CASE("Check v3d assembly/disassembly [v3d][asm]") {
 
   if (!v3d_init()) return;
 	if (V3DLib::Platform::compiling_for_vc7()) {
-		// The expected output is vc6-specific, ignore OR fix (TODO)
+		// The expected output is vc6-specific
 		return;
 	}
 
