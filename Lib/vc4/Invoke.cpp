@@ -21,6 +21,15 @@ void check_align(BaseSharedArray const &arr, std::string const &name) {
 }
 
 
+void check_align(uint32_t addr, std::string const &name) {
+  warn << "check_align addr called for '" << name << "'";
+
+  if (addr % 16) {
+    cerr << "Address " << name << " not 16-bit aligned: 0x" << hex << addr;
+  }
+}
+
+
 /**
  * Number of 32-bit words needed for the parameters (uniforms)
  *
@@ -121,11 +130,15 @@ void add_launch_message(int index, Data &launch_messages, ScheduledJob const &jo
  */
 void init_launch_messages(Data &launch_messages, Code const &code, IntList const &params, Data const &uniforms) {
   assertq(!uniforms.empty(), "init_launch_messages(): expecting values for uniforms");
+  warn << "init_launch_messages() called";
 
 	alloc_launch_messages(launch_messages);
 
   for (int i = 0; i < Platform::max_qpus(); i++) {
-    launch_messages[2*i]     = uniforms.getAddress() + 4*i*num_params(params);  // 4* for uint32_t offset
+    uint32_t offset= uniforms.getAddress() + 4*i*num_params(params);  // 4* for uint32_t offset
+    check_align(offset, "launch param");
+
+    launch_messages[2*i]     = offset;
     launch_messages[2*i + 1] = code.getAddress();
   }
 }
