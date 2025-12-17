@@ -13,6 +13,8 @@ struct MandSettings : public V3DLib::Settings {
   int numStepsWidth;
   int numStepsHeight;
 
+  int count;
+
   // Initialize constants for the kernels
   const float topLeftReal     = -2.5f;
   const float topLeftIm       = 2.0f;

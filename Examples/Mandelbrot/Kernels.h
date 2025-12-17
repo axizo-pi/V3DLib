@@ -9,7 +9,8 @@ void mandelbrot_multi(
   Float offsetX, Float offsetY,
   Int numStepsWidth, Int numStepsHeight,
   Int numIterations,
-  Int::Ptr result
+  Int::Ptr result,
+  Int count
 );
 
 } // namespace V3DLib

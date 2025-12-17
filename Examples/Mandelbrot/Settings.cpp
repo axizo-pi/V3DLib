@@ -47,6 +47,12 @@ CmdParameters params = {
     ParamType::POSITIVE_INTEGER,
     "Number of steps (or 'pixels') in horizontal and vertical direction",
     1024
+  }, {
+    "Count",
+    { "-c=", "-count=" },
+    ParamType::POSITIVE_INTEGER,
+    "Perform the operation this number of times",
+    1
   }}
 };
 
@@ -71,6 +77,7 @@ bool MandSettings::init_params() {
   num_iterations = p["Number of steps"]->get_int_value();
   numStepsWidth  = p["Dimension"]->get_int_value();
   numStepsHeight = p["Dimension"]->get_int_value();
+  count          = p["Count"]->get_int_value();
 
   return true;
 }
