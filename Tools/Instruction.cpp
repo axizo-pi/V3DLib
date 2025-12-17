@@ -1,4 +1,7 @@
 /**
+ * This is a dirty hack tool to determine the binary representation of V3D instructions.
+ *
+ * ===============================================================================================
  * NOTES
  * =====
  *
@@ -292,7 +295,7 @@ std::string instr_format_branch_7x(uint64_t val) {
 
 	string h2 =
 "|  |  |  |  |  | 0| 1|  | offset_bottom                                                | cond   |\n"
-"| offset_top            |  | fign|  |  |  |  | bdu |ub| bdi |  |  |  |  |  |  |  |  |  |  |  |  |\n"
+"| offset_top            |  | fign|  |  |  |  | bdu |ub| bdi | raddr_a         |  |  |  |  |  |  |\n"
 	;
 
 	string desc = "\n"
@@ -300,9 +303,14 @@ std::string instr_format_branch_7x(uint64_t val) {
 		"- offset_bottom: lower 24 bits of 32-bit offset address. The bottom 3 bits are left out\n"
 		"- fign         : msfign\n"
 		"- cond         : enum values of cond are not consecutive in the packed instr\n"
+		"- ub           : if set, adds 'a:unif' to mnemonic\n"
+		"- bdu          : only set if ub set. a:absolute, r:relative, lri:link regfile, rf: regfile\n"
+		"- offset       : 16-bit aligned. The bottom nibble is rounded downward.\n"
+		"                 not set if bdi = _REGFILE\n"
+		"- raddr_a      : only filled in if bdi == _REGFILE\n"
 	;
 
-	return instr_format(h2, desc, val);
+	return instr_format(h2, desc, val, true);
 }
 
 
@@ -391,14 +399,19 @@ int main(int argc, const char *argv[]) {
 		.branch = {
 			//.cond = V3D_QPU_BRANCH_COND_ANYNA,
 			//.msfign = V3D_QPU_MSFIGN_Q,
-      //.bdu = V3D_QPU_BRANCH_DEST_REL,
-			//.ub = true,
-			//.raddr_a = 63
-			.offset = 0 //0x00800018
+
+			//.bdi = V3D_QPU_BRANCH_DEST_REL,
+			.bdi = V3D_QPU_BRANCH_DEST_REGFILE,
+
+      .bdu = V3D_QPU_BRANCH_DEST_REL,
+
+			.ub = false,
+			.raddr_a = 33,
+			.offset = 0x10
 		}
 	};
 
-	auto &instr = instr_alu;
+	auto &instr = instr_branch;
 
 	//display_instr(instr);
 
@@ -423,10 +436,11 @@ int main(int argc, const char *argv[]) {
   	}
   }
 
+/*
   uint64_t const prev = 0x38000000f903f003;  
-	cout << "Prev  : " << hex << prev << "\n";
+	cout << "\n\nPrev  : " << hex << prev << "\n";
 	cout << "Disasm: " << qpu_disasm(prev) << "\n";
 	cout << diff_bits(prev, packed);
-
+*/
   return 0;
 }
