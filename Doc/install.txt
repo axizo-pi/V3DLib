@@ -32,11 +32,6 @@ gpu_mem=128
 `dtoverlay` should *not* be specified for Pi1. In addition, this sets the memory split with `gpu_mem`.
  
 
-- Bluetooh connect device on console
-
-https://computingforgeeks.com/connect-to-bluetooth-device-from-linux-terminal/
-
-
 - Interesting: I ran Mandelbrot on pi5-1 and it worked, in spite of GUI
 
 Pre: Debian 12 Bookworm on SD card
@@ -104,6 +99,7 @@ ssh-copy-id wim@silke
 scp .vimrc wim@silke:~
 ssh silke
 
+
 # on silke:
 sudo raspi-config
 # Select 5. Localization Options
@@ -122,6 +118,10 @@ ssh-copy-id wim@backup
 sudo apt-get update
 sudo apt-get -y upgrade
 sudo apt-get install -y git libraspberrypi-dev raspberrypi-kernel-headers expat libexpat1-dev libz-dev ruby mc vim cmake libdrm-dev raspi-config
+
+# Do following separately, can fail due to unmet dependencies
+sudo apt-get install -y git libraspberrypi-dev
+sudo apt-get install -y git raspberrypi-kernel-headers
 
 mkdir ~/projects
 mkdir ~/tmp
