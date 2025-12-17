@@ -295,27 +295,28 @@ unsigned qpu_enable(int file_desc, unsigned enable)
  * @param fd       file descriptor of the vc4 mailbox
  */
 unsigned execute_qpu(int fd, unsigned num_qpus, unsigned control, unsigned noflush, unsigned timeout) {
-	 warn << "execute_qpu()\n"
-        << "  fd     : "   << fd             << "\n"
-        << "  control: 0x" << hex << control << "\n"
-        << "  noflush: "   << noflush        << "\n"
-        << "  timeout: "   << timeout        << "\n"
+	 warn << "execute_qpu() params:\n"
+        << "  fd      : "   << fd             << "\n"
+        << "  num_qpus: "   << num_qpus       << "\n"
+        << "  control : 0x" << hex << control << "\n"
+        << "  noflush : "   << noflush        << "\n"
+        << "  timeout : "   << timeout        << "\n"
   ;
 
-   unsigned i=0;
+   unsigned i = 0;
    unsigned p[32];
 
-   p[i++] = 0; // size
-   p[i++] = 0x00000000; // process request
-   p[i++] = 0x30011; // (the tag id)
-   p[i++] = 16; // (size of the buffer)
-   p[i++] = 16; // (size of the data)
+   p[i++] = 0;                      // size
+   p[i++] = 0x00000000;             // process request
+   p[i++] = 0x30011;                // the tag id
+   p[i++] = 16;                     // size of the buffer
+   p[i++] = 16;                     // size of the data
    p[i++] = num_qpus;
    p[i++] = control;
    p[i++] = noflush;
-   p[i++] = timeout; // ms
+   p[i++] = timeout;                 // ms
 
-   p[i++] = 0x00000000; // end tag
+   p[i++] = 0x00000000;              // end tag
    p[0] = i * (unsigned) sizeof(*p); // actual size
 
    int ret = mbox_property(fd, p);

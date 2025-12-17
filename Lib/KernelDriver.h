@@ -34,7 +34,7 @@ public:
 
   Code const &code() const { return qpuCodeMem; }
 
-	std::string dump() const;
+	std::string dump();
   std::string compile_info() const;
 	std::string dump_compile_data() const;
 
@@ -55,7 +55,7 @@ protected:
   int qpuCodeMemOffset = 0;
   std::vector<std::string> errors;
 
-  virtual std::string emit_opcodes() const { return ""; } 
+  virtual std::string emit_opcodes() { return ""; } 
   void obtain_ast();
   bool handle_errors();
 

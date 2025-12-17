@@ -63,7 +63,7 @@ public:
   V3DLib::KernelDriver const &driver() const;
 
   void compile_init(bool do_vc4);
-	std::string dump() const;
+	std::string dump();
 
   BaseKernel &setNumQPUs(int n) { m_settings.num_qpus = n; return *this; }
   int numQPUs() const { return m_settings.num_qpus; }

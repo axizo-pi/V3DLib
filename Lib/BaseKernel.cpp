@@ -49,7 +49,7 @@ bool BaseKernel::has_errors() const {
 }
 
 
-std::string BaseKernel::dump() const {
+std::string BaseKernel::dump() {
 	return driver().dump();
 }
 

@@ -834,7 +834,7 @@ void KernelDriver::invoke(int numQPUs, IntList &params, bool wait_complete) {
 }
 
 
-std::string KernelDriver::emit_opcodes() const {
+std::string KernelDriver::emit_opcodes() {
 	std::string ret;
 
   if (instructions.empty()) {

@@ -12,21 +12,27 @@ namespace V3DLib {
 
 namespace {
 
-void check_align(BaseSharedArray const &arr, std::string const &name) {
-  warn << "check_align called for '" << name << "'";
+bool check_align(BaseSharedArray const &arr, std::string const &name) {
+  //warn << "check_align called for '" << name << "'";
 
   if (arr.getAddress() % 16) {
     cerr << "SharedArray " << name << " not 16-bit aligned";
+    return false;
   }
+
+  return true;
 }
 
 
-void check_align(uint32_t addr, std::string const &name) {
-  warn << "check_align addr called for '" << name << "'";
+MAYBE_UNUSED bool check_align(uint32_t addr, std::string const &name) {
+  //warn << "check_align addr called for '" << name << "'";
 
   if (addr % 16) {
-    cerr << "Address " << name << " not 16-bit aligned: 0x" << hex << addr;
+    cerr << "Address " << name << " not 16-bit aligned: " << hex << addr;
+    return false;
   }
+
+  return true;
 }
 
 
@@ -125,22 +131,36 @@ void add_launch_message(int index, Data &launch_messages, ScheduledJob const &jo
 
 /**
  * Initialize launch messages, if not already done so
- *
- * Doing this for max number of QPUs, so that num QPUs can be changed dynamically on calls.
  */
-void init_launch_messages(Data &launch_messages, Code const &code, IntList const &params, Data const &uniforms) {
+void init_launch_messages(int numQPUs, Data &launch_messages, Code const &code, IntList const &params, Data const &uniforms) {
+  assert(numQPUs > 0);
   assertq(!uniforms.empty(), "init_launch_messages(): expecting values for uniforms");
   warn << "init_launch_messages() called";
 
 	alloc_launch_messages(launch_messages);
 
-  for (int i = 0; i < Platform::max_qpus(); i++) {
+  //bool check_ok = true;
+
+  //for (int i = 0; i < Platform::max_qpus(); i++) {
+  for (int i = 0; i < numQPUs; i++) {
     uint32_t offset= uniforms.getAddress() + 4*i*num_params(params);  // 4* for uint32_t offset
-    check_align(offset, "launch param");
+
+    // This is not the issue! Examples other than Mandelbrot work fine when this check fails
+    //check_ok = check_ok & check_align(offset, "launch param");        // single '&' intentional
 
     launch_messages[2*i]     = offset;
     launch_messages[2*i + 1] = code.getAddress();
   }
+
+  // Doesn't help
+  for (int i = numQPUs; i < Platform::max_qpus(); i++) {
+    launch_messages[2*i]     = 0;
+    launch_messages[2*i + 1] = 0; 
+  }
+
+  //if (!check_ok) {
+  //  cerr << "init_launch_messages() align check failed."; //<< Can not invoke mailbox" << thrw;
+  //}
 }
 
 
@@ -206,7 +226,7 @@ void MailBoxInvoke::invoke(int numQPUs, Code const &code, IntList const &params)
   check_align(launch_messages, "launch_messages");
   check_align(code, "code");
 
-  init_launch_messages(launch_messages, code, params, uniforms);
+  init_launch_messages(numQPUs, launch_messages, code, params, uniforms);
 
   invoke_jobs(numQPUs, launch_messages);
 }

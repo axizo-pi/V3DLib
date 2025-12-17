@@ -24,7 +24,7 @@ private:
   void kernelFinish();
   void compile_intern() override;
 
-	std::string emit_opcodes(); // override;
+	std::string emit_opcodes() override;
 };
 
 }  // namespace vc4

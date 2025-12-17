@@ -126,7 +126,7 @@ Stmts &KernelDriver::sourceCode() {
 *
 * @param filename  if specified, print the output to this file. Otherwise, print to stdout
 */
-std::string KernelDriver::dump() const {
+std::string KernelDriver::dump() {
 	std::string ret;
 
   if (has_errors()) {
