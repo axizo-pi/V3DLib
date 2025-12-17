@@ -78,35 +78,6 @@ void mandelbrotCore(Complex const &c, Int &numIterations, Int::Ptr &dst) {
 } // anon namespace
 
 namespace V3DLib {
-void mandelbrot_single(
-  Float topLeftReal, Float topLeftIm,
-  Float offsetX, Float offsetY,
-  Int numStepsWidth, Int numStepsHeight,
-  Int numIterations,
-  Int::Ptr result
-) {
-  For (Int yStep = 0, yStep < numStepsHeight, yStep++)
-    Int::Ptr dst = result + yStep*numStepsWidth;
-		Int xMax = (numStepsWidth - 16);
-
-    For (Int xStep = 0, xStep < xMax, xStep += 16)
-      Int xIndex = xStep + index();
-
-      mandelbrotCore(
-        Complex(topLeftReal + offsetX*toFloat(xIndex), topLeftIm - offsetY*toFloat(yStep)),
-        numIterations,
-        dst);
-
-      dst.inc();  comment("dst increment");
-    End
-
-    //Int::Ptr dst2 = result + yStep*numStepsWidth;
-		//*dst2 = 128;
-  End
-
-  Int::Ptr dst3 = result + (numStepsHeight/2)*numStepsWidth;
-	*dst3 = 512;
-}
 
 
 /**

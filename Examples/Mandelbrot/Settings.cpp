@@ -2,7 +2,7 @@
 
 namespace {
 
-std::vector<const char *> const _kernels = { "multi", "single", "cpu", "all" };  // Order important! First is default, 'all' must be last
+std::vector<const char *> const _kernels = { "multi", "cpu" };  // Order important! First is default, 'all' must be last
 
 
 
@@ -14,10 +14,7 @@ CmdParameters params = {
   "It is therefore an indicator of compute speed, "
   "and is used for performance comparisons of platforms and configurations.\n"
 	"\n"
-	"NOTE: On vc4, ioctl errors occur on execute_qpu() and qpu_enable(0) for the single kernel and for\n"
-	"      the multi kernel with num QPU's <=3. However, the kernels run fine anyway.\n"
-	"      This mystery is unsolved but benign.\n"
-	"\n",
+	"NOTE: due to technical limitations, the minimal number of selected QPU's for vc4 is 4.\n",
 
   {{
     "Kernel",

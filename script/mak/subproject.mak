@@ -3,7 +3,7 @@ COMPILE := $(CXX) -std=c++17 -c $(CXX_FLAGS) $(INCLUDE)
 TARGET=${OBJDIR}/bin/${NAME}
 
 OBJ_LOCAL=${OBJDIR}/${NAME}
-$(info OBJ_LOCAL: $(OBJ_LOCAL))
+#$(info OBJ_LOCAL: $(OBJ_LOCAL))
 
 STRUCTURE := $(shell ls -r)     
 #$(info structure: $(STRUCTURE))

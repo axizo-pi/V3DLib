@@ -15,7 +15,7 @@ using std::string;
 // Local functions
 // ============================================================================
 
-using KernelType = decltype(mandelbrot_single);
+using KernelType = decltype(mandelbrot_multi);
 
 template<class Array>
 void output_pgm(Array &result) {
@@ -34,11 +34,12 @@ void output_pgm(Array &result) {
 
 void run_qpu_kernel(KernelType &kernel) {
   assertq(0 == settings().numStepsWidth % 16, "Width dimension must be a multiple of 16");
+  assertq(!Platform::compiling_for_vc4() || (4 <= settings().num_qpus),
+    "num QPU's must be at least for for vc4"
+  );
 
   Timer timer("Kernel compile");
-
   auto k = compile(kernel, settings());
-
   timer.end(!settings().silent);
 
   k.setNumQPUs(settings().num_qpus);
@@ -64,8 +65,7 @@ void run_kernel(int kernel_index) {
 
   switch (kernel_index) {
     case 0: run_qpu_kernel(mandelbrot_multi);  break;  
-    case 1: run_qpu_kernel(mandelbrot_single); break;
-    case 2: {
+    case 1: {
         int *result = new int [settings().num_items()];  // Allocate and initialise
 
         mandelbrot_cpu(result);
