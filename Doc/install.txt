@@ -1,14 +1,4 @@
-- Pi1 mandelbrot -k=single -k=multi gives error:
-
-[2025-12-12 14:59:43] ERROR: mbox_property() ioctl failed, ret: -1, error: Unknown error -1
-[2025-12-12 14:59:43] ERROR: execute_qpu(): mbox_property call failed
-[2025-12-12 14:59:44] ERROR: mbox_property() ioctl failed, ret: -1, error: Unknown error -1
-[2025-12-12 14:59:44] ERROR: qpu_enable(): mbox_property call failed
-[2025-12-12 14:59:44] ERROR: invoke_jobs(): Failed to invoke kernel on QPUs
-
-...but it works anyway
-
-- Fix for Pi1 - From Issues.md 
+- Fix for Pi1, Pi2 - From Issues.md 
 
 Call to `qpu_enable()` in `Mailbox.cpp` fails. To fix:
 
