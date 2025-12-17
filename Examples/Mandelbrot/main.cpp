@@ -51,7 +51,9 @@ void run_qpu_kernel(KernelType &kernel) {
     settings().offsetX(), settings().offsetY(),
     settings().numStepsWidth, settings().numStepsHeight,
     settings().num_iterations,
-    &result).run();
+    &result,
+    settings().count
+  ).run();
 
   output_pgm(result);
 }

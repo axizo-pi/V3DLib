@@ -88,23 +88,26 @@ void mandelbrot_multi(
   Float offsetX, Float offsetY,
   Int numStepsWidth, Int numStepsHeight,
   Int numIterations,
-  Int::Ptr result
+  Int::Ptr result,
+  Int count
 ) {
   Int yMax = numStepsHeight - numQPUs();
 
-  For (Int yStep = 0, yStep < yMax, yStep += numQPUs())
-    Int yIndex = yStep + me();
-    Int::Ptr dst = result + yIndex*numStepsWidth;
+  For (Int c = 0, c < count, c++)
+    For (Int yStep = 0, yStep < yMax, yStep += numQPUs())
+      Int yIndex = yStep + me();
+      Int::Ptr dst = result + yIndex*numStepsWidth;
 
-    For (Int xStep = 0, xStep < numStepsWidth - 16, xStep += 16)
-      Int xIndex = xStep + index();
+      For (Int xStep = 0, xStep < numStepsWidth - 16, xStep += 16)
+        Int xIndex = xStep + index();
 
-      mandelbrotCore(
-        Complex(topLeftReal + offsetX*toFloat(xIndex), topLeftIm - offsetY*toFloat(yIndex)),
-        numIterations,
-        dst);
+        mandelbrotCore(
+          Complex(topLeftReal + offsetX*toFloat(xIndex), topLeftIm - offsetY*toFloat(yIndex)),
+          numIterations,
+          dst);
 
-      dst.inc();
+        dst.inc();
+      End
     End
   End
 }
