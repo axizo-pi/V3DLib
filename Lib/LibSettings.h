@@ -6,21 +6,23 @@ namespace V3DLib {
 /**
  * Global settings for V3DLib
  */
-class LibSettings {
-public:
-  static int  qpu_timeout();
-  static void qpu_timeout(int val);
+namespace LibSettings {
 
-  static int  heap_size();
-  static void heap_size(int val);
+int  qpu_timeout();
+void qpu_timeout(int val);
 
-  static bool use_tmu_for_load();
-  static void use_tmu_for_load(bool val);
+int  heap_size();
+void heap_size(int val);
 
-  static bool use_high_precision_sincos();
-  static void use_high_precision_sincos(bool val);
-};
+bool use_tmu_for_load();
+void use_tmu_for_load(bool val);
 
-}  // namespace V3DLib
+bool use_high_precision_sincos();
+void use_high_precision_sincos(bool val);
+
+bool dump_line_numbers();
+
+} // namespace LibSettings
+} // namespace V3DLib
 
 #endif  // _V3DLIB_LIBSETTINGS_H_

@@ -15,6 +15,7 @@
 #include "global/log.h"
 #include "Target/Satisfy.h"
 #include "Combine.h"
+#include "LibSettings.h"
 
 namespace V3DLib {
 namespace v3d {
@@ -836,13 +837,18 @@ void KernelDriver::invoke(int numQPUs, IntList &params, bool wait_complete) {
 
 std::string KernelDriver::emit_opcodes() {
 	std::string ret;
+	bool do_line_numbers = LibSettings::dump_line_numbers();
 
   if (instructions.empty()) {
     ret << "<No opcodes to print>\n";
   } else {
 		int count = 0;
     for (auto const &instr : instructions) {
-      ret << count << ": " << instr.mnemonic(true) << "\n";
+			if (do_line_numbers) {
+      	ret << count << ": ";
+			}
+
+      ret << instr.mnemonic(true) << "\n";
 			count++;
     }
   }

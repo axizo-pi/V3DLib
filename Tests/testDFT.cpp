@@ -438,6 +438,7 @@ TEST_CASE("Discrete Fourier Transform [dft]") {
     {
       Complex::Array2D result_tmp;  // Will be Dimx16, columns padded to 16 and only 1st relevant
       auto k = compile(kernels::matrix_mult_decorator(dft_matrix, input, result_tmp));
+      to_file("obj/test/matrix_mul_decorator.txt", k.dump());
 
       //std::cout << "result dimensions: (" << result_tmp.rows() << ", " << result_tmp.columns() << ")" << std::endl;
 
@@ -458,7 +459,7 @@ TEST_CASE("Discrete Fourier Transform [dft]") {
 
     {
       auto k = compile(kernels::matrix_mult_decorator(input, dft_matrix, result_switched));
-      to_file("obj/test/matrix_mul_decorator.txt", k.dump());
+      to_file("obj/test/matrix_mul_decorator_switched.txt", k.dump());
 
       k.setNumQPUs(8);  // Running with multi-QPU gives very limited performance improvement
       k.load(&result_switched, &input, &dft_matrix).run();
