@@ -6,6 +6,8 @@
 
 namespace V3DLib {
 
+using namespace Target;
+
 class Liveness;
 class RegUsage;
 

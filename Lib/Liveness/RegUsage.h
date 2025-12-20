@@ -51,7 +51,7 @@ struct RegUsage : private std::vector<RegUsageItem> {
   RegUsage(int numVars);
 
   void reset();
-  void set_used(Instr::List &instrs);
+  void set_used(Target::Instr::List &instrs);
   void set_live(Liveness &live);
   std::string dump(bool verbose = false) const;
   void check() const;

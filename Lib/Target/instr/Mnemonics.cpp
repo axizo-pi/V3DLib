@@ -7,6 +7,9 @@
 using namespace Log;
 
 namespace V3DLib {
+
+using namespace Target;
+
 namespace {
 
 Instr genInstr(ALUOp::Enum op, Reg dst, RegOrImm const &srcA, RegOrImm const &srcB) {

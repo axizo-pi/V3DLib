@@ -1039,7 +1039,7 @@ bool Instr::alu_mul_set(Location const &dst, Source const &in_a, Source const &i
 /**
  * 
  */
-bool Instr::alu_add_set(V3DLib::Instr const &src_instr) {
+bool Instr::alu_add_set(Target::Instr const &src_instr) {
   assert(add_nop());
   assert(mul_nop());
 
@@ -1063,7 +1063,7 @@ bool Instr::alu_add_set(V3DLib::Instr const &src_instr) {
 /**
  * @return true if mul instruction set, false otherwise
  */
-bool Instr::alu_mul_set(V3DLib::Instr const &src_instr) {
+bool Instr::alu_mul_set(Target::Instr const &src_instr) {
   assert(mul_nop());
   auto const &alu = src_instr.ALU;
   auto dst = encodeDestReg(src_instr);
@@ -1116,7 +1116,7 @@ bool Instr::alu_mul_set(V3DLib::Instr const &src_instr) {
 }
 
 
-bool Instr::alu_set(V3DLib::Instr const &src_instr) {
+bool Instr::alu_set(Target::Instr const &src_instr) {
     return alu_add_set(src_instr) || alu_mul_set(src_instr);
 }
 

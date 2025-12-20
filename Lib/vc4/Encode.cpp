@@ -3,140 +3,14 @@
 #include <stdlib.h>
 #include "Support/basics.h"  // fatal()
 #include "Target/Satisfy.h"
+#include "Instr.h"
 
 namespace V3DLib {
+
+using namespace Target;
+
 namespace vc4 {
 namespace {
-
-class vc4_Instr {
-public:
-  enum Tag {
-    NOP,
-    ROT,
-    ALU,
-    LI,
-    BR,
-    END,
-    SINC,
-    SDEC,
-    LDTMU  // Always writes to ACC4
-  };
-
-  uint32_t cond_add = 0;    // reused for LI, BR
-  uint32_t cond_mul = 0;
-  uint32_t waddr_add = 39;  // reused for LI
-  uint32_t waddr_mul = 39;
-
-  uint32_t addOp  = 0;
-  uint32_t mulOp  = 0;
-  uint32_t muxa   = 0;
-  uint32_t muxb   = 0;
-  uint32_t raddra = 39;
-  uint32_t raddrb = 0;
-
-  uint32_t li_imm = 0;  // Also used as BR target
-  uint32_t sema_id = 0;
-
-  void tag(Tag in_tag, bool imm = false) {
-    m_tag = in_tag;
-
-    switch(m_tag) {
-      case NOP:  // default
-      case LI:
-        break;  // as is
-
-      case ROT:
-        m_sig = 13;
-        break;
-
-      case ALU:
-        m_sig = imm?13:1;
-        break;
-
-      case BR:
-        m_sig = 15;
-        break;
-
-      case END:
-        m_sig = 3;
-        raddrb = 39;
-        break;
-
-      case LDTMU:
-        m_sig = 10;
-        raddrb = 39;
-        break;
-
-      case SINC:
-      case SDEC:
-        m_sig = 0xe;
-        m_sem_flag = 8;
-        break;
-    };
-  }
-
-
-  void sf(bool val) { assert(m_tag != BR); m_sf = val; }
-  void ws(bool val) { assert(m_tag != BR); m_ws = val; }
-  void rel(bool val) { assert(m_tag == BR); m_rel = val; }
-
-  uint64_t encode() const {
-   return (((uint64_t) high()) << 32) + low();
-  }
-
-private:
-  Tag m_tag = NOP;
-  uint32_t m_sig = 14;        // 0xe0000000
-  uint32_t m_sem_flag = 0;    // TODO research what this is for, only used with SINC/SDEC
-
-  bool m_ws  = false;
-  bool m_sf  = false;
-  bool m_rel = false;
-
-
-  uint32_t high() const {
-    uint32_t ret = (m_sig << 28) | (m_sem_flag << 24) | (waddr_add << 6) | waddr_mul;
-
-    if (m_tag == BR) {
-      ret |= (cond_add << 20)
-          |  (m_rel?(1 << 19):0);
-    } else if (m_tag != END && m_tag != LDTMU) {
-      ret |= (cond_add << 17) | (cond_mul << 14) 
-          |  (m_sf?(1 << 13):0)
-          |  (m_ws?(1 << 12):0);
-    }
-
-    return ret;
-  }
-
-
-  uint32_t low() const {
-    switch (m_tag) {
-      case NOP:
-        return  0;
-      case ROT:
-        return (mulOp << 29) | (raddra << 18) | (raddrb << 12);
-      case ALU:
-        return (mulOp << 29) | (addOp << 24) | (raddra << 18) | (raddrb << 12)
-                     | (muxa << 9) | (muxb << 6)
-                     | (muxa << 3) | muxb;
-      case END:
-      case LDTMU:
-        return (raddra << 18) | (raddrb << 12);
-      case LI:
-      case BR:
-        return li_imm;
-      case SINC:
-        return sema_id;
-      case SDEC:
-        return (1 << 4) | sema_id;
-    };
-
-    assert(false);
-    return 0;
-  }
-};
-
 
 // ================
 // Register encoder
@@ -295,7 +169,7 @@ uint32_t encodeSrcReg(Reg reg, RegTag file, uint32_t* mux) {
 /**
  * Convert intermediate instruction into core instruction
  */
-void convertInstr(Instr &instr) {
+void convertInstr(Target::Instr &instr) {
   switch (instr.tag) {
     case IRQ:
       instr.tag           = LI;
@@ -332,7 +206,7 @@ void convertInstr(Instr &instr) {
  * This is fairly convoluted stuff; apparently there are rules with regfile A/B usage
  * which I am not aware of.
  */
-void encode_operands(vc4_Instr &vc4_instr, RegOrImm const &srcA, RegOrImm const &srcB) {
+void encode_operands(Instr &vc4_instr, RegOrImm const &srcA, RegOrImm const &srcB) {
   uint32_t muxa, muxb;
   uint32_t raddra = 0, raddrb;
 
@@ -400,10 +274,10 @@ void encode_operands(vc4_Instr &vc4_instr, RegOrImm const &srcA, RegOrImm const 
 // Instruction encoder
 // ===================
 
-uint64_t encodeInstr(Instr instr) {
+uint64_t encodeInstr(Target::Instr instr) {
   convertInstr(instr);
 
-  vc4_Instr vc4_instr;
+  vc4::Instr vc4_instr;
 
   // Encode core instruction
   switch (instr.tag) {
@@ -414,7 +288,7 @@ uint64_t encodeInstr(Instr instr) {
       auto &li = instr.LI;
       RegTag file;
 
-      vc4_instr.tag(vc4_Instr::LI);
+      vc4_instr.tag(vc4::Instr::LI);
       vc4_instr.cond_add  = instr.assign_cond().encode();
       vc4_instr.waddr_add = encodeDestReg(instr.dest(), &file);
       vc4_instr.ws(file != REG_A);
@@ -426,7 +300,7 @@ uint64_t encodeInstr(Instr instr) {
     case BR:  // Branch
       assertq(!instr.branch_target().useRegOffset, "Register offset not yet supported");
 
-      vc4_instr.tag(vc4_Instr::BR);
+      vc4_instr.tag(vc4::Instr::BR);
       vc4_instr.cond_add = instr.branch_cond().encode();
       vc4_instr.rel(instr.branch_target().relative);
       vc4_instr.li_imm = 8*instr.branch_target().immOffset;
@@ -463,11 +337,11 @@ uint64_t encodeInstr(Instr instr) {
         }
 
 
-        vc4_instr.tag(vc4_Instr::ROT);
+        vc4_instr.tag(vc4::Instr::ROT);
         vc4_instr.mulOp  = ALUOp(ALUOp::M_V8MIN).vc4_encodeMulOp();
         vc4_instr.raddrb = raddrb;
       } else {
-        vc4_instr.tag(vc4_Instr::ALU, instr.hasImm());
+        vc4_instr.tag(vc4::Instr::ALU, instr.hasImm());
         vc4_instr.mulOp = (alu.op.isMul() ? alu.op.vc4_encodeMulOp() : 0);
         vc4_instr.addOp = (alu.op.isMul() ? 0 : alu.op.vc4_encodeAddOp());
         encode_operands(vc4_instr, alu.srcA, alu.srcB);
@@ -477,23 +351,23 @@ uint64_t encodeInstr(Instr instr) {
 
     // Halt
     case END:
-      vc4_instr.tag(vc4_Instr::END);
+      vc4_instr.tag(vc4::Instr::END);
       break;
 
     case RECV: {
       assert(instr.dest() == Reg(ACC,4));  // ACC4 is the only value allowed as dest
-      vc4_instr.tag(vc4_Instr::LDTMU);
+      vc4_instr.tag(vc4::Instr::LDTMU);
     }
     break;
 
     // Semaphore increment/decrement
     case SINC:
-      vc4_instr.tag(vc4_Instr::SINC);
+      vc4_instr.tag(vc4::Instr::SINC);
       vc4_instr.sema_id = instr.semaId;
       break;
 
     case SDEC:
-      vc4_instr.tag(vc4_Instr::SDEC);
+      vc4_instr.tag(vc4::Instr::SDEC);
       vc4_instr.sema_id = instr.semaId;
       break;
 
@@ -512,11 +386,11 @@ uint64_t encodeInstr(Instr instr) {
 // Top-level encoder
 // ============================================================================
 
-CodeList encode(Instr::List &instrs) {
+CodeList encode(Target::Instr::List &instrs) {
   CodeList code;
 
   for (int i = 0; i < instrs.size(); i++) {
-    Instr instr = instrs.get(i);
+    auto instr = instrs.get(i);
     check_instruction_tag_for_platform(instr.tag, true);
 
     if (instr.tag == INIT_BEGIN || instr.tag == INIT_END) {

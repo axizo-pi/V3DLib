@@ -4,9 +4,9 @@
 
 namespace V3DLib {
 
-void adjust_immediates(Instr::List &instrs);
-void vc4_satisfy(Instr::List &instrs);
-void v3d_satisfy(Instr::List &instrs);
+void adjust_immediates(Target::Instr::List &instrs);
+void vc4_satisfy(Target::Instr::List &instrs);
+void v3d_satisfy(Target::Instr::List &instrs);
 
 }  // namespace V3DLib
 

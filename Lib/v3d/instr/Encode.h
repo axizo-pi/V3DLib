@@ -10,9 +10,8 @@ namespace v3d {
 namespace instr {
 
 uint8_t to_waddr(Reg const &reg);
-//void check_unhandled_registers(Reg reg, bool do_src_regs);
 std::unique_ptr<Location> encodeSrcReg(Reg reg);
-std::unique_ptr<Location> encodeDestReg(V3DLib::Instr const &src_instr);
+std::unique_ptr<Location> encodeDestReg(Target::Instr const &src_instr);
 
 }  // instr
 }  // v3d

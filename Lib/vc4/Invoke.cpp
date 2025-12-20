@@ -143,7 +143,11 @@ void init_launch_messages(int numQPUs, Data &launch_messages, Code const &code, 
 
   //for (int i = 0; i < Platform::max_qpus(); i++) {
   for (int i = 0; i < numQPUs; i++) {
-    uint32_t offset= uniforms.getAddress() + 4*i*num_params(params);  // 4* for uint32_t offset
+    //
+    // Every launch message absolutely needs its own uniforms.
+    // Otherwise, mbox_property() fails (verified)
+    //
+    uint32_t offset = uniforms.getAddress() + 4*i*num_params(params);  // 4* for uint32_t offset
 
     // This is not the issue! Examples other than Mandelbrot work fine when this check fails
     //check_ok = check_ok & check_align(offset, "launch param");        // single '&' intentional

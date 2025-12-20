@@ -5,6 +5,9 @@
 #include "UseDef.h"
 
 namespace V3DLib {
+
+using namespace Target;
+
 namespace {
 
 std::string get_unused_list(RegUsage const &alloc_list) {

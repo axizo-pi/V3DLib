@@ -3,10 +3,13 @@
 #include "Support/basics.h"
 
 namespace V3DLib {
+
+using namespace Target;
+
 namespace v3d {
 namespace instr {
 
-bool OpItems::uses_add_alu(V3DLib::Instr const &instr) {
+bool OpItems::uses_add_alu(Instr const &instr) {
   if (instr.tag != ALU) return false;
   auto op = instr.ALU.op.value();
   op_item const *item = op_items_find_by_op(op);
@@ -17,7 +20,7 @@ bool OpItems::uses_add_alu(V3DLib::Instr const &instr) {
 }
 
 
-bool OpItems::uses_mul_alu(V3DLib::Instr const &instr) {
+bool OpItems::uses_mul_alu(Instr const &instr) {
   if (instr.tag != ALU) return false;
   auto op = instr.ALU.op.value();
   op_item const *item = op_items_find_by_op(op);
@@ -55,7 +58,7 @@ bool OpItems::get_mul_op(ALUInstruction const &add_alu, v3d_qpu_mul_op &dst ) {
  *
  * TODO Not used any more (20210614), check if should be removed
  */
-bool OpItems::valid_combine_pair(V3DLib::Instr const &instr, V3DLib::Instr const &next_instr, bool &do_converse) {
+bool OpItems::valid_combine_pair(Instr const &instr, Instr const &next_instr, bool &do_converse) {
   if (uses_add_alu(instr) && uses_mul_alu(next_instr)) {
     do_converse = false;
     return true;

@@ -122,10 +122,10 @@ public:
   bool alu_mul_set(Location const &dst, Source const &a);
   bool alu_mul_set(Location const &dst, Source const &in_a, Source const &in_b);
 
-  bool alu_add_set(V3DLib::Instr const &src_instr);
-  bool alu_mul_set(V3DLib::Instr const &src_instr);
+  bool alu_add_set(Target::Instr const &src_instr);
+  bool alu_mul_set(Target::Instr const &src_instr);
 
-  bool alu_set(V3DLib::Instr const &src_instr);
+  bool alu_set(Target::Instr const &src_instr);
 
 	// BaseSource implementation
   bool alu_add_a(BaseSource const &src, bool overwrite = false);

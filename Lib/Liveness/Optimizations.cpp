@@ -10,6 +10,9 @@
 using namespace Log;
 
 namespace V3DLib {
+
+using namespace Target;
+
 namespace {
 
 void replace_acc(Instr::List &instrs, RegUsageItem &item, int var_id, int acc_id) {

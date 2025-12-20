@@ -8,6 +8,9 @@
 using namespace Log;
 
 namespace V3DLib {
+
+using namespace Target;
+
 namespace v3d {
 namespace instr {
 
@@ -57,18 +60,8 @@ void check_reg(Reg reg) {
 }
 
 
-}  // anon namespace
-
-uint8_t to_waddr(Reg const &reg) {
-  assertq(reg.tag != REG_B, "to_waddr(): Not expecting REG_B any more, examine");
-  assert(reg.tag == REG_A);
-  return (uint8_t) (reg.regId);
-}
-
-
 void check_unhandled_registers(Reg reg, bool do_src_regs) {
 	if (reg.is_none()) return; // Don't bother checking
-
 
   if (do_src_regs) {
     switch (reg.tag) {
@@ -112,6 +105,14 @@ void check_unhandled_registers(Reg reg, bool do_src_regs) {
 
     default: break;
   }
+}
+
+}  // anon namespace
+
+uint8_t to_waddr(Reg const &reg) {
+  assertq(reg.tag != REG_B, "to_waddr(): Not expecting REG_B any more, examine");
+  assert(reg.tag == REG_A);
+  return (uint8_t) (reg.regId);
 }
 
 

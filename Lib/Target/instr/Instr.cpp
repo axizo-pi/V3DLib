@@ -9,6 +9,8 @@
 using namespace Log;
 
 namespace V3DLib {
+namespace Target {
+
 namespace {
 
 const char *dump_instr_tag(InstrTag tag) {
@@ -84,7 +86,7 @@ std::string dump_instr(Instr const &instr) {
     case SKIP:
     case IRQ:
     case VPM_STALL:
-      buf << V3DLib::dump_instr_tag(instr.tag);
+      buf << dump_instr_tag(instr.tag);
       break;
 
     default:
@@ -397,20 +399,20 @@ AssignCond Instr::assign_cond() const   {
   return m_assign_cond;
 }
 
-BranchTarget Instr::branch_target() const { assert(tag == V3DLib::BR); return m_branch_target; }
+BranchTarget Instr::branch_target() const { assert(tag == InstrTag::BR); return m_branch_target; }
 
 void  Instr::branch_label(Label rhs) { assert(tag == InstrTag::BRL); m_branch_label = rhs; }
 Label Instr::branch_label() const    { assert(tag == InstrTag::BRL); return m_branch_label; }
 
 Instr &Instr::branch_cond(BranchCond rhs) {
-  assert(tag == V3DLib::BR || tag == V3DLib::BRL);
+  assert(tag == InstrTag::BR || tag == InstrTag::BRL);
   m_branch_cond = rhs;
   return *this;
 }
 
 
 BranchCond Instr::branch_cond() const {
-  assert(tag == V3DLib::BR || tag == V3DLib::BRL);
+  assert(tag == InstrTag::BR || tag == InstrTag::BRL);
   return m_branch_cond;
 }
 
@@ -435,7 +437,7 @@ bool Instr::is_always() const {
  * TODO Unused, do we need this?
  */
 bool Instr::isLast() const {
-  return tag == V3DLib::BRL || tag == V3DLib::BR || tag == V3DLib::END;
+  return tag == InstrTag::BRL || tag == InstrTag::BR || tag == InstrTag::END;
 }
 
 
@@ -861,4 +863,5 @@ std::string Instr::mnemonic(bool with_comments, std::string const &prefix) const
   return ret;
 }
 
+}  // namespace Target
 }  // namespace V3DLib

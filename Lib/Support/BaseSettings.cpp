@@ -17,12 +17,6 @@ void BaseSettings::process(BaseKernel &k) {
 // Pi1 is 32-bits only; we thus need to support 32-bits.
 
 #ifdef ARM32
-  //
-  // TODO: differentiate on platforms
-  //
-  // - Debian 10 Buster 32-bits works fine
-  // - Debian 12 Woodworm  32-bits fails
-  //
   static bool showed_msg = false;
 
   if (!showed_msg) {

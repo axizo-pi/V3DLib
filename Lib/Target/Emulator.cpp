@@ -8,6 +8,8 @@
 
 namespace V3DLib {
 
+using namespace Target;
+
 namespace {
 
 /**

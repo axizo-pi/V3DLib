@@ -2,7 +2,7 @@
 
 namespace V3DLib {
 
-
+using namespace Target;
 
 /**
  * Rename used registers in an instruction

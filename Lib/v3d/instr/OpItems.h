@@ -10,11 +10,11 @@ class OpItems {
 public:
   static bool get_add_op(ALUInstruction const &add_alu, v3d_qpu_add_op &dst, bool strict = false);
   static bool get_mul_op(ALUInstruction const &add_alu, v3d_qpu_mul_op &dst);
-  static bool valid_combine_pair(V3DLib::Instr const &instr, V3DLib::Instr const &next_instr, bool &do_converse);
+  static bool valid_combine_pair(Target::Instr const &instr, Target::Instr const &next_instr, bool &do_converse);
 
 private:
-  static bool uses_add_alu(V3DLib::Instr const &instr);
-  static bool uses_mul_alu(V3DLib::Instr const &instr);
+  static bool uses_add_alu(Target::Instr const &instr);
+  static bool uses_mul_alu(Target::Instr const &instr);
 };
 
 

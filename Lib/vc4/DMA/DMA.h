@@ -6,6 +6,9 @@
 #include "Target/instr/Instr.h"
 
 namespace V3DLib {
+
+using namespace Target;
+
 namespace DMA {
 
 // ============================================================================

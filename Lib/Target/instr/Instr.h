@@ -11,6 +11,10 @@
 
 namespace V3DLib {
 
+class CmpOp;
+
+namespace Target {
+
 inline std::set<Reg> operator+(std::set<Reg> const &lhs, std::set<Reg> const &rhs) {
   std::set<Reg> ret = lhs;
   ret.insert(rhs.begin(), rhs.end());
@@ -18,7 +22,6 @@ inline std::set<Reg> operator+(std::set<Reg> const &lhs, std::set<Reg> const &rh
 }
 
 
-class CmpOp;
 
 // ============================================================================
 // Class BranchTarget
@@ -227,6 +230,7 @@ private:
 
 void check_zeroes(Instr::List const &instrs);
 
+}  // namespace Target
 }  // namespace V3DLib
 
 #endif  // _V3DLIB_TARGET_INSTR_INSTRUCTIONS_H_

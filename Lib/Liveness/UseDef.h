@@ -10,7 +10,7 @@ struct UseDefReg {
   std::set<Reg> use;   // the variables used as src in an instruction
   Reg  def;            // the variable (at most 1, absence indicated by NONE tag)) used as dst by an instruction
 
-  UseDefReg(Instr const &instr, bool set_use_where = false);
+  UseDefReg(Target::Instr const &instr, bool set_use_where = false);
 
   std::string dump() const;
 };   
@@ -25,7 +25,7 @@ struct UseDef {
   RegIdSet use;
   Reg def;
 
-  UseDef(Instr const &instr, bool set_use_where = false);
+  UseDef(Target::Instr const &instr, bool set_use_where = false);
   std::string dump() const;
 };   
 

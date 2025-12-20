@@ -13,6 +13,8 @@ using V3DLib::v3d::instr::SmallImm;
 
 namespace V3DLib {
 
+using namespace Target;
+
 namespace {
 
 bool hasRegFileConflict(Instr const &instr) {
