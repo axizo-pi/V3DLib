@@ -74,7 +74,7 @@ void checkSpecialIndex(V3DLib::Instr const &src_instr) {
     return;  // Nothing to do
   }
 
-  if (src_instr.ALU.op.value() != ALUOp::A_BOR && src_instr.ALU.op.value() != ALUOp::A_MOV) {  // A_MOV is vc7-specific
+  if (src_instr.ALU.op.value() != Enum::A_BOR && src_instr.ALU.op.value() != Enum::A_MOV) {  // A_MOV is vc7-specific
     // All other instructions disallowed
     fatal("For v3d, special registers QPU_NUM and ELEM_NUM can only be used in a move instruction");
     return;
@@ -100,7 +100,7 @@ bool is_special_index(V3DLib::Instr const &src_instr, Special index ) {
     return false;
   }
 
-  if (src_instr.ALU.op.value() != ALUOp::A_BOR) {
+  if (src_instr.ALU.op.value() != Enum::A_BOR) {
     return false;
   }
 
@@ -114,7 +114,7 @@ bool is_special_index(V3DLib::Instr const &src_instr, Special index ) {
 
 
 bool handle_special_index(V3DLib::Instr const &src_instr, Instructions &ret) {
-  if (src_instr.tag == ALU && src_instr.ALU.op == ALUOp::A_TMUWT) {
+  if (src_instr.tag == ALU && src_instr.ALU.op == Enum::A_TMUWT) {
     ret << tmuwt();
     return true;
   }
@@ -148,7 +148,7 @@ bool translateOpcode(V3DLib::Instr const &src_instr, Instructions &ret) {
   auto reg_a = src_instr.ALU.srcA;
   auto reg_b = src_instr.ALU.srcB;
 
-  assertq(src_instr.ALU.op.value() != ALUOp::A_FSIN || (reg_a.is_reg() && reg_b.is_reg()), 
+  assertq(src_instr.ALU.op.value() != Enum::A_FSIN || (reg_a.is_reg() && reg_b.is_reg()), 
 		"sin has smallims");
 
   auto dst_reg = encodeDestReg(src_instr);
@@ -157,28 +157,28 @@ bool translateOpcode(V3DLib::Instr const &src_instr, Instructions &ret) {
   int num_ops = src_instr.ALU.num_operands();
 
   switch (src_instr.ALU.op.value()) {
-  case ALUOp::A_FSIN:
+  case Enum::A_FSIN:
     assert(num_ops == 1);
     ret << fsin(*dst_reg, reg_a);
     break;
-  case ALUOp::A_FFLOOR:
+  case Enum::A_FFLOOR:
     assert(num_ops == 1);
     ret << ffloor(*dst_reg, reg_a);
     break;
-  case ALUOp::A_TMUWT:
+  case Enum::A_TMUWT:
     assert(num_ops == 0);
     ret << tmuwt();
     break;
-  case ALUOp::A_TIDX:
+  case Enum::A_TIDX:
     breakpoint  // Apparently never called?
     assert(num_ops == 0);
     ret << tidx(*dst_reg);
     break;
-  case ALUOp::A_EIDX:
+  case Enum::A_EIDX:
     assert(num_ops == 0);
     ret << eidx(*dst_reg);
     break;
-  case ALUOp::A_MOV: {
+  case Enum::A_MOV: {
     assert(num_ops == 1);
 
     auto tmp = mov(*dst_reg, reg_a);

@@ -1078,7 +1078,7 @@ bool Instr::alu_mul_set(Target::Instr const &src_instr) {
   // Special case: OR with same inputs can be considered a MOV
   // Handles rf-registers and accumulators only, fails otherwise
   // (ie. case combined tmua tmud won't work).
-  if (alu.op == ALUOp::A_BOR) {
+  if (alu.op == Enum::A_BOR) {
     bool same_sources = (src_instr.dest().tag <= ACC)
                      && (alu.srcA == alu.srcB)
                      && (alu.srcA.is_imm() || alu.srcA.reg().tag <= ACC);  // Verified: this check is required, won't work with special registers

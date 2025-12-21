@@ -599,7 +599,7 @@ uint32_t Instr::get_acc_usage() const {
         ret |=  (1 << ALU.srcB.reg().regId);
       }
 
-      if (ALU.op == ALUOp::A_FSIN) {
+      if (ALU.op == Enum::A_FSIN) {
         if (!Platform::compiling_for_vc4()) {
           // SIN using special reg always returns result in r4
           assertq((ret & (1 << 4)) == 0, "get_acc_usage(): Not really expecting r4 to be already in use for sin");

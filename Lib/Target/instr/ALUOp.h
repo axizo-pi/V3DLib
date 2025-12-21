@@ -5,10 +5,6 @@
 
 namespace V3DLib {
 
-class Op;
-
-class ALUOp {
-public:
   //
   // Prefixes:
   //   A_: for 'add' ALU
@@ -17,7 +13,7 @@ public:
   // Up to Mul, opcodes are values as used directly by vc4.
   //
   enum Enum :uint32_t {
-    NONE = (uint32_t) -1,
+    OP_UNDEFINED = (uint32_t) -1,
 
     NOP = 0,            // No op
 
@@ -43,6 +39,7 @@ public:
     A_BXOR,         // Bitwise xor
     A_BNOT,         // Bitwise not
     A_CLZ,          // Count leading zeros
+    // 25-29 reserved
     A_V8ADDS = 30,  // Add with saturation per 8-bit element; vc4 only
     A_V8SUBS,       // Subtract with saturation per 8-bit element; vc4 only
 
@@ -75,6 +72,11 @@ public:
 		A_LOG
   };
 
+class Op;
+
+class ALUOp {
+public:
+
   ALUOp() = default;
   explicit ALUOp(Enum val) : m_value(val) {}
   explicit ALUOp(Op const &op);
@@ -88,7 +90,7 @@ public:
   uint8_t vc4_encodeAddOp() const;
   uint8_t vc4_encodeMulOp() const;
 
-  bool operator==(ALUOp::Enum rhs) const { return m_value == rhs; }
+  bool operator==(Enum rhs) const { return m_value == rhs; }
 
 private:
   Enum m_value = NOP;
@@ -96,18 +98,18 @@ private:
 
 
 struct op_item {
-  op_item(ALUOp::Enum in_op, v3d_qpu_add_op in_add_op);
-  op_item(ALUOp::Enum in_op, bool in_add_op, v3d_qpu_mul_op in_mul_op);
-  op_item(ALUOp::Enum in_op, v3d_qpu_add_op in_add_op, v3d_qpu_mul_op in_mul_op);
+  op_item(Enum in_op, v3d_qpu_add_op in_add_op);
+  op_item(Enum in_op, bool in_add_op, v3d_qpu_mul_op in_mul_op);
+  op_item(Enum in_op, v3d_qpu_add_op in_add_op, v3d_qpu_mul_op in_mul_op);
 
-  ALUOp::Enum op;
+  Enum op;
   bool has_add_op       = false;
   v3d_qpu_add_op add_op = V3D_QPU_A_NOP;
   bool has_mul_op       = false;
   v3d_qpu_mul_op mul_op = V3D_QPU_M_NOP;
 };
 
-op_item const *op_items_find_by_op(ALUOp::Enum op, bool strict = true);
+op_item const *op_items_find_by_op(Enum op, bool strict = true);
 
 namespace Oper {
 
@@ -115,8 +117,11 @@ int num_operands(v3d_qpu_add_op op);
 
 } // namespace Oper
 
-std::string dump_add_op(enum v3d_qpu_add_op val);
-std::string dump_mul_op(enum v3d_qpu_add_op val);
+
+std::string dump_add_op(uint32_t val, bool &found_it);
+
+std::string translate_add_op(enum v3d_qpu_add_op val);
+std::string translate__mul_op(enum v3d_qpu_add_op val);
 
 }  // namespace V3DLib
 

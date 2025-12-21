@@ -214,7 +214,7 @@ bool Vec::apply(Op const &op, Vec a, Vec b) {
 
 bool Vec::apply(ALUOp const &op, Vec a, Vec b) {
   bool handled = true;
-  if (op.value() == ALUOp::NOP) return true;
+  if (op.value() == Enum::NOP) return true;
 
   // Floating-point operations
   for (int i = 0; i < NUM_LANES; i++) {
@@ -223,15 +223,15 @@ bool Vec::apply(ALUOp const &op, Vec a, Vec b) {
     float &d = elems[i].floatVal;
 
     switch (op.value()) {
-    case ALUOp::A_FADD:    d = x+y;                       break;
-    case ALUOp::A_FSUB:    d = x-y;                       break;
-    case ALUOp::A_FMIN:    d = x<y?x:y;                   break;
-    case ALUOp::A_FMAX:    d = x>y?x:y;                   break;
-    case ALUOp::A_FMINABS: d = fabs(x) < fabs(y) ? x : y; break; // min of absolute values
-    case ALUOp::A_FMAXABS: d = fabs(x) > fabs(y) ? x : y; break; // max of absolute values
-    case ALUOp::A_FtoI:    elems[i].intVal = (int) x;     break;
-    case ALUOp::A_ItoF:    d = (float) a[i].intVal;       break;
-    case ALUOp::M_FMUL:    d = x*y;                       break;
+    case Enum::A_FADD:    d = x+y;                       break;
+    case Enum::A_FSUB:    d = x-y;                       break;
+    case Enum::A_FMIN:    d = x<y?x:y;                   break;
+    case Enum::A_FMAX:    d = x>y?x:y;                   break;
+    case Enum::A_FMINABS: d = fabs(x) < fabs(y) ? x : y; break; // min of absolute values
+    case Enum::A_FMAXABS: d = fabs(x) > fabs(y) ? x : y; break; // max of absolute values
+    case Enum::A_FtoI:    elems[i].intVal = (int) x;     break;
+    case Enum::A_ItoF:    d = (float) a[i].intVal;       break;
+    case Enum::M_FMUL:    d = x*y;                       break;
 
     default:
       handled = false;
@@ -249,19 +249,19 @@ bool Vec::apply(ALUOp const &op, Vec a, Vec b) {
     int &d = elems[i].intVal;
 
     switch (op.value()) {
-    case ALUOp::A_ADD:   d = x+y;            break;
-    case ALUOp::A_SUB:   d = x-y;            break;
-    case ALUOp::A_ROR:   d = rotRight(x, y); break;
-    case ALUOp::A_SHL:   d = x<<y;           break;
-    case ALUOp::A_SHR:   d = (int32_t) (((uint32_t) x) >> y); break;
-    case ALUOp::A_ASR:   d = x >> y; break;
-    case ALUOp::A_MIN:   d = x<y?x:y;        break;
-    case ALUOp::A_MAX:   d = x>y?x:y;        break;
-    case ALUOp::A_BAND:  d = x&y;            break;
-    case ALUOp::A_BOR:   d = x|y;            break;
-    case ALUOp::A_BXOR:  d = x^y;            break;
-    case ALUOp::A_BNOT:  d = ~x; break;
-    case ALUOp::M_MUL24: {                           // Integer multiply (24-bit)
+    case Enum::A_ADD:   d = x+y;            break;
+    case Enum::A_SUB:   d = x-y;            break;
+    case Enum::A_ROR:   d = rotRight(x, y); break;
+    case Enum::A_SHL:   d = x<<y;           break;
+    case Enum::A_SHR:   d = (int32_t) (((uint32_t) x) >> y); break;
+    case Enum::A_ASR:   d = x >> y; break;
+    case Enum::A_MIN:   d = x<y?x:y;        break;
+    case Enum::A_MAX:   d = x>y?x:y;        break;
+    case Enum::A_BAND:  d = x&y;            break;
+    case Enum::A_BOR:   d = x|y;            break;
+    case Enum::A_BXOR:  d = x^y;            break;
+    case Enum::A_BNOT:  d = ~x; break;
+    case Enum::M_MUL24: {                           // Integer multiply (24-bit)
 			int x2 = (x & 0xffffff);  // Clip to 24 bits
 			int y2 = (y & 0xffffff);
 
@@ -277,15 +277,15 @@ bool Vec::apply(ALUOp const &op, Vec a, Vec b) {
 		}
 		break;
 
-    case ALUOp::A_CLZ:    d = clz(x);         break; // Count leading zeros
+    case Enum::A_CLZ:    d = clz(x);         break; // Count leading zeros
 
-    case ALUOp::A_V8ADDS:
-    case ALUOp::A_V8SUBS:
-    case ALUOp::M_V8MUL:
-    case ALUOp::M_V8MIN:
-    case ALUOp::M_V8MAX:
-    case ALUOp::M_V8ADDS:
-    case ALUOp::M_V8SUBS: {
+    case Enum::A_V8ADDS:
+    case Enum::A_V8SUBS:
+    case Enum::M_V8MUL:
+    case Enum::M_V8MIN:
+    case Enum::M_V8MAX:
+    case Enum::M_V8ADDS:
+    case Enum::M_V8SUBS: {
       cerr << "EmuSupport: unsupported operator " << op.value() << thrw;
     }
     break;
@@ -301,7 +301,7 @@ bool Vec::apply(ALUOp const &op, Vec a, Vec b) {
 
   // Other operations
   switch (op.value()) {
-    case ALUOp::M_ROTATE: { // Vector rotation
+    case Enum::M_ROTATE: { // Vector rotation
       assert(b.is_uniform());
       int n = b[0].intVal;
 

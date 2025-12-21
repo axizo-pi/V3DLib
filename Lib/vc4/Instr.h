@@ -1,7 +1,7 @@
 #ifndef _V3DLIB_VC4_INSTR_H_
 #define _V3DLIB_VC4_INSTR_H_
 #include <stdint.h>
-#include "Target/instr/Reg.h"
+#include "Target/instr/Instr.h"
 
 namespace V3DLib {
 namespace vc4 {
@@ -47,6 +47,10 @@ public:
 
     NUM_RF          = 32,
     UNIFORM_READ    = 32,      // rfA/B rd
+
+    ACC_START       = 33,
+    ACC_END         = 37,
+
     ELEMENT_NUMBER  = 38,      // rfA rd
     QPU_NUMBER      = 38,      // rfB rd
     HOST_INT        = 38,      // rfA/B wr
@@ -125,9 +129,9 @@ public:
     BR_SIZE = 16
   };
 
-  Encoding enc = NONE;
 
-  Signal sig = SOFTWARE_BREAKPOINT;
+  Encoding enc = NONE;
+  Signal sig = NO_SIGNAL;
 
   // Specific for ALU, ALU_IMMEDIATE
   Unpack unpack    = NO_UNPACK;
@@ -152,10 +156,7 @@ public:
   uint8_t op_add = 0;
 
   uint8_t raddr_a = NOP_R;
-  uint8_t raddr_b = NOP_R;
-
-  // specific for ALU_IMMEDIATE
-  uint8_t small_imm = 0;
+  uint8_t raddr_b = NOP_R;  // Doubles as small_int for ALU_IMMEDIATE
 
   uint8_t add_a = 0;
   uint8_t add_b = 0;
@@ -167,28 +168,14 @@ public:
   bool     sa        = false;  // increment if false, decrement if true
   uint32_t semaphore = 0;
 
+  void encode(Target::Instr const &instr);
   uint64_t encode() const;
+  std::string dump() const;
 
   static uint8_t encodeDestReg(Reg reg, RegTag* file);
   static uint8_t encodeSrcReg(Reg reg, RegTag file, uint8_t &mux);
 
-//==================================================
-
 private:
-
-  uint32_t addOp  = 0;
-  uint32_t mulOp  = 0;
-  uint32_t muxa   = 0;
-  uint32_t muxb   = 0;
-
-  uint32_t sema_id = 0;
-
-private:
-  uint32_t m_sig      = 14;   // 0xe0000000
-  uint32_t m_sem_flag = 0;    // TODO research what this is for, only used with SINC/SDEC
-
-
-
   uint32_t high() const;
   uint32_t low() const;
 };

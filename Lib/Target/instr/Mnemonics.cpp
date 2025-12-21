@@ -12,7 +12,7 @@ using namespace Target;
 
 namespace {
 
-Instr genInstr(ALUOp::Enum op, Reg dst, RegOrImm const &srcA, RegOrImm const &srcB) {
+Instr genInstr(Enum op, Reg dst, RegOrImm const &srcA, RegOrImm const &srcB) {
   dst.can_write(true);
   srcA.can_read(true);
   srcB.can_read(true);
@@ -27,7 +27,7 @@ Instr genInstr(ALUOp::Enum op, Reg dst, RegOrImm const &srcA, RegOrImm const &sr
 }
 
 
-Instr genInstr(ALUOp::Enum op, Reg dst, RegOrImm const &src) {
+Instr genInstr(Enum op, Reg dst, RegOrImm const &src) {
   dst.can_write(true);
 
   Instr instr(ALU);
@@ -70,7 +70,7 @@ Reg const ACC4_(ACC, 4);
 
 
 Instr _mov(Reg dst, RegOrImm const &src) {
-	return genInstr(ALUOp::A_MOV, dst, src); //.comment("_mov");
+	return genInstr(Enum::A_MOV, dst, src); //.comment("_mov");
 }
 
 }  // anon namespace
@@ -227,11 +227,11 @@ Instr::List mov(Reg dst, RegOrImm const &src) {
 
 
 // Generation of bitwise instructions
-Instr bor(Reg dst, RegOrImm const &srcA, RegOrImm const &srcB)  { return genInstr(ALUOp::A_BOR, dst, srcA, srcB); }
-Instr bor(Reg dst, RegOrImm const &src)   { return genInstr(ALUOp::A_BOR, dst, src, src); }
-Instr band(Reg dst, Reg srcA, Reg srcB)   { return genInstr(ALUOp::A_BAND, dst, srcA, srcB); }
-Instr band(Reg dst, Reg srcA, int n)      { return genInstr(ALUOp::A_BAND, dst, srcA, n); }
-Instr bxor(Var dst, RegOrImm srcA, int n) { return genInstr(ALUOp::A_BXOR, dst, srcA, n); }
+Instr bor(Reg dst, RegOrImm const &srcA, RegOrImm const &srcB)  { return genInstr(Enum::A_BOR, dst, srcA, srcB); }
+Instr bor(Reg dst, RegOrImm const &src)   { return genInstr(Enum::A_BOR, dst, src, src); }
+Instr band(Reg dst, Reg srcA, Reg srcB)   { return genInstr(Enum::A_BAND, dst, srcA, srcB); }
+Instr band(Reg dst, Reg srcA, int n)      { return genInstr(Enum::A_BAND, dst, srcA, n); }
+Instr bxor(Var dst, RegOrImm srcA, int n) { return genInstr(Enum::A_BXOR, dst, srcA, n); }
 
 
 /**
@@ -239,18 +239,18 @@ Instr bxor(Var dst, RegOrImm srcA, int n) { return genInstr(ALUOp::A_BXOR, dst, 
  */
 Instr shl(Reg dst, Reg srcA, int val) {
   assert(val >= 0 && val <= 15);
-  return genInstr(ALUOp::A_SHL, dst, srcA, val);
+  return genInstr(Enum::A_SHL, dst, srcA, val);
 }
 
 
 Instr shl(Reg dst, Reg srcA, Reg srcB) {
-  return genInstr(ALUOp::A_SHL, dst, srcA, srcB);
+  return genInstr(Enum::A_SHL, dst, srcA, srcB);
 }
 
 
 Instr shr(Reg dst, Reg srcA, int n) {
   assert(n >= 0 && n <= 15);
-  return genInstr(ALUOp::A_SHR, dst, srcA, n);
+  return genInstr(Enum::A_SHR, dst, srcA, n);
 }
 
 
@@ -258,35 +258,35 @@ Instr shr(Reg dst, Reg srcA, int n) {
  * Generate addition instruction.
  */
 Instr add(Reg dst, Reg srcA, Reg srcB) {
-  return genInstr(ALUOp::A_ADD, dst, srcA, srcB);
+  return genInstr(Enum::A_ADD, dst, srcA, srcB);
 }
 
 
 Instr add(Reg dst, Reg srcA, int n) {
   assert(n >= 0 && n <= 15);
-  return genInstr(ALUOp::A_ADD, dst, srcA, n);
+  return genInstr(Enum::A_ADD, dst, srcA, n);
 }
 
 
 Instr sub(Reg dst, Reg srcA, int n) {
   assert(n >= 0 && n <= 15);
-  return genInstr(ALUOp::A_SUB, dst, srcA, n);
+  return genInstr(Enum::A_SUB, dst, srcA, n);
 }
 
 
 Instr sub(Reg dst, int n, Reg srcA) {
   assert(n >= 0 && n <= 15);
-  return genInstr(ALUOp::A_SUB, dst, n, srcA);
+  return genInstr(Enum::A_SUB, dst, n, srcA);
 }
 
 
 Instr fmul(Reg dst, RegOrImm const &srcA, RegOrImm const &srcB) {
-  return genInstr(ALUOp::M_FMUL, dst, srcA, srcB);
+  return genInstr(Enum::M_FMUL, dst, srcA, srcB);
 }
 
 
 Instr fsub(Reg dst, RegOrImm const &srcA, RegOrImm const &srcB) {
-  return genInstr(ALUOp::A_FSUB, dst, srcA, srcB);
+  return genInstr(Enum::A_FSUB, dst, srcA, srcB);
 }
 
 
@@ -306,7 +306,7 @@ Instr li(Reg dst, Imm const &src) {
 }
 
 
-Instr itof(Reg dst, RegOrImm const &src) { return genInstr(ALUOp::A_ItoF, dst, src); }
+Instr itof(Reg dst, RegOrImm const &src) { return genInstr(Enum::A_ItoF, dst, src); }
 
 
 /**
@@ -325,8 +325,8 @@ Instr::List recipsqrt(Var dst, Var srcA) {
 	if (Platform::compiling_for_vc7()) {
 		Instr::List ret;
 
- 		// We also have ALUOp::A_RSQRT2d
- 		ret << genInstr(ALUOp::A_RSQRT, dst, srcA);
+ 		// We also have Enum::A_RSQRT2d
+ 		ret << genInstr(Enum::A_RSQRT, dst, srcA);
 
 		return ret;
 	} else {
@@ -341,7 +341,7 @@ Instr::List recipsqrt(Var dst, Var srcA) {
 Instr::List blog(Reg dst, RegOrImm const &srcA) {
 	if (Platform::compiling_for_vc7()) {
 		Instr::List ret;
- 		ret << genInstr(ALUOp::A_LOG, dst, srcA);
+ 		ret << genInstr(Enum::A_LOG, dst, srcA);
 		return ret;
 	} else {
 		return sfu_function(dst, srcA, SFU_LOG, "log");
@@ -352,7 +352,7 @@ Instr::List blog(Reg dst, RegOrImm const &srcA) {
 Instr::List recip(Reg dst, RegOrImm const &srcA) {
 	if (Platform::compiling_for_vc7()) {
 		Instr::List ret;
-  	ret << genInstr(ALUOp::A_RECIP, dst, srcA);
+  	ret << genInstr(Enum::A_RECIP, dst, srcA);
 		return ret;
 	} else {
 		return sfu_function(dst, srcA, SFU_RECIP    , "recip");
@@ -366,7 +366,7 @@ Instr::List recip(Reg dst, RegOrImm const &srcA) {
 Instr::List bexp(Var dst, RegOrImm const &srcA) {
 	if (Platform::compiling_for_vc7()) {
 		Instr::List ret;
- 		ret << genInstr(ALUOp::A_EXP, dst, srcA);
+ 		ret << genInstr(Enum::A_EXP, dst, srcA);
 		return ret;
 	} else {
 		return sfu_function(dst, srcA, SFU_EXP      , "exp");
@@ -417,7 +417,7 @@ Instr recv(Reg dst) {
  * v3d only
  */
 Instr tmuwt() {
-  return genInstr(ALUOp::A_TMUWT, None, None, None);
+  return genInstr(Enum::A_TMUWT, None, None, None);
 }
 
 

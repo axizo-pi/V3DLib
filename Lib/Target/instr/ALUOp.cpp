@@ -10,39 +10,39 @@ namespace V3DLib {
 namespace {
 
 std::vector<op_item> op_items = {
-  { ALUOp::A_FADD,   V3D_QPU_A_FADD },  // NOTE: ADD on mul alu is int only
-  { ALUOp::A_FSUB,   V3D_QPU_A_FSUB },  //       SUB on mul alu is int only
-  { ALUOp::A_FtoI,   V3D_QPU_A_FTOIN  },
-  { ALUOp::A_ItoF,   V3D_QPU_A_ITOF   },
-  { ALUOp::A_ADD,    V3D_QPU_A_ADD,   V3D_QPU_M_ADD },
-  { ALUOp::A_SUB,    V3D_QPU_A_SUB,   V3D_QPU_M_SUB },
-  { ALUOp::A_SHR,    V3D_QPU_A_SHR    },
-  { ALUOp::A_ASR,    V3D_QPU_A_ASR    },
-  { ALUOp::A_SHL,    V3D_QPU_A_SHL    },
-  { ALUOp::A_MIN,    V3D_QPU_A_MIN    },
-  { ALUOp::A_MAX,    V3D_QPU_A_MAX    },
-  { ALUOp::A_BAND,   V3D_QPU_A_AND    },
-  { ALUOp::A_BOR,    V3D_QPU_A_OR     },
-  { ALUOp::A_BXOR,   V3D_QPU_A_XOR    },
-  { ALUOp::A_BNOT,   V3D_QPU_A_NOT    },
-  { ALUOp::M_FMUL,   false,           V3D_QPU_M_FMUL },
-  { ALUOp::M_MUL24,  false,           V3D_QPU_M_SMUL24 },
-  { ALUOp::M_ROTATE, false,           V3D_QPU_M_MOV },     // < vc7:Special case: it's a mul alu mov with sig.rotate set
-  { ALUOp::A_TIDX,   V3D_QPU_A_TIDX   },
-  { ALUOp::A_EIDX,   V3D_QPU_A_EIDX   },
-  { ALUOp::A_FFLOOR, V3D_QPU_A_FFLOOR },
-  { ALUOp::A_FSIN,   V3D_QPU_A_SIN    },                   // NOTE: Extra NOP's and read in generation
-  { ALUOp::A_TMUWT,  V3D_QPU_A_TMUWT  },                   // NOTE: Extra NOP's and read in generation
+  { Enum::A_FADD,   V3D_QPU_A_FADD },  // NOTE: ADD on mul alu is int only
+  { Enum::A_FSUB,   V3D_QPU_A_FSUB },  //       SUB on mul alu is int only
+  { Enum::A_FtoI,   V3D_QPU_A_FTOIN  },
+  { Enum::A_ItoF,   V3D_QPU_A_ITOF   },
+  { Enum::A_ADD,    V3D_QPU_A_ADD,   V3D_QPU_M_ADD },
+  { Enum::A_SUB,    V3D_QPU_A_SUB,   V3D_QPU_M_SUB },
+  { Enum::A_SHR,    V3D_QPU_A_SHR    },
+  { Enum::A_ASR,    V3D_QPU_A_ASR    },
+  { Enum::A_SHL,    V3D_QPU_A_SHL    },
+  { Enum::A_MIN,    V3D_QPU_A_MIN    },
+  { Enum::A_MAX,    V3D_QPU_A_MAX    },
+  { Enum::A_BAND,   V3D_QPU_A_AND    },
+  { Enum::A_BOR,    V3D_QPU_A_OR     },
+  { Enum::A_BXOR,   V3D_QPU_A_XOR    },
+  { Enum::A_BNOT,   V3D_QPU_A_NOT    },
+  { Enum::M_FMUL,   false,           V3D_QPU_M_FMUL },
+  { Enum::M_MUL24,  false,           V3D_QPU_M_SMUL24 },
+  { Enum::M_ROTATE, false,           V3D_QPU_M_MOV },     // < vc7:Special case: it's a mul alu mov with sig.rotate set
+  { Enum::A_TIDX,   V3D_QPU_A_TIDX   },
+  { Enum::A_EIDX,   V3D_QPU_A_EIDX   },
+  { Enum::A_FFLOOR, V3D_QPU_A_FFLOOR },
+  { Enum::A_FSIN,   V3D_QPU_A_SIN    },                   // NOTE: Extra NOP's and read in generation
+  { Enum::A_TMUWT,  V3D_QPU_A_TMUWT  },                   // NOTE: Extra NOP's and read in generation
 
 	// v3d
-  { ALUOp::A_RSQRT,  V3D_QPU_A_RSQRT  },
+  { Enum::A_RSQRT,  V3D_QPU_A_RSQRT  },
 
 	// VC7
-  { ALUOp::A_MOV,    V3D_QPU_A_MOV    },
-  { ALUOp::A_EXP,    V3D_QPU_A_EXP    },
-  {	ALUOp::A_RECIP,  V3D_QPU_A_RECIP  },
+  { Enum::A_MOV,    V3D_QPU_A_MOV    },
+  { Enum::A_EXP,    V3D_QPU_A_EXP    },
+  {	Enum::A_RECIP,  V3D_QPU_A_RECIP  },
 
-  { ALUOp::A_LOG,    V3D_QPU_A_LOG    },
+  { Enum::A_LOG,    V3D_QPU_A_LOG    },
 };
 
 
@@ -52,7 +52,7 @@ void op_items_check_sorted() {
   if (checked) return;
 
   bool did_first = false;
-  ALUOp::Enum previous;
+  Enum previous;
 
   for (auto const &item : op_items) {
     if (!did_first) {
@@ -72,7 +72,7 @@ void op_items_check_sorted() {
 /**
  * Derived from (iterative version): https://iq.opengenus.org/binary-search-in-cpp/
  */
-int op_items_binary_search(int left, int right, ALUOp::Enum needle) {
+int op_items_binary_search(int left, int right, Enum needle) {
   while (left <= right) { 
     int middle = (left + right) / 2; 
 
@@ -110,31 +110,13 @@ bool ALUOp::isMul() const {
 
 
 std::string ALUOp::dump() const {
+  bool found_it;
+  std::string ret = dump_add_op(m_value, found_it);
+
+  if (found_it) return ret;
+
   switch (m_value) {
-    case NOP:       return "nop";
-    case A_FADD:    return "addf";
-    case A_FSUB:    return "subf";
-    case A_FMIN:    return "minf";
-    case A_FMAX:    return "maxf";
-    case A_FMINABS: return "minabsf";
-    case A_FMAXABS: return "maxabsf";
-    case A_FtoI:    return "ftoi";
-    case A_ItoF:    return "itof";
-    case A_ADD:     return "add";
-    case A_SUB:     return "sub";
-    case A_SHR:     return "shr";
-    case A_ASR:     return "asr";
-    case A_ROR:     return "ror";
-    case A_SHL:     return "shl";
-    case A_MIN:     return "min";
-    case A_MAX:     return "max";
-    case A_BAND:    return "and";
-    case A_BOR:     return "or";
-    case A_BXOR:    return "xor";
-    case A_BNOT:    return "not";
-    case A_CLZ:     return "clz";
-    case A_V8ADDS:  return "addsatb";
-    case A_V8SUBS:  return "subsatb";
+    // mul ops
     case M_FMUL:    return "fmul";
     case M_MUL24:   return "mul24";
     case M_V8MUL:   return "mulb";
@@ -142,8 +124,9 @@ std::string ALUOp::dump() const {
     case M_V8MAX:   return "maxb";
     case M_V8ADDS:  return "m_addsatb";
     case M_V8SUBS:  return "m_subsatb";
-    case M_ROTATE:  return "rotate";
 
+    // Not part of vc4 mul ops
+    case M_ROTATE:  return "rotate";
     case A_LOG:     return "log";
 
     // v3d-specific
@@ -172,9 +155,6 @@ uint8_t ALUOp::vc4_encodeAddOp() const {
 // Here is the reason vc4 wasn't working!!!!
 /////////////////////////////////////////////////////////
 
-/* <<<<<<<<<<<<<<<<<<<<<<<<
-  if (NOP <= m_value && m_value <= A_V8SUBS) return m_value;
-   ======================== */
   switch (m_value) {
     case NOP:       return 0;
     case A_FADD:    return 1;
@@ -213,10 +193,6 @@ uint8_t ALUOp::vc4_encodeMulOp() const {
 // Here is the second reason vc4 wasn't working!!!!
 /////////////////////////////////////////////////////////
 
-/* <<<<<<<<<<<<<<<<<<<<<<<<
-  if (m_value == NOP) return NOP;
-  if (isMul() && m_value != M_ROTATE) return m_value - M_FMUL; 
-   ======================== */
   switch (m_value) {
     case NOP:      return 0;
     case M_FMUL:   return 1;
@@ -226,28 +202,22 @@ uint8_t ALUOp::vc4_encodeMulOp() const {
     case M_V8MAX:  return 5;
     case M_V8ADDS: return 6;
     case M_V8SUBS: return 7;
-/* >>>>>>>>>>>>>>>>>>>>>>>> */
 
-/* <<<<<<<<<<<<<<<<<<<<<<<<
-  fatal("V3DLib: unknown MUL op");
-  return 0;
-   ======================== */
     default:
       fatal("V3DLib: unknown mul op");
       return 0;
   }
-/* >>>>>>>>>>>>>>>>>>>>>>>> */
 }
 
 
-op_item::op_item(ALUOp::Enum in_op, v3d_qpu_add_op in_add_op) :
+op_item::op_item(Enum in_op, v3d_qpu_add_op in_add_op) :
   op(in_op),
   has_add_op(true),
   add_op(in_add_op)
 {}
 
 
-op_item::op_item(ALUOp::Enum in_op, bool in_add_op, v3d_qpu_mul_op in_mul_op) :
+op_item::op_item(Enum in_op, bool in_add_op, v3d_qpu_mul_op in_mul_op) :
   op(in_op),
   has_mul_op(true),
   mul_op(in_mul_op)
@@ -256,7 +226,7 @@ op_item::op_item(ALUOp::Enum in_op, bool in_add_op, v3d_qpu_mul_op in_mul_op) :
 }
 
 
-op_item::op_item(ALUOp::Enum in_op, v3d_qpu_add_op in_add_op, v3d_qpu_mul_op in_mul_op) :
+op_item::op_item(Enum in_op, v3d_qpu_add_op in_add_op, v3d_qpu_mul_op in_mul_op) :
   op(in_op),
   has_add_op(true),
   add_op(in_add_op),
@@ -265,7 +235,7 @@ op_item::op_item(ALUOp::Enum in_op, v3d_qpu_add_op in_add_op, v3d_qpu_mul_op in_
 {}
 
 
-op_item const *op_items_find_by_op(ALUOp::Enum op, bool strict) {
+op_item const *op_items_find_by_op(Enum op, bool strict) {
 	assert(!Platform::compiling_for_vc4());
 
   op_items_check_sorted();
@@ -317,9 +287,55 @@ int num_operands(v3d_qpu_add_op op) {
 
 } // namespace Oper
 
+
+/**
+ * Convert ALUOp enum to string representation
+ */
+std::string dump_add_op(uint32_t val, bool &found_it) {
+  found_it = true;
+
+  switch (val) {
+    // There is a 1-to-1 correspondence with the vc4 add opcodes here.
+    // It should be no problem to use them for vc4 instructions directly.
+    case NOP:       return "nop";
+    case A_FADD:    return "addf";
+    case A_FSUB:    return "subf";
+    case A_FMIN:    return "minf";
+    case A_FMAX:    return "maxf";
+    case A_FMINABS: return "minabsf";
+    case A_FMAXABS: return "maxabsf";
+    case A_FtoI:    return "ftoi";
+    case A_ItoF:    return "itof";
+    case A_ADD:     return "add";
+    case A_SUB:     return "sub";
+    case A_SHR:     return "shr";
+    case A_ASR:     return "asr";
+    case A_ROR:     return "ror";
+    case A_SHL:     return "shl";
+    case A_MIN:     return "min";
+    case A_MAX:     return "max";
+    case A_BAND:    return "and";
+    case A_BOR:     return "or";
+    case A_BXOR:    return "xor";
+    case A_BNOT:    return "not";
+    case A_CLZ:     return "clz";
+    case A_V8ADDS:  return "addsatb";
+    case A_V8SUBS:  return "subsatb";
+
+    default:
+      found_it = false;
+      return "Unknown";
+  }
+}
+
+
 #define CASE(l)  case V3D_QPU_##l: ret = #l; break;
 
-std::string dump_add_op(enum v3d_qpu_add_op val) {
+/**
+ * Translate v3d add op to string rep of ALUOp enum.
+ * Not particularly useful and not used.
+ */
+std::string translate_add_op(enum v3d_qpu_add_op val) {
 	std::string ret;
 
   switch (val) {
@@ -432,7 +448,11 @@ std::string dump_add_op(enum v3d_qpu_add_op val) {
 }
 
 
-std::string dump_mul_op(enum v3d_qpu_mul_op val) {
+/**
+ * Translate v3d mul op to string rep of ALUOp enum.
+ * Not particularly useful and not used.
+ */
+std::string translate_mul_op(enum v3d_qpu_mul_op val) {
 	std::string ret;
 
   switch (val) {

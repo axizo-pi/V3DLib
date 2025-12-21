@@ -7,45 +7,45 @@ namespace V3DLib {
 namespace {
 
 std::vector<OpItem> m_list = {
-  {ADD,    "+",        false, ALUOp::A_FADD,   ALUOp::A_ADD},
-  {SUB,    "-",        false, ALUOp::A_FSUB,   ALUOp::A_SUB},
-  {MUL,    "*",        false, ALUOp::M_FMUL,   ALUOp::M_MUL24},
-  {MIN,    " min ",    false, ALUOp::A_FMIN,   ALUOp::A_MIN},
-  {MAX,    " max ",    false, ALUOp::A_FMAX,   ALUOp::A_MAX},
-  {ItoF,   "(Float) ", false, ALUOp::A_ItoF,   ALUOp::NONE,    false, 1},
-  {FtoI,   "(Int) ",   false, ALUOp::NONE,     ALUOp::A_FtoI,  false, 1},
-  {ROTATE, " rotate ", false, ALUOp::M_ROTATE, ALUOp::M_ROTATE},
-  {SHL,    " << ",     false, ALUOp::NONE,     ALUOp::A_SHL},
-  {SHR,    " >> ",     false, ALUOp::NONE,     ALUOp::A_ASR},
-  {USHR,   " _>> ",    false, ALUOp::NONE,     ALUOp::A_SHR},
-  {ROR,    " ror ",    false, ALUOp::NONE,     ALUOp::A_ROR},
-  {BAND,   " & ",      false, ALUOp::NONE,     ALUOp::A_BAND},
-  {BOR,    " | ",      false, ALUOp::NONE,     ALUOp::A_BOR},
-  {BXOR,   " ^ ",      false, ALUOp::NONE,     ALUOp::A_BXOR},
-  {BNOT,   "~",        false, ALUOp::NONE,     ALUOp::A_BNOT, false, 1},
+  {ADD,    "+",        false, Enum::A_FADD,   Enum::A_ADD},
+  {SUB,    "-",        false, Enum::A_FSUB,   Enum::A_SUB},
+  {MUL,    "*",        false, Enum::M_FMUL,   Enum::M_MUL24},
+  {MIN,    " min ",    false, Enum::A_FMIN,   Enum::A_MIN},
+  {MAX,    " max ",    false, Enum::A_FMAX,   Enum::A_MAX},
+  {ItoF,   "(Float) ", false, Enum::A_ItoF,   Enum::OP_UNDEFINED,    false, 1},
+  {FtoI,   "(Int) ",   false, Enum::OP_UNDEFINED,     Enum::A_FtoI,  false, 1},
+  {ROTATE, " rotate ", false, Enum::M_ROTATE, Enum::M_ROTATE},
+  {SHL,    " << ",     false, Enum::OP_UNDEFINED,     Enum::A_SHL},
+  {SHR,    " >> ",     false, Enum::OP_UNDEFINED,     Enum::A_ASR},
+  {USHR,   " _>> ",    false, Enum::OP_UNDEFINED,     Enum::A_SHR},
+  {ROR,    " ror ",    false, Enum::OP_UNDEFINED,     Enum::A_ROR},
+  {BAND,   " & ",      false, Enum::OP_UNDEFINED,     Enum::A_BAND},
+  {BOR,    " | ",      false, Enum::OP_UNDEFINED,     Enum::A_BOR},
+  {BXOR,   " ^ ",      false, Enum::OP_UNDEFINED,     Enum::A_BXOR},
+  {BNOT,   "~",        false, Enum::OP_UNDEFINED,     Enum::A_BNOT, false, 1},
 
   // v3d-specific
-  {FFLOOR, "ffloor",    true, ALUOp::A_FFLOOR, ALUOp::NONE,   true, 1},
-  {SIN,    "sin",       true, ALUOp::A_FSIN,   ALUOp::NONE,   true, 1},  // also SFU function
-  {TIDX,   "tidx",     false, ALUOp::NONE,     ALUOp::A_TIDX, true, 0},
-  {EIDX,   "eidx",     false, ALUOp::NONE,     ALUOp::A_EIDX, true, 0},
+  {FFLOOR, "ffloor",    true, Enum::A_FFLOOR, Enum::OP_UNDEFINED,   true, 1},
+  {SIN,    "sin",       true, Enum::A_FSIN,   Enum::OP_UNDEFINED,   true, 1},  // also SFU function
+  {TIDX,   "tidx",     false, Enum::OP_UNDEFINED,     Enum::A_TIDX, true, 0},
+  {EIDX,   "eidx",     false, Enum::OP_UNDEFINED,     Enum::A_EIDX, true, 0},
 
   // SFU functions
-  {RECIP,     "recip",     true, ALUOp::A_RECIP, ALUOp::NONE, false, 1},
-  {RECIPSQRT, "recipsqrt", true, ALUOp::A_RSQRT, ALUOp::NONE, false, 1},
-  {EXP,       "exp",       true, ALUOp::A_EXP,   ALUOp::NONE, false, 1},
-  {LOG,       "log",       true, ALUOp::A_LOG,   ALUOp::NONE, false, 1},
+  {RECIP,     "recip",     true, Enum::A_RECIP, Enum::OP_UNDEFINED, false, 1},
+  {RECIPSQRT, "recipsqrt", true, Enum::A_RSQRT, Enum::OP_UNDEFINED, false, 1},
+  {EXP,       "exp",       true, Enum::A_EXP,   Enum::OP_UNDEFINED, false, 1},
+  {LOG,       "log",       true, Enum::A_LOG,   Enum::OP_UNDEFINED, false, 1},
 
 	// Derived instructions
-  {EXP_E,     "exp_e",     true, ALUOp::NONE,    ALUOp::NONE, false, 1},
+  {EXP_E,     "exp_e",     true, Enum::OP_UNDEFINED,    Enum::OP_UNDEFINED, false, 1},
 
 	//
 	// Following are not direct instructions in the source language
 	//
-  {_DUMMY,    "",         false, ALUOp::A_TMUWT, ALUOp::NONE, false, 0},
-  {_DUMMY,    "",         false, ALUOp::A_TIDX,  ALUOp::NONE, false, 0},
-  {_DUMMY,    "",         false, ALUOp::A_EIDX,  ALUOp::NONE, false, 0},
-  {_DUMMY,    "",         false, ALUOp::A_MOV,   ALUOp::NONE, false, 1},
+  {_DUMMY,    "",         false, Enum::A_TMUWT, Enum::OP_UNDEFINED, false, 0},
+  {_DUMMY,    "",         false, Enum::A_TIDX,  Enum::OP_UNDEFINED, false, 0},
+  {_DUMMY,    "",         false, Enum::A_EIDX,  Enum::OP_UNDEFINED, false, 0},
+  {_DUMMY,    "",         false, Enum::A_MOV,   Enum::OP_UNDEFINED, false, 1},
 };
 
 }  // anon namespace
@@ -58,8 +58,8 @@ OpItem::OpItem(
   OpId in_tag,
   char const *in_str,
   bool in_is_function,
-  ALUOp::Enum in_aluop_float,
-  ALUOp::Enum in_aluop_int,
+  Enum in_aluop_float,
+  Enum in_aluop_int,
   bool in_v3d_specific,
   int in_num_params
 ) :
@@ -79,12 +79,12 @@ int OpItem::num_params() const {
 }
 
 
-ALUOp::Enum OpItem::aluop_float() const {
+Enum OpItem::aluop_float() const {
   return m_aluop_float;
 }
 
 
-ALUOp::Enum OpItem::aluop_int() const {
+Enum OpItem::aluop_int() const {
   return m_aluop_int;
 }
 
@@ -142,7 +142,7 @@ OpItem const &get(OpId id) {
 /**
  * Translate source operator to target opcode
  */
-ALUOp::Enum opcode(Op const &op) {
+Enum opcode(Op const &op) {
   auto const *item = find(op.op);
 
   if (item == nullptr) {
@@ -151,7 +151,7 @@ ALUOp::Enum opcode(Op const &op) {
     } else {
       assertq(false, "opcode(): Unhandled op for int", true);
     }
-    return ALUOp::NOP;
+    return Enum::NOP;
   }
 
   if (item->v3d_specific()) {
@@ -170,9 +170,9 @@ ALUOp::Enum opcode(Op const &op) {
 }
 
 
-int num_operands_by_op(ALUOp::Enum op) {
-	assert(op != ALUOp::NONE);
-	assert(op != ALUOp::NOP);
+int num_operands_by_op(Enum op) {
+	assert(op != Enum::OP_UNDEFINED);
+	assert(op != Enum::NOP);
 
 	int num = -1;
   for (auto &it : m_list) {

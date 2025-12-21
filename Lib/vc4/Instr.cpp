@@ -1,8 +1,82 @@
 #include "Instr.h"
 #include "Support/basics.h"  // fatal()
-//#include <cassert>
+#include "global/log.h"
+
+using namespace Log;
 
 namespace V3DLib {
+namespace {
+
+/**
+ * Handle case where there are two source operands
+ *
+ * This is fairly convoluted stuff; apparently there are rules with regfile A/B usage
+ * which I am not aware of.
+ */
+void encode_operands(vc4::Instr &instr, RegOrImm const &srcA, RegOrImm const &srcB) {
+  uint8_t muxa, muxb;
+  uint8_t raddr_a = 0, raddr_b = 0;
+
+  if (srcA.is_reg() && srcB.is_reg()) { // Both operands are registers
+    RegTag aFile = srcA.reg().regfile();
+    RegTag aTag  = srcA.reg().tag;
+
+    RegTag bFile = srcB.reg().regfile();
+
+    // If operands are the same register
+    if (aTag != NONE && srcA == srcB) {
+      if (aFile == REG_A) {
+        raddr_a = vc4::Instr::encodeSrcReg(srcA.reg(), REG_A, muxa);
+        muxb = muxa;
+      } else {
+        raddr_b = vc4::Instr::encodeSrcReg(srcA.reg(), REG_B, muxa);
+        muxb = muxa;
+      }
+    } else {
+      // Operands are different registers
+      assert(aFile == NONE || bFile == NONE || aFile != bFile);  // TODO examine why aFile == bFile is disallowed here
+      if (aFile == REG_A || bFile == REG_B) {
+        raddr_a = vc4::Instr::encodeSrcReg(srcA.reg(), REG_A, muxa);
+        raddr_b = vc4::Instr::encodeSrcReg(srcB.reg(), REG_B, muxb);
+      } else {
+        raddr_a = vc4::Instr::encodeSrcReg(srcB.reg(), REG_A, muxb);
+        raddr_b = vc4::Instr::encodeSrcReg(srcA.reg(), REG_B, muxa);
+      }
+    }
+  } else if (srcA.is_imm() || srcB.is_imm()) {
+    if (srcA.is_imm() && srcB.is_imm()) {
+      assertq(srcA.imm() == srcB.imm(),
+        "srcA and srcB can not both be immediates with different values", true);
+
+      raddr_b = srcA.encode();  // srcB is the same
+      muxa   = vc4::Instr::MUX_B;
+      muxb   = vc4::Instr::MUX_B;
+    } else if (srcB.is_imm()) {
+      // Second operand is a small immediate
+      raddr_a = vc4::Instr::encodeSrcReg(srcA.reg(), REG_A, muxa);
+      raddr_b = srcB.encode();
+      muxb   = vc4::Instr::MUX_B;
+    } else if (srcA.is_imm()) {
+      // First operand is a small immediate
+      raddr_a = vc4::Instr::encodeSrcReg(srcB.reg(), REG_A, muxb);
+      raddr_b = srcA.encode();
+      muxa   = vc4::Instr::MUX_B;
+    } else {
+      assert(false);  // Not expecting this
+    }
+  } else {
+    assert(false);  // Not expecting this
+  }
+
+  instr.raddr_a  = raddr_a;
+  instr.raddr_b  = raddr_b;
+  instr.add_a    = muxa;
+  instr.add_b    = muxb;
+}
+
+} // anon namespace
+
+
 namespace vc4 {
 
 uint32_t Instr::high() const {
@@ -74,15 +148,12 @@ uint32_t Instr::low() const {
         |  (raddr_a << 18) | (raddr_b << 12);
   }
 
-  if (enc == ALU) {
+  if (enc == ALU ||enc == ALU_SMALL_IMM) {
     assert(raddr_b < 64);
     ret |= (raddr_b << 12);
-  } else if (enc == ALU_SMALL_IMM) {
-    assert(small_imm < 64);
-    ret |= (small_imm << 12);
   }
 
-  if ((enc == BRANCH_ENC) || (enc == LOAD_IMM)) {
+  if ((enc == BRANCH_ENC) || enc == LOAD_IMM) {
     ret |= (immediate);
   }
 
@@ -141,7 +212,7 @@ uint8_t Instr::encodeDestReg(Reg reg, RegTag* file) {
       // See NOTES in header comment
       assert(reg.regId >= 0 && reg.regId <= 5); // !! ACC4 is TMP_NOSWAP, *not* r4
       *file = reg.regId == 5 ? REG_B : AorB; 
-      return (uint8_t) (NUM_RF + reg.regId);
+      return (uint8_t) (ACC_START + reg.regId);
 
     case SPECIAL:
       switch (reg.regId) {
@@ -257,6 +328,236 @@ uint8_t Instr::encodeSrcReg(Reg reg, RegTag file, uint8_t &mux) {
       fatal("V3DLib: missing case in encodeSrcReg");
       return 0;
   }
+}
+
+
+void Instr::encode(Target::Instr const &instr) {
+
+  switch (instr.tag) {
+    case Target::ALU: {
+      auto &alu = instr.ALU;
+
+      RegTag file;
+      uint8_t dest = encodeDestReg(instr.dest(), &file);
+
+      if (alu.op.isMul()) {
+        cond_mul  = instr.assign_cond().encode();
+        waddr_mul = dest;
+        ws        = (file != REG_B);
+      } else {
+        cond_add  = instr.assign_cond().encode();
+        waddr_add = dest;
+        ws        = (file != REG_A);
+      }
+
+      sf = (instr.set_cond().flags_set());
+
+      if (alu.op.isRot()) {
+        breakpoint;
+        assert(alu.srcA.is_reg() && alu.srcA.reg().tag == ACC && alu.srcA.reg().regId == 0);
+        assert(!alu.srcB.is_reg() || (alu.srcB.reg().tag == ACC && alu.srcB.reg().regId == 5));
+        uint8_t _raddr_b = 48;
+
+        if (!alu.srcB.is_reg()) {  // i.e. value is an imm
+
+// Grumbl mofo compiler insists that n is int
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+          uint8_t n = alu.srcB.encode();
+          assert(n >= 1 || n <= 15);
+          _raddr_b += n;
+#pragma GCC diagnostic pop
+
+        }
+
+        enc     = ALU_SMALL_IMM;
+        op_mul  = ALUOp(Enum::M_V8MIN).vc4_encodeMulOp();
+        raddr_b = _raddr_b;
+      } else {
+        if (instr.hasImm()) {
+          enc  = ALU_SMALL_IMM;
+        } else {
+          enc  = ALU;
+        }
+
+        op_mul = (alu.op.isMul() ? alu.op.vc4_encodeMulOp() : 0);
+        op_add = (alu.op.isMul() ? 0 : alu.op.vc4_encodeAddOp());
+        encode_operands(*this, alu.srcA, alu.srcB);
+      }
+    }
+    break;
+
+    case Target::LI: {
+      auto &li = instr.LI;
+      RegTag file;
+
+      enc       = vc4::Instr::LOAD_IMM;
+      cond_add  = instr.assign_cond().encode();
+      waddr_add = vc4::Instr::encodeDestReg(instr.dest(), &file);
+      ws        = (file != REG_A);
+      immediate = li.imm.encode();
+      sf        = instr.set_cond().flags_set();
+
+      breakpoint;
+    }
+    break;
+
+    default:
+      // Deal with other options as they come
+      warn << "Target tag not dealt with yet, examine";
+      breakpoint;
+      break;
+  }
+
+  warn << instr.dump();
+  warn << dump();
+}
+
+
+std::string Instr::dump() const {
+  std::string ret;
+
+  auto mux_to_str = [*this] (uint8_t mux) -> std::string {
+    std::string ret;
+
+    if (mux == MUX_A) {
+      if (raddr_a == 32) {
+        ret << "unif";
+      } else if (raddr_a == 38) {
+        ret << "elem_num";
+      } else {
+        ret << "rfa" << raddr_a;
+      }
+    } else if (mux == MUX_B) {
+      if (enc == ALU_SMALL_IMM) {
+        // This should actually be converted to representation value
+        ret << raddr_b;
+      } else {
+        if (raddr_b == 32) {
+          ret << "unif";
+        } else if (raddr_b == 38) {
+          ret << "qpu_num";
+        } else {
+          ret << "rfb" << raddr_b;
+        }
+      }
+    } else {
+      ret << "a" << mux;
+    }
+
+    return ret;
+  };
+
+
+  auto waddr_to_str = [*this] (uint8_t waddr, bool do_a) -> std::string {
+    std::string ret;
+
+    if (ACC_START <= waddr && waddr <= ACC_END) {
+      ret << "a" << (waddr - ACC_START);
+      return ret;
+    }
+
+    if (waddr == 32) {
+      ret << "unif";
+      return ret;
+    }
+
+    if (do_a) {
+      if (ws) {
+        ret << "rfb";
+      } else {
+        ret << "rfa";
+      }
+    } else {
+      if (ws) {
+        ret << "rfa";
+      } else {
+        ret << "rfb";
+      }
+    }
+
+    ret << waddr; 
+
+    return ret;
+  };
+
+  ret << "enc: ";
+  switch (enc) {
+  case NONE:          ret << "NONE";          break;
+  case ALU:           ret << "ALU";           break;
+  case ALU_SMALL_IMM: ret << "ALU_SMALL_IMM"; break;
+  case LOAD_IMM:      ret << "LOAD_IMM";      break;
+
+  default:
+    ret << enc;
+    break;
+  }
+
+  if (enc == LOAD_IMM) {
+    ret << " " << immediate;
+  } else {
+    bool found_it;
+    std::string op;
+
+    if (op_add != 0) {
+      op = dump_add_op(op_add, found_it);
+      ret << " add: " << op << "("
+          << waddr_to_str(waddr_add, true) << ", "
+          << mux_to_str(add_a)             << ", "
+          << mux_to_str(add_b)             << ")";
+
+    } else {
+      ret << " op_add: NOP";
+    }
+
+    if (op_mul != 0) {
+      //op = dump_add_op(op_add, found_it);
+      ret << " mul: TODO" << "("
+          << waddr_to_str(waddr_mul, false) << ", "
+          << mux_to_str(mul_a)              << ", "
+          << mux_to_str(mul_b)              << ")";
+    } else {
+      ret << " mul: NOP";
+    }
+  }
+
+  if (sig != NO_SIGNAL)    ret << " sig: " << sig;
+  if (unpack != NO_UNPACK) ret << " unpack: " << unpack; // Specific for ALU, ALU_IMMEDIATE
+  if (pack != NO_PACK)     ret << " pack: " << pack;
+
+  if (pm)  ret << " pm";
+  if (sf)  ret << " sf";
+  if (ws)  ret << " ws";
+  if (rel) ret << " rel";
+  if (reg) ret << " reg";
+  if (sa)  ret << " sa";
+
+
+/*
+  uint8_t cond_add = 0;
+  uint8_t cond_mul = 0;
+
+
+  // Specific for branch
+  BranchCondition cond_br = ALWAYS;
+
+  uint8_t waddr_add = NOP_R;
+  uint8_t waddr_mul = NOP_R;
+
+  uint8_t op_mul = 0;
+  uint8_t op_add = 0;
+
+  uint8_t raddr_a = NOP_R;
+  uint8_t raddr_b = NOP_R;
+
+  // specific for ALU_IMMEDIATE
+  uint8_t small_imm = 0;
+
+  uint32_t immediate = 0;
+
+  uint32_t semaphore = 0;
+*/
+  return ret;
 }
 
 }  // namespace vc4

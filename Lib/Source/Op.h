@@ -62,7 +62,7 @@ struct Op {
   std::string disp(std::string const &lhs, std::string const &rhs) const;
   std::string dump() const;
 
-  ALUOp::Enum opcode() const;
+  Enum opcode() const;
 
 private:
   OpItem const &m_item;
