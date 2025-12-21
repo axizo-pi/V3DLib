@@ -37,7 +37,7 @@ struct BranchCond {
   BranchCond negate() const;
   bool is_always() const { return tag == COND_ALWAYS; }
 
-  uint32_t encode() const;
+  uint8_t encode() const;
   std::string to_string() const;
 };
 
@@ -97,7 +97,7 @@ struct AssignCond {
   bool operator==(AssignCond rhs) const { return (tag == rhs.tag && flag == rhs.flag); }
   bool operator!=(AssignCond rhs) const { return !(*this == rhs); }
 
-  uint32_t encode() const;
+  uint8_t encode() const;
   std::string to_string() const;
   BranchCond to_branch_cond(bool do_all) const;
 };

@@ -24,19 +24,14 @@ Reg RegOrImm::reg() const             { assert(is_reg()); return m_reg; }
 Imm &RegOrImm::imm()                  { assert(is_imm()); return m_imm; }
 Imm RegOrImm::imm() const             { assert(is_imm()); return m_imm; }
 
-/*
-EncodedSmallImm &RegOrImm::imm()      { assert(is_imm()); return m_smallImm; }
-EncodedSmallImm RegOrImm::imm() const { assert(is_imm()); return m_smallImm; }
-*/
 
-uint32_t RegOrImm::encode() const {
+uint8_t RegOrImm::encode() const {
   assert(Platform::compiling_for_vc4() || Platform::running_emulator());
   assert(is_imm());
 
   //warn << "encode() imm: " << m_imm.dump();
 
   int ret = m_imm.encode_imm();
-
   //warn << "encode() ret: " << hex << ret;
 
   if (ret == -1) {
@@ -48,7 +43,8 @@ uint32_t RegOrImm::encode() const {
   // input should be in the encode range for target platforms
   assert(v3d::instr::SmallImm::is_legal_encoded_value(ret));
 
-  return (uint32_t) ret;
+  assert(ret >= 0);
+  return (uint8_t) ret;
 }
 
 

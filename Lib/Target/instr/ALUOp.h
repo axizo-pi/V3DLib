@@ -85,8 +85,8 @@ public:
   bool isMul() const;
   std::string dump() const;
 
-  uint32_t vc4_encodeAddOp() const;
-  uint32_t vc4_encodeMulOp() const;
+  uint8_t vc4_encodeAddOp() const;
+  uint8_t vc4_encodeMulOp() const;
 
   bool operator==(ALUOp::Enum rhs) const { return m_value == rhs; }
 

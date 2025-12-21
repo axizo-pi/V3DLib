@@ -52,9 +52,9 @@ void convertInstr(Target::Instr &instr) {
  * This is fairly convoluted stuff; apparently there are rules with regfile A/B usage
  * which I am not aware of.
  */
-void encode_operands(Instr &vc4_instr, RegOrImm const &srcA, RegOrImm const &srcB) {
-  uint32_t muxa, muxb;
-  uint32_t raddra = 0, raddrb;
+void encode_operands(Instr &instr, RegOrImm const &srcA, RegOrImm const &srcB) {
+  uint8_t muxa, muxb;
+  uint8_t raddr_a = 0, raddr_b = 0;
 
   if (srcA.is_reg() && srcB.is_reg()) { // Both operands are registers
     RegTag aFile = srcA.reg().regfile();
@@ -65,23 +65,21 @@ void encode_operands(Instr &vc4_instr, RegOrImm const &srcA, RegOrImm const &src
     // If operands are the same register
     if (aTag != NONE && srcA == srcB) {
       if (aFile == REG_A) {
-        raddra = vc4::Instr::encodeSrcReg(srcA.reg(), REG_A, &muxa);
-        raddrb = Instr::NOP_R;
+        raddr_a = vc4::Instr::encodeSrcReg(srcA.reg(), REG_A, muxa);
         muxb = muxa;
       } else {
-        raddra = Instr::NOP_R;
-        raddrb = vc4::Instr::encodeSrcReg(srcA.reg(), REG_B, &muxa);
+        raddr_b = vc4::Instr::encodeSrcReg(srcA.reg(), REG_B, muxa);
         muxb = muxa;
       }
     } else {
       // Operands are different registers
       assert(aFile == NONE || bFile == NONE || aFile != bFile);  // TODO examine why aFile == bFile is disallowed here
       if (aFile == REG_A || bFile == REG_B) {
-        raddra = vc4::Instr::encodeSrcReg(srcA.reg(), REG_A, &muxa);
-        raddrb = vc4::Instr::encodeSrcReg(srcB.reg(), REG_B, &muxb);
+        raddr_a = vc4::Instr::encodeSrcReg(srcA.reg(), REG_A, muxa);
+        raddr_b = vc4::Instr::encodeSrcReg(srcB.reg(), REG_B, muxb);
       } else {
-        raddra = vc4::Instr::encodeSrcReg(srcB.reg(), REG_A, &muxb);
-        raddrb = vc4::Instr::encodeSrcReg(srcA.reg(), REG_B, &muxa);
+        raddr_a = vc4::Instr::encodeSrcReg(srcB.reg(), REG_A, muxb);
+        raddr_b = vc4::Instr::encodeSrcReg(srcA.reg(), REG_B, muxa);
       }
     }
   } else if (srcA.is_imm() || srcB.is_imm()) {
@@ -89,18 +87,18 @@ void encode_operands(Instr &vc4_instr, RegOrImm const &srcA, RegOrImm const &src
       assertq(srcA.imm() == srcB.imm(),
         "srcA and srcB can not both be immediates with different values", true);
 
-      raddrb = srcA.encode();  // srcB is the same
+      raddr_b = srcA.encode();  // srcB is the same
       muxa   = Instr::MUX_B;
       muxb   = Instr::MUX_B;
     } else if (srcB.is_imm()) {
       // Second operand is a small immediate
-      raddra = vc4::Instr::encodeSrcReg(srcA.reg(), REG_A, &muxa);
-      raddrb = srcB.encode();
+      raddr_a = vc4::Instr::encodeSrcReg(srcA.reg(), REG_A, muxa);
+      raddr_b = srcB.encode();
       muxb   = Instr::MUX_B;
     } else if (srcA.is_imm()) {
       // First operand is a small immediate
-      raddra = vc4::Instr::encodeSrcReg(srcB.reg(), REG_A, &muxb);
-      raddrb = srcA.encode();
+      raddr_a = vc4::Instr::encodeSrcReg(srcB.reg(), REG_A, muxb);
+      raddr_b = srcA.encode();
       muxa   = Instr::MUX_B;
     } else {
       assert(false);  // Not expecting this
@@ -109,10 +107,10 @@ void encode_operands(Instr &vc4_instr, RegOrImm const &srcA, RegOrImm const &src
     assert(false);  // Not expecting this
   }
 
-  vc4_instr.raddra  = raddra;
-  vc4_instr.raddrb  = raddrb;
-  vc4_instr.muxa    = muxa;
-  vc4_instr.muxb    = muxb;
+  instr.raddr_a  = raddr_a;
+  instr.raddr_b  = raddr_b;
+  instr.add_a    = muxa;
+  instr.add_b    = muxb;
 }
 
 
@@ -134,62 +132,70 @@ uint64_t encodeInstr(Target::Instr instr) {
       auto &li = instr.LI;
       RegTag file;
 
-      vc4_instr.tag(vc4::Instr::LI);
+      vc4_instr.enc       = vc4::Instr::LOAD_IMM;
       vc4_instr.cond_add  = instr.assign_cond().encode();
       vc4_instr.waddr_add = vc4::Instr::encodeDestReg(instr.dest(), &file);
-      vc4_instr.ws(file != REG_A);
-      vc4_instr.li_imm = li.imm.encode();
-      vc4_instr.sf(instr.set_cond().flags_set());
+      vc4_instr.ws        = (file != REG_A);
+      vc4_instr.immediate = li.imm.encode();
+      vc4_instr.sf        = instr.set_cond().flags_set();
     }
     break;
 
     case BR:  // Branch
       assertq(!instr.branch_target().useRegOffset, "Register offset not yet supported");
 
-      vc4_instr.tag(vc4::Instr::BR);
-      vc4_instr.cond_add = instr.branch_cond().encode();
-      vc4_instr.rel(instr.branch_target().relative);
-      vc4_instr.li_imm = 8*instr.branch_target().immOffset;
+      vc4_instr.enc       = vc4::Instr::BRANCH_ENC;
+      vc4_instr.cond_add  = instr.branch_cond().encode();
+      vc4_instr.rel       = instr.branch_target().relative;
+      vc4_instr.immediate = 8*instr.branch_target().immOffset;
     break;
 
     case ALU: {
       auto &alu = instr.ALU;
 
       RegTag file;
-      uint32_t dest = vc4::Instr::encodeDestReg(instr.dest(), &file);
+      uint8_t dest = vc4::Instr::encodeDestReg(instr.dest(), &file);
 
       if (alu.op.isMul()) {
         vc4_instr.cond_mul  = instr.assign_cond().encode();
         vc4_instr.waddr_mul = dest;
-        vc4_instr.ws(file != REG_B);
+        vc4_instr.ws        = (file != REG_B);
       } else {
         vc4_instr.cond_add  = instr.assign_cond().encode();
         vc4_instr.waddr_add = dest;
-        vc4_instr.ws(file != REG_A);
+        vc4_instr.ws        = (file != REG_A);
       }
 
-      vc4_instr.sf(instr.set_cond().flags_set());
-
+      vc4_instr.sf = (instr.set_cond().flags_set());
 
       if (alu.op.isRot()) {
         assert(alu.srcA.is_reg() && alu.srcA.reg().tag == ACC && alu.srcA.reg().regId == 0);
         assert(!alu.srcB.is_reg() || (alu.srcB.reg().tag == ACC && alu.srcB.reg().regId == 5));
-        uint32_t raddrb = 48;
+        uint8_t raddr_b = 48;
 
         if (!alu.srcB.is_reg()) {  // i.e. value is an imm
-          uint32_t n = alu.srcB.encode();
+
+// Grumbl mofo compiler insists that n is int
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+          uint8_t n = alu.srcB.encode();
           assert(n >= 1 || n <= 15);
-          raddrb += n;
+          raddr_b += n;
+#pragma GCC diagnostic pop
+
         }
 
-
-        vc4_instr.tag(vc4::Instr::ROT);
-        vc4_instr.mulOp  = ALUOp(ALUOp::M_V8MIN).vc4_encodeMulOp();
-        vc4_instr.raddrb = raddrb;
+        vc4_instr.enc     = Instr::ALU_SMALL_IMM;
+        vc4_instr.op_mul  = ALUOp(ALUOp::M_V8MIN).vc4_encodeMulOp();
+        vc4_instr.raddr_b = raddr_b;
       } else {
-        vc4_instr.tag(vc4::Instr::ALU, instr.hasImm());
-        vc4_instr.mulOp = (alu.op.isMul() ? alu.op.vc4_encodeMulOp() : 0);
-        vc4_instr.addOp = (alu.op.isMul() ? 0 : alu.op.vc4_encodeAddOp());
+        if (instr.hasImm()) {
+          vc4_instr.enc  = Instr::ALU_SMALL_IMM;
+        } else {
+          vc4_instr.enc  = Instr::ALU;
+        }
+        vc4_instr.op_mul = (alu.op.isMul() ? alu.op.vc4_encodeMulOp() : 0);
+        vc4_instr.op_add = (alu.op.isMul() ? 0 : alu.op.vc4_encodeAddOp());
         encode_operands(vc4_instr, alu.srcA, alu.srcB);
       }
     }
@@ -197,24 +203,36 @@ uint64_t encodeInstr(Target::Instr instr) {
 
     // Halt
     case END:
-      vc4_instr.tag(vc4::Instr::END);
+      //vc4_instr.tag(vc4::Instr::END);
+      vc4_instr.enc     = Instr::ALU;
+      vc4_instr.sig     = Instr::PROGRAM_END;
+      vc4_instr.raddr_b = Instr::NOP_R;
       break;
 
     case RECV: {
       assert(instr.dest() == Reg(ACC,4));  // ACC4 is the only value allowed as dest
-      vc4_instr.tag(vc4::Instr::LDTMU);
+      //vc4_instr.tag(vc4::Instr::LDTMU);
+      vc4_instr.enc     = Instr::ALU;
+      vc4_instr.sig     = Instr::LOAD_FROM_TMU0;
+      vc4_instr.raddr_b = Instr::NOP_R;
     }
     break;
 
     // Semaphore increment/decrement
     case SINC:
-      vc4_instr.tag(vc4::Instr::SINC);
-      vc4_instr.sema_id = instr.semaId;
+      //vc4_instr.tag(vc4::Instr::SINC);
+      //vc4_instr.sema_id = instr.semaId;
+      vc4_instr.enc       = Instr::SEMAPHORE;
+      vc4_instr.semaphore = instr.semaId;
+      vc4_instr.sa        = false;
       break;
 
     case SDEC:
-      vc4_instr.tag(vc4::Instr::SDEC);
-      vc4_instr.sema_id = instr.semaId;
+      //vc4_instr.tag(vc4::Instr::SDEC);
+      //vc4_instr.sema_id = instr.semaId;
+      vc4_instr.enc       = Instr::SEMAPHORE;
+      vc4_instr.semaphore = instr.semaId;
+      vc4_instr.sa        = true;
       break;
 
     default:

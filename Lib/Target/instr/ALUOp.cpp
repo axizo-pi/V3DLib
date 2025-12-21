@@ -166,7 +166,7 @@ std::string ALUOp::dump() const {
 }
 
 
-uint32_t ALUOp::vc4_encodeAddOp() const {
+uint8_t ALUOp::vc4_encodeAddOp() const {
 
 /////////////////////////////////////////////////////////
 // Here is the reason vc4 wasn't working!!!!
@@ -199,22 +199,15 @@ uint32_t ALUOp::vc4_encodeAddOp() const {
     case A_BNOT:    return 23;
     case A_CLZ:     return 24;
     case A_V8ADDS:  return 30;
-    case A_V8SUBS:  return 31;
-/* >>>>>>>>>>>>>>>>>>>>>>>> */
 
-/* <<<<<<<<<<<<<<<<<<<<<<<<
-  assertq("V3DLib: unknown add op", true);
-  return 0;
-   ======================== */
     default:
       assertq("V3DLib: unknown add op", true);
       return 0;
   }
-/* >>>>>>>>>>>>>>>>>>>>>>>> */
 }
 
 
-uint32_t ALUOp::vc4_encodeMulOp() const {
+uint8_t ALUOp::vc4_encodeMulOp() const {
 
 /////////////////////////////////////////////////////////
 // Here is the second reason vc4 wasn't working!!!!

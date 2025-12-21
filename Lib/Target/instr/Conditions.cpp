@@ -56,7 +56,7 @@ BranchCond BranchCond::negate() const {
 }
 
 
-uint32_t BranchCond::encode() const {
+uint8_t BranchCond::encode() const {
   assertq(Platform::compiling_for_vc4(), "BranchCond::encode(): this call is vc4 only");
 
   switch (tag) {
@@ -219,7 +219,7 @@ std::string AssignCond::to_string() const {
 }
 
 
-uint32_t AssignCond::encode() const {
+uint8_t AssignCond::encode() const {
   assertq(Platform::compiling_for_vc4(), "AssignCond::encode(): this call is vc4 only");
 
   switch (tag) {
@@ -263,7 +263,5 @@ BranchCond AssignCond::to_branch_cond(bool do_all) const {
 
   return bcond;
 }
-
-
 
 }  // namespace V3DLib
