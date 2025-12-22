@@ -351,12 +351,17 @@ bool translateRotate(V3DLib::Instr const &instr, Instructions &ret) {
 		assert(dst_reg->is_rf());
 		assert(src_a->is_rf());
 		assert(reg_b.is_imm());  // rf not handled yet
+		assert(0 <= reg_b.imm().intVal() && reg_b.imm().intVal() < 16);;
+
+		// vc7 rotates in the other direction! Hoodathunk.
+		// Reverse the rotation order
+		int tmp_b = 16 - reg_b.imm().intVal();
 	
 		Instr dst_instr;
 		dst_instr.alu.add.op = V3D_QPU_A_ROT;
-  	dst_instr.alu_add_set(*dst_reg, *src_a, reg_b);
+  	dst_instr.alu_add_set(*dst_reg, *src_a, tmp_b); //reg_b);
 
-		cdebug << "translateRotate vc7 instruction: " << dst_instr.mnemonic(false);
+		warn << "translateRotate vc7 instruction: " << dst_instr.mnemonic(false);
 
 		ret << dst_instr;
 
