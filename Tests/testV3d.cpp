@@ -33,12 +33,14 @@
 
 #define ARRAY_LENGTH(arr, type) (sizeof(arr)/sizeof(type))
 
-using BufferObject = V3DLib::v3d::BufferObject;
+using namespace Log;
+using namespace V3DLib::v3d::instr;
+using Instructions =  V3DLib::v3d::Instructions;
 
+using BufferObject = V3DLib::v3d::BufferObject;
 
 namespace {
 
-using Instructions = V3DLib::v3d::Instructions;
 using ByteCode     = V3DLib::v3d::ByteCode;
 using Code         = V3DLib::SharedArray<uint64_t>;
 using Data         = V3DLib::Data;
@@ -73,6 +75,17 @@ bool v3d_init() {
   return true;
 }
 
+
+// NOTE: Always uses rf(1) as dest ptr
+Instructions output(Location const &src) {
+  Instructions ret;
+  ret << mov(tmud, src).comment("Output to main mem")       // write result to main mem
+      << mov(tmua, rf(1))
+      << tmuwt(rf(16))                                      // rf(16) used as devnull for return value of tmuwt
+      << add(rf(1), rf(1), 4).comment("increment pointer");
+  return ret;
+}
+
 }  // anon namespace
 
 
@@ -81,137 +94,133 @@ bool v3d_init() {
 // The actual tests
 //////////////////////////////////
 
-TEST_CASE("Test v3d opcodes [v3d][code][opcodes]") {
-  using namespace V3DLib::v3d::instr;
-  using Instructions =  V3DLib::v3d::Instructions;
-
-  if (!v3d_init()) return;
-
-  // NOTE: Always uses rf(1) as dest ptr
-  auto output = [] (Location const &src) -> Instructions {
-    Instructions ret;
-    ret << mov(tmud, src).comment("Output to main mem")       // write result to main mem
-        << mov(tmua, rf(1))
-        << tmuwt(rf(16))                                      // rf(16) used as devnull for return value of tmuwt
-        << add(rf(1), rf(1), 4).comment("increment pointer");
-    return ret;
-  };
 
   /**
    * Issues here:
    * - sin via register always returns 1.0
    * - ALU op's return nothing
    */
-  SUBCASE("Test SFU opcodes") {
-    // This is bothersome
-    // TODO find way to avoid qualifying namespaces
-    auto sin =  V3DLib::v3d::instr::sin;
-    auto exp =  V3DLib::v3d::instr::exp;
-    auto log =  V3DLib::v3d::instr::log;
+TEST_CASE("Test SFU opcodes [v3d][code][SFU]") {
+  if (!v3d_init()) return;
 
-    Instructions instrs;
+	if (V3DLib::Platform::compiling_for_vc7()) {
+		warn << "SFU functions not applicable for vc7, skipping";
+		return;
+	}
 
-    instrs << nop().ldunifrf(rf(0))  // value to operate on
-           << nop().ldunifrf(rf(1))  // ptr to location to store
+  // This is bothersome
+  // TODO find way to avoid qualifying namespaces
+  auto sin =  V3DLib::v3d::instr::sin;
+  auto exp =  V3DLib::v3d::instr::exp;
+  auto log =  V3DLib::v3d::instr::log;
 
-    // The classic way of using SFU:
-    // - write to special register for function
-    // - wait 2 cycles (for r4 to stabilize, can optimize with other instructions!)
-    // - read result in r4
+  Instructions instrs;
 
-           << mov(recip, rf(0))
-           << nop()
-           << nop()
-           << output(r4)
+  instrs << nop().ldunifrf(rf(0))  // value to operate on
+         << nop().ldunifrf(rf(1))  // ptr to location to store
 
-           << mov(rsqrt, rf(0))
-           << nop()
-           << nop()
-           << output(r4)
+  // The classic way of using SFU:
+  // - write to special register for function
+  // - wait 2 cycles (for r4 to stabilize, can optimize with other instructions!)
+  // - read result in r4
 
-           << mov(exp, rf(0))    // base 2!
-           << nop()
-           << nop()
-           << output(r4)
+         << mov(recip, rf(0))
+         << nop()
+         << nop()
+         << output(r4)
 
-           << mov(log, rf(0))    // base 2!
-           << nop()
-           << nop()
-           << output(r4)
+         << mov(rsqrt, rf(0))
+         << nop()
+         << nop()
+         << output(r4)
 
-           << mov(sin, rf(0))
-           << nop()
-           << nop()
-           << output(r4)
+         << mov(exp, rf(0))    // base 2!
+         << nop()
+         << nop()
+         << output(r4)
 
-           << mov(rsqrt2, rf(0))  // TODO what is difference with rsqrt?
-           << nop()
-           << nop()
-           << output(r4)
+         << mov(log, rf(0))    // base 2!
+         << nop()
+         << nop()
+         << output(r4)
+
+         << mov(sin, rf(0))
+         << nop()
+         << nop()
+         << output(r4)
+
+         << mov(rsqrt2, rf(0))  // TODO what is difference with rsqrt?
+         << nop()
+         << nop()
+         << output(r4)
 
     // Using v3d ALU op's for the same
     // No output here!
     // TODO investigate further
 
-           << brecip(r1, rf(0))
-           << nop()
-           << nop()
-           << output(r1)
+         << brecip(r1, rf(0))
+         << nop()
+         << nop()
+         << output(r1)
 
-           << brsqrt(r1, rf(0))
-           << nop()
-           << nop()
-           << output(r1)
+         << brsqrt(r1, rf(0))
+         << nop()
+         << nop()
+         << output(r1)
 
-           << bexp(r1, rf(0))  // base 2!
-           << nop()
-           << nop()
-           << output(r1)
+         << bexp(r1, rf(0))  // base 2!
+         << nop()
+         << nop()
+         << output(r1)
 
-           << blog(r1, rf(0))  // base 2!
-           << nop()
-           << nop()
-           << output(r1)
+         << blog(r1, rf(0))  // base 2!
+         << nop()
+         << nop()
+         << output(r1)
 
-           << bsin(r1, rf(0))
-           << nop()
-           << nop()
-           << output(r1)
+         << bsin(r1, rf(0))
+         << nop()
+         << nop()
+         << output(r1)
 
-           << brsqrt2(r1, rf(0))
-           << nop()
-           << nop()
-           << output(r1)
+         << brsqrt2(r1, rf(0))
+         << nop()
+         << nop()
+         << output(r1)
 
-           << end_program();
+         << end_program();
 
-    ByteCode byte_code = instrs.bytecode();
+  ByteCode byte_code = instrs.bytecode();
 
-    BufferObject heap;
-    heap.alloc(1024);
-    Code codeMem((uint32_t) byte_code.size(), heap);
-    codeMem.copyFrom(byte_code);
-    V3DLib::Float::Array result(16, heap);
-    Data unif(2, heap);
+  BufferObject heap;
+  heap.alloc(1024);
+  Code codeMem((uint32_t) byte_code.size(), heap);
+  codeMem.copyFrom(byte_code);
+  V3DLib::Float::Array result(16, heap);
+  Data unif(2, heap);
 
-    // Some magic to store a float in a uint32_t
-    float x = 0.125f; //2.5f;
-    int32_t *bits = (int32_t*) &x;
-    unif[0] = *bits;
+  // Some magic to store a float in a uint32_t
+  float x = 0.125f; //2.5f;
+  int32_t *bits = (int32_t*) &x;
+  unif[0] = *bits;
 
-    unif[1] = result.getAddress();
+  unif[1] = result.getAddress();
 
-    V3DLib::v3d::Driver driver;
-    driver.add_bo(heap.getHandle());
-    REQUIRE(driver.execute(codeMem, &unif));
+  V3DLib::v3d::Driver driver;
+  driver.add_bo(heap.getHandle());
+  REQUIRE(driver.execute(codeMem, &unif));
 
-    //dump_data(result, true, true);
-    //printf("\n");
+  //dump_data(result, true, true);
+  //printf("\n");
 
-    //debug(result.dump());
+  //debug(result.dump());
 
-    // TODO: add REQUIRE's for expected output
-  }
+  // TODO: add REQUIRE's for expected output
+}
+
+
+TEST_CASE("Test v3d opcodes [v3d][code][opcodes]") {
+  if (!v3d_init()) return;
 
 
   /**
@@ -219,6 +228,7 @@ TEST_CASE("Test v3d opcodes [v3d][code][opcodes]") {
    * Works now, is a canary
    */
   SUBCASE("Test add/mov") {
+		warn << "Test v3d opcodes [v3d][code][opcodes] - Test add/mov";
     Instructions instrs;
 
 		// Use rf replacements for r2 and r3 on vc7
