@@ -36,7 +36,10 @@ void encode_operands(vc4::Instr &instr, RegOrImm const &srcA, RegOrImm const &sr
       }
     } else {
       // Operands are different registers
-      assert(aFile == NONE || bFile == NONE || aFile != bFile);  // TODO examine why aFile == bFile is disallowed here
+
+      // TODO examine why aFile == bFile is disallowed here
+      assert(aFile == NONE || bFile == NONE || aFile != bFile);
+
       if (aFile == REG_A || bFile == REG_B) {
         raddr_a = vc4::Instr::encodeSrcReg(srcA.reg(), REG_A, muxa);
         raddr_b = vc4::Instr::encodeSrcReg(srcB.reg(), REG_B, muxb);
@@ -148,15 +151,17 @@ uint32_t Instr::high() const {
   uint32_t ret = 0;
 
   switch (enc) {
-    case NONE:                   /* assert(false); */      break; 
     case ALU:                    assert(SOFTWARE_BREAKPOINT < sig && sig <= BRANCH);
                                  ret |= (sig       << 28); break;
     case ALU_SMALL_IMM:          ret |= (0b1101    << 28); break;
     case BRANCH_ENC:             ret |= (0b1111    << 28); break;
-    case LOAD_IMM:               ret |= (0b1110000 << 24); break;
-    case LOAD_IMM_ELEM_SIGNED:   ret |= (0b1110001 << 24); break;
-    case LOAD_IMM_ELEM_UNSIGNED: ret |= (0b1110011 << 24); break;
-    case SEMAPHORE:              ret |= (0b1110100 << 24); break;
+
+    case NONE:                   // Intentional fall-though, to conform with previous version of output
+    case LOAD_IMM:               ret |= (0b1110000 << 25); break;
+
+    case LOAD_IMM_ELEM_SIGNED:   ret |= (0b1110001 << 25); break;
+    case LOAD_IMM_ELEM_UNSIGNED: ret |= (0b1110011 << 25); break;
+    case SEMAPHORE:              ret |= (0b1110100 << 25); break;
   }
 
   assert(waddr_add < 64);
@@ -166,7 +171,7 @@ uint32_t Instr::high() const {
       |  (waddr_add <<  6) | (waddr_mul);
 
   if (sig == BRANCH) {
-    assert(raddr_a < 64);
+    assert(raddr_a < 32);
 
     ret |= (cond_br << 20)
         |  (rel ?(1 << 19):0) 
@@ -180,7 +185,7 @@ uint32_t Instr::high() const {
     ret |= (pm ?(1 << 24):0)
         |  (pack      << 20)
         |  (cond_add  << 17) | (cond_mul << 14)
-        |  (sf ?(1 << 12):0) ;
+        |  (sf ?(1 << 13):0) ;
   }
 
 
@@ -206,6 +211,7 @@ uint32_t Instr::low() const {
     assert(mul_a < 8);
     assert(mul_b < 8);
     assert(raddr_a < 64);
+    assert(raddr_b < 64);
     assert(op_mul < 8);
     assert(op_add < 32);
 
@@ -214,13 +220,12 @@ uint32_t Instr::low() const {
         |  (raddr_a << 18) | (raddr_b << 12);
   }
 
-  if (enc == ALU || enc == ALU_SMALL_IMM) {
-    assert(raddr_b < 64);
-    ret |= (raddr_b << 12);
-  }
-
   if ((enc == BRANCH_ENC) || enc == LOAD_IMM) {
     ret |= (immediate);
+  }
+
+  if (enc == SEMAPHORE) {
+    ret |= (sa << 4) | semaphore;
   }
 
   return ret;
@@ -451,8 +456,8 @@ void Instr::encode(Target::Instr const &instr) {
           enc  = ALU;
         }
 
-        op_mul = (alu.op.isMul() ? alu.op.vc4_encodeMulOp() : 0);
         op_add = (alu.op.isMul() ? 0 : alu.op.vc4_encodeAddOp());
+        op_mul = (alu.op.isMul() ? alu.op.vc4_encodeMulOp() : 0);
         encode_operands(*this, alu.srcA, alu.srcB, alu.op.isMul());
       }
     }
@@ -496,7 +501,6 @@ void Instr::encode(Target::Instr const &instr) {
     break;
 
     case Target::END: {       // Halt
-      breakpoint;
       enc     = Instr::ALU;
       sig     = Instr::PROGRAM_END;
       raddr_b = Instr::NOP_R;

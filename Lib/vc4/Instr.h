@@ -48,7 +48,7 @@ public:
     NUM_RF          = 32,
     UNIFORM_READ    = 32,      // rfA/B rd
 
-    ACC_START       = 33,
+    ACC_START       = 32,
     ACC_END         = 37,
 
     ELEMENT_NUMBER  = 38,      // rfA rd
@@ -176,6 +176,7 @@ public:
 
   uint32_t immediate = 0;
 
+  // Semaphores
   bool     sa        = false;  // increment if false, decrement if true
   uint32_t semaphore = 0;
 
