@@ -48,7 +48,7 @@ void init_msg() {
 
 /**
  * @return true if can run
- */
+ * /
 bool gcd_msg() {
   if (!V3DLib::Platform::run_vc7()) return true;
 
@@ -60,6 +60,7 @@ bool gcd_msg() {
 
   return false;
 }
+*/
 
 
 void check_output_run(std::string const &program, RunType run_type, std::string const &extra_params) {
@@ -140,9 +141,9 @@ TEST_CASE("Check correct output example programs for all three run options [cmdl
   SUBCASE("Check output ID")      { check_output_example("ID"); }
   SUBCASE("Check output Hello")   { check_output_example("Hello"); }
 
-  if (gcd_msg()) {
+  //if (gcd_msg()) {
     SUBCASE("Check output GCD")     { check_output_example("GCD"); }
-  }
+  //}
 
   SUBCASE("Check output Tri")     { check_output_example("Tri"); }
   SUBCASE("Check output OET")     { check_output_example("OET"); }

@@ -9,8 +9,11 @@ V3DLib::Settings settings;
  * Odd/even transposition sorter for a 32-element array
  */
 void kernel(Int::Ptr p) {
+	Int::Ptr p2 = p;
+	p2.inc();
+
   Int evens = *p;
-  Int odds  = *(p+16);
+  Int odds  = *p2;
 
   For (Int count = 0, count < 16, count++)
     Int evens2 = min(evens, odds);
@@ -30,8 +33,8 @@ void kernel(Int::Ptr p) {
     odds  = odds2;
   End
 
-  *p      = evens;
-  *(p+16) = odds;
+  *p  = evens;
+  *p2 = odds;
 }
 
 

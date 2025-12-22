@@ -249,13 +249,14 @@ std::string instr_format_alu_7x(uint64_t val) {
 
 	string h2 =
 "|  |  |  |  |  | 1| sig          |sm| sig_addr (2apf?)|mw|aw| mul waddr       | add waddr       |\n"
-"|  |  | a_pa|  |1?|  |1?| mul a raddr     | mul b raddr     | add a raddr     | add b raddr     |\n"
+"|     | a_pa|                                                                                   |\n"
+"| add_op    |  |1?|  |1?| mul a raddr     | mul b raddr     | add a raddr     | add b raddr     |\n"
 	;
 
 	string desc = "\n"
 		"- mw  : mul magic write\n"
 		"- aw  : add magic write\n"
-		"- a_pa: add output pack\n"
+		"- a_pa: add output pack; overlaps with add op\n"
 		"- ac: flags\n"
 		"  - 51: condition enabled\n"
 		"  - 50: 0\n"
@@ -351,12 +352,12 @@ int main(int argc, const char *argv[]) {
 			//.ldunifrf = 1
 			//.ldtmu = 1,
 			//.wrtmuc = 1
-			.small_imm_b = 1,
+			//.small_imm_b = 1,
 	 	},
 		.sig_addr = 0,
 		.sig_magic = false,
-    .raddr_a = 3,  // 4x
-    .raddr_b = 0,  // 4x
+    //.raddr_a = 3,  // 4x
+    //.raddr_b = 0,  // 4x
 		.flags = {
 		  //.ac = V3D_QPU_COND_IFA,
 		  //.mc = V3D_QPU_COND_IFA
@@ -365,30 +366,30 @@ int main(int argc, const char *argv[]) {
 		},
 		.alu = {
 			.add = {
-				  .op = V3D_QPU_A_OR,
+				  .op = V3D_QPU_A_FDY,
 			  	.a = {
-            .mux = V3D_QPU_MUX_B,
-            //.raddr = 2 
+            //.mux = V3D_QPU_MUX_B,
+            .raddr = 0 
           },
 			  	.b = {
-            .mux = V3D_QPU_MUX_B,
+            //.mux = V3D_QPU_MUX_B,
+            .raddr = 0 
           },
-		 	    .waddr = 13, //V3D_QPU_WADDR_NOP,
+		 	    .waddr = 0, //V3D_QPU_WADDR_NOP,
 					.magic_write = false,
 			},
 			.mul = {
-				  .op = V3D_QPU_M_ADD,
+				  .op = V3D_QPU_M_FMOV,
 			  	.a = {
-            .mux = V3D_QPU_MUX_R4,
-            //.raddr = 0
+            //.mux = V3D_QPU_MUX_R4,
+            .raddr = 0
           },
 			  	.b = {
-            .mux = V3D_QPU_MUX_B,
-            //.raddr = 0
+            //.mux = V3D_QPU_MUX_B,
+            .raddr = 0
           },
-				  //.op = V3D_QPU_M_FMOV,
 					//.output_pack = V3D_QPU_PACK_NONE  // Other values fail disasm
-		 	    .waddr = 10, //V3D_QPU_WADDR_TMUA,
+		 	    .waddr = 0, //V3D_QPU_WADDR_TMUA,
 					.magic_write = false,
 			},
 		},
@@ -411,7 +412,8 @@ int main(int argc, const char *argv[]) {
 		}
 	};
 
-	auto &instr = instr_branch;
+	auto &instr = instr_alu;
+	//auto &instr = instr_branch;
 
 	//display_instr(instr);
 
@@ -430,6 +432,7 @@ int main(int argc, const char *argv[]) {
   	}
   } else {
   	if (instr.type == V3D_QPU_INSTR_TYPE_ALU) {
+			cout << "7\n";
   		cout << instr_format_alu_7x(packed);
   	} else {
   		cout << instr_format_branch_7x(packed);

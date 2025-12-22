@@ -157,55 +157,68 @@ bool translateOpcode(V3DLib::Instr const &src_instr, Instructions &ret) {
   int num_ops = src_instr.ALU.num_operands();
 
   switch (src_instr.ALU.op.value()) {
-  case Enum::A_FSIN:
-    assert(num_ops == 1);
-    ret << fsin(*dst_reg, reg_a);
-    break;
-  case Enum::A_FFLOOR:
-    assert(num_ops == 1);
-    ret << ffloor(*dst_reg, reg_a);
-    break;
-  case Enum::A_TMUWT:
-    assert(num_ops == 0);
-    ret << tmuwt();
-    break;
-  case Enum::A_TIDX:
-    breakpoint  // Apparently never called?
-    assert(num_ops == 0);
-    ret << tidx(*dst_reg);
-    break;
-  case Enum::A_EIDX:
-    assert(num_ops == 0);
-    ret << eidx(*dst_reg);
-    break;
-  case Enum::A_MOV: {
-    assert(num_ops == 1);
+	  case Enum::A_FSIN:
+  	  assert(num_ops == 1);
+   	 	ret << fsin(*dst_reg, reg_a);
+    	break;
+  	case Enum::A_FFLOOR:
+    	assert(num_ops == 1);
+    	ret << ffloor(*dst_reg, reg_a);
+    	break;
+  	case Enum::A_TMUWT:
+    	assert(num_ops == 0);
+    	ret << tmuwt();
+    	break;
+  	case Enum::A_TIDX:
+    	breakpoint  // Apparently never called?
+    	assert(num_ops == 0);
+    	ret << tidx(*dst_reg);
+    	break;
+  	case Enum::A_EIDX:
+    	assert(num_ops == 0);
+    	ret << eidx(*dst_reg);
+    	break;
+  	case Enum::A_MOV: {
+    	assert(num_ops == 1);
 
-    auto tmp = mov(*dst_reg, reg_a);
+    	auto tmp = mov(*dst_reg, reg_a);
 
-		// BRAINFART: TODO cleanup. This solution is totally disgusting
-		if (*dst_reg == tmua) {
-			// Following thrsw and nop's absolutely required on vc7, verified
-			tmp.thrsw();
-			ret << tmp << nop() << nop();
-		} else {
-			ret << tmp;
-		}
-	 }
-   break;
-  default: {
-    // Handle general case
-    Instr instr;
+			if (*dst_reg == tmua) {
+				//warn << "Doing tmua brainfart";
 
-    if (instr.alu_set(src_instr)) {
-      ret << instr;
-    } else {
-      did_something = false;
-    }
+				// Following thrsw and nop's absolutely required on vc7, verified
+				tmp.thrsw();
+				ret << tmp << nop() << nop();
+			} else {
+				ret << tmp;
+			}
+	 	}
+   	break;
+
+	  default: {
+  	  // Handle general case
+ 			Mnemonic tmp;
+	    if (tmp.alu_set(src_instr)) {
+
+				// Copy of the above, couldn't figure out how to merge it properly, brainfog.
+				if (*dst_reg == tmua) {
+					//warn << "Doing tmua brainfart 2";
+
+					// Following thrsw and nop's absolutely required on vc7, verified
+					tmp.thrsw();
+					ret << tmp << nop() << nop();
+				} else {
+					ret << tmp;
+				}
+			} else {
+	      did_something = false;
+	    }
+	  }
   }
-  }
 
-  if (did_something) return true;
+  if (did_something) {
+		return true;
+	}
 
   auto const &src_alu = src_instr.ALU;
   std::string msg = "translateOpcode(): Unknown conversion for src ";
@@ -359,9 +372,9 @@ bool translateRotate(V3DLib::Instr const &instr, Instructions &ret) {
 	
 		Instr dst_instr;
 		dst_instr.alu.add.op = V3D_QPU_A_ROT;
-  	dst_instr.alu_add_set(*dst_reg, *src_a, tmp_b); //reg_b);
+  	dst_instr.alu_add_set(*dst_reg, *src_a, tmp_b);
 
-		warn << "translateRotate vc7 instruction: " << dst_instr.mnemonic(false);
+		//warn << "translateRotate vc7 instruction: " << dst_instr.mnemonic(false);
 
 		ret << dst_instr;
 
