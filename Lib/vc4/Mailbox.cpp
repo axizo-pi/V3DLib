@@ -295,6 +295,7 @@ unsigned qpu_enable(int file_desc, unsigned enable)
  * @param fd       file descriptor of the vc4 mailbox
  */
 unsigned execute_qpu(int fd, unsigned num_qpus, unsigned control, unsigned noflush, unsigned timeout) {
+/*
 	 warn << "execute_qpu() params:\n"
         << "  fd      : "   << fd             << "\n"
         << "  num_qpus: "   << num_qpus       << "\n"
@@ -302,6 +303,7 @@ unsigned execute_qpu(int fd, unsigned num_qpus, unsigned control, unsigned noflu
         << "  noflush : "   << noflush        << "\n"
         << "  timeout : "   << timeout        << "\n"
   ;
+*/
 
    unsigned i = 0;
    unsigned p[32];

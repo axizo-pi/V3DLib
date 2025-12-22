@@ -73,11 +73,11 @@ std::string dump_instr(Instr const &instr) {
     }
     break;
 
-    case BR:   buf << "if "    << instr.branch_cond().to_string()
+    case BR:   buf << "if "    << instr.branch_cond().dump()
                    << " goto " << instr.branch_target().to_string();
     break;
 
-    case BRL:  buf << "if "     << instr.branch_cond().to_string()
+    case BRL:  buf << "if "     << instr.branch_cond().dump()
                    << " goto L" << instr.branch_label();
     break;
 

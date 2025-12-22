@@ -23,7 +23,7 @@ Flag negFlag(Flag flag) {
 }
 
 
-const char *dump(Flag flag) {
+const char *dump_flag(Flag flag) {
   switch (flag) {
     case ZS: return "ZS";
     case ZC: return "ZC";
@@ -87,15 +87,15 @@ uint8_t BranchCond::encode() const {
 }
 
 
-std::string BranchCond::to_string() const {
+std::string BranchCond::dump() const {
   std::string ret;
 
   switch (tag) {
     case COND_ALL:
-      ret << "all(" << dump(flag) << ")";
+      ret << "all(" << dump_flag(flag) << ")";
       break;
     case COND_ANY:
-      ret << "any(" << dump(flag) << ")";
+      ret << "any(" << dump_flag(flag) << ")";
       break;
     case COND_ALWAYS:
       ret = "always";
@@ -175,7 +175,7 @@ std::string dump(AssignCond cond) {
   switch (cond.tag) {
     case Tag::ALWAYS: return "always";
     case Tag::NEVER:  return "never";
-    case Tag::FLAG:   return dump(cond.flag);
+    case Tag::FLAG:   return dump_flag(cond.flag);
   	default: assert(false); return "";
   }
 }

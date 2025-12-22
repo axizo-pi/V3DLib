@@ -12,7 +12,7 @@ namespace V3DLib {
 
 namespace {
 
-bool check_align(BaseSharedArray const &arr, std::string const &name) {
+MAYBE_UNUSED bool check_align(BaseSharedArray const &arr, std::string const &name) {
   //warn << "check_align called for '" << name << "'";
 
   if (arr.getAddress() % 16) {
@@ -122,7 +122,7 @@ void add_launch_message(int index, Data &launch_messages, ScheduledJob const &jo
 	assert(job.params_offset != -1);
 
 	alloc_launch_messages(launch_messages);
-  check_align(launch_messages, "launch_messages");
+  //check_align(launch_messages, "launch_messages");
 
 	launch_messages[2*index]     = uniforms.getAddress() + 4*job.params_offset;
 	launch_messages[2*index + 1] = job.code.getAddress();
@@ -132,10 +132,16 @@ void add_launch_message(int index, Data &launch_messages, ScheduledJob const &jo
 /**
  * Initialize launch messages, if not already done so
  */
-void init_launch_messages(int numQPUs, Data &launch_messages, Code const &code, IntList const &params, Data const &uniforms) {
+void init_launch_messages(
+  int numQPUs,
+  Data &launch_messages,
+  Code const &code,
+  IntList const &params,
+  Data const &uniforms
+) {
   assert(numQPUs > 0);
   assertq(!uniforms.empty(), "init_launch_messages(): expecting values for uniforms");
-  warn << "init_launch_messages() called";
+  //warn << "init_launch_messages() called";
 
 	alloc_launch_messages(launch_messages);
 
@@ -226,9 +232,9 @@ void MailBoxInvoke::invoke(int numQPUs, Code const &code, IntList const &params)
   Data uniforms;  // Memory region for QPU parameters
   load_uniforms(uniforms, params, numQPUs);
 
-  check_align(uniforms, "uniforms");
-  check_align(launch_messages, "launch_messages");
-  check_align(code, "code");
+  //check_align(uniforms, "uniforms");
+  //check_align(launch_messages, "launch_messages");
+  //check_align(code, "code");
 
   init_launch_messages(numQPUs, launch_messages, code, params, uniforms);
 
@@ -245,7 +251,7 @@ void run(ScheduledJobs &jobs) {
   Data uniforms;                          // Memory region for QPU parameters
   uniforms.alloc(jobs.num_params());
 
-  check_align(uniforms, "uniforms");
+  //check_align(uniforms, "uniforms");
 
 	int index = 0;
 	int offset = 0;

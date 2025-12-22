@@ -38,7 +38,7 @@ struct BranchCond {
   bool is_always() const { return tag == COND_ALWAYS; }
 
   uint8_t encode() const;
-  std::string to_string() const;
+  std::string dump() const;
 };
 
 

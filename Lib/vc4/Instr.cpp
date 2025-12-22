@@ -170,8 +170,9 @@ uint32_t Instr::high() const {
   ret |= (ws ?(1 << 12):0) 
       |  (waddr_add <<  6) | (waddr_mul);
 
-  if (sig == BRANCH) {
+  if (enc == BRANCH_ENC) {
     assert(raddr_a < 32);
+    assert(cond_br < BR_SIZE);
 
     ret |= (cond_br << 20)
         |  (rel ?(1 << 19):0) 
@@ -233,7 +234,7 @@ uint32_t Instr::low() const {
 
 
 uint64_t Instr::encode() const {
- return (((uint64_t) high()) << 32) + low();
+ return (((uint64_t) high()) << 32) | low();
 }
 
 
@@ -429,7 +430,6 @@ void Instr::encode(Target::Instr const &instr) {
       sf = (instr.set_cond().flags_set());
 
       if (alu.op.isRot()) {
-        breakpoint;
         assert(alu.srcA.is_reg() && alu.srcA.reg().tag == ACC && alu.srcA.reg().regId == 0);
         assert(!alu.srcB.is_reg() || (alu.srcB.reg().tag == ACC && alu.srcB.reg().regId == 5));
         uint8_t _raddr_b = 48;
@@ -483,6 +483,7 @@ void Instr::encode(Target::Instr const &instr) {
       cond_br   = (BranchCondition) instr.branch_cond().encode();
       rel       = instr.branch_target().relative;
       immediate = 8*instr.branch_target().immOffset;
+      raddr_a   = 0;
     }
     break;
 
@@ -508,7 +509,6 @@ void Instr::encode(Target::Instr const &instr) {
     break;
 
     case Target::RECV: {
-      breakpoint;
       assert(instr.dest() == Reg(ACC,4));  // ACC4 is the only value allowed as dest
       enc     = Instr::ALU;
       sig     = Instr::LOAD_FROM_TMU0;
@@ -523,8 +523,8 @@ void Instr::encode(Target::Instr const &instr) {
       break;
   }
 
-  warn << instr.dump();
-  warn << dump();
+  //warn << instr.dump();
+  //warn << dump();
 }
 
 
@@ -535,28 +535,22 @@ std::string Instr::dump() const {
     std::string ret;
 
     if (mux == MUX_A) {
-      if (raddr_a == 32) {
-        ret << "unif";
-      } else if (raddr_a == 38) {
-        ret << "elem_num";
-      } else if (raddr_a == 39) {
-        ret << "none";
-      } else {
-        ret << "rfa" << raddr_a;
+      switch(raddr_a) {
+        case 32: ret << "unif";           break;
+        case 38: ret << "elem_num";       break;
+        case 39: ret << "none";           break;
+        default: ret << "rfa" << raddr_a; break;
       }
     } else if (mux == MUX_B) {
       if (enc == ALU_SMALL_IMM) {
         // This should actually be converted to representation value
         ret << raddr_b;
       } else {
-        if (raddr_b == 32) {
-          ret << "unif";
-        } else if (raddr_b == 38) {
-          ret << "qpu_num";
-      } else if (raddr_b == 39) {
-        ret << "none";
-        } else {
-          ret << "rfb" << raddr_b;
+        switch(raddr_b) {
+          case 32: ret << "unif";           break;
+          case 38: ret << "qpu_num";        break;
+          case 39: ret << "none";           break;
+          default: ret << "rfb" << raddr_b; break;
         }
       }
     } else {
@@ -575,12 +569,14 @@ std::string Instr::dump() const {
       return ret;
     }
 
-    if (waddr == 32) {
-      ret << "unif";
-    } else if (waddr == 39) {
-        ret << "none";
-      return ret;
+    bool found_it = true;
+    switch(waddr) {
+      case 32: ret << "unif";     break;
+      case 38: ret << "host_int"; break;
+      case 39: ret << "none";     break;
+      default: found_it = false;  break;
     }
+    if (found_it) return ret;
 
     if (do_a) {
       if (ws) {
@@ -620,35 +616,38 @@ std::string Instr::dump() const {
   } else if (enc == ALU || enc == ALU_SMALL_IMM) {
     switch(sig) {
       case NO_SIGNAL: break;
-      case THREAD_SWITCH: ret << " thrsw";        break;
-      case PROGRAM_END:   ret << " end";          break;
-      default:            ret << " sig: " << sig; break;
+      case THREAD_SWITCH:  ret << " thrsw";        break;
+      case PROGRAM_END:    ret << " end";          break;
+      case LOAD_FROM_TMU0: ret << "load_tmu0 a4";  break;  // acc4 is implicit
+      default:             ret << " sig: " << sig; break;
     }
 
-    bool found_it;
-    std::string op;
+    if (sig != LOAD_FROM_TMU0) {
+      bool found_it;
+      std::string op;
 
-    if (op_add != 0) {
-      op = dump_add_op(op_add, found_it);
-      ret << op << "("
-          << waddr_to_str(waddr_add, true) << ", "
-          << mux_to_str(add_a)             << ", "
-          << mux_to_str(add_b)             << ")"
-          << cond_code_to_str(cond_add);
-    } else {
-      ret << " nop";
-    }
+      if (op_add != 0) {
+        op = dump_add_op(op_add, found_it);
+        ret << op << "("
+            << waddr_to_str(waddr_add, true) << ", "
+            << mux_to_str(add_a)             << ", "
+            << mux_to_str(add_b)             << ")"
+            << cond_code_to_str(cond_add);
+      } else {
+        ret << " nop";
+      }
 
-    if (op_mul != 0) {
-      op = dump_mul_op(op_mul, found_it);
-      ret << ", " << op << "("
-          << waddr_to_str(waddr_mul, false) << ", "
-          << mux_to_str(mul_a)              << ", "
-          << mux_to_str(mul_b)              << ")"
-          << cond_code_to_str(cond_mul)
-          << ";";
-    } else {
-      ret << ", nop;";
+      if (op_mul != 0) {
+        op = dump_mul_op(op_mul, found_it);
+        ret << ", " << op << "("
+            << waddr_to_str(waddr_mul, false) << ", "
+            << mux_to_str(mul_a)              << ", "
+            << mux_to_str(mul_b)              << ")"
+            << cond_code_to_str(cond_mul)
+            << ";";
+      } else {
+        ret << ", nop;";
+      }
     }
   } else if (enc == SEMAPHORE) {
     ret << " " << (sa?"dec":"inc")
@@ -662,10 +661,8 @@ std::string Instr::dump() const {
 
   if (pm)  ret << " pm";
   if (sf)  ret << " sf";
-//  if (ws)  ret << " ws";
   if (rel) ret << " rel";
   if (reg) ret << " reg";
-//  if (sa)  ret << " sa";
 
   return ret;
 }
