@@ -352,6 +352,7 @@ int main(int argc, const char *argv[]) {
 			//.ldunifrf = 1
 			//.ldtmu = 1,
 			//.wrtmuc = 1
+			.small_imm_a = 1,
 			//.small_imm_b = 1,
 	 	},
 		.sig_addr = 0,
@@ -366,14 +367,14 @@ int main(int argc, const char *argv[]) {
 		},
 		.alu = {
 			.add = {
-				  .op = V3D_QPU_A_FDY,
+				  .op = V3D_QPU_A_SHL,
 			  	.a = {
             //.mux = V3D_QPU_MUX_B,
-            .raddr = 0 
+            .raddr = 2 
           },
 			  	.b = {
             //.mux = V3D_QPU_MUX_B,
-            .raddr = 0 
+            .raddr = 1 
           },
 		 	    .waddr = 0, //V3D_QPU_WADDR_NOP,
 					.magic_write = false,

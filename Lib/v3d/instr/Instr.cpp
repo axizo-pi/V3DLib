@@ -772,15 +772,14 @@ bool Instr::alu_add_set(Location const &dst, Source const &in_a, Source const &i
 	// TODO: Likely need this on alu_mul_set as well
 	//       Better would be to test alu/mul together
 	if (Platform::compiling_for_vc7()) {
-		// TODO: I *think* this is correct, but need to research further
 		if (a.is_small_imm() && b.is_small_imm()) {
-				cerr << "shl(): can not pass in two immediates: " 
-					   << a.dump() << ", " << b.dump() << "\n" << thrw;
+			cerr << "alu_add_set(): can not pass in two immediates: " 
+				   << a.dump() << ", " << b.dump() << "\n" << thrw;
 		}
 	} else {
 		if (a.is_small_imm() && b.is_small_imm()) {
-			if (a != b) {
-				cerr << "shl(): can not pass in two different immediates: " 
+				if (a != b) {
+				cerr << "alu_add_set(): can not pass in two different immediates: " 
 					   << a.dump() << " != " << b.dump() << "\n" << thrw;
 			}
 		}

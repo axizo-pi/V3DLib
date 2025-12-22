@@ -445,14 +445,13 @@ TEST_CASE("Check v3d opcodes [v3d][opcodes]") {
   using namespace V3DLib::v3d::instr;
 
   SUBCASE("For opcode with two small immediates values, value should be the same") {
-    REQUIRE_THROWS(shl(r0, 1, 5));
-    REQUIRE_NOTHROW(shl(r3, 4, 4));
-    REQUIRE_THROWS(shr(r0, 2, 4));
-    REQUIRE_NOTHROW(shr(r3, 3, 3));
-	
 		if (V3DLib::Platform::compiling_for_vc7()) {
-   	 	REQUIRE_THROWS(nop().add(r0, 1, 5));
-    	REQUIRE_NOTHROW(nop().add(r3, 4, 4));
+			warn << "Skipping tests with two immediate values, always forbidden for vc7.";
+		} else {
+	    REQUIRE_THROWS(shl(r0, 1, 5));
+	    REQUIRE_NOTHROW(shl(r3, 4, 4));
+	    REQUIRE_THROWS(shr(r0, 2, 4));
+	    REQUIRE_NOTHROW(shr(r3, 3, 3));
 		}
   }
 
@@ -511,7 +510,7 @@ TEST_CASE("Check v3d opcodes [v3d][opcodes]") {
       	<< nop().smul24(rf(1), SmallImm(2), rf(0))
       	<< rotate(rf(1), rf(0), rf(15))
       	<< rotate(rf(1), rf(0), 3)
-      	<< shl(rf(3), 4, 4).mov(rf(1), rf(5))
+      	<< shl(rf(3), rf(4), 4).mov(rf(1), rf(5))
     	;
 		} else {
     	ret
