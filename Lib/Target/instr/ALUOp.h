@@ -119,9 +119,7 @@ int num_operands(v3d_qpu_add_op op);
 
 
 std::string dump_add_op(uint32_t val, bool &found_it);
-
-std::string translate_add_op(enum v3d_qpu_add_op val);
-std::string translate__mul_op(enum v3d_qpu_add_op val);
+std::string dump_mul_op(uint32_t val, bool &found_it);
 
 }  // namespace V3DLib
 

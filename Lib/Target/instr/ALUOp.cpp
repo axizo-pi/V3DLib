@@ -111,19 +111,15 @@ bool ALUOp::isMul() const {
 
 std::string ALUOp::dump() const {
   bool found_it;
-  std::string ret = dump_add_op(m_value, found_it);
+  std::string ret;
 
+  ret = dump_add_op(m_value, found_it);
+  if (found_it) return ret;
+
+  ret = dump_mul_op(m_value - M_FMUL + 1, found_it);  // +1 to take NOP into account
   if (found_it) return ret;
 
   switch (m_value) {
-    // mul ops
-    case M_FMUL:    return "fmul";
-    case M_MUL24:   return "mul24";
-    case M_V8MUL:   return "mulb";
-    case M_V8MIN:   return "minb";
-    case M_V8MAX:   return "maxb";
-    case M_V8ADDS:  return "m_addsatb";
-    case M_V8SUBS:  return "m_subsatb";
 
     // Not part of vc4 mul ops
     case M_ROTATE:  return "rotate";
@@ -289,7 +285,7 @@ int num_operands(v3d_qpu_add_op op) {
 
 
 /**
- * Convert ALUOp enum to string representation
+ * Convert ALUOp add enum to string representation
  */
 std::string dump_add_op(uint32_t val, bool &found_it) {
   found_it = true;
@@ -329,159 +325,26 @@ std::string dump_add_op(uint32_t val, bool &found_it) {
 }
 
 
-#define CASE(l)  case V3D_QPU_##l: ret = #l; break;
-
 /**
- * Translate v3d add op to string rep of ALUOp enum.
- * Not particularly useful and not used.
+ * Convert ALUOp mul enum to string representation
  */
-std::string translate_add_op(enum v3d_qpu_add_op val) {
-	std::string ret;
+std::string dump_mul_op(uint32_t val, bool &found_it) {
+  found_it = true;
 
   switch (val) {
-    CASE(A_FADD)
-    CASE(A_FADDNF)
-    CASE(A_VFPACK)
-    CASE(A_ADD)
-    CASE(A_SUB)
-    CASE(A_FSUB)
-    CASE(A_MIN)
-    CASE(A_MAX)
-    CASE(A_UMIN)
-    CASE(A_UMAX)
-    CASE(A_SHL)
-    CASE(A_SHR)
-    CASE(A_ASR)
-    CASE(A_ROR)
-    CASE(A_FMIN)
-    CASE(A_FMAX)
-    CASE(A_VFMIN)
-    CASE(A_AND)
-    CASE(A_OR)
-    CASE(A_XOR)
-    CASE(A_VADD)
-    CASE(A_VSUB)
-    CASE(A_NOT)
-    CASE(A_NEG)
-    CASE(A_FLAPUSH)
-    CASE(A_FLBPUSH)
-    CASE(A_FLPOP)
-    CASE(A_RECIP)
-    CASE(A_SETMSF)
-    CASE(A_SETREVF)
-    CASE(A_NOP)
-    CASE(A_TIDX)
-    CASE(A_EIDX)
-    CASE(A_LR)
-    CASE(A_VFLA)
-    CASE(A_VFLNA)
-    CASE(A_VFLB)
-    CASE(A_VFLNB)
-    CASE(A_FXCD)
-    CASE(A_XCD)
-    CASE(A_FYCD)
-    CASE(A_YCD)
-    CASE(A_MSF)
-    CASE(A_REVF)
-    CASE(A_VDWWT)
-    CASE(A_IID)
-    CASE(A_SAMPID)
-    CASE(A_BARRIERID)
-    CASE(A_TMUWT)
-    CASE(A_VPMSETUP)
-    CASE(A_VPMWT)
-    CASE(A_LDVPMV_IN)
-    CASE(A_LDVPMV_OUT)
-    CASE(A_LDVPMD_IN)
-    CASE(A_LDVPMD_OUT)
-    CASE(A_LDVPMP)
-    CASE(A_RSQRT)
-    CASE(A_EXP)
-    CASE(A_LOG)
-    CASE(A_SIN)
-    CASE(A_RSQRT2)
-    CASE(A_LDVPMG_IN)
-    CASE(A_LDVPMG_OUT)
-    CASE(A_FCMP)
-    CASE(A_VFMAX)
-    CASE(A_FROUND)
-    CASE(A_FTOIN)
-    CASE(A_FTRUNC)
-    CASE(A_FTOIZ)
-    CASE(A_FFLOOR)
-    CASE(A_FTOUZ)
-    CASE(A_FCEIL)
-    CASE(A_FTOC)
-    CASE(A_FDX)
-    CASE(A_FDY)
-    CASE(A_STVPMV)
-    CASE(A_STVPMD)
-    CASE(A_STVPMP)
-    CASE(A_ITOF)
-    CASE(A_CLZ)
-    CASE(A_UTOF)
+    case 0: return "nop";
+    case 1: return "fmul";
+    case 2: return "mul24";
+    case 3: return "mulb";
+    case 4: return "minb";
+    case 5: return "maxb";
+    case 6: return "m_addsatb";
+    case 7: return "m_subsatb";
 
-		// Following added in mesa2
-    CASE(A_FLAFIRST)   // added between vc6 opcodes; pehaps neglected vc6 opcodes
-    CASE(A_FLNAFIRST)  // idem
-
-    /* V3D 7.x */
-    CASE(A_FMOV)
-    CASE(A_MOV)
-    CASE(A_VPACK)
-    CASE(A_V8PACK)
-    CASE(A_V10PACK)
-    CASE(A_V11FPACK)
-    CASE(A_BALLOT)
-    CASE(A_BCASTF)
-    CASE(A_ALLEQ)
-    CASE(A_ALLFEQ)
-    CASE(A_ROTQ)
-    CASE(A_ROT)
-    CASE(A_SHUFFLE)
+    default:
+      found_it = false;
+      return "Unknown";
   }
-
-  assert(!ret.empty());
-	if(ret.empty()) ret = "<<UNKNOWN>>";
-
-  return ret;
 }
-
-
-/**
- * Translate v3d mul op to string rep of ALUOp enum.
- * Not particularly useful and not used.
- */
-std::string translate_mul_op(enum v3d_qpu_mul_op val) {
-	std::string ret;
-
-  switch (val) {
-    CASE(M_ADD)
-    CASE(M_SUB)
-    CASE(M_UMUL24)
-    CASE(M_VFMUL)
-    CASE(M_SMUL24)
-    CASE(M_MULTOP)
-    CASE(M_FMOV)
-    CASE(M_MOV)
-    CASE(M_NOP)
-    CASE(M_FMUL)
-
-    /* added in mesa1; V3D 7.x */
-    CASE(M_FTOUNORM16)
-    CASE(M_FTOSNORM16)
-    CASE(M_VFTOUNORM8)
-    CASE(M_VFTOSNORM8)
-    CASE(M_VFTOUNORM10LO)
-    CASE(M_VFTOUNORM10HI)
-  }
-
-  assert(!ret.empty());
-	if(ret.empty()) ret = "<<UNKNOWN>>";
-
-  return ret;
-}
-
-#undef CASE
 
 }  // namespace V3DLib

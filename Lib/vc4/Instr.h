@@ -110,6 +110,17 @@ public:
     PACK_SIZE     = 14,
   };
 
+  enum ConditionCode {
+    COND_NEVER = 0, // (NB gates ALU – useful for LDI instructions to save ALU power)
+    COND_ALWAYS,
+    COND_ZS,        // (Z set)
+    COND_ZC,        // (Z clear)
+    COND_NS,        // (N set)
+    COND_NC,        // (N clear)
+    COND_CS,        // (C set)
+    COND_CC,        // (C clear)
+  };
+
   enum BranchCondition {
     ALL_Z_FLAGS_SET   =  0, // &{Z[15:0]}  All Z flags set
     ALL_Z_FLAGS_CLEAR =  1, // &{~Z[15:0]} All Z flags clear
@@ -138,8 +149,8 @@ public:
 
   bool    pm       = false;
   Pack    pack     = NO_PACK;
-  uint8_t cond_add = 0;
-  uint8_t cond_mul = 0;
+  ConditionCode cond_add = COND_ALWAYS;
+  ConditionCode cond_mul = COND_ALWAYS;
 
   bool sf   = false;
   bool ws   = false;

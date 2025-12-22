@@ -65,19 +65,26 @@ std::string dump_instr(Instr const &instr) {
       } else if (num_ops == 1) {
         buf << "(" << instr.ALU.srcA.dump() << ")";
       } else {
-        buf << "(" << instr.ALU.srcA.dump() << ", " << instr.ALU.srcB.dump() << ")";
+        buf << "("
+            << instr.ALU.srcA.dump() << ", "
+            << instr.ALU.srcB.dump()
+            << ")";
       }
     }
     break;
 
-    case BR:   buf << "if " << instr.branch_cond().to_string()
+    case BR:   buf << "if "    << instr.branch_cond().to_string()
                    << " goto " << instr.branch_target().to_string();
     break;
-    case BRL:  buf << "if " << instr.branch_cond().to_string() << " goto L" << instr.branch_label(); break;
-    case LAB:  buf << "L" << instr.label();                                                          break;
-    case RECV: buf << "RECV(" <<  instr.dest().dump() << ")";                                        break;
-    case SINC: buf << "SINC " << instr.semaId;                                                       break;
-    case SDEC: buf << "SDEC " << instr.semaId;                                                       break;
+
+    case BRL:  buf << "if "     << instr.branch_cond().to_string()
+                   << " goto L" << instr.branch_label();
+    break;
+
+    case LAB:  buf << "L"     << instr.label();               break;
+    case RECV: buf << "RECV(" << instr.dest().dump() << ")";  break;
+    case SINC: buf << "SINC " << instr.semaId;                break;
+    case SDEC: buf << "SDEC " << instr.semaId;                break;
 
     case INIT_BEGIN:
     case INIT_END:
@@ -87,7 +94,7 @@ std::string dump_instr(Instr const &instr) {
     case IRQ:
     case VPM_STALL:
       buf << dump_instr_tag(instr.tag);
-      break;
+    break;
 
     default:
       assert(false);

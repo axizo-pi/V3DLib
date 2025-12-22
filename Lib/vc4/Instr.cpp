@@ -3,8 +3,10 @@
 #include "global/log.h"
 
 using namespace Log;
+using namespace std;
 
 namespace V3DLib {
+namespace vc4 {
 namespace {
 
 /**
@@ -13,7 +15,7 @@ namespace {
  * This is fairly convoluted stuff; apparently there are rules with regfile A/B usage
  * which I am not aware of.
  */
-void encode_operands(vc4::Instr &instr, RegOrImm const &srcA, RegOrImm const &srcB) {
+void encode_operands(vc4::Instr &instr, RegOrImm const &srcA, RegOrImm const &srcB, bool is_mul) {
   uint8_t muxa, muxb;
   uint8_t raddr_a = 0, raddr_b = 0;
 
@@ -70,20 +72,83 @@ void encode_operands(vc4::Instr &instr, RegOrImm const &srcA, RegOrImm const &sr
 
   instr.raddr_a  = raddr_a;
   instr.raddr_b  = raddr_b;
-  instr.add_a    = muxa;
-  instr.add_b    = muxb;
+
+  if (is_mul) {
+    instr.mul_a    = muxa;
+    instr.mul_b    = muxb;
+  } else {
+    instr.add_a    = muxa;
+    instr.add_b    = muxb;
+  }
+}
+
+
+string enc_to_str(Instr::Encoding enc) {
+  string ret;
+
+  switch (enc) {
+    case Instr::NONE:          ret << "NOP";                       break;
+    case Instr::ALU:           /* ret << "ALU"; */                 break;
+    case Instr::ALU_SMALL_IMM: /* ret << "ALU_SMALL_IMM"; */       break;
+    case Instr::LOAD_IMM:      ret << "LOAD_IMM";                  break;
+    case Instr::BRANCH_ENC:    ret << "branch" /* "BRANCH_ENC" */; break;
+    case Instr::SEMAPHORE:     ret << "semaphore";                 break;
+
+    default:                   ret << enc;                         break;
+  }
+
+  return ret;
+}
+
+string cond_code_to_str(Instr::ConditionCode cond) {
+  string ret;
+
+  switch (cond) {
+    case Instr::COND_NEVER:  ret << ".never()"; break;
+    case Instr::COND_ALWAYS:                    break;
+    case Instr::COND_ZS:     ret << ".zs()";    break;
+    case Instr::COND_ZC:     ret << ".zc()";    break;
+    case Instr::COND_NS:     ret << ".ns()";    break;
+    case Instr::COND_NC:     ret << ".nc()";    break;
+    case Instr::COND_CS:     ret << ".cs()";    break;
+    case Instr::COND_CC:     ret << ".cc()";    break;
+  }
+
+  return ret;
+}
+
+string brcond_to_str(Instr::BranchCondition cond) {
+  string ret;
+
+  switch (cond) {
+    case Instr::ALL_Z_FLAGS_SET:   ret << "all(Z)";  break;
+    case Instr::ALL_Z_FLAGS_CLEAR: ret << "all(!Z)"; break;
+    case Instr::ANY_Z_FLAGS_SET:   ret << "any(Z)";  break;
+    case Instr::ANY_Z_FLAGS_CLEAR: ret << "any(!Z)"; break;
+    case Instr::ALL_N_FLAGS_SET:   ret << "all(N)";  break;
+    case Instr::ALL_N_FLAGS_CLEAR: ret << "all(!N)"; break;
+    case Instr::ANY_N_FLAGS_SET:   ret << "any(N)";  break;
+    case Instr::ANY_N_FLAGS_CLEAR: ret << "any(!N)"; break;
+    case Instr::ALL_C_FLAGS_SET:   ret << "all(C)";  break;
+    case Instr::ALL_C_FLAGS_CLEAR: ret << "all(!C)"; break;
+    case Instr::ANY_C_FLAGS_SET:   ret << "any(C)";  break;
+    case Instr::ANY_C_FLAGS_CLEAR: ret << "any(!C)"; break;
+
+    case Instr::BR_SIZE:  assert(false); break;
+    case Instr::ALWAYS:   ret << "always"; break;
+  }
+
+  return ret;
 }
 
 } // anon namespace
 
 
-namespace vc4 {
-
 uint32_t Instr::high() const {
   uint32_t ret = 0;
 
   switch (enc) {
-    case NONE:                   assert(false);           break; 
+    case NONE:                   /* assert(false); */      break; 
     case ALU:                    assert(SOFTWARE_BREAKPOINT < sig && sig <= BRANCH);
                                  ret |= (sig       << 28); break;
     case ALU_SMALL_IMM:          ret |= (0b1101    << 28); break;
@@ -130,9 +195,10 @@ uint32_t Instr::high() const {
 
 uint32_t Instr::low() const {
   //assert(sig > SOFTWARE_BREAKPOINT);
-  assert(enc != NONE);
 
   uint32_t ret = 0;
+
+  if (enc == NONE) return ret;
 
   if (enc == ALU || enc == ALU_SMALL_IMM) {
     assert(add_a < 8);
@@ -148,7 +214,7 @@ uint32_t Instr::low() const {
         |  (raddr_a << 18) | (raddr_b << 12);
   }
 
-  if (enc == ALU ||enc == ALU_SMALL_IMM) {
+  if (enc == ALU || enc == ALU_SMALL_IMM) {
     assert(raddr_b < 64);
     ret |= (raddr_b << 12);
   }
@@ -252,9 +318,11 @@ uint8_t Instr::encodeDestReg(Reg reg, RegTag* file) {
  * This function deals exclusively with 'read' values.
  *
  * @param reg   register definition for which to determine output value
- * @param file  regfile to use. This is used mainly to validate the `regid` field in param `reg`. In specific
- *              cases where both regfile A and B are valid (e.g. NONE), it is used to select the regfile.
- * @param mux   out-parameter; value in ALU instruction encoding for fields `add_a`, `add_b`, `mul_a` and `mul_b`.
+ * @param file  regfile to use. This is used mainly to validate the `regid` field in param `reg`.
+ *              In specific cases where both regfile A and B are valid (e.g. NONE),
+ *               it is used to select the regfile.
+ * @param mux   out-parameter; value in ALU instruction encoding for fields
+ *              `add_a`, `add_b`, `mul_a` and `mul_b`.
  *
  * @return index into regfile (A, B or both) of the passed register.
  *
@@ -334,6 +402,9 @@ uint8_t Instr::encodeSrcReg(Reg reg, RegTag file, uint8_t &mux) {
 void Instr::encode(Target::Instr const &instr) {
 
   switch (instr.tag) {
+    case Target::NO_OP:
+    break;               // Use default value for instr, which is a full NOP
+
     case Target::ALU: {
       auto &alu = instr.ALU;
 
@@ -341,11 +412,11 @@ void Instr::encode(Target::Instr const &instr) {
       uint8_t dest = encodeDestReg(instr.dest(), &file);
 
       if (alu.op.isMul()) {
-        cond_mul  = instr.assign_cond().encode();
+        cond_mul  = (ConditionCode) instr.assign_cond().encode();
         waddr_mul = dest;
         ws        = (file != REG_B);
       } else {
-        cond_add  = instr.assign_cond().encode();
+        cond_add  = (ConditionCode) instr.assign_cond().encode();
         waddr_add = dest;
         ws        = (file != REG_A);
       }
@@ -382,7 +453,7 @@ void Instr::encode(Target::Instr const &instr) {
 
         op_mul = (alu.op.isMul() ? alu.op.vc4_encodeMulOp() : 0);
         op_add = (alu.op.isMul() ? 0 : alu.op.vc4_encodeAddOp());
-        encode_operands(*this, alu.srcA, alu.srcB);
+        encode_operands(*this, alu.srcA, alu.srcB, alu.op.isMul());
       }
     }
     break;
@@ -392,13 +463,52 @@ void Instr::encode(Target::Instr const &instr) {
       RegTag file;
 
       enc       = vc4::Instr::LOAD_IMM;
-      cond_add  = instr.assign_cond().encode();
+      cond_add  = (ConditionCode) instr.assign_cond().encode();
       waddr_add = vc4::Instr::encodeDestReg(instr.dest(), &file);
       ws        = (file != REG_A);
       immediate = li.imm.encode();
       sf        = instr.set_cond().flags_set();
+    }
+    break;
 
+    case Target::BR: {  // Branch
+      assertq(!instr.branch_target().useRegOffset, "Register offset not yet supported");
+
+      enc       = vc4::Instr::BRANCH_ENC;
+      cond_br   = (BranchCondition) instr.branch_cond().encode();
+      rel       = instr.branch_target().relative;
+      immediate = 8*instr.branch_target().immOffset;
+    }
+    break;
+
+    case Target::SINC: { // Semaphore increment
+      enc       = Instr::SEMAPHORE;
+      semaphore = instr.semaId;
+      sa        = false;
+    }
+    break;
+
+    case Target::SDEC: { // Semaphore decrement
+      enc       = Instr::SEMAPHORE;
+      semaphore = instr.semaId;
+      sa        = true;
+    }
+    break;
+
+    case Target::END: {       // Halt
       breakpoint;
+      enc     = Instr::ALU;
+      sig     = Instr::PROGRAM_END;
+      raddr_b = Instr::NOP_R;
+    }
+    break;
+
+    case Target::RECV: {
+      breakpoint;
+      assert(instr.dest() == Reg(ACC,4));  // ACC4 is the only value allowed as dest
+      enc     = Instr::ALU;
+      sig     = Instr::LOAD_FROM_TMU0;
+      raddr_b = Instr::NOP_R;
     }
     break;
 
@@ -425,6 +535,8 @@ std::string Instr::dump() const {
         ret << "unif";
       } else if (raddr_a == 38) {
         ret << "elem_num";
+      } else if (raddr_a == 39) {
+        ret << "none";
       } else {
         ret << "rfa" << raddr_a;
       }
@@ -437,6 +549,8 @@ std::string Instr::dump() const {
           ret << "unif";
         } else if (raddr_b == 38) {
           ret << "qpu_num";
+      } else if (raddr_b == 39) {
+        ret << "none";
         } else {
           ret << "rfb" << raddr_b;
         }
@@ -459,6 +573,8 @@ std::string Instr::dump() const {
 
     if (waddr == 32) {
       ret << "unif";
+    } else if (waddr == 39) {
+        ret << "none";
       return ret;
     }
 
@@ -481,82 +597,72 @@ std::string Instr::dump() const {
     return ret;
   };
 
-  ret << "enc: ";
-  switch (enc) {
-  case NONE:          ret << "NONE";          break;
-  case ALU:           ret << "ALU";           break;
-  case ALU_SMALL_IMM: ret << "ALU_SMALL_IMM"; break;
-  case LOAD_IMM:      ret << "LOAD_IMM";      break;
+  ret << enc_to_str(enc);
 
-  default:
-    ret << enc;
-    break;
-  }
+  if (enc == NONE) {
+    return ret;  // Nothing to add
+  } else if (enc == BRANCH_ENC) {
+    ret << " " << brcond_to_str(cond_br) << " ";
 
-  if (enc == LOAD_IMM) {
-    ret << " " << immediate;
-  } else {
+    if (rel) ret << "+";
+    ret << immediate;
+
+  } else if (enc == LOAD_IMM) {
+    ret << "("
+        << waddr_to_str(waddr_add, true) << ", "
+        << waddr_to_str(waddr_mul, true) << ", "
+        << immediate
+        << ")" << cond_code_to_str(cond_add);
+  } else if (enc == ALU || enc == ALU_SMALL_IMM) {
+    switch(sig) {
+      case NO_SIGNAL: break;
+      case THREAD_SWITCH: ret << " thrsw";        break;
+      case PROGRAM_END:   ret << " end";          break;
+      default:            ret << " sig: " << sig; break;
+    }
+
     bool found_it;
     std::string op;
 
     if (op_add != 0) {
       op = dump_add_op(op_add, found_it);
-      ret << " add: " << op << "("
+      ret << op << "("
           << waddr_to_str(waddr_add, true) << ", "
           << mux_to_str(add_a)             << ", "
-          << mux_to_str(add_b)             << ")";
-
+          << mux_to_str(add_b)             << ")"
+          << cond_code_to_str(cond_add);
     } else {
-      ret << " op_add: NOP";
+      ret << " nop";
     }
 
     if (op_mul != 0) {
-      //op = dump_add_op(op_add, found_it);
-      ret << " mul: TODO" << "("
+      op = dump_mul_op(op_mul, found_it);
+      ret << ", " << op << "("
           << waddr_to_str(waddr_mul, false) << ", "
           << mux_to_str(mul_a)              << ", "
-          << mux_to_str(mul_b)              << ")";
+          << mux_to_str(mul_b)              << ")"
+          << cond_code_to_str(cond_mul)
+          << ";";
     } else {
-      ret << " mul: NOP";
+      ret << ", nop;";
     }
+  } else if (enc == SEMAPHORE) {
+    ret << " " << (sa?"dec":"inc")
+        << " " << semaphore;
+  } else {
+    breakpoint;  // Unhandled encoding
   }
 
-  if (sig != NO_SIGNAL)    ret << " sig: " << sig;
   if (unpack != NO_UNPACK) ret << " unpack: " << unpack; // Specific for ALU, ALU_IMMEDIATE
   if (pack != NO_PACK)     ret << " pack: " << pack;
 
   if (pm)  ret << " pm";
   if (sf)  ret << " sf";
-  if (ws)  ret << " ws";
+//  if (ws)  ret << " ws";
   if (rel) ret << " rel";
   if (reg) ret << " reg";
-  if (sa)  ret << " sa";
+//  if (sa)  ret << " sa";
 
-
-/*
-  uint8_t cond_add = 0;
-  uint8_t cond_mul = 0;
-
-
-  // Specific for branch
-  BranchCondition cond_br = ALWAYS;
-
-  uint8_t waddr_add = NOP_R;
-  uint8_t waddr_mul = NOP_R;
-
-  uint8_t op_mul = 0;
-  uint8_t op_add = 0;
-
-  uint8_t raddr_a = NOP_R;
-  uint8_t raddr_b = NOP_R;
-
-  // specific for ALU_IMMEDIATE
-  uint8_t small_imm = 0;
-
-  uint32_t immediate = 0;
-
-  uint32_t semaphore = 0;
-*/
   return ret;
 }
 
