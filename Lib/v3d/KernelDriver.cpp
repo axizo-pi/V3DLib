@@ -2,6 +2,7 @@
 #include <iostream>
 #include <memory>
 #include "Source/Translate.h"
+#include "Target/instr/Mnemonics.h"
 #include "Target/SmallLiteral.h"  // decodeSmallLit()
 #include "Target/RemoveLabels.h"
 #include "instr/Snippets.h"
@@ -140,6 +141,37 @@ bool handle_special_index(V3DLib::Instr const &src_instr, Instructions &ret) {
 }
 
 
+namespace {
+
+Instructions tmua_brainfart(Mnemonic &instr, bool prev_is_tmud) {
+	Instructions ret;
+
+	bool changed = false;
+
+	// prev_is_tmud: Do for write only
+	//warn << "is tmua: " << (instr.add_dest() == tmua);
+
+	if (Platform::compiling_for_vc7() && instr.add_dest() == tmua) {
+		if (!prev_is_tmud) {
+			warn << "Doing tmua brainfart";
+
+			// Following thrsw and nop's absolutely required on vc7, verified
+			instr.thrsw();
+			ret << instr << nop() << nop();
+			changed = true;
+		}
+	}
+
+	if (!changed) {
+		ret << instr;
+	}
+
+	return ret;
+}
+
+} // anon namespace
+
+
 bool translateOpcode(Target::Instr const &src, Instructions &ret) {
 	static bool prev_is_tmud = false;
 
@@ -150,18 +182,18 @@ bool translateOpcode(Target::Instr const &src, Instructions &ret) {
 
   bool did_something = true;
 
-  auto reg_a = src.ALU.srcA;
-  auto reg_b = src.ALU.srcB;
+  auto reg_a  = src.ALU.srcA;
+  auto reg_b  = src.ALU.srcB;
+	auto op     = src.ALU.op.value(); 
+  int num_ops = src.ALU.num_operands();
 
-  assertq(src.ALU.op.value() != Enum::A_FSIN || (reg_a.is_reg() && reg_b.is_reg()), 
-		"sin has smallims");
+  assertq(op != Enum::A_FSIN || (reg_a.is_reg() && reg_b.is_reg()), "sin has smallims");
 
   auto dst_reg = encodeDestReg(src);
   assert(dst_reg);
 
-  int num_ops = src.ALU.num_operands();
 
-  switch (src.ALU.op.value()) {
+  switch (op) {
 	  case Enum::A_FSIN:   assert(num_ops == 1); ret << fsin(*dst_reg, reg_a);   break;
   	case Enum::A_FFLOOR: assert(num_ops == 1); ret << ffloor(*dst_reg, reg_a); break;
   	case Enum::A_TMUWT:  assert(num_ops == 0); ret << tmuwt();                 break;
@@ -177,24 +209,63 @@ bool translateOpcode(Target::Instr const &src, Instructions &ret) {
     	assert(num_ops == 1);
 
     	auto tmp = mov(*dst_reg, reg_a);
-
-			if (Platform::compiling_for_vc7() && *dst_reg == tmua && !prev_is_tmud) {
-				//warn << "Doing tmua brainfart";
-
-				// Following thrsw and nop's absolutely required on vc7, verified
-				tmp.thrsw();
-				ret << tmp << nop() << nop();
-			} else {
-				ret << tmp;
-			}
+			ret << tmua_brainfart(tmp, prev_is_tmud);
 	 	}
    	break;
 
 	  default: {
   	  // Handle general case
  			Mnemonic tmp;
-	    if (tmp.alu_set(src)) {
 
+	    if (!tmp.alu_set(src)) {
+	      did_something = false;
+				break;
+			}
+
+			bool changed = false;
+
+			if (Platform::compiling_for_vc7() && *dst_reg == tmua) {
+  			assert(!reg_a.is_imm());
+				warn << "default src: " << src.dump();
+				warn << "default tmp: " << tmp.dump();
+				//breakpoint;
+
+  			if (op == Enum::A_ADD && reg_b.is_imm()) {
+					cerr << "translateOpcode(): add(tmua, dst, imm) does not work for vc7";
+
+					// It is very probable that the PointExpr addition has been done beforehand,
+					// but is not being used. Ignoring that for now. TODO: examine 
+
+					// Do an interim add so that a mov can be used for tmua
+					std::unique_ptr<Location> src_p = encodeSrcReg(reg_a.reg());
+					auto tmp2  = add(*src_p, reg_a, reg_b);
+					auto tmp3  = mov(*dst_reg, reg_a);
+					auto tmp4  = sub(*src_p, reg_a, reg_b);
+
+					//warn << "tmp2: " << tmp2.dump();
+
+					Instructions tmp_ret;
+					tmp_ret << tmp2
+									<< tmua_brainfart(tmp3, prev_is_tmud)
+						      << tmp4;
+
+					warn << "tmp_ret:\n" << tmp_ret.dump();
+
+					ret << tmp_ret;
+
+					changed = true;
+				} else {
+					warn << "default brainfart";
+					ret << tmua_brainfart(tmp, prev_is_tmud);
+					changed = true;
+				}
+			}
+
+			if (!changed) {
+				ret << tmp;
+			}
+
+/*
 				// Copy of the above, couldn't figure out how to merge it properly, brainfog.
 				if (Platform::compiling_for_vc7() && *dst_reg == tmua && !prev_is_tmud) {
 					//warn << "Doing tmua brainfart 2";
@@ -205,15 +276,17 @@ bool translateOpcode(Target::Instr const &src, Instructions &ret) {
 				} else {
 					ret << tmp;
 				}
-			} else {
-	      did_something = false;
-	    }
+*/				
+			break;
 	  }
   }
 
   if (did_something) {
 		prev_is_tmud = (*dst_reg == tmud);
+		//warn << "did_something: " << prev_is_tmud;
 		return true;
+	} else {
+		warn << "NOT did_something";
 	}
 
   auto const &src_alu = src.ALU;

@@ -41,12 +41,11 @@ std::string Location::dump() const {
 	std::string ret;
 
   if (is_rf()) {
-		ret << "rf ";
+		ret << "rf";
 	} else if (is_acc()) {
 		ret << "r";
 	} else {
-		// Must be reg
-		ret << "reg ";
+		ret << "special ";
 	}
 
   ret << to_waddr();
