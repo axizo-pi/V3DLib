@@ -183,7 +183,7 @@ bool translateOpcode(Target::Instr const &src_instr, Instructions &ret) {
 
     	auto tmp = mov(*dst_reg, reg_a);
 
-			if (*dst_reg == tmua) {
+			if (Platform::compiling_for_vc7() && *dst_reg == tmua) {
 				//warn << "Doing tmua brainfart";
 
 				// Following thrsw and nop's absolutely required on vc7, verified
@@ -201,7 +201,7 @@ bool translateOpcode(Target::Instr const &src_instr, Instructions &ret) {
 	    if (tmp.alu_set(src_instr)) {
 
 				// Copy of the above, couldn't figure out how to merge it properly, brainfog.
-				if (*dst_reg == tmua) {
+				if (Platform::compiling_for_vc7() && *dst_reg == tmua) {
 					//warn << "Doing tmua brainfart 2";
 
 					// Following thrsw and nop's absolutely required on vc7, verified

@@ -222,8 +222,8 @@ SmallImm::SmallImm(int val) {
   //warn << "SmallImm ctor, float from int val: 0x" << hex << val << " => float " << val2;
 
   if (float_to_opcode_value(val2, rep_value)) {
-    warn << "SmallImm ctor, got float from int! val: 0x" << hex << val << " => float " << val2
-         << ", rep_value: " << rep_value;
+    //warn << "SmallImm ctor, got float from int! val: 0x" << hex << val << " => float " << val2
+    //     << ", rep_value: " << rep_value;
 
     m_val = (uint8_t) rep_value;
     return;

@@ -780,8 +780,8 @@ bool Instr::alu_add_set(Location const &dst, Source const &in_a, Source const &i
 	} else {
 		if (a.is_small_imm() && b.is_small_imm()) {
 				if (a != b) {
-				cerr << "alu_add_set(): can not pass in two different immediates: " 
-					   << a.dump() << " != " << b.dump() << "\n" << thrw;
+				cdebug << "alu_add_set(): can not pass in two different immediates: " 
+					     << a.dump() << " != " << b.dump() << "\n" << thrw;
 			}
 		}
 	}

@@ -228,7 +228,6 @@ TEST_CASE("Test v3d opcodes [v3d][code][opcodes]") {
    * Works now, is a canary
    */
   SUBCASE("Test add/mov") {
-		warn << "Test v3d opcodes [v3d][code][opcodes] - Test add/mov";
     Instructions instrs;
 
 		// Use rf replacements for r2 and r3 on vc7
