@@ -140,7 +140,30 @@ uint32_t pack(uint8_t val) {
 }
 */
 
-}  // anon namespace
+}  // anon namepace
+
+
+/**
+ * Do a reverse lookup from encoding to int.
+ */
+int SmallImm::to_int() const {
+	assert(m_val != 0xff);
+
+  bool found_it  = false;
+	int ret = 0;
+
+  for (auto &item : int_encodings) {
+    if (item.encoding == m_val) {
+      ret = item.val;
+      found_it = true;
+      break;
+    }
+  }
+
+  assert(found_it);
+  return ret;
+
+}
 
 /**
  * @return true if conversion succeeded, false otherwise

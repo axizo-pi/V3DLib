@@ -140,7 +140,7 @@ bool handle_special_index(V3DLib::Instr const &src_instr, Instructions &ret) {
 }
 
 
-bool translateOpcode(V3DLib::Instr const &src_instr, Instructions &ret) {
+bool translateOpcode(Target::Instr const &src_instr, Instructions &ret) {
   if (handle_special_index(src_instr, ret)) return true;
 
   bool did_something = true;
@@ -536,8 +536,8 @@ Instructions encodeInstr(V3DLib::Instr instr) {
     break;
 
     case LI:           ret << encode_LI(instr);   break;
-    case ALU:          ret << encodeALUOp(instr);           break;
-    case NO_OP:        ret << nop();                        break;
+    case ALU:          ret << encodeALUOp(instr); break;
+    case NO_OP:        ret << nop();              break;
 
     default:
       fatal("v3d: missing case in encodeInstr");

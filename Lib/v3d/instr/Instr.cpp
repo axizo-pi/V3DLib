@@ -773,6 +773,7 @@ bool Instr::alu_add_set(Location const &dst, Source const &in_a, Source const &i
 	//       Better would be to test alu/mul together
 	if (Platform::compiling_for_vc7()) {
 		if (a.is_small_imm() && b.is_small_imm()) {
+			breakpoint;
 			cerr << "alu_add_set(): can not pass in two immediates: " 
 				   << a.dump() << ", " << b.dump() << "\n" << thrw;
 		}
@@ -1116,8 +1117,44 @@ bool Instr::alu_mul_set(Target::Instr const &src_instr) {
 }
 
 
-bool Instr::alu_set(Target::Instr const &src_instr) {
-    return alu_add_set(src_instr) || alu_mul_set(src_instr);
+bool Instr::alu_set(Target::Instr src) {
+  if (Platform::compiling_for_vc7() && src.ALU.num_operands() == 2) {
+  	auto a  = src.ALU.srcA;
+  	auto b  = src.ALU.srcB;
+	  auto op = src.ALU.op.value();
+
+		if (a.is_imm() && b.is_imm()) {
+			// Convert two simple small imm sources to a mov instruction
+			switch (op) {
+  			case Enum::A_ADD: {
+					int n = a.imm().intVal() + b.imm().intVal();
+		  		assert(SmallImm::is_legal_encoded_value(n));
+
+					src.ALU.op = ALUOp(Enum::A_MOV);
+					src.ALU.srcA = RegOrImm(n);
+					src.ALU.srcB = Reg(REG_A, 0);  // Ensure srcB is not small imm
+				}
+				break;
+
+  			case Enum::A_SHL: {
+					int n = a.imm().intVal() << b.imm().intVal();
+		  		assert(SmallImm::is_legal_encoded_value(n));
+
+					src.ALU.op = ALUOp(Enum::A_MOV);
+					src.ALU.srcA = RegOrImm(n);
+					src.ALU.srcB = Reg(REG_A, 0);  // Ensure srcB is not small imm
+				}
+				break;
+
+				default:
+					breakpoint;
+					cerr << "alu_set(): unhandled op for two immediates" << thrw;
+				break;
+			}
+		}
+	}
+
+  return alu_add_set(src) || alu_mul_set(src);
 }
 
 
