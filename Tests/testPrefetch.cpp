@@ -1,35 +1,28 @@
 #include <V3DLib.h>
 #include "support/support.h"
+#include "Support/Helpers.h"
 
 namespace {
 
 using namespace V3DLib;
 
 template<typename T, typename Ptr>
-void prefetch_kernel(Ptr result, Ptr in_src) {
-  Ptr src = in_src;
-  Ptr dst = result;
+void prefetch_kernel(Ptr dst, Ptr src) {
 
   //
   // The usual way of doing things
   //
 
-//  input = *src; //cannot bind non-const lvalue reference of type ‘V3DLib::Int&’ to an rvalue of type ‘V3DLib::Int’
   T input = *src;  comment("Start regular fetch/store");
 
-  src += 16;
+  src.inc();
   *dst = input;
-  dst += 16;
+  dst.inc();
 
-  // See above
-//  input = *src;
-//  src += 16;
-//  *dst = input;
-//  dst += 16;
   T inputa = *src;
-  src += 16;
+  src.inc();
   *dst = inputa;
-  dst += 16;
+  dst.inc();
 
   //
   // With regular gather
@@ -40,10 +33,10 @@ void prefetch_kernel(Ptr result, Ptr in_src) {
   gather(src + 16);
   receive(input);
   *dst = input;
-  dst += 16;
+  dst.inc();
   receive(input);
   *dst = input;
-  dst += 16;
+  dst.inc();
 
 
   //
@@ -61,9 +54,9 @@ void prefetch_kernel(Ptr result, Ptr in_src) {
   prefetch(input3, src + 0);  // For test of usage PointerExpr
 
   *dst = input;
-  dst += 16;
+  dst.inc();
   *dst = input2;
-  dst += 16;
+  dst.inc();
   *dst = input3;
 }
 
@@ -97,6 +90,7 @@ TEST_CASE("Test prefetch on stmt stack [prefetch]") {
     result.fill(-1);
 
     auto k = compile(prefetch_kernel<Int, Int::Ptr>);
+		to_file("prefetch_kernel<Int>.txt", k.dump());
     k.load(&result, &src).run();
   
     for (int i = 0; i < (int) result.size(); ++i) {

@@ -140,50 +140,45 @@ bool handle_special_index(V3DLib::Instr const &src_instr, Instructions &ret) {
 }
 
 
-bool translateOpcode(Target::Instr const &src_instr, Instructions &ret) {
-  if (handle_special_index(src_instr, ret)) return true;
+bool translateOpcode(Target::Instr const &src, Instructions &ret) {
+	static bool prev_is_tmud = false;
+
+  if (handle_special_index(src, ret)) {
+		prev_is_tmud = false;
+		return true;
+	}
 
   bool did_something = true;
 
-  auto reg_a = src_instr.ALU.srcA;
-  auto reg_b = src_instr.ALU.srcB;
+  auto reg_a = src.ALU.srcA;
+  auto reg_b = src.ALU.srcB;
 
-  assertq(src_instr.ALU.op.value() != Enum::A_FSIN || (reg_a.is_reg() && reg_b.is_reg()), 
+  assertq(src.ALU.op.value() != Enum::A_FSIN || (reg_a.is_reg() && reg_b.is_reg()), 
 		"sin has smallims");
 
-  auto dst_reg = encodeDestReg(src_instr);
+  auto dst_reg = encodeDestReg(src);
   assert(dst_reg);
 
-  int num_ops = src_instr.ALU.num_operands();
+  int num_ops = src.ALU.num_operands();
 
-  switch (src_instr.ALU.op.value()) {
-	  case Enum::A_FSIN:
-  	  assert(num_ops == 1);
-   	 	ret << fsin(*dst_reg, reg_a);
-    	break;
-  	case Enum::A_FFLOOR:
-    	assert(num_ops == 1);
-    	ret << ffloor(*dst_reg, reg_a);
-    	break;
-  	case Enum::A_TMUWT:
-    	assert(num_ops == 0);
-    	ret << tmuwt();
-    	break;
+  switch (src.ALU.op.value()) {
+	  case Enum::A_FSIN:   assert(num_ops == 1); ret << fsin(*dst_reg, reg_a);   break;
+  	case Enum::A_FFLOOR: assert(num_ops == 1); ret << ffloor(*dst_reg, reg_a); break;
+  	case Enum::A_TMUWT:  assert(num_ops == 0); ret << tmuwt();                 break;
+  	case Enum::A_EIDX:   assert(num_ops == 0); ret << eidx(*dst_reg);          break;
+
   	case Enum::A_TIDX:
     	breakpoint  // Apparently never called?
     	assert(num_ops == 0);
     	ret << tidx(*dst_reg);
     	break;
-  	case Enum::A_EIDX:
-    	assert(num_ops == 0);
-    	ret << eidx(*dst_reg);
-    	break;
+
   	case Enum::A_MOV: {
     	assert(num_ops == 1);
 
     	auto tmp = mov(*dst_reg, reg_a);
 
-			if (Platform::compiling_for_vc7() && *dst_reg == tmua) {
+			if (Platform::compiling_for_vc7() && *dst_reg == tmua && !prev_is_tmud) {
 				//warn << "Doing tmua brainfart";
 
 				// Following thrsw and nop's absolutely required on vc7, verified
@@ -198,10 +193,10 @@ bool translateOpcode(Target::Instr const &src_instr, Instructions &ret) {
 	  default: {
   	  // Handle general case
  			Mnemonic tmp;
-	    if (tmp.alu_set(src_instr)) {
+	    if (tmp.alu_set(src)) {
 
 				// Copy of the above, couldn't figure out how to merge it properly, brainfog.
-				if (Platform::compiling_for_vc7() && *dst_reg == tmua) {
+				if (Platform::compiling_for_vc7() && *dst_reg == tmua && !prev_is_tmud) {
 					//warn << "Doing tmua brainfart 2";
 
 					// Following thrsw and nop's absolutely required on vc7, verified
@@ -217,14 +212,14 @@ bool translateOpcode(Target::Instr const &src_instr, Instructions &ret) {
   }
 
   if (did_something) {
+		prev_is_tmud = (*dst_reg == tmud);
 		return true;
 	}
 
-  auto const &src_alu = src_instr.ALU;
-  std::string msg = "translateOpcode(): Unknown conversion for src ";
-  msg  << "op: " << src_alu.op.value()
-       << ", instr: " << src_instr.dump();
-  assertq(false, msg, true);
+  auto const &src_alu = src.ALU;
+  cerr  << "op: " << src_alu.op.value()
+        << ", instr: " << src.dump()
+				<< thrw;
 
   return false;
 }
@@ -285,29 +280,6 @@ void handle_condition_tags(V3DLib::Instr const &src_instr, Instructions &ret) {
 
   ret.back().set_push_tag(setCond);
 
-  //
-  // Add and mul alus are set to have the same destination, normally this is risky!
-  // However, in this case the dst is a dummy (assumption? check), so if the hardware
-  // allows it, this is ok.
-  //
-  // or.pushz  r0, r3, r3 ; mov.pushz  r0, r3
-  //
-/*
-  Instructions tmp;
-  assertq(translateOpcode(src_instr, tmp), "translateOpcode() failed");
-  assert(tmp.size() == 1);
-  Instr &tmp_instr = tmp[0];
-*/
-/*
-  Instr tmp_instr;
-  if(!tmp_instr.alu_mul_set(src_instr)) {
-    assert(false);
-  }
-
-  tmp_instr.set_push_tag(setCond);
-*/
-
-
   Instr tmp_instr;
   auto reg = encodeDestReg(src_instr);
   assert(reg);
@@ -315,11 +287,11 @@ void handle_condition_tags(V3DLib::Instr const &src_instr, Instructions &ret) {
 
   ret << tmp_instr;
 
-  if (false) {
-    warn   << "handle_condition_tags() "
-           << "v3d final: " << ret.back().mnemonic() << "'\n"
-           << "v3d tmp: " << tmp_instr.mnemonic() << "'\n";
-  }
+/*
+  warn << "handle_condition_tags() "
+       << "v3d final: " << ret.back().mnemonic() << "'\n"
+       << "v3d tmp: " << tmp_instr.mnemonic() << "'\n";
+*/			 
 }
 
 
