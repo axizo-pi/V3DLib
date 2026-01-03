@@ -24,7 +24,6 @@ void prefetch_kernel(Ptr dst, Ptr src) {
   *dst = inputa;
   dst.inc();
 
-/*
   //
   // With regular gather
   //
@@ -53,14 +52,13 @@ void prefetch_kernel(Ptr dst, Ptr src) {
   T b = 2468;                 // Interference
   prefetch(input2, src);      comment("Second prefetch");
   T input3 = -6;
-  prefetch(input3, src / *+ 0 * /);  comment("Test usage PointerExpr");
+  prefetch(input3, src + 0 );  comment("Test usage PointerExpr");
 
   *dst = input;
   dst.inc();
   *dst = input2;
   dst.inc();
   *dst = input3;
-*/
 }
 
 
