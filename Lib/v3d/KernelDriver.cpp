@@ -153,7 +153,7 @@ Instructions tmua_brainfart(Mnemonic &instr, bool prev_is_tmud) {
 
 	if (Platform::compiling_for_vc7() && instr.add_dest() == tmua) {
 		if (!prev_is_tmud) {
-			warn << "Doing tmua brainfart";
+			//warn << "Doing tmua brainfart";
 
 			// Following thrsw and nop's absolutely required on vc7, verified
 			instr.thrsw();
@@ -226,12 +226,11 @@ bool translateOpcode(Target::Instr const &src, Instructions &ret) {
 
 			if (Platform::compiling_for_vc7() && *dst_reg == tmua) {
   			assert(!reg_a.is_imm());
-				warn << "default src: " << src.dump();
-				warn << "default tmp: " << tmp.dump();
-				//breakpoint;
+				//warn << "default src: " << src.dump();
+				//warn << "default tmp: " << tmp.dump();
 
   			if (op == Enum::A_ADD && reg_b.is_imm()) {
-					cerr << "translateOpcode(): add(tmua, dst, imm) does not work for vc7";
+					warn << "translateOpcode(): add(tmua, dst, imm) does not work for vc7, adjusting";
 
 					// It is very probable that the PointExpr addition has been done beforehand,
 					// but is not being used. Ignoring that for now. TODO: examine 
@@ -249,13 +248,13 @@ bool translateOpcode(Target::Instr const &src, Instructions &ret) {
 									<< tmua_brainfart(tmp3, prev_is_tmud)
 						      << tmp4;
 
-					warn << "tmp_ret:\n" << tmp_ret.dump();
+					//warn << "tmp_ret:\n" << tmp_ret.dump();
 
 					ret << tmp_ret;
 
 					changed = true;
 				} else {
-					warn << "default brainfart";
+					//warn << "default brainfart";
 					ret << tmua_brainfart(tmp, prev_is_tmud);
 					changed = true;
 				}
@@ -265,18 +264,6 @@ bool translateOpcode(Target::Instr const &src, Instructions &ret) {
 				ret << tmp;
 			}
 
-/*
-				// Copy of the above, couldn't figure out how to merge it properly, brainfog.
-				if (Platform::compiling_for_vc7() && *dst_reg == tmua && !prev_is_tmud) {
-					//warn << "Doing tmua brainfart 2";
-
-					// Following thrsw and nop's absolutely required on vc7, verified
-					tmp.thrsw();
-					ret << tmp << nop() << nop();
-				} else {
-					ret << tmp;
-				}
-*/				
 			break;
 	  }
   }

@@ -11,10 +11,10 @@
  * Its goal is to produce distinct peaks in the transform,
  * despite noise and such.
  *
- * Note that it uses the son/cos approximation of V3DLib.
+ * Note that it uses the sin/cos approximation of V3DLib.
  */
 float wavelet_function(int c, int const Dim) {
-  using namespace V3DLib;
+  using namespace V3DLib::functions::scalar;
   assert(c < Dim);
 
   float offset = 0.1f;
@@ -23,10 +23,10 @@ float wavelet_function(int c, int const Dim) {
   float freq1       =  1.0f / ((float) Dim);
   float freq2       = 45.0f / ((float) Dim);
 
-  float filter = functions::sin(freq_filter*((float) c), true);
-  float noise = 0.3f *random_float();
-  float val1  = 1.0f *functions::sin(freq1*((float) c), true);
-  float val2  = 0.75f*functions::sin(freq2*((float) c), true);
+  float filter = sin(freq_filter*((float) c), true);
+  float noise = 0.3f * V3DLib::random_float();
+  float val1  = 1.0f * sin(freq1*((float) c), true);
+  float val2  = 0.75f* sin(freq2*((float) c), true);
 
   return (offset + noise + (filter*filter)*(val1 + val2));
 }

@@ -900,7 +900,7 @@ TEST_CASE("Test functions [dsl][func][pass2]") {
 
     {
       for (int x = 0; x < size; ++x) {
-        scalar_cos[x] = functions::cos(freq*((float) (x - offset)));
+        scalar_cos[x] = functions::scalar::cos(freq*((float) (x - offset)));
       };
 
       float max_diff = calc_max_diff(scalar_cos, lib_cos, size); 
