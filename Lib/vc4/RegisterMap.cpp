@@ -108,41 +108,14 @@ void RegisterMap::checkVersionString(uint32_t  reg) {
 
   buf[0] = reg & 0xff;
   buf[1] = (reg >> 8)  & 0xff;
-buf[2] = (reg >> 16)  & 0xff;
+  buf[2] = (reg >> 16)  & 0xff;
   buf[3] = '\0';
   
   if (strncmp(ident, buf, 3)) {
     printf("Id string is not the expected 'V3D' but '%s'!\n", buf);
   } else {
-    printf("Id string checks out\n");
+    //printf("Id string checks out\n");
   }
-
-/*
-  uint32_t buf2 = 0;
-  buf2 |= (ident[0]);
-  buf2 |= (ident[1] <<  8) & 0x00ff00;
-  buf2 |= (ident[2] << 16) & 0xff0000;
-
-
-  // Search the memory area for the given string
-  const unsigned STEP = 1000;
-  const unsigned MAX = 102400;
-  unsigned length = size() >> 2;
-  if (length > MAX) length = MAX;
-
-  for (unsigned s = 0; s < length; ++s) {
-    if (s % STEP == 0) {
-      printf("%u,",s);
-    }
-
-    uint32_t val = instance().m_addr[s];
-    if ((val & 0x00ffffff) == buf2) {
-      printf("Found '%s' at register: %08X\n", buf,  s);
-    }
-  }
-
-  printf("\n");
-*/
 }
 
 

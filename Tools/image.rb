@@ -8,8 +8,22 @@
 ###################################################
 require 'rmagick'
 
-cat = Magick::ImageList.new("mandelbrot.pgm")
-cat.display
+list = Magick::ImageList.new #("*.pgm")
+
+index = 0
+filename = "#{index}_heatmap.pgm"
+
+while File.exist?(filename) && (index < 200)
+	#puts "#{filename} exists"
+	list.read filename
+
+	index += 1
+	filename = "#{index}_heatmap.pgm"
+end
+
+list.display
+puts "Displaying"
+#list.animate
 
 puts "Done"
 
