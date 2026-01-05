@@ -185,6 +185,8 @@ void heatmap_kernel(Float::Ptr map, Float::Ptr mapOut, Int height, Int width) {
  * i.e. there is constant cold at the edges.
  */
 void run_kernel() {
+	bool output_sequence = false;
+
   // Allocate and initialise input and output maps
   Float::Array mapA(settings.SIZE);
   Float::Array mapB(settings.SIZE);
@@ -206,6 +208,12 @@ void run_kernel() {
     } else {
       k.load(&mapA, &mapB, settings.HEIGHT, settings.WIDTH).run();  // Load the uniforms and invoke the kernel
     }
+
+		if (output_sequence) {
+			std::string filename;
+			filename << i << "_heatmap.pgm";
+  		output_pgm_file(mapB, settings.WIDTH, settings.HEIGHT, 255, filename.c_str());
+		}
   }
 
   timer.end(!settings.silent);
