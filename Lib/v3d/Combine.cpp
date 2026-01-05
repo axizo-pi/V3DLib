@@ -305,13 +305,9 @@ bool alu_to_mul_alu(Instr const &src, Instr &dst) {
 		auto dst_loc = src.add_alu_dst();
   	ret.alu_mul_dst(*dst_loc);  // dst (waddr) is always safe
 
-  	if (!ret.alu_mul_a(alu_add_a)) {
-			return false;
-		}
+  	if (!ret.alu_mul_a(alu_add_a)) return false;
+  	if (!ret.alu_mul_b(alu_add_b)) return false;
 
-  	if (!ret.alu_mul_b(alu_add_b)) {
-			return false;
-		}
   } else {                  // Take the values from alu mul
     ret.alu.mul.op = src.alu.mul.op;
 		auto dst_loc = src.mul_alu_dst();
