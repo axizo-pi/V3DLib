@@ -1,7 +1,7 @@
 #
 # This file is generated!  Editing it directly is a bad idea.
 #
-# Generated on: Sat 20 Dec 2025 09:11:26 AM CET
+# Generated on: Mon 05 Jan 2026 06:49:32 AM CET
 #
 ###############################################################################
 
@@ -116,7 +116,6 @@ OBJ := \
 # All programs in the Examples *and Tools* directory
 EXAMPLES := \
   Concurrent  \
-  DirectQPU  \
   DMA  \
   GCD  \
   HeatMap  \
@@ -130,6 +129,7 @@ EXAMPLES := \
   Counter  \
   detectPlatform  \
   Instruction  \
+  Sub  \
 
 # support files for tests
 TESTS_FILES := \

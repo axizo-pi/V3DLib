@@ -125,7 +125,7 @@ public:
   bool alu_add_set(Target::Instr const &src_instr);
   bool alu_mul_set(Target::Instr const &src_instr);
 
-  bool alu_set(Target::Instr const &src_instr);
+  bool alu_set(Target::Instr src);
 
 	// BaseSource implementation
   bool alu_add_a(BaseSource const &src, bool overwrite = false);

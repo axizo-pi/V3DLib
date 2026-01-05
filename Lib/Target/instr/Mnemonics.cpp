@@ -258,7 +258,7 @@ Instr shr(Reg dst, Reg srcA, int n) {
  * Generate addition instruction.
  */
 Instr add(Reg dst, Reg srcA, Reg srcB) {
-  return genInstr(Enum::A_ADD, dst, srcA, srcB);
+	return genInstr(Enum::A_ADD, dst, srcA, srcB);
 }
 
 

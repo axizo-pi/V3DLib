@@ -7,6 +7,8 @@ namespace V3DLib {
 namespace v3d {
 namespace instr {
 
+class Register;
+
 class DestReg {
 public:
   DestReg() : m_used(false) {}
@@ -18,6 +20,8 @@ public:
     if (!m_used || !rhs.m_used) return false;
     return (m_waddr == rhs.m_waddr && m_magic_write == rhs.m_magic_write);
   }
+
+  bool operator==(Register const &rhs) const;
 
   bool is_magic() const { return m_magic_write; }
 
@@ -48,6 +52,7 @@ public:
   Register swp() const;
 
   bool is_dest_acc() const { return m_is_dest_acc; }
+  bool is_mux_set() const { return m_mux_is_set; }
   std::string const &name() const { return m_name; }
 
   bool operator==(Location const &rhs) const override;

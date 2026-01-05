@@ -1,35 +1,28 @@
 #include <V3DLib.h>
 #include "support/support.h"
+#include "Support/Helpers.h"
 
 namespace {
 
 using namespace V3DLib;
 
 template<typename T, typename Ptr>
-void prefetch_kernel(Ptr result, Ptr in_src) {
-  Ptr src = in_src;
-  Ptr dst = result;
+void prefetch_kernel(Ptr dst, Ptr src) {
 
   //
   // The usual way of doing things
   //
 
-//  input = *src; //cannot bind non-const lvalue reference of type ‘V3DLib::Int&’ to an rvalue of type ‘V3DLib::Int’
   T input = *src;  comment("Start regular fetch/store");
 
-  src += 16;
+  src.inc();
   *dst = input;
-  dst += 16;
+  dst.inc();
 
-  // See above
-//  input = *src;
-//  src += 16;
-//  *dst = input;
-//  dst += 16;
   T inputa = *src;
-  src += 16;
+  src.inc();
   *dst = inputa;
-  dst += 16;
+  dst.inc();
 
   //
   // With regular gather
@@ -40,30 +33,31 @@ void prefetch_kernel(Ptr result, Ptr in_src) {
   gather(src + 16);
   receive(input);
   *dst = input;
-  dst += 16;
+  dst.inc();
   receive(input);
   *dst = input;
-  dst += 16;
+  dst.inc();
 
 
   //
   // Now with prefetch
   //
-  *dst = 123;  comment("Start prefetch");
+  *dst = 123;                 comment("Start prefetch");
+
   src += 32;
   input = -3;
   T input2 = -4;
-  T a = 1357;             // Interference
-  prefetch(input, src);
-  T b = 2468;             // Interference
-  prefetch(input2, src);
+  T a = 1357;                 // Interference
+  prefetch(input, src);       comment("First prefetch");
+  T b = 2468;                 // Interference
+  prefetch(input2, src);      comment("Second prefetch");
   T input3 = -6;
-  prefetch(input3, src + 0);  // For test of usage PointerExpr
+  prefetch(input3, src + 0 );  comment("Test usage PointerExpr");
 
   *dst = input;
-  dst += 16;
+  dst.inc();
   *dst = input2;
-  dst += 16;
+  dst.inc();
   *dst = input3;
 }
 
@@ -97,6 +91,7 @@ TEST_CASE("Test prefetch on stmt stack [prefetch]") {
     result.fill(-1);
 
     auto k = compile(prefetch_kernel<Int, Int::Ptr>);
+		to_file("prefetch_kernel<Int>.txt", k.dump());
     k.load(&result, &src).run();
   
     for (int i = 0; i < (int) result.size(); ++i) {

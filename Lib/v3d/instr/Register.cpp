@@ -1,11 +1,19 @@
 #include "Register.h"
-#include "Support/basics.h"  // Exception
+#include "Support/basics.h"    // Exception
 #include "Support/Platform.h"  // Exception
 #include "RFAddress.h"
+//#include "Encode.h"            // encodeSrcReg();
 
 namespace V3DLib {
 namespace v3d {
 namespace instr {
+
+bool DestReg::operator==(Register const &rhs) const {
+  if (!m_used) return false;
+	if (is_magic() != rhs.is_special()) return false;
+			
+	return (m_waddr == rhs.to_waddr());
+}
 
 std::string DestReg::dump() const {
 	std::string ret;

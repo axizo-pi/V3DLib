@@ -6,15 +6,14 @@
 #include "Target/RemoveLabels.h"
 #include "vc4.h"
 #include "DMA/Operations.h"
-#include "dump_instr.h"
 #include "Target/instr/Mnemonics.h"
 #include "SourceTranslate.h"  // add_uniform_pointer_offset()
 #include "Target/Satisfy.h"
 #include "RegAlloc.h"
 #include <stdio.h>
 #include <stdlib.h>
-#include <fstream>
 #include "global/log.h"
+#include "Instr.h"
 
 using namespace Log;
 
@@ -31,18 +30,18 @@ namespace {
 /**
  * vc4 LDTMU implicitly writes to ACC4, take this into account
  */
-void loadStorePass(Instr::List &instrs) {
+void loadStorePass(Target::Instr::List &instrs) {
   using namespace V3DLib::Target::instr;
 
-  Instr::List newInstrs(instrs.size()*2);
+  Target::Instr::List newInstrs(instrs.size()*2);
 
   for (int i = 0; i < instrs.size(); i++) {
-    Instr instr = instrs[i];
+    Target::Instr instr = instrs[i];
 
 		auto acc4 = ACC4();   // Should not be converted to rf here
 
     if (instr.tag == RECV && instr.dest() != acc4) {
-      Instr::List tmp(2);
+      Target::Instr::List tmp(2);
       tmp << recv(acc4)
           << mov(instr.dest(), acc4);
       tmp.front().transfer_comments(instr);
@@ -63,7 +62,7 @@ void loadStorePass(Instr::List &instrs) {
 /**
  * @param targetCode  output variable for the target code assembled from the AST and adjusted
  */
-void compile_postprocess(Instr::List &targetCode) {
+void compile_postprocess(Target::Instr::List &targetCode) {
   assertq(!targetCode.empty(), "compile_postprocess(): passed target code is empty");
 
 	loadStorePass(targetCode);
@@ -139,40 +138,8 @@ void KernelDriver::encode() {
 
 
 std::string KernelDriver::emit_opcodes() {
-	std::string ret;
-
   encode();
-
-  if (qpuCodeMem.empty()) {
-    ret << "<No opcodes to print>\n";
-		return ret;
-	}
-
-  std::string filename = "vc4_code_tmp.txt";
-
-  //
-	// dump_instr() is redirected to a file, make it first
-  //
-  FILE *f = fopen(filename.c_str(), "w");
- 	assert (f != nullptr);
-
-  dump_instr(f, qpuCodeMem.ptr(), qpuCodeMem.size());
-
-  fclose(f);
-
-	// Load redirected file int ret
-	std::ifstream file(filename);
-  assert(file.is_open());
-
-  // Read the file line by line into a string
-  string line;
-  while (getline(file, line)) {
-    ret << line << "\n";
-  }
-
-  file.close();
-
-	return ret;
+  return vc4::opcodes(qpuCodeMem);
 }
 
 
@@ -197,7 +164,7 @@ void KernelDriver::compile_intern() {
     Reg tmp1 = VarGen::fresh();
     //Reg tmp2 = VarGen::fresh();
 
-    Instr::List ret;
+    Target::Instr::List ret;
     ret << mov(tmp1, Var(UNIFORM))
         << add_uniform_pointer_offset(m_targetCode);  // !!! NOTE: doesn't take dummy in previous into account
                                                       // This should not be a problem
@@ -212,7 +179,7 @@ void KernelDriver::compile_intern() {
     m_targetCode.insert(index + 1, ret);
   }
 
-  m_targetCode << Instr(END);
+  m_targetCode << Target::Instr(END);
 
   compile_postprocess(m_targetCode);
 

@@ -175,24 +175,26 @@ void matrix_mult_scalar(int N, float *dst, float *a, float *b) {
 }
 
 
-void create_block_kernel(Int const &in_offset, std::function<void (Int const &offset)> f) {
+void create_block_kernel(Int const &in_offset, std::function<void (Int const &offset, bool zero_offset)> f) {
   auto &settings = get_matrix_settings();
 
   if (settings.use_multi_kernel_calls) {
     // Use a separate kernel for every offset
-    f(in_offset);
+    f(in_offset, false);
   } else {
     // Use a single block for the offsets
     // param in_offset ignored here
 
     // First call doesn't need to get the result values for addition; they are zero anyway
     settings.add_result = false;
-    f(0);
+		//Log::warn << "create_block_kernel() first call offset 0";
+    f(0, true);
 
     if (settings.num_blocks() == 2) {
       settings.add_result = true;
       Int offset = settings.width();
-      f(offset);
+			//Log::warn << "create_block_kernel() 2 blocks offset " << settings.width();
+      f(offset, false);
     }
   }
 }

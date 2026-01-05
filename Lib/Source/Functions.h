@@ -22,17 +22,19 @@ IntExpr integer_division_f(IntExpr in_a, IntExpr in_b);
 
 inline IntExpr operator-(IntExpr a) { return two_complement(a); }
 
-float cos(float x_in, bool extra_precision = false) noexcept;
-float sin(float x_in, bool extra_precision = false) noexcept;
-
 FloatExpr cos(FloatExpr x_in, bool extra_precision = false);
 FloatExpr sin(FloatExpr x_in, bool extra_precision = false);
 FloatExpr sin_v3d(FloatExpr x_in);
-FloatExpr cos_v3d(FloatExpr x_in);
 
 FloatExpr ffloor(FloatExpr x);
 FloatExpr fabs(FloatExpr x);
 
+namespace scalar {
+
+float cos(float x_in, bool extra_precision = false) noexcept;
+float sin(float x_in, bool extra_precision = false) noexcept;
+
+} // namespace scalar
 }  // namespace functions
 
 void rotate_sum(Int &input, Int &result);

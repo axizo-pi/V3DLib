@@ -399,7 +399,13 @@ Mnemonic barrierid(v3d_qpu_waddr waddr) {
 
 
 Mnemonic ffloor(Location const &dst, Source const &srca) {
-  Mnemonic instr(V3D_QPU_A_FFLOOR, dst, srca, r1);  // r1 apparently implicit
+	if (Platform::compiling_for_vc7()) {
+		// src_b is not used but for the  logic should not be an acc
+  	Mnemonic instr(V3D_QPU_A_FFLOOR, dst, srca, Source(RFAddress(0)));
+
+		return instr;
+	} else {
+  	Mnemonic instr(V3D_QPU_A_FFLOOR, dst, srca, r1);  // r1 apparently implicit
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wconversion"
@@ -408,7 +414,8 @@ Mnemonic ffloor(Location const &dst, Source const &srca) {
 
 #pragma GCC diagnostic pop
 
-  return instr;
+  	return instr;
+	}
 }
 
 
@@ -744,11 +751,21 @@ Mnemonic bexp(Location const &dst, Location const &a) {
 Mnemonics fsin(Location const &dst, Source const &a) {
   Mnemonics ret;
 
-  // bsin returns nothing, use the SFU reg instead
-  ret << mov(sin, a).comment("v3d sin")
-      << nop()   // This to prevent r4 used in the meantime, can be specified further
-      << nop()
-      << mov(dst, r4);
+	if (Platform::compiling_for_vc7()) {
+  	Mnemonic instr;
+  	instr.alu_add_dst(dst);
+	  instr.alu_add_a(a);
+	  instr.alu.add.op = V3D_QPU_A_SIN;
+		instr.comment("vc7 sin");
+		ret << instr;
+	} else {
+
+	  // bsin returns nothing, use the SFU reg instead
+  	ret << mov(sin, a).comment("v3d sin")
+    	  << nop()   // This to prevent r4 used in the meantime, can be specified further
+      	<< nop()
+      	<< mov(dst, r4);
+	}
 
   return ret;
 }

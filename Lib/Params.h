@@ -64,18 +64,16 @@ template <typename T> bool append(
 	T val
 ) {
 	bool ret = true;
-	Log::debug << "Here t2 " << index << ": " << (unsigned) var_type(val) << "\n";
+	//Log::debug << "Here t2 " << index << ": " << (unsigned) var_type(val) << "\n";
 
 	if (var_type(val) != typelist[index]) {
 		Log::cerr << "ERROR incorrect type for param at index " << index << "\n";
 		ret = false;
 	} else {
-		Log::debug << "Param " << index << ": checks out.";
+		//Log::debug << "Param " << index << ": checks out.";
 	}
 
   uniforms.append(param_value(val));
-  //bool tmp = T::passParam(uniforms, val);
-	//assert(tmp);
 	++index;
 	return ret;
 }

@@ -247,11 +247,19 @@ IntExpr integer_division_f(IntExpr in_a, IntExpr in_b) {
 // Trigonometric functions
 ///////////////////////////////////////////////////////////////////////////////
 
+namespace scalar {
+
 /**
- * scalar version of cosine
+ * scalar version of cosine.
+ *
+ * This circumvents the QPU cos() function.
  *
  * The input param is normalized on 2*M_PI. Hence setting `x = 1.0f` means that
  * `cos(2*M_PI) is calculated.
+ *
+ * From source:
+ *   If EXTRA_PRECISION is defined, the maximum error is about 0.00109 for the range -π to π,i
+ *   assuming T is double. Otherwise, the maximum error is about 0.056 for the same range.
  *
  * Source: https://stackoverflow.com/questions/18662261/fastest-implementation-of-sine-cosine-and-square-root-in-c-doesnt-need-to-b/28050328#28050328
  */
@@ -265,7 +273,8 @@ float cos(float x_in, bool extra_precision) noexcept {
   x *= 16. * (std::abs(x) - .5);
 
   if (extra_precision) {
-    x += .225 * x * (std::abs(x) - 1.);
+		//Log::warn << "doing extra precision 2";
+    x += .225 * x * (std::abs(x) - 1.0f);
   }
 
   return (float) x;
@@ -278,10 +287,17 @@ float cos(float x_in, bool extra_precision) noexcept {
  * NB: The input param is normalized on 2*M_PI.
  */
 float sin(float x_in, bool extra_precision) noexcept {
-  return functions::cos(0.25f - x_in, extra_precision);
+  return functions::scalar::cos(0.25f - x_in, extra_precision);
 }
 
+} // namespace scalar
 
+
+/**
+ * This circumvents the SFU cos() function.
+ *
+ * See header comment of scalar cos().
+ */
 FloatExpr cos(FloatExpr x_in, bool extra_precision) {
   // setting to true in param overrides lib setting
   extra_precision |= LibSettings::use_high_precision_sincos();
@@ -292,6 +308,7 @@ FloatExpr cos(FloatExpr x_in, bool extra_precision) {
   x *= 16.0f * (fabs(x) - 0.5f);
 
   if (extra_precision) {
+		//Log::warn << "doing extra precision";
     x += 0.225f * x * (fabs(x) - 1.0f);
   }
 
@@ -300,7 +317,7 @@ FloatExpr cos(FloatExpr x_in, bool extra_precision) {
 
 
 FloatExpr sin(FloatExpr x_in, bool extra_precision) {
-    return cos(0.25f - x_in, extra_precision);
+	return cos(0.25f - x_in, extra_precision);
 }
 
 
@@ -355,7 +372,7 @@ FloatExpr sin(FloatExpr x_in, bool extra_precision) {
  *   Okay, that was real interesting.
  */
 FloatExpr sin_v3d(FloatExpr x_in) {
-  //debug("using v3d sin");
+	//Log::warn << "using v3d sin";
 
   return create_float_function_snippet([x_in] {
     Float tmp = x_in;                    comment("Start source lang v3d sin");

@@ -29,6 +29,7 @@ public:
 	LogItem &operator<<(const char *str);
 	LogItem &operator<<(int n);
 	LogItem &operator<<(unsigned n);
+	LogItem &operator<<(unsigned long n);
 	LogItem &operator<<(float n);
 	LogItem &operator<<(double n);
 	LogItem &operator<<(LogFlag f);

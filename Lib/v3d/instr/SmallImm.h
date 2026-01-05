@@ -31,6 +31,8 @@ public:
 
   std::string dump() const;
 
+	int to_int() const;
+
   static bool int_to_opcode_value(int value, int &rep_value);
   static bool float_to_opcode_value(float value, int &rep_value);
   static bool is_legal_encoded_value(int value);

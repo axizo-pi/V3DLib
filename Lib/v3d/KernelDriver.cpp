@@ -2,6 +2,7 @@
 #include <iostream>
 #include <memory>
 #include "Source/Translate.h"
+#include "Target/instr/Mnemonics.h"
 #include "Target/SmallLiteral.h"  // decodeSmallLit()
 #include "Target/RemoveLabels.h"
 #include "instr/Snippets.h"
@@ -140,78 +141,145 @@ bool handle_special_index(V3DLib::Instr const &src_instr, Instructions &ret) {
 }
 
 
-bool translateOpcode(V3DLib::Instr const &src_instr, Instructions &ret) {
-  if (handle_special_index(src_instr, ret)) return true;
+namespace {
+
+Instructions tmua_brainfart(Mnemonic &instr, bool prev_is_tmud) {
+	Instructions ret;
+
+	bool changed = false;
+
+	// prev_is_tmud: Do for write only
+	//warn << "is tmua: " << (instr.add_dest() == tmua);
+
+	if (Platform::compiling_for_vc7() && instr.add_dest() == tmua) {
+		if (!prev_is_tmud) {
+			//warn << "Doing tmua brainfart";
+
+			// Following thrsw and nop's absolutely required on vc7, verified
+			instr.thrsw();
+			ret << instr << nop() << nop();
+			changed = true;
+		}
+	}
+
+	if (!changed) {
+		ret << instr;
+	}
+
+	return ret;
+}
+
+} // anon namespace
+
+
+bool translateOpcode(Target::Instr const &src, Instructions &ret) {
+	static bool prev_is_tmud = false;
+
+  if (handle_special_index(src, ret)) {
+		prev_is_tmud = false;
+		return true;
+	}
 
   bool did_something = true;
 
-  auto reg_a = src_instr.ALU.srcA;
-  auto reg_b = src_instr.ALU.srcB;
+  auto reg_a  = src.ALU.srcA;
+  auto reg_b  = src.ALU.srcB;
+	auto op     = src.ALU.op.value(); 
+  int num_ops = src.ALU.num_operands();
 
-  assertq(src_instr.ALU.op.value() != Enum::A_FSIN || (reg_a.is_reg() && reg_b.is_reg()), 
-		"sin has smallims");
+  assertq(op != Enum::A_FSIN || (reg_a.is_reg() && reg_b.is_reg()), "sin has smallims");
 
-  auto dst_reg = encodeDestReg(src_instr);
+  auto dst_reg = encodeDestReg(src);
   assert(dst_reg);
 
-  int num_ops = src_instr.ALU.num_operands();
 
-  switch (src_instr.ALU.op.value()) {
-  case Enum::A_FSIN:
-    assert(num_ops == 1);
-    ret << fsin(*dst_reg, reg_a);
-    break;
-  case Enum::A_FFLOOR:
-    assert(num_ops == 1);
-    ret << ffloor(*dst_reg, reg_a);
-    break;
-  case Enum::A_TMUWT:
-    assert(num_ops == 0);
-    ret << tmuwt();
-    break;
-  case Enum::A_TIDX:
-    breakpoint  // Apparently never called?
-    assert(num_ops == 0);
-    ret << tidx(*dst_reg);
-    break;
-  case Enum::A_EIDX:
-    assert(num_ops == 0);
-    ret << eidx(*dst_reg);
-    break;
-  case Enum::A_MOV: {
-    assert(num_ops == 1);
+  switch (op) {
+	  case Enum::A_FSIN:   assert(num_ops == 1); ret << fsin(*dst_reg, reg_a);   break;
+  	case Enum::A_FFLOOR: assert(num_ops == 1); ret << ffloor(*dst_reg, reg_a); break;
+  	case Enum::A_TMUWT:  assert(num_ops == 0); ret << tmuwt();                 break;
+  	case Enum::A_EIDX:   assert(num_ops == 0); ret << eidx(*dst_reg);          break;
 
-    auto tmp = mov(*dst_reg, reg_a);
+  	case Enum::A_TIDX:
+    	breakpoint  // Apparently never called?
+    	assert(num_ops == 0);
+    	ret << tidx(*dst_reg);
+    	break;
 
-		// BRAINFART: TODO cleanup. This solution is totally disgusting
-		if (*dst_reg == tmua) {
-			// Following thrsw and nop's absolutely required on vc7, verified
-			tmp.thrsw();
-			ret << tmp << nop() << nop();
-		} else {
-			ret << tmp;
-		}
-	 }
-   break;
-  default: {
-    // Handle general case
-    Instr instr;
+  	case Enum::A_MOV: {
+    	assert(num_ops == 1);
 
-    if (instr.alu_set(src_instr)) {
-      ret << instr;
-    } else {
-      did_something = false;
-    }
+    	auto tmp = mov(*dst_reg, reg_a);
+			ret << tmua_brainfart(tmp, prev_is_tmud);
+	 	}
+   	break;
+
+	  default: {
+  	  // Handle general case
+ 			Mnemonic tmp;
+
+	    if (!tmp.alu_set(src)) {
+	      did_something = false;
+				break;
+			}
+
+			bool changed = false;
+
+			if (Platform::compiling_for_vc7() && *dst_reg == tmua) {
+  			assert(!reg_a.is_imm());
+				//warn << "default src: " << src.dump();
+				//warn << "default tmp: " << tmp.dump();
+
+  			if (op == Enum::A_ADD && reg_b.is_imm()) {
+					warn << "translateOpcode(): add(tmua, dst, imm) does not work for vc7, adjusting";
+
+					// It is very probable that the PointExpr addition has been done beforehand,
+					// but is not being used. Ignoring that for now. TODO: examine 
+
+					// Do an interim add so that a mov can be used for tmua
+					std::unique_ptr<Location> src_p = encodeSrcReg(reg_a.reg());
+					auto tmp2  = add(*src_p, reg_a, reg_b);
+					auto tmp3  = mov(*dst_reg, reg_a);
+					auto tmp4  = sub(*src_p, reg_a, reg_b);
+
+					//warn << "tmp2: " << tmp2.dump();
+
+					Instructions tmp_ret;
+					tmp_ret << tmp2
+									<< tmua_brainfart(tmp3, prev_is_tmud)
+						      << tmp4;
+
+					//warn << "tmp_ret:\n" << tmp_ret.dump();
+
+					ret << tmp_ret;
+
+					changed = true;
+				} else {
+					//warn << "default brainfart";
+					ret << tmua_brainfart(tmp, prev_is_tmud);
+					changed = true;
+				}
+			}
+
+			if (!changed) {
+				ret << tmp;
+			}
+
+			break;
+	  }
   }
-  }
 
-  if (did_something) return true;
+  if (did_something) {
+		prev_is_tmud = (*dst_reg == tmud);
+		//warn << "did_something: " << prev_is_tmud;
+		return true;
+	} else {
+		warn << "NOT did_something";
+	}
 
-  auto const &src_alu = src_instr.ALU;
-  std::string msg = "translateOpcode(): Unknown conversion for src ";
-  msg  << "op: " << src_alu.op.value()
-       << ", instr: " << src_instr.dump();
-  assertq(false, msg, true);
+  auto const &src_alu = src.ALU;
+  cerr  << "op: " << src_alu.op.value()
+        << ", instr: " << src.dump()
+				<< thrw;
 
   return false;
 }
@@ -272,29 +340,6 @@ void handle_condition_tags(V3DLib::Instr const &src_instr, Instructions &ret) {
 
   ret.back().set_push_tag(setCond);
 
-  //
-  // Add and mul alus are set to have the same destination, normally this is risky!
-  // However, in this case the dst is a dummy (assumption? check), so if the hardware
-  // allows it, this is ok.
-  //
-  // or.pushz  r0, r3, r3 ; mov.pushz  r0, r3
-  //
-/*
-  Instructions tmp;
-  assertq(translateOpcode(src_instr, tmp), "translateOpcode() failed");
-  assert(tmp.size() == 1);
-  Instr &tmp_instr = tmp[0];
-*/
-/*
-  Instr tmp_instr;
-  if(!tmp_instr.alu_mul_set(src_instr)) {
-    assert(false);
-  }
-
-  tmp_instr.set_push_tag(setCond);
-*/
-
-
   Instr tmp_instr;
   auto reg = encodeDestReg(src_instr);
   assert(reg);
@@ -302,11 +347,11 @@ void handle_condition_tags(V3DLib::Instr const &src_instr, Instructions &ret) {
 
   ret << tmp_instr;
 
-  if (false) {
-    warn   << "handle_condition_tags() "
-           << "v3d final: " << ret.back().mnemonic() << "'\n"
-           << "v3d tmp: " << tmp_instr.mnemonic() << "'\n";
-  }
+/*
+  warn << "handle_condition_tags() "
+       << "v3d final: " << ret.back().mnemonic() << "'\n"
+       << "v3d tmp: " << tmp_instr.mnemonic() << "'\n";
+*/			 
 }
 
 
@@ -351,12 +396,17 @@ bool translateRotate(V3DLib::Instr const &instr, Instructions &ret) {
 		assert(dst_reg->is_rf());
 		assert(src_a->is_rf());
 		assert(reg_b.is_imm());  // rf not handled yet
+		assert(0 <= reg_b.imm().intVal() && reg_b.imm().intVal() < 16);;
+
+		// vc7 rotates in the other direction! Hoodathunk.
+		// Reverse the rotation order
+		int tmp_b = 16 - reg_b.imm().intVal();
 	
 		Instr dst_instr;
 		dst_instr.alu.add.op = V3D_QPU_A_ROT;
-  	dst_instr.alu_add_set(*dst_reg, *src_a, reg_b);
+  	dst_instr.alu_add_set(*dst_reg, *src_a, tmp_b);
 
-		cdebug << "translateRotate vc7 instruction: " << dst_instr.mnemonic(false);
+		//warn << "translateRotate vc7 instruction: " << dst_instr.mnemonic(false);
 
 		ret << dst_instr;
 
@@ -518,8 +568,8 @@ Instructions encodeInstr(V3DLib::Instr instr) {
     break;
 
     case LI:           ret << encode_LI(instr);   break;
-    case ALU:          ret << encodeALUOp(instr);           break;
-    case NO_OP:        ret << nop();                        break;
+    case ALU:          ret << encodeALUOp(instr); break;
+    case NO_OP:        ret << nop();              break;
 
     default:
       fatal("v3d: missing case in encodeInstr");

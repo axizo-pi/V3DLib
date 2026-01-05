@@ -1,6 +1,8 @@
 #include "Instr.h"
 #include "Support/basics.h"  // fatal()
 #include "global/log.h"
+#include "dump_instr.h"
+#include <fstream>
 
 using namespace Log;
 using namespace std;
@@ -120,7 +122,7 @@ string cond_code_to_str(Instr::ConditionCode cond) {
   return ret;
 }
 
-string brcond_to_str(Instr::BranchCondition cond) {
+string brcond_to_str(Instr::BranchCondition cond, bool show_always = true) {
   string ret;
 
   switch (cond) {
@@ -137,8 +139,8 @@ string brcond_to_str(Instr::BranchCondition cond) {
     case Instr::ANY_C_FLAGS_SET:   ret << "any(C)";  break;
     case Instr::ANY_C_FLAGS_CLEAR: ret << "any(!C)"; break;
 
-    case Instr::BR_SIZE:  assert(false); break;
-    case Instr::ALWAYS:   ret << "always"; break;
+    case Instr::BR_SIZE:  assert(false);                    break;
+    case Instr::ALWAYS:   if (show_always) ret << "always"; break;
   }
 
   return ret;
@@ -171,13 +173,17 @@ uint32_t Instr::high() const {
       |  (waddr_add <<  6) | (waddr_mul);
 
   if (enc == BRANCH_ENC) {
-    assert(raddr_a < 32);
     assert(cond_br < BR_SIZE);
+    assert(raddr_a   < 32);
 
-    ret |= (cond_br << 20)
-        |  (rel ?(1 << 19):0) 
-        |  (reg ?(1 << 18):0) 
-        |  (raddr_a << 13);
+    ret |= (cond_br    << 20)
+        |  (rel    ?(1 << 19):0) 
+        |  (reg    ?(1 << 18):0) 
+        |  (raddr_a    << 13)
+        |  (ws     ?(1 << 12):0) 
+        |  (waddr_add  <<  6)
+        |  (waddr_mul)
+    ;
   } else {
     assert(cond_add < 8);
     assert(cond_mul < 8);
@@ -186,7 +192,7 @@ uint32_t Instr::high() const {
     ret |= (pm ?(1 << 24):0)
         |  (pack      << 20)
         |  (cond_add  << 17) | (cond_mul << 14)
-        |  (sf ?(1 << 13):0) ;
+        |  (sf ?(1 << 13):0);
   }
 
 
@@ -522,9 +528,6 @@ void Instr::encode(Target::Instr const &instr) {
       breakpoint;
       break;
   }
-
-  //warn << instr.dump();
-  //warn << dump();
 }
 
 
@@ -602,10 +605,15 @@ std::string Instr::dump() const {
   if (enc == NONE) {
     return ret;  // Nothing to add
   } else if (enc == BRANCH_ENC) {
-    ret << " " << brcond_to_str(cond_br) << " ";
+    ret << " " << brcond_to_str(cond_br, false);
 
-    if (rel) ret << "+";
+    if (rel) ret << " (PC+4)+";
     ret << immediate;
+
+    if (reg) ret << "+rfa" << raddr_a;
+
+    if (waddr_add > 0) ret << " " << waddr_to_str(waddr_add, true) << ", ";
+    if (waddr_mul > 0) ret << " " << waddr_to_str(waddr_mul, true) << ", ";
 
   } else if (enc == LOAD_IMM) {
     ret << "("
@@ -661,10 +669,56 @@ std::string Instr::dump() const {
 
   if (pm)  ret << " pm";
   if (sf)  ret << " sf";
-  if (rel) ret << " rel";
-  if (reg) ret << " reg";
 
   return ret;
+}
+
+
+namespace {
+
+std::string opcodes(uint64_t const *data, int size) {
+  std::string ret;
+
+  if (size == 0) {
+    ret << "<No opcodes to print>\n";
+		return ret;
+	}
+
+  std::string filename = "vc4_code_tmp.txt";
+
+  //
+	// dump_instr() is redirected to a file, make it first
+  //
+  FILE *f = fopen(filename.c_str(), "w");
+ 	assert (f != nullptr);
+
+  dump_instr(f, data, size);
+
+  fclose(f);
+
+	// Load redirected file int ret
+	std::ifstream file(filename);
+  assert(file.is_open());
+
+  // Read the file line by line into a string
+  string line;
+  while (getline(file, line)) {
+    ret << line << "\n";
+  }
+
+  file.close();
+
+  return ret;
+}
+
+} // anon namespace
+
+std::string opcodes(Code const &code) {
+  return opcodes(code.ptr(), code.size());
+}
+
+std::string opcodes(std::vector<uint64_t> const &code) {
+  return opcodes(code.data(), code.size());
 }
 
 }  // namespace vc4
