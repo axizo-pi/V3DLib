@@ -1,3 +1,8 @@
+/**
+ * Test if QPU and CPU can communicate via main memory.
+ *
+ * Conclusion: doesn't work. Most likely because QPU uses cache
+ */
 #include "V3DLib.h"
 #include "Support/Settings.h"
 #include "Support/basics.h"
