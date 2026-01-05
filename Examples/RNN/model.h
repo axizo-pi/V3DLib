@@ -27,17 +27,18 @@ struct model {
 	{
 		w1_v.frand();
 		bias1.frand();
-		w2_v.frand();
+		w2.frand();
 		bias2.frand();
 	}
+
+	float alpha = 1;
 
 	matrix<N, M> w1_v;
 	vector<1> z1_v;
   vector<1> bias1;
   vector<1> a1;
 
-  //Float::Array w2;
-	matrix<1, 16> w2_v;
+	matrix<1, 16> w2;
   vector<1> bias2;
   vector<1> z2_v;
   vector<1> a2;
@@ -65,11 +66,11 @@ struct model {
   	//warn << "scalar sigmoid: " << vector_dump(s_tmp, 16);
   	//warn << "kernel sigmoid: " << a1.dump();
 
-  	z2_v = w2_v * a1;
+  	z2_v = w2 * a1;
 
-  	k.load(&a1.arr(), &w2_v.arr(), &s_tmp).run();
+  	k.load(&a1.arr(), &w2.arr(), &s_tmp).run();
 
-  	//run_scalar(a1.arr(), w2_v.arr(), s_tmp);
+  	//run_scalar(a1.arr(), w2.arr(), s_tmp);
   	//warn << "scalar z2: " << vector_dump(s_tmp, 16);
   	//warn << "kernel z2: " << z2_v.dump();
 
@@ -90,12 +91,27 @@ struct model {
 		return a2;
 	}
 
-	void back_prop(vector<2> &input, vector<1> &result) {
-  	warn << "Pre  a2: " << a2.dump();
-		auto la2 = forward(input);  // This does not change the value of a2!
-  	warn << "Post a2: " << la2.dump();
 
-		auto d2 = la2 - result; 
+	void back_prop(vector<2> &input, vector<1> &desired) {
+  	warn << "desired: " << desired.dump();
+  	//warn << "Pre  a2: " << a2.dump();
+		auto la2 = forward(input);  // Same as member a2; expected
+  	//warn << "Post la2: " << la2.dump();
+
+		//
+		// Output layer to hidden layer
+		//
+		auto d2     = la2 - desired; 
+  	warn << "d2: " << d2.dump();
+
+		auto w2_adj = a1.outer(d2);
+  	warn << "w2_adj:\n" << w2_adj.dump();
+
+		auto w2_tmp = w2 - alpha*w2_adj;
+  	warn << "w2_tmp:\n" << w2_tmp.dump();
+	
+		bias2 -= alpha * d2;
+  	warn << "bias2:\n" << bias2.dump();
 	}
 };
 

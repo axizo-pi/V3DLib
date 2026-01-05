@@ -718,7 +718,7 @@ std::string opcodes(Code const &code) {
 }
 
 std::string opcodes(std::vector<uint64_t> const &code) {
-  return opcodes(code.data(), code.size());
+  return opcodes(code.data(), (int) code.size());
 }
 
 }  // namespace vc4

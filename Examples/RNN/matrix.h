@@ -103,6 +103,37 @@ struct matrix {
 	}
 
 
+	Class operator-(Class const &rhs) {
+		Class ret;
+
+		for (int i = 0; i < (int) m_arr->size(); ++i) {
+			ret.arr()[i] = arr()[i] - rhs.arr()[i];
+		}
+
+		return ret;
+	}
+
+
+	Class &operator-=(Class const &rhs) {
+		for (int i = 0; i < (int) m_arr->size(); ++i) {
+			arr()[i] -= rhs.arr()[i];
+		}
+
+		return *this;
+	}
+
+
+	Class operator*(float rhs) {
+		Class ret;
+
+		for (int i = 0; i < (int) m_arr->size(); ++i) {
+			ret.arr()[i] = arr()[i]*rhs;
+		}
+
+		return ret;
+	}
+
+
 	std::string dump() const {
 		assert(m_arr != nullptr);
 		std::string ret;
@@ -150,6 +181,12 @@ private:
 		}
 	}
 };
+
+template<int const Width, int const Height>
+matrix<Width, Height> operator*(float scalar, matrix<Width, Height> &mat) {
+	auto ret = mat *scalar;
+	return ret;
+}
 
 
 template<int const Width, int const Height>
