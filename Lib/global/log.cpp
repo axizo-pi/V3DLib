@@ -80,6 +80,20 @@ LogItem &LogItem::operator<<(unsigned n) {
 }
 
 
+LogItem &LogItem::operator<<(unsigned long n) {
+  if (m_next_is_hex) {
+    char buf[64];
+    sprintf(buf, "0x%lx", n);
+    m_log.buf() << buf;
+
+    m_next_is_hex = false;
+  } else { 
+	  m_log.buf() << n;
+  }
+	return *this;
+}
+
+
 LogItem &LogItem::operator<<(float n) {
   m_log.buf() << n;
 	return *this;

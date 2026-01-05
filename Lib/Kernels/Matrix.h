@@ -117,15 +117,16 @@ void blockmatrix_loop(
   // and adjusts loop parameters accordingly.
   //
   Int a_init = 0; 
-  Int a_inc = 1;
+  Int a_inc  = 1;
   Int b_init = 0; 
   Int b_count = settings.columns;
+
   if (settings.rows >= settings.columns) {
-    //debug("blockmatrix_loop iterating over rows");
+    //warning("blockmatrix_loop iterating over rows");
     a_init = me();
     a_inc  = numQPUs();
   } else {
-    //debug("blockmatrix_loop iterating over columns");
+    //warning("blockmatrix_loop iterating over columns");
     using functions::integer_division;
 
     Int cols_div;
@@ -150,25 +151,26 @@ void blockmatrix_loop(
   T result = 0;  // Explicit init required, for T == Complex '0' is interpreted as phase
 
   For (Int a_index = a_init, a_index < settings.rows, a_index += a_inc)
-    vec.load(a + a_index*settings.inner);
+    vec.load(a + a_index*settings.inner); comment("Start loop a_index");
 
     Int bit_count = 0;
     DstPtr dst_local = dst + a_index*settings.cols_result() + b_init;
 
     For (Int b_index = b_init,  b_index < b_count, b_index += 1)
-      T tmp = 0;
+      T tmp = 0;                          comment("Start loop b_index");
       core(vec, b_index, tmp);
       result.set_at(bit_count, tmp);
 
       bit_count = (bit_count + 1) & 0xf;
 
       If (bit_count == 0)
-        pre_write(dst_local, result, settings.add_result);
+        pre_write(dst_local, result, settings.add_result); comment("End pre_write in loop");
       End
     End
 
+
     If (bit_count != 0)
-      pre_write(dst_local, result, settings.add_result, bit_count);
+      pre_write(dst_local, result, settings.add_result, bit_count); comment("End pre_write after loop");
     End
   End
 }
@@ -187,6 +189,8 @@ template<
   typename T = typename std::conditional<std::is_same<Ptr, Float::Ptr>::value, Float, Complex>::type
 >
 void matrix_mult(Ptr dst, Ptr a, Ptr b) {
+	//Log::warn << "matrix_mult() &dst: " << Log::hex << (unsigned long) (&dst);
+
   using DotVecType = typename std::conditional<std::is_same<Ptr, Float::Ptr>::value, DotVector, ComplexDotVector>::type;
   auto &settings = get_matrix_settings();
 
@@ -290,7 +294,7 @@ void dft_kernel(Complex::Ptr dst, Ptr a) {
 
 template<typename Ptr>
 void dft_kernel_block(Complex::Ptr in_dst, Ptr in_a, Int in_offset) {
-  create_block_kernel(in_offset, [&] (Int const &offset) {
+  create_block_kernel(in_offset, [&] (Int const &offset, bool zero_offset) {
      dft_kernel_intern<Ptr>(in_dst, in_a + offset, offset);
   });
 }
@@ -320,7 +324,7 @@ auto dft_decorator(Array &a, Complex::Array2D &result) -> decltype(*dft_kernel<P
 }
 
 
-void create_block_kernel(Int const &in_offset, std::function<void (Int const &offset)> f);
+void create_block_kernel(Int const &in_offset, std::function<void (Int const &offset, bool zero_offset)> f);
 
 
 /**
@@ -340,8 +344,14 @@ void create_block_kernel(Int const &in_offset, std::function<void (Int const &of
  */ 
 template<typename Ptr>
 void matrix_mult_block(Ptr in_dst, Ptr in_a, Ptr in_b, Int in_offset) {
-  create_block_kernel(in_offset, [&] (Int const &offset) {
-     matrix_mult<Ptr>(in_dst, in_a + offset, in_b + offset);
+  create_block_kernel(in_offset, [&] (Int const &offset, bool zero_offset) {
+		//Log::warn << "matrix_mult_block() &in_dst: " << Log::hex << (unsigned long) (&in_dst);
+
+		if (zero_offset) {
+			matrix_mult<Ptr>(in_dst, in_a, in_b);
+		} else {
+			matrix_mult<Ptr>(in_dst, in_a + offset, in_b + offset);
+		}
   });
 }
 
@@ -391,10 +401,14 @@ public:
   using BlockKernelPtr = std::unique_ptr<BlockKernelType>;
 
 
-  ResultArray &result() { return m_result; }
+  ResultArray &result() {
+		//Log::warn << "&result(): " << Log::hex << (unsigned long) (&m_result);
+		return m_result;
+	}
+
   BlockKernelType &kernel() { return *m_k; }
-  void compile()  { init_block(CALL); }
-  bool has_errors() const { return (m_k_first && m_k_first->has_errors()) || m_k->has_errors(); }
+  void compile()            { init_block(CALL); }
+  bool has_errors() const   { return (m_k_first && m_k_first->has_errors()) || m_k->has_errors(); }
 
   /**
    * If set to true, force multiple kernel calls if possible.
@@ -458,13 +472,16 @@ public:
     if constexpr (std::is_same<Array, Float::Array2D>::value) {
       zero = 0.0f;
     }
+		//Log::warn << "call() pre m_result: " << m_result.dump();
     m_result.fill(zero);  // Apparently necessary; 1-ones mult -> final element is + 1 for some reason
+		//Log::warn << "&call() after fill() m_result: " << Log::hex << (unsigned long) (&m_result);
+		//Log::warn << "call() after fill() m_result: " << m_result.dump();
 
     if (m_k_first.get() != nullptr) m_k_first->setNumQPUs(m_num_qpus);
-    if (m_k.get() != nullptr) m_k->setNumQPUs(m_num_qpus);
+    if (m_k.get()       != nullptr) m_k->setNumQPUs(m_num_qpus);
 
     if (use_multi_kernel_calls(call_type)) {
-      //debug("multi kernel calls");
+      //warning("multi kernel calls");
       // This part required for vc4 hardware; see header of kernel matrix_mult_block().
       assert(m_k_first.get() != nullptr);
 
@@ -481,9 +498,10 @@ public:
         k_call();
       }
     } else {
-      //debug("single block");
+      //warning("single block");
       load(m_k, 0);
       k_call();
+			//Log::warn << "k_call() m_result: " << m_result.dump();
     }
   }
 
@@ -493,25 +511,33 @@ public:
 
     std::string ret;
 
-    ret << "Num blocks       : " << m_num_blocks  << "\n"
-        << "Num QPUs         : " << m_num_qpus    << "\n"
-        << "Kernel calls     : " << (use_multi_kernel_calls(CALL)?"multi":"single") << "\n"
-        << "Force multi-calls: " << (m_force_multi_kernels_calls?"true":"false") << "\n";
+    ret << "  Num blocks       : " << m_num_blocks                                    << "\n"
+        << "  Num QPUs         : " << m_num_qpus                                      << "\n"
+        << "  Kernel calls     : " << (use_multi_kernel_calls(CALL)?"multi":"single") << "\n"
+        << "  Force multi-calls: " << (m_force_multi_kernels_calls?"true":"false")    << "\n";
+
+    auto &settings = kernels::get_matrix_settings();
+
+		ret << "  sett. add_result : " << (settings.add_result?"yes":"no")                << "\n";
 
     if (m_k_first) {
-      ret << "First kernel:\n" << m_k_first->info();
+      ret << "  First kernel     :" << m_k_first->info();
     } else {
-      ret << "First kernel: not compiled\n" ;
+      ret << "  First kernel     : not compiled" ;
     }
 
     if (m_k) {
-      ret << "Block kernel:\n" << m_k->info();
+      ret << "  Block kernel     :" << m_k->info();
     } else {
-      ret << "Block kernel: not compiled\n" ;
+      ret << "  Block kernel     : not compiled" ;
     }
 
     return ret;
   }
+
+  std::string k_dump() const {
+		return m_k->dump();
+	}
 
 
 protected:
@@ -537,7 +563,6 @@ protected:
   template<typename KernelType>  
   void init_block_kernels(KernelType kernel, CallType call_type) {
     auto &settings = kernels::get_matrix_settings();
-    //settings.multi_block = Parent::m_multi_block;
 
     if (m_k.get() != nullptr) {
       // Kernel already compiled. Don't recompile if nothing changed
@@ -553,17 +578,6 @@ protected:
     settings.use_multi_kernel_calls = use_multi_kernel_calls(call_type);
     kernels::init_result_array(m_result);
 
-/*
-    if (num_blocks() != 1) {
-      using ::operator<<;  // C++ weirdness
-
-      std::string msg;
-      msg << "Doing " << num_blocks() << " blocks";
-      debug(msg);
-    }
-*/
-
-
     settings.add_result = false;
     m_k_first.reset(new BlockKernelType(V3DLib::compile(kernel)));
 
@@ -575,6 +589,13 @@ protected:
 
     settings.add_result = true;
     m_k.reset(new BlockKernelType(V3DLib::compile(kernel)));
+
+    if (m_k->has_errors()) {
+			Log::cerr << "Compile failed of block kernel";
+      m_k.reset(nullptr);
+    } else {
+			//Log::warn << "Compile succeeded of block kernel";
+		}
   }
 
 
@@ -603,12 +624,14 @@ private:
 
 
   void k_first_call() {
+		//Log::warn << "Called k_first_call()";
     assert(m_k_first);
     m_k_first->run();
   }
 
 
   void k_call() {
+		//Log::warn << "Called k_call()";
     assert(m_k);
     m_k->run();
   }
@@ -632,14 +655,26 @@ public:
   }
 
   void load(std::unique_ptr<BlockKernelType> &k, int offset) override {
+		//Log::warn << "load() &Parent::result(): " << Log::hex << (unsigned long) (&Parent::result());
     k->load(&Parent::result(), &m_a, &m_b, offset);
   } 
 
   void init_block(CallType call_type) override {
     auto &settings = kernels::get_matrix_settings();
     settings.use_multi_kernel_calls = Parent::use_multi_kernel_calls(call_type); 
+
     Parent::init_block_kernels(kernels::matrix_mult_block<Ptr>, call_type);
+		//Log::warn << "init_block() &Parent::result(): " << Log::hex << (unsigned long) (&Parent::result());
   }
+
+	std::string dump() {
+		std::string ret;
+
+		ret << "m_a: " << m_a.dump()
+		    << "m_b: " << m_b.dump();
+
+		return ret;
+	}
 
 private:
   Array2D &m_a;

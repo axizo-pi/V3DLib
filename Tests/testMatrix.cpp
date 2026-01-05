@@ -510,41 +510,54 @@ void test_complex_matrix_multiplication(
   //
   // Test using decorator - this does not use num_blocks
   //
-  INFO("Decorator");
+  INFO("Doing Decorator");
 	BaseSettings settings;
 	if (do_emulate) {
     settings.run_type = 1;
   }
 
   auto k = compile(kernels::matrix_mult_decorator(a, b, result), settings);
-  //to_file("mult_complex_vc4.txt", k.dump());
+  //to_file("mult_complex.txt", k.dump());
   k.setNumQPUs(num_qpus);
-  result.fill({-1.0f, -1.0f});
+  //result.fill({-2.0f, -2.0f});
 
   k.load(&result, &a, &b).run();
 
   INFO("num QPUs:" << num_qpus << ", num blocks: " << num_blocks);
+  //INFO("Doing matrix_mult_decorator");
   check_complex_matrix_multiplication(rows, inner, cols, result, init_a*init_b);
 
   //
   // Test using class Matrix
   //
-  INFO("Matrix");
+  INFO("Doing Matrix");
+	//Log::warn << "Doing Matrix";
   Matrix m(a, b);
+
   m.setNumQPUs(num_qpus);
   m.num_blocks(num_blocks);
-  m.call(do_emulate?EMULATE:CALL);
+
+  //if (do_emulate) {
+	//	Log::warn << "Doing emulate";
+	//}
+	m.call(do_emulate?EMULATE:CALL);
+	//Log::warn << "Matrix after call()";
+  INFO("Matrix info:\n" << m.info());
+	//to_file("matrix_k.txt", m.k_dump());  // m_k is compiled in call(), need to call dump() here
+	//m.result().fill({-2.0f, -1.0f});
+	//Log::warn << "\n" << m.dump();
+	//Log::warn << m.result().dump();
+
   check_complex_matrix_multiplication(rows, inner, cols, m.result(), init_a*init_b);
 }
 
 
-TEST_CASE("Test complex matrix algebra with varying sizes [matrix][complex]") {
+TEST_CASE("Test complex matrix algebra with varying sizes [matrix][complex][dot]") {
   SUBCASE("Check correct working complex dotvector") {
     test_complex_dotvector<1>();
     test_complex_dotvector<4>();
     test_complex_dotvector<10>();
   }
-
 
 
   SUBCASE("Compare pure real/im complex matrixes with real") {
@@ -603,12 +616,17 @@ TEST_CASE("Test complex matrix algebra with varying sizes [matrix][complex]") {
 
 TEST_CASE("Check complex matrix multiplication [matrix][complex]") {
 	if (!Platform::compiling_for_vc4()) {
+		//
+		// v3d does not return a result. Lorokked at it, clueless.
+		// vc4 and emulator work fine here
+		//
 		Log::warn << "Skipping test for v3d: 'Check complex matrix multiplication [matrix][complex]'";
 		return;
 	}
 	
   auto test = [] (int num_qpus, int num_blocks = 1) {
     // num_blocks factor for inner dimension is there to ensure block sizes are always valid
+    test_complex_matrix_multiplication(  1,    16*num_blocks,  1, num_qpus, num_blocks, {1,0}, {1,0}, true);
     test_complex_matrix_multiplication(  1,    16*num_blocks,  1, num_qpus, num_blocks);
     test_complex_matrix_multiplication(  2,  2*16*num_blocks,  2, num_qpus, num_blocks, {-1.0f, 2.0f});
     test_complex_matrix_multiplication(  2,  3*16*num_blocks,  2, num_qpus, num_blocks, {-1.0f, 2.0f}, { 1.0f, -1.0f });
@@ -701,51 +719,51 @@ bool profile_block_mult(int dimension) {
 
 
 void test_simple_block(int dimension) {
-    Float::Array2D a(dimension);
-    Float::Array2D result(dimension);
+  Float::Array2D a(dimension);
+  Float::Array2D result(dimension);
 
-    Matrix m(a, a);
+  Matrix m(a, a);
 
-    //
-    // Check identity matrix
-    //
-    {
-      a.make_unit_matrix();
-      check_unitary(a);
+  //
+  // Check identity matrix
+  //
+  {
+    a.make_unit_matrix();
+    check_unitary(a);
 
-      m.call();
-      INFO("Checking mult unit matrix");
-      check_unitary(m.result());
+    m.call();
+    INFO("Checking mult unit matrix");
+    check_unitary(m.result());
+  }
+
+  //
+  // Square of input matrix containing all ones
+  //
+  {
+    a.fill(1);
+    m.call();
+    INFO("Checking mult all ones");
+    compare_array_scalar(m.result(), (float) dimension);
+  }
+
+  //
+  // Square of array with random values
+  //
+  {
+    // Prepare input and expected result
+    std::vector<float> expected;
+    prepare_random(a, expected, dimension);
+
+    m.call();
+    INFO("Checking mult random values");
+
+    float precision = -1.0f;
+    if (dimension >  m.MAX_FULL_BLOCKS_V3D) {
+      precision = 1e-3f;  // For big arrays using blocks
     }
 
-    //
-    // Square of input matrix containing all ones
-    //
-    {
-      a.fill(1);
-      m.call();
-      INFO("Checking mult all ones");
-      compare_array_scalar(m.result(), (float) dimension);
-    }
-
-    //
-    // Square of array with random values
-    //
-    {
-      // Prepare input and expected result
-      std::vector<float> expected;
-      prepare_random(a, expected, dimension);
-
-      m.call();
-      INFO("Checking mult random values");
-
-      float precision = -1.0f;
-      if (dimension >  m.MAX_FULL_BLOCKS_V3D) {
-        precision = 1e-3f;  // For big arrays using blocks
-      }
-
-      compare_arrays(m.result(), expected, precision);
-    }
+    compare_arrays(m.result(), expected, precision);
+  }
 }
 
 }  // anon namespace
