@@ -12,6 +12,7 @@
 #include "Kernels/Matrix.h"
 #include "LibSettings.h"
 #include "support/ProfileOutput.h"
+#include "Support/Helpers.h"  // to_file()
 
 
 using namespace V3DLib;
@@ -30,10 +31,11 @@ void create_test_wavelet(Complex::Array2D &input, int const Dim) {
 
 
 /**
- * @param high_precision if true, use sin/cos with extra precision.
- *                       Generally, this is a good idea.
+ * @param high_precision if true, use sin/cos with extra precision. Generally, this is a good idea.
  */
 void create_dft_matrix(Complex::Array2D &arr, bool high_precision = true) {
+	using namespace V3DLib::functions;
+
   REQUIRE(arr.rows() > 0);
   REQUIRE(arr.rows() % 16 == 0);
   int const Dim = arr.rows();
@@ -57,7 +59,7 @@ void create_dft_matrix(Complex::Array2D &arr, bool high_precision = true) {
   for (int r = 0; r < Dim; ++r) {
     for (int c = 0; c < Dim; ++c) {
       float angle = ((float) (-r*c))/((float) Dim); 
-      complex tmp(functions::cos(angle, high_precision), functions::sin(angle, high_precision));
+      complex tmp(scalar::cos(angle, high_precision), scalar::sin(angle, high_precision));
       //std::cout << tmp.dump();
 
       check_acceptable_precision(r, c, tmp);
@@ -211,17 +213,17 @@ bool compare_dfts(int Dim, bool do_profiling) {
   }
 
   //
-  // Use high-precision sin/cos in kernel creation, otherwise the cumulative error is really really bad for vc4.
-  // Even with this, the error is bad.
+  // Use high-precision sin/cos in kernel creation, otherwise the cumulative error is really really bad
+	// for vc4. Even with this, the error is bad.
   //
   // v3d does a much better job at it, even low precision sin/cos is then acceptable.
-  // The difference here is that vc4 round downward in float mult, and v3d uses the same rounding scheme as the CPU.
-  // The DFT uses a shitton of float mults and you really notice the effect.
+  // The difference here is that vc4 round downward in float mult, and v3d uses the same rounding scheme
+	// as the CPU. The DFT uses a shitton of float mults and you really notice the effect.
   //
-  // As a special note, all DFT calls, including via the DFT class have pretty much the same output, since they
-  // all use the same kernel internally and thus have the same cumulative error.
-  // The difference becomes apparent when comparing DFT agains mult (first option tested), which uses sin/cos
-  // values precalculated on the CPU.
+  // As a special note, all DFT calls, including via the DFT class, have pretty much the same output,
+	// since they all use the same kernel internally and thus have the same cumulative error.
+  // The difference becomes apparent when comparing DFT againsit mult (first option tested), which uses
+	// sin/cos values precalculated on the CPU.
   //
   bool prev_precision = LibSettings::use_high_precision_sincos();
   LibSettings::use_high_precision_sincos(true);
@@ -231,6 +233,7 @@ bool compare_dfts(int Dim, bool do_profiling) {
 
     Timer timer1;
     auto k = compile(kernels::dft_decorator(input, result_complex));
+		//to_file("dft_complex_with_mult.txt", k.dump());
     profile_output.add_compile(label, timer1, Dim);
 
     if (!k.has_errors()) {
@@ -247,6 +250,7 @@ bool compare_dfts(int Dim, bool do_profiling) {
       }
     }
   }
+
 
   if (run_kernels & FLOAT_DFT) {
     std::string label = "dft float";
