@@ -292,7 +292,7 @@ void Platform::use_main_memory(bool val) {
  * The compilation can occur on any platform, including non-pi.
  */
 void Platform::compiling_for_vc4(bool val) { 
-  Log::debug << "compiling_for_vc4 val: " << val;
+  //Log::debug << "compiling_for_vc4 val: " << val;
   instance().m_compiling_for_vc4 = val;
 }
 
