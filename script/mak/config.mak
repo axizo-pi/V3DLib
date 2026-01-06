@@ -13,7 +13,8 @@ MESA_LIB=$(BASE)/obj/mesa/bin/libmesa.a
 VCSM_LIB=$(VCSM_DIR)/libvcsm.a
 
 INCLUDE_EXTERN= \
- -I $(BASE)/../CmdParameter/Lib
+ -I $(BASE)/../CmdParameter/Lib \
+ -I $(BASE)/extern/bitmap
 
 LIB_EXTERN= \
  -L $(VCSM_DIR) -lvcsm \

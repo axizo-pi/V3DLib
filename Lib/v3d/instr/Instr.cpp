@@ -100,7 +100,7 @@ bool check_small_imm(Instr const &dst, BaseSource const &src) {
 /**
  * Note that the mul a can set the small imm before the mul b does it.
  */
-void set_mul_small_imm(
+bool set_mul_small_imm(
 	Instr &dst,
 	BaseSource const &imm,
 	v3d_qpu_input &input,
@@ -111,12 +111,16 @@ void set_mul_small_imm(
 
 	if (dst.sig.small_imm_b) {
 		// If same value, all is well
-		assertq(dst.raddr_b == imm.val(), "alu_mul_b: small imm different value on vc6");
+		if (dst.raddr_b != imm.val()) {
+			cerr << "set_mul_small_imm(): small imm different value on vc6";
+			return false;
+		}
 		input.mux = V3D_QPU_MUX_B;
 	} else {
 		// Reserve the small imm
    	if (dst.mux_in_use(check_src, V3D_QPU_MUX_B)) {
-			assertq(false, "MUX_B in use for non-small_imm");
+			cerr << "set_mul_small_imm(): MUX_B in use for non-small_imm";
+			return false;
 		}
 
 		dst.sig.small_imm_b = true;
@@ -124,6 +128,8 @@ void set_mul_small_imm(
 		dst.raddr_b = imm.val();
 		input.unpack = imm.unpack();
 	}
+
+	return true;
 }
 
 }  // anon namespace
@@ -715,8 +721,7 @@ bool Instr::alu_set_src(Source const &src, v3d_qpu_input &input, CheckSrc check_
 
 	if (src.is_small_imm()) {
 		BaseSource tmp_src(src);
-		set_mul_small_imm(*this, tmp_src, input, check_src);
-		// warn << "alu_set_src small_imm";
+		if (!set_mul_small_imm(*this, tmp_src, input, check_src)) return false;
 
 		auto const &imm	= src.small_imm();
 
@@ -724,13 +729,17 @@ bool Instr::alu_set_src(Source const &src, v3d_qpu_input &input, CheckSrc check_
 			// warn << "alu_set_a: small imm same value";
 
 			// If same value, all is well
-			assertq(raddr_b == imm.val(), "alu_mul_b: small imm different value on vc6");
+			if (raddr_b != imm.val()) {
+				cerr << "alu_set_src(): small imm different value on vc6";
+				return false;
+			}
 		  input.mux = V3D_QPU_MUX_B;
 		} else {
 			// Reserve the small imm
 			// warn << "small imm different value or not present";
     	if (mux_in_use(check_src, V3D_QPU_MUX_B)) {
-				assertq(false, "MUX_B in use for non-small_imm");
+				cerr << "alu_set_src(): MUX_B in use for non-small_imm";
+				return false;
 			}
 
 			sig.small_imm_b = true;
@@ -811,7 +820,7 @@ bool Instr::alu_add_a(BaseSource const &src, bool overwrite) {
 			sig.small_imm_a = true;
 			alu.add.a.raddr = src.val();
 		} else {
-			set_mul_small_imm(*this, src, alu.add.a, CHECK_ADD_A);
+			if (!set_mul_small_imm(*this, src, alu.add.a, CHECK_ADD_A)) return false;
 		}
 
 	} else if (!alu_set_src(src, alu.add.a, CHECK_ADD_A)) {
@@ -839,7 +848,7 @@ bool Instr::alu_add_b(BaseSource const &src, bool overwrite) {
 			sig.small_imm_b = true;
 			alu.add.b.raddr = src.val();
 		} else {
-			set_mul_small_imm(*this, src, alu.add.b, CHECK_ADD_B);
+			if (!set_mul_small_imm(*this, src, alu.add.b, CHECK_ADD_B)) return false;
 		}
 
 	} else if (!alu_set_src(src, alu.add.b, CHECK_ADD_B)) {
@@ -895,7 +904,7 @@ bool Instr::alu_mul_a(BaseSource const &src, bool overwrite) {
 			sig.small_imm_c = true;
 			alu.mul.a.raddr = src.val();
 		} else {
-			set_mul_small_imm(*this, src, alu.mul.a, CHECK_MUL_A);
+			if (!set_mul_small_imm(*this, src, alu.mul.a, CHECK_MUL_A)) return false;
 		}
 
 	} else if (!alu_set_src(src, alu.mul.a, CHECK_MUL_A)) {
@@ -978,7 +987,7 @@ bool Instr::alu_mul_b(BaseSource const &src, bool overwrite) {
 			sig.small_imm_d = true;
 			alu.mul.b.raddr = src.val();
 		} else {
-			set_mul_small_imm(*this, src, alu.mul.b, CHECK_MUL_B);
+			if (!set_mul_small_imm(*this, src, alu.mul.b, CHECK_MUL_B)) return false;
 		}
 
 	} else if (!alu_set_src(src, alu.mul.b, CHECK_MUL_B)) {

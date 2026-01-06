@@ -42,3 +42,21 @@ void run_scalar(Float::Array const &vec, Float::Array const &mat, Float::Array &
     }
   }
 }
+
+
+/**
+ * Using MSE to calculate loss.
+ */
+float loss(Float::Array const &result, Float::Array const &y) {
+	assert(result.size() > 0);
+	assert(result.size() == y.size());
+
+	int width = result.size();
+	float sum = 0;
+
+	for (int i = 0; i < width; ++i) {
+		sum += (result[i] - y[i])*(result[i] - y[i]);
+	}
+
+	return sum/((float) width);
+}

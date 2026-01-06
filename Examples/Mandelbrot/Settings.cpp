@@ -1,5 +1,8 @@
 #include "Settings.h"
 
+//#include <signal.h>
+//#define breakpoint raise(SIGTRAP)
+
 namespace {
 
 std::vector<const char *> const _kernels = { "multi", "cpu" };  // Order important! First is default, 'all' must be last
@@ -22,19 +25,17 @@ CmdParameters params = {
     _kernels,
     "Select the kernel to use"
   }, {
-    "Output PGM file",
-    "-pgm",
-    ParamType::NONE,   // Prefix needed to disambiguate
-    "Output a (grayscale) PGM bitmap of the calculation results.\n"
-    "A PGM bitmap named 'mandelbrot.pgm' will be created in the current working directory.\n"
-    "Creating a bitmap takes significant time, and will skew the performance results\n",
-  }, {
-    "Output PPM file",
-    "-ppm",
+		"Output greyscale image",
+    "-grey",
     ParamType::NONE,
-    "Output a (color) PPM bitmap of the calculation results.\n"
-    "A PPM bitmap named 'mandelbrot.ppm' will be created in the current working directory.\n"
-    "Creating a bitmap takes significant time, and will skew the performance results\n",
+    "Output a greyscale BMP-file of the calculated results.\n"
+    "A file named 'mandelbrot.bmp' will be created in the current working directory.\n",
+  }, {
+		"Output color image",
+    "-color",
+    ParamType::NONE,
+    "Output a color BMP-file of the calculated results.\n"
+    "A file named 'mandelbrot_c.bmp' will be created in the current working directory.\n",
   }, {
     "Number of steps",
     "-steps=",
@@ -71,13 +72,13 @@ float MandSettings::offsetY() const { return (topLeftIm       - bottomRightIm)/(
 bool MandSettings::init_params() {
   auto const &p = parameters();
 
-  kernel         = p["Kernel"]->get_int_value();
-  output_pgm     = p["Output PGM file"]->get_bool_value();
-  output_ppm     = p["Output PPM file"]->get_bool_value();
-  num_iterations = p["Number of steps"]->get_int_value();
-  numStepsWidth  = p["Dimension"]->get_int_value();
-  numStepsHeight = p["Dimension"]->get_int_value();
-  count          = p["Count"]->get_int_value();
+  kernel         = p["Kernel"                ]->get_int_value();
+  output_grey    = p["Output greyscale image"]->get_bool_value();
+  output_color   = p["Output color image"    ]->get_bool_value();
+  num_iterations = p["Number of steps"       ]->get_int_value();
+  numStepsWidth  = p["Dimension"             ]->get_int_value();
+  numStepsHeight = p["Dimension"             ]->get_int_value();
+  count          = p["Count"                 ]->get_int_value();
 
   return true;
 }

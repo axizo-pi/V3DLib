@@ -4,6 +4,7 @@ obj*
 *.log
 *.pgm
 *.ppm
+*.bmp
 *.swp
 *.org~
 .~lock.*

@@ -1,13 +1,13 @@
 #include "Settings.h"
 #include "Scalar.h"
 #include "Kernels.h"
-
 #include "V3DLib.h"
 #include <string>
 #include "Support/Timer.h"
-#include "Support/pgm.h"
+#include "Support/bmp.h"
 
 using namespace V3DLib;
+using namespace Log;
 using std::string;
 
 
@@ -18,16 +18,17 @@ using std::string;
 using KernelType = decltype(mandelbrot_multi);
 
 template<class Array>
-void output_pgm(Array &result) {
+void output_image(Array &result) {
   int width         = settings().numStepsWidth;
   int height        = settings().numStepsHeight;
   int numIterations = settings().num_iterations;
 
-  if (settings().output_pgm) {
-    output_pgm_file(result, width, height, numIterations, "mandelbrot.pgm");
+  if (settings().output_grey) {
+    output_bmp(result, width, height, numIterations, "mandelbrot.bmp", false);
   }
-  if (settings().output_ppm) {
-    output_ppm_file(result, width, height, numIterations, "mandelbrot.ppm");
+
+  if (settings().output_color) {
+    output_bmp(result, width, height, numIterations, "mandelbrot_c.bmp", true);
   }
 }
 
@@ -55,7 +56,7 @@ void run_qpu_kernel(KernelType &kernel) {
     settings().count
   ).run();
 
-  output_pgm(result);
+  output_image(result);
 }
 
 
@@ -71,7 +72,7 @@ void run_kernel(int kernel_index) {
         int *result = new int [settings().num_items()];  // Allocate and initialise
 
         mandelbrot_cpu(result);
-        output_pgm(result);
+        output_image(result);
 
         delete result;
       }

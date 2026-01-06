@@ -29,7 +29,8 @@ float a[3][30] = {
   0, 1, 1, 1, 1, 0
 }};
 
-float labels[3][3] = {
+const int label_size = 3;
+float labels[3][label_size] = {
 	{1, 0, 0},
   {0, 1, 0},
   {0, 0, 1}
@@ -113,16 +114,19 @@ int main(int argc, const char *argv[]) {
 	//test_outer_product(vector<2>::op_kernel());
 	//test_vector();
 
-	vector<N> input;
-	input.set(a[0], 30);
+	vector<N> input[3];
+	input[0].set(a[0], 30);
 
+	vector<1> desired[3];
+	desired[0].set(labels[0], label_size);
 
-	auto result = k_model.forward(input);
+	auto result = k_model.forward(input[0]);
 
  // warn << "Scalar a2 : " << vector_dump(k_model.s_tmp, 16);
  // warn << "kernel res: " << result.dump();
+	warn << "Loss: " << loss(result.arr(), desired[0].arr());
 
-	k_model.back_prop(input, result);
+	k_model.back_prop(input[0], desired[0]);
 
   return 0;
 }
