@@ -1,0 +1,79 @@
+<!--
+<style>
+  .image-container { display: flex; flex-wrap: wrap; gap: 10px; }
+  .image-container img { width: 200px; height: auto; border-radius: 8px; }
+  .loading { text-align: center; padding: 20px; font-size: 18px; }
+</style>
+<div class="image-container" id="imageContainer"></div>
+<div class="loading" id="loading">Loading...</div>
+
+<hr>
+-->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+<script>
+
+function file_exists(filename) {
+  $.ajax({
+    url: "file://" + filename,
+    type: 'HEAD',
+crossDomain: true,
+ beforeSend: function(xhr){
+                xhr.withCredentials = true;
+          },
+    error: function () {
+      console.log("File doesn't exist");
+    },
+    success: function () {
+      console.log('File exists');
+    }
+  });
+}
+
+function load_image(filename) {
+	$("#filename").html(filename);
+	$("img#animate").attr("src", filename);
+}
+
+
+var path = "../tmp/img";
+var index = 1;
+var intervalID;
+
+function next_file() {
+	index++;
+	if (index < 750) {
+		var filename = path + "/" + index + "_heatmap.bmp";
+		load_image(filename);
+	} else {
+		window.clearInterval(intervalID);
+	}
+}
+
+function myCallback() {
+    console.log("myCallback");
+		next_file();
+}
+
+
+$(document).ready(function () {
+
+$("button#restart").click(function() {
+	console.log("Click");
+
+	index = 1;
+	window.clearInterval(intervalID);
+	intervalID = window.setInterval(myCallback, 33);
+});
+
+
+	intervalID = window.setInterval(myCallback, 33);
+	//file_exists(filename);
+});
+
+</script>
+<body>
+	<div id="filename"></div>
+	<img id="animate" src="img/1_heatmap.bmp">
+	<br>
+	<button type="button" id="restart">Restart</button>
+</body>
