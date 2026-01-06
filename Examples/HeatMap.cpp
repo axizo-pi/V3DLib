@@ -4,7 +4,7 @@
 #include <CmdParameters.h>
 #include "Support/Settings.h"
 #include "Support/Timer.h"
-#include "Support/pgm.h"
+#include "Support/bmp.h"
 #include "Kernels/Cursor.h"
 
 using namespace V3DLib;
@@ -17,7 +17,7 @@ CmdParameters params = {
   "HeatMap Example\n"
   "\n"
   "This example models the heat flow across a 2D surface.\n"
-  "The output is a pgm-bitmap with the final state of the surface.\n"
+  "The output is a bmp-bitmap with the final state of the surface.\n"
   "\n"
   "The edges are set at zero temperature, and a number of hot points are placed randomly over the surface.\n"
   "The lower border can be broader than 1 pixel, depending on the number of QPU's running. This is due to\n"
@@ -132,7 +132,7 @@ void run_scalar() {
   }
 
   // Display results
-  output_pgm_file(mapOut, settings.WIDTH, settings.HEIGHT, 255, "heatmap.pgm");
+  output_bmp(mapOut, settings.WIDTH, settings.HEIGHT, 255, "heatmap.bmp", false);
 }
 
 
@@ -185,7 +185,7 @@ void heatmap_kernel(Float::Ptr map, Float::Ptr mapOut, Int height, Int width) {
  * i.e. there is constant cold at the edges.
  */
 void run_kernel() {
-	bool output_sequence = false;
+	bool output_sequence = true;
 
   // Allocate and initialise input and output maps
   Float::Array mapA(settings.SIZE);
@@ -207,19 +207,19 @@ void run_kernel() {
       k.load(&mapB, &mapA, settings.HEIGHT, settings.WIDTH).run();  // Load the uniforms and invoke the kernel
     } else {
       k.load(&mapA, &mapB, settings.HEIGHT, settings.WIDTH).run();  // Load the uniforms and invoke the kernel
-    }
 
-		if (output_sequence) {
-			std::string filename;
-			filename << i << "_heatmap.pgm";
-  		output_pgm_file(mapB, settings.WIDTH, settings.HEIGHT, 255, filename.c_str());
-		}
+			if (output_sequence) {
+				std::string filename;
+				filename << (i/2) << "_heatmap.bmp";
+  			output_bmp(mapB, settings.WIDTH, settings.HEIGHT, 255, filename.c_str(), false);
+			}
+    }
   }
 
   timer.end(!settings.silent);
 
   // Output results
-  output_pgm_file(mapB, settings.WIDTH, settings.HEIGHT, 255, "heatmap.pgm");
+  output_bmp(mapB, settings.WIDTH, settings.HEIGHT, 255, "heatmap.bmp", false);
 }
 
 

@@ -6,8 +6,8 @@ struct MandSettings : public V3DLib::Settings {
   const int ALL = 3;
 
   int    kernel;
-  bool   output_pgm;
-  bool   output_ppm;
+  bool   output_grey;
+  bool   output_color;
   int    num_iterations;
 
   int numStepsWidth;
