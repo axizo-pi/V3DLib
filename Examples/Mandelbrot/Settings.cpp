@@ -1,4 +1,5 @@
 #include "Settings.h"
+#include "Support/basics.h"
 
 //#include <signal.h>
 //#define breakpoint raise(SIGTRAP)
@@ -6,8 +7,6 @@
 namespace {
 
 std::vector<const char *> const _kernels = { "multi", "cpu" };  // Order important! First is default, 'all' must be last
-
-
 
 CmdParameters params = {
   "Mandelbrot Generator\n"
@@ -61,12 +60,39 @@ MandSettings _settings;
 
 }  // anon namespace
 
+
+float MandRange::offsetX() const { return (bottomRightReal - topLeftReal  )/((float) numStepsWidth  - 1); }
+float MandRange::offsetY() const { return (topLeftIm       - bottomRightIm)/((float) numStepsHeight - 1); }
+
+
+MandRange &MandRange::operator=(const MandRange &rhs) {
+ 	numStepsWidth   = rhs.numStepsWidth;
+  numStepsHeight  = rhs.numStepsHeight;
+
+  topLeftReal     = rhs.topLeftReal;
+  topLeftIm       = rhs.topLeftIm;
+  bottomRightReal = rhs.bottomRightReal;
+  bottomRightIm   = rhs.bottomRightIm;
+
+	return *this;
+}
+
+
+std::string MandRange::dump() const {
+	std::string ret;
+
+	ret << "  Steps(W,H)         : ("  << numStepsWidth  << ", "  << numStepsHeight << ")\n"
+		  << "  topleft(Re, Im)    : ("  << topLeftReal    << ", "  << topLeftIm      << ")\n"
+		  << "  bottomright(Re, Im): (" << bottomRightReal << ", " << bottomRightIm  << ")\n";
+
+	return ret;
+}
+
+
 MandSettings::MandSettings() : Settings(&params, true) {}
 
 
 int MandSettings::num_items() const { return numStepsWidth*numStepsHeight; }
-float MandSettings::offsetX() const { return (bottomRightReal - topLeftReal  )/((float) numStepsWidth  - 1); }
-float MandSettings::offsetY() const { return (topLeftIm       - bottomRightIm)/((float) numStepsHeight - 1); }
 
 
 bool MandSettings::init_params() {

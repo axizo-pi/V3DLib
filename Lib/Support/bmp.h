@@ -77,7 +77,7 @@ void output_bmp(
 
 			unsigned index;
 			if (do_color) {
-				if (val != 0 && val != (float) in_max_value) {
+				if (val != 0 && val != in_max_value) {
   				index = scale((float) val, PaletteSize);
 					color = jet_colormap[index];
 				}

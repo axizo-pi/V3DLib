@@ -2,7 +2,34 @@
 #define _INCLUDE_MANDELBROT_SETTINGS
 #include "Support/Settings.h"
 
-struct MandSettings : public V3DLib::Settings {
+struct MandRange {
+	MandRange() = default;
+
+	MandRange(float tl_re, float tl_im, float br_re, float br_im) :
+  	topLeftReal(tl_re),
+  	topLeftIm(tl_im),
+  	bottomRightReal(br_re),
+  	bottomRightIm(br_im)
+	{}
+
+  float offsetX() const;
+  float offsetY() const;
+
+	MandRange& operator=(const MandRange &rhs);
+
+	std::string dump() const;
+
+  int numStepsWidth;
+  int numStepsHeight;
+
+  float topLeftReal     = -2.5f;
+  float topLeftIm       = 2.0f;
+  float bottomRightReal = 1.5f;
+  float bottomRightIm   = -2.0f;
+};
+
+
+struct MandSettings : public V3DLib::Settings, public MandRange {
   const int ALL = 3;
 
   int    kernel;
@@ -10,34 +37,14 @@ struct MandSettings : public V3DLib::Settings {
   bool   output_color;
   int    num_iterations;
 
-  int numStepsWidth;
-  int numStepsHeight;
-
   int count;
 
-  // Initialize constants for the kernels
-  const float topLeftReal     = -2.5f;
-  const float topLeftIm       = 2.0f;
-  const float bottomRightReal = 1.5f;
-  const float bottomRightIm   = -2.0f;
-
-/*
-  // Nice zoom-in range, used for testing
-  const float topLeftReal     = -2.0f;
-  const float topLeftIm       = 0.75f;
-  const float bottomRightReal = -1.0f;
-  const float bottomRightIm   = -0.25f;
-*/
-
   int num_items() const;
-  float offsetX() const;
-  float offsetY() const;
 	static std::vector<const char *> const kernels();
 
   MandSettings();
 
   bool init_params() override;
-
 };
 
 void settings_init(int argc, const char *argv[]);

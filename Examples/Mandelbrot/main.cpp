@@ -1,6 +1,7 @@
 #include "Settings.h"
 #include "Scalar.h"
 #include "Kernels.h"
+#include "animate.h"
 #include "V3DLib.h"
 #include <string>
 #include "Support/Timer.h"
@@ -18,43 +19,80 @@ using std::string;
 using KernelType = decltype(mandelbrot_multi);
 
 template<class Array>
-void output_image(Array &result) {
+void output_image(Array &result, std::string filename = "") {
   int width         = settings().numStepsWidth;
   int height        = settings().numStepsHeight;
   int numIterations = settings().num_iterations;
 
   if (settings().output_grey) {
-    output_bmp(result, width, height, numIterations, "mandelbrot.bmp", false);
+		if (filename.empty()) {
+			filename = "mandelbrot.bmp";
+		}
+    output_bmp(result, width, height, numIterations, filename.c_str(), false);
   }
 
   if (settings().output_color) {
-    output_bmp(result, width, height, numIterations, "mandelbrot_c.bmp", true);
+		if (filename.empty()) {
+			filename = "mandelbrot_c.bmp";
+		}
+    output_bmp(result, width, height, numIterations, filename.c_str(), true);
   }
 }
 
 
 void run_qpu_kernel(KernelType &kernel) {
-  assertq(0 == settings().numStepsWidth % 16, "Width dimension must be a multiple of 16");
-  assertq(!Platform::compiling_for_vc4() || (4 <= settings().num_qpus),
-    "num QPU's must be at least for for vc4"
+	const bool do_animate = false;
+	auto const &s = settings();
+
+  assertq(0 == s.numStepsWidth % 16, "Width dimension must be a multiple of 16");
+  assertq(!Platform::compiling_for_vc4() || (4 <= s.num_qpus),
+    "num QPU's must be at least 4 for vc4"
   );
 
   Timer timer("Kernel compile");
-  auto k = compile(kernel, settings());
-  timer.end(!settings().silent);
+  auto k = compile(kernel, s);
+  timer.end(!s.silent);
 
-  k.setNumQPUs(settings().num_qpus);
+  k.setNumQPUs(s.num_qpus);
 
-  Int::Array result(settings().num_items());  // Allocate and initialise
+  Int::Array result(s.num_items());  // Allocate and initialise
 
-  k.load(
-    settings().topLeftReal, settings().topLeftIm,
-    settings().offsetX(), settings().offsetY(),
-    settings().numStepsWidth, settings().numStepsHeight,
-    settings().num_iterations,
-    &result,
-    settings().count
-  ).run();
+	if (do_animate) {
+		int index = 0;
+		animate::init(s);
+
+		while (!animate::done()) {
+			MandRange r = animate::next();
+			//Log::warn << "MandRange r:\n" << r.dump();
+			if (index % 100 == 0) {
+				warn << "index: " << index;
+			}
+
+			std::string filename;
+			filename << index << "_mandelbrot.bmp";
+
+	  	k.load(
+		    r.topLeftReal, r.topLeftIm,
+		    r.offsetX(), r.offsetY(),
+		    r.numStepsWidth, r.numStepsHeight,
+		    s.num_iterations,
+		    &result,
+		    s.count
+		  ).run();
+  
+			output_image(result, filename);
+			index++;
+		}
+	} else {
+	  k.load(
+	    s.topLeftReal, s.topLeftIm,
+	    s.offsetX(), s.offsetY(),
+	    s.numStepsWidth, s.numStepsHeight,
+	    s.num_iterations,
+	    &result,
+	    s.count
+	  ).run();
+	}
 
   output_image(result);
 }
