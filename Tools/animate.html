@@ -1,14 +1,6 @@
-<!--
 <style>
-  .image-container { display: flex; flex-wrap: wrap; gap: 10px; }
-  .image-container img { width: 200px; height: auto; border-radius: 8px; }
-  .loading { text-align: center; padding: 20px; font-size: 18px; }
+  img#animate { width: 512px; height: auto; border-radius: 8px; }
 </style>
-<div class="image-container" id="imageContainer"></div>
-<div class="loading" id="loading">Loading...</div>
-
-<hr>
--->
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
 <script>
 
@@ -41,8 +33,10 @@ var intervalID;
 
 function next_file() {
 	index++;
-	if (index < 750) {
-		var filename = path + "/" + index + "_heatmap.bmp";
+	//if (index < 750) {
+	if (index < 500) {
+		//var filename = path + "/" + index + "_heatmap.bmp";
+		var filename = path + "/" + index + "_mandelbrot.bmp";
 		load_image(filename);
 	} else {
 		window.clearInterval(intervalID);
@@ -50,7 +44,7 @@ function next_file() {
 }
 
 function myCallback() {
-    console.log("myCallback");
+    //console.log("myCallback");
 		next_file();
 }
 
@@ -58,7 +52,7 @@ function myCallback() {
 $(document).ready(function () {
 
 $("button#restart").click(function() {
-	console.log("Click");
+	//console.log("Click");
 
 	index = 1;
 	window.clearInterval(intervalID);
@@ -73,7 +67,7 @@ $("button#restart").click(function() {
 </script>
 <body>
 	<div id="filename"></div>
-	<img id="animate" src="img/1_heatmap.bmp">
+	<img id="animate">
 	<br>
 	<button type="button" id="restart">Restart</button>
 </body>
