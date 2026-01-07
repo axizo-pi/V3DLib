@@ -690,7 +690,7 @@ std::string opcodes(uint64_t const *data, int size) {
 	// dump_instr() is redirected to a file, make it first
   //
   FILE *f = fopen(filename.c_str(), "w");
- 	assert (f != nullptr);
+ 	assert(f != nullptr);
 
   dump_instr(f, data, size);
 

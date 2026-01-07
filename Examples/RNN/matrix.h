@@ -5,7 +5,6 @@
 #include "Support/basics.h"
 #include "Support/Settings.h"
 #include "tools.h"
-#include "Source/Float.h"
 
 using namespace Log;
 using namespace V3DLib;
