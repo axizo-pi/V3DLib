@@ -133,6 +133,28 @@ struct matrix {
 	}
 
 
+	/**
+	 * NOTE: this is currently a scalar operation
+	 */
+	Class sigmoid_derivative(Class const &rhs) {
+		Class ret;
+
+		for (int i = 0; i < (int) m_arr->size(); ++i) {
+			float el = arr()[i];
+			ret.arr()[i] = el*(1 - el);
+		}
+
+		for (int i = 0; i < (int) ret.arr().size(); ++i) {
+			float a = ret.arr()[i];
+			float b = rhs.arr()[i];
+
+			ret.arr()[i] = a*b;
+		}
+
+		return ret;
+	}
+
+
 	std::string dump() const {
 		assert(m_arr != nullptr);
 		std::string ret;
@@ -183,7 +205,7 @@ private:
 
 template<int const Width, int const Height>
 matrix<Width, Height> operator*(float scalar, matrix<Width, Height> &mat) {
-	auto ret = mat *scalar;
+	auto ret = mat * scalar;
 	return ret;
 }
 

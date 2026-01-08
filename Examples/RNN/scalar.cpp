@@ -1,7 +1,19 @@
-#include "Static.h"
+#include "scalar.h"
 #include <cmath>  // exp()
 #include "tools.h"
 
+namespace scalar {
+
+namespace {
+	
+/**
+ * activation function
+ */
+float sigmoid_int(float x) {
+	return (float) (1.0/(1.0 + std::exp(-x)));
+}
+
+} // anon namespace
 
 void frand_array(Float::Array &rhs) {
   for (int i = 0; i < (int) rhs.size(); ++i) {
@@ -10,26 +22,17 @@ void frand_array(Float::Array &rhs) {
 }
 
 
-/**
- * activation function
- */
-float sigmoid(float x) {
-	return (float) (1.0/(1.0 + std::exp(-x)));
-}
-
-
-void scalar_sigmoid(Float::Array &vec, Float::Array const &bias, Float::Array &output) {
+void sigmoid(Float::Array &vec, Float::Array const &bias, Float::Array &output) {
   for (int h = 0; h < (int) vec.size(); ++h) {
-		output[h] = sigmoid(vec[h] + bias[h]); 
+		output[h] = sigmoid_int(vec[h] + bias[h]); 
   }
 }
-
 
 
 /**
  * matrix width is assumed to be the same as the vector length
  */
-void run_scalar(Float::Array const &vec, Float::Array const &mat, Float::Array &res) {
+void mult(Float::Array const &vec, Float::Array const &mat, Float::Array &res) {
   int height = mat.size()/vec.size();
   assert(height*vec.size() == mat.size());
 
@@ -60,3 +63,5 @@ float loss(Float::Array const &result, Float::Array const &y) {
 
 	return sum/((float) width);
 }
+
+} // namespace scalar

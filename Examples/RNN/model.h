@@ -1,7 +1,7 @@
 #ifndef _INCLUDE_RNN_MODEL
 #define _INCLUDE_RNN_MODEL
 #include "matrix.h"
-#include "Static.h"
+#include "scalar.h"
 
 using namespace V3DLib;
 
@@ -75,7 +75,7 @@ struct model {
   	//warn << "kernel z2: " << z2_v.dump();
 
 		a2 = z2_v.sigmoid(bias2);
-		scalar_sigmoid(z2_v.arr(), bias2.arr(), s_tmp);
+		scalar::sigmoid(z2_v.arr(), bias2.arr(), s_tmp);
 
 /*
 		// TODO adjust
@@ -105,13 +105,25 @@ struct model {
   	warn << "d2: " << d2.dump();
 
 		auto w2_adj = a1.outer(d2);
-  	warn << "w2_adj:\n" << w2_adj.dump();
+  	//warn << "w2_adj:\n" << w2_adj.dump();
 
 		auto w2_tmp = w2 - alpha*w2_adj;
-  	warn << "w2_tmp:\n" << w2_tmp.dump();
+  	//warn << "w2_tmp:\n" << w2_tmp.dump();
 	
 		bias2 -= alpha * d2;
   	warn << "bias2:\n" << bias2.dump();
+
+		//	
+		// Hidden layer adjusting w1
+		//
+		auto tmp1 = w2 * d2;
+  	warn << "tmp1:\n" << tmp1.dump();
+
+		auto d1 = a1.sigmoid_derivative(tmp1);
+  	warn << "d1:\n" << d1.dump();
+
+		auto w1_adj = input.outer(d1);  // gradient, outer product
+  	warn << "w1_adj:\n" << w1_adj.dump();
 	}
 };
 

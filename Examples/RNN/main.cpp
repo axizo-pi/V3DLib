@@ -67,9 +67,9 @@ int main(int argc, const char *argv[]) {
 
 	auto result = k_model.forward(input[0]);
 
- // warn << "Scalar a2 : " << vector_dump(k_model.s_tmp, 16);
- // warn << "kernel res: " << result.dump();
-	warn << "Loss: " << loss(result.arr(), desired[0].arr());
+  // warn << "Scalar a2 : " << vector_dump(k_model.s_tmp, 16);
+  // warn << "kernel res: " << result.dump();
+	warn << "Loss: " << scalar::loss(result.arr(), desired[0].arr());
 
 	k_model.back_prop(input[0], desired[0]);
 
