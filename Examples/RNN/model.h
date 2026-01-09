@@ -17,13 +17,11 @@ const int N = 2;  // Width of matrix and length of vector
  * of 16. We should the smallest 16-item increments that
  * encompass the original size.
  */
-template<int const n_size>
 struct model {
-	model(int m_size) :
+	model(int n_size, int m_size) :
 		s_tmp(16*n_size),
-
-  	k(compile(kernel<M, n_size>, settings())),
-		sigmoid(compile(kernel_sigmoid<n_size>, settings()))
+  	k(compile(kernel, settings())),
+		sigmoid(compile(kernel_sigmoid, settings()))
 	{
 		w1_v.frand();
 		bias1.frand();
@@ -33,22 +31,22 @@ struct model {
 
 	float alpha = 1;
 
-	matrix<N, M> w1_v;
-	vector<1> z1_v;
-  vector<1> bias1;
-  vector<1> a1;
+	matrix w1_v{16*N, M};
+	vector z1_v{16};
+  vector bias1{16};
+  vector a1{16};
 
-	matrix<1, 16> w2;
-  vector<1> bias2;
-  vector<1> z2_v;
-  vector<1> a2;
+	matrix w2{16, 16};
+  vector bias2{16};
+  vector z2_v{16};
+  vector a2{16};
 
 	Float::Array s_tmp; // For scalar output
 
 	BaseKernel k;
 	BaseKernel sigmoid;
 
-	vector<1> forward(vector<2> const &input_v) {
+	vector forward(vector const &input_v) {
     //Timer timer("Matrix mult");
 
   	z1_v = w1_v * input_v;
@@ -92,7 +90,7 @@ struct model {
 	}
 
 
-	void back_prop(vector<2> &input, vector<1> &desired) {
+	void back_prop(vector &input, vector &desired) {
   	warn << "desired: " << desired.dump();
   	//warn << "Pre  a2: " << a2.dump();
 		auto la2 = forward(input);  // Same as member a2; expected

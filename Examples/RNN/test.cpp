@@ -56,10 +56,10 @@ void test_vector() {
  	warn << "a_vec: " << a_vec.dump();
  	warn << "sub: " << c_vec.dump();
 */	
-	vector<2> d_vec; d_vec.set(primes, primes_size);
+	vector d_vec{32}; d_vec.set(primes, primes_size);
 	//warn << "d_vec: " << d_vec.dump();
 
-	vector<2> e_vec;
+	vector e_vec{32};
 
 	for (int i = 0; i < 2*16; ++i) {
 	  e_vec[i] = (float) (i + 1);

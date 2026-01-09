@@ -1,7 +1,7 @@
 #ifndef _INCLUDE_RNN_MATRIX
 #define _INCLUDE_RNN_MATRIX
 #include "Kernel.h"
-#include "Kernels.h"
+#include "kernels.h"
 #include "Support/basics.h"
 #include "Support/Settings.h"
 #include "tools.h"
@@ -9,318 +9,116 @@
 using namespace Log;
 using namespace V3DLib;
 
-template<int const Size>
-struct vector;
+
+////////////////////////////////////////////////
+// Class matrix
+////////////////////////////////////////////////
 
 /**
- * width is in multiples of 16.
+ * Width must be in multiples of 16.
  *
- * width x height = 16*16 x 16:
+ * Case width x height = 16*16 x 16:
  * - has been shown to work
  * - are dimension which I consider to efficiently use the QPU
  */
-template<int const Width, int const Height>
 struct matrix {
-	using Class = matrix<Width, Height>;
 
-	matrix() : 
-		m_width(16*Width),
-		m_height(Height)
-	{
-		if (m_width < 0) {
-			cerr << "vector ctor: width must be positive" << thrw;
-		}
-		if (m_height < 0) {
-			cerr << "vector ctor: height must be positive" << thrw;
-		}
-
-		m_arr.reset(new Float::Array(m_width*m_height));
-
-		init_static();
-	}
-
-
-	matrix(matrix &rhs) {
-		*this = rhs;
-		init_static();
-	}
-
+	matrix(int width, int height);
+	matrix(matrix &rhs);
 
 	int width() const  { return m_width; }
 	int height() const { return m_height; }
 
-	Float::Array &operator &() {
-		assert(m_arr != nullptr);
-		return (*m_arr);
-	}
+	Float::Array &operator &();
+	Float::Array &arr();
+	Float::Array const &arr() const;
+	void rand();
+	void set(float init_val);
+	void set(Float::Array const &rhs);
+	void frand();
 
+	matrix &operator=(matrix &rhs);
+	matrix operator-(matrix const &rhs);
+	matrix &operator-=(matrix const &rhs);
+	matrix operator*(float rhs);
+	matrix operator*(matrix const &rhs);
+	matrix sigmoid_derivative(matrix const &rhs);
 
-	Float::Array &arr() {
-		assert(m_arr != nullptr);
-		return *m_arr;
-	}
-
-	Float::Array const &arr() const {
-		assert(m_arr != nullptr);
-		return *m_arr;
-	}
-
-	void rand() {
-  	frand_array(arr());
-	}
-
-
-	void set(float init_val) {
-		auto &r = arr();
-
-		for (int i = 0; i < m_width*m_height; ++i) {
-			r[i] = init_val;
-		}
-	}
-
-
-	void frand() {
-		assert(arr().size() > 0);
-
-  	for (int i = 0; i < (int) arr().size(); ++i) {
-	    arr()[i] = ::frand();
-  	}
-	}
-
-	void set(Float::Array const &rhs) {
-		assert(arr().size() == rhs.size());
-
-		for (int i = 0; i < (int) arr().size(); ++i) {
-			arr()[i] = rhs[i];
-		}
-	}
-
-
-	Class &operator=(Class &rhs) {
-		transfer(rhs);
-		return *this;
-	}
-
-
-	Class operator-(Class const &rhs) {
-		Class ret;
-
-		for (int i = 0; i < (int) m_arr->size(); ++i) {
-			ret.arr()[i] = arr()[i] - rhs.arr()[i];
-		}
-
-		return ret;
-	}
-
-
-	Class &operator-=(Class const &rhs) {
-		for (int i = 0; i < (int) m_arr->size(); ++i) {
-			arr()[i] -= rhs.arr()[i];
-		}
-
-		return *this;
-	}
-
-
-	Class operator*(float rhs) {
-		Class ret;
-
-		for (int i = 0; i < (int) m_arr->size(); ++i) {
-			ret.arr()[i] = arr()[i]*rhs;
-		}
-
-		return ret;
-	}
-
-
-	/**
-	 * NOTE: this is currently a scalar operation
-	 */
-	Class sigmoid_derivative(Class const &rhs) {
-		Class ret;
-
-		for (int i = 0; i < (int) m_arr->size(); ++i) {
-			float el = arr()[i];
-			ret.arr()[i] = el*(1 - el);
-		}
-
-		for (int i = 0; i < (int) ret.arr().size(); ++i) {
-			float a = ret.arr()[i];
-			float b = rhs.arr()[i];
-
-			ret.arr()[i] = a*b;
-		}
-
-		return ret;
-	}
-
-
-	std::string dump() const {
-		assert(m_arr != nullptr);
-		std::string ret;
-
-		for (int h = 0; h < m_height; ++h) {
-		 	ret << h << ": " << vector_dump(*m_arr, m_width, h*m_width) << "\n";
-		}
-
-		return ret;
-	}
-
-
-	vector<Height/16> operator*(vector<Width> const &rhs) {
-		vector<Height/16> ret;
-
-  	m_mult->load(&rhs.arr(), &arr(), &ret.arr()).run();
-		return ret;
-	}
+	std::string dump() const;
 
 protected:
 	void width(int rhs) { m_width = rhs; }
 
-	void transfer(Class const &rhs) {
-		assert(rhs.m_arr != nullptr);
-
-		m_width  = rhs.m_width;
-		m_height = rhs.m_height;
-
-		//m_arr.reset(rhs.m_arr.release());
-		m_arr = rhs.m_arr;
-		//assert(rhs.m_arr == nullptr);
-	}
+	void transfer(matrix const &rhs);
 
 	std::shared_ptr<Float::Array> m_arr;
 
 private:
-	int m_width = 0;
+	int m_width  = 0;
 	int m_height = 0;
 
 	static BaseKernel *m_mult;
 
-	void init_static() {
-		if (m_mult == nullptr) {
-			m_mult = new BaseKernel(compile(kernel<Height, Width>, settings()));
-		}
-	}
+	void init_static();
 };
 
-template<int const Width, int const Height>
-matrix<Width, Height> operator*(float scalar, matrix<Width, Height> &mat) {
+
+matrix operator*(float scalar, matrix /* const */ &mat) {
 	auto ret = mat * scalar;
 	return ret;
 }
 
 
-template<int const Width, int const Height>
-BaseKernel *matrix<Width, Height>::m_mult = nullptr;
-
+////////////////////////////////////////////////
+// Class vector 
+////////////////////////////////////////////////
 
 /**
- * size is in multiples of 16
+ * Size must be a multiple of 16
  */
-template<int const Size>
-struct vector : public matrix<Size, 1> {
-	using Class = vector<Size>;
-	using Parent = matrix<Size,1>;
+struct vector : public matrix {
 
-	vector(vector &rhs) : Parent() {
-		*this = rhs;
-		init_static();
-	}
+	vector(vector &rhs);
+	vector(int height);
 	
-
-	vector() : Parent() {
+/*
+	vector() : matrix() {
 		init_static();
 	}
+*/
 
 	//
 	// It's unfortunate that these are required
+	// TODO: check again
 	//
-	void set(float rhs) { Parent::set(rhs); }
+	void set(float rhs) { matrix::set(rhs); }
 
 	
 	Float::Array &arr() {
-		assert(Parent::m_arr != nullptr);
-		return *Parent::m_arr;
+		assert(m_arr != nullptr);
+		return *m_arr;
 	}
 
 
 	// Would have really appreciated having the deleted out const in
+	// TODO: check again
 	Float::Array /*const*/ &arr() const {
-		assert(Parent::m_arr != nullptr);
-		return *Parent::m_arr;
+		assert(m_arr != nullptr);
+		return *m_arr;
 	}
 
 	// End unfortunate
 
-	void set(float *rhs, int in_size) {
-		assert(Parent::width() >= in_size);
+	void set(float *rhs, int in_size);
+	float &operator[] (int index);
 
-		auto &r = Parent::arr();
+	vector operator-(vector &rhs);
+	vector &operator=(matrix const &rhs);
+	matrix outer(matrix const &rhs);
+	vector sigmoid(vector const &bias);
+	static BaseKernel &op_kernel();
 
-		for (int i = 0; i < in_size; ++i) {
-			r[i] = rhs[i];
-		}
-
-		for (int i = in_size; i < Parent::width(); ++i) {
-			r[i] = 0;
-		}
-	}
-
-
-	float &operator[] (int index) {
-		assert(Parent::width() > index);
-
-		auto &r = Parent::arr();
-		return r[index];
-	}
-
-
-	vector operator-(vector &rhs) {
-		assert(Parent::width() == rhs.width());
-		assert(Parent::height() == 1);
-		assert(Parent::height() == rhs.height());
-
-		vector ret;
-		assert(ret.width() == Parent::width());
-
-		m_sub->load(&Parent::arr(), &rhs.arr(), &ret.arr()).run();
-		return ret;
-	}
-
-
-	vector &operator=(vector const &rhs) {
-		Parent::transfer(rhs);
-		return *this;
-	}
-
-
-	std::string dump() const {
-	 	return vector_dump(Parent::arr(), Parent::width());
-	}
-
-
-	matrix<Size, 16*Size> outer(vector const &rhs) {
-		matrix<Size, 16*Size> ret;
-
-		m_op->load(&Parent::arr(), &rhs.arr(), &ret.arr()).run();
-
-		return ret;	
-	}
-
-
-	vector sigmoid(vector const &bias) {
-		vector ret;
-
-		m_sigmoid->load(&Parent::arr(), &bias.arr(), &ret.arr()).run();
-		return ret;	
-	}
-
-
-	static BaseKernel &op_kernel() {
-		init_static();
-		return *m_op;
-	}
-
+	std::string dump() const;
 
 private:
 
@@ -330,22 +128,9 @@ private:
 	static BaseKernel *m_op;
 	static BaseKernel *m_sigmoid;
 
-	static void init_static() {
-		if (m_sub == nullptr) {
-			m_sub = new BaseKernel(compile_b(vector_sub<Size>, settings()));
-		}
-		if (m_op == nullptr) {
-			m_op = new BaseKernel(compile(outer_product<Size>, settings()));
-		}
-		if (m_sigmoid == nullptr) {
-			m_sigmoid = new BaseKernel(compile(kernel_sigmoid<Size>, settings()));
-		}
-	}
+	static void init_static();
 };
 
 
-template<int const size> BaseKernel *vector<size>::m_sub     = nullptr;
-template<int const size> BaseKernel *vector<size>::m_op      = nullptr;
-template<int const size> BaseKernel *vector<size>::m_sigmoid = nullptr;
 
 #endif // _INCLUDE_RNN_MATRIX
