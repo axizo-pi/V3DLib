@@ -14,8 +14,8 @@ void kernel(Int x, Int::Ptr result) {
 
 MAYBE_UNUSED void run_kernel() {
   auto k = compile(kernel);
-  //cdebug << k.dump();
-  cdebug << vc4::opcodes(k.code());
+  //cout << k.dump();
+  cout << vc4::opcodes(k.code());
   //k.setNumQPUs(settings.num_qpus);
 
 	Int::Array result(16);
@@ -28,15 +28,10 @@ MAYBE_UNUSED void run_kernel() {
     ret << result[i] << ", ";
   }
 
-  warn << "result: " << ret;
+  cout << "result: " << ret;
 }
 
-} // anon namespace
-
-
-int main(int argc, const char *argv[]) {
-  //run_kernel();
-
+void vc4_branch() {
   vc4::Instr instr1;
   instr1.enc       = vc4::Instr::BRANCH_ENC;
   instr1.sig       = vc4::Instr::BRANCH;
@@ -46,7 +41,7 @@ int main(int argc, const char *argv[]) {
   instr1.immediate = 1234;
   instr1.waddr_add = 7;    // value 0 registers as NOP
   instr1.waddr_mul = 8;    // value 0 registers as NOP
-  cdebug << instr1.dump();
+	std::cout << "  " << instr1.dump() << "\n";
 
   vc4::Instr instr2;
   instr2.enc       = vc4::Instr::LOAD_IMM;
@@ -55,12 +50,26 @@ int main(int argc, const char *argv[]) {
                             // If true, rega and regb are reversed
   instr2.waddr_add = 12;    // value 0 registers as NOP
   instr2.waddr_mul = 11;    // idem
-  cdebug << instr2.dump();
+	std::cout << "  " << instr2.dump() << "\n";
 
   std::vector<uint64_t> code;
   code.push_back(instr1.encode());
   code.push_back(instr2.encode());
-  warn << "Opcodes:\n" << vc4::opcodes(code);
+
+	std::cout << "\nEncoding:\n";
+	for (auto const &enc : code) {
+		std::cout << "  " << std::hex << "0x" << enc << "\n";
+	}
+
+	std::cout << "\nOpcodes:\n" << vc4::opcodes(code);
+}
+
+} // anon namespace
+
+
+int main(int argc, const char *argv[]) {
+  //run_kernel();
+	vc4_branch();
 
   return 0;
 }

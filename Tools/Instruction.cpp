@@ -413,8 +413,8 @@ int main(int argc, const char *argv[]) {
 		}
 	};
 
-	auto &instr = instr_alu;
-	//auto &instr = instr_branch;
+	//auto &instr = instr_alu;
+	auto &instr = instr_branch;
 
 	//display_instr(instr);
 
