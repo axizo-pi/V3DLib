@@ -26,48 +26,52 @@ void init_input(Float::Array &input, float *a,  int n) {
  * Separate test for outer product
  */
 void test_outer_product(BaseKernel &op) {
-	Float::Array left_outer(2*16); 
-	init_input(left_outer, primes, 2*16);
+	const int blocks = 2;
+	const int vec_size = blocks*16;
 
-	Float::Array right_outer(2*16); 
-	Float::Array result_outer((2*16)*(2*16)); 
+	Float::Array left_outer(vec_size); 
+	init_input(left_outer, primes, vec_size);
 
-	for (int i = 0; i < 2*16; ++i) {
+	Float::Array right_outer(vec_size); 
+	Float::Array result_outer(vec_size*vec_size); 
+
+	for (int i = 0; i < vec_size; ++i) {
 	  right_outer[i] = (float) (i + 1);
 	}
 
-	op.load(&left_outer, &right_outer, &result_outer);
+	op.load(&left_outer, &right_outer, &result_outer, blocks);
 	op.run();
 
 	std::string buf;
 	buf << "outer product:\n";
-	for (int i = 0; i < 2*16; ++i) {
-	  buf << i << ": " << vector_dump(result_outer, 2*16, 2*16*i) << "\n";
+	for (int i = 0; i < vec_size; ++i) {
+	  buf << i << ": " << vector_dump(result_outer, vec_size, vec_size*i) << "\n";
 	}
 	warn << buf;
 }
 
 
 void test_vector() {
-/*	
-	vector<2> a_vec; a_vec.set(3);
-	vector<2> b_vec; b_vec.set(-7);
+	const int blocks = 2;
+	const int vec_size = blocks*16;
+/*
+	vector a_vec(vec_size); a_vec.set(4);
+	vector b_vec(vec_size); b_vec.set(3);
 	auto c_vec = a_vec - b_vec;
  	warn << "a_vec: " << a_vec.dump();
- 	warn << "sub: " << c_vec.dump();
+ 	warn << "sub: "   << c_vec.dump();
 */	
-	vector d_vec{32}; d_vec.set(primes, primes_size);
-	//warn << "d_vec: " << d_vec.dump();
 
-	vector e_vec{32};
+	vector d_vec{vec_size}; d_vec.set(primes, primes_size);
+	warn << "d_vec: " << d_vec.dump();
 
-	for (int i = 0; i < 2*16; ++i) {
+	vector e_vec{vec_size};
+
+	for (int i = 0; i < vec_size; ++i) {
 	  e_vec[i] = (float) (i + 1);
 	}
-
 	warn << "e_vec: " << e_vec.dump();
 
 	auto result = d_vec.outer(e_vec);
-
 	warn << "result: " << result.dump();
 }

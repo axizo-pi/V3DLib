@@ -1,6 +1,5 @@
 #ifndef _INCLUDE_RNN_MATRIX
 #define _INCLUDE_RNN_MATRIX
-#include "Kernel.h"
 #include "kernels.h"
 #include "Support/basics.h"
 #include "Support/Settings.h"
@@ -43,6 +42,7 @@ struct matrix {
 	matrix operator*(float rhs);
 	matrix operator*(matrix const &rhs);
 	matrix sigmoid_derivative(matrix const &rhs);
+	matrix transpose() const;
 
 	std::string dump() const;
 
@@ -57,16 +57,13 @@ private:
 	int m_width  = 0;
 	int m_height = 0;
 
-	static BaseKernel *m_mult;
+	static BaseKernel *m_mult_vec;
 
 	void init_static();
 };
 
 
-matrix operator*(float scalar, matrix /* const */ &mat) {
-	auto ret = mat * scalar;
-	return ret;
-}
+matrix operator*(float scalar, matrix /* const */ &mat);
 
 
 ////////////////////////////////////////////////
@@ -93,7 +90,7 @@ struct vector : public matrix {
 	//
 	void set(float rhs) { matrix::set(rhs); }
 
-	
+/*	
 	Float::Array &arr() {
 		assert(m_arr != nullptr);
 		return *m_arr;
@@ -102,11 +99,11 @@ struct vector : public matrix {
 
 	// Would have really appreciated having the deleted out const in
 	// TODO: check again
-	Float::Array /*const*/ &arr() const {
+	Float::Array / *const * / &arr() const {
 		assert(m_arr != nullptr);
 		return *m_arr;
 	}
-
+*/
 	// End unfortunate
 
 	void set(float *rhs, int in_size);

@@ -10,8 +10,9 @@ using namespace V3DLib;
 using namespace Log;
 
 
-void kernel_params(Float::Ptr out, Int::Ptr in) {
-	*out = toFloat(Int(*in)) * 1.25f;
+void kernel_params(Float::Ptr out, Int::Ptr in, Float mult) {
+	//*out = toFloat(Int(*in)) * mult)) * 1.25f;
+	*out = toFloat(Int(*in)) * mult * 1.25f;
 }
 
 
@@ -26,10 +27,9 @@ void dump_result(Float::Array &out) {
 
 
 int main(int argc, const char *argv[]) {
+  float mult = 1.5;
   Int::Array   in(16);
   Float::Array out(16);
-  Int::Array   in2(16);
-  Float::Array out2(16);
 
 	//================================================
 	warn << " ";
@@ -37,7 +37,6 @@ int main(int argc, const char *argv[]) {
 
   auto k = compile(kernel_params);
 	to_file("kernel_params.txt", k.dump());
-
 
 	//================================================
 	warn << " ";
@@ -52,16 +51,17 @@ int main(int argc, const char *argv[]) {
 
   in.fill(2);
   out.fill(-2);
-  k.load(&out, &in).run();
+  k.load(&out, &in, mult).run();
 	dump_result(out);
 
 	//================================================
 	warn << " ";
 	warn << "Running kernel k2\n";
 
-  in.fill(3);
+	mult = 6;
+  in.fill(4);
   out.fill(-1);
-  k2.load(&out, &in).run();
+  k2.load(&out, &in, mult).run();
 	dump_result(out);
 
   return 0;

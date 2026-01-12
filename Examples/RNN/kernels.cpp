@@ -1,9 +1,12 @@
 #include "kernels.h"
+#include "V3DLib.h"
+
+using namespace V3DLib;
 
 
 void kernel_sigmoid(Float::Ptr in, Float::Ptr bias, Float::Ptr out, Int N) {
-
-  For (Int h = 0, h < N, ++h)
+	Int h;
+  For (h = 0, h < N, h++)
 		Float x = *in;
 
 		x += *bias;
@@ -18,52 +21,50 @@ void kernel_sigmoid(Float::Ptr in, Float::Ptr bias, Float::Ptr out, Int N) {
 }
 
 
-void kernel(Float::Ptr input, Float::Ptr mat, Float::Ptr result, Int M, Int N) {
-  Float tmp[M];
-  Float::Ptr row[M];
-  Int offset2 = 4*16*N;
+/**
+ * Multiply matrix mat with vector input.
+ *
+ * @param M length of vector in blocks of 16
+ * @param N height of matrix. Currently max 16, which suits our current purposes
+ */
+void kernel_mult_vec(Float::Ptr input, Float::Ptr mat, Float::Ptr result, Int M, Int N) {
+	Float res = 0;
+  Int mat_offset = 4*16*M;
 
-  For (Int h = 0, h < M, ++h)
-    tmp[h] = 0;
-    row[h] = mat.offset(h*offset2);
+ 	For (Int n = 0, n < N, n++)
+		Float tmp = 0.0f;
+
+		Float::Ptr tmp_mat = mat.offset(n*mat_offset);
+		Float::Ptr tmp_vec = input;
+
+ 		For (Int m = 0, m < M, m++)
+			tmp += (*tmp_mat) * (*tmp_vec);
+			tmp_mat.inc();
+			tmp_vec.inc();
+		End
+
+    rotate_sum(tmp, tmp);
+
+		Where (index() == n)
+			res = tmp;
+		End
 	End
 
-  For (Int i = 0, i < N, ++i)
-    Float v = *input;
-  
-  	For (Int h = 0, h < M, ++h)
-      tmp[h] += (*row[h])*v;
-    End
-
-    If (i < (N - 1))
-  		For (Int h = 0, h < M, ++h)
-        row[h].inc();
-    	End
-
-      input.inc();
-    End
- 	End 
-
-  Float res = 0;
-
- 	For (Int h = 0, h < M, ++h)
-    rotate_sum(tmp[h], tmp[h]);
-    res.set_at(h, tmp[h]);
- 	End 
-
-  *result = res;
+	*result = res;
 }
 
 
-// @param N  length of input vectors, in blocks of 16
+/**
+ * @param N  length of input vectors, in blocks of 16
+ */
 void outer_product(Float::Ptr left, Float::Ptr right, Float::Ptr out_matrix, Int N) {
 	left -= index();
 	//Float right_out = toFloat(2*(1 + index()));
 
-  For (Int i = 0, i < 16*N, ++i)
+  For (Int i = 0, i < 16*N, i++)
 		Float::Ptr start = right;
 
-  	For (Int j = 0, j < N, ++j)
+  	For (Int j = 0, j < N, j++)
 			*out_matrix = *left * *start;
 			out_matrix.inc(); start.inc();
 		End
@@ -76,7 +77,7 @@ void outer_product(Float::Ptr left, Float::Ptr right, Float::Ptr out_matrix, Int
 void vector_sub(Float::Ptr left, Float::Ptr right, Float::Ptr out, Int N) {
 	Float tmp;
 
-  For (Int i = 0, i < N, ++i)
+  For (Int i = 0, i < N, i++)
 		tmp = *left - *right; 
 		*out = tmp;
 

@@ -91,14 +91,13 @@ public:
    */
   template <typename... us>
   BaseKernel &load(us... args) {
-		Log::warn << "Called BaseKernel::load()";
+		//Log::warn << "Called BaseKernel::load()";
 
     uniforms.clear();
 
     if (!ppassParam(uniforms, m_typelist, 0,  args...)) {
 			Log::cerr << "Errors in params of load()\n" << Log::thrw;
 		}
-
 /*		
 		using ::operator<<;  // C++ weirdness
 		std::string tmp;

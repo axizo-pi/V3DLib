@@ -6,27 +6,27 @@
 
 namespace V3DLib {
 
-inline std::size_t var_type(Float::Array2D *p) {
+inline std::size_t var_type(Float::Array2D const *p) {
 	return typeid(Float::Ptr).hash_code();
 }
 
-inline uint32_t param_value(Float::Array2D *p) {
+inline uint32_t param_value(Float::Array2D const *p) {
 	return p->getAddress();
 }
 
-inline std::size_t var_type(Float::Array *p) {
+inline std::size_t var_type(Float::Array const *p) {
 	return typeid(Float::Ptr).hash_code();
 }
 
-inline uint32_t param_value(Float::Array *p) {
+inline uint32_t param_value(Float::Array const *p) {
 	return p->getAddress();
 }
 
-inline std::size_t var_type(Int::Array *p) {
+inline std::size_t var_type(Int::Array const *p) {
 	return typeid(Int::Ptr).hash_code();
 }
 
-inline uint32_t param_value(Int::Array *p) {
+inline uint32_t param_value(Int::Array const *p) {
 	return p->getAddress();
 }
 
@@ -56,6 +56,7 @@ inline bool ppassParam(IntList &uniforms, std::vector<std::size_t> &typelist, in
 
 	return true;
 }
+
 
 template <typename T> bool append(
 	IntList &uniforms,
@@ -89,6 +90,7 @@ template <typename T, typename ...t> bool ppassParam(
 
 	return ret & ppassParam(uniforms, typelist, index, x...);
 }
+
 
 template <typename ...t> bool ppassParam(
 	IntList &uniforms,

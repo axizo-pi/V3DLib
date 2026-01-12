@@ -2,6 +2,7 @@
 #define _INCLUDE_RNN_MODEL
 #include "matrix.h"
 #include "scalar.h"
+//#include "Source/Float.h"
 
 using namespace V3DLib;
 
@@ -14,16 +15,12 @@ const int N = 2;  // Width of matrix and length of vector
  * input : hidden : output = 30 : 5 : 3
  *
  * The kernel(s) however work with array sizes of multiples
- * of 16. We should the smallest 16-item increments that
+ * of 16. We should use the smallest 16-item increments that
  * encompass the original size.
  */
 struct model {
-	model(int n_size, int m_size) :
-		s_tmp(16*n_size),
-  	k(compile(kernel, settings())),
-		sigmoid(compile(kernel_sigmoid, settings()))
-	{
-		w1_v.frand();
+	model(int n_size, int m_size) : s_tmp(n_size) {
+		w1.frand();
 		bias1.frand();
 		w2.frand();
 		bias2.frand();
@@ -31,52 +28,48 @@ struct model {
 
 	float alpha = 1;
 
-	matrix w1_v{16*N, M};
-	vector z1_v{16};
+	matrix w1{16*N, M};
+	vector z1{16};
   vector bias1{16};
   vector a1{16};
 
 	matrix w2{16, 16};
   vector bias2{16};
-  vector z2_v{16};
+  vector z2{16};
   vector a2{16};
 
-	Float::Array s_tmp; // For scalar output
-
-	BaseKernel k;
-	BaseKernel sigmoid;
+	Float::Array s_tmp{16}; // For scalar output
 
 	vector forward(vector const &input_v) {
     //Timer timer("Matrix mult");
 
-  	z1_v = w1_v * input_v;
- 		//warn << "z1_v: " << z1_v.dump();
+ 		//warn << "input_v: " << input_v.dump();
+ 		//warn << "w1:\n"     << w1.dump();
 
-  	//run_scalar(input_v.arr(), w1_v.arr(), s_tmp);
+  	z1 = w1 * input_v;
+		//scalar::mult(input_v.arr(), w1.arr(), s_tmp);
+ 		//warn << "z1       : " << z1.dump();
   	//warn << "scalar z1: " << vector_dump(s_tmp, 16);
-  	//warn << "kernel z1: " << z1_v.dump();
 
   	//warn << "bias1: " << bias1.dump();
-
-		a1 = z1_v.sigmoid(bias1);
-
-		//scalar_sigmoid(z1_v.arr(), bias1.arr(), s_tmp);
-  	//warn << "scalar sigmoid: " << vector_dump(s_tmp, 16);
+		a1 = z1.sigmoid(bias1);
+		//scalar::sigmoid(z1.arr(), bias1.arr(), s_tmp);
   	//warn << "kernel sigmoid: " << a1.dump();
+  	//warn << "scalar sigmoid: " << vector_dump(s_tmp, 16);
 
-  	z2_v = w2 * a1;
-
-  	k.load(&a1.arr(), &w2.arr(), &s_tmp).run();
-
-  	//run_scalar(a1.arr(), w2.arr(), s_tmp);
+  	z2 = w2 * a1;
+		//scalar::mult(a1.arr(), w2.arr(), s_tmp);
+  	//warn << "kernel z2: " << z2.dump();
   	//warn << "scalar z2: " << vector_dump(s_tmp, 16);
-  	//warn << "kernel z2: " << z2_v.dump();
 
-		a2 = z2_v.sigmoid(bias2);
-		scalar::sigmoid(z2_v.arr(), bias2.arr(), s_tmp);
+		a2 = z2.sigmoid(bias2);
+		//scalar::sigmoid(z2.arr(), bias2.arr(), s_tmp);
+  	//warn << "kernel sigmoid: " << a2.dump();
+  	//warn << "scalar sigmoid: " << vector_dump(s_tmp, 16);
 
 /*
-		// TODO adjust
+		// TODO generalize FLOP calculations for all operations.
+		//      Stuff below is embryonic.
     timer.end();
 
     int flops = 2*M*(16*N + 16*(N - 1));  // matrix num_rows*(num_mults + num_adds);
@@ -85,7 +78,6 @@ struct model {
     //warn << "MFLOPS: " << ((float) flops)/timer.diff()/1.0e6;
     //warn << "Timer diff: " << timer.diff();
 */		
-
 		return a2;
 	}
 
@@ -99,29 +91,41 @@ struct model {
 		//
 		// Output layer to hidden layer
 		//
-		auto d2     = la2 - desired; 
-  	warn << "d2: " << d2.dump();
+		auto d2     = la2 - desired;            // error in output layer
+  	//warn << "d2: " << d2.dump();          // TODO: only top 3 elements of error (d2) are significant,
+ 		                                        //       consider setiting rest to 0.
 
-		auto w2_adj = a1.outer(d2);
+		auto w2_adj = a1.outer(d2);             // gradient, outer product
   	//warn << "w2_adj:\n" << w2_adj.dump();
 
 		auto w2_tmp = w2 - alpha*w2_adj;
   	//warn << "w2_tmp:\n" << w2_tmp.dump();
 	
 		bias2 -= alpha * d2;
-  	warn << "bias2:\n" << bias2.dump();
+  	//warn << "bias2: " << bias2.dump();
 
 		//	
 		// Hidden layer adjusting w1
 		//
 		auto tmp1 = w2 * d2;
-  	warn << "tmp1:\n" << tmp1.dump();
+  	//warn << "tmp1: " << tmp1.dump();
 
 		auto d1 = a1.sigmoid_derivative(tmp1);
-  	warn << "d1:\n" << d1.dump();
+  	warn << "d1: " << d1.dump();
 
-		auto w1_adj = input.outer(d1);  // gradient, outer product
-  	warn << "w1_adj:\n" << w1_adj.dump();
+		auto w1_trans = input.outer(d1);        // gradient, outer product; should be transposed
+  	//warn << "w1_trans:\n" << w1_trans.dump();
+		auto w1_adj = w1_trans.transpose();
+  	//warn << "w1_adj:\n" << w1_adj.dump();
+
+		w1 -= alpha*w1_adj;
+  	//warn << "w1 post:\n" << w1.dump();
+
+  	//warn << "bias1 pre :" << bias1.dump();
+		bias1 -= alpha * d1;
+  	//warn << "bias1 post:" << bias1.dump();
+
+		w2 = w2_tmp;
 	}
 };
 

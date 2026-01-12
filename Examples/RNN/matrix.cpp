@@ -6,13 +6,12 @@
 // Class matrix
 ////////////////////////////////////////////////
 
-BaseKernel *matrix::m_mult = nullptr;
+BaseKernel *matrix::m_mult_vec = nullptr;
 
 
 matrix::matrix(int width, int height) : m_width(width), m_height(height) {
-	if (m_width <= 0)        { cerr << "vector ctor: width must be positive" << thrw; }
-	if ((m_width & 16) != 0) { cerr << "vector ctor: width must be a multiple of 16" << thrw; }
-	if (m_height <= 0)       { cerr << "vector ctor: height must be positive" << thrw; }
+	if (m_width <= 0)         { cerr << "vector ctor: width must be positive" << thrw; }
+	if (m_height <= 0)        { cerr << "vector ctor: height must be positive" << thrw; }
 
 	m_arr.reset(new Float::Array(m_width*m_height));
 
@@ -77,7 +76,6 @@ void matrix::frand() {
 
 
 matrix &matrix::operator=(matrix &rhs) {
-	assert(m_width == rhs.width() && m_height == rhs.height());
 	transfer(rhs);
 	return *this;
 }
@@ -118,10 +116,13 @@ matrix matrix::operator*(float rhs) {
 
 
 matrix matrix::operator*(matrix const &rhs) {
+	//warn << "Called matrix matrix::operator*()";
 	assert(m_width == rhs.height());  // Inner dimension must match
-	matrix ret(1,m_height);
+	assert((m_width % 16) == 0);      // Inner dimension (width) must be multiple of 16
+	assert(m_height <= 16);           // Larger height needs adjustment in kernel
+	matrix ret(1 , m_height);
 
- 	m_mult->load(&rhs.arr(), &arr(), &ret.arr()).run();
+ 	m_mult_vec->load(&rhs.arr(), &arr(), &ret.arr(), m_width/16, m_height).run();
 	return ret;
 }
 
@@ -150,12 +151,34 @@ matrix matrix::sigmoid_derivative(matrix const &rhs) {
 }
 
 
+matrix matrix::transpose() const {
+	matrix ret(m_height, m_width);
+
+	for (int h = 0; h < m_height; ++h) {
+		for (int w = 0; w < m_width; ++w) {
+			ret.arr()[w*m_height + h] = arr()[h*m_width + w];
+		}
+	}
+
+	return ret;
+}
+
+
 std::string matrix::dump() const {
 	assert(m_arr != nullptr);
 	std::string ret;
 
-	for (int h = 0; h < m_height; ++h) {
-	 	ret << h << ": " << vector_dump(*m_arr, m_width, h*m_width) << "\n";
+	ret << "(" << m_width << ", " << m_height << ") ";
+
+	if (m_width == 1) {
+		ret << "(tr) ";
+		ret << vector_dump(*m_arr, m_height);
+	} else {
+		ret << "\n";
+
+		for (int h = 0; h < m_height; ++h) {
+		 	ret << h << ": " << vector_dump(*m_arr, m_width, h*m_width) << "\n";
+		}
 	}
 
 	return ret;
@@ -175,9 +198,15 @@ void matrix::transfer(matrix const &rhs) {
 
 
 void matrix::init_static() {
-	if (m_mult == nullptr) {
-		m_mult = new BaseKernel(compile(kernel, settings()));
+	if (m_mult_vec == nullptr) {
+		m_mult_vec = new BaseKernel(compile(kernel_mult_vec, settings()));
 	}
+}
+
+
+matrix operator*(float scalar, matrix /* const */ &mat) {
+	auto ret = mat * scalar;
+	return ret;
 }
 
 
@@ -197,12 +226,13 @@ vector::vector(vector &rhs) : matrix(rhs) {
 
 
 vector::vector(int height) : matrix(1, height) {
+	if ((height & 0xf) != 0) { cerr << "vector ctor: height must be a multiple of 16" << thrw; }
 	init_static();
 }
 
 
 void vector::set(float *rhs, int in_size) {
-	assert(width() >= in_size);
+	assert(height() >= in_size);
 
 	auto &r = matrix::arr();
 
@@ -210,14 +240,14 @@ void vector::set(float *rhs, int in_size) {
 		r[i] = rhs[i];
 	}
 
-	for (int i = in_size; i < width(); ++i) {
+	for (int i = in_size; i < height(); ++i) {
 		r[i] = 0;
 	}
 }
 
 
 float &vector::operator[] (int index) {
-	assert(width() > index);
+	assert(height() > index);
 
 	auto &r = arr();
 	return r[index];
@@ -228,10 +258,11 @@ vector vector::operator-(vector &rhs) {
 	assert(width() == 1);
 	assert(width() == rhs.width());
 	assert(height() == rhs.height());
+	if ((height() & 0xf) != 0) { cerr << "vector sub: height must be a multiple of 16" << thrw; }
 
 	vector ret(height());
 
-	m_sub->load(&arr(), &rhs.arr(), &ret.arr()).run();
+	m_sub->load(&arr(), &rhs.arr(), &ret.arr(), height()/16).run();
 	return ret;
 }
 
@@ -244,10 +275,13 @@ vector &vector::operator=(matrix const &rhs) {
 
 
 matrix vector::outer(matrix const &rhs) {
-	assert(rhs.width() == 1);
-	matrix ret(width(), rhs.height());
+	assert(rhs.width() == 1);         // Expecting a vector as input
+	if ((height() & 0xf) != 0)     { cerr << "vector outer: expecting height to be a multiple of 16" << thrw; }
+	if ((rhs.height() & 0xf) != 0) { cerr << "vector outer: expecting rhs height to be a multiple of 16" << thrw; }
 
-	m_op->load(&arr(), &rhs.arr(), &ret.arr()).run();
+	matrix ret(rhs.height(), height());
+
+	m_op->load(&arr(), &rhs.arr(), &ret.arr(), height()/16).run();
 	return ret;	
 }
 
@@ -255,13 +289,13 @@ matrix vector::outer(matrix const &rhs) {
 vector vector::sigmoid(vector const &bias) {
 	vector ret(height());
 
-	m_sigmoid->load(&arr(), &bias.arr(), &ret.arr()).run();
+	m_sigmoid->load(&arr(), &bias.arr(), &ret.arr(), height()/16).run();
 	return ret;	
 }
 
 
 std::string vector::dump() const {
- 	return vector_dump(arr(), width());
+ 	return vector_dump(arr(), height());
 }
 
 
