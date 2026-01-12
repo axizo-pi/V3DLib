@@ -6,6 +6,9 @@
 #include "Support/Platform.h"  // has_vc4() 
 #include "v3d.h"
 #include "LibSettings.h"
+#include "global/log.h"
+
+using namespace Log;
 
 namespace V3DLib {
 namespace v3d {
@@ -29,6 +32,7 @@ void BufferObject::alloc_mem(uint32_t size_in_bytes) {
     assertq(false, "Failed to allocate v3d shared memory");
   }
   arm_base = (uint8_t *) tmp_addr;
+	warn << "v3d alloc_mem arm_base: " << hex << (unsigned long) arm_base;
 
   assert(handle != 0);
   assert(arm_base != nullptr);

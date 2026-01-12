@@ -140,6 +140,9 @@ public:
   public:
     Array(int size);
 
+		/**
+		 * @return  number of elements in array (not size in bytes)
+		 */
     size_t size() const {
       assert(m_re.size() == m_im.size());
       return m_re.size();

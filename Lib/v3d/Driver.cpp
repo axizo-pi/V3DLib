@@ -98,9 +98,9 @@ bool Driver::execute(Code &code, Data *uniforms, uint32_t thread, bool wait_comp
 	// Works for vc7, fails for vc6
 	bool do_special_flags = true;
 
-	if ((code_phyaddr & 0x111) != 0) {
+	if ((code_phyaddr & 0x7) != 0) {
 		if (Platform::compiling_for_vc7()) {  // Fails often on vc6, now also on vc7
-			cdebug << "Test on room for special flags fails";
+			cdebug << "Test on room for special flags fails. phyaddr: " << hex << code_phyaddr;
 		}
 		do_special_flags = false;
 	}
@@ -129,6 +129,18 @@ bool Driver::execute(Code &code, Data *uniforms, uint32_t thread, bool wait_comp
 	if (!Platform::compiling_for_vc7()) {
 		thread--;   // This is what vc6 expects
 	}
+
+/*
+	warn << "Driver::execute() code_phyaddr: "     << hex << code_phyaddr;
+	warn << "Driver::execute() uniforms address: " << hex << uniforms->getAddress();
+	warn << "Driver::execute() thread: "           << thread;
+
+	std::string tmp;
+  for (int i = 0; i < (int) m_bo_handles.size(); i++) {
+		tmp << m_bo_handles[i] << ", ";
+  }
+	warn << "Driver::execute() bo_handles: " << tmp;
+*/
 
   drm_v3d_submit_csd st = {
     {
@@ -161,6 +173,7 @@ bool Driver::execute(Code &code, Data *uniforms, uint32_t thread, bool wait_comp
   if (ret && wait_complete) {
     ret = wait_bo();
   }
+  assert(ret);
   return ret;
 }
 
@@ -171,13 +184,15 @@ bool Driver::execute(Code &code, Data *uniforms, uint32_t thread, bool wait_comp
 bool Driver::wait_bo() {
   assert(m_bo_handles.size() > 0);
 
-  //warn << "Timeout: " << LibSettings::qpu_timeout();
+  //warn << "Timeout: " << LibSettings::qpu_timeout() << "s";
   uint64_t timeout_ns = 1000000000llu * LibSettings::qpu_timeout();
 
   int ret = true;
 
   for (auto handle : m_bo_handles) {
+		//warn << "wait_bo waiting for handle: " << handle;
     if (!::v3d::wait_bo(handle, timeout_ns)) { 
+			cerr << "wait_bo fail";
       ret = false;
     }
   }

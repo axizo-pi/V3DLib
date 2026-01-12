@@ -114,13 +114,6 @@ Complex &Complex::operator+=(Complex const &rhs) {
 
 
 Complex Complex::operator*(Complex const &rhs) const {
-/*
-  Complex tmp;
-  tmp.m_re = m_re*rhs.m_re - m_im*rhs.m_im;
-  tmp.m_im = m_re*rhs.m_im + m_im*rhs.m_re;
-
-  return tmp;
-*/
   return Complex(m_re*rhs.m_re - m_im*rhs.m_im, m_re*rhs.m_im + m_im*rhs.m_re);
 }
 

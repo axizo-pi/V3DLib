@@ -1,10 +1,13 @@
 #include "BufferObject.h"
 #include "Support/Platform.h"
 #include "Support/debug.h"
+#include "global/log.h"
 #include "BufferType.h"
 #include "Target/BufferObject.h"
 #include "vc4/BufferObject.h"
 #include "v3d/BufferObject.h"
+
+using namespace Log;
 
 namespace V3DLib {
 
@@ -15,10 +18,16 @@ namespace V3DLib {
  * @return physical address of the newly allocated memory in the heap
  */
 uint32_t BufferObject::alloc_array(uint32_t size_in_bytes, uint8_t *&array_start_address) {
-  int new_offset = HeapManager::alloc_array(size_in_bytes);
+	// +16: extra padding so that we can guarantee 4-bit alignment
+  int new_offset = HeapManager::alloc_array(size_in_bytes + 16);
   assert(new_offset >= 0);
   array_start_address = arm_base + (uint32_t) new_offset;
   return phy_address() + (uint32_t) new_offset;
+}
+
+
+uint32_t BufferObject::phy_address() const {
+	return m_phyaddr;
 }
 
 
@@ -37,20 +46,20 @@ uint32_t BufferObject::getHandle() const {
 
 void BufferObject::set_phy_address(uint32_t val) {
   assert(val > 0);
-  assert(phyaddr == 0);  // Only allow initial size setting for now
-  phyaddr = val;
+  assert(m_phyaddr == 0);  // Only allow initial size setting for now
+  m_phyaddr = val;
 }
 
 
 void BufferObject::clear() {
-  phyaddr = 0;
+  m_phyaddr = 0;
   HeapManager::clear();
 }
 
 
 bool BufferObject::is_cleared() const {
   if  (size() == 0) {
-    assert(phyaddr == 0);
+    assert(m_phyaddr == 0);
   }
 
   return HeapManager::is_cleared();

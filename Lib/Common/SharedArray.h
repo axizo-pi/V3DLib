@@ -7,6 +7,10 @@
 
 namespace V3DLib {
 
+//////////////////////////////////////////////////
+// Class BaseSharedArray
+//////////////////////////////////////////////////
+
 class BaseSharedArray {
 public:
   BaseSharedArray(BaseSharedArray &&a) = default;
@@ -15,31 +19,42 @@ public:
   void alloc(uint32_t n);
   void dealloc();
   bool allocated() const;
-  uint32_t getAddress() const { return m_phyaddr; }
-  uint32_t size() const { return m_size; }
-  bool empty() const { return size() == 0; }
+  uint32_t getAddress() const;
+	std::string dump() const;
+
+	/**
+	 * @return number of elements contained
+	 */
+  uint32_t size() const { return m_num_elems; }
+  bool empty() const { return m_mem_size == 0; }
 
   void heap_view(BufferObject &heap);
 
 protected:
-  uint8_t *m_usraddr = nullptr;  // Start of the heap in main memory, as seen by the CPU
 
   BaseSharedArray(BufferObject *heap, uint32_t element_size);
   BaseSharedArray(uint32_t element_size) : BaseSharedArray(nullptr, element_size) {}
 
-  uint32_t phy(uint32_t i);
+  uint32_t phy(uint32_t val);
+  uint8_t *usraddr() { return m_usraddr; }
+  uint8_t const *usraddr() const { return m_usraddr; }
 
 private:
-  BufferObject *m_heap = nullptr;  // Reference to used heap
+  BufferObject *m_heap    = nullptr;  // Reference to used heap
+  uint8_t *m_usraddr      = nullptr;  // Start of the heap in main memory, as seen by the CPU
+  uint32_t m_phyaddr      = 0;        // Starting index of memory in GPU space
+	uint32_t m_mem_size     = 0;        // Allocated memory in bytes
   uint32_t const m_element_size;
-  uint32_t m_phyaddr   = 0;        // Starting index of memory in GPU space
-  uint32_t m_size      = 0;        // Number of contained elements (not memory size!)
+  uint32_t m_num_elems    = 0;        // Number of contained elements (not memory size!)
   bool     m_is_heap_view = false;
 
   BaseSharedArray(BaseSharedArray const &a) = delete;  // Disallow copy
-
 };
 
+
+//////////////////////////////////////////////////
+// Class SharedArray
+//////////////////////////////////////////////////
 
 /**
  * Reserve and access a memory range in the underlying buffer object.
@@ -65,8 +80,8 @@ public:
 
   ~SharedArray() { Parent::dealloc(); }
 
-  T const *ptr() const { return (T *) m_usraddr; }  // Return pointer to data in main memory
-  T *ptr() { return (T *) m_usraddr; }
+  T const *ptr() const { return (T const *) usraddr(); }  // Return pointer to data in main memory
+  T *ptr() { return (T *) usraddr(); }
 
   void fill(T val) {
     assertq(allocated(), "Can not fill unallocated array", true);
@@ -84,8 +99,8 @@ public:
    *
    * Needed by interpreter and emulator.
    */
-  inline T& phy(uint32_t i) {
-    return (*this)[Parent::phy(i)];
+  inline T& phy(uint32_t val) {
+    return (*this)[Parent::phy(val)];
   }
 
 
@@ -190,7 +205,7 @@ protected:
     assert(allocated());
     assertq(i >= 0 && i < (int) size(), "SharedArray::[]: index outside of possible range", true);
 
-    T *base = (T *) m_usraddr;
+    T *base = (T *) ptr();
     return (T&) base[i];
   }
 
@@ -199,11 +214,15 @@ protected:
     assert(allocated());
     assertq(i >= 0 && i < (int) size(), "SharedArray::[]: index outside of possible range", true);
 
-    T *base = (T *) m_usraddr;
+    T *base = (T *) ptr();
     return base[i];
   }
 };
 
+
+//////////////////////////////////////////////////
+// Class Shared2DArray
+//////////////////////////////////////////////////
 
 template <typename T>
 class Shared2DArray : private SharedArray<T> {
@@ -348,6 +367,26 @@ private:
 };
 
 
+//////////////////////////////////////////////////
+// Class Code
+//
+// Contained code should be 4-bit aligned.
+//////////////////////////////////////////////////
+
+class Code : public SharedArray<uint64_t> {
+	using Parent = SharedArray<uint64_t>;
+
+public:	
+  void alloc(uint32_t n);
+  void copyFrom(std::vector<uint64_t> const &src);
+	std::string dump() const;
+};
+
+
+//////////////////////////////////////////////////
+// Other definitions
+//////////////////////////////////////////////////
+
 inline bool no_fractions(V3DLib::SharedArray<float> const &a) {
   bool ret = true;
 
@@ -362,7 +401,6 @@ inline bool no_fractions(V3DLib::SharedArray<float> const &a) {
 }
 
 
-using Code = SharedArray<uint64_t>;
 using Data = SharedArray<uint32_t>;
 
 }  // namespace V3DLib

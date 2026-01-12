@@ -20,8 +20,7 @@ public:
 
   uint32_t alloc_array(uint32_t size_in_bytes, uint8_t *&array_start_address);
   void dealloc_array(uint32_t in_phyaddr, uint32_t in_size);
-
-  uint32_t phy_address() const { return phyaddr; }
+  uint32_t phy_address() const;
   uint8_t *usr_address() { return arm_base; }
 
 protected:
@@ -36,7 +35,7 @@ private:
   void operator=(BufferObject a);
   void operator=(BufferObject const &a);
 
-  uint32_t phyaddr  = 0;
+  uint32_t m_phyaddr  = 0;
 };
 
 BufferObject &getBufferObject();

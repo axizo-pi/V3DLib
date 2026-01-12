@@ -32,7 +32,7 @@ public:
   Instr::List &targetCode() { return m_targetCode; }
   Stmts &sourceCode();
 
-  Code const &code() const { return qpuCodeMem; }
+  Code const &code() const { return m_code; }
 
 	std::string dump();
   std::string compile_info() const;
@@ -46,13 +46,12 @@ public:
 
 protected:
 	KernelType  m_type;
-  Instr::List m_targetCode;                // Target code generated from AST
+  Instr::List m_targetCode; // Target code generated from AST
   Stmts       m_body;
 
-  Code qpuCodeMem;     // Memory region for QPU code
-                       // Doesn't survive std::move, dtor gets called despite move ctor present
+  Code m_code;              // Memory region for QPU code
+                            // Doesn't survive std::move, dtor gets called despite move ctor present
 
-  int qpuCodeMemOffset = 0;
   std::vector<std::string> errors;
 
   virtual std::string emit_opcodes() { return ""; } 

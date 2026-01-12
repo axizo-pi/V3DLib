@@ -1,7 +1,7 @@
 #
 # This file is generated!  Editing it directly is a bad idea.
 #
-# Generated on: Tue Jan  6 03:52:21 AM CET 2026
+# Generated on: Sat Jan 10 02:39:49 AM CET 2026
 #
 ###############################################################################
 
@@ -130,6 +130,7 @@ EXAMPLES := \
   Counter  \
   detectPlatform  \
   Instruction  \
+  KernelParams  \
   Sub  \
 
 # support files for tests

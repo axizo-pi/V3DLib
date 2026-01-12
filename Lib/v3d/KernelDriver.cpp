@@ -695,6 +695,7 @@ void load_uniforms(Data &unif, int numQPUs, Data const &devnull, Data const &don
   unif[offset++] = devnull.getAddress();  // Memory location for values to be discarded
 
   for (int j = 0; j < params.size(); j++) {
+		//Log::warn << "load_uniforms param " << j << ": " << params[j];
     unif[offset++] = params[j];
   }
 
@@ -713,7 +714,7 @@ void load_uniforms(Data &unif, int numQPUs, Data const &devnull, Data const &don
 // Class KernelDriver
 ///////////////////////////////////////////////////////////////////////////////
 
-KernelDriver::KernelDriver() : V3DLib::KernelDriver(V3dBuffer) { //, qpuCodeMem(code_bo)  { // Why is last item  here?
+KernelDriver::KernelDriver() : V3DLib::KernelDriver(V3dBuffer) { //, m_code(code_bo)  { // Why is last item  here?
 	assert(!Platform::compiling_for_vc4());
 
 	if(Platform::compiling_for_vc7()) {
@@ -729,7 +730,7 @@ KernelDriver::KernelDriver() : V3DLib::KernelDriver(V3dBuffer) { //, qpuCodeMem(
 void KernelDriver::encode() {
   if (instructions.size() > 0) return;  // Don't bother if already encoded
   if (has_errors()) return;              // Don't do this if compile errors occured
-  assert(!qpuCodeMem.allocated());
+  assert(!m_code.allocated());
 
   // Encode target instructions
   _encode(m_targetCode, instructions);
@@ -815,22 +816,20 @@ void KernelDriver::allocate() {
   assert(!instructions.empty());
 
   // Assumption: code in a kernel, once allocated, doesn't change
-  if (qpuCodeMem.allocated()) {
-    if (instructions.size() > qpuCodeMem.size()) {
+  if (m_code.allocated()) {
+    if (instructions.size() > m_code.size()) {
 			cerr << "KernelDriver::allocate(): Discrepancy between instruction size: " << (int) instructions.size()
-  	       << " and qpuCodeMem size: " << qpuCodeMem.size();
+  	       << " and m_code size: " << m_code.size();
 		}
-    assert(instructions.size() <= qpuCodeMem.size());  // Tentative check, not perfect
-                                                       // actual opcode seq can be smaller due to removal labels
+    assert(instructions.size() <= m_code.size());  // Tentative check, not perfect
+                                                        // actual opcode seq can be smaller due to removal labels
   } else {
     std::vector<uint64_t> code = to_opcodes();
     assert(!code.empty());
 
     // Allocate memory for the QPU code
-    //uint32_t size_in_bytes = (uint32_t) (sizeof(uint64_t)*code.size());
-    //code_bo.alloc(size_in_bytes);
-    qpuCodeMem.alloc((uint32_t) code.size());
-    qpuCodeMem.copyFrom(code);  // Copy kernel to code memory
+    m_code.alloc((uint32_t) code.size());
+    m_code.copyFrom(code);  // Copy kernel to code memory
   }
 }
 
@@ -866,8 +865,8 @@ void KernelDriver::invoke(int numQPUs, IntList &params, bool wait_complete) {
   assertq(!has_errors(), "v3d kernels has errors, can not invoke");
 
   allocate();
-  assert(qpuCodeMem.allocated());
-  assert(!qpuCodeMem.empty());
+  assert(m_code.allocated());
+  assert(!m_code.empty());
 
   if (!devnull.allocated()) {
     devnull.alloc(16);
@@ -880,7 +879,9 @@ void KernelDriver::invoke(int numQPUs, IntList &params, bool wait_complete) {
 	load_uniforms(uniforms, numQPUs, devnull, done, params);
 
   drv.add_bo(getBufferObject().getHandle());
-  drv.execute(qpuCodeMem, &uniforms, numQPUs, wait_complete);
+  drv.execute(m_code, &uniforms, numQPUs, wait_complete);
+
+	//Log::warn << "KernelDriver::invoke() done: " << done.dump(); 
 #endif  // QPU_MODE
 }
 

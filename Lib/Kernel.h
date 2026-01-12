@@ -75,11 +75,14 @@ template <typename... ts> struct Kernel : public BaseKernel {
   using KernelFunction = void (*)(ts... params);
 
   // Construct an argument of QPU type 't'.
-  template <typename T> inline T mkArg( std::vector<std::size_t> &typelist) {
+  template <typename T> inline T mkArg(std::vector<std::size_t> &typelist) {
 		auto t_hash = typeid(T).hash_code(); //both T and T::Ptr return the same value: N6V3DLib7Complex3PtrE
-		//Log::warn << "mkArg t_hash: " << typeid(T).name();
+		Log::warn << "Doing mkArg";
+		Log::warn << "mkArg t_hash: " << typeid(T).name();
 
 	  auto c_hash = typeid(typename Complex::Ptr).hash_code();
+	  auto i_hash = typeid(int).hash_code();
+		Log::warn << "mkArg i_hash    : " << typeid(int).name();
 
 	  if (t_hash == c_hash) {
 			//Log::warn << "mkArg: Complex::Ptr detected";
@@ -88,8 +91,13 @@ template <typename... ts> struct Kernel : public BaseKernel {
 			auto p_hash = typeid(typename Float::Ptr).hash_code();
 			typelist.push_back(p_hash);
 			typelist.push_back(p_hash);
+		} else if (t_hash == i_hash) {
+			typelist.push_back(i_hash);
 		} else {
 			auto hash = typeid(typename T::Ptr).hash_code();
+			Log::warn << "mkArg adding hash: " << typeid(typename T::Ptr).name();
+			Log::warn << "mkArg hash T     : " << typeid(T).name();
+			//auto hash = typeid(T).hash_code();
 			typelist.push_back(hash);
 		}
 
@@ -135,7 +143,6 @@ public:
       f(mkArg<ts>(m_typelist)...);  // Construct the AST
     });
 
-/*
 		// DEBUG: show the detected types for the param's (uniforms)
 		std::string buf;
 		buf << "Types: ";
@@ -143,7 +150,6 @@ public:
 			buf << m_typelist[i] << ", ";
 		}
 		Log::warn << buf;
-*/
 
 		Platform::compiling_for_vc4(prev);
  }
@@ -157,6 +163,7 @@ public:
    */
   template <typename... us>
   Kernel &load_k(us... args) {
+		Log::warn << "Called load_k()";
     uniforms.clear();
 
     // Check arguments types of param us against types of ts
@@ -190,6 +197,13 @@ Kernel<ts...> compile(void (*f)(ts... params)) {
  * of a kernel template, and should be more flexible
  * in the calling code.
  */ 
+template <typename... ts>
+BaseKernel compile_b(void (*f)(ts... params)) {
+	BaseSettings settings;
+  return (BaseKernel) Kernel<ts...>(f, settings);
+}
+
+
 template <typename... ts>
 BaseKernel compile_b(void (*f)(ts... params), BaseSettings const &settings) {
   return (BaseKernel) Kernel<ts...>(f, settings);

@@ -87,8 +87,8 @@ KernelDriver::KernelDriver() : V3DLib::KernelDriver(Vc4Buffer) {
 
 
 int KernelDriver::kernel_size() const {
-  assert(qpuCodeMem.allocated());
-  return qpuCodeMem.size();
+  assert(m_code.allocated());
+  return m_code.size();
 }
 
 
@@ -120,26 +120,26 @@ void KernelDriver::kernelFinish() {
  * Assumption: code in a kernel, once allocated, does not change.
  */
 void KernelDriver::encode() {
-  if (!qpuCodeMem.empty()) return;  // Don't bother if already encoded
+  if (!m_code.empty()) return;  // Don't bother if already encoded
   if (has_errors()) return;         // Don't do this if compile errors occured
 
   CodeList code = V3DLib::vc4::encode(m_targetCode);
 
   // Allocate memory for QPU code
-  qpuCodeMem.alloc(code.size());
-  assert(qpuCodeMem.size() > 0);
+  m_code.alloc(code.size());
+  assert(m_code.size() > 0);
 
   // Copy kernel to code memory
   int offset = 0;
   for (int i = 0; i < code.size(); i++) {
-    qpuCodeMem[offset++] = code[i];
+    m_code[offset++] = code[i];
   }
 }
 
 
 std::string KernelDriver::emit_opcodes() {
   encode();
-  return vc4::opcodes(qpuCodeMem);
+  return vc4::opcodes(m_code);
 }
 
 
@@ -201,7 +201,7 @@ void KernelDriver::invoke(int numQPUs, IntList &params, bool wait_complete) {
 		warn << "run(): disabling wait completion only works for v3d. Ignoring for vc4.";
 	}
 
-  MailBoxInvoke::invoke(numQPUs, qpuCodeMem, params);
+  MailBoxInvoke::invoke(numQPUs, m_code, params);
 }
 
 }  // namespace vc4
