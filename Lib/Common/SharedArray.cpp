@@ -81,7 +81,9 @@ void BaseSharedArray::dealloc() {
     assert(allocated());
     assert(m_heap != nullptr);
     if (!m_is_heap_view) { 
+			//warn << "Calling dealloc_array";
       m_heap->dealloc_array(m_phyaddr, m_mem_size);
+			//warn << m_heap->dump();
     }
 
     m_phyaddr      = 0;
@@ -98,28 +100,15 @@ void BaseSharedArray::dealloc() {
 
 
 /**
- * Return 4-bit aligned value for v3d.
- * This is required for v3d Code segments, for other allocations appears to be less critical.
- * We do it anyway for all allocations.
- *
- * Can't 4-bit align directly for m_phyaddr, used to dealloc.
  */
 uint32_t BaseSharedArray::getAddress() const {
 	// Not sure if 4-bit alignment is required for vc4, it might go well automatically
 	// TODO: check this
-	if (Platform::compiling_for_vc4()) {
-		return m_phyaddr;
-	} else {
-		// v3d
+	if (!Platform::compiling_for_vc4()) { // v3d
 		assert((m_phyaddr & 0xf) == 0);
-/*
-		if ((m_phyaddr & 0xf) != 0) {
-			cerr << "phy_address(): m_phyaddr not 4-bit aligned. "
-			     << "m_phyaddr: " << hex << m_phyaddr;
-		}
-*/		
-		return m_phyaddr;
 	}
+
+	return m_phyaddr;
 }
 
 
@@ -135,16 +124,17 @@ std::string BaseSharedArray::dump() const {
 
 
 void BaseSharedArray::heap_view(BufferObject &heap) {
-	warn << "BaseSharedArray::heap_view() called";
+	//warn << "BaseSharedArray::heap_view() called";
   assert(!allocated());
   assert(m_heap == nullptr);
   assert(m_element_size > 0);
-  assert(m_num_elems > 0);
+  assert(m_mem_size == 0);
+  assert(m_num_elems == 0);
 
   m_heap = &heap;
   m_is_heap_view = true;
   m_mem_size = m_heap->size();
-  assert(m_num_elems > 0);
+  m_num_elems = m_mem_size/m_element_size;;
   m_usraddr = m_heap->usr_address();
   m_phyaddr = m_heap->phy_address();
 }

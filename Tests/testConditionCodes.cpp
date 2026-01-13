@@ -41,7 +41,7 @@ namespace {
 using namespace V3DLib::v3d::instr;
 using Instructions = V3DLib::v3d::Instructions;
 using ByteCode     = V3DLib::v3d::ByteCode;
-using Code         = V3DLib::SharedArray<uint64_t>;
+using Code         = V3DLib::Code;
 using Data         = V3DLib::Data;
 
 
@@ -138,7 +138,7 @@ TEST_CASE("Check v3d condition codes [v3d][cond]") {
     //std::cout << Instr::mnemonics(bytecode) << std::endl;
 
     BufferObject heap;
-    heap.alloc(10*1024);  // arbitrary size, large enough
+    heap.alloc_bo(10*1024);  // arbitrary size, large enough
 
     Code code((uint32_t) bytecode.size(), heap);
     code.copyFrom(bytecode);

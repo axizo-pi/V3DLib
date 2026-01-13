@@ -7,8 +7,8 @@
 #include "v3d/instr/Snippets.h"
 
 using Data         = V3DLib::Data;
-using Code         = V3DLib::SharedArray<uint64_t>;
 using ByteCode     = V3DLib::v3d::ByteCode;
+using Code         = V3DLib::Code;
 using Instructions = V3DLib::v3d::Instructions;
 
 
@@ -409,7 +409,7 @@ void run_rotate_alias_kernel(ByteCode const &bytecode) {
   uint32_t data_area_size = (10 * 1024) * 4;                 // taken amply
 
   BufferObject heap;
-  heap.alloc(code_area_size + data_area_size);
+  heap.alloc_bo(code_area_size + data_area_size);
   Code code((uint32_t) bytecode.size(), heap);
   code.copyFrom(bytecode);
 

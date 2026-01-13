@@ -50,7 +50,7 @@ BufferObject &BufferObject::getHeap() {
   if (!emuHeap) {
     //debug("Allocating emu heap v3d\n");
     emuHeap.reset(new BufferObject());
-    emuHeap->alloc(LibSettings::heap_size());
+    emuHeap->alloc_bo(LibSettings::heap_size());
   }
 
   return *emuHeap;

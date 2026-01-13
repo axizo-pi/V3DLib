@@ -78,7 +78,10 @@ public:
   SharedArray(SharedArray &&a) = default;
   SharedArray &operator=(SharedArray &&a) = default; 
 
-  ~SharedArray() { Parent::dealloc(); }
+  ~SharedArray() {
+		//Log::warn << "Called SharedArray ctor";
+		Parent::dealloc();
+	}
 
   T const *ptr() const { return (T const *) usraddr(); }  // Return pointer to data in main memory
   T *ptr() { return (T *) usraddr(); }
@@ -377,6 +380,11 @@ class Code : public SharedArray<uint64_t> {
 	using Parent = SharedArray<uint64_t>;
 
 public:	
+	Code() : Parent() {}
+	Code(uint32_t n, BufferObject &heap) : Parent(n, heap) {}
+
+	using Parent::copyFrom;
+
   void alloc(uint32_t n);
   void copyFrom(std::vector<uint64_t> const &src);
 	std::string dump() const;

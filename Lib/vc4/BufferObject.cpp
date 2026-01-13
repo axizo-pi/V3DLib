@@ -80,7 +80,7 @@ void BufferObject::dealloc() {
 BufferObject &BufferObject::getHeap() {
   if (Platform::run_vc4()) {
     if (heap.size() == 0) {
-      heap.alloc(LibSettings::heap_size());
+      heap.alloc_bo(LibSettings::heap_size());
     }
   }
 

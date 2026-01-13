@@ -16,7 +16,7 @@ public:
   HeapManager();
   HeapManager(HeapManager *object) = delete;
 
-  void alloc(uint32_t size_in_bytes);
+  void alloc_bo(uint32_t size_in_bytes);
   uint32_t size() const { return m_size; }
   bool empty() const { return m_offset == 0; }
   std::string dump() const;
@@ -45,17 +45,17 @@ private:
     uint32_t right = 0;
 
     FreeRange(uint32_t l, uint32_t r) : left(l), right(r) {}  // required by std::vector
-    unsigned size() const;
+
+    uint32_t size() const;
     bool empty() const { return size() == 0; }
-
-    bool overlaps(FreeRange const &rhs) const {
-      return !(rhs.left > right || rhs.right < left);
-    }
-
+    bool overlaps(FreeRange const &rhs) const;
+		bool operator>(FreeRange const &rhs) const;
     std::string dump() const;
   };
 
   std::vector<FreeRange> m_free_ranges;
+
+	std::string dump_free_ranges() const;
 
   bool check_available(uint32_t n);
   void dealloc_array(FreeRange const in_range);

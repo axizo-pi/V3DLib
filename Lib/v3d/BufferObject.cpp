@@ -123,7 +123,7 @@ BufferObject &BufferObject::getHeap() {
   if (!mainHeap) {
     //debug("Allocating main heap v3d\n");
     mainHeap.reset(new BufferObject());
-    mainHeap->alloc(LibSettings::heap_size());
+    mainHeap->alloc_bo(LibSettings::heap_size());
   }
 
   return *mainHeap;

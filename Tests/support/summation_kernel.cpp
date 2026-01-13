@@ -5,7 +5,7 @@
 namespace {
 
 using Data = V3DLib::Data;
-using Code = V3DLib::SharedArray<uint64_t>;
+using Code = V3DLib::Code;
 using Instructions = V3DLib::v3d::Instructions;
 
 
@@ -940,7 +940,7 @@ void run_summation_kernel(ByteCode &bytecode, uint8_t num_qpus, int unroll_shift
   //printf("data_area_size size: %u\n", data_area_size);
 
   BufferObject heap;
-  heap.alloc(code_area_size + data_area_size);
+  heap.alloc_bo(code_area_size + data_area_size);
   //printf("heap phyaddr: %u, size: %u\n", heap.phy_address(), heap.size());
 
   heap.fill(0xdeadbeef);

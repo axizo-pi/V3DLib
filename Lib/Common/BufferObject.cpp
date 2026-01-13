@@ -18,8 +18,7 @@ namespace V3DLib {
  * @return physical address of the newly allocated memory in the heap
  */
 uint32_t BufferObject::alloc_array(uint32_t size_in_bytes, uint8_t *&array_start_address) {
-	// +16: extra padding so that we can guarantee 4-bit alignment
-  int new_offset = HeapManager::alloc_array(size_in_bytes + 16);
+  int new_offset = HeapManager::alloc_array(size_in_bytes);
   assert(new_offset >= 0);
   array_start_address = arm_base + (uint32_t) new_offset;
   return phy_address() + (uint32_t) new_offset;

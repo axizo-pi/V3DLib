@@ -42,7 +42,7 @@ using BufferObject = V3DLib::v3d::BufferObject;
 namespace {
 
 using ByteCode     = V3DLib::v3d::ByteCode;
-using Code         = V3DLib::SharedArray<uint64_t>;
+using Code         = V3DLib::Code;
 using Data         = V3DLib::Data;
 
 const uint32_t DEFAULT_CODE_AREA_SIZE = 1024 * 1024;
@@ -193,7 +193,7 @@ TEST_CASE("Test SFU opcodes [v3d][code][SFU]") {
   ByteCode byte_code = instrs.bytecode();
 
   BufferObject heap;
-  heap.alloc(1024);
+  heap.alloc_bo(1024);
   Code codeMem((uint32_t) byte_code.size(), heap);
   codeMem.copyFrom(byte_code);
   V3DLib::Float::Array result(16, heap);
@@ -269,7 +269,7 @@ TEST_CASE("Test v3d opcodes [v3d][code][opcodes]") {
     ByteCode byte_code = instrs.bytecode();
 
     BufferObject heap;
-    heap.alloc(1024);
+    heap.alloc_bo(1024);
     Code codeMem((uint32_t) byte_code.size(), heap);
     codeMem.copyFrom(byte_code);
     V3DLib::Int::Array result(16, heap);
@@ -308,7 +308,7 @@ TEST_CASE("Check v3d code is working properly [v3d][code]") {
     REQUIRE(array_length == 8);
 
     BufferObject heap;
-    heap.alloc(1024);
+    heap.alloc_bo(1024);
     //printf("heap phyaddr: %u, size: %u\n", heap.phy_address(), heap.size());
 
     Code codeMem(array_length, heap);
