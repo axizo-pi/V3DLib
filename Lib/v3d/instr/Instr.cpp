@@ -798,7 +798,11 @@ bool Instr::alu_add_set(Location const &dst, Source const &in_a, Source const &i
   bool ret = alu_add_a(a) && alu_add_b(b);
 
 	if (!ret) {
-		breakpoint;  // Warn me when this happens
+		cerr << "alu_add_set failed. "
+			   << "add_a: " << a.dump() << ", "
+				 << "add_b: " << b.dump()
+				 << thrw;
+		//breakpoint;  // Warn me when this happens
 	}
 
 	return ret;
