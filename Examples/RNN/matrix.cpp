@@ -246,7 +246,7 @@ void vector::set(float *rhs, int in_size) {
 }
 
 
-float &vector::operator[] (int index) {
+float &vector::operator[](int index) {
 	assert(height() > index);
 
 	auto &r = arr();
@@ -254,7 +254,15 @@ float &vector::operator[] (int index) {
 }
 
 
-vector vector::operator-(vector &rhs) {
+float vector::operator[](int index) const {
+	assert(height() > index);
+
+	auto &r = arr();
+	return r[index];
+}
+
+
+vector vector::operator-(vector const &rhs) {
 	assert(width() == 1);
 	assert(width() == rhs.width());
 	assert(height() == rhs.height());
@@ -274,7 +282,7 @@ vector &vector::operator=(matrix const &rhs) {
 }
 
 
-matrix vector::outer(matrix const &rhs) {
+matrix vector::outer(matrix const &rhs) const {
 	assert(rhs.width() == 1);         // Expecting a vector as input
 	if ((height() & 0xf) != 0)     { cerr << "vector outer: expecting height to be a multiple of 16" << thrw; }
 	if ((rhs.height() & 0xf) != 0) { cerr << "vector outer: expecting rhs height to be a multiple of 16" << thrw; }

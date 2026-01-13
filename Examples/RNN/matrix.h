@@ -107,11 +107,12 @@ struct vector : public matrix {
 	// End unfortunate
 
 	void set(float *rhs, int in_size);
-	float &operator[] (int index);
+	float &operator[](int index);
+	float operator[](int index) const;
 
-	vector operator-(vector &rhs);
+	vector operator-(vector const &rhs);
 	vector &operator=(matrix const &rhs);
-	matrix outer(matrix const &rhs);
+	matrix outer(matrix const &rhs) const;
 	vector sigmoid(vector const &bias);
 	static BaseKernel &op_kernel();
 

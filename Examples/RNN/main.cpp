@@ -16,6 +16,7 @@
 #include "Support/Timer.h"
 
 const int NumInputs = 3;
+const int NumEpochs = 1000;
 
 /**
  * 3 inputs: Letters A, B and C (if you squint)
@@ -53,17 +54,69 @@ float labels[NumInputs][label_size] = {
 };
 
 
+
+void train(vector const *inputs, vector const *desired, model &k_model) {
+	int   epoch = 0;
+	float loss[NumInputs];
+
+	while (epoch < NumEpochs) {
+		for (int i = 0; i < NumInputs; ++i) {
+			auto result = k_model.forward(inputs[i]);
+
+			loss[i] = scalar::loss(result.arr(), desired[i].arr());
+			k_model.back_prop(inputs[i], desired[i]);
+		}
+
+		float sum = 0;
+		for (int i = 0; i < NumInputs; ++i) {
+			sum += loss[i];
+		}
+
+		sum /= ((float) NumInputs);  // Take average
+
+		if (epoch % 10 == 0) {
+			warn << "epoch: " << epoch << " ======== acc: " << (1 - sum)*100;
+		}
+		epoch++;
+	}
+}
+
+
+void predict(vector const &input, model &k_model) {
+	auto result = k_model.forward(input);
+	warn << "predict result: " << result.dump();
+
+	float maxm = 0;
+	int k = 0;
+
+	for (int i = 0; i < NumInputs; ++i) {
+		float n = result[i];
+
+		if (maxm < n) {
+			maxm = n;
+			k = i;
+		}
+	}
+
+	switch (k) {
+		case 0: warn << "Image is of letter A."; break;
+		case 1: warn << "Image is of letter B."; break;
+		case 2: warn << "Image is of letter C."; break;
+
+		default: assert(false); break;
+	}
+}
+
+
 int main(int argc, const char *argv[]) {
   settings().init(argc, argv);
-
-	model k_model(32, M);
 
 	//test_outer_product(vector::op_kernel());
 	//test_vector();
 
-	vector input[NumInputs] = {32, 32, 32};
+	vector inputs[NumInputs] = {32, 32, 32};
 	for (int i = 0; i < NumInputs; ++i) {
-		input[i].set(a[i], 30);
+		inputs[i].set(a[i], 30);
 	}
 
 	vector desired[NumInputs] = {16, 16, 16};
@@ -71,13 +124,14 @@ int main(int argc, const char *argv[]) {
 		desired[i].set(labels[i], label_size);
 	}
 
-	for (int i = 0; i < NumInputs; ++i) {
-		auto result = k_model.forward(input[i]);
+	// Using this as a global var leads to segmentation fault
+	model k_model(32, M);
 
-		warn << "Loss: " << scalar::loss(result.arr(), desired[i].arr());
+	train(inputs, desired, k_model);
 
-		k_model.back_prop(input[i], desired[i]);
-	}
+	predict(inputs[0], k_model);
+	predict(inputs[1], k_model);
+	predict(inputs[2], k_model);
 
   return 0;
 }
