@@ -218,7 +218,6 @@ BaseKernel *vector::m_sub     = nullptr;
 BaseKernel *vector::m_op      = nullptr;
 BaseKernel *vector::m_sigmoid = nullptr;
 
-
 vector::vector(vector &rhs) : matrix(rhs) {
 	*this = rhs;
 	init_static();
@@ -259,6 +258,12 @@ float vector::operator[](int index) const {
 
 	auto &r = arr();
 	return r[index];
+}
+
+
+int vector::size() const {
+	assert(width() == 1);
+	return height();
 }
 
 

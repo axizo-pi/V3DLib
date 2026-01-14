@@ -59,6 +59,13 @@ void train(vector const *inputs, vector const *desired, model &k_model) {
 	int   epoch = 0;
 	float loss[NumInputs];
 
+	int epoch_step = 1;
+	if (NumEpochs >= 1000) {
+		epoch_step = 20;
+	} else if (NumEpochs >= 400) {
+		epoch_step = 10;
+	}
+
 	while (epoch < NumEpochs) {
 		for (int i = 0; i < NumInputs; ++i) {
 			auto result = k_model.forward(inputs[i]);
@@ -74,7 +81,7 @@ void train(vector const *inputs, vector const *desired, model &k_model) {
 
 		sum /= ((float) NumInputs);  // Take average
 
-		if (epoch % 10 == 0) {
+		if (epoch % epoch_step == 0) {
 			warn << "epoch: " << epoch << " ======== acc: " << (1 - sum)*100;
 		}
 		epoch++;
@@ -125,7 +132,7 @@ int main(int argc, const char *argv[]) {
 	}
 
 	// Using this as a global var leads to segmentation fault
-	model k_model(32, M);
+	model k_model(N*16, M);
 
 	train(inputs, desired, k_model);
 

@@ -59,8 +59,12 @@ void model::back_prop(vector const &input, vector const &desired) {
 	// Output layer to hidden layer
 	//
 	auto d2 = la2 - desired;                // error in output layer
- 	//warn << "d2: " << d2.dump();          // TODO: only top 3 elements of error (d2) are significant,
- 	                                        //       consider setiting rest to 0.
+
+ 	// Only top 3 elements of error (d2) are significant, zap the rest
+	for (int i = NumOutputNodes; i < d2.size(); ++i) {
+		d2[i] = 0;
+	}
+ 	//warn << "d2: " << d2.dump();
 
 	auto w2_adj = a1.outer(d2);             // gradient, outer product
  	//warn << "w2_adj:\n" << w2_adj.dump();

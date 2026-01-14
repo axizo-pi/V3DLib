@@ -2,12 +2,13 @@
 #define _INCLUDE_RNN_MODEL
 #include "matrix.h"
 #include "scalar.h"
-//#include "Source/Float.h"
 
 using namespace V3DLib;
 
 const int M = 16; // Num of rows in matrix
-const int N = 2;  // Width of matrix and length of vector
+const int N = 2;  // Width of matrix and length of vector, in blocks of 16
+
+const int NumOutputNodes = 3;
 
 /**
  * The layer sizes of the example models are:

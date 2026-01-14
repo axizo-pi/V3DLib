@@ -77,38 +77,11 @@ struct vector : public matrix {
 
 	vector(vector &rhs);
 	vector(int height);
-	
-/*
-	vector() : matrix() {
-		init_static();
-	}
-*/
-
-	//
-	// It's unfortunate that these are required
-	// TODO: check again
-	//
-	void set(float rhs) { matrix::set(rhs); }
-
-/*	
-	Float::Array &arr() {
-		assert(m_arr != nullptr);
-		return *m_arr;
-	}
-
-
-	// Would have really appreciated having the deleted out const in
-	// TODO: check again
-	Float::Array / *const * / &arr() const {
-		assert(m_arr != nullptr);
-		return *m_arr;
-	}
-*/
-	// End unfortunate
 
 	void set(float *rhs, int in_size);
 	float &operator[](int index);
 	float operator[](int index) const;
+	int size() const;
 
 	vector operator-(vector const &rhs);
 	vector &operator=(matrix const &rhs);
