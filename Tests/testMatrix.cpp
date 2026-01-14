@@ -615,14 +615,6 @@ TEST_CASE("Test complex matrix algebra with varying sizes [matrix][complex][dot]
 
 
 TEST_CASE("Check complex matrix multiplication [matrix][complex]") {
-	if (!Platform::compiling_for_vc4()) {
-		//
-		// v3d does not return a result. Lorokked at it, clueless.
-		// vc4 and emulator work fine here
-		//
-		Log::warn << "Skipping test for v3d: 'Check complex matrix multiplication [matrix][complex]'";
-		return;
-	}
 	
   auto test = [] (int num_qpus, int num_blocks = 1) {
     // num_blocks factor for inner dimension is there to ensure block sizes are always valid
