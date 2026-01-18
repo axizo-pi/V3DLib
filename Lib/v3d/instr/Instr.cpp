@@ -112,14 +112,14 @@ bool set_mul_small_imm(
 	if (dst.sig.small_imm_b) {
 		// If same value, all is well
 		if (dst.raddr_b != imm.val()) {
-			cerr << "set_mul_small_imm(): small imm different value on vc6";
+			//cerr << "set_mul_small_imm(): small imm different value on vc6";
 			return false;
 		}
 		input.mux = V3D_QPU_MUX_B;
 	} else {
 		// Reserve the small imm
    	if (dst.mux_in_use(check_src, V3D_QPU_MUX_B)) {
-			cerr << "set_mul_small_imm(): MUX_B in use for non-small_imm";
+			//cerr << "set_mul_small_imm(): MUX_B in use for non-small_imm";
 			return false;
 		}
 

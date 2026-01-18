@@ -72,17 +72,17 @@ void output_bmp(
 			//const unsigned int index = static_cast<unsigned int>
       //            (1000.0 * log2(1.75 + i - log2(log2(z))) / log2(max_iterations));
 
-			auto val    = arr[x + width*y];
+			float val    = arr[x + width*y];
 			rgb_t color = {0, 0, 0};
 
 			unsigned index;
 			if (do_color) {
-				if (val != 0 && val != in_max_value) {
-  				index = scale((float) val, PaletteSize);
+				if (val != 0 && val != (float) in_max_value) {
+  				index = scale(val, PaletteSize);
 					color = jet_colormap[index];
 				}
 			} else {
-  			unsigned char rgb = (unsigned char) scale((float) val, RGBLimit);
+  			unsigned char rgb = (unsigned char) scale(val, RGBLimit);
 				color = {rgb, rgb, rgb};
 			}
 

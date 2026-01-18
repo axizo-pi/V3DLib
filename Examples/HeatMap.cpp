@@ -40,6 +40,12 @@ CmdParameters params = {
     POSITIVE_INTEGER,
     "Set the number of randomly distributed hot points to start with",
     10
+  }, {
+    "Animate the results",
+    { "-a", "-animate"},
+		ParamType::NONE,
+    "Create an indexed sequence of bitmaps for the simulation\n"
+		"A bitmap is outputted for every second iteration, eg. 750 images for the default number of steps"
   }}
 };
 
@@ -54,16 +60,19 @@ struct HeatMapSettings : public Settings {
   string kernel_name;
   int    num_steps;
   int    num_points;
+  bool   animate;
 
   HeatMapSettings() : Settings(&params, true) {}
 
   bool init_params() override {
     auto const &p = parameters();
 
-    kernel      = p["Kernel"]->get_int_value();
-    kernel_name = p["Kernel"]->get_string_value();
-    num_steps   = p["Number of steps"]->get_int_value();
-    num_points  = p["Number of points"]->get_int_value();
+    kernel      = p["Kernel"             ]->get_int_value();
+    kernel_name = p["Kernel"             ]->get_string_value();
+    num_steps   = p["Number of steps"    ]->get_int_value();
+    num_points  = p["Number of points"   ]->get_int_value();
+    animate     = p["Animate the results"]->get_bool_value();
+
     return true;
   }
 } settings;
@@ -108,8 +117,8 @@ void scalar_step(float** map, float** mapOut, int width, int height) {
 
 
 void run_scalar() {
-  float* map       = new float [settings.SIZE];
-  float* mapOut    = new float [settings.SIZE];
+  float*  map      = new float [settings.SIZE];
+  float*  mapOut   = new float [settings.SIZE];
   float** map2D    = new float* [settings.HEIGHT];
   float** mapOut2D = new float* [settings.HEIGHT];
 
@@ -128,11 +137,21 @@ void run_scalar() {
   // Simulate
   for (int i = 0; i < settings.num_steps; i++) {
     scalar_step(map2D, mapOut2D, settings.WIDTH, settings.HEIGHT);
-    float** tmp = map2D; map2D = mapOut2D; mapOut2D = tmp;
+    float** tmp = map2D;
+		map2D = mapOut2D;
+		mapOut2D = tmp;
+
+		if ((i % 2) == 0 && settings.animate) {
+			std::string filename;
+			filename << (i/2) << "_heatmap.bmp";
+  		output_bmp(mapOut, settings.WIDTH, settings.HEIGHT, 255, filename.c_str(), false);
+		}
   }
 
-  // Display results
-  output_bmp(mapOut, settings.WIDTH, settings.HEIGHT, 255, "heatmap.bmp", false);
+	if (!settings.animate) {
+	  // Output results
+  	output_bmp(mapOut, settings.WIDTH, settings.HEIGHT, 255, "heatmap.bmp", false);
+	}
 }
 
 
@@ -185,8 +204,6 @@ void heatmap_kernel(Float::Ptr map, Float::Ptr mapOut, Int height, Int width) {
  * i.e. there is constant cold at the edges.
  */
 void run_kernel() {
-	bool output_sequence = true;
-
   // Allocate and initialise input and output maps
   Float::Array mapA(settings.SIZE);
   Float::Array mapB(settings.SIZE);
@@ -204,11 +221,13 @@ void run_kernel() {
 
   for (int i = 0; i < settings.num_steps; i++) {
     if (i & 1) {
-      k.load(&mapB, &mapA, settings.HEIGHT, settings.WIDTH).run();  // Load the uniforms and invoke the kernel
+			// Load the uniforms and invoke the kernel
+      k.load(&mapB, &mapA, settings.HEIGHT, settings.WIDTH).run();
     } else {
-      k.load(&mapA, &mapB, settings.HEIGHT, settings.WIDTH).run();  // Load the uniforms and invoke the kernel
+			// Load the uniforms and invoke the kernel
+      k.load(&mapA, &mapB, settings.HEIGHT, settings.WIDTH).run();
 
-			if (output_sequence) {
+			if (settings.animate) {
 				std::string filename;
 				filename << (i/2) << "_heatmap.bmp";
   			output_bmp(mapB, settings.WIDTH, settings.HEIGHT, 255, filename.c_str(), false);
@@ -218,8 +237,10 @@ void run_kernel() {
 
   timer.end(!settings.silent);
 
-  // Output results
-  output_bmp(mapB, settings.WIDTH, settings.HEIGHT, 255, "heatmap.bmp", false);
+	if (!settings.animate) {
+	  // Output results
+  	output_bmp(mapB, settings.WIDTH, settings.HEIGHT, 255, "heatmap.bmp", false);
+	}
 }
 
 
