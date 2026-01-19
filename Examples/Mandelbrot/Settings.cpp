@@ -1,6 +1,8 @@
 #include "Settings.h"
 #include "Support/basics.h"
 
+using namespace V3DLib;
+
 //#include <signal.h>
 //#define breakpoint raise(SIGTRAP)
 
@@ -53,6 +55,30 @@ CmdParameters params = {
     ParamType::POSITIVE_INTEGER,
     "Perform the operation this number of times",
     1
+  }, {
+    "Topleft Real",
+    { "-tlr=", "-topleft_real=" },
+    ParamType::FLOAT,
+    "Set the real component of the topleft coordinate",
+    -2.5f
+  }, {
+    "Topleft Imaginary",
+    { "-tli=", "-topleft_imaginary=" },
+    ParamType::FLOAT,
+    "Set the imaginary component of the topleft coordinate",
+    2.0f
+  }, {
+    "BottomRight Real",
+    { "-brr=", "-bottomright_real=" },
+    ParamType::FLOAT,
+    "Set the real component of the bottomright coordinate",
+    1.5f
+  }, {
+    "BottomRight Imaginary",
+    { "-bri=", "-bottomright_imaginary=" },
+    ParamType::FLOAT,
+    "Set the imaginary component of the bottomright coordinate",
+    -2.0f
   }}
 };
 
@@ -98,13 +124,25 @@ int MandSettings::num_items() const { return numStepsWidth*numStepsHeight; }
 bool MandSettings::init_params() {
   auto const &p = parameters();
 
-  kernel         = p["Kernel"                ]->get_int_value();
-  output_grey    = p["Output greyscale image"]->get_bool_value();
-  output_color   = p["Output color image"    ]->get_bool_value();
-  num_iterations = p["Number of steps"       ]->get_int_value();
-  numStepsWidth  = p["Dimension"             ]->get_int_value();
-  numStepsHeight = p["Dimension"             ]->get_int_value();
-  count          = p["Count"                 ]->get_int_value();
+  kernel          = p["Kernel"                ]->get_int_value();
+  output_grey     = p["Output greyscale image"]->get_bool_value();
+  output_color    = p["Output color image"    ]->get_bool_value();
+  num_iterations  = p["Number of steps"       ]->get_int_value();
+  numStepsWidth   = p["Dimension"             ]->get_int_value();
+  numStepsHeight  = p["Dimension"             ]->get_int_value();
+  count           = p["Count"                 ]->get_int_value();
+
+  topLeftReal     = p["Topleft Real"          ]->get_float_value();
+  topLeftIm       = p["Topleft Imaginary"     ]->get_float_value();
+  bottomRightReal = p["BottomRight Real"      ]->get_float_value();
+  bottomRightIm   = p["BottomRight Imaginary" ]->get_float_value();
+
+	if (topLeftReal >= bottomRightReal) {
+		throw Exception("TopLeft real must be smaller than BottomRight real");
+	}
+	if (topLeftIm <= bottomRightIm) {
+		throw Exception("TopLeft imaginary must be larger than BottomRight imaginary");
+	}
 
   return true;
 }
