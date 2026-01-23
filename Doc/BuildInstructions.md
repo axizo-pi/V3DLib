@@ -9,24 +9,6 @@ Jump straight to the actual [Basic Build Instructions](#basic-build-instructions
 - Indent is two spaces. Not because I want it to (I vastly prefer tabs), but because `github`
   otherwise makes a mess of the source display, especially when tabs and spaces are mixed.
 
-In this project:
-
-- `VideoCore IV` is referred to as `vc4`
-- `VideoCore VI` is referred to as `v3d`
-
-This follows the naming convention as used in the linux kernel code and in the `Mesa` library.
-
-
-### All development is done on **Raspbian 10 Buster**
-
-In other words, the latest stable release is used. Upgrades are run regularly.
-
-`V3DLib` should compile and run on Raspbian versions from **Jessie** onwards.
-There are compatibility issues with previous versions (Wheezy and before), see the FAQ for known issues.
-
-In general, don't bother with old distributions. Use the latest stable distro instead.
-
-
 ### Unit Testing 
 
 Unit tests are run often and always before a push to the central repository on `github`

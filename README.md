@@ -1,56 +1,42 @@
 # V3DLib
 
-**Version 0.7.18**
+**Version 0.8.0**
 
-`V3DLib` is a C++ library for creating programs to run on the VideoCore GPU's of all versions of the [Raspberry Pi](https://www.raspberrypi.org/).
+`V3DLib` is a C++ library for creating programs to run on the VideoCore GPU's of **all** versions of the [Raspberry Pi](https://www.raspberrypi.org/){:target="_blank"}.
 
-Prior to the Pi 4, this meant compiling for just the `VideoCore IV` GPU.
-The Pi 4, however, has a `VideoCore VI` GPU which, although related, is significantly different.
-`V3DLib` compiles and assembles for both versions of the VideoCore GPU.
+The Pi5 has a new version of the GPU. I resolved to update the project when I got the Pi5 to pass all unit tests[^1]; I reached this point.
+
+In addition, I lost my previous account due to 'enhanced restriction' of the GitHub authentication. The current account replaces [my previous account](https://github.com/wimrijnders){:target="_blank"}.
+
+[^1]: This is not entirely true; there is *one* unit test which can not be run within the context of all unit tests. However, it runs fine when run on its own.
 
 Kernel programs compile dynamically, so that a given program can run unchanged on any version of the RaspBerry Pi.
 The kernels are generated inline and offloaded to the GPU's at runtime.
 
-
 ## Motivation for this Project
 
-The Raspberry Pi's have pretty nifty on-chip capabilities for SIMD vector processing.
-It bothered me to no end that this is largely unused; the only thing really using it is `OpenGL`.
+The Raspberry Pi's have a pretty nifty *general-purpose* GPU, the `VideoCore`.
+It bothered me to no end that this GPU largely unused; the only thing really using it is `OpenGL`.
 
-The goal of this project is to **make the SIMD vector processing accessible** for a larger audience, and
-to **ease the pain of programming** it.
-
+The goal of this project is to make **the GPU accessible** for programming, and
+to **ease the pain** of using it.
 
 ## Getting Started
 
-Before trying to deal with any code, take a moment to view the [Basics Page](Doc/Basics.md).
-This will supply you with a working model of the VideoCore and will facilitate your understanding.
+To install a PI with `V3DLib`, see the [Install Instructions](Doc/install.md).
 
-Also, for starters, scan the naming conventions at the top of the
-[Architecture and Design Page](Doc/ArchitectureAndDesign.md). Read the rest at your own leisure.
+The VideCore is an **SIMD processor**.
+If the term `SIMD`[^2] is new to you, please look at the [Basics Page](Doc/Basics.md), as it applies
+to this project.
+
+[^2]: SIMD: Single Instruction, Multiple Data. The VideoCore does operations on 16 values in one go.
 
 
-### Compiling and Building
+===== ** Till here ** =====
 
-This assumes that you are building on a Raspberry Pi.
 
+- For starters, scan the naming conventions at the top of the [Architecture and Design Page](Doc/ArchitectureAndDesign.md). Read the rest at your own leisure.
 - Please look at the [Known Issues](Doc/BuildInstructions.md#known-issues), so you have an idea what to expect.
-- For more extensive details on building, see [Build Instructions](Doc/BuildInstructions.md).
-- **Fair Warning:** The first build can take a *long* time, especially on older Pi's.
-See the Build Instructions for details.
-
-```
-> sudo apt-get install git                                       # If not done already
-
-> sudo apt install libexpat1-dev                                 # You need this for one lousy include file
-
-> git clone --depth 1 https://github.com/wimrijnders/V3DLib.git  # Get only latest commit
-> cd V3DLib
-> make QPU=1 DEBUG=1 all                                         # Make debug versions with hardware
-                                                                 # GPU support of all examples.
-    
-> make QPU=1 DEBUG=1 test                                        # Build and run the tests
-```
 
 
 ## Code Example
@@ -58,38 +44,36 @@ See the Build Instructions for details.
 `V3DLib` contains a high-level programming language for easing the pain of GPU-programming.
 The following is an example of the language (the 'Hello' program):
 
-```
-#include "V3DLib.h"
-#include "Support/Settings.h"
+	#include "V3DLib.h"
+	#include "Support/Settings.h"
+	
+	using namespace V3DLib;
+	
+	V3DLib::Settings settings;
+	
 
-using namespace V3DLib;
-
-V3DLib::Settings settings;
-
-
-void hello(Int::Ptr p) {                          // The kernel definition
-  *p = 1;
-}
+	void hello(Int::Ptr p) {                          // The kernel definition
+	  *p = 1;
+	}
 
 
-int main(int argc, const char *argv[]) {
-  settings.init(argc, argv);
+	int main(int argc, const char *argv[]) {
+	  settings.init(argc, argv);
 
-  auto k = compile(hello);                        // Construct the kernel
+	  auto k = compile(hello);                        // Construct the kernel
+	
+	  Int::Array array(16);                           // Allocate and initialise the array shared between ARM and GPU
+	  array.fill(100);
 
-  Int::Array array(16);                           // Allocate and initialise the array shared between ARM and GPU
-  array.fill(100);
+	  k.load(&array);                                 // Invoke the kernel
+	  settings.process(k);  
 
-  k.load(&array);                                 // Invoke the kernel
-  settings.process(k);  
+	  for (int i = 0; i < (int) array.size(); i++) {  // Display the result
+	    printf("%i: %i\n", i, array[i]);
+	  }
 
-  for (int i = 0; i < (int) array.size(); i++) {  // Display the result
-    printf("%i: %i\n", i, array[i]);
-  }
-
-  return 0;
-}
-```
+	  return 0;
+	}
 
 ## Credit where Credit is Due
 This project builds upon the [QPULib](https://github.com/mn416/QPULib) project, by **Matthew Naylor**.
