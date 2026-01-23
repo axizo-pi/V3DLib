@@ -7,6 +7,81 @@
 ##################################################################
 require 'matrix'
 
+##################################################################
+# Test methods
+##################################################################
+
+@primes = Array[ 
+  2,	3,	5,	7,	11,	13,	17,	19,	23,	29,	31,	37,	41,	43,	47,	53,	59,	61,	67,	71,
+ 73, 79,	83,	89,	97,	101,	103,	107,	109,	113,	127,	131 #	137	139	149	151	157	163	167	173
+]
+
+
+def dump_matrix_header matrix, label
+	"#{label}(#{matrix.row_count}, #{matrix.column_count})"
+end
+
+
+def dump_matrix matrix, label
+	puts "#{dump_matrix_header(matrix, label)}:\n"
+
+	buf = "0: "
+	cur_row = 0 
+	matrix.each_with_index do |e, row, col|
+		if cur_row != row
+			buf << "\n#{row}: "
+			cur_row = row
+		end
+
+		buf << "#{e}, "
+	end
+	puts buf
+end
+
+
+def test_back_prop
+	a = []
+	(0...32).step(1) do |i|
+		a << (1 + i)
+	end
+	puts "a1: #{a.join(", ")}"
+
+	puts "d2: #{@primes.join(", ")}"
+
+	#
+	# gradient, outer product
+	#
+	d2 = Matrix.row_vector(@primes)
+	a1 = Matrix.row_vector(a)
+
+	w2_adj = a1.t * d2
+	dump_matrix w2_adj, "w2_adj"
+
+	#
+	# output layer to hidden layer
+	# TODO: outer product here above
+	#
+
+
+	#
+	# Hidden layer adjusting w1
+	#
+=begin	
+	w2 = Matrix.zero(5, 3)
+	puts dump_matrix_header w2, "w2" 
+	puts dump_matrix_header d2, "d2" 
+
+	tmp1 = (w2 * d2.t).t
+	puts dump_matrix_header w2, "w2" 
+	puts dump_matrix_header tmp1, "tmp1" 
+=end	
+end
+
+
+##################################################################
+# Model
+##################################################################
+
 # initializing the weights randomly
 def generate_wt(x, y)
 	Matrix.build(x, y) {|row, col| rand }
@@ -144,7 +219,6 @@ end
 # w1 <-- f( x, d1)
 #
 def back_prop(x, y, nn)
-
 	a2 = nn.f_forward x
 
 	#
@@ -159,6 +233,9 @@ def back_prop(x, y, nn)
 	# Hidden layer adjusting w1
 	#
 	tmp1 = (nn.w2 * d2.t).t
+	puts dump_matrix_header nn.w2, "w2" 
+	puts dump_matrix_header tmp1, "tmp1" 
+
 	tmp2 = nn.a1.collect {|el| el*(1 - el) }    # sigmoid derivative
 	d1   = tmp1.combine(tmp2) {|a, b| a*b}
 
@@ -235,18 +312,19 @@ end
 ####################
 # Main
 ####################
-
+if false
+	test_back_prop
+	return
+end
 
 #puts "#{w1}\n\n#{w2}"
 
 nn = NeuralNetwork.new
 
-
 # epoch:
 # 100  - 99.98% acc 
 # 1000 - 99.999% acc 
 acc, losss = train(x, y, nn, 1000)
-
 
 # Example: Predicting for letter 'B'
 predict(x[0], nn)

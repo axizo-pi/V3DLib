@@ -164,7 +164,7 @@ matrix matrix::transpose() const {
 }
 
 
-std::string matrix::dump() const {
+std::string matrix::dump(bool output_int) const {
 	assert(m_arr != nullptr);
 	std::string ret;
 
@@ -172,12 +172,12 @@ std::string matrix::dump() const {
 
 	if (m_width == 1) {
 		ret << "(tr) ";
-		ret << vector_dump(*m_arr, m_height);
+		ret << vector_dump(*m_arr, m_height, 0, output_int);
 	} else {
 		ret << "\n";
 
 		for (int h = 0; h < m_height; ++h) {
-		 	ret << h << ": " << vector_dump(*m_arr, m_width, h*m_width) << "\n";
+		 	ret << h << ": " << vector_dump(*m_arr, m_width, h*m_width, output_int) << "\n";
 		}
 	}
 
@@ -307,8 +307,8 @@ vector vector::sigmoid(vector const &bias) {
 }
 
 
-std::string vector::dump() const {
- 	return vector_dump(arr(), height());
+std::string vector::dump(bool output_int) const {
+ 	return vector_dump(arr(), height(), 0, output_int);
 }
 
 

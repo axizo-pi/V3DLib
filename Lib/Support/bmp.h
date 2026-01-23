@@ -1,6 +1,7 @@
 #ifndef _EXAMPLE_SUPPORT_BMP_H
 #define _EXAMPLE_SUPPORT_BMP_H
 #include "bitmap_image.hpp"
+#include <cassert>
 
 /*
 class PGM {

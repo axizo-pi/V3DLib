@@ -113,6 +113,14 @@ CmdParameters numqpu_params = {
     "  - vc6 (Pi4)                       : 1 or 8\n"
     "  - vc7 (Pi5)                       : 1..16 (inclusive)\n",
     1
+  }, {
+    "Max QPU's",
+    "-nmax",
+    ParamType::NONE,
+		"Use the maximum available number of QPU's on the current platform.\n"
+		"The maximum number for the VideoCore versions are: "
+		"vc4: 12, vc6: 8, vc7: 16\n"
+		"This parameter overrides any value set by parameter '-n'"
   }}
 };
 
@@ -253,6 +261,16 @@ bool Settings::process() {
 
   if (m_use_num_qpus) {
     num_qpus    = p["Num QPU's"]->get_int_value();
+
+    if (p["Max QPU's"]->get_bool_value()) {
+    	if (run_type != 0 || Platform::run_vc4()) {
+      	num_qpus = 12;
+			}	else if (Platform::run_vc7()) {
+      	num_qpus = 16;
+      } else {  // vc6
+      	num_qpus = 8;
+      }
+		}
 
     if (run_type != 0 || Platform::run_vc4()) {
       if (num_qpus < 0 || num_qpus > 12) {

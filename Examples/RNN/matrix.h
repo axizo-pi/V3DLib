@@ -44,7 +44,7 @@ struct matrix {
 	matrix sigmoid_derivative(matrix const &rhs);
 	matrix transpose() const;
 
-	std::string dump() const;
+	std::string dump(bool output_int = false) const;
 
 protected:
 	void width(int rhs) { m_width = rhs; }
@@ -89,7 +89,7 @@ struct vector : public matrix {
 	vector sigmoid(vector const &bias);
 	static BaseKernel &op_kernel();
 
-	std::string dump() const;
+	std::string dump(bool output_int = false) const;
 
 private:
 

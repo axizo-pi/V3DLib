@@ -118,8 +118,12 @@ void predict(vector const &input, model &k_model) {
 int main(int argc, const char *argv[]) {
   settings().init(argc, argv);
 
-	//test_outer_product(vector::op_kernel());
-	//test_vector();
+	if (true) {
+		test_back_propagation(vector::op_kernel());
+		//test_outer_product(vector::op_kernel(), true);
+		//test_vector();
+		return 0;
+	}
 
 	vector inputs[NumInputs] = {32, 32, 32};
 	for (int i = 0; i < NumInputs; ++i) {
