@@ -1,0 +1,6 @@
+#ifndef V3DLIB_HEATMAP_KERNEL_H
+#define V3DLIB_HEATMAP_KERNEL_H
+
+void run_kernel();
+
+#endif // V3DLIB_HEATMAP_KERNEL_H
