@@ -25,29 +25,54 @@ void init_input(Float::Array &input, float *a,  int n) {
 /**
  * Separate test for outer product
  */
-void test_outer_product(BaseKernel &op) {
+void test_outer_product(BaseKernel &op, bool do_kernel) {
 	const int blocks = 2;
 	const int vec_size = blocks*16;
 
 	Float::Array left_outer(vec_size); 
-	init_input(left_outer, primes, vec_size);
+	for (int i = 0; i < vec_size; ++i) {
+	  left_outer[i] = (float) (i + 1);
+	}
 
 	Float::Array right_outer(vec_size); 
+	init_input(right_outer, primes, vec_size);
+
 	Float::Array result_outer(vec_size*vec_size); 
 
-	for (int i = 0; i < vec_size; ++i) {
-	  right_outer[i] = (float) (i + 1);
-	}
+	if (do_kernel) {
+		// Call kernel directly
+		op.load(&left_outer, &right_outer, &result_outer, blocks);
+		op.run();
 
-	op.load(&left_outer, &right_outer, &result_outer, blocks);
-	op.run();
+		std::string buf;
+		buf << "outer product:\n";
+		for (int i = 0; i < vec_size; ++i) {
+		  buf << i << ": " << vector_dump(result_outer, vec_size, vec_size*i, true) << "\n";
+		}
+		warn << buf;
+	} else {
+		// Perform outer product with vector operations
+		vector a1(vec_size);
+		for (int i = 0; i < vec_size; ++i) {
+		  a1[i] = (float) (i + 1);
+		}
+ 		warn << "a1: " << a1.dump(true);
 
-	std::string buf;
-	buf << "outer product:\n";
-	for (int i = 0; i < vec_size; ++i) {
-	  buf << i << ": " << vector_dump(result_outer, vec_size, vec_size*i) << "\n";
+		vector d2(vec_size);
+		for (int i = 0; i < vec_size; ++i) {
+	  	d2[i] = primes[i];
+		}
+ 		warn << "d2: " << d2.dump(true);
+
+		auto w2_adj = a1.outer(d2);             // gradient, outer product
+ 		warn << "w2_adj:\n" << w2_adj.dump(true);
 	}
-	warn << buf;
+}
+
+
+void test_back_propagation(V3DLib::BaseKernel &op) {
+	warn << "test_back_propagation";
+	test_outer_product(op, false);
 }
 
 

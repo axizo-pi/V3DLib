@@ -37,12 +37,16 @@ float frand() {
 }
 
 
-std::string vector_dump(Float::Array const &src, int size, int start_index) {
+std::string vector_dump(Float::Array const &src, int size, int start_index, bool output_int) {
 	assert(size <= (int) src.size());
 	std::string buf;
 
   for (int h = 0; h < size; ++h) {
-    buf << src[start_index + h] << ", ";
+		if (output_int) {
+    	buf << (int) src[start_index + h] << ", ";
+		} else {
+    	buf << src[start_index + h] << ", ";
+		}
   }
 
 	return buf;
