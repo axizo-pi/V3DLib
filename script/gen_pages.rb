@@ -37,6 +37,8 @@ class GenPages < WebController
     @html_output_subdir = ''
 
 	  [
+			"../README.md",
+			"install.md",
 			"Basics.md",
 			"BuildInstructions.md",
 			"Examples.md",
@@ -45,7 +47,9 @@ class GenPages < WebController
 			"QuickStart.md",
 			"Issues.md",
 			"Profiling.md",
-			"TODO.md"
+			"TODO.md",
+			"ArchitectureAndDesign.md",
+		  "Mesa2.md"
   	].each { |f|
     	puts "generating page for #{f}"
       init_inline_parts

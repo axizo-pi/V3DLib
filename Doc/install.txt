@@ -10,10 +10,16 @@ dtoverlay=vc4-fkms-v3d
 max_framebuffers=2
 ```
 
+On zero, the text is:
+```
+# Enable DRM VC4 V3D driver
+dtoverlay=vc4-kms-v3d
+max_framebuffers=2
+```
+
 Replace with:
 
 ```
-[all]
 #dtoverlay=vc4-fkms-v3d
 max_framebuffers=2
 gpu_mem=128
@@ -21,8 +27,6 @@ gpu_mem=128
 
 `dtoverlay` should *not* be specified for Pi1. In addition, this sets the memory split with `gpu_mem`.
  
-
-- Interesting: I ran Mandelbrot on pi5-1 and it worked, in spite of GUI
 
 Pre: Debian 12 Bookworm on SD card
 
@@ -53,7 +57,7 @@ but that was hours ago.
 
 - raspi-config does not support 'Memory Split' any more, not even on Pi1.
 
-- Addubg user to group:
+- Add user to group `video`:
 
 > sudo usermod -a -G video wim
 
@@ -83,54 +87,4 @@ lsb_release -a
 getconf LONG_BIT
 
 ============================================
-
-# From pi5-1:
-ssh-copy-id wim@silke
-scp .vimrc wim@silke:~
-ssh silke
-
-
-# on silke:
-sudo raspi-config
-# Select 5. Localization Options
-# Select Locale
-# Unselect en_GB.UTF-8 UTF-8
-# Select en_US.UTF-8 UTF-8
-# <Ok>
-# Again select en_US.UTF-8
-# <Ok>
-# <Finish>
-
-
-ssh-keygen
-ssh-copy-id wim@backup
-
-sudo apt-get update
-sudo apt-get -y upgrade
-sudo apt-get install -y git libraspberrypi-dev raspberrypi-kernel-headers expat libexpat1-dev libz-dev ruby mc vim cmake libdrm-dev raspi-config
-
-# Do following separately, can fail due to unmet dependencies
-sudo apt-get install -y git libraspberrypi-dev
-sudo apt-get install -y git raspberrypi-kernel-headers
-
-mkdir ~/projects
-mkdir ~/tmp
-
-cd projects
-git clone ssh://backup/home/git_masters/V3DLib
-
-# for al git own repo's (previous list)
-cd V3DLib
-git config --global user.email wrijnders@gmail.com
-git config --global user.name  "Wim Rijnders"
-git config pull.rebase false
-git config --global core.editor "vim"
-git push --set-upstream origin master
-
-cd extern/userland
-cmake .
-make
-cd ../../
-
-make all runTests
 

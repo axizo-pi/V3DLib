@@ -1,34 +1,55 @@
 # Architecture and Design
-cycles to deliver a full 16-element result vector.
 
 This document explains the basics of the QPU architecture and documents some design decisions within `V3DLib` to deal with it.
 
 -----
+
 # Naming
 
-In conformance with the linux kernel, the following naming is used within the project:
+The following naming is used within the project:
 
-- the `VideoCore IV` is referred to as `vc4`,
-- the `VideoCore VI` as `v3d`.
+- The `VideoCore IV` is referred to as `vc4`,
+- The `VideoCore VI` as `vc6`.
+- The `VideoCore VII` as `vc7`.
+- `vc6` and `vc7` are collectively referred to as `v3d`[^1]. 
+
+[^1]: This comes from the Mesa library. `vc6` and `vc7` are handled by a common driver called `v3d`.
 
 By convention:
 
-- A program running on a VideoCore is called a [(compute) kernel](https://en.wikipedia.org/wiki/Compute_kernel). I tend to leave out 'compute' when describing kernels.
+- A program running on a VideoCore is called a
+  [(compute) kernel](https://en.wikipedia.org/wiki/Compute_kernel).
+	I tend to leave out 'compute' when describing kernels.
 - Values passed from a CPU program into a kernel are called *uniform values* or **uniforms**.
 
+Kernel programs compile dynamically, so that a given program can run unchanged on any version of the RaspBerry Pi.
+The kernels are generated inline and offloaded to the GPU's at runtime.
 
-# Support
 
-`V3DLib` is supported for Raspbian distributions from `wheezy` onwards.
-Unit tests are run regularly on the following platforms:
+# Supported Pi's
 
-| Platform             | Last unit test run |
-| -------------------- | ------------------ |
-| Pi 1 Model B         | |
-| Pi 2                 | |
-| Pi 3 Model B         | 20210719           |
-| Pi 4 Model B 32-bits | 20210719           |
-| Pi 4 Model B 64-bits | |
+I have about 14 Pi's rummaging around here, which I intend to cluster.
+
+Unit tests are run regularly on the following Pi versions:
+
+**TODO:** Fill this in.
+
+| Pi   | Version         | 32/64bits | Debian distro |
+| ---- | --------------- | --------- | ------------- |
+| Pi5  | Model B Rev 1.0 | 64        | 12 (bookworm) |
+| Pi4  | Model B Rev 1.1 | 64        | 12 (bookworm) |
+| Zero | W Rev 1.1       | 32        | 12 (bookworm) |
+| Pi4  | Model B         | 32 |
+| Pi4  | Model B         | 64 |
+| Pi3  | Model B Rev 1.2 | 32        | 10 (buster)   |
+| Pi2  |                 |
+| Pi1  | Model B         |
+
+The notable omissions in this list:
+
+- **Raspberry PI Pico**: This is a microcontroller. Can't run Debian, has no VideoCore. 
+- **Raspberry PI Compute Module 5**: As far as I can tell, this is a Pi5 in a sexy casing.
+	I will buy it eventually, but currently I don't see the point.
 
 
 # VideoCore Background
@@ -421,3 +442,7 @@ void SourceTranslate::add_init(Seq<Instr> &code) {
 
 	code.insert(insert_index + 1, ret);  // Insert init code after the INIT_BEGIN marker
 }
+
+-----
+
+#### Footnotes

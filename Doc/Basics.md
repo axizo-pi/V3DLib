@@ -3,14 +3,6 @@
 In order to effectively program on the `VideoCore`, you need a working model of its functionality
 in your head. This document describes the bare minimum you need to know.
 
-In conformance with the linux kernel, the following naming is used:
-
-- the `VideoCore IV` is referred to as `vc4`,
-- the `VideoCore VI` as `v3d`.
-
-The text applies to both `vc4` and `v3d`. Where there are differences, it will be explicitly noted.
-
-
 ## Registers
 
 The basic storage location within the VideoCore is a register. It is a 32-bit wide location which
