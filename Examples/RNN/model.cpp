@@ -84,10 +84,12 @@ void model::back_prop(vector const &input, vector const &desired) {
 	auto d1 = a1.sigmoid_derivative(tmp1);
  	//warn << "d1: " << d1.dump();
 
-	auto w1_trans = input.outer(d1);        // gradient, outer product; should be transposed
- 	//warn << "w1_trans:\n" << w1_trans.dump();
-	auto w1_adj = w1_trans.transpose();
- 	//warn << "w1_adj:\n" << w1_adj.dump();
+	auto w1_trans = input.outer(d1);        // gradient, outer product; result transposed
+ 	warn << "w1_trans:\n" << w1_trans.dump();
+
+	// Following is wrong! w1_trans is transposed already
+	//auto w1_adj = w1_trans.transpose();
+	auto w1_adj = w1_trans;
 
 	w1 -= alpha*w1_adj;
  	//warn << "w1 post:\n" << w1.dump();
