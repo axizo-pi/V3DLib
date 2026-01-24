@@ -23,6 +23,22 @@ private:
 };
 */
 
+class Image {
+public:
+	Image(int width, int height);
+
+	void set_conversion_factor(double val);
+	void plot(double in_x, double in_y);
+	void save(std::string const &filename) const;
+
+private:	
+	int    m_width;
+	int    m_height;
+	double m_factor = 1.0;
+
+	bitmap_image m_img;
+};
+
 
 template<class Array>
 void output_bmp(
@@ -86,7 +102,6 @@ void output_bmp(
   			unsigned char rgb = (unsigned char) scale(val, RGBLimit);
 				color = {rgb, rgb, rgb};
 			}
-
 
 			img.set_pixel(x, y, color);
 		}
