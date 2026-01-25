@@ -118,7 +118,7 @@ void predict(vector const &input, model &k_model) {
 int main(int argc, const char *argv[]) {
   settings().init(argc, argv);
 
-	if (true) {
+	if (false) {
 		test_back_propagation(vector::op_kernel());
 		//test_outer_product(vector::op_kernel(), true);
 		//test_vector();

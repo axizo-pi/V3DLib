@@ -25,17 +25,51 @@ end
 def dump_matrix matrix, label
 	puts "#{dump_matrix_header(matrix, label)}:\n"
 
-	buf = "0: "
-	cur_row = 0 
-	matrix.each_with_index do |e, row, col|
-		if cur_row != row
-			buf << "\n#{row}: "
-			cur_row = row
+	if false
+		buf = "0: "
+		cur_row = 0 
+		matrix.each_with_index do |e, row, col|
+			if cur_row != row
+				buf << "\n#{row}: "
+				cur_row = row
+			end
+
+			buf << "#{e}, "
 		end
 
-		buf << "#{e}, "
+		puts buf
+	else
+		buf = "#{label} = Array[\n"
+
+		cur_row = 0 
+		row_vec = [] 
+		matrix.each_with_index do |e, row, col|
+			if cur_row != row
+				buf << "  [#{row_vec.join(", ")}],\n"
+				row_vec = [] 
+
+				cur_row = row
+			end
+
+			row_vec << e
+		end
+
+		buf << "  [#{row_vec.join(", ")}]\n"
+		buf << "]"
+		puts buf
 	end
-	puts buf
+end
+
+def init_matrix m, value
+	r = 0
+	while r < m.row_count do
+		c = 0
+		while c < m.column_count do
+			m[r, c] = value 
+			c += 1
+		end
+		r += 1
+	end
 end
 
 
@@ -44,8 +78,8 @@ def test_back_prop
 	(0...32).step(1) do |i|
 		a << (1 + i)
 	end
-	puts "a1: #{a.join(", ")}"
 
+	puts "a1: #{a.join(", ")}"
 	puts "d2: #{@primes.join(", ")}"
 
 	#
@@ -55,26 +89,64 @@ def test_back_prop
 	a1 = Matrix.row_vector(a)
 
 	w2_adj = a1.t * d2
-	dump_matrix w2_adj, "w2_adj"
+	#dump_matrix w2_adj, "w2_adj"
 
 	#
 	# output layer to hidden layer
-	# TODO: outer product here above
+	# TODO: outer product here above, do rest
 	#
 
 
 	#
 	# Hidden layer adjusting w1
 	#
-=begin	
-	w2 = Matrix.zero(5, 3)
-	puts dump_matrix_header w2, "w2" 
-	puts dump_matrix_header d2, "d2" 
+	puts "
+##################################
+# Test: Hidden layer adjusting w1
+##################################"
 
-	tmp1 = (w2 * d2.t).t
-	puts dump_matrix_header w2, "w2" 
-	puts dump_matrix_header tmp1, "tmp1" 
+=begin
+	puts "### Using coords in back_prop ###"
+	w2 = Matrix.zero(5, 3)
+	init_matrix w2, 0.5
+	dump_matrix w2, "w2"
+
+	d2 = Matrix.zero(1, 3)
+	init_matrix d2, 0.25
+	dump_matrix d2, "d2"
 =end	
+
+	puts "### Using 16-blocks ###"
+	w2 = Matrix.zero(32, 16)
+	init_matrix w2, 0.5
+	dump_matrix w2, "w2"
+
+	d2 = Matrix.zero(1, 16)
+	init_matrix d2, 0.25
+	dump_matrix d2, "d2"
+
+	#####
+	tmp1 = (w2 * d2.t).t
+	dump_matrix tmp1, "tmp1"
+
+	a1 = Matrix.row_vector(a) # a[0...16])
+	dump_matrix a1, "a1"
+
+	#####
+	tmp2 = a1.collect {|el| el*(1 - el) }    # sigmoid derivative
+	puts dump_matrix tmp2, "tmp2" 
+
+	d1   = tmp1.combine(tmp2) {|a, b| a*b}
+	dump_matrix d1, "d1"
+
+	puts "### Till Here ###"
+
+	x = Matrix.zero(1, 16)
+	init_matrix x, 1 
+
+	#####
+	w1_adj = x.t * d1  # gradient, outer product
+	dump_matrix w1_adj, "w1_adj"
 end
 
 
@@ -119,9 +191,8 @@ class NeuralNetwork
 
 	# Creating the Feed forward neural network
 	def f_forward(x)
-		#size(x)
-		#size(w1)
-		#size(w2)
+		puts dump_matrix   x, "f_forward x" 
+		puts dump_matrix @w1, "f_forward @w1" 
 
 		# hidden
 		z1 = x * @w1 + @bias1    # input from layer 1
@@ -225,6 +296,8 @@ def back_prop(x, y, nn)
 	# output layer to hidden layer
 	#
 	d2        = a2 - y                  # error in output layer
+	puts "back_prop " + dump_matrix_header(d2, "d2")
+
 	w2_adj    = nn.a1.t * d2            # gradient, outer product
 	w2_tmp    = nn.w2 - nn.alpha*w2_adj
 	nn.bias2 -= nn.alpha * d2
@@ -232,14 +305,28 @@ def back_prop(x, y, nn)
 	#
 	# Hidden layer adjusting w1
 	#
+	puts "
+#######################################
+# back_prop: Hidden layer adjusting w1
+#######################################"
+
 	tmp1 = (nn.w2 * d2.t).t
-	puts dump_matrix_header nn.w2, "w2" 
-	puts dump_matrix_header tmp1, "tmp1" 
+	#puts dump_matrix_header nn.w2, "w2" 
+	puts dump_matrix nn.w2, "w2" 
+	puts dump_matrix d2, "d2" 
+
+	# Following also works, but has no multiline formatting
+	#puts nn.w2
+
+	#puts dump_matrix_header tmp1, "tmp1" 
+	puts dump_matrix tmp1, "tmp1" 
 
 	tmp2 = nn.a1.collect {|el| el*(1 - el) }    # sigmoid derivative
 	d1   = tmp1.combine(tmp2) {|a, b| a*b}
 
 	w1_adj = x.t * d1  # gradient, outer product
+	puts dump_matrix w1_adj, "w1_adj" 
+
 	nn.w1 -= nn.alpha*w1_adj
 	nn.bias1 -= nn.alpha * d1
 
@@ -309,22 +396,23 @@ def predict(x, nn)
 	end
 end
 
+
 ####################
 # Main
 ####################
+nn = NeuralNetwork.new
+puts dump_matrix_header nn.w2, "nn.w2" 
+
 if false
 	test_back_prop
 	return
 end
 
-#puts "#{w1}\n\n#{w2}"
-
-nn = NeuralNetwork.new
-
 # epoch:
 # 100  - 99.98% acc 
 # 1000 - 99.999% acc 
-acc, losss = train(x, y, nn, 1000)
+NumEpochs = 1  #1000
+acc, losss = train(x, y, nn, NumEpochs)
 
 # Example: Predicting for letter 'B'
 predict(x[0], nn)

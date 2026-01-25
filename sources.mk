@@ -1,7 +1,7 @@
 #
 # This file is generated!  Editing it directly is a bad idea.
 #
-# Generated on: Fri Jan 23 05:54:14 AM CET 2026
+# Generated on: Sat Jan 24 06:21:18 AM CET 2026
 #
 ###############################################################################
 
@@ -119,6 +119,7 @@ EXAMPLES := \
   Concurrent  \
   DMA  \
   GCD  \
+  Gravity  \
   Hello  \
   ID  \
   Matrix  \

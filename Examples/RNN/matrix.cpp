@@ -117,9 +117,10 @@ matrix matrix::operator*(float rhs) {
 
 matrix matrix::operator*(matrix const &rhs) {
 	//warn << "Called matrix matrix::operator*()";
+	assert(m_width > 0);
+	assert(m_height > 0);
 	assert(m_width == rhs.height());  // Inner dimension must match
 	assert((m_width % 16) == 0);      // Inner dimension (width) must be multiple of 16
-	assert(m_height <= 16);           // Larger height needs adjustment in kernel
 	matrix ret(1 , m_height);
 
  	m_mult_vec->load(&rhs.arr(), &arr(), &ret.arr(), m_width/16, m_height).run();
@@ -245,6 +246,15 @@ void vector::set(float *rhs, int in_size) {
 }
 
 
+void vector::set(float init_val) {
+	auto &r = arr();
+
+	for (int i = 0; i < size(); ++i) {
+		r[i] = init_val;
+	}
+}
+
+
 float &vector::operator[](int index) {
 	assert(height() > index);
 
@@ -294,7 +304,7 @@ matrix vector::outer(matrix const &rhs) const {
 
 	matrix ret(rhs.height(), height());
 
-	m_op->load(&arr(), &rhs.arr(), &ret.arr(), height()/16).run();
+	m_op->load(&arr(), &rhs.arr(), &ret.arr(), height(), rhs.height()/16).run();
 	return ret;	
 }
 
@@ -319,7 +329,7 @@ BaseKernel &vector::op_kernel() {
 
 
 void vector::init_static() {
-	if (m_sub == nullptr)     { m_sub     = new BaseKernel(compile_b(vector_sub,   settings())); }
-	if (m_op == nullptr)      { m_op      = new BaseKernel(compile(outer_product,  settings())); }
+	if (m_sub     == nullptr) { m_sub     = new BaseKernel(compile_b(vector_sub,   settings())); }
+	if (m_op      == nullptr) { m_op      = new BaseKernel(compile(outer_product,  settings())); }
 	if (m_sigmoid == nullptr) { m_sigmoid = new BaseKernel(compile(kernel_sigmoid, settings())); }
 }
