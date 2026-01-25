@@ -1,6 +1,7 @@
 #include "V3DLib.h"
 #include "Support/Settings.h"
 #include "Support/bmp.h"
+#include "Support/Timer.h"
 #include <cmath>
 #include <random>
 
@@ -19,134 +20,142 @@ double rand_1() { return distribution(generator); }
 // Source: https://en.wikipedia.org/wiki/N-body_simulation
 ///////////////////////////////////////////////////////////////
 
-struct Vector3
-{
-    double e[3] = { 0 };
+struct Vector3 {
+  double e[3] = { 0 };
 
-    Vector3() {}
-    ~Vector3() {}
+  Vector3() {}
+  ~Vector3() {}
 
-    inline Vector3(double e0, double e1, double e2)
-    {
-        this->e[0] = e0;
-        this->e[1] = e1;
-        this->e[2] = e2;
+  inline Vector3(double e0, double e1, double e2) {
+    this->e[0] = e0;
+    this->e[1] = e1;
+    this->e[2] = e2;
     }
 };
 
-struct OrbitalEntity
-{
-    double e[7] = { 0 };
+struct OrbitalEntity {
+  double e[7] = { 0 };
 
-    OrbitalEntity() {}
-    ~OrbitalEntity() {}
+  OrbitalEntity() {}
+  ~OrbitalEntity() {}
 
-    inline OrbitalEntity(double e0, double e1, double e2, double e3, double e4, double e5, double e6)
-    {
-        this->e[0] = e0;
-        this->e[1] = e1;
-        this->e[2] = e2;
-        this->e[3] = e3;
-        this->e[4] = e4;
-        this->e[5] = e5;
-        this->e[6] = e6;
-    }
+  inline OrbitalEntity(double e0, double e1, double e2, double e3, double e4, double e5, double e6) {
+    this->e[0] = e0;
+    this->e[1] = e1;
+    this->e[2] = e2;
+    this->e[3] = e3;
+    this->e[4] = e4;
+    this->e[5] = e5;
+    this->e[6] = e6;
+  }
 
-		std::string dump() {
-			std::string ret;
+	std::string dump() {
+		std::string ret;
 
-			ret << "Position(" << (float) e[0] << ", " << (float) e[1] << ", " << (float) e[2] << "), "
-			    << "Velocity(" << (float) e[3] << ", " << (float) e[4] << ", " << (float) e[5] << "), "
-			    << "Mass: " << (float) e[6];
+		ret << "Position(" << (float) e[0] << ", " << (float) e[1] << ", " << (float) e[2] << "), "
+		    << "Velocity(" << (float) e[3] << ", " << (float) e[4] << ", " << (float) e[5] << "), "
+		    << "Mass: " << (float) e[6];
 
-			return ret;
-		}
+		return ret;
+	}
 
-		double x() const { return e[0]; }
-		double y() const { return e[1]; }
+	double x() const { return e[0]; }
+	double y() const { return e[1]; }
+	double z() const { return e[2]; }
 };
 
 
-const int N_ASTEROIDS = 20;
+const int N_PLANETS   = 9;                       // Also includes the sun, pluto missing
+const int N_ASTEROIDS = 23;
+const int NUM         = N_PLANETS + N_ASTEROIDS; // Total number of gravitational entities
 
-std::vector<OrbitalEntity> orbital_entities(9 + N_ASTEROIDS);
+double t_0   = 0;
+double t     = t_0;
+double dt    = 86400;
+double const DECADE = 86400 * 365 * 10; // approximately a decade in seconds
+double t_end = ((double) 35) * DECADE;
+double BIG_G = 6.67e-11; // gravitational constant
+
+
+std::vector<OrbitalEntity> orbital_entities(NUM);
 
 void init_orbital_entities() {
-	orbital_entities[0] = { 0.0,0.0,0.0,        0.0,0.0,0.0,      1.989e30 };   // a star similar to the sun
-	orbital_entities[1] = { 57.909e9,0.0,0.0,   0.0,47.36e3,0.0,  0.33011e24 }; // a planet similar to mercury
-	orbital_entities[2] = { 108.209e9,0.0,0.0,  0.0,35.02e3,0.0,  4.8675e24 };  // a planet similar to venus
-	orbital_entities[3] = { 149.596e9,0.0,0.0,  0.0,29.78e3,0.0,  5.9724e24 };  // a planet similar to earth
-	orbital_entities[4] = { 227.923e9,0.0,0.0,  0.0,24.07e3,0.0,  0.64171e24 }; // a planet similar to mars
-	orbital_entities[5] = { 778.570e9,0.0,0.0,  0.0,13e3,0.0,     1898.19e24 }; // a planet similar to jupiter
-	orbital_entities[6] = { 1433.529e9,0.0,0.0, 0.0,9.68e3,0.0,   568.34e24 };  // a planet similar to saturn
-	orbital_entities[7] = { 2872.463e9,0.0,0.0, 0.0,6.80e3,0.0,   86.813e24 };  // a planet similar to uranus
-	orbital_entities[8] = { 4495.060e9,0.0,0.0, 0.0,5.43e3,0.0,   102.413e24 }; // a planet similar to neptune
+	auto &o = orbital_entities;
+
+	o[0] = { 0.0,0.0,0.0,        0.0,0.0,0.0,      1.989e30 };   // a star similar to the sun
+	o[1] = { 57.909e9,0.0,0.0,   0.0,47.36e3,0.0,  0.33011e24 }; // a planet similar to mercury
+	o[2] = { 108.209e9,0.0,0.0,  0.0,35.02e3,0.0,  4.8675e24 };  // a planet similar to venus
+	o[3] = { 149.596e9,0.0,0.0,  0.0,29.78e3,0.0,  5.9724e24 };  // a planet similar to earth
+	o[4] = { 227.923e9,0.0,0.0,  0.0,24.07e3,0.0,  0.64171e24 }; // a planet similar to mars
+	o[5] = { 778.570e9,0.0,0.0,  0.0,13e3,0.0,     1898.19e24 }; // a planet similar to jupiter
+	o[6] = { 1433.529e9,0.0,0.0, 0.0,9.68e3,0.0,   568.34e24 };  // a planet similar to saturn
+	o[7] = { 2872.463e9,0.0,0.0, 0.0,6.80e3,0.0,   86.813e24 };  // a planet similar to uranus
+	o[8] = { 4495.060e9,0.0,0.0, 0.0,5.43e3,0.0,   102.413e24 }; // a planet similar to neptune
 
 	assert(N_ASTEROIDS >= 0);
 	for (int i = 0; i < N_ASTEROIDS; ++i) {
 		//warn << "rand_1: " << rand_1();
 
-		orbital_entities[ 9 + i] = {
+		o[N_PLANETS + i] = {
 			/*rand_1()*1e13 */ 1e13 + 5e9*i, 0 /*rand_1()*1e13 */, 0,
-			/*rand_1()*1e4 */ 0, /*rand_1()* */ 5e3, 0,
+			/*rand_1()*1e4 */ 0, /*rand_1()* */ 3e3, 0,
 			1e22
 		};
 	}
 }
 
-double t_0 = 0;
-double t = t_0;
-double dt = 86400;
-double t_end = ((double) 100) * 86400 * 365 * 10; // approximately a decade in seconds
-double BIG_G = 6.67e-11; // gravitational constant
 
 void scalar_step() {
-    for (size_t m1_idx = 0; m1_idx < 9 + N_ASTEROIDS; m1_idx++)
-    {
-        Vector3 a_g = { 0,0,0 };
+	auto &o = orbital_entities;
 
-        for (size_t m2_idx = 0; m2_idx < 9 + N_ASTEROIDS; m2_idx++)
-        {
-            if (m2_idx != m1_idx)
-            {
-                Vector3 r_vector;
+  for (size_t m1_idx = 0; m1_idx < NUM; m1_idx++) {
+    Vector3 a_g = { 0,0,0 };
 
-                r_vector.e[0] = orbital_entities[m1_idx].e[0] - orbital_entities[m2_idx].e[0];
-                r_vector.e[1] = orbital_entities[m1_idx].e[1] - orbital_entities[m2_idx].e[1];
-                r_vector.e[2] = orbital_entities[m1_idx].e[2] - orbital_entities[m2_idx].e[2];
+    for (size_t m2_idx = 0; m2_idx < NUM; m2_idx++) {
+      if (m2_idx != m1_idx) {
+        Vector3 r_vector;
 
-                double r_mag = sqrt(
-                        r_vector.e[0] * r_vector.e[0]
-                      + r_vector.e[1] * r_vector.e[1]
-                      + r_vector.e[2] * r_vector.e[2]);
+        r_vector.e[0] = o[m1_idx].e[0] - o[m2_idx].e[0];
+        r_vector.e[1] = o[m1_idx].e[1] - o[m2_idx].e[1];
+        r_vector.e[2] = o[m1_idx].e[2] - o[m2_idx].e[2];
 
-                double acceleration = -1.0 * BIG_G * (orbital_entities[m2_idx].e[6]) / pow(r_mag, 2.0);
+        double r_mag = sqrt(
+          r_vector.e[0] * r_vector.e[0]
+          + r_vector.e[1] * r_vector.e[1]
+          + r_vector.e[2] * r_vector.e[2]);
 
-                Vector3 r_unit_vector = { r_vector.e[0] / r_mag, r_vector.e[1] / r_mag, r_vector.e[2] / r_mag };
+        double acceleration = -1.0 * BIG_G * (o[m2_idx].e[6]) / pow(r_mag, 2.0);
 
-                a_g.e[0] += acceleration * r_unit_vector.e[0];
-                a_g.e[1] += acceleration * r_unit_vector.e[1];
-                a_g.e[2] += acceleration * r_unit_vector.e[2];
-            }
-        }
+        Vector3 r_unit_vector = {
+					r_vector.e[0] / r_mag,
+					r_vector.e[1] / r_mag,
+					r_vector.e[2] / r_mag
+				};
 
-        orbital_entities[m1_idx].e[3] += a_g.e[0] * dt;
-        orbital_entities[m1_idx].e[4] += a_g.e[1] * dt;
-        orbital_entities[m1_idx].e[5] += a_g.e[2] * dt;
+        a_g.e[0] += acceleration * r_unit_vector.e[0];
+        a_g.e[1] += acceleration * r_unit_vector.e[1];
+        a_g.e[2] += acceleration * r_unit_vector.e[2];
+      }
     }
 
-    for (size_t entity_idx = 0; entity_idx < 9 + N_ASTEROIDS; entity_idx++)
-    {
-        orbital_entities[entity_idx].e[0] += orbital_entities[entity_idx].e[3] * dt;
-        orbital_entities[entity_idx].e[1] += orbital_entities[entity_idx].e[4] * dt;
-        orbital_entities[entity_idx].e[2] += orbital_entities[entity_idx].e[5] * dt;
-    }
+    o[m1_idx].e[3] += a_g.e[0] * dt;
+    o[m1_idx].e[4] += a_g.e[1] * dt;
+    o[m1_idx].e[5] += a_g.e[2] * dt;
+  }
+
+  for (size_t entity_idx = 0; entity_idx < 9 + N_ASTEROIDS; entity_idx++) {
+    o[entity_idx].e[0] += o[entity_idx].e[3] * dt;
+    o[entity_idx].e[1] += o[entity_idx].e[4] * dt;
+    o[entity_idx].e[2] += o[entity_idx].e[5] * dt;
+  }
 }
 
 
 void plot_orbital_entities(Image &img) {
-	for (int i = 0; i < (int) orbital_entities.size(); ++i) {
-		img.plot(orbital_entities[i].x(), orbital_entities[i].y());
+	auto &o = orbital_entities;
+
+	for (int i = 0; i < (int) o.size(); ++i) {
+		img.plot(o[i].x(), o[i].y());
 	}
 }
 
@@ -163,12 +172,149 @@ void scalar_run(Image &img) {
 
 ///////////////////////////////////////////////////////////////
 // Kernel version 
-// TODO
 ///////////////////////////////////////////////////////////////
 
-void kernel(Int::Ptr p) {                          // The kernel definition
-	*p = 1;
+/**
+ * Pre: num_entities multiple of 16
+ */
+void kernel(
+	Float::Ptr in_x,
+	Float::Ptr in_y,
+	Float::Ptr in_z,
+ 	Float::Ptr in_mass,
+ 	Float::Ptr out_acc_x,
+ 	Float::Ptr out_acc_y,
+ 	Float::Ptr out_acc_z,
+	Int num_entities
+) {
+	For (Int cur_index, cur_index < num_entities, cur_index++)
+		Float::Ptr px0    = in_x    - index() + cur_index;
+		Float::Ptr py0    = in_y    - index() + cur_index;
+		Float::Ptr pz0    = in_z    - index() + cur_index;
+		Float::Ptr pmass0 = in_mass - index() + cur_index;
+
+		Float x0    = *px0;
+		Float y0    = *py0;
+		Float z0    = *pz0;
+		Float mass0 = *pmass0;
+
+		// Accumulated acceleration vector
+		Float x0_acc = 0;
+		Float y0_acc = 0;
+		Float z0_acc = 0;
+
+		Float::Ptr px    = in_x;
+		Float::Ptr py    = in_y;
+		Float::Ptr pz    = in_z;
+		Float::Ptr pmass = in_mass;
+
+		For (Int cur_block, cur_block < num_entities/16, cur_block++)
+			Float x    = *px;
+			Float y    = *py;
+			Float z    = *pz;
+			Float mass = *pmass;
+
+			// Acceleration vector
+			Float nx1 = x0 - x; 
+			Float ny1 = y0 - y; 
+			Float nz1 = z0 - z; 
+
+			// Gravity/Acceleration components
+			Float dx1 = nx1 * nx1;
+			Float dy1 = ny1 * ny1;
+			Float dz1 = nz1 * nz1;
+
+			Float d1 = dx1 + dy1 + dz1;
+
+			// Set the force/acceleration to zero for current entity,
+			// calculate the rest.
+			Float denom = 0;
+			Float force = 0;
+
+			Where ((num_entities + index()) != cur_index)
+				denom = recipsqrt(d1);
+				force = ((float) BIG_G)*mass0*mass/d1;
+			End
+
+			// Normalize the acceleration vector
+			nx1 *= denom; 
+			ny1 *= denom; 
+			nz1 *= denom; 
+
+			// Set the force component
+			nx1 *= force; 
+			ny1 *= force; 
+			nz1 *= force; 
+
+			// Add to total
+			x0_acc += nx1;
+			y0_acc += ny1;
+			z0_acc += nz1;
+
+			// Do next iteration
+			px.inc();
+			py.inc();
+			pz.inc();
+		End
+
+		// Sum up and return the acceleration
+		rotate_sum(x0_acc, x0_acc);
+		Float::Ptr pacc_x = out_acc_x - index() + cur_index;
+		*pacc_x = x0_acc;
+
+		rotate_sum(y0_acc, y0_acc);
+		Float::Ptr pacc_y = out_acc_y - index() + cur_index;
+		*pacc_y = y0_acc;
+
+		rotate_sum(z0_acc, z0_acc);
+		Float::Ptr pacc_z = out_acc_y - index() + cur_index;
+		*pacc_z = z0_acc;
+	End
 }
+
+
+struct Model {
+	Float::Array x{NUM};
+	Float::Array y{NUM};
+	Float::Array z{NUM};
+	Float::Array mass{NUM};
+	Float::Array acc_x{NUM};
+	Float::Array acc_y{NUM};
+	Float::Array acc_z{NUM};
+
+	Image img{512, 512};
+
+	//
+	// Take the values from the scalar simulation, so that results can 
+	// be compared.
+	//
+	// The main consideration here is that scalar uses doubles, which
+	// do not exist on the QPU. QPU will use 4-byte Floats.
+	// Differences in output are inevitable.
+	//
+	void init() {
+		assert(NUM % 16 == 0);  // Num entities must be a multiple of 16
+
+		auto &o = orbital_entities;
+
+	  for (int i = 0; i < NUM; i++) {
+			x[i]    = (float) o[i].x();
+			y[i]    = (float) o[i].y();
+			z[i]    = (float) o[i].z();
+			mass[i] = (float) o[i].e[6];
+		}
+
+		img.set_conversion_factor(5e13);
+	}
+
+	void plot() {
+		for (int i = 0; i < (int) x.size(); ++i) {
+			img.plot(x[i], y[i]);
+		}
+
+		img.save("gravity_qpu.bmp");
+	}
+};
 
 
 ///////////////////////////////////////////////////////////////
@@ -176,27 +322,31 @@ void kernel(Int::Ptr p) {                          // The kernel definition
 ///////////////////////////////////////////////////////////////
 
 int main(int argc, const char *argv[]) {
-
-
   settings.init(argc, argv);
 
 	Image img(512, 512);
 	img.set_conversion_factor(5e13);
 
-	init_orbital_entities();
-	scalar_run(img);
+	{
+		Timer timer("Scalar", true);
 
-	img.save("gravity.bmp");
+		init_orbital_entities();
+		scalar_run(img);
 
+		img.save("gravity.bmp");
+	}
 
-/*
-  auto k = compile(kernel, settings);              // Construct the kernel
+	Model m;
+	m.init();
+	m.plot();
 
-  Int::Array array(16);                           // Allocate and initialise the array shared between ARM and GPU
-  array.fill(100);
+	{
+		Timer timer("QPU", true);
 
-  k.load(&array).run();                           // Invoke the kernel
-*/	
+	  auto k = compile(kernel, settings);
+	  k.load(&m.x, &m.y, &m.z, &m.mass, &m.acc_x, &m.acc_y, &m.acc_z, NUM);
+	//  k.run();
+	}
 
   return 0;
 }
