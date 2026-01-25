@@ -362,7 +362,7 @@ void RegUsage::check() const {
     }
 
     if (!tmp.empty()) {
-      tmp << "\n  This can happen if the first assignment is in a conditional block (If, When, For etc).\n";
+      tmp << "\n  This can happen if the first assignment is in a conditional block (If, Where, For etc).\n";
       ret << tmp;
     }
   }
