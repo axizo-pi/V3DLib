@@ -82,45 +82,45 @@ void test_back_propagation(V3DLib::BaseKernel &op) {
 	//	
 	// Hidden layer adjusting w1
 	//
-	matrix w2(16, 16);
+	matrix w2(16, 32);   // !!! Params reversed wrt ruby Matrix
 	w2.set(0.5);
  	warn << "w2: " << w2.dump();
 
 	vector d2(16);
-
-	for (int c = 0; c < d2.size(); ++c) {
-		d2[c] = 0.25;
-	}
- 	warn << "d2: " << d2.dump();
+	d2.set(0.25);
+ 	warn << "d2(" << d2.size() << "): " << d2.dump();
 
 	// ####
 	auto tmp1 = w2 * d2;
  	warn << "tmp1: " << tmp1.dump();
 
-	vector a1(16);
+	vector a1(32);
 	for (int i = 0; i < a1.size(); ++i) {
 	  a1[i] = (float) (i + 1);
 	}
  	warn << "a1: " << a1.dump(true);
 
+
 	// ####
 	auto d1 = a1.sigmoid_derivative(tmp1);
- 	warn << "d1: " << d1.dump();
+ 	warn << "d1: " << d1.dump(true);
 
 	vector input(16);
-	for (int i = 0; i < input.size(); ++i) {
-	  input[i] = (float) (1);
-	}
+	input.set(1);
  	warn << "input: " << input.dump(true);
 
 	// ####
-	auto w1_trans = input.outer(d1);        // gradient, outer product; result transposed
- 	//warn << "w1_trans:\n" << w1_trans.dump();
+	auto w1_adj = input.outer(d1);        // gradient, outer product; result transposed
+ 	warn << "w1_adj:\n" << w1_adj.dump(true);
 
-	// Following is wrong! w1_trans is transposed already
-	//auto w1_adj = w1_trans.transpose();
-	auto w1_adj = w1_trans;
- 	warn << "w1_adj:\n" << w1_adj.dump();
+	float alpha = 1;
+	auto tmp = alpha*w1_adj;
+ 	warn << "tmp:\n" << tmp.dump(true);
+
+	//w1 -= alpha*w1_adj;
+ 	//warn << "w1:\n" << w1.dump();
+
+	warn <<  "### Till Here ###";
 }
 
 

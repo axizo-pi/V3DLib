@@ -25,7 +25,7 @@ void kernel_sigmoid(Float::Ptr in, Float::Ptr bias, Float::Ptr out, Int N) {
  * Multiply matrix mat with vector input.
  *
  * @param M length of vector in blocks of 16
- * @param N height of matrix. Currently max 16, which suits our current purposes
+ * @param N height of matrix.
  */
 void kernel_mult_vec(Float::Ptr input, Float::Ptr mat, Float::Ptr result, Int M, Int N) {
 	Float res = 0;
@@ -45,8 +45,14 @@ void kernel_mult_vec(Float::Ptr input, Float::Ptr mat, Float::Ptr result, Int M,
 
     rotate_sum(tmp, tmp);
 
-		Where (index() == n)
+		Where (index() == (n % 16))
 			res = tmp;
+		End
+
+		If (n > 0 && n % 16 == 0)
+			*result = res;
+			result.inc();
+			res = 0;
 		End
 	End
 
@@ -55,21 +61,23 @@ void kernel_mult_vec(Float::Ptr input, Float::Ptr mat, Float::Ptr result, Int M,
 
 
 /**
- * @param N  length of input vectors, in blocks of 16
+ * @param N  length of left input vector
+ * @param M  length of right input vector, in blocks of 16
  */
-void outer_product(Float::Ptr left, Float::Ptr right, Float::Ptr out_matrix, Int N) {
+void outer_product(Float::Ptr left, Float::Ptr right, Float::Ptr out_matrix, Int N, Int M) {
 	left -= index();
-	//Float right_out = toFloat(2*(1 + index()));
 
-  For (Int i = 0, i < 16*N, i++)
+  For (Int i = 0, i < N, i++)
 		Float::Ptr start = right;
 
-  	For (Int j = 0, j < N, j++)
+  	For (Int j = 0, j < M, j++)
 			*out_matrix = *left * *start;
-			out_matrix.inc(); start.inc();
+
+			out_matrix.inc();
+			start.inc();
 		End
 
-		++left;
+		left++;
 	End
 }
 

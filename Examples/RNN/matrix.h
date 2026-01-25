@@ -79,6 +79,7 @@ struct vector : public matrix {
 	vector(int height);
 
 	void set(float *rhs, int in_size);
+	void set(float init_val);
 	float &operator[](int index);
 	float operator[](int index) const;
 	int size() const;

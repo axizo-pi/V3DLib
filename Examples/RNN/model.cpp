@@ -11,8 +11,8 @@ model::model(int n_size, int m_size) : s_tmp(n_size) {
 vector model::forward(vector const &input) {
   //Timer timer("Matrix mult");
 
- 	//warn << "input: " << input.dump();
- 	//warn << "w1:\n"     << w1.dump();
+ 	warn << "input: " << input.dump();
+ 	warn << "w1:\n"     << w1.dump();
 
   z1 = w1 * input;
 	//scalar::mult(input.arr(), w1.arr(), s_tmp);
@@ -82,16 +82,20 @@ void model::back_prop(vector const &input, vector const &desired) {
  	//warn << "tmp1: " << tmp1.dump();
 
 	auto d1 = a1.sigmoid_derivative(tmp1);
- 	//warn << "d1: " << d1.dump();
+	warn << "d1: " << d1.dump();
 
-	auto w1_trans = input.outer(d1);        // gradient, outer product; result transposed
- 	warn << "w1_trans:\n" << w1_trans.dump();
+	auto w1_adj = input.outer(d1);        // gradient, outer product; result transposed
+ 	warn << "w1_adj:\n" << w1_adj.dump();
 
-	// Following is wrong! w1_trans is transposed already
-	//auto w1_adj = w1_trans.transpose();
-	auto w1_adj = w1_trans;
+	//w1 -= alpha*w1_adj;
+	auto tmp = alpha*w1_adj;
+ 	warn << "tmp:\n" << tmp.dump();
+ 	warn << "w1:\n" << w1.dump();
+
+	warn <<  "### Till Here ###";
 
 	w1 -= alpha*w1_adj;
+
  	//warn << "w1 post:\n" << w1.dump();
 
  	//warn << "bias1 pre :" << bias1.dump();
