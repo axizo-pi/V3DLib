@@ -597,7 +597,8 @@ int remove_useless(Instructions &instr) {
 
 
 void combine(Instructions &instr) {
-   cdebug << "Entered Combine::combine()";
+	cdebug << "Entered Combine::combine()";
+	return; // Disable till we find out what the problem is here
 
 try {
 

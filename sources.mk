@@ -1,7 +1,7 @@
 #
 # This file is generated!  Editing it directly is a bad idea.
 #
-# Generated on: Sat Jan 24 06:21:18 AM CET 2026
+# Generated on: Mon Jan 26 10:24:47 AM CET 2026
 #
 ###############################################################################
 
@@ -119,7 +119,6 @@ EXAMPLES := \
   Concurrent  \
   DMA  \
   GCD  \
-  Gravity  \
   Hello  \
   ID  \
   Matrix  \
@@ -166,6 +165,7 @@ SUB_PROJECTS := \
   Mandelbrot \
   RNN \
   HeatMap \
+  Gravity \
 
 
 Mandelbrot: $(V3DLIB)
@@ -176,5 +176,8 @@ RNN: $(V3DLIB)
 	
 HeatMap: $(V3DLIB)
 	@cd Examples/HeatMap && make DEBUG=${DEBUG} QPU=${QPU} 
+	
+Gravity: $(V3DLIB)
+	@cd Examples/Gravity && make DEBUG=${DEBUG} QPU=${QPU} 
 	
 
