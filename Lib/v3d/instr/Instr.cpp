@@ -188,6 +188,13 @@ bool Instr::has_signal(bool all_signals) const {
 }
 
 
+bool Instr::has_magic_registers() const {
+  return sig_dst().is_magic()     || 
+      	 alu_add_dst().is_magic() || 
+      	 alu_mul_dst().is_magic();
+}
+
+
 /**
  * Determine if singals use signal destination field.
  *
@@ -392,6 +399,11 @@ std::string Instr::mnemonic(bool with_comments) const {
 }
 
 
+std::string Instr::dump() const {
+	return mnemonic();
+}
+
+
 uint64_t Instr::bytecode() const {
   uint64_t repack = instr_pack(const_cast<Instr *>(this));
   return repack;
@@ -418,13 +430,48 @@ std::string Instr::mnemonics(std::vector<uint64_t> const &in_code) {
 void Instr::init(uint64_t in_code) {
   raddr_a = 0;
 
-  // These do not always get initialized in unpack
+	//
+  // Ensure defaults set
+	//
   sig_addr  = 0;
   sig_magic = false;
   raddr_b   = 0;      // Not set for branch
 
-	alu.add.output_pack = V3D_QPU_PACK_NONE;
-	alu.mul.output_pack = V3D_QPU_PACK_NONE;
+	sig.small_imm_a = false;
+	sig.small_imm_b = false;
+	sig.small_imm_c = false;
+	sig.small_imm_d = false;
+
+	alu.add = {
+    op: V3D_QPU_A_NOP,
+    a: {
+			raddr: 0,
+      unpack: V3D_QPU_UNPACK_NONE
+		},
+    b: {
+			raddr: 0,
+      unpack: V3D_QPU_UNPACK_NONE
+		},
+    waddr: 0,
+    magic_write: false,
+    output_pack: V3D_QPU_PACK_NONE
+	};
+
+	alu.mul = {
+    op: V3D_QPU_M_NOP,
+    a: {
+			raddr: 0,
+      unpack: V3D_QPU_UNPACK_NONE
+		},
+    b: {
+			raddr: 0,
+      unpack: V3D_QPU_UNPACK_NONE
+		},
+    waddr: 0,
+    magic_write: false,
+    output_pack: V3D_QPU_PACK_NONE
+	};
+
 
   if (!instr_unpack(in_code, this)) {
     warn << "Instr:init: call to instr_unpack failed.";
@@ -905,6 +952,10 @@ bool Instr::alu_mul_a(BaseSource const &src, bool overwrite) {
 
 	if (src.is_small_imm()) {
 		if (Platform::compiling_for_vc7()) {
+/*			
+			cdebug << "alu_mul_a adding small imm (" << src.dump() << ") to mul a";
+			breakpoint;
+*/
 			sig.small_imm_c = true;
 			alu.mul.a.raddr = src.val();
 		} else {
@@ -980,7 +1031,12 @@ bool Instr::alu_set_src(BaseSource const &src, v3d_qpu_input &input, CheckSrc ch
 
 
 bool Instr::alu_mul_b(BaseSource const &src, bool overwrite) {
-	assert(src.is_set());
+	//assert(src.is_set());
+	if (!src.is_set()) {
+		// This happens for single-source operations, for example MOV.
+		return true;
+	}
+
 	assert(!m_external_init);
 	if (m_alu_mul_b_set && !overwrite) {
 		warn << "alu_mul_b overwriting existing src value";
@@ -988,6 +1044,13 @@ bool Instr::alu_mul_b(BaseSource const &src, bool overwrite) {
 
 	if (src.is_small_imm()) {
 		if (Platform::compiling_for_vc7()) {
+			// Assumption: only one of the 4 source registers can have a small imm
+			// If the assumption is correct, also add to the other src assignments.
+			if (has_small_imm()) {
+				cerr << "alu_mul_b() vc7 instruction already has a small imm: " << dump();
+				return false;
+			}
+
 			sig.small_imm_d = true;
 			alu.mul.b.raddr = src.val();
 		} else {
@@ -1290,9 +1353,24 @@ BaseSource Instr::sig_dst() const {
  *
  *
  */
-BaseSource Instr::alu_add_a() const { return BaseSource(*this, CHECK_ADD_A); }
+BaseSource Instr::alu_add_a() const {
+	auto ret = BaseSource(*this, CHECK_ADD_A);
+/*
+ 	// WRI DEBUG	 
+	if (!add_nop() && ret.is_small_imm()) {
+		breakpoint;
+		auto ret2 = BaseSource(*this, CHECK_ADD_A);
+	}
+*/	
+	return ret;
+}
+
 BaseSource Instr::alu_add_b() const { return BaseSource(*this, CHECK_ADD_B); }
-BaseSource Instr::alu_mul_a() const { return BaseSource(*this, CHECK_MUL_A); }
+
+BaseSource Instr::alu_mul_a() const {
+	return BaseSource(*this, CHECK_MUL_A);
+}
+
 BaseSource Instr::alu_mul_b() const { return BaseSource(*this, CHECK_MUL_B); }
 
 

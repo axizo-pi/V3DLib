@@ -63,15 +63,16 @@ public:
   bool skip() const { return m_skip; }
   void skip(bool val) { m_skip = val; }
 
-  // Grumbl
   Instr &header(std::string const &msg) { InstructionComment::header(msg);  return *this; }
   Instr &comment(std::string msg)       { InstructionComment::comment(msg); return *this; }
 
+  // Grumbl
   std::string const &header() const     { return InstructionComment::header();}
   std::string const &comment() const    { return InstructionComment::comment();}
 
   bool is_branch()  const;
   bool has_signal(bool all_signals = false) const;
+	bool has_magic_registers() const;
 
   bool flag_push_set() const;
   bool flag_cond_set() const;
@@ -80,7 +81,7 @@ public:
   void set_push_tag(SetCond set_cond);
 
   std::string mnemonic(bool with_comments = false) const;
-  std::string dump() const { return mnemonic(); }
+  std::string dump() const;
   uint64_t bytecode() const;
   static std::string mnemonic(uint64_t in_code);
   static std::string mnemonics(std::vector<uint64_t> const &in_code);

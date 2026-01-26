@@ -53,29 +53,44 @@ BaseSource::BaseSource(Instr const &instr, int check_src) {
 	assert(check_src <= CheckSrc::CHECK_MUL_B);
 
 	v3d_qpu_input input;
+	bool small_imm = false;  // for vc7
 
 	// Ugly but necessary
-	if (check_src == CHECK_ADD_A) {
-		if (instr.add_nop()) return;
-		if (!instr.alu_add_a_set()) return;
-		input = instr.alu.add.a;
-	} else if (check_src == CHECK_ADD_B) {
-		if (instr.add_nop()) return;
-		if (!instr.alu_add_b_set()) return;
-		input = instr.alu.add.b;
-	} else if (check_src == CHECK_MUL_A) {
-		if (instr.mul_nop()) return;
-		if (!instr.alu_mul_a_set()) return;
-		input = instr.alu.mul.a;
-	} else if (check_src == CHECK_MUL_B) {
-		if (instr.mul_nop()) return;
-		if (!instr.alu_mul_b_set()) return;
-		input = instr.alu.mul.b;
+	switch (check_src) {
+		case CHECK_ADD_A:
+			if (instr.add_nop()) return;
+			if (!instr.alu_add_a_set()) return;
+			input = instr.alu.add.a;
+	  	small_imm = instr.sig.small_imm_a;
+		break;
+
+		case CHECK_ADD_B:
+			if (instr.add_nop()) return;
+			if (!instr.alu_add_b_set()) return;
+			input = instr.alu.add.b;
+	  	small_imm = instr.sig.small_imm_b;
+		break;
+
+		case CHECK_MUL_A:
+			if (instr.mul_nop()) return;
+			if (!instr.alu_mul_a_set()) return;
+			input = instr.alu.mul.a;
+	  	small_imm = instr.sig.small_imm_c;
+		break;
+
+		case CHECK_MUL_B:
+			if (instr.mul_nop()) return;
+			if (!instr.alu_mul_b_set()) return;
+			input = instr.alu.mul.b;
+	  	small_imm = instr.sig.small_imm_d;
+		break;
+
+		default: assert(false);
 	}
 
 	if (Platform::compiling_for_vc7()) {
 		// vc7 - no acc's
-	  set_from_src(input.raddr, instr.sig.small_imm_b, false, true);
+	  set_from_src(input.raddr, small_imm, false, true);
 	} else {
 		// 
 		if (input.mux == V3D_QPU_MUX_A) {

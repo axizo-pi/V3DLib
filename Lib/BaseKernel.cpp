@@ -79,7 +79,13 @@ void BaseKernel::run(bool wait_complete) {
   m_settings.startPerfCounters();
 
 	if (m_settings.compile_only) {
-    Log::warn << "BaseKernel::run(): Compile-only selected, not running.";
+		// A kernel can be called multiple times, show warning only on first attempt
+		static bool showed_msg = false;
+
+		if (!showed_msg) {
+	    Log::warn << "BaseKernel::run(): Compile-only selected, not running.";
+			showed_msg = true;
+		}
   } else {
 
     switch (m_settings.run_type) {

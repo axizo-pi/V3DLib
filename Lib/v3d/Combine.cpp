@@ -232,11 +232,6 @@ bool convert_alu_op_to_mul_op(v3d_qpu_mul_op &mul_op, v3d::instr::Instr const &a
 
 bool can_equal(Instr const &top, Instr const &bottom) {
   if (add_register_conflict(top, bottom, false)) return false;
-/*
-	warn << "Here1, top,bottom:\n" 
-		   << top.mnemonic() << "\n"
-		   << bottom.mnemonic();
-*/
 
   v3d_qpu_mul_op tmp;
   if (!convert_alu_op_to_mul_op(tmp, bottom)) return false ;
@@ -602,7 +597,7 @@ int remove_useless(Instructions &instr) {
 
 
 void combine(Instructions &instr) {
-  // warn << "Combine::combine() called";
+   cdebug << "Entered Combine::combine()";
 
 try {
 
@@ -616,8 +611,9 @@ try {
   //
   int start = -1;
   for (int i = 0; i < (int) instr.size(); ++i) {
-    if (instr[i].header() != "Main program") {
+    if (instr[i].header() == "Main program") {
       start = i;
+			break;
     }
   }
 
@@ -628,24 +624,40 @@ try {
 
   // TODO: better specify end program. This should be on barrierid
   int end = (int) instr.size();
-  //if (end > (start + 133)) end = (start + 133);  // WRI DEBUG
-  //if (end > (start + 350)) end = (start + 350);  // WRI DEBUG
-  //if (end > (start + 250)) end = (start + 250);  // WRI DEBUG
 
   // Consider all instructions in main body
+	cdebug << "combine(): starting loop; start: " << start << ", end: " << end;
   for (int i = start + 1; i < end; ++i) {
-    if (instr[i].add_nop()) continue; 
-    if (!instr[i].mul_nop()) continue; 
-    if (instr[i].skip()) continue; 
-
-
-    if (instr[i].is_branch()) {
-      warn << "Branch detected, skipping to launch point";
-      i += 4;
-      assert(i <  end);
-    }
-
     auto &bottom = instr[i];
+
+    if (bottom.add_nop() ) continue; 
+    if (!bottom.mul_nop()) continue; 
+    if (bottom.skip()    ) continue; 
+
+    if (bottom.is_branch()) {
+      cdebug << "Branch detected at line " << i << ", skipping to launch point";
+/*			
+			// WRI DEBUG: show next 10 instructions
+			{
+				std::string buf;
+
+				for (int k = 0; k < 10; ++k) {
+        	buf <<  (i + k)  << "; " << instr[i + k].mnemonic() << "\n";
+				}
+
+				cdebug << "Next 10 instructions:\n"
+							 << buf;
+			}
+*/			
+
+			// For some reason, an extra NOP is added after a branch
+			int const Skip = 5;
+
+			start = i + Skip;        // Can't move instructions upward beyond this point
+      i = start + 1;
+      assert(i <  end);
+			continue;
+    }
 
     if (!bottom.add_nop() && !bottom.mul_nop()) {
       // instruction efficient already, don't bother (both add and mul used).
@@ -684,40 +696,35 @@ try {
       continue;
     }
 
-    bool has_special_regs =
-      bottom.sig_dst().is_magic() || 
-      bottom.alu_add_dst().is_magic() || 
-      bottom.alu_mul_dst().is_magic() 
-    ;
-
-    if (has_special_regs) {
-      cerr << "magic write to special register set on instr:\n"
-           << "  " << bottom.mnemonic() << "\n"
-           << "- Deal with this later on";
-      break;
+    if (bottom.has_magic_registers()) {
+      cdebug << "magic write to special register set on instr:\n"
+             << "  " << bottom.mnemonic() << "\n"
+             << "  - Deal with this later on";
+      continue;
     }
 
+    if (bottom.add_nop() && bottom.mul_nop()) continue;  // Skip full NOP's
+
+		//
     // Try to move instructions as far up as possible
+		//
     for (int j = i - 1; j >= start; --j) {
-     auto &top    = instr[j];
+      auto &top    = instr[j];
 
-     if (top.skip()) continue;
+      if (top.skip()) continue;
 /*
-     warn << "Considering following:\n"
-          << "  " << j << ": " << top.mnemonic()    << "\n"
-          << "  " << i << ": " << bottom.mnemonic()
+      cdebug << "Considering following:\n"
+             << "  " << j << ": " << top.mnemonic()    << "\n"
+             << "  " << i << ": " << bottom.mnemonic()
       ;
-*/
+*/			
 
-      if (!(
-        !bottom.add_nop() && bottom.mul_nop()
-      )) {
+      if (bottom.add_nop() || !bottom.mul_nop()) {
         cerr << "combine: only add op's in bottom handled now.\n" 
              << "  " << j << ": " << top.mnemonic()    << "\n"
              << "  " << i << ": " << bottom.mnemonic()
              << thrw;
       }
-
 
       if (can_equal(top, bottom)) {
         //warn << "bottom can equal top";
@@ -730,21 +737,14 @@ try {
     }
 
     if (final_top == -1) continue;
-/*
-    if (i - final_top > 1) {
-      warn << "final top is " << (i - final_top) << " places above i";
-    }
-*/
 
     //
     // Move forward again to find the best place
     //
     for (int k = final_top; k < i; ++ k) {
       auto &ftop    = instr[k];
+
       if (ftop.skip()) continue;
-  
-      //bool full_op =  !ftop.add_nop() && !ftop.mul_nop();
-      //if (full_op) continue;
       if (!ftop.mul_nop()) continue;
 
       std::string buf;
@@ -752,15 +752,13 @@ try {
           << "  " << i << ": " << bottom.mnemonic();
 
       if (alu_to_mul_alu(bottom, ftop)) {
-/*				
-        warn << "combine: adding bottom to top succeeded.\n"
-             << "Pre:\n"
-             << buf << "\n"
-             << "Post:\n"
-             << "  " << final_top << ": " << ftop.mnemonic() << "\n"
-             << "== Combine SUCCESS =="
+        cdebug << "combine: adding bottom to top succeeded.\n"
+               << "Pre:\n"
+               << buf << "\n"
+               << "Post:\n"
+               << "  " << final_top << ": " << ftop.mnemonic() << "\n"
+               << "== Combine SUCCESS =="
         ;
-*/				
 
         bottom.skip(true);
         break;
@@ -771,10 +769,13 @@ try {
   }
 
 } catch(V3DLib::Exception const &e) {
-  cerr << "Runtime error during Combine::combine(). Aborting further combination. err:\n"
+  cerr << "\nV3DLib exception during Combine::combine(). Aborting further combination. err:\n"
+       << e.what();
+} catch(std:: runtime_error &e) {
+  cerr << "\nruntime_error exception during Combine::combine(). Aborting further combination. err:\n"
        << e.what();
 } catch(...) {
-  cerr << "Unknown untime error during Combine::combine(). Aborting further combination.\n";
+  cerr << "\nUnknown exception during Combine::combine(). Aborting further combination.\n";
 }
 
 }
