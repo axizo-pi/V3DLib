@@ -65,11 +65,15 @@ public:
 private:
 	Level m_level;
 	std::stringstream m_buf;
+
+	std::string msg();
 };
 
 
-void set_level(Logger::Level level);
+void set_log_dir(std::string const &path);
+void set_log_file(std::string const &file);
 void log_to_cout(bool val);
+
 
 #pragma push_macro("assert")
 #undef assert

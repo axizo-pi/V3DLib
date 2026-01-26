@@ -579,7 +579,11 @@ Instructions encodeInstr(V3DLib::Instr instr) {
 
   if (!ret.empty()) {
     ret.front().transfer_comments(instr);
-  }
+  } else {
+		if (instr.has_comments()) {
+			Log::warn << "encodeInstr() comments not transferred, no output instructions";
+		}
+	}
 
   return ret;
 }

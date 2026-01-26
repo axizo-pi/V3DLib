@@ -20,6 +20,11 @@ void InstructionComment::clear_comments() {
 }
 
 
+bool InstructionComment::has_comments() const {
+	return !m_header.empty() || !m_comment.empty();
+}
+
+
 /**
  * Assign header comment to current instance
  *

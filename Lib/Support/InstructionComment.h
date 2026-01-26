@@ -13,6 +13,7 @@ public:
 
   void transfer_comments(InstructionComment const &rhs);
   void clear_comments();
+	bool has_comments() const;
   std::string const &header() const { return m_header; }
   std::string const &comment() const { return m_comment; }
 

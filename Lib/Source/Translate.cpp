@@ -564,7 +564,11 @@ void stmt(Instr::List *seq, Stmt::Ptr s) {
 
   if (!seq->empty()) {
     seq->back().transfer_comments(*s);
-  }
+  } else {
+		if (s->has_comments()) {
+			Log::warn << "stmt() comments not transferred, no sequence output";
+		}
+	}
 
   if (s->do_break_point()) {
     seq->back().break_point();

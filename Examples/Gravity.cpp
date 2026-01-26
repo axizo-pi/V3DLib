@@ -26,6 +26,7 @@ F = BIG_G*m1*m2/r^2  = (m^3⋅kg^−1⋅s^−2)*kg^2/m^2 = kg*m/s^2
 */
 
 float const IMG_CONVERSION_FACTOR = 2.5e13f;
+int const BATCH_STEPS = 150;
 
 const int N_PLANETS   = 9;                       // Also includes the sun, pluto missing
 const int N_ASTEROIDS = 23;
@@ -162,7 +163,7 @@ void scalar_step() {
     o[m1_idx].e[5] += a_g.e[2] * dt;
   }
 
-  for (size_t entity_idx = 0; entity_idx < 9 + N_ASTEROIDS; entity_idx++) {
+  for (size_t entity_idx = 0; entity_idx < NUM; entity_idx++) {
     o[entity_idx].e[0] += o[entity_idx].e[3] * dt;
     o[entity_idx].e[1] += o[entity_idx].e[4] * dt;
     o[entity_idx].e[2] += o[entity_idx].e[5] * dt;
@@ -181,10 +182,12 @@ void plot_orbital_entities(Image &img) {
 
 void scalar_run(Image &img) {
 	while (t < t_end) {
-		scalar_step();
+		for (int i = 0; i < BATCH_STEPS; ++i) {
+			scalar_step();
+		}
 		plot_orbital_entities(img);
 
-    t += dt;
+    t += BATCH_STEPS*dt;
 	}
 }
 
@@ -195,25 +198,32 @@ void scalar_run(Image &img) {
 
 /**
  * Pre: num_entities multiple of 16
+ *
+ * Using ref's doesn't increase performance.
  */
-void kernel(
-	Float::Ptr in_x,
-	Float::Ptr in_y,
-	Float::Ptr in_z,
- 	Float::Ptr in_mass,
- 	Float::Ptr out_acc_x,
- 	Float::Ptr out_acc_y,
- 	Float::Ptr out_acc_z,
-	Int num_entities
+void kernel_calc_acc(
+	Float::Ptr &in_x, Float::Ptr &in_y, Float::Ptr &in_z,
+ 	Float::Ptr &in_mass,
+ 	Float::Ptr &out_acc_x, Float::Ptr &out_acc_y, Float::Ptr &out_acc_z,
+	Int &num_entities
 ) {
-	Float DIST_FACTOR = 1e-12f;  comment("Init DIST_FACTOR");
-	Float MASS_FACTOR = 1e-18f;  comment("Init MASS_FACTOR");
+	//
+	// These conversion factors are here to prevent Inf values.
+	// Distance and mass values are quite huge and calculations
+	// go over the max float value without breaking a sweat.
+	//
+	Float DIST_FACTOR  = 1e-12f;  comment("Init DIST_FACTOR");
+	Float MASS_FACTOR  = 1e-18f;  comment("Init MASS_FACTOR");
+
+	Float ACC_CONSTANT = ((float) BIG_G) * DIST_FACTOR / MASS_FACTOR * DIST_FACTOR;
 
 	For (Int cur_index = 0, cur_index < num_entities, cur_index++)
-		Float::Ptr px0    = in_x    - index() + cur_index;
-		Float::Ptr py0    = in_y    - index() + cur_index;
-		Float::Ptr pz0    = in_z    - index() + cur_index;
-		Float::Ptr pmass0 = in_mass - index() + cur_index;
+		Int ptr_offset = cur_index - index();
+
+		Float::Ptr px0    = in_x    + ptr_offset; comment("Start loop kernel_calc_acc");
+		Float::Ptr py0    = in_y    + ptr_offset; 
+		Float::Ptr pz0    = in_z    + ptr_offset; 
+		Float::Ptr pmass0 = in_mass + ptr_offset;
 
 		Float x0    = *px0    * DIST_FACTOR;
 		Float y0    = *py0    * DIST_FACTOR;
@@ -230,7 +240,7 @@ void kernel(
 		Float::Ptr pz    = in_z;
 		Float::Ptr pmass = in_mass;
 
-		For (Int cur_block = 0, cur_block < num_entities/16, cur_block++)
+		For (Int cur_block = 0, cur_block < (num_entities >> 4), cur_block++)
 			Float x    = *px    * DIST_FACTOR;
 			Float y    = *py    * DIST_FACTOR;
 			Float z    = *pz    * DIST_FACTOR;
@@ -256,12 +266,12 @@ void kernel(
 			Float denom = 0;
 			Float acceleration = 0;
 
-			Where ((cur_block*16 + index()) != cur_index)
+			Where (((cur_block << 4) + index()) != cur_index)
 				denom = recipsqrt(d1);
 				acceleration = -1 * mass * recip(d1);
 			End
 
-			acceleration *= ((float) BIG_G) * DIST_FACTOR / MASS_FACTOR * DIST_FACTOR;
+			acceleration *= ACC_CONSTANT;
 			comment("Calc force factor");
 
 			// Normalize the acceleration vector
@@ -289,15 +299,15 @@ void kernel(
 
 		// Sum up and return the acceleration
 		rotate_sum(x0_acc, x0_acc);
-		Float::Ptr pacc_x = out_acc_x - index() + cur_index;
+		Float::Ptr pacc_x = out_acc_x + ptr_offset; // - index() + cur_index;
 		*pacc_x = x0_acc;
 
 		rotate_sum(y0_acc, y0_acc);
-		Float::Ptr pacc_y = out_acc_y - index() + cur_index;
+		Float::Ptr pacc_y = out_acc_y + ptr_offset; //- index() + cur_index;
 		*pacc_y = y0_acc;
 
 		rotate_sum(z0_acc, z0_acc);
-		Float::Ptr pacc_z = out_acc_z - index() + cur_index;
+		Float::Ptr pacc_z = out_acc_z + ptr_offset; //- index() + cur_index;
 		*pacc_z = z0_acc;
 	End
 }
@@ -305,29 +315,27 @@ void kernel(
 
 /**
  * Pre: num_entities multiple of 16
+ *
+ * Using ref's doesn't increase performance.
  */
 void kernel_step(
-	Float::Ptr x,
-	Float::Ptr y,
-	Float::Ptr z,
-	Float::Ptr in_v_x,
-	Float::Ptr in_v_y,
-	Float::Ptr in_v_z,
- 	Float::Ptr acc_x,
- 	Float::Ptr acc_y,
- 	Float::Ptr acc_z,
-	Int num_entities
+	Float::Ptr &x, Float::Ptr &y, Float::Ptr &z,
+	Float::Ptr &in_v_x, Float::Ptr &in_v_y, Float::Ptr &in_v_z,
+ 	Float::Ptr &acc_x, Float::Ptr &acc_y, Float::Ptr &acc_z,
+	Int &num_entities
 ) {
-	Float delta_t = (float) dt;
+	Float delta_t = (float) dt; comment("Start kernel_step");
 
 	//
 	// Update speed
 	//
+	header("Start kernel_step");
+
 	Float::Ptr v_x = in_v_x;
 	Float::Ptr v_y = in_v_y;
 	Float::Ptr v_z = in_v_z;
 
-	For (Int cur_block = 0, cur_block < num_entities/16, cur_block++)
+	For (Int cur_block = 0, cur_block < (num_entities >> 4), cur_block++)
 		Float tmp_x = *v_x + *acc_x * delta_t;
 		*v_x = tmp_x;
 
@@ -337,7 +345,7 @@ void kernel_step(
 		Float tmp_z = *v_z + *acc_z * delta_t;
 		*v_z = tmp_z;
 
-		v_x.inc();
+		v_x.inc();  comment("kernel_step do pointer increments");
 		v_y.inc();
 		v_z.inc();
 		acc_x.inc();
@@ -353,7 +361,7 @@ void kernel_step(
 	v_y = in_v_y;
 	v_z = in_v_z;
 
-	For (Int cur_block = 0, cur_block < num_entities/16, cur_block++)
+	For (Int cur_block = 0, cur_block < (num_entities >> 4), cur_block++)
 		Float tmp_x = *x + *v_x * delta_t;
 		*x = tmp_x;
 
@@ -369,6 +377,48 @@ void kernel_step(
 		v_x.inc();
 		v_y.inc();
 		v_z.inc();
+	End
+}
+
+
+/**
+ * Pre: num_entities multiple of 16
+ */
+void kernel_gravity(
+	Float::Ptr in_x, Float::Ptr in_y, Float::Ptr in_z,
+	Float::Ptr in_v_x, Float::Ptr in_v_y, Float::Ptr in_v_z,
+ 	Float::Ptr in_mass,
+ 	Float::Ptr in_acc_x, Float::Ptr in_acc_y, Float::Ptr in_acc_z,
+	Int num_entities
+) {
+	Int Count = BATCH_STEPS;
+
+	For (Int i = 0, i < Count, i++)
+
+		kernel_calc_acc(
+			in_x, in_y, in_z,
+		 	in_mass,
+		 	in_acc_x, in_acc_y, in_acc_z,
+			num_entities
+		);
+
+		// kernel_step() adjusts pointers, reset to start before calling	
+		Float::Ptr x = in_x;
+		Float::Ptr y = in_y;
+		Float::Ptr z = in_z;
+		Float::Ptr v_x = in_v_x;
+		Float::Ptr v_y = in_v_y;
+		Float::Ptr v_z = in_v_z;
+		Float::Ptr acc_x = in_acc_x;
+		Float::Ptr acc_y = in_acc_y;
+		Float::Ptr acc_z = in_acc_z;
+
+		kernel_step(
+			x, y, z,
+			v_x, v_y, v_z,
+		 	acc_x, acc_y, acc_z,
+			num_entities
+		);
 	End
 }
 
@@ -481,13 +531,16 @@ int main(int argc, const char *argv[]) {
 	Model m;
 	m.init();
 	m.plot();
-	warn << m.dump_pos();
+	//warn << m.dump_pos();
 
-	auto k = compile(kernel, settings);
-	k.load(&m.x, &m.y, &m.z, &m.mass, &m.acc_x, &m.acc_y, &m.acc_z, NUM);
-
-	auto k_step = compile(kernel_step, settings);
-	k_step.load(&m.x, &m.y, &m.z, &m.v_x, &m.v_y, &m.v_z, &m.acc_x, &m.acc_y, &m.acc_z, NUM);
+	auto k = compile(kernel_gravity, settings);
+	k.load(
+		&m.x, &m.y, &m.z,
+		&m.v_x, &m.v_y, &m.v_z,
+		&m.mass,
+		&m.acc_x, &m.acc_y, &m.acc_z,
+		NUM
+	);
 
 	//if (false)
  	{
@@ -496,14 +549,13 @@ int main(int argc, const char *argv[]) {
 		t = 0;
 		while (t < t_end) {
 	  	k.run();
-		  k_step.run();
 			m.plot();
 
-  	  t += dt;
+  	  t += BATCH_STEPS*dt;
 		}
 
-		warn << m.dump_acc();
-		warn << m.dump_pos();
+		//warn << m.dump_acc();
+		//warn << m.dump_pos();
 		m.save_img();
 	}
 

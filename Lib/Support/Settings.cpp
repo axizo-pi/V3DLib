@@ -166,9 +166,10 @@ void Settings::init(int argc, const char *argv[]) {
 
   check_params(m_all_params, argc, argv);
 
-  // Set default logging to warnings
   set_loglevel(WARNING);
-  Log::set_level(Log::Logger::WARNING);
+	// No need to set log level for Log
+ 	Log::set_log_dir("/home/wim/projects/V3DLib/log");
+  Log::set_log_file("V3DLib.log");
 }
 
 
