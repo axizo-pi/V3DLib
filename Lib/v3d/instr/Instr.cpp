@@ -442,36 +442,24 @@ void Instr::init(uint64_t in_code) {
 	sig.small_imm_c = false;
 	sig.small_imm_d = false;
 
-	alu.add = {
-    op: V3D_QPU_A_NOP,
-    a: {
-			raddr: 0,
-      unpack: V3D_QPU_UNPACK_NONE
-		},
-    b: {
-			raddr: 0,
-      unpack: V3D_QPU_UNPACK_NONE
-		},
-    waddr: 0,
-    magic_write: false,
-    output_pack: V3D_QPU_PACK_NONE
-	};
+  // Debian 10 buster can't deal with init substructs
+	alu.add.op          = V3D_QPU_A_NOP;
+	alu.add.a.raddr     = 0;
+	alu.add.a.unpack    = V3D_QPU_UNPACK_NONE;
+	alu.add.b.raddr     = 0;
+	alu.add.b.unpack    = V3D_QPU_UNPACK_NONE;
+	alu.add.waddr       = 0;
+	alu.add.magic_write = false;
+	alu.add.output_pack = V3D_QPU_PACK_NONE;
 
-	alu.mul = {
-    op: V3D_QPU_M_NOP,
-    a: {
-			raddr: 0,
-      unpack: V3D_QPU_UNPACK_NONE
-		},
-    b: {
-			raddr: 0,
-      unpack: V3D_QPU_UNPACK_NONE
-		},
-    waddr: 0,
-    magic_write: false,
-    output_pack: V3D_QPU_PACK_NONE
-	};
-
+	alu.mul.op          = V3D_QPU_M_NOP;
+	alu.mul.a.raddr     = 0;
+	alu.mul.a.unpack    = V3D_QPU_UNPACK_NONE;
+	alu.mul.b.raddr     = 0;
+	alu.mul.b.unpack    = V3D_QPU_UNPACK_NONE;
+	alu.mul.waddr       = 0;
+	alu.mul.magic_write = false;
+	alu.mul.output_pack = V3D_QPU_PACK_NONE;
 
   if (!instr_unpack(in_code, this)) {
     warn << "Instr:init: call to instr_unpack failed.";

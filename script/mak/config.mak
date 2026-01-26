@@ -114,6 +114,7 @@ INCLUDE= \
 # Order important! drm MUST be after mesa, because mesa has dependencies on drm
 LIB_EXTERN+= \
  -L $(BASE)/obj/mesa/bin -lmesa \
+ -lstdc++fs \
  -ldrm
 
 V3DLIB=$(OBJDIR)/libv3dlib.a

@@ -21,7 +21,6 @@
 
 int main(int argc, char** argv) {
   set_loglevel(LogLevel::WARNING);
-  Log::set_level(Log::Logger::WARNING);
 
   doctest::Context context;
   context.applyCommandLine(argc, argv);
