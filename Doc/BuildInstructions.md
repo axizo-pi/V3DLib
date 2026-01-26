@@ -9,23 +9,6 @@ Jump straight to the actual [Basic Build Instructions](#basic-build-instructions
 - Indent is two spaces. Not because I want it to (I vastly prefer tabs), but because `github`
   otherwise makes a mess of the source display, especially when tabs and spaces are mixed.
 
-### Unit Testing 
-
-Unit tests are run often and always before a push to the central repository on `github`
-(although I may skip tests on some platforms if the fix is obvious).
-
-All platforms mentioned below run `Raspbian Buster 32-bits`, unless otherwise specified.
-
-The following platforms are used for unit testing:
-
-- Raspberry Pi 4 Model B Rev 1.1, 32 as well as 64 bits
-- Raspberry Pi 3 Model B Rev 1.2
-- Raspberry Pi 2 - **TODO Set up**
-- Raspberry Pi Model B Rev 2
-- Raspberry Pi 4 Model B Rev 1.1,  aarch64 (ARM 64-bits)
-- Debian Buster 64-bits on Intel i7  - with QPU=0, skips the hardware GPU tests (obviously)
-
-
 ### External Libraries
 
 The following external libraries are used:
@@ -65,17 +48,6 @@ You need to run the example programs with sudo in the following situations:
 - On a `Pi 4` when running on Raspbian 64-bits (`aarch64`). This can be avoided by running command:
 
     > sudo setfacl -m u:((your user name here)):rw /dev/dri/card*
-
-
-## Version Numbering
-
-The API is still a moving target and keeps on breaking.
-Officially, I should be changing the major version continually, but with the project still in its infancy
-and having exactly two users (Update 2021027: three!), I consider this overkill.
-I up the minor version instead as a compromise.
-
-I decided to go to `1.0.0` when the TODO list has been completely cleared.
-Don't hold your breath, though, it is still very much a moving target.
 
 
 ## Basic Build Instructions
@@ -137,9 +109,9 @@ Please report this and hopefully a valid explanation can be found for the differ
 The makefile takes two flags:
 
 - **DEBUG=1**  - enables debug information in the builds.
-                 Values 0 (default) or 1
+                 Values 1 (default) or 0
 - **QPU=1**    - includes the code in the build for utilizing the GPU hardware
-                 Values 0 (default) or 1.
+                 Values 1 (default) or 0.
 
 Using `QPU=0` allows you to develop run code on non-Pi platforms.
 Run modes `emulator` and `interpreter` will then still be available.

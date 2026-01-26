@@ -1,3 +1,14 @@
+<style>
+
+pre:has(> code) {
+	background-color: lightgrey;
+	margin-left: 2em;
+	padding: 1em;
+	border: thin solid black;
+}
+
+</style>
+
 # Architecture and Design
 
 This document explains the basics of the QPU architecture and documents some design decisions within `V3DLib` to deal with it.
@@ -39,11 +50,9 @@ Unit tests are run regularly on the following Pi versions:
 | Pi5  | Model B Rev 1.0 | 64        | 12 (bookworm) |
 | Pi4  | Model B Rev 1.1 | 64        | 12 (bookworm) |
 | Zero | W Rev 1.1       | 32        | 12 (bookworm) |
-| Pi4  | Model B         | 32 |
-| Pi4  | Model B         | 64 |
 | Pi3  | Model B Rev 1.2 | 32        | 10 (buster)   |
-| Pi2  |                 |
-| Pi1  | Model B         |
+| Pi2  | Model B Rev 1.1 | 32        | 12 (bookworm) |
+| Pi1  | Model B Rev 2   | 32        | 12 (bookworm) |
 
 The notable omissions in this list:
 
@@ -80,9 +89,7 @@ The added value of `V3DLib` is accelerating non-graphics parts of your Pi projec
 
 In a kernel, when loading values in a register in a manner that would be considered intuitive for a programmer:
 
-```c++
-  Int a = 2;
-```
+    Int a = 2;
 
 ...you end up with a 16-vector containing the same values:
 
@@ -117,12 +124,10 @@ For `v3d`, you can use either 1 or 8 QPU's. In the latter case, `me()` would ret
 The previous functions are useful to differentiate pointers to memory addresses.
 The following is a method to load in consective values from shared main memory:
 
-```c++
-void kernel(Ptr<Int> x) {
-  x = x + index();
-  a = *x;
-}
-```
+    void kernel(Ptr<Int> x) {
+      x = x + index();
+      a = *x;
+    }
 
 *Keep in mind that Int and Float values are 4 bytes. Pointer arithmetic takes this into account.*
 
@@ -133,12 +138,10 @@ On the assignment to `a`, these consecutive values will be loaded into the vecto
 
 When using multiple QPUs, you could load consecutive blocks of values into separate QPUs int the following way:
 
-```c++
-void kernel(Ptr<Float> x) {
-  x = x + index() + (me() << 4);
-  a = *x;
-}
-```
+    void kernel(Ptr<Float> x) {
+      x = x + index() + (me() << 4);
+      a = *x;
+    }
 
 
 ## Automatic Uniform Pointer Initialization
@@ -206,30 +209,27 @@ The DMA load is first configured, then you start it and wait for it to complete.
 
 To load 16 consecutive 16-byte vectors from shared main memory to (byte) address 0 in the VPM:
 
-```c++
-dmaSetReadPitch(64);               // 64: size of one 16-byte vector
-dmaSetupRead(HORIZ, 16, 0);        // 16: number of vectors to load; 0: target address in VPM
-
-dmaStartRead(p);                   // p:  source pointer in shared memory
-dmaWaitRead();                     // Wait until load complete
-```
+    dmaSetReadPitch(64);               // 64: size of one 16-byte vector
+    dmaSetupRead(HORIZ, 16, 0);        // 16: number of vectors to load; 0: target address in VPM
+    
+    dmaStartRead(p);                   // p:  source pointer in shared memory
+    dmaWaitRead();                     // Wait until load complete
 
 C++ pseudo code:
-```c++
-byte *p         = <assigned value>;
-byte *vpm       = 0;
-int pitch       = 64;
-int num_vectors = 16;
 
-for (int i = 0; i < num_vectors; i++) {
-  for (int j = 0; j < pitch; j++) {
-    *(vpm + j) = *(p + j);
-  }
-  vpm += pitch;
-  p   += pitch;
-}
+     byte *p         = <assigned value>;
+     byte *vpm       = 0;
+     int pitch       = 64;
+     int num_vectors = 16;
 
-```
+     for (int i = 0; i < num_vectors; i++) {
+       for (int j = 0; j < pitch; j++) {
+         *(vpm + j) = *(p + j);
+       }
+       vpm += pitch;
+       p   += pitch;
+     }
+
 
 
 ### Store example in source language (adapted from example `DMA`)
@@ -243,43 +243,39 @@ the last parameter to `dmaSetupWrite()` (see example program `DMA`).
 To move **the first 3 values** of 16 consecutive 16-byte vectors
 from (byte) address 256 in VPM to shared main memory:
 
-```c++
-dmaSetWriteStride(13*4);           // Skip 13 values of vector
-dmaSetupWrite(HORIZ, 16, 256, 3);  // 16:  number of vectors to handle;
-                                   // 256: start address for read;
-                                   // 3:   number of consecutive values to transfer
-dmaStartWrite(p);                  // p:   target address in shared main memory
-dmaWaitWrite();                    // Wait until store complete
-```
+    dmaSetWriteStride(13*4);           // Skip 13 values of vector
+    dmaSetupWrite(HORIZ, 16, 256, 3);  // 16:  number of vectors to handle;
+                                       // 256: start address for read;
+                                       // 3:   number of consecutive values to transfer
+    dmaStartWrite(p);                  // p:   target address in shared main memory
+    dmaWaitWrite();                    // Wait until store complete
 
 Note the discrepancy in parameter types:
 - in `dmaSetWriteStride()`, the parameter is in **bytes**
 - in `dmaSetupWrite()`, the final parameter is in **words**, i.e. the number of 4-byte elements
 
-This is a source language thing which could be changed, but I don't want to go there.
+This is a source language thing which could be changed, but I do not want to go there.
 I just want to understand it.
 
 C++ pseudo code:
-```c++
-// Assume that word size is 4 bytes
 
-byte *p         = <assigned value>;
-byte *vpm       = 256;
-int num_elems   = 3;
-int stride      = 13*4;  // i.e. 16 - num_bytes
-int num_vectors = 16;
-
-for (int i = 0; i < num_vectors; i++) {
-  for (int j = 0; j < num_elems; j++) {
-    *((word *) p) = *((word *) vpm);
-    vpm += sizeof(word);
-    p   += sizeof(word);
-  }
-  vpm += stride;
-  p   += stride;
-}
-
-```
+    // Assume that word size is 4 bytes
+    
+    byte *p         = <assigned value>;
+    byte *vpm       = 256;
+    int num_elems   = 3;
+    int stride      = 13*4;  // i.e. 16 - num_bytes
+    int num_vectors = 16;
+    
+    for (int i = 0; i < num_vectors; i++) {
+      for (int j = 0; j < num_elems; j++) {
+        *((word *) p) = *((word *) vpm);
+        vpm += sizeof(word);
+        p   += sizeof(word);
+      }
+      vpm += stride;
+      p   += stride;
+    }
 
 
 ## VPM Usage
@@ -297,53 +293,47 @@ The example `DMA` combines the load and store in an artful manner.
 
 Load 16 consecutive values from VPM into a QPU register:
 
-```c++
-  Int a;                             // Variable which is assigned to a QPU register on compile
-  vpmSetupRead(HORIZ, 16, 0);        // 16: number of vectors to load; 0: start index of vectors
-
-  for (int i = 0; i < 16; i++) {     // Read each vector
-   a = vpmGetInt();
-   // Do some operation on value here
-  }
-```
+    Int a;                             // Variable which is assigned to a QPU register on compile
+    vpmSetupRead(HORIZ, 16, 0);        // 16: number of vectors to load; 0: start index of vectors
+    
+    for (int i = 0; i < 16; i++) {     // Read each vector
+      a = vpmGetInt();
+      // Do some operation on value here
+    }
 
 C++ pseudo code:
-```c++
-vector *vpm_in  = 0;   // vector: 64-byte data structure; 0: starting index of vectors
-int num_vectors = 16;
 
-for (int i = 0; i < num_vectors; i++) {
-  a = *vpm_in;
-  vpm_in++;
-  // Do some operation on value here
-}
-```
+    vector *vpm_in  = 0;   // vector: 64-byte data structure; 0: starting index of vectors
+    int num_vectors = 16;
+    
+    for (int i = 0; i < num_vectors; i++) {
+      a = *vpm_in;
+      vpm_in++;
+      // Do some operation on value here
+    }
 
 
 ### Example of saving values from QPU:
-```c++
-  vpmSetupWrite(HORIZ, 16);          // 16: vector index to store at
 
-  Int a = 0;
-  for (int i = 0; i < 16; i++) {     // write back values of a
-    vpmPut(a);
-    a++;
-  }
-```
+    vpmSetupWrite(HORIZ, 16);          // 16: vector index to store at
+    
+    Int a = 0;
+    for (int i = 0; i < 16; i++) {     // write back values of a
+      vpmPut(a);
+      a++;
+    }
 
 C++ pseudo code:
-```c++
-vector *vpm_out = 16;                // vector: 64-byte data structure; 16: starting index of vectors
-int num_vectors = 16;
 
-Int a = 0;
-for (int i = 0; i < num_vectors; i++) {
-  *vpm_out = a;
-  vpm_out++;
-  a += 1;
-}
-```
-
+    vector *vpm_out = 16;                // vector: 64-byte data structure; 16: starting index of vectors
+    int num_vectors = 16;
+    
+    Int a = 0;
+    for (int i = 0; i < num_vectors; i++) {
+      *vpm_out = a;
+      vpm_out++;
+      a += 1;
+    }
 
 -----
 
@@ -354,12 +344,13 @@ for (int i = 0; i < num_vectors; i++) {
 Source: qpu_instr.h, line 74, enum v3d_qpu_uf:
 
 How I interpret this:
-  - AND: if all bits set
-  - NOR: if no bits set
-  - N  : field not set
-  - Z  : Field zero
-  - N  : field negative set
-  - C  : Field negative cleared
+
+- AND: if all bits set
+- NOR: if no bits set
+- N  : field not set
+- Z  : Field zero
+- N  : field negative set
+- C  : Field negative cleared
 
 What the bits are is not clear at this point.
 These assumptions are probably wrong, but I need a starting point.
@@ -367,9 +358,10 @@ These assumptions are probably wrong, but I need a starting point.
 **TODO:** make tests to verify these assumptions (how? No clue right now)
 
 So:
-  - vc4 `if all(nc)...` -> ANDC
-  - vc4 `nc` - negative clear, ie. >= 0
-  - vc4 `ns` - negative set,   ie.  < 0
+
+- vc4 `if all(nc)...` -> ANDC
+- vc4 `nc` - negative clear, ie. >= 0
+- vc4 `ns` - negative set,   ie.  < 0
 
 
 -----
@@ -387,21 +379,17 @@ In fact, the added offset is completely disregarded.
 This came to light in a previous version of the `DSL` unit test.
 The following was done before a write (kernel source code):
 
-```
-  outIndex = index();
-  ...
-  result[outIndex] = res;
-  outIndex = outIndex + 16;
-```
+    outIndex = index();
+    ...
+    result[outIndex] = res;
+    outIndex = outIndex + 16;
 
 I would expect DMA to write to wrong locations, **but it doesn't**.
 The DMA write ignores this offset and writes to the correct location, i.e. just like:
 
-```
-  ...
-  *result = res;
-  ...
-```
+    ...
+    *result = res;
+    ...
 
 My working hypothesis is that only the pointer value for vector index 0 is used to
 initialize DMA.
@@ -415,33 +403,31 @@ The INIT-block therefore needs to be added first.
 The pointer offset is only effective for TMU accesses.
 When VPM/DMA is used, the index number is compensated for automatically, hence no need for it.
 
-```
-void SourceTranslate::add_init(Seq<Instr> &code) {
-	using namespace V3DLib::Target::instr;
+    void SourceTranslate::add_init(Seq<Instr> &code) {
+    	using namespace V3DLib::Target::instr;
 
-	int insert_index = get_init_begin_marker(code);
+    	int insert_index = get_init_begin_marker(code);
 
-	Seq<Instr> ret;
+    	Seq<Instr> ret;
 
-/*
-    // Previous version, adding an offset for multiple QPUs
-    // This was silly idea and has been removed. Kept here for reference
-    // offset = 4 * (vector_id + 16 * qpu_num);
-    ret << shl(ACC1, rf(RSV_QPU_ID), 4) // Avoid ACC0 here, it's used for getting QPU_ID and ELEM_ID (next stmt)
-        << mov(ACC0, ELEM_ID)
-        << add(ACC1, ACC1, ACC0)
-        << shl(ACC0, ACC1, 2)           // offset now in ACC0
-        << add_uniform_pointer_offset(code);
-*/
+    /*
+      // Previous version, adding an offset for multiple QPUs
+      // This was silly idea and has been removed. Kept here for reference
+      // offset = 4 * (vector_id + 16 * qpu_num);
+      ret << shl(ACC1, rf(RSV_QPU_ID), 4) // Avoid ACC0 here, it's used for getting QPU_ID and ELEM_ID (next stmt)
+          << mov(ACC0, ELEM_ID)
+          << add(ACC1, ACC1, ACC0)
+          << shl(ACC0, ACC1, 2)           // offset now in ACC0
+          << add_uniform_pointer_offset(code);
+    */
 
-  // offset = 4 * vector_id;
-  ret << mov(ACC0, ELEM_ID)
-      << shl(ACC0, ACC0, 2)             // offset now in ACC0
-      << add_uniform_pointer_offset(code);
-		
-
-	code.insert(insert_index + 1, ret);  // Insert init code after the INIT_BEGIN marker
-}
+      // offset = 4 * vector_id;
+      ret << mov(ACC0, ELEM_ID)
+          << shl(ACC0, ACC0, 2)             // offset now in ACC0
+          << add_uniform_pointer_offset(code);
+    
+    	 code.insert(insert_index + 1, ret);  // Insert init code after the INIT_BEGIN marker
+    }
 
 -----
 
