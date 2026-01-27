@@ -4,6 +4,29 @@
 namespace {
 
 /**
+ * Update speed and position.
+ *
+ * Param references important here!
+ */
+void kernel_update(
+	Float &x    , Float &y    , Float &z,
+	Float &v_x  , Float &v_y  , Float &v_z,
+	Float &acc_x, Float &acc_y, Float &acc_z,
+	Float &delta_t
+) {
+	comment("Update speed and position");
+
+	v_x = v_x + acc_x * delta_t;
+	v_y = v_y + acc_y * delta_t;
+	v_z = v_z + acc_z * delta_t;
+
+	x = x + v_x * delta_t;
+	y = y + v_y * delta_t;
+	z = z + v_z * delta_t;
+}
+
+
+/**
  * Pre: num_entities multiple of 16
  *
  * Using ref's doesn't increase performance.
@@ -64,9 +87,6 @@ void kernel_calc_acc(
 			Float dz1 = nz1 * nz1;
 
 			Float d1 = dx1 + dy1 + dz1;  comment("Calc distance denominator");
-			//d1 = d1 * 1e12f;
-			//d1 = 3.6e12f;
-			
 
 			// Set the force/acceleration to zero for current entity,
 			// calculate the rest.
@@ -90,7 +110,6 @@ void kernel_calc_acc(
 			nx1 *= acceleration; 
 			ny1 *= acceleration; 
 			nz1 *= acceleration; 
-			
 
 			// Add to total
 			x0_acc += nx1;
@@ -104,17 +123,27 @@ void kernel_calc_acc(
 			pmass.inc();
 		End
 
+		//
 		// Sum up and return the acceleration
+		//
+		// I tried updating speed and position for entity 0
+		// here, the result is completely distorted.
+		//
+		// This is unfortunate; I was hoping to make using multiple QPU's
+		// easier.
+		// 
+		// An option might be to use double buffering for speed and position.
+		//
 		rotate_sum(x0_acc, x0_acc);
-		Float::Ptr pacc_x = out_acc_x + ptr_offset; // - index() + cur_index;
+		Float::Ptr pacc_x = out_acc_x + ptr_offset;
 		*pacc_x = x0_acc;
 
 		rotate_sum(y0_acc, y0_acc);
-		Float::Ptr pacc_y = out_acc_y + ptr_offset; //- index() + cur_index;
+		Float::Ptr pacc_y = out_acc_y + ptr_offset;
 		*pacc_y = y0_acc;
 
 		rotate_sum(z0_acc, z0_acc);
-		Float::Ptr pacc_z = out_acc_z + ptr_offset; //- index() + cur_index;
+		Float::Ptr pacc_z = out_acc_z + ptr_offset;
 		*pacc_z = z0_acc;
 	End
 }
@@ -126,64 +155,49 @@ void kernel_calc_acc(
  * Using ref's doesn't increase performance.
  */
 void kernel_step(
-	Float::Ptr &x, Float::Ptr &y, Float::Ptr &z,
-	Float::Ptr &in_v_x, Float::Ptr &in_v_y, Float::Ptr &in_v_z,
- 	Float::Ptr &acc_x, Float::Ptr &acc_y, Float::Ptr &acc_z,
+	Float::Ptr &p_x    , Float::Ptr &p_y    , Float::Ptr &p_z,
+	Float::Ptr &p_v_x  , Float::Ptr &p_v_y  , Float::Ptr &p_v_z,
+ 	Float::Ptr &p_acc_x, Float::Ptr &p_acc_y, Float::Ptr &p_acc_z,
 	Int &num_entities
 ) {
 	Float delta_t = (float) dt; comment("Start kernel_step");
 
-	//
-	// Update speed
-	//
 	header("Start kernel_step");
 
-	Float::Ptr v_x = in_v_x;
-	Float::Ptr v_y = in_v_y;
-	Float::Ptr v_z = in_v_z;
-
 	For (Int cur_block = 0, cur_block < (num_entities >> 4), cur_block++)
-		Float tmp_x = *v_x + *acc_x * delta_t;
-		*v_x = tmp_x;
+		Float x     = *p_x;
+		Float y     = *p_y;
+		Float z     = *p_z;
+		Float v_x   = *p_v_x;
+		Float v_y   = *p_v_y;
+		Float v_z   = *p_v_z;
+		Float acc_x = *p_acc_x;
+		Float acc_y = *p_acc_y;
+		Float acc_z = *p_acc_z;
 
-		Float tmp_y = *v_y + *acc_y * delta_t;
-		*v_y = tmp_y;
+		kernel_update(
+			x    , y    , z,
+			v_x  , v_y  , v_z,
+			acc_x, acc_y, acc_z,
+			delta_t);
 
-		Float tmp_z = *v_z + *acc_z * delta_t;
-		*v_z = tmp_z;
+		*p_v_x = v_x;
+		*p_v_y = v_y;
+		*p_v_z = v_z;
 
-		v_x.inc();  comment("kernel_step do pointer increments");
-		v_y.inc();
-		v_z.inc();
-		acc_x.inc();
-		acc_y.inc();
-		acc_z.inc();
-	End
+		*p_x = x;
+		*p_y = y;
+		*p_z = z;
 
-
-	//
-	// Update position
-	//
-	v_x = in_v_x;
-	v_y = in_v_y;
-	v_z = in_v_z;
-
-	For (Int cur_block = 0, cur_block < (num_entities >> 4), cur_block++)
-		Float tmp_x = *x + *v_x * delta_t;
-		*x = tmp_x;
-
-		Float tmp_y = *y + *v_y * delta_t;
-		*y = tmp_y;
-
-		Float tmp_z = *z + *v_z * delta_t;
-		*z = tmp_z;
-
-		x.inc();
-		y.inc();
-		z.inc();
-		v_x.inc();
-		v_y.inc();
-		v_z.inc();
+		p_x.inc();      comment("kernel_step do pointer increments");
+		p_y.inc();
+		p_z.inc();
+		p_v_x.inc();
+		p_v_y.inc();
+		p_v_z.inc();
+		p_acc_x.inc();
+		p_acc_y.inc();
+		p_acc_z.inc();
 	End
 }
 
