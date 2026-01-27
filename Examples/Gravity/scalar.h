@@ -17,8 +17,19 @@ struct Vector3 {
   Vector3(double e0, double e1, double e2);
   ~Vector3() {}
 
+	double x() const { return e[0]; }
+	double y() const { return e[1]; }
+	double z() const { return e[2]; }
+	double length() const;
+
+	Vector3 operator*(double val) const;
+
 	std::string dump() const;
+	static Vector3 random();
 };
+
+
+Vector3 operator*(double lhs, Vector3 const &rhs);
 
 
 struct OrbitalEntity {
@@ -26,6 +37,7 @@ struct OrbitalEntity {
 
   OrbitalEntity() {}
   OrbitalEntity(double e0, double e1, double e2, double e3, double e4, double e5, double e6);
+  OrbitalEntity(Vector3 const &pos, Vector3 const &velocity, double mass);
   ~OrbitalEntity() {}
 
 	std::string dump() const;

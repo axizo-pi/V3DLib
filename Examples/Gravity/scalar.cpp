@@ -1,6 +1,9 @@
 #include "scalar.h"
-#include "Support/basics.h"
+#include "tools.h"
 #include <cmath>
+#include "Support/basics.h"
+
+using namespace std;
 
 
 /////////////////////////////////////////////////////////////////
@@ -8,9 +11,9 @@
 /////////////////////////////////////////////////////////////////
 
 Vector3::Vector3(double e0, double e1, double e2) {
-  this->e[0] = e0;
-  this->e[1] = e1;
-  this->e[2] = e2;
+  e[0] = e0;
+  e[1] = e1;
+  e[2] = e2;
 }
 
 
@@ -22,18 +25,69 @@ std::string Vector3::dump() const {
 }
 
 
+double Vector3::length() const {
+	double val = x()*x() + y()*y() + z()*z();
+	return sqrt(val);
+}
+
+
+Vector3 Vector3::operator*(double val) const {
+	auto  ret = *this;
+
+	ret.e[0] *= val;
+	ret.e[1] *= val;
+	ret.e[2] *= val;
+
+	return ret;
+}
+
+
+Vector3 operator*(double lhs, Vector3 const &rhs) {
+	return rhs * lhs;
+}
+
+
+/**
+ * Return a unit vector with random coordinates
+ *
+ * The coordinates follow a Gaussian distribution.
+ */
+Vector3 Vector3::random() {
+	Vector3 ret(frand(), frand(), frand());
+	//Log::warn << "Vector3::random() ret: " << ret.dump();
+
+	auto length = ret.length();
+	ret.e[0] /= length;
+	ret.e[1] /= length;
+	ret.e[2] /= length;
+
+	return ret;
+}
+
+
 /////////////////////////////////////////////////////////////////
 // Class OrbitalEntity
 /////////////////////////////////////////////////////////////////
 
 OrbitalEntity::OrbitalEntity(double e0, double e1, double e2, double e3, double e4, double e5, double e6) {
-  this->e[0] = e0;
-  this->e[1] = e1;
-  this->e[2] = e2;
-  this->e[3] = e3;
-  this->e[4] = e4;
-  this->e[5] = e5;
-  this->e[6] = e6;
+  e[0] = e0;
+  e[1] = e1;
+  e[2] = e2;
+  e[3] = e3;
+  e[4] = e4;
+  e[5] = e5;
+  e[6] = e6;
+}
+
+
+OrbitalEntity::OrbitalEntity(Vector3 const &pos, Vector3 const &velocity, double mass) {
+  e[0] = pos.x();
+  e[1] = pos.y();
+  e[2] = pos.z();
+  e[3] = velocity.x();
+  e[4] = velocity.y();
+  e[5] = velocity.z();
+  e[6] = mass;
 }
 
 
@@ -57,22 +111,33 @@ std::vector<OrbitalEntity> orbital_entities(NUM);
 void init_orbital_entities() {
 	auto &o = orbital_entities;
 
-	o[0] = { 0.0,0.0,0.0,        0.0,0.0,0.0,      1.989e30 };   // a star similar to the sun
+	o[0] = { 0.0,0.0,0.0,        0.0,0.0,0.0,      1.989e30   };  // a star similar to the sun
 	o[1] = { 57.909e9,0.0,0.0,   0.0,47.36e3,0.0,  0.33011e24 }; // a planet similar to mercury
-	o[2] = { 108.209e9,0.0,0.0,  0.0,35.02e3,0.0,  4.8675e24 };  // a planet similar to venus
-	o[3] = { 149.596e9,0.0,0.0,  0.0,29.78e3,0.0,  5.9724e24 };  // a planet similar to earth
+	o[2] = { 108.209e9,0.0,0.0,  0.0,35.02e3,0.0,  4.8675e24  }; // a planet similar to venus
+	o[3] = { 149.596e9,0.0,0.0,  0.0,29.78e3,0.0,  5.9724e24  }; // a planet similar to earth
 	o[4] = { 227.923e9,0.0,0.0,  0.0,24.07e3,0.0,  0.64171e24 }; // a planet similar to mars
 	o[5] = { 778.570e9,0.0,0.0,  0.0,13e3,0.0,     1898.19e24 }; // a planet similar to jupiter
-	o[6] = { 1433.529e9,0.0,0.0, 0.0,9.68e3,0.0,   568.34e24 };  // a planet similar to saturn
-	o[7] = { 2872.463e9,0.0,0.0, 0.0,6.80e3,0.0,   86.813e24 };  // a planet similar to uranus
+	o[6] = { 1433.529e9,0.0,0.0, 0.0,9.68e3,0.0,   568.34e24  }; // a planet similar to saturn
+	o[7] = { 2872.463e9,0.0,0.0, 0.0,6.80e3,0.0,   86.813e24  }; // a planet similar to uranus
 	o[8] = { 4495.060e9,0.0,0.0, 0.0,5.43e3,0.0,   102.413e24 }; // a planet similar to neptune
 
 	assert(N_ASTEROIDS >= 0);
+	double const Asteroid_Dist  = 8e12;
+	double const Asteroid_Speed = 3.5e3;
+	double const Asteroid_Mass  = 1e22;
+
 	for (int i = 0; i < N_ASTEROIDS; ++i) {
+/*		
 		o[N_PLANETS + i] = {
-			8e12 + 9e10*i, 0, 0,
-			0, 3.5e3, 0,
-			1e22
+			Asteroid_Dist*Vector3::random(),
+			Asteroid_Speed*Vector3::random(),
+			Asteroid_Mass
+		};
+*/		
+		o[N_PLANETS + i] = {
+			Asteroid_Dist + 9e10*i, 0, 0,
+			0, Asteroid_Speed, 0,
+			Asteroid_Mass
 		};
 	}
 }

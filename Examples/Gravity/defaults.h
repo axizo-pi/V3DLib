@@ -1,27 +1,30 @@
 #ifndef _V3DLIB_GRAVITY_DEFAULTS_H
 #define _V3DLIB_GRAVITY_DEFAULTS_H
-//#include <random>
 
-/*
-// Source: https://stackoverflow.com/a/33389729/1223531
-std::default_random_engine generator;
-std::uniform_real_distribution<double> distribution(-1,1); //doubles from -1 to 1
-double rand_1() { return distribution(generator); }
-*/
-
-
-/*
-Float min/max = +/-3.40282e+38
-
-F = BIG_G*m1*m2/r^2  = (m^3⋅kg^−1⋅s^−2)*kg^2/m^2 = kg*m/s^2
-		= (m^3⋅kg^−1⋅s^−2)*Pg^2/Gm^2 * 1e24/1e18
-*/
+/**
+ * 27-1-26: Scalar vs. single QPU
+ * - 96 entities for 25 decades:
+ *   WARNING: Scalar timer:   60.621603s
+ *   WARNING: QPU timer   :   28.327675s - output different due to rand()
+ *
+ * - 160 entities for 25 decades:
+ *   WARNING: Scalar timer:  167.632421s
+ *   WARNING: QPU timer   :   71.769218s
+ *
+ * - 288 entities for 25 decades:
+ *   WARNING: Scalar timer: 548.515168s
+ *   WARNING: QPU timer   : 217.725386s
+ *
+ * - 1048 entities for 25 decades:
+ *	 WARNING: Scalar timer: 7360.986145s
+ *	 WARNING: QPU timer   :  311.831073s  - No output, error?! Timeout I presume
+ */
 
 float const IMG_CONVERSION_FACTOR = 2.5e13f;
 int const BATCH_STEPS = 150;
 
 const int N_PLANETS   = 9;                       // Also includes the sun, pluto missing
-const int N_ASTEROIDS = 23;
+const int N_ASTEROIDS = 64 + 23;
 const int NUM         = N_PLANETS + N_ASTEROIDS; // Total number of gravitational entities
 
 double const dt    = 86400;
