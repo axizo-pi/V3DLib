@@ -86,6 +86,9 @@ void model::back_prop(vector const &input, vector const &desired) {
 
 	auto w1_adj = input.outer(d1);        // gradient, outer product; result transposed
  	warn << "w1_adj:\n" << w1_adj.dump();
+	auto tmp2 = w1_adj.transpose();
+	w1_adj = tmp2;
+ 	warn << "w1_adj transposed:\n" << w1_adj.dump(true);
 
 	//w1 -= alpha*w1_adj;
 	auto tmp = alpha*w1_adj;

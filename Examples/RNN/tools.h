@@ -5,6 +5,9 @@
 #include "Support/Settings.h"
 
 float frand();
+unsigned rrand();
+float frrand();
+
 std::string vector_dump(
 	V3DLib::Float::Array const &src,
 	int  size,

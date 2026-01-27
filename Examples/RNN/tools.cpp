@@ -53,3 +53,38 @@ std::string vector_dump(Float::Array const &src, int size, int start_index, bool
 }
 
 Settings &settings() { return _settings; }
+
+
+namespace {
+
+unsigned s_seed = 0;
+unsigned const s_m = 6012119;
+
+/**
+ * Sample random numbers using a linear congruential generator.
+ *
+ * The goal is have exactly the same random number generator on ruby and C++.
+ * Checked for the first million values.
+ *
+ * Source: https://predictivesciencelab.github.io/data-analytics-se/lecture07/hands-on-07.1.html
+ */
+unsigned lcg(unsigned x) {
+  unsigned const a = 123456;
+  unsigned const b = 978564;
+
+  return (a * x + b) % s_m;
+}
+
+} // anon namespace
+
+
+unsigned rrand() {
+	s_seed = lcg(s_seed);
+	return s_seed;
+}
+
+
+float frrand() {
+	unsigned val = rrand();
+	return -1.0f + 2.0f*((float) val)/((float) s_m);
+}

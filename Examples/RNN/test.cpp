@@ -112,6 +112,13 @@ void test_back_propagation(V3DLib::BaseKernel &op) {
 	// ####
 	auto w1_adj = input.outer(d1);        // gradient, outer product; result transposed
  	warn << "w1_adj:\n" << w1_adj.dump(true);
+	auto tmp2 = w1_adj.transpose();
+	w1_adj = tmp2;
+ 	warn << "w1_adj transposed:\n" << w1_adj.dump(true);
+
+	matrix w1(32, 16);
+	w1.set(1);
+ 	warn << "w1:\n" << w1.dump();
 
 	float alpha = 1;
 	auto tmp = alpha*w1_adj;

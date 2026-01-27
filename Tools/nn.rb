@@ -8,6 +8,39 @@
 require 'matrix'
 
 ##################################################################
+# Utils 
+##################################################################
+
+$seed = 0
+$s_m = 6012119
+
+#
+# Sample random numbers using a linear congruential generator.
+#
+# The goal is have exactly the same random number generator on ruby and C++.
+# Checked for the first million values.
+#
+# Source: https://predictivesciencelab.github.io/data-analytics-se/lecture07/hands-on-07.1.html
+#
+def lcg x
+  a = 123456
+  b = 978564
+
+	((((a * x) % 0x100000000) + b) % 0x100000000) % ($s_m)
+end		
+
+def rrand
+	$seed = lcg($seed)
+end
+
+
+def frrand
+	val = rrand
+	return (-1.0 + 2.0*val/($s_m))
+end
+
+
+##################################################################
 # Test methods
 ##################################################################
 
@@ -403,7 +436,17 @@ end
 nn = NeuralNetwork.new
 puts dump_matrix_header nn.w2, "nn.w2" 
 
-if false
+# To compare pseudo-random values with C++
+#if true
+#	(0...1000).step(1) do |n|
+#		puts frrand.truncate(6)
+#		#puts rrand
+#	end
+#
+#	return
+#end
+
+if true
 	test_back_prop
 	return
 end
