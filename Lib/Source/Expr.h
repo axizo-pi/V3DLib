@@ -108,6 +108,7 @@ Expr::Ptr mkIntLit(int lit);
 Expr::Ptr mkVar(Var var);
 Expr::Ptr mkApply(Expr::Ptr lhs, Op const &op, Expr::Ptr rhs);
 Expr::Ptr mkApply(Expr::Ptr rhs, Op const &op);
+Expr::Ptr mkApply(Op const &op);
 Expr::Ptr mkDeref(Expr::Ptr ptr);
 
 }  // namespace V3DLib

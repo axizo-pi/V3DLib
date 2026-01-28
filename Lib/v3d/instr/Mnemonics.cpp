@@ -387,12 +387,25 @@ Mnemonic fmov(Location const &dst, Source const &src) {
 }
 
 
-Mnemonic barrierid(v3d_qpu_waddr waddr) {
+/**
+ * Likely, this instruction works only with V3D_QPU_A_BARRIERID.
+ *
+ * For now, input parameters are kept flexible.
+ */
+Mnemonic barrierid(v3d_qpu_waddr waddr, bool magic_write) {
   Mnemonic instr;
 
+	if (waddr != V3D_QPU_WADDR_SYNCB || !magic_write) {
+		warn << "barrierid() other waddr passed in than V3D_QPU_WADDR_SYNCB";
+	}
+
   instr.alu.add.op    = V3D_QPU_A_BARRIERID;
-  set_muxes_add(instr.alu, V3D_QPU_MUX_R4, V3D_QPU_MUX_R2);
+
+	// Add a/b ignored for barrierid
+  //set_muxes_add(instr.alu, V3D_QPU_MUX_R4, V3D_QPU_MUX_R2);
+
   instr.alu.add.waddr = waddr;
+  instr.alu.add.magic_write = magic_write;
 
   return instr;
 }

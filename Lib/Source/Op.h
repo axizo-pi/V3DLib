@@ -38,6 +38,7 @@ enum OpId {
   // v3d only
   TIDX,
   EIDX,
+  BARRIER,
   FFLOOR,
 
 	_DUMMY  // Indicates not an instruction 
@@ -58,6 +59,7 @@ struct Op {
   Op(OpId in_op, BaseType in_type);
 
   bool isUnary() const;
+  bool noParams() const;
 
   std::string disp(std::string const &lhs, std::string const &rhs) const;
   std::string dump() const;

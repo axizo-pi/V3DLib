@@ -213,6 +213,19 @@ Expr::Ptr mkApply(Expr::Ptr lhs, Op const &op) {
 }
 
 
+/**
+ * No params op version
+ */
+Expr::Ptr mkApply(Op const &op) {
+  if (!op.noParams()) {
+    std::string msg;
+    msg << "mkApply(): " << op.dump() << " expected to have no input parameters";
+    assertq(false, msg);
+  }
+  return std::make_shared<Expr>(mkIntLit(0), op, mkIntLit(0));
+}
+
+
 // ============================================================================
 // Class IntExpr                   
 // ============================================================================

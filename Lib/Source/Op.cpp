@@ -8,8 +8,9 @@ namespace V3DLib {
 Op::Op(Op const &rhs) : op(rhs.op), type(rhs.type), m_item(OpItems::get(rhs.op)) {}
 Op::Op(OpId in_op, BaseType in_type) : op(in_op), type(in_type), m_item(OpItems::get(in_op)) {}
 
-bool        Op::isUnary() const { return (m_item.num_params() == 1); }
-std::string Op::dump()    const { return m_item.dump(); }
+bool        Op::isUnary()  const { return (m_item.num_params() == 1); }
+bool        Op::noParams() const { return (m_item.num_params() == 0); }
+std::string Op::dump()     const { return m_item.dump(); }
 Enum        Op::opcode()  const { return OpItems::opcode(*this); }
 
 std::string Op::disp(std::string const &lhs, std::string const &rhs) const { return m_item.disp(lhs, rhs); }

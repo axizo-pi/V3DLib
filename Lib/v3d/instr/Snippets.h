@@ -13,6 +13,7 @@ Instructions set_qpu_num(uint8_t num_qpus, uint8_t reg_qpu_num);
 Instructions get_num_qpus(Register const &reg, uint8_t num_qpus);
 Instructions enable_tmu_read(Instr const *last_slot = nullptr);
 Instructions sync_tmu();
+Instructions barrier();
 Instructions end_program();
 
 }  // instr

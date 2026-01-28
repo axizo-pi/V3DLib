@@ -1,0 +1,130 @@
+
+	> cat /proc/interrupts
+
+Relevant parts in output:
+           CPU0       CPU1       CPU2       CPU3      
+
+167:    7774058          0          0          0     GICv2 281 Level     v3d_core0
+168:     657856          0          0          0     GICv2 282 Level     v3d_hub
+169:          0          0          0          0     GICv2 104 Level     pispbe
+
+174:          0          0          0          0  interrupt-controller@7d510600   7 Level     vc4 hdmi hpd connected
+175:          0          0          0          0  interrupt-controller@7d510600   8 Level     vc4 hdmi hpd disconnected
+176:          0          0          0          0  interrupt-controller@7d510600   2 Level     vc4 hdmi cec rx
+177:          0          0          0          0  interrupt-controller@7d510600   1 Level     vc4 hdmi cec tx
+178:          0          0          0          0  interrupt-controller@7d510600  14 Level     vc4 hdmi hpd connected
+179:          0          0          0          0  interrupt-controller@7d510600  15 Level     vc4 hdmi hpd disconnected
+180:          0          0          0          0  interrupt-controller@7d510600  12 Level     vc4 hdmi cec rx
+181:          0          0          0          0  interrupt-controller@7d510600  11 Level     vc4 hdmi cec tx
+
+184:          0          0          0          0     GICv2 133 Level     vc4 crtc
+185:          0          0          0          0     GICv2 142 Level     vc4 crtc
+
+
+
+==================================
+Source: https://embetronicx.com/tutorials/linux/device-drivers/linux-device-driver-tutorial-part-13-interrupt-example-program-in-linux-kernel/
+Totally crappy website, 3.2GB and crammed with adverts
+
+---------------------------------
+
+Interrupt Example Program in Linux Kernel
+Before writing any interrupt program, you should keep the following points in mind.
+
+- Interrupt handlers can not enter sleep, so to avoid calls to some functions which has sleep.
+- When the interrupt handler has part of the code to enter the critical section, use spinlocks lock, rather than mutexes. Because if it can’t take mutex it will go to sleep until it takes the mute.
+- Interrupt handlers can not exchange data with the userspace.
+- The interrupt handlers must be executed as soon as possible. To ensure this, it is best to split the implementation into two parts, the top half and the bottom half. The top half of the handler will get the job done as soon as possible and then work late on the bottom half, which can be done with softirq or tasklet or workqueue.
+- Interrupt handlers can not be called repeatedly. When a handler is already executing, its corresponding IRQ must be disabled until the handler is done.
+- Interrupt handlers can be interrupted by higher authority handlers. If you want to avoid being interrupted by a highly qualified handler, you can mark the interrupt handler as a fast handler. However, if too many are marked as fast handlers, the performance of the system will be degraded because the interrupt latency will be longer.
+
+##  Functions Related to Interrupt
+Before programming, we should know the basic functions which are useful for interrupts. This table explains the usage of all functions.
+
+Function	Description
+
+request_irq ( unsigned int irq, irq_handler_t handler, unsigned long flags, const char *name, void *dev_id)
+
+Register an IRQ, the parameters are as follows:
+
+irq: IRQ number to allocate.
+
+handler: This is Interrupt handler function.This function will be invoked whenever the operating system receives the interrupt.The data type of return is irq_handler_t, if its return value is IRQ_HANDLED, it indicates that the processing is completed successfully, but if the return value is IRQ_NONE, the processing fails.
+
+flags: can be either zero or a bit mask of one or more of the flags defined in linux/interrupt.h. The most important of these flags are:
+* IRQF_DISABLED
+* IRQF_SAMPLE_RANDOM
+* IRQF_SHARED
+* IRQF_TIMER
+(Explained after this table)
+
+name: Used to identify the device name using this IRQ, for example, cat / proc / interrupts will list the IRQ number and device name.
+
+dev_id: IRQ shared by many devices. When an interrupt handler is freed, dev provides a unique cookie to enable the removal of only the desired interrupt handler from the interrupt line. Without this parameter, it would be impossible for the kernel to know which handler to remove on a given interrupt line. You can pass NULL here if the line is not shared, but you must pass a unique cookie if your interrupt line is shared. This pointer is also passed into the interrupt handler on each invocation. A common practice is to pass the driver’s device structure. This pointer is unique and might be useful to have within the handlers.
+
+Return: returns zero on success and nonzero value indicates an error.
+
+*request_irq() cannot be called from interrupt context (other situations where code cannot block), because it can block.*
+
+------
+
+free_irq( unsigned int irq, void *dev_id)
+
+Release an IRQ registered by request_irq() with the following parameters:
+
+irq: IRQ number.
+dev_id: is the last parameter of request_irq.
+
+If the specified interrupt line is not shared, this function removes the handler and disables the line.
+If the interrupt line is shared, the handler identified via dev_id is removed, but the interrupt line is disabled only when the last handler is removed. With shared interrupt lines, a unique cookie is required to differentiate between the multiple handlers that can exist on a single line and enable free_irq() to remove only the correct handler.
+In either case (shared or unshared), if dev_id is non-NULL, it must match the desired handler. A call to free_irq() must be made from process context.
+
+----
+enable_irq(unsigned int irq)	Re-enable interrupt disabled by disable_irq or disable_irq_nosync.
+----
+disable_irq(unsigned int irq)	Disable an IRQ from issuing an interrupt.
+
+disable_irq_nosync(unsigned int irq)	Disable an IRQ from issuing an interrupt, but wait until there is an interrupt handler being executed.
+----
+in_irq()	returns true when in interrupt handler
+----
+in_interrupt()	returns true when in interrupt handler or bottom half
+
+
+Interrupts Flags:
+These are the second parameters of the function. It has several flags. Here I explained important flags.
+
+IRQF_DISABLED:
+When set, this flag instructs the kernel to disable all interrupts when executing this interrupt handler.When unset, interrupt handlers run with all interrupts except their own enabled.
+Most interrupt handlers do not set this flag, as disabling all interrupts is bad form. Its use is reserved for performance-sensitive interrupts that execute quickly. This flag is the current manifestation of the SA_INTERRUPT flag, which in the past distinguished between “fast” and “slow” interrupts.
+
+IRQF_SAMPLE_RANDOM:
+This flag specifies that interrupts generated by this device should contribute to the kernel entropy pool. The kernel entropy pool provides truly random numbers derived from various random events. If this flag is specified, the timing of interrupts from this device is fed to the pool as entropy. Do not set this if your device issues interrupt at a predictable rate (e.g. the system timer) or can be influenced by external attackers (e.g. a networking device). On the other hand, most other hardware generates an interrupt at non-deterministic times and is, therefore, a good source of entropy.
+
+IRQF_TIMER:
+This flag specifies that this handler process interrupts the system timer.
+
+IRQF_SHARED:
+This flag specifies that the interrupt line can be shared among multiple interrupt handlers. Each handler registered on a given line must specify this flag; otherwise, only one handler can exist per line.
+
+Registering an Interrupt Handler
+
+	#define IRQ_NO 11
+	if (request_irq(IRQ_NO, irq_handler, IRQF_SHARED, "etx_device", (void *)(irq_handler))) {
+	            printk(KERN_INFO "my_device: cannot register IRQ ");
+	            goto irq;
+	}
+
+Freeing an Interrupt Handler
+
+	free_irq(IRQ_NO,(void *)(irq_handler));
+
+Interrupt Handler
+
+	static irqreturn_t irq_handler(int irq,void *dev_id) {
+	  printk(KERN_INFO "Shared IRQ: Interrupt Occurred");
+	  return IRQ_HANDLED;
+	}
+
+
+

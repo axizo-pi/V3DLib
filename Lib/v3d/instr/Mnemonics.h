@@ -199,9 +199,9 @@ Mnemonic add(Location const &dst, Source const &a, Source const &b);
 Mnemonic mov(Location const &dst, Source const &a);
 Mnemonic fmov(Location const &dst, Source const &a);
 
-v3d_qpu_waddr const syncb = V3D_QPU_WADDR_SYNCB;  // Needed for barrierid()
+v3d_qpu_waddr const syncb = V3D_QPU_WADDR_SYNCB;  // Only used by barrierid
 
-Mnemonic barrierid(v3d_qpu_waddr waddr);
+Mnemonic barrierid(v3d_qpu_waddr waddr, bool magic_write = true);
 
 Mnemonic ffloor(Location const &dst, Source const &srca);
 Mnemonic flpop(RFAddress rf_addr1, RFAddress rf_addr2);

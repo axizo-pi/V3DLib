@@ -58,6 +58,7 @@ namespace V3DLib {
     // v3d only
     A_TIDX,
     A_EIDX,
+    A_BARRIER,
     A_FFLOOR,
     A_FSIN,
     A_TMUWT,

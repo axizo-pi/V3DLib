@@ -521,7 +521,17 @@ void set_at(Float &dst, Int n, Float const &src) {
 
 
 /**
+ * Has no inputs, only an output, which is always magic reg SYNCB.
+ */
+IntExpr barrier() {
+  return mkApply(Op(BARRIER, INT32));
+}
+
+
+/**
  * Let QPUs wait for each other.
+ *
+ * This is a busy wait!
  *
  * Intended for v3d, where I don't see a hardware signal function as in vc4.
  * Works fine with vc4 also.

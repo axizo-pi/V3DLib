@@ -29,6 +29,7 @@ std::vector<OpItem> m_list = {
   {SIN,    "sin",       true, Enum::A_FSIN,   Enum::OP_UNDEFINED,   true, 1},  // also SFU function
   {TIDX,   "tidx",     false, Enum::OP_UNDEFINED,     Enum::A_TIDX, true, 0},
   {EIDX,   "eidx",     false, Enum::OP_UNDEFINED,     Enum::A_EIDX, true, 0},
+  {BARRIER,"barrier",  false, Enum::OP_UNDEFINED,     Enum::A_BARRIER, true, 0},
 
   // SFU functions
   {RECIP,     "recip",     true, Enum::A_RECIP, Enum::OP_UNDEFINED, false, 1},

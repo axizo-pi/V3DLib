@@ -345,18 +345,19 @@ std::string instr_format_branch_4x(uint64_t val) {
 
 
 int main(int argc, const char *argv[]) {
+
 	MAYBE_UNUSED struct v3d_qpu_instr instr_alu = {
 		.type = V3D_QPU_INSTR_TYPE_ALU,
 		.sig  = {
-			//.thrsw = 1,
+			.thrsw = 1,
 			//.ldunifrf = 1
 			//.ldtmu = 1,
 			//.wrtmuc = 1
-			.small_imm_a = 1,
+			//.small_imm_a = 1,
 			//.small_imm_b = 1,
 	 	},
-		.sig_addr = 0,
-		.sig_magic = false,
+		//.sig_addr = 18,
+		//.sig_magic = true,
     //.raddr_a = 3,  // 4x
     //.raddr_b = 0,  // 4x
 		.flags = {
@@ -367,20 +368,24 @@ int main(int argc, const char *argv[]) {
 		},
 		.alu = {
 			.add = {
-				  .op = V3D_QPU_A_SHL,
+					.op = V3D_QPU_A_BARRIERID,
+				  //.op = V3D_QPU_A_MOV,
 			  	.a = {
             //.mux = V3D_QPU_MUX_B,
-            .raddr = 2 
+            .raddr = 0 
           },
 			  	.b = {
             //.mux = V3D_QPU_MUX_B,
             .raddr = 1 
           },
-		 	    .waddr = 0, //V3D_QPU_WADDR_NOP,
-					.magic_write = false,
+		 	    .waddr = 16,
+					//.waddr = V3D_QPU_WADDR_SYNCB,
+		 	    //.waddr = V3D_QPU_WADDR_NOP,
+					//.magic_write = true,
 			},
 			.mul = {
-				  .op = V3D_QPU_M_FMOV,
+				  .op = V3D_QPU_M_NOP,
+				  //.op = V3D_QPU_M_FMOV,
 			  	.a = {
             //.mux = V3D_QPU_MUX_R4,
             .raddr = 0
@@ -413,8 +418,15 @@ int main(int argc, const char *argv[]) {
 		}
 	};
 
-	//auto &instr = instr_alu;
+
+	cout << "Doing ALU instruction\n"
+		   << "========================\n";
+	auto &instr = instr_alu;
+/*
+	cout << "Doing Branch instruction\n"
+		   << "========================\n";
 	auto &instr = instr_branch;
+*/	
 
 	//display_instr(instr);
 
@@ -423,15 +435,19 @@ int main(int argc, const char *argv[]) {
 	cout << "\n";
 	cout << "Packed: " << hex << packed << "\n";
 	cout << "Decode: " << qpu_decode(&instr) << "\n";
-	cout << "Disasm: " << qpu_disasm(packed) << "\n";
+	cout << "Disasm: " << qpu_disasm(packed) << "\n\n";
 
   if (devinfo_ver() == 42) {
+		cout << "---- vc4 instruction ----\n";
+
   	if (instr.type == V3D_QPU_INSTR_TYPE_ALU) {
   		cout << instr_format_alu_4x(packed);
   	} else {
   		cout << instr_format_branch_4x(packed);
   	}
   } else {
+		cout << "---- v3d instruction ----\n";
+
   	if (instr.type == V3D_QPU_INSTR_TYPE_ALU) {
 			cout << "7\n";
   		cout << instr_format_alu_7x(packed);

@@ -22,7 +22,7 @@ int main(int argc, const char *argv[]) {
 	//
 	// Run scalar version
 	//
-	// if (false)
+	if (false)
 	{
 		Timer timer("Scalar timer", true);
 
