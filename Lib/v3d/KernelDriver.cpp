@@ -891,21 +891,19 @@ void KernelDriver::invoke(int numQPUs, IntList &params, bool wait_complete) {
 
 
 std::string KernelDriver::emit_opcodes() {
-	std::string ret;
+  if (instructions.empty()) return "<No opcodes to print>\n";
+
 	bool do_line_numbers = LibSettings::dump_line_numbers();
+	std::string ret;
 
-  if (instructions.empty()) {
-    ret << "<No opcodes to print>\n";
-  } else {
-		int count = 0;
-    for (auto const &instr : instructions) {
-			if (do_line_numbers) {
-      	ret << count << ": ";
-			}
+	int count = 0;
+  for (auto const &instr : instructions) {
+		if (do_line_numbers) {
+   		ret << count << ": ";
+		}
 
-      ret << instr.mnemonic(true) << "\n";
-			count++;
-    }
+    ret << instr.mnemonic(true) << "\n";
+	  count++;
   }
 
 	return ret;

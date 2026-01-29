@@ -63,7 +63,7 @@ struct Stmt : public InstructionComment {
 
   class Array : public std::vector<Ptr> {
   public:
-    std::string dump() const;
+    std::string dump(bool show_comments = false) const;
   };
 
   ~Stmt();
@@ -72,7 +72,7 @@ struct Stmt : public InstructionComment {
   Stmt &comment(std::string msg)       { InstructionComment::comment(msg); return *this; }
 
   std::string disp() const { return disp_intern(false, 0); }
-  std::string dump() const { return disp_intern(true, 0); }
+  std::string dump(bool show_comments = false) const { return disp_intern(true, 0, show_comments); }
   void append(Array const &rhs);
 
   //
@@ -129,12 +129,15 @@ private:
 
   static Ptr create(Tag in_tag, Ptr s0, Ptr s1);
   void init(Tag in_tag);
-  std::string disp_intern(bool with_linebreaks, int seq_depth) const;
+  std::string disp_intern(bool with_linebreaks, int seq_depth = 0, bool show_comments = false) const;
   bool check_blocks() const;
 };
 
 
-using Stmts = Stmt::Array;
+class Stmts : public Stmt::Array {
+public:
+	std::string dump() const;
+};
 
 }  // namespace V3DLib
 

@@ -38,8 +38,7 @@ Instr::List ISourceTranslate::load_var(Var &in_dst, Expr &e) {
   ret << mov(TMUA, src)
       << recv(dst);
 
-	Log::debug << "\n" << ret.dump(true);
-
+	//Log::debug << "\n" << ret.dump(true);
   return ret;
 }
 

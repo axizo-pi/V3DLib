@@ -1,12 +1,53 @@
 #include "Stmt.h"
 #include "Support/basics.h"
 #include "vc4/DMA/DMA.h"
+#include "LibSettings.h"
 
 using namespace Log;
 
 namespace V3DLib {
 
 using ::operator<<;  // C++ weirdness
+
+namespace {
+
+
+/**
+ * Split a string at a given delimiter.
+ *
+ * Note that this is destructive on the input string.
+ *
+ * Source: https://stackoverflow.com/a/14266139/1223531
+ */
+std::vector<std::string> split(std::string& s, const std::string& delimiter) {
+  std::vector<std::string> tokens;
+  size_t pos = 0;
+  std::string token;
+  while ((pos = s.find(delimiter)) != std::string::npos) {
+    token = s.substr(0, pos);
+    tokens.push_back(token);
+    s.erase(0, pos + delimiter.length());
+  }
+  tokens.push_back(s);
+
+  return tokens;
+}
+
+
+std::string make_comment(std::string &str) {
+	std::vector<std::string> lines = split(str, "\n");
+
+  std::string ret;
+	ret << "\n#\n";
+  for (int i = 0; i < (int) lines.size(); i++) {
+		ret << "# " << lines[i] << "\n";
+	}
+	ret << "#\n";
+
+	return ret;
+}
+
+}  // anon namespace
 
 // ============================================================================
 // Class Stmt
@@ -212,7 +253,7 @@ void Stmt::inc(Array const &arr) {
 /**
  * Debug routine for easier display of instance contents during debugging
  */
-std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth) const {
+std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_comments) const {
   std::string ret;
 
   switch (tag) {
@@ -230,7 +271,7 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth) const {
         std::string tmp;
 
         for (int i = 0; i < (int) m_stmts_a.size(); i++) {
-          tmp << "  " << m_stmts_a[i]->disp_intern(with_linebreaks, seq_depth + 1) << "\n";
+          tmp << "  " << m_stmts_a[i]->disp_intern(with_linebreaks, seq_depth + 1, show_comments) << "\n";
         }
 
         // Remove all superfluous whitespace
@@ -257,7 +298,7 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth) const {
         ret << "SEQ {";
 
         for (int i = 0; i < (int) m_stmts_a.size(); i++) {
-          ret << m_stmts_a[i]->disp_intern(with_linebreaks, seq_depth + 1) << "; ";
+          ret << m_stmts_a[i]->disp_intern(with_linebreaks, seq_depth + 1, show_comments) << "; ";
         }
 
         ret << "}";
@@ -265,22 +306,24 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth) const {
     break;
     case WHERE:
       assert(m_where_cond.get() != nullptr);
-      ret << "WHERE (" << m_where_cond->dump() << ") THEN " << then_block().dump();
+      ret << "WHERE (" << m_where_cond->dump() << ")\n"
+			    << "  THEN " << then_block().dump(show_comments);
       if (!else_block().empty()) {
-        ret << " ELSE " << else_block().dump();
+        ret << "\n  ELSE " << else_block().dump(show_comments);
       }
     break;
     case IF:
       assert(m_cond.get() != nullptr);
-      ret << "IF (" << m_cond->dump() << ") THEN " << then_block().dump();
+      ret << "IF (" << m_cond->dump() << ") THEN " << then_block().dump(show_comments);
       if (!else_block().empty()) {
-        ret << " ELSE " << else_block().dump();
+        ret << " ELSE " << else_block().dump(show_comments);
       }
     break;
     case WHILE:
       assert(m_cond.get() != nullptr);
       if (!then_block().empty()) {
-      	ret << "WHILE (" << m_cond->dump() << ") " << then_block().dump();
+      	ret << "WHILE (" << m_cond->dump() << ")\n"
+					  << "  " << then_block().dump(show_comments);
 			}
       // There is no ELSE for while
     break;
@@ -305,6 +348,23 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth) const {
       }
       break;
   }
+
+	if (show_comments) {
+		std::string out;
+		auto h = InstructionComment::header(); 
+		if (!h.empty()) {
+			out << make_comment(h);
+		}
+
+		out << ret; 
+
+		auto c = InstructionComment::comment(); 
+		if (!c.empty()) {
+			out << "           ; " << c;
+		}
+
+  	return out;
+	}
 
   return ret;
 }
@@ -400,12 +460,62 @@ Stmt *Stmt::first_in_seq() const {
 // Class Stmt::Array
 ///////////////////////////////////////////////////////////////////////////////
 
-std::string Stmt::Array::dump() const {
+/**
+ * Stmt::dump() can return Stmt::Array;
+ * Collect the values in a string before outputting.
+ *
+ * This is relevant for adding line numbers.
+ */
+std::string Stmt::Array::dump(bool show_comments) const {
   if (empty()) return "<Empty>";
+
   std::string ret;
 
   for (int i = 0; i < (int) size(); i++) {
-    ret << (*this)[i]->dump() << "\n";
+    ret << (*this)[i]->dump(show_comments) << "\n";
+  }
+
+  return ret;
+}
+
+
+std::string Stmts::dump() const {
+  if (empty()) return "<Empty>";
+
+	bool do_line_numbers = LibSettings::dump_line_numbers();
+  std::string buf = Array::dump(true);
+	std::vector<std::string> lines = split(buf, "\n");
+
+	int count = 0;
+  std::string ret;
+	std::string pre = "#";
+	std::string sp = "  ";
+
+  for (int i = 0; i < (int) lines.size(); i++) {
+		// Skip empty lines
+		if (lines[i].empty()) {
+	  	ret << "\n";
+			continue;
+		}
+
+		// Skip line numbers for lines starting with spaces
+		if (lines[i].compare(0, sp.size(), sp) == 0) {
+	  	ret << lines[i] << "\n";
+			continue;
+		}
+
+		// Skip line numbers for comment lines
+		if (lines[i].compare(0, pre.size(), pre) == 0) {
+	  	ret << lines[i] << "\n";
+			continue;
+		}
+
+		if (do_line_numbers) {
+	  	ret << count << ": ";
+		}
+
+	  ret << lines[i] << "\n";
+		count++;
   }
 
   return ret;

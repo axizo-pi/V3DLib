@@ -30,10 +30,10 @@ std::vector<op_item> op_items = {
   { Enum::M_ROTATE, false,           V3D_QPU_M_MOV },     // < vc7:Special case: it's a mul alu mov with sig.rotate set
   { Enum::A_TIDX,   V3D_QPU_A_TIDX   },
   { Enum::A_EIDX,   V3D_QPU_A_EIDX   },
-  { Enum::A_BARRIER, V3D_QPU_A_BARRIERID },
+  { Enum::A_BARRIER, V3D_QPU_A_BARRIERID },               // NOTE: v3d-specific; Generation adds NOP's
   { Enum::A_FFLOOR, V3D_QPU_A_FFLOOR },
-  { Enum::A_FSIN,   V3D_QPU_A_SIN    },                   // NOTE: Extra NOP's and read in generation
-  { Enum::A_TMUWT,  V3D_QPU_A_TMUWT  },                   // NOTE: Extra NOP's and read in generation
+  { Enum::A_FSIN,   V3D_QPU_A_SIN    },                   // NOTE: Generation adds NOP's
+  { Enum::A_TMUWT,  V3D_QPU_A_TMUWT  },                   // NOTE: Generation adds NOP's
 
 	// v3d
   { Enum::A_RSQRT,  V3D_QPU_A_RSQRT  },

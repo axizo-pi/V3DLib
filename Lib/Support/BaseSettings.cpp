@@ -9,18 +9,20 @@
 #include "v3d/PerformanceCounters.h"
 #endif  // QPU_MODE
 
+using namespace Log;
+
 namespace V3DLib {
 
 void BaseSettings::process(BaseKernel &k) {
+
 #if 0
 
 // Pi1 is 32-bits only; we thus need to support 32-bits.
-
 #ifdef ARM32
   static bool showed_msg = false;
 
   if (!showed_msg) {
-  	Log::warn << "ARM 32-bits not supported any more. If it works, it works. You're on your own.";
+  	warn << "ARM 32-bits not supported any more. If it works, it works. You're on your own.";
     showed_msg = true;
   }
 #endif
@@ -30,12 +32,14 @@ void BaseSettings::process(BaseKernel &k) {
   //       this will prevent dumping the v3d code (mnemonics, actually) on every call.
   if (output_code) {
     if (output_count == 0) {
+			warn << "BaseSettings outputting code";
+
       assert(!name.empty());
       std::string code_filename = name + "_code.txt";
 
       to_file(code_filename.c_str(), k.dump());
     } else if (output_count == 1) {
-      warning("Not outputting code more than once");
+      warn << "Not outputting code more than once";
     }
 
     output_count++;
