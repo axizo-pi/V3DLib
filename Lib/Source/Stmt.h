@@ -66,7 +66,7 @@ struct Stmt : public InstructionComment {
     std::string dump() const;
   };
 
-  ~Stmt() {}
+  ~Stmt();
 
   Stmt &header(std::string const &msg) { InstructionComment::header(msg);  return *this; }
   Stmt &comment(std::string msg)       { InstructionComment::comment(msg); return *this; }

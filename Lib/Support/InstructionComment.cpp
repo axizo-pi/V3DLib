@@ -3,14 +3,26 @@
 
 namespace V3DLib {
 
-void InstructionComment::transfer_comments(InstructionComment const &rhs) {
+void InstructionComment::transfer_comments(InstructionComment &rhs) {
   if (!rhs.header().empty()) {
+		//Log::warn << "transfer_comments header: " << rhs.header();
     header(rhs.header());
   }
 
   if (!rhs.comment().empty()) {
+		//Log::warn << "transfer_comments comment: " << rhs.comment();
     comment(rhs.comment());
   }
+
+	rhs.m_transferred = true;
+}
+
+
+bool InstructionComment::transferred() const {
+	// Don't bother signalling if no comments present
+	if (header().empty() && comment().empty()) return true;
+
+	return m_transferred;
 }
 
 

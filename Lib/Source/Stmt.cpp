@@ -2,6 +2,8 @@
 #include "Support/basics.h"
 #include "vc4/DMA/DMA.h"
 
+using namespace Log;
+
 namespace V3DLib {
 
 using ::operator<<;  // C++ weirdness
@@ -22,6 +24,16 @@ void Stmt::init(Tag in_tag) {
   assert(SKIP <= in_tag && in_tag <= DMA_START_WRITE);
   assertq(tag == SKIP, "Stmt::init(): can't reassign tag once assigned");
   tag = in_tag;
+}
+
+
+Stmt::~Stmt() {
+	if (!InstructionComment::transferred()) {
+		warn << "Stmt dtor comments not transferred\n"
+				 << "     stmt: " << dump() << "\n"
+				 << "   header: " << InstructionComment::header()  << "\n"
+				 << "  comment: " << InstructionComment::comment() << "\n";
+	}
 }
 
 
@@ -313,10 +325,10 @@ Stmt::Ptr Stmt::create(Tag in_tag, Expr::Ptr e0, Expr::Ptr e1) {
   switch (in_tag) {
     case ASSIGN:
       if (e0 == nullptr) {
-        error("Stmt::create(): e0 is null, variable might not be initialized", true);
+        cerr << "Stmt::create(): e0 is null, variable might not be initialized" << thrw;
       }
       if (e1 == nullptr) {
-        error("Stmt::create(): e1 is null, variable might not be initialized", true);
+        cerr << "Stmt::create(): e1 is null, variable might not be initialized" << thrw;
       }
       //assertq(e0 != nullptr && e1 != nullptr, "create 1");
       ret->m_exp_a = e0;
