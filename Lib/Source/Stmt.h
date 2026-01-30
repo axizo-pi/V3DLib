@@ -13,20 +13,36 @@ namespace V3DLib {
 // ============================================================================
 
 /**
- * An instance is actually a tree of statements, due to having SEQ as 
- * a possible element.
+ * Representation of source-level instructions, directly translated from
+ * the user-level language.
+ *
+ * A `Stmt` instance is either a single statement (eg. `ASSIGN`) or arrays
+ * of statements for the top-level block instructions (eg. `FOR`).
+ *
+ * ## Statement Blocks
+ *
+ * The main member elements are:
+ *
+ * - **Array m_stmts_a**: Array of statements in default block; in the case
+ *                        of conditional statements, this is the THEN-block.
+ * - **Array m_stmts_b**: For conditional statements with ELSE-parts,
+ *                        (`IF`, `WHERE`), contains the array of statements in
+ *                        the ELSE-part.
+ *
+ * =====
+ * Notes
+ * -----
  *
  * The original implementation put instances of `Stmt` on a custom heap.
  * This placed a strict limit on compilation size, which I continually ran
  * into, and complicated initialization of instances (notably, ctors were
- * not called).
- *
+ * not called).  
  * The custom heap has thus been removed and instances are allocated in
- * the regular C++ way.
+ * the regular C++ way.  
  *
  * Pointers within this definition are in the process of being replaced
- * with smart pointers.
- * TODO check if done
+ * with smart pointers.  
+ * **TODO** check if done
  */
 struct Stmt : public InstructionComment {
   using Ptr = std::shared_ptr<Stmt>;

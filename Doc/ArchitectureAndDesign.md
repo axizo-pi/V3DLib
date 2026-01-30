@@ -28,9 +28,9 @@ The following naming is used within the project:
 
 By convention:
 
-- A program running on a VideoCore is called a
-  [(compute) kernel](https://en.wikipedia.org/wiki/Compute_kernel).
-	I tend to leave out 'compute' when describing kernels.
+- A program running on a VideoCore is named a [(compute) kernel](https://en.wikipedia.org/wiki/Compute_kernel).
+	I leave out 'compute' when describing kernels.
+  This is different from the Broadcomm and Mesa terminology, where programs are called **shaders**.
 - Values passed from a CPU program into a kernel are called *uniform values* or **uniforms**.
 
 Kernel programs compile dynamically, so that a given program can run unchanged on any version of the RaspBerry Pi.
@@ -39,11 +39,9 @@ The kernels are generated inline and offloaded to the GPU's at runtime.
 
 # Supported Pi's
 
-I have about 14 Pi's rummaging around here, which I intend to cluster.
+I have about 14 Pi's foraging around here, which I intend to cluster.
 
 Unit tests are run regularly on the following Pi versions:
-
-**TODO:** Fill this in.
 
 | Pi   | Version         | 32/64bits | Debian distro |
 | ---- | --------------- | --------- | ------------- |
