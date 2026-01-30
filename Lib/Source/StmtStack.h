@@ -10,7 +10,30 @@ namespace V3DLib {
 
 
 /**
- * 
+ * Stack of statements holding conversions
+ * during compilation of the  user-language language.
+ *
+ * Each element is a sequence of statements. Statements are
+ * instances of class `Stmt`.
+ *
+ * `StmtStack` is used to retain the partial conversions
+ * of the user-level language to the Source-level language.
+ *
+ * The top-level item is the current item handled. When complete,
+ * it is merged into the previous item.
+ *
+ * At the end of a kernel compilation, there should be
+ * exactly one item on the stack. This is the entire compiled
+ * program.
+ *
+ * ==============
+ * Notes
+ * -----
+ *
+ * Internally, `StmtStack` uses a global hidden pointer to the 'current'
+ * stack. This is currently required by the programming logic and allows
+ * for multiple kernels to be compiled within a single program.
+ * However this means that **kernel compilation is not thread-safe**.
  */
 class StmtStack : public Stack<Stmts> {
   using Parent = Stack<Stmts>;
@@ -26,14 +49,18 @@ public:
   void append(Stmt::Ptr stmt);
   void append(Stmts const &stmts);
 
-  StmtStack &operator<<(Stmt::Ptr stmt) { append(stmt); return *this; }
+  StmtStack &operator<<(Stmt::Ptr stmt)      { append(stmt);  return *this; }
   StmtStack &operator<<(Stmts const &stmts)  { append(stmts); return *this; }
 
   std::string dump() const;
 
+	void merge_top_block();
+
   Stmt *first_in_seq() const;
 
+	// Prefetch Support - If I get the chance to remove prefetches, I will grab that chance
   void first_prefetch(int prefetch_label);
+`
   void add_prefetch(Pointer &exp, int prefetch_label);
   void add_prefetch(PointerExpr const &exp, int prefetch_label);
   void resolve_prefetches();

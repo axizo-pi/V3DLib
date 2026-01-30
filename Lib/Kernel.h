@@ -6,6 +6,21 @@
 #include <iostream>
 #include <typeinfo>
 
+//
+// Main Page for doxygen documentation.
+// Put here because this file is the main entry point for the library.
+//
+
+/** \mainpage V3DLib Source Documentation 
+
+This source-code documentation is by no means complete; I'm filling it in as I go.
+And I'm filling it in for better understanding as I code, because 
+
+<b>I DON'T KNOW WTF I WAS THINKING FOUR YEARS AGO</b>.
+
+Eventually, this will benefit you too.
+*/
+
 namespace V3DLib {
 	using ::operator<<; // C++ weirdness
 

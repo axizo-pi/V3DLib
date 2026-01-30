@@ -208,7 +208,7 @@ bool Stmt::then_block(Array const &in_block) {
  * @return true if block successfully added, false otherwise
  */
 bool Stmt::add_block(Array const &block) {
-  bool then_is_empty = (m_stmts_a.empty());  // TODO rename to _is_empty
+  bool then_is_empty = (m_stmts_a.empty());
   bool else_is_empty = (m_stmts_b.empty());
 
   switch (tag) {
@@ -245,7 +245,7 @@ bool Stmt::add_block(Array const &block) {
       }
       break;
 
-    default: break;
+    default: assert(false); break;  // Should really never happen
   }
 
   return false;

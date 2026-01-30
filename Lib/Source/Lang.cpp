@@ -48,17 +48,7 @@ void Else_() {
 //=============================================================================
 
 void End_() {
-  auto block_ptr = stmtStack().top();
-  stmtStack().pop();
-
-  Stmt::Ptr s = stmtStack().last_stmt();
-
-  if (!s->add_block(*block_ptr)) {
-    error("Syntax error: unexpected 'End'", true);
-  }
-
-  stmtStack().pop();
-  stmtStack().append(s);
+	stmtStack.merge_top_block();
 }
 
 

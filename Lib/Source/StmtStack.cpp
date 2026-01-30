@@ -87,14 +87,8 @@ void StmtStack::PrefetchContext::post_prefetch(Ptr assign) {
   assert(assign->size() == 1);  // Not expecting anything else
   assert(prefetch_count <= Platform::gather_limit());
 
-/*
-  std::cout << "===== assign stack =====\n"
-            << assign->dump()
-            << "========================\n"
-            << std::endl;
-*/
-
   if (m_prefetch_tags.empty()) {
+		assert(false);  // Is this ever called???
     auto item = assign->first_in_seq();
     assert(item != nullptr);
     item->comment("Start Prefetch");
@@ -127,10 +121,10 @@ void StmtStack::first_prefetch(int prefetch_label) {
 }
 
 
-/**
+/*  // Intentionally not doxygen
  * Technically, the param should be a pointer in some form.
- * This is not enforced right now.
- * TODO find a way to enforce this
+ * This is not enforced right now.  
+ * **TODO** find a way to enforce this
  *
  * @return true if param added to prefetch list,
  *         false otherwise (prefetch list is full)
@@ -176,7 +170,13 @@ void StmtStack::push(Stmt::Ptr s) {
 
 
 /**
- * Return the last added statement on the stack
+ * Return the last added statement on the stack.
+ *
+ * This **does not mean** the current item at the top to the stack,
+ * because the stack items are **sequences of statements**.
+ * The last added statement will be the last statement in the top item of the stack.
+ *
+ * @return Pointer to the last added statement.
  */
 Stmt::Ptr StmtStack::last_stmt() {
   assert(!empty());
@@ -185,7 +185,7 @@ Stmt::Ptr StmtStack::last_stmt() {
   assert(!level->empty());
 
   auto ptr = level->back();
-  assert(ptr.get() != nullptr);
+  assert(ptr.get() != nullptr);  // Not expecting 'level' to be empty
 
   return ptr;
 }
@@ -213,10 +213,8 @@ void StmtStack::reset() {
  */
 void StmtStack::append(Stmt::Ptr stmt) {
   assert(stmt.get() != nullptr);
-  if (empty()) {
-    push();
-  }
-  
+
+  if (empty()) push(); // add empty item on empty stack
   Parent::top()->push_back(stmt);
 }
 
@@ -244,7 +242,37 @@ std::string StmtStack::dump() const {
 
 
 /**
+ * Added top-level item in the stack to the next item as a block.
+ *
+ * The next item must be a statement requiring blocks
+ * (`IF`, `WHERE`, `WHILE`, `FOR`).
+ *
+ * This is called from function `End_()`, in file `Lang.cpp`.
+ * There should be no other place where this method is called.
+ *
+ * **Assumption**: top element is a complete block.
+ */
+void StmtStack::merge_top_block() {
+  auto block_ptr = top();  // Remove top-level item
+  pop();
+
+	// Merge into next item in stack
+  Stmt::Ptr s = last_stmt();
+  if (!s->add_block(*block_ptr)) {
+    error("Syntax error: unexpected block", true);
+  }
+
+	// TODO: I think following is not necessary, the top stack item is changed while still on the stack.
+  //       Examine this
+  pop();
+  append(s);
+}
+
+
+/**
  * Only first item on stack is checked
+ *
+ * I have serious doubt that this is ever called. <b>TODO</b> Check this.
  */
 Stmt *StmtStack::first_in_seq() const {
   breakpoint  // TODO is this ever called?
