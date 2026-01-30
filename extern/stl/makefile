@@ -16,6 +16,8 @@
 #   See `v3d_launch_grid()` in `gallium/drivers/v3d/v3dX_draw.c`
 #
 ################################################################################
+.DEFAULT_GOAL := all
+
 SRCDIR = src
 BASEDIR = ./obj
 OBJDIR = $(BASEDIR)/src
@@ -54,11 +56,8 @@ OBJFILES := $(subst $(SRCDIR),$(OBJDIR)$(SRC_DIR),$(SRCFILES))
 OBJFILES := $(OBJFILES:%.cpp=%.o)
 #$(info  obj: $(OBJFILES))
 
-LIB = $(OBJFILES)
-#$(info lib:  $(LIB))
-
 # Dependencies from list of object files
-DEPS := $(LIB:.o=.d)
+DEPS := $(OBJFILES:.o=.d)
 #$(info deps:  $(DEPS))
 -include $(DEPS)
 
@@ -67,7 +66,7 @@ DEPS := $(LIB:.o=.d)
 # Rules
 ################################################################################
 
-all: init stl
+all: init $(BINDIR)/stl
 
 init:
 	@mkdir -p $(OBJDIR)
@@ -85,6 +84,4 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 
 $(BINDIR)/stl: $(OBJFILES)
 	@echo Linking $@...
-	$(LINK) -L $(BINDIR) $^ -o $@
-
-stl: $(BINDIR)/stl
+	@$(LINK) -L $(BINDIR) $^ -o $@

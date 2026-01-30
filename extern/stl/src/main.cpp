@@ -7,6 +7,29 @@
  */
 #include "stl.h"
 
+//////////////////////////////////////////////////////////////
+// Support
+//////////////////////////////////////////////////////////////
+
+std::string const dump(openstl::Triangle const &t) {
+	std::stringstream buf;
+
+	buf << "  v0: " << t.v0.x << ", " << t.v0.y << ", " << t.v0.z << "\n"
+			<< "  v1: " << t.v1.x << ", " << t.v1.y << ", " << t.v1.z << "\n"
+			<< "  v2: " << t.v2.x << ", " << t.v2.y << ", " << t.v2.z;
+
+	if (t.attribute_byte_count > 0) {
+  	buf << "\n   attribute_byte_count: " << t.attribute_byte_count;
+	}
+
+	return buf.str();
+}
+
+
+//////////////////////////////////////////////////////////////
+// STL
+//////////////////////////////////////////////////////////////
+
 /**
  * Read STL from file
  */
@@ -97,15 +120,20 @@ void vertices_and_faces_to_triangles() {
 
 
 int main(int arc, char **argv) {
-	std::string filename = // "icosahedron_dl.stl";
-												 "Utah_teapot_(solid).stl";
+	std::string filename = "icosahedron_dl.stl";
+												 // "Utah_teapot_(solid).stl";
 
 	std::vector<openstl::Triangle> triangles;
 	read_stl(filename, triangles);
 
 	std::cout << "Num triangles: " << triangles.size() << "\n";
 
-	write_stl("teapot.stl", triangles, false);
+	std::cout << "First ten triangles:\n";
+	for (int i = 0; i < 10; ++i) {
+		std::cout << dump(triangles[i]) << "\n\n";
+	}
+
+	//write_stl("teapot.stl", triangles, false);
 
 	return 0;
 }
