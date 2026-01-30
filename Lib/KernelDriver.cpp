@@ -3,7 +3,6 @@
 #include "Support/basics.h"
 #include "Support/Platform.h"
 #include "Source/StmtStack.h"
-#include "Source/Pretty.h"
 #include "Source/Translate.h"
 #include "Source/Lang.h"            // initStmt
 #include "Support/Timer.h"

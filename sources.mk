@@ -1,7 +1,7 @@
 #
 # This file is generated!  Editing it directly is a bad idea.
 #
-# Generated on: Mon Jan 26 10:24:47 AM CET 2026
+# Generated on: Fri Jan 30 02:48:28 PM CET 2026
 #
 ###############################################################################
 
@@ -36,7 +36,6 @@ OBJ := \
   Source/Stmt.o  \
   Source/Op.o  \
   Source/Functions.o  \
-  Source/Pretty.o  \
   Source/Interpreter.o  \
   Source/StmtStack.o  \
   Source/Var.o  \
