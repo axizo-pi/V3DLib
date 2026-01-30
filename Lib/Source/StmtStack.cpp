@@ -86,13 +86,7 @@ void StmtStack::PrefetchContext::post_prefetch(Ptr assign) {
   assert(assign.get() != nullptr);
   assert(assign->size() == 1);  // Not expecting anything else
   assert(prefetch_count <= Platform::gather_limit());
-
-  if (m_prefetch_tags.empty()) {
-		assert(false);  // Is this ever called???
-    auto item = assign->first_in_seq();
-    assert(item != nullptr);
-    item->comment("Start Prefetch");
-  }
+  assert(!m_prefetch_tags.empty());
 
   m_assigns.push_back(assign);
 }
@@ -266,25 +260,6 @@ void StmtStack::merge_top_block() {
   //       Examine this
   pop();
   append(s);
-}
-
-
-/**
- * Only first item on stack is checked
- *
- * I have serious doubt that this is ever called. <b>TODO</b> Check this.
- */
-Stmt *StmtStack::first_in_seq() const {
-  breakpoint  // TODO is this ever called?
-
-  if (empty()) {
-    return nullptr;
-  }
-
-  auto item = top();
-  assert(item.get() != nullptr);
-  assert(!item->empty());
-  return (*item)[0]->first_in_seq();
 }
 
 

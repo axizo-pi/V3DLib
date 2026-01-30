@@ -85,12 +85,21 @@ private:
  *
  * ========================
  * NOTES
- * =====
+ * -----
  *
- * * Often, following is enough:
+ * Often, following is enough:
  *
- *    T &operator=(T &rhs) { m_expr = rhs.expr2(); return rhs; }
- *    T const &operator=(T const &rhs) { m_expr = rhs.expr(); return rhs; }
+ * \code{.cpp}
+ * T &operator=(T &rhs) {
+ *   m_expr = rhs.expr2();
+ *   return rhs;
+ * }
+ *
+ * T const &operator=(T const &rhs) {
+ *   m_expr = rhs.expr();
+ *   return rhs;
+ * }
+ * \endcode
  *
  *  Notable exception: `Rot3D`, no output written.
  */

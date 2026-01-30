@@ -56,9 +56,9 @@ public:
 
 	void merge_top_block();
 
-  Stmt *first_in_seq() const;
-
+	//
 	// Prefetch Support - If I get the chance to remove prefetches, I will grab that chance
+	//
   void first_prefetch(int prefetch_label);
 
   void add_prefetch(Pointer &exp, int prefetch_label);

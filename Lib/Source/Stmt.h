@@ -103,7 +103,6 @@ struct Stmt : public InstructionComment {
   Expr::Ptr assign_lhs() const;
   Expr::Ptr assign_rhs() const;
   Expr::Ptr address();
-  Stmt *first_in_seq() const;
 
   Array const &then_block() const;
   bool then_block(Array const &in_block);

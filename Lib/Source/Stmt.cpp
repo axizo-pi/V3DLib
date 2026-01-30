@@ -452,28 +452,6 @@ CExpr::Ptr Stmt::loop_cond() const {
 }
 
 
-/**
- * Do a leftmost search for non-SEQ item
- */
-Stmt *Stmt::first_in_seq() const {
-  breakpoint  // TODO is this ever called?
-
-  if (tag != SEQ) {
-    if (tag == SKIP) {
-      return nullptr;
-    } else {
-      assert(tag != Stmt::GATHER_PREFETCH);  // paranoia
-      return const_cast<Stmt *>(this);
-    }
-  }
-
-  if (m_stmts_a.empty()) return nullptr;
-  assert(m_stmts_a[0] != nullptr);
-
-  return m_stmts_a[0]->first_in_seq();
-}
-
-
 ///////////////////////////////////////////////////////////////////////////////
 // Class Stmt::Array
 ///////////////////////////////////////////////////////////////////////////////
