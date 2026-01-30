@@ -27,7 +27,8 @@ INCLUDES =
 
 CFLAGS = -g -Wall -Wno-unused-function -O3 -pthread \
 $(INCLUDES) \
-$(XX_FLAGS)
+$(XX_FLAGS) \
+-Wno-sign-compare
 
 LINK= g++
 
@@ -51,10 +52,10 @@ SRCFILES := $(filter %.c %.cpp,$(CODEFILES))
 HDRFILES := $(filter %.h,$(CODEFILES))
 OBJFILES := $(subst $(SRCDIR),$(OBJDIR)$(SRC_DIR),$(SRCFILES))
 OBJFILES := $(OBJFILES:%.cpp=%.o)
-$(info  obj: $(OBJFILES))
+#$(info  obj: $(OBJFILES))
 
 LIB = $(OBJFILES)
-$(info lib:  $(LIB))
+#$(info lib:  $(LIB))
 
 # Dependencies from list of object files
 DEPS := $(LIB:.o=.d)
