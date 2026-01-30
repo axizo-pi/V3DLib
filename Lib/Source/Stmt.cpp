@@ -11,6 +11,15 @@ using ::operator<<;  // C++ weirdness
 
 namespace {
 
+bool contains(std::string const &s1, std::string const &s2) {	
+	if (s1.find(s2) != std::string::npos) {
+    //std::cout << "found!" << '\n';
+		return true;
+	}
+
+	return false;
+}
+
 
 /**
  * Split a string at a given delimiter.
@@ -256,6 +265,11 @@ void Stmt::inc(Array const &arr) {
 std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_comments) const {
   std::string ret;
 
+	if (contains(InstructionComment::comment(), "barrier")) {
+		breakpoint;
+	}
+
+
   switch (tag) {
     case SKIP:
       ret << "SKIP";
@@ -334,6 +348,7 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_com
 
     default: {
         std::string tmp = DMA::disp(tag);
+				warn << "disp_intern default: " << tmp;
         if (tmp.empty()) {
           std::string msg;
           msg << "Unknown tag '" << tag << "' in Stmt::disp_intern()";

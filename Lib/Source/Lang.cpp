@@ -36,7 +36,7 @@ void Else_() {
   Stmt::Ptr s = stmtStack().last_stmt();
 
   if (!s->then_block(*block_ptr)) {
-    error("Syntax error: 'Else' without preceeding 'If' or 'Where'");
+    error("Syntax error: 'Else' without preceding 'If' or 'Where'");
   }
 
   stmtStack().push();  // Set top stack item for else-block
