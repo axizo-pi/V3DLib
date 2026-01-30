@@ -230,7 +230,7 @@ bool translateOpcode(Target::Instr const &src, Instructions &ret) {
 				//warn << "default tmp: " << tmp.dump();
 
   			if (op == Enum::A_ADD && reg_b.is_imm()) {
-					warn << "translateOpcode(): add(tmua, dst, imm) does not work for vc7, adjusting";
+					//warn << "translateOpcode(): add(tmua, dst, imm) does not work for vc7, adjusting";
 
 					// It is very probable that the PointExpr addition has been done beforehand,
 					// but is not being used. Ignoring that for now. TODO: examine 
@@ -241,14 +241,10 @@ bool translateOpcode(Target::Instr const &src, Instructions &ret) {
 					auto tmp3  = mov(*dst_reg, reg_a);
 					auto tmp4  = sub(*src_p, reg_a, reg_b);
 
-					//warn << "tmp2: " << tmp2.dump();
-
 					Instructions tmp_ret;
 					tmp_ret << tmp2
 									<< tmua_brainfart(tmp3, prev_is_tmud)
 						      << tmp4;
-
-					//warn << "tmp_ret:\n" << tmp_ret.dump();
 
 					ret << tmp_ret;
 

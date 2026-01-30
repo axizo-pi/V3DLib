@@ -78,12 +78,15 @@ void Stmt::init(Tag in_tag) {
 
 
 Stmt::~Stmt() {
+/*	
+	// Useful only for debug
 	if (!InstructionComment::transferred()) {
 		warn << "Stmt dtor comments not transferred\n"
 				 << "     stmt: " << dump() << "\n"
 				 << "   header: " << InstructionComment::header()  << "\n"
 				 << "  comment: " << InstructionComment::comment() << "\n";
 	}
+*/	
 }
 
 

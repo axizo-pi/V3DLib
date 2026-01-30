@@ -1071,7 +1071,7 @@ TEST_CASE("Test issues [dsl][issues]") {
    * Anything more elaborate, forget it. I've racked my brain on this, there is no salvation.
    */
   SUBCASE("Check init self issue") {
-    log_to_cout(false);
+		log_to_cout(false);
 
     {
       auto k = compile(init_self_1_kernel);

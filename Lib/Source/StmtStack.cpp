@@ -6,7 +6,7 @@
 namespace V3DLib {
 namespace {
 
-StmtStack *p_stmtStack = nullptr;
+StmtStack *p_stmtStack = nullptr;  // This is not an malloc'd instance but an external reference
 
 StmtStack::Ptr tempStack(StackCallback f) {
   StmtStack::Ptr stack;
@@ -305,7 +305,18 @@ void clearStack() {
 
 
 void initStack(StmtStack &stmtStack) {
-  assert(p_stmtStack == nullptr);
+  if (p_stmtStack != nullptr) {
+		//
+		// This can happen if a compilation of a preceding kernel fails
+		//
+		// Another option is that tempStack() was called, which means that an malloc'd intance
+		// is pointed to by p_stmtStack.
+		// We ignore this option, it occurs under very specific circumstances
+		//
+
+		Log::cerr << "initStack(): p_stmtStack set on entry. Ignoring.";
+	}
+
   stmtStack.reset();
   p_stmtStack = &stmtStack;
 }

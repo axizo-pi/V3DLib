@@ -48,7 +48,7 @@ void Else_() {
 //=============================================================================
 
 void End_() {
-	stmtStack.merge_top_block();
+	stmtStack().merge_top_block();
 }
 
 

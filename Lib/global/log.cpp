@@ -7,9 +7,9 @@
 #include "log.h"
 #include <stdexcept>
 #include <iostream>
-#include <cstdlib>    // abort()
-#include <time.h>     // strftime()
-#include <sstream>    // std::stringstream
+#include <cstdlib>          // abort()
+#include <time.h>           // strftime()
+#include <sstream>          // std::stringstream
 #include <fstream>
 #include <filesystem>
 
@@ -280,10 +280,10 @@ void set_log_file(std::string const &file) {
 	file_logger.log_file(file);
 }
 
+
 void log_to_cout(bool val) {
   s_log_to_cout = val;
 }
-
 
 
 void assert(bool condition, const std::string &msg) {
