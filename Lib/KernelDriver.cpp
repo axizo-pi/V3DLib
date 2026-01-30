@@ -1,13 +1,14 @@
 #include "KernelDriver.h"
-#include <iostream>            // cout
+#include <iostream>                 // cout
 #include "Support/basics.h"
 #include "Support/Platform.h"
 #include "Source/StmtStack.h"
 #include "Source/Pretty.h"
 #include "Source/Translate.h"
-#include "Source/Lang.h"       // initStmt
+#include "Source/Lang.h"            // initStmt
 #include "Support/Timer.h"
 #include "Target/instr/Mnemonics.h"
+#include "Support/Helpers.h"        // to_file
 
 namespace V3DLib {
 
@@ -62,6 +63,8 @@ void KernelDriver::obtain_ast() {
 void KernelDriver::compile(std::function<void()> create_ast) {
   try {
     create_ast();
+		//to_file("stack.txt", stmtStack().dump());
+
     compile_intern();
     m_numVars = VarGen::count();
   } catch (V3DLib::Exception const &e) {

@@ -235,7 +235,7 @@ std::string StmtStack::dump() const {
 
   each([&ret] (Stmts const &item) {
     for (int i = 0; i < (int) item.size(); i++) {
-      ret << item[i]->dump() << "\n";
+      ret << item[i]->dump(true) << "\n";
     }
   });
 

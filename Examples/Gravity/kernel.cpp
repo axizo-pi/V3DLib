@@ -14,7 +14,7 @@ void kernel_update(
 	Float &acc_x, Float &acc_y, Float &acc_z,
 	Float &delta_t
 ) {
-	comment("Update speed and position");
+	header("Update speed and position");
 
 	v_x = v_x + acc_x * delta_t;
 	v_y = v_y + acc_y * delta_t;
@@ -37,6 +37,7 @@ void kernel_calc_acc(
  	Float::Ptr &out_acc_x, Float::Ptr &out_acc_y, Float::Ptr &out_acc_z,
 	Int &num_entities
 ) {
+
 	//
 	// These conversion factors are here to prevent Inf values.
 	// Distance and mass values are quite huge and calculations
@@ -47,10 +48,12 @@ void kernel_calc_acc(
 
 	Float ACC_CONSTANT = ((float) BIG_G) * DIST_FACTOR / MASS_FACTOR * DIST_FACTOR;
 
+	header("Start loop kernel_calc_acc");
+
 	For (Int cur_index = 0, cur_index < num_entities, cur_index++)
 		Int ptr_offset = cur_index - index();
 
-		Float::Ptr px0    = in_x    + ptr_offset; comment("Start loop kernel_calc_acc");
+		Float::Ptr px0    = in_x    + ptr_offset;
 		Float::Ptr py0    = in_y    + ptr_offset; 
 		Float::Ptr pz0    = in_z    + ptr_offset; 
 		Float::Ptr pmass0 = in_mass + ptr_offset;
@@ -160,7 +163,7 @@ void kernel_step(
  	Float::Ptr &p_acc_x, Float::Ptr &p_acc_y, Float::Ptr &p_acc_z,
 	Int &num_entities
 ) {
-	Float delta_t = (float) dt; comment("Start kernel_step");
+	Float delta_t = (float) dt;
 
 	header("Start kernel_step");
 
@@ -224,6 +227,8 @@ void kernel_gravity(
 		 	in_acc_x, in_acc_y, in_acc_z,
 			num_entities
 		);
+
+		barrier();  comment("barrier()");
 
 		// kernel_step() adjusts pointers, reset to start before calling	
 		Float::Ptr x = in_x;
