@@ -7,6 +7,7 @@
 // ============================================================================
 #include "Rot3D.h"
 #include "Source/Functions.h"
+#include <math.h>             // sinf(), cosf()
 
 namespace kernels { 
 
@@ -17,12 +18,34 @@ using namespace V3DLib;
 // Scalar version
 // ============================================================================
 
-void rot3D(int n, float cosTheta, float sinTheta, float* x, float* y) {
+void rot3D(int n, float rot_x, float rot_y, float rot_z, float *x, float *y, float *z) {
+  const float PI = (float) 3.14159;
+
+	rot_x *= PI;
+	rot_y *= PI;
+	rot_z *= PI;
+
   for (int i = 0; i < n; i++) {
-    float xOld = x[i];
-    float yOld = y[i];
-    x[i] = xOld * cosTheta - yOld * sinTheta;
-    y[i] = yOld * cosTheta + xOld * sinTheta;
+		// Rotation around x-axis
+    float y_prev = y[i];
+    float z_prev = z[i];
+
+    y[i] = y_prev * cos(rot_x) - z_prev * sin(rot_x);
+    z[i] = y_prev * sin(rot_x) + z_prev * cos(rot_x);
+
+		// Rotation around y-axis
+    float x_prev = x[i];
+    z_prev = z[i];
+
+    x[i] = x_prev *  cos(rot_y) - z_prev * sin(rot_y);
+    z[i] = x_prev * -sin(rot_y) + z_prev * cos(rot_y);
+
+		// Rotation around z-axis
+    x_prev = x[i];
+    y_prev = y[i];
+
+    x[i] = x_prev * cos(rot_z) - y_prev * sin(rot_z);
+    y[i] = x_prev * sin(rot_z) + y_prev * cos(rot_z);
   }
 }
 

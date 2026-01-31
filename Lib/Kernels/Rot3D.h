@@ -6,11 +6,13 @@ namespace kernels {
 
 using namespace V3DLib;
 
-void rot3D(int n, float cosTheta, float sinTheta, float* x, float* y);
+// Scalar kernel
+void rot3D(int n, float rot_x, float rot_y, float rot_z, float *x, float *y, float *z);
+
+// QPU kernels
 void rot3D_1(Int n, Float cosTheta, Float sinTheta, Float::Ptr x, Float::Ptr y);
 void rot3D_1a(Int n, Float cosTheta, Float sinTheta, Float::Ptr x, Float::Ptr y);
 void rot3D_2(Int n, Float cosTheta, Float sinTheta, Float::Ptr x, Float::Ptr y);
-
 void rot3D_3(Float cosTheta, Float sinTheta, Float::Ptr x, Float::Ptr y);
 
 using FuncType = decltype(rot3D_3);
