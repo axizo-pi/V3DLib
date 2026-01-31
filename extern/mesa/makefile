@@ -22,9 +22,9 @@ OBJDIR = $(BASEDIR)/src
 BINDIR = $(BASEDIR)/bin
 MAINDIR = $(BASEDIR)/main
 
-XX_FLAGS = -MMD -MP -MF"$(@:%.o=%.d)"
-
 MESA_LIB=$(BINDIR)/libmesa.a
+
+-include ../../script/mak/extern.mak
 
 INCLUDES = \
 -I ./src/ \
@@ -41,7 +41,7 @@ INCLUDES = \
 -I ./src/gallium/drivers/vc4 \
 
 
-CFLAGS = -g -Wall -Wno-unused-function -O3 -pthread \
+CFLAGS += \
 -D V3D_VERSION=71 \
 -D HAVE_ENDIAN_H \
 -D HAVE_PTHREAD \
@@ -54,54 +54,13 @@ CFLAGS = -g -Wall -Wno-unused-function -O3 -pthread \
 -D USE_V3D_SIMULATOR=0 \
 -D MESA_DEBUG=0 \
 -D HAVE_SECURE_GETENV \
-$(INCLUDES) \
-$(XX_FLAGS)
-
-
-LINK= g++
-
-
-################################################################################
-# Source Files
-################################################################################
-
-# Get Only the Internal Structure of SRCDIR Recursively
-STRUCTURE := $(shell find $(SRCDIR) -type d)     
-#$(info structure: $(STRUCTURE))
-
-# Get All Files inside the STRUCTURE Variable
-CODEFILES := $(addsuffix /*,$(STRUCTURE))
-CODEFILES := $(wildcard $(CODEFILES))            
-#$(info codefiles: $(CODEFILES))
-
-# Filter Only Specific Files                                
-SRCFILES := $(filter %.c %.cpp,$(CODEFILES))
-#$(info  src: $(SRCFILES))
-HDRFILES := $(filter %.h,$(CODEFILES))
-OBJFILES := $(subst $(SRCDIR),$(OBJDIR)$(SRC_DIR),$(SRCFILES))
-#OBJFILES := $(OBJFILES:%.cpp=%.o)
-OBJFILES := $(OBJFILES:%.c=%.o)
-#$(info  obj: $(OBJFILES))
-
-DEPEND_FILES := $(addprefix $(SRCDIR)/,%.c %.h)
-#$(info depend: $(DEPEND_FILES))
-
-
-#LIB = $(patsubst %,$(OBJDIR)/%,$(OBJFILES))
-LIB = $(OBJFILES)
-#$(info lib:  $(LIB))
-
-# Dependencies from list of object files
-DEPS := $(LIB:.o=.d)
-#$(info deps:  $(DEPS))
--include $(DEPS)
+$(INCLUDES)
 
 
 ################################################################################
 # Rules
 ################################################################################
 
-#compile: init $(BINDIR)/qpu_disasm
 compile: init $(MESA_LIB)
 
 init:
@@ -115,16 +74,6 @@ clean:
 	rm -rf $(MAINDIR)/*
 
 
-$(OBJDIR)/%.o: $(SRCDIR)/%.c
-	@echo Compiling $<
-	@mkdir -p $(@D)
-	@$(CC) $(CFLAGS) -c $< -o $@
-
-$(OBJDIR)/%.o: $(SRCDIR)/%.cpp
-	@echo Compiling $<
-	@mkdir -p $(@D)
-	@g++ $(CFLAGS) -c $< -o $@
-
 $(MESA_LIB): $(OBJFILES)
 	@echo Creating $@
 	@mkdir -p $(@D)
@@ -135,6 +84,7 @@ $(MAINDIR)/%.o: main/%.c
 	@echo Compiling $<
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c $< -o $@
+
 
 $(BINDIR)/%: $(MAINDIR)/%.o $(MESA_LIB)
 	@echo Linking $@...
