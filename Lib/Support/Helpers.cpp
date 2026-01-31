@@ -3,6 +3,13 @@
 #include <chrono>
 #include <thread>
 
+/** \file 
+ * Helper Functions
+ * ================
+ *
+ * Collection of useful functions which are unrelated to the object of the library.
+ */
+
 using namespace std::this_thread; // sleep_for, sleep_until
 using namespace std::chrono;      // nanoseconds, system_clock, seconds
 

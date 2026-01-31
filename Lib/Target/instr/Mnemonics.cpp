@@ -4,6 +4,18 @@
 #include "global/log.h"
 #include <memory>
 
+/** \file 
+ * Taget-Level Instructions 
+ * ========================
+ *
+ * Definition of Target-level instructions as functions.
+ *
+ * Goals:
+ *
+ * - Raise the level of abstraction on the Target-level
+ * - Create program snippets on the Target-level
+ */
+
 using namespace Log;
 
 namespace V3DLib {

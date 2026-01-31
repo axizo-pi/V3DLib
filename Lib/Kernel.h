@@ -19,6 +19,15 @@ And I'm filling it in for better understanding as I code, because
 <b>I DON'T KNOW WTF I WAS THINKING FOUR YEARS AGO</b>.
 
 Eventually, this will benefit you too.
+
+==========================
+Doxygen Wisdom
+--------------
+
+- Entities that are members of classes are only documented if their class is documented.
+- Entities declared at namespace scope are only documented if their namespace is documented.
+- Entities declared at file scope are only documented if their file is documented.
+
 */
 
 namespace V3DLib {
