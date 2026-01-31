@@ -11,38 +11,6 @@ using ::operator<<;  // C++ weirdness
 
 namespace {
 
-MAYBE_UNUSED bool contains(std::string const &s1, std::string const &s2) {	
-	if (s1.find(s2) != std::string::npos) {
-    //std::cout << "found!" << '\n';
-		return true;
-	}
-
-	return false;
-}
-
-
-/**
- * Split a string at a given delimiter.
- *
- * Note that this is destructive on the input string.
- *
- * Source: https://stackoverflow.com/a/14266139/1223531
- */
-std::vector<std::string> split(std::string& s, const std::string& delimiter) {
-  std::vector<std::string> tokens;
-  size_t pos = 0;
-  std::string token;
-  while ((pos = s.find(delimiter)) != std::string::npos) {
-    token = s.substr(0, pos);
-    tokens.push_back(token);
-    s.erase(0, pos + delimiter.length());
-  }
-  tokens.push_back(s);
-
-  return tokens;
-}
-
-
 std::string make_comment(std::string &str) {
 	std::vector<std::string> lines = split(str, "\n");
 
