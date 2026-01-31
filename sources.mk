@@ -1,7 +1,7 @@
 #
 # This file is generated!  Editing it directly is a bad idea.
 #
-# Generated on: Fri Jan 30 02:48:28 PM CET 2026
+# Generated on: Sat Jan 31 07:34:49 AM CET 2026
 #
 ###############################################################################
 
@@ -123,7 +123,6 @@ EXAMPLES := \
   Matrix  \
   OET  \
   ReqRecv  \
-  Rot3D  \
   Tri  \
   Counter  \
   detectPlatform  \
@@ -165,6 +164,7 @@ SUB_PROJECTS := \
   RNN \
   HeatMap \
   Gravity \
+  Rot3D \
 
 
 Mandelbrot: $(V3DLIB)
@@ -178,5 +178,8 @@ HeatMap: $(V3DLIB)
 	
 Gravity: $(V3DLIB)
 	@cd Examples/Gravity && make DEBUG=${DEBUG} QPU=${QPU} 
+	
+Rot3D: $(V3DLIB)
+	@cd Examples/Rot3D && make DEBUG=${DEBUG} QPU=${QPU} 
 	
 
