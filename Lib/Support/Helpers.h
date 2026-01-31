@@ -1,6 +1,7 @@
 #ifndef _V3DLIB_SUPPORT_HELPERS_H_
 #define _V3DLIB_SUPPORT_HELPERS_H_
 #include <string>
+#include <vector>
 
 namespace V3DLib {
 

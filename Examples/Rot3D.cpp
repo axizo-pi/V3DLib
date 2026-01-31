@@ -8,6 +8,7 @@
 
 using namespace V3DLib;
 using namespace kernels;
+using namespace std;
 using KernelType = decltype(rot3D_1);  // All kernel functions except scalar have same prototype
 
 
@@ -81,7 +82,7 @@ void info() {
 "  - clockwise around the y axis (param rotate_y)\n"
 "  - clockwise around the z axis (param rotate_z)\n"
 "\n"
-"(If you're looking down at the rotation axis, the rotation will be counter-clockwise).\n"
+"If you're looking down at the rotation axis, the rotation will be counter-clockwise.\n"
 "The following rotation matrices are used:\n"
 "\n"
 "           |   1       0       0     |\n"
@@ -101,7 +102,7 @@ void info() {
 "\n"	
 	;
 
-	std::cout << msg;
+	cout << msg;
 }
 
 
@@ -132,7 +133,7 @@ struct Rot3DSettings : public Settings {
     rot_z        = p["Rotate Z"]->get_float_value();
 
     if (num_vertices % 16 != 0) {
-      printf("ERROR: Number of vertices must be a multiple of 16.\n");
+      cout << "ERROR: Number of vertices must be a multiple of 16.\n";
       return false;
     }
 
@@ -149,7 +150,28 @@ struct Rot3DSettings : public Settings {
 // ============================================================================
 
 void init_arrays(float *x, float *y, float *z, int size) {
-  for (int i = 0; i < size; i++) {
+	assert(size % 16 == 0);
+	assert(size >= 16);
+
+	auto init_v = [x, y, z] (int index, float in_x, float in_y, float in_z) {
+		x[index] = in_x;
+		y[index] = in_y;
+		z[index] = in_z;
+	};
+
+	// First, initialize basic vectors
+	init_v(0,  1,  0,  0);
+	init_v(1,  0,  1,  0);
+	init_v(2,  0,  0,  1);
+	init_v(3, -1,  0,  0);
+	init_v(4,  0, -1,  0);
+	init_v(5,  0,  0, -1);
+	init_v(6,  1,  1,  0);
+	init_v(7,  1,  0,  1);
+	init_v(8,  0,  1,  1);
+
+	// Add some reasonably random stuff
+  for (int i = 9; i < size; i++) {
     x[i] = (float) ((i +2)% 4);
     y[i] = (float) (i % 4);
     z[i] = 1;
@@ -165,7 +187,7 @@ void disp_arrays(float *x, float *y, float *z, int size) {
   if (!settings.show_results) return;
 
   for (int i = 0; i < settings.num_vertices; i++) {
-		std::cout << x[i] << ", " << y[i] << ", " << z[i] << "\n";
+		cout << x[i] << ", " << y[i] << ", " << z[i] << "\n";
   }
 }
 
@@ -204,6 +226,7 @@ void init_arrays(Arr &x, Arr &y) {
     y[i] = (float) i;
   }
 }
+
 
 template<typename Arr>
 void disp_arrays(Arr &x, Arr &y) {
@@ -261,7 +284,8 @@ void run_kernel(int kernel_index) {
   auto name = kernel_id[kernel_index];
 
   if (!settings.silent) {
-    printf("Ran kernel '%s' with %d QPU's.\n", name, settings.num_qpus);
+    cout << "Ran kernel '" << name << "' "
+		     << "with " << settings.num_qpus << " QPU's.\n";
   }
 }
 
