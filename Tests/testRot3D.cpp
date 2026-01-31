@@ -84,9 +84,11 @@ TEST_CASE("Test working of Rot3D example [rot3d]") {
     // Allocate and initialise
     float* x_scalar = new float [N];
     float* y_scalar = new float [N];
+    float* z_scalar = new float [N];
     initArrays(x_scalar, y_scalar, N);
 
-    rot3D(N, cosf(THETA), sinf(THETA), x_scalar, y_scalar);
+		// Run scalar
+		rot3D(N, 0, 0, 1, x_scalar, y_scalar, z_scalar);
 
     // Storage for first kernel results
     float* x_1 = new float [N];
@@ -187,8 +189,9 @@ TEST_CASE("Test working of Rot3D example [rot3d]") {
 
     delete [] x_1;
     delete [] y_1;
-    delete [] x_scalar;
+    delete [] z_scalar;
     delete [] y_scalar;
+    delete [] x_scalar;
   }
 
 

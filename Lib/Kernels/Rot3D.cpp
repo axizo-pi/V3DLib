@@ -18,6 +18,27 @@ using namespace V3DLib;
 // Scalar version
 // ============================================================================
 
+/**
+ * Scalar kernel to rotate around x- and/or y- and/or z-axis.
+ *
+ * All angles are performed for in the calculation.
+ * The order of rotation is:
+ *
+ * - Around x-axis
+ * - Around y-axis
+ * - Around z-axis
+ *
+ * @param n     Number of elements in passed float arrays
+ * @param rot_x Angle to which rotate clockwise around the x-axis.
+ *              The value is a multiple of `PI`.
+ * @param rot_y Angle to which rotate clockwise around the y-axis.
+ *              The value is a multiple of `PI`.
+ * @param rot_z Angle to which rotate clockwise around the z-axis.
+ *              The value is a multiple of `PI`.
+ * @param x     Array containing x-component of vectors to rotate
+ * @param x     Array containing y-component of vectors to rotate
+ * @param z     Array containing z-component of vectors to rotate
+ */
 void rot3D(int n, float rot_x, float rot_y, float rot_z, float *x, float *y, float *z) {
   const float PI = (float) 3.14159;
 
@@ -37,7 +58,7 @@ void rot3D(int n, float rot_x, float rot_y, float rot_z, float *x, float *y, flo
     float x_prev = x[i];
     z_prev = z[i];
 
-    x[i] = x_prev *  cos(rot_y) - z_prev * sin(rot_y);
+    x[i] = x_prev *  cos(rot_y) + z_prev * sin(rot_y);
     z[i] = x_prev * -sin(rot_y) + z_prev * cos(rot_y);
 
 		// Rotation around z-axis

@@ -1,5 +1,6 @@
 #include "Stmt.h"
 #include "Support/basics.h"
+#include "Support/Helpers.h"
 #include "vc4/DMA/DMA.h"
 #include "LibSettings.h"
 
