@@ -1,3 +1,7 @@
+<head>
+	<link rel="stylesheet" type="text/css" href="css/docs.css">
+</head>
+
 # Profiling Matrix multiplication
 
 This compares the efficiency of *full* matrix multiplications with
@@ -9,11 +13,9 @@ due to not enough registers available.
 With block matrices, a given matrix is split into sub-matrices, which are calculated separately
 and then added:
 
-```
                         | B1 |
     AxB = | A1 | A2 | x | -- | = | A1xB1 + B1xB2 |
                         | B2 |
-```
 
 The implementation handled here divides matrices into two block matrices.
 Since this now works, the subdivision can be ieasily further expanded into any amount of block matrices.
@@ -23,8 +25,6 @@ There is no need for this yet, so I will leave it for now.
 ## Comparison of number of used QPUs
 
 | ![vc4 full multiplication](./images/vc4_full_mult_qpus.png) | ![vc4 block multiplication](./images/vc4_block_mult_qpus.png) |
-|:---:|:---:|
-| `vc4` full multiplication | `v4c` block multiplication |
 
 What you see here, is that the performance scales nicely with the number of used QPUs.
 This is true for the full matrix calculation as well as the block calculation.

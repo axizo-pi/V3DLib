@@ -1,13 +1,12 @@
+<head>
+	<link rel="stylesheet" type="text/css" href="css/docs.css">
+</head>
+
 # Build Instructions
 
 Jump straight to the actual [Basic Build Instructions](#basic-build-instructions).
 
-
 ## General Project Information
-
-- The C++ code is compiled with language version `c++17`
-- Indent is two spaces. Not because I want it to (I vastly prefer tabs), but because `github`
-  otherwise makes a mess of the source display, especially when tabs and spaces are mixed.
 
 ### External Libraries
 
@@ -52,8 +51,13 @@ You need to run the example programs with sudo in the following situations:
 
 ## Basic Build Instructions
 
-This demonstrates the build commands by example.
+The output directory depends on the make flags passed.
 The flags `GPU` and `DEBUG` are explained below.
+
+Strictly speaking, any program that works in emulation mode but not on the Pi’s physical QPUs is
+probably a bug in V3DLib and should be reported.
+
+This demonstrates the build commands by example.
 
     > make help                     # Overview of specific build commands
     > make                          # same
@@ -113,8 +117,10 @@ The makefile takes two flags:
 - **QPU=1**    - includes the code in the build for utilizing the GPU hardware
                  Values 1 (default) or 0.
 
-Using `QPU=0` allows you to develop run code on non-Pi platforms.
+Using `QPU=0` allows you to develop run code on non-Pi platforms[^1].
 Run modes `emulator` and `interpreter` will then still be available.
+
+[^1]: However, it will have a severe performance impact.
 
 The build directory depends on the make flags passed. The combinations are:
 

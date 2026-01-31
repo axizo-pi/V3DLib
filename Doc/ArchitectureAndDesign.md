@@ -1,13 +1,6 @@
-<style>
-
-pre:has(> code) {
-	background-color: lightgrey;
-	margin-left: 2em;
-	padding: 1em;
-	border: thin solid black;
-}
-
-</style>
+<head>
+	<link rel="stylesheet" type="text/css" href="css/docs.css">
+</head>
 
 # Architecture and Design
 
@@ -15,25 +8,30 @@ This document explains the basics of the QPU architecture and documents some des
 
 -----
 
-# Naming
+# Naming and other Conventions
 
 The following naming is used within the project:
 
 - The `VideoCore IV` is referred to as `vc4`,
-- The `VideoCore VI` as `vc6`.
+- The `VideoCore VI` as `vc6`,
 - The `VideoCore VII` as `vc7`.
 - `vc6` and `vc7` are collectively referred to as `v3d`[^1]. 
 
 [^1]: This comes from the Mesa library. `vc6` and `vc7` are handled by a common driver called `v3d`.
 
-By convention:
-
+- The earliest Debian version supported is **Debian 10 Buster**.
+- 32-bits continues to be supported. This is required for the early PI's and `Zero`.
+- The C++ code is currently compiled with language version `c++17`. There is no overriding reason
+  to hold on to this, give me a good reason and I will happily up the C++ version.
+- Indent is two spaces. Not because I want it to (I vastly prefer tabs), but because `github`
+  otherwise makes a mess of the source display, especially when tabs and spaces are mixed.
 - A program running on a VideoCore is named a [(compute) kernel](https://en.wikipedia.org/wiki/Compute_kernel).
 	I leave out 'compute' when describing kernels.
   This is different from the Broadcomm and Mesa terminology, where programs are called **shaders**.
 - Values passed from a CPU program into a kernel are called *uniform values* or **uniforms**.
 
-Kernel programs compile dynamically, so that a given program can run unchanged on any version of the RaspBerry Pi.
+Kernel programs are compiled dynamically, so that a given program can run unchanged on any version
+of the RaspBerry Pi.
 The kernels are generated inline and offloaded to the GPU's at runtime.
 
 
@@ -95,27 +93,35 @@ In a kernel, when loading values in a register in a manner that would be conside
 
 In order to use the vector processing capabalities effectively, you want to be able to perform the calculations
 with different values.
+
 The following functions at source code level are supplied to deal this:
 
 ### Function `index()`
 
 Returns an index value unique to each vector element, in the range `0..15`.
 
+The following user-level code:
+
+    Int a = index();
+
+Results in: 
+
+    a = <0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15>
 
 ### Function `me()`
 
-Returns an index value unique to each QPU participating an a calculation.
+Returns an index value unique to each QPU participating in a calculation.
 A single running QPU would have `me() == 0`, any further QPU's are indexed sequentially.
 
 ### Function `numQPUs()` 
 
 Returns  number of QPU's participating in a calculation.
 
-For `vc4`, the number of QPU's is selectable between 1 and 12, 12 being the maximum.
-The participating QPU's would then have `me() == 0, 1, 2...` up to the selected maximum.
+The possible values depend on the VideoCore used:
 
-For `v3d`, you can use either 1 or 8 QPU's. In the latter case, `me()` would return 0, 1, 2, 3, 4, 5, 6 or 7 per QPU.
-
+- `vc4`: 1...12
+- `vc6`: 1 or 8
+- `vc7`: 1...16
 
 ### Vector offset calculation
 

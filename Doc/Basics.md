@@ -1,3 +1,7 @@
+<head>
+	<link rel="stylesheet" type="text/css" href="css/docs.css">
+</head>
+
 # VideoCore Basics - What you need to know
 
 In order to effectively program on the `VideoCore`, you need a working model of its functionality

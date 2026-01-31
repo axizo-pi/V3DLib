@@ -1,6 +1,8 @@
 [//]: # (Construct `<a name="performance-1"></a>` is used to disambiguate internal links)
 [//]: # (This is not required for unambiguous links, `markdown` and/or `gitlit` can deal with these)
-
+<head>
+	<link rel="stylesheet" type="text/css" href="css/docs.css">
+</head>
 
 # Examples
 
@@ -27,10 +29,8 @@
 
 To build and run an example:
 
-```
-make QPU=1 <name>
-sudo obj/qpu/bin/<name>
-```
+    make QPU=1 <name>
+    sudo obj/qpu/bin/<name>
 
 Interesting examples (there are more):
 
@@ -63,20 +63,18 @@ We present two versions of the algorithm:
 
 In plain C++, we can express the algorithm as follows.
 
-```C++
-void gcd(int* p, int* q, int* r) {
-  int a = *p;
-  int b = *q;
-
-  while (a != b) {
-    if (a > b) 
-      a = a-b;
-    else
-      b = b-a;
-  }
-  *r = a;
-}
-```
+    void gcd(int* p, int* q, int* r) {
+      int a = *p;
+      int b = *q;
+    
+      while (a != b) {
+        if (a > b) 
+          a = a-b;
+        else
+          b = b-a;
+      }
+      *r = a;
+    }
 
 Admittedly, it's slightly odd to write `gcd` in this way, operating
 on pointers to integers rather than integers directly.  However, it
@@ -87,23 +85,21 @@ prepares the way for the vector version which operates on
 
 Using `V3DLib`, the algorithm looks as follows.
 
-```c++
-void gcd(Int::Ptr p, Int::Ptr q, Int::Ptr r) {
-  Int a = *p;
-  Int b = *q;
-
-  While (any(a != b))
-    Where (a > b)
-      a = a-b;
-    End
-    Where (a < b)
-      b = b-a;
-    End
-  End
-
-  *r = a;
-}
-```
+    void gcd(Int::Ptr p, Int::Ptr q, Int::Ptr r) {
+      Int a = *p;
+      Int b = *q;
+    
+      While (any(a != b))
+        Where (a > b)
+          a = a-b;
+        End
+        Where (a < b)
+          b = b-a;
+        End
+      End
+    
+      *r = a;
+    }
 
 This example introduces a number of concepts:
 
@@ -123,116 +119,109 @@ This example introduces a number of concepts:
 
 It's worth reiterating that `V3dLib` is just standard C++ code: there
 are no pre-processors being used other than the standard C pre-processor.
-All the `V3DLib` language constructs are simply classes, functions, and macros exported by `V3DLib`.
-This kind of language is called a
-[Domain Specific Embedded Language](http://cs.yale.edu/c2/images/uploads/dsl.pdf).
-
+All the `V3DLib` language constructs are simply classes, functions, and macros exported by `V3DLib`.  
+This kind of language is called a [Embedded Domain Specific Language](https://wiki.c2.com/?EmbeddedDomainSpecificLanguage){:target="_blank"}.
 
 ### Invoking the QPUs
 
 The following program computes 16 GCDs in parallel on a single QPU:
 
-```c++
-int main(int argc, const char *argv[]) {
-  settings.init(argc, argv);
-
-  auto k = compile(gcd);                 // Construct the kernel
-
-  Int::Array a(16), b(16), r(16);        // Allocate and initialise the arrays shared between ARM and GPU
-  srand(0);
-  for (int i = 0; i < 16; i++) {
-    a[i] = 100 + (rand() % 100);
-    b[i] = 100 + (rand() % 100);
-  }
-
-  k.load(&a, &b, &r);                    // Invoke the kernel
-  settings.process(k);
-
-  for (int i = 0; i < 16; i++)           // Display the result
-    printf("gcd(%i, %i) = %i\n", a[i], b[i], r[i]);
-  
-  return 0;
-}
-```
+    int main(int argc, const char *argv[]) {
+      settings.init(argc, argv);
+    
+      auto k = compile(gcd);                 // Construct the kernel
+    
+      Int::Array a(16), b(16), r(16);        // Allocate and initialise the arrays shared between ARM and GPU
+      srand(0);
+      for (int i = 0; i < 16; i++) {
+        a[i] = 100 + (rand() % 100);
+        b[i] = 100 + (rand() % 100);
+      }
+    
+      k.load(&a, &b, &r);                    // Invoke the kernel
+      settings.process(k);
+    
+      for (int i = 0; i < 16; i++)           // Display the result
+        printf("gcd(%i, %i) = %i\n", a[i], b[i], r[i]);
+      
+      return 0;
+    }
 
 Explanation:
 
   * `compile()` takes a function defining a QPU computation and returns a
     CPU-side handle that can be used to invoke it;
-  * the handle `k` is of type `Kernel<Int::Ptr, iInt::Ptr, Int::Ptr>`,
+  * the handle `k` is of type `Kernel<Int::Ptr, Int::Ptr, Int::Ptr>`,
     capturing the types of `gcd`'s parameters,
     but we use the `auto` keyword to avoid clutter;
   * when the kernel is invoked by writing `k(&a, &b, &r)`, `V3DLib` 
     automatically converts CPU values of type
     `Int::Array*` into QPU values of type `Int::Ptr`;
-  * Type `Int::Array` is derived  from `SharedArray&lt;&alpha;&gt;` which is used to allocate
+  * Type `Int::Array` is derived  from `SharedArray<>` which is used to allocate
     memory that is accessible by both the CPU and the QPUs.
     memory allocated with `new` and `malloc()` is not accessible from the QPUs.
 
 Running this program produces the output:
 
-```
-gcd(183, 186) = 3
-gcd(177, 115) = 1
-gcd(193, 135) = 1
-gcd(186, 192) = 6
-gcd(149, 121) = 1
-gcd(162, 127) = 1
-gcd(190, 159) = 1
-gcd(163, 126) = 1
-gcd(140, 126) = 14
-gcd(172, 136) = 4
-gcd(111, 168) = 3
-gcd(167, 129) = 1
-gcd(182, 130) = 26
-gcd(162, 123) = 3
-gcd(167, 135) = 1
-gcd(129, 102) = 3
-```
+    gcd(183, 186) = 3
+    gcd(177, 115) = 1
+    gcd(193, 135) = 1
+    gcd(186, 192) = 6
+    gcd(149, 121) = 1
+    gcd(162, 127) = 1
+    gcd(190, 159) = 1
+    gcd(163, 126) = 1
+    gcd(140, 126) = 14
+    gcd(172, 136) = 4
+    gcd(111, 168) = 3
+    gcd(167, 129) = 1
+    gcd(182, 130) = 26
+    gcd(162, 123) = 3
+    gcd(167, 135) = 1
+    gcd(129, 102) = 3
 
 ### Vector version 2: loop unrolling
 
-[Loop unrolling](https://en.wikipedia.org/wiki/Loop_unrolling) is a
+[Loop unrolling](https://en.wikipedia.org/wiki/Loop_unrolling){:target="_blank"} is a
 technique for improving performance by reducing the number of costly
 branch instructions executed.
 
 The QPU's branch instruction is costly: it requires three
-[delay slots](https://en.wikipedia.org/wiki/Delay_slot) (that's 12 clock cycles),
+[delay slots](https://en.wikipedia.org/wiki/Delay_slot){:target="_blank"} (that's 12 clock cycles),
 and this project currently makes no attempt to fill these slots with useful work.
 Although loop unrolling is not done automaticlly,
 it is straightforward use a C++ loop to generate multiple QPU statements.
 
-```c++
-void gcd(Int::Ptr p, Int::Ptr q, Int::Ptr r) {
-  Int a = *p;
-  Int b = *q;
-  While (any(a != b))
-    // Unroll the loop body 32 times
-    for (int i = 0; i < 32; i++) {
-      Where (a > b)
-        a = a-b;
+    void gcd(Int::Ptr p, Int::Ptr q, Int::Ptr r) {
+      Int a = *p;
+      Int b = *q;
+      While (any(a != b))
+        // Unroll the loop body 32 times
+        for (int i = 0; i < 32; i++) {
+          Where (a > b)
+            a = a-b;
+          End
+          Where (a < b)
+            b = b-a;
+          End
+        }
       End
-      Where (a < b)
-        b = b-a;
-      End
+      *r = a;
     }
-  End
-  *r = a;
-}
-```
 
 
 ## Example 2: 3D Rotation
 
 This example illustrates a routine to rotate 3D objects.
 
-([OpenGL ES](https://www.raspberrypi.org/documentation/usage/demos/hello-teapot.md)
+([OpenGL ES](https://www.raspberrypi.org/documentation/usage/demos/hello-teapot.md){:target="_blank"}
 is probably a better idea for this if you need to rotate a lot.
 This example is just for illustration purposes)
 
 If this is applied to the vertices of
-[Newell's teapot](https://github.com/rm-hull/newell-teapot/blob/master/teapot)
-(rendered using [Richard Hull's wireframes](https://github.com/rm-hull/wireframes) tool):
+[Newell's teapot](https://github.com/rm-hull/newell-teapot/blob/master/teapot){:target="_blank"}[^1];
+
+[^1]: rendered using [Richard Hull's wireframes](https://github.com/rm-hull/wireframes){:target="_blank"} tool
 
 | ![Newell's teapot](./images/teapot.png) | ![Newell's teapot rotated](./images/teapot180.png) |
 |:---:|:---:|
@@ -243,32 +232,28 @@ If this is applied to the vertices of
 The following function will rotate `n` vertices about the Z axis by
 &theta; degrees.
 
-```c++
-void rot3D(int n, float cosTheta, float sinTheta, float* x, float* y) {
-  for (int i = 0; i < n; i++) {
-    float xOld = x[i];
-    float yOld = y[i];
-    x[i] = xOld * cosTheta - yOld * sinTheta;
-    y[i] = yOld * cosTheta + xOld * sinTheta;
-  }
-}
-```
+    void rot3D(int n, float cosTheta, float sinTheta, float* x, float* y) {
+      for (int i = 0; i < n; i++) {
+        float xOld = x[i];
+        float yOld = y[i];
+        x[i] = xOld * cosTheta - yOld * sinTheta;
+        y[i] = yOld * cosTheta + xOld * sinTheta;
+      }
+    }
 
 ### <a name="vector-version-1-1"></a>  Vector version 1
 
 This first vector version is almost identical to the scalar version above.
 The only difference is that each loop iteration now processes 16 vertices at a time rather than a single vertex.
 
-```c++
-void rot3D_1(Int n, Float cosTheta, Float sinTheta, Float::Ptr x, Float::Ptr y) {
-  For (Int i = 0, i < n, i += 16)
-    Float xOld = x[i];
-    Float yOld = y[i];
-    x[i] = xOld * cosTheta - yOld * sinTheta;
-    y[i] = yOld * cosTheta + xOld * sinTheta;
-  End
-}
-```
+    void rot3D_1(Int n, Float cosTheta, Float sinTheta, Float::Ptr x, Float::Ptr y) {
+      For (Int i = 0, i < n, i += 16)
+        Float xOld = x[i];
+        Float yOld = y[i];
+        x[i] = xOld * cosTheta - yOld * sinTheta;
+        y[i] = yOld * cosTheta + xOld * sinTheta;
+      End
+    }
 
 This simple solution will spend a lot of time blocking on the memory subsystem, waiting for vector reads and write to complete.
 The next section explores how to improve performance by overlapping memory access with computation.
@@ -302,29 +287,27 @@ This means that a maximum of eight `gather` calls may be issued before a `receiv
 
 A vectorised rotation routine that overlaps memory access with computation might be as follows:
 
-```c++
-void rot3D_2(Int n, Float cosTheta, Float sinTheta, Float::Ptr x, Float::Ptr y) {
-  Int inc = numQPUs() << 4;
-  Float::Ptr p = x + me()*16;
-  Float::Ptr q = y + me()*16;
+    void rot3D_2(Int n, Float cosTheta, Float sinTheta, Float::Ptr x, Float::Ptr y) {
+      Int inc = numQPUs() << 4;
+      Float::Ptr p = x + me()*16;
+      Float::Ptr q = y + me()*16;
+    
+      gather(p); gather(q);
+     
+      Float xOld, yOld;
+      For (Int i = 0, i < n, i += inc)
+        gather(p+inc); gather(q+inc); 
+        receive(xOld); receive(yOld);
+    
+        *p = xOld * cosTheta - yOld * sinTheta;
+        *q = yOld * cosTheta + xOld * sinTheta;
+        p += inc; q += inc;
+      End
+    
+      receive(xOld); receive(yOld);
+    }
 
-  gather(p); gather(q);
- 
-  Float xOld, yOld;
-  For (Int i = 0, i < n, i += inc)
-    gather(p+inc); gather(q+inc); 
-    receive(xOld); receive(yOld);
-
-    *p = xOld * cosTheta - yOld * sinTheta;
-    *q = yOld * cosTheta + xOld * sinTheta;
-    p += inc; q += inc;
-  End
-
-  receive(xOld); receive(yOld);
-}
-```
-
-(**TODO** same example with `prefetch()`)
+_(**TODO** same example with `prefetch()`)_
 
 While the outputs from one iteration are being computed and written to
 memory, the inputs for the *next* iteration are being loaded *in parallel*.
@@ -337,8 +320,7 @@ Each QPU will handle a distinct block of 16 elements.
 
 Times taken to rotate an object with 192,000 vertices:
 
-```
-Raspberry Pi 3 Model B Rev 1.2 (vc4):
+**Raspberry Pi 3 Model B Rev 1.2 (vc4):**
 
   Version  | Number of QPUs | Run-time (s) |
   ---------| -------------- | ------------ |
@@ -349,7 +331,7 @@ Raspberry Pi 3 Model B Rev 1.2 (vc4):
   Kernel 2 |  8             | 0.013368     |
   Kernel 2 | 12             | 0.013386     |
 
-Raspberry Pi 4 Model B Rev 1.1 (64-bits, v3d):
+**Raspberry Pi 4 Model B Rev 1.1 (64-bits, v3d):**
 
   Version  | Number of QPUs | Run-time (s) |
   ---------| -------------- | ------------ |
@@ -358,7 +340,6 @@ Raspberry Pi 4 Model B Rev 1.1 (64-bits, v3d):
   Kernel 2 |  1             | 0.00566      |
   Kernel 2 |  8             | 0.001803     |
 
-```
 
 ![Rot3D Profiling](./images/rot3d_profiling.png)
 
@@ -385,9 +366,7 @@ states that an object cools at a rate proportional to the difference
 between its temperature `T` and the temperature of its environment (or
 ambient temperature) `A`:
 
-```
-   dT/dt = −k(T − A)
-```
+    dT/dt = −k(T − A)
 
 In the simulation, each point on the 2D surface to be a separate object,
 and the ambient temperature of each object to be the average of the temperatures of the 8 surrounding objects.
@@ -408,20 +387,18 @@ The following images show what happens with progressive iterations:
 The following function simulates a single time-step of the
 differential equation, applied to each object in the 2D grid.
 
-```c++
-void scalar_step(float** map, float** mapOut, int width, int height) {
-  for (int y = 1; y < height-1; y++) {
-    for (int x = 1; x < width-1; x++) {
-      float surroundings =
-        map[y-1][x-1] + map[y-1][x]   + map[y-1][x+1] +
-        map[y][x-1]   +                 map[y][x+1]   +
-        map[y+1][x-1] + map[y+1][x]   + map[y+1][x+1];
-      surroundings *= 0.125f;
-      mapOut[y][x] = (float) (map[y][x] - (K * (map[y][x] - surroundings)));
+    void scalar_step(float** map, float** mapOut, int width, int height) {
+      for (int y = 1; y < height-1; y++) {
+        for (int x = 1; x < width-1; x++) {
+          float surroundings =
+            map[y-1][x-1] + map[y-1][x]   + map[y-1][x+1] +
+            map[y][x-1]   +                 map[y][x+1]   +
+            map[y+1][x-1] + map[y+1][x]   + map[y+1][x+1];
+          surroundings *= 0.125f;
+          mapOut[y][x] = (float) (map[y][x] - (K * (map[y][x] - surroundings)));
+        }
+      }
     }
-  }
-}
-```
 
 
 ### Kernel Version
@@ -432,17 +409,16 @@ This allows for a kernel program to access all direct neighbors of a particular 
 
 Conceptually, you can think of it as follows:
 
-```
-               prev     current    next
-columns:       i - 1       i       i + 1
-            +---------+---------+---------+
-line j -1   |         |         |         |
-            +---------+---------+---------+
-line j      |         | (i , j) |         |
-            +---------+---------+---------+
-line j + 1  |         |         |         |
-            +---------+---------+---------+
-```
+                   prev     current    next
+    columns:       i - 1       i       i + 1
+                +---------+---------+---------+
+    line j -1   |         |         |         |
+                +---------+---------+---------+
+    line j      |         | (i , j) |         |
+                +---------+---------+---------+
+    line j + 1  |         |         |         |
+                +---------+---------+---------+
+
 Keep in mind, though, that in the implementation every cell is actually a 16-vector,
 and represents 16 consecutive values.
 
@@ -451,46 +427,44 @@ For the kernel program, a 1D-array with a width offset ('pitch') is used to impl
 The kernel simulation step using cursors is expressed below (taken from example `HeatMap`).
 
 
-```C++
-/**
- * Performs a single step for the heat transfer
- */
-void heatmap_kernel(Float::Ptr map, Float::Ptr mapOut, Int height, Int width) {
-  Cursor cursor(width);
-
-  For (Int offset = cursor.offset()*me() + 1,
-       offset < height - cursor.offset() - 1,
-       offset += cursor.offset()*numQPUs())
-
-    Float::Ptr src = map    + offset*width;
-    Float::Ptr dst = mapOut + offset*width;
-
-    cursor.init(src, dst);
-
-    // Compute one output row
-    For (Int x = 0, x < width, x = x + 16)
-      cursor.step([&x, &width] (Cursor::Block const &b, Float &output) {
-        Float sum = b.left(0) + b.current(0) + b.right(0) +
-                    b.left(1) +                b.right(1) +
-                    b.left(2) + b.current(2) + b.right(2);
-
-        output = b.current(1) - K * (b.current(1) - sum * 0.125);
-
-        // Ensure left and right borders are zero
-        Int actual_x = x + index();
-        Where (actual_x == 0)
-          output = 0.0f;
+    /**
+     * Performs a single step for the heat transfer
+     */
+    void heatmap_kernel(Float::Ptr map, Float::Ptr mapOut, Int height, Int width) {
+      Cursor cursor(width);
+    
+      For (Int offset = cursor.offset()*me() + 1,
+           offset < height - cursor.offset() - 1,
+           offset += cursor.offset()*numQPUs())
+    
+        Float::Ptr src = map    + offset*width;
+        Float::Ptr dst = mapOut + offset*width;
+    
+        cursor.init(src, dst);
+    
+        // Compute one output row
+        For (Int x = 0, x < width, x = x + 16)
+          cursor.step([&x, &width] (Cursor::Block const &b, Float &output) {
+            Float sum = b.left(0) + b.current(0) + b.right(0) +
+                        b.left(1) +                b.right(1) +
+                        b.left(2) + b.current(2) + b.right(2);
+    
+            output = b.current(1) - K * (b.current(1) - sum * 0.125);
+    
+            // Ensure left and right borders are zero
+            Int actual_x = x + index();
+            Where (actual_x == 0)
+              output = 0.0f;
+            End
+            Where (actual_x == width - 1)
+              output = 0.0f;
+            End
+          });
         End
-        Where (actual_x == width - 1)
-          output = 0.0f;
-        End
-      });
-    End
-
-    cursor.finish();
-  End
-}
-```
+    
+        cursor.finish();
+      End
+    }
 
 ### <a name="performance-1"></a> Performance
 
@@ -509,3 +483,5 @@ Times taken to simulate a 512x506 surface for 1500 steps:
 |            | Vector | 12             | 16.25        ||
 
 ![HeatMap performance](./images/heatmap_perf.png)
+
+--------------------------

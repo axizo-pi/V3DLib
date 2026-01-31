@@ -1,3 +1,7 @@
+<head>
+	<link rel="stylesheet" type="text/css" href="css/docs.css">
+</head>
+
 # TODO
 
 ## General
@@ -45,21 +49,18 @@
 *This can not be fixed - just keep it in mind*
 
 Example:
-```
-Float x = freq*(x + toFloat(index() - offset));  // Note usage x in RHS (redacted from original)
-```
+
+    Float x = freq*(x + toFloat(index() - offset));  // Note usage x in RHS (redacted from original)
 
 **Research:**
 
 The issue here is that the following is allowed by `C++` syntax:
-```
-int x = x;  // or any other rhs with x
-```
+
+    int x = x;  // or any other rhs with x
 
 ...and this is also valid for `Int x`. With `-Wall`, you will get output:
-```
-warning: ‘x’ may be used uninitialized in this function [-Wmaybe-uninitialized]
-```
+
+    warning: ‘x’ may be used uninitialized in this function [-Wmaybe-uninitialized]
 
 In the case of `Int x = x` the compiler will happily compile, but the contents of `x` on the rhs
 are uninitialized and therefore garbage. Due to this, things likely explode on execution.
@@ -68,24 +69,19 @@ are uninitialized and therefore garbage. Due to this, things likely explode on e
 
 Source code:
 
-```
     *p = 4*(index() + 16*me());
-```
 
   Target code:
 
-```
     22: ACC1 <- 16
     23: ACC1 <- mul24(ACC1, A0)
     24: ACC1 <- add(S[ELEM_NUM], ACC1)
     25: ACC1 <- mul24(4, ACC1)
     26: S[VPM_WRITE] <- or(ACC1, ACC1)
     27: S[DMA_ST_ADDR] <- or(A2, A2)
-```
 
   `v3d` assembly:
 
-```
     or  r1, 0x41800000, 0x41800000; nop
     nop                  ; smul24  r1, r1, rf0
     eidx  r0             ; nop
@@ -93,7 +89,6 @@ Source code:
     nop                  ; smul24  r1, 4, rf0   // Should be `smul24 r1, 4, r1` or similar
     or  tmud, r1, r1     ; nop
     or  tmua, rf2, rf2   ; nop
-```
 
   In assembled code, `rf0 (QPU_NUM)` gets reloaded, cancelling the previous operations
   The result is thus: `*p = 4*me()`
@@ -123,16 +118,14 @@ Source code:
   Due to kernel rounding downward for floating point operations, unit tests comparing outputs
   in an emulator-only (QPU=0) build will fail. E.g.:
 
-```
     Tests/testRot3D.cpp:33: FAILED:
-      REQUIRE( y1[i] == y2[i] )
+    REQUIRE( y1[i] == y2[i] )
     with expansion:
       -19183.95117f == 19184.0f
     with message:
       Comparing Rot3D_2 for index 19184
 
   This error happens twice, for `testRot3D`.
-```
 
 
 ## Investigate
@@ -152,14 +145,11 @@ Source code:
 - [x] For display, sort the parameters (except for `--help`, which should be at top)
 - [x] Issue, when leaving out `=` for param `-n`:
 
-```
-> sudo ./obj/qpu-debug/bin/Mandelbrot  -n12
-Error(s) on command line:
-  Parameter 'Num QPU's' (-n) takes a value, none specified.
-
-  Use 'help' or '-h' to view options
-
-```
+    > sudo ./obj/qpu-debug/bin/Mandelbrot  -n12
+    Error(s) on command line:
+      Parameter 'Num QPU's' (-n) takes a value, none specified.
+     
+      Use 'help' or '-h' to view options
 
 ## Library Code
 - [ ] Add check in emulator for too many `gather()` calls. Or not enough `receive()` calls, same thing

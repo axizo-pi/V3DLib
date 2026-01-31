@@ -1,3 +1,7 @@
+<head>
+	<link rel="stylesheet" type="text/css" href="css/docs.css">
+</head>
+
 Frequently Asked Questions
 --------------------------
 
@@ -32,22 +36,40 @@ The strategy appears to be to investigate the available open source drivers.
 
 Here is an overview for the easily comparable stuff:
 
+[Useful commands](#useful-commands) for obtaining this information.
+
+| Pi Version | CPU # Cores |CPU Clock (Mhz) | GPU Clock (Mhz) | VideoCore version |
+|------------|-------------|----------------|-----------------|-------------------|
+| **Pi1**    | 1           |  700           | 250             | vc4               |
+| **Pi2**    | 4           |  900           | 250             | vc4               |
+| **Pi3**    | 4           | 1200           | 300             | vc4               |
+| **Zero**   | 1           | 1000           | 300             | vc4               |
+| **Pi4**    | 4           | 1500           | 500             | vc6               |
+| **Pi5**    | 4           | 2400           | 960             | vc7               |
+
+
+**GPU Stuff**
+
+| Item                 | vc4             | vc6              | vc7             | Comment |
+|----------------------|-----------------|------------------|-----------------|---------|
+| **Num QPU's:**       | 12              | 8                | 16              |         | 
+| **Register Files**   | 2x32            | 1x64             | 1x64            |         |
+| **Data Transfer**    |                 |                  |                 |         |
+| DMA                  | read/write      | *not supported*  | *not supported* |         |
+| VPM                  | read only       | read/write       | read/write      |         |
+
+Previous version:
+
 | Item                 | vc4             | v3d              | Comment |
 |----------------------|-----------------|------------------|-|
-| **Clock Speed :**    | 400MHz (Pi3+)   | 500MHz           | |
-| **Num QPU's:**       | 12              | 8                | |
 | **TMU gather limit:**|  4              | 8                | The maximum number of concurrent prefetches before QPU execution blocks |
 | **Threads per QPU**  |                 |                  | *Shows num available registers in register file per thread* |
 | 1 thread             | 64 registers    |  *not supported* | |
 | 2 threads            | 32 registers    | 64 registers     | |
 | 4 threads            | *not supported* | 32 registers     | |
-| **Data Transfer**    |                 |                  | |
-| DMA                  | read/write      | *not supported*  | |
-| VPM                  | read only       | read/write       | |
-| **Register File**    | 2x32 registers  | 1x64 registers   | |
 
 - There was also a 'VideoCore V' (let's call it `vc5`), which was skipped in the Pis.
-- `vc5` added a four thread per QPU mode, with 16 registers per thread.
+- `vc5` added four threads per QPU mode, with 16 registers per thread.
 - Using threads in the QPU has effect upon the available resources: e.g. for two threads, the
   TMU depth is halved (to 4) and only half the registers in a register file are available.
 - `vc4` has two 32-register register files, A and B. `v3d` has a single 64-register register file.
@@ -314,3 +336,71 @@ Known cases (there may be more):
 | `errno()`      | `#include <errno.h>`  |
 | `printf()` etc | `#include <stdio.h>`  |
 
+===================
+
+## <a name="useful-commands">Useful Commands</a>
+
+Values here are for `Pi5`, unless otherwise specified.
+
+**Get GPU Speed**
+
+`Pi5`:
+
+    > vcgencmd get_config int | grep v3d
+    v3d_freq=960
+    v3d_freq_min=500
+
+`Pi4`, `Zero`:
+
+    > vcgencmd get_config int | grep gpu
+    gpu_freq=500
+    ...
+
+`Pi3`:
+
+    > sudo vcgencmd get_config int | grep gpu
+    gpu_freq=300
+
+Previous doesn't work on `Pi2`. Following is a tentative to get the QPU speed anyway:
+
+    > sudo vcgencmd measure_clock core
+    frequency(1)=250000000
+
+Also works for `Pi1`.
+
+
+
+**Get GPU info**
+
+`Pi5`, `Pi4`. Among other info, number of QPU's.
+
+    > cat /sys/kernel/debug/dri/0/v3d_ident
+    Revision:   7.1.7.0
+    MMU:        yes
+    TFU:        no
+    MSO:        yes
+    L3C:        no (0kb)
+    Core 0:
+      Revision:     7.1
+      Slices:       4
+      TMUs:         4
+      QPUs:         16
+      Semaphores:   0
+
+**Get CPU speed**
+
+`lscpu` returns other stuff which may be useful, in particular `Core(s) per cluster`.
+
+    > lscpu | grep CPU.*MHz
+    CPU(s) scaling MHz:                   62%
+    CPU max MHz:                          2400.0000
+    CPU min MHz:                          1500.0000
+
+Following works on `Pi2`, should be OK on other Pi's:
+
+    > vcgencmd get_config int | grep freq
+    arm_freq=900
+    arm_freq_min=600
+    ...
+
+-

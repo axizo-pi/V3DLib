@@ -44,15 +44,13 @@ class GenPages < WebController
 			"Examples.md",
 			"FAQ.md",
 			"Links.md",
-			"GettingStarted.md",
-			"QuickStart.md",
 			"Issues.md",
 			"Profiling.md",
 			"TODO.md",
 			"ArchitectureAndDesign.md",
 		  "Mesa2.md"
   	].each { |f|
-    	puts "generating page for #{f}"
+    	#puts "generating page for #{f}"
       init_inline_parts
       gen_method f
 		}
@@ -79,7 +77,8 @@ c.gen []
 dirs = [
   # Source                                          Target subdir
   # ======                                          =============
-  [ "../Doc/images",                                ""]
+  [ "../Doc/images",                                ""],
+  [ "../Doc/css",                                   ""]
 ]
 
 files = []

@@ -1,3 +1,7 @@
+<head>
+	<link rel="stylesheet" type="text/css" href="css/docs.css">
+</head>
+
 # Install Instructions
 
 I'm sorry, I can't make this easy. You've got to jump through several hoops to make it work.
@@ -30,7 +34,7 @@ Put the SD-card in the PI, and give it current to start it up.
 ## VC4: Set memory split and remove dtoverlay[^3]
 
 [^3]: It used to be possible to adjust the memory split witn `raspi-config`.
-      This option has been removed in more recent `Raspbian` version.
+      This option has been removed in more recent `Raspbian` versions.
 
 <!-- Line break in Markdown is "two or more spaces at the end of the line". -->
 

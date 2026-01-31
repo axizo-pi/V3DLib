@@ -1,0 +1,39 @@
+body {
+  font-family: sans-serif;
+}
+
+
+pre:has(> code) {
+	background-color: lightgrey;
+	margin-left: 2em;
+	padding: 1em;
+	border: thin solid black;
+}
+
+table, th, td {
+  border: 1px solid;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+th, td {
+	padding: 0.5em;
+}
+
+th {
+	font-style: bold;
+}
+
+img {
+	width: 50%;
+	height: auto;
+}
+
+
+td img {
+	width: auto;
+	height: auto;
+}
+

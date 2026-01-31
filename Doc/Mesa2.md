@@ -1,8 +1,6 @@
-* mesa - old mesa library
-* mesa2 - new mesa library
-* `vc6` is a synonym for define `V3D 4.x
-* `vc7` is a synonym for define `V3D 7.x
-
+<head>
+	<link rel="stylesheet" type="text/css" href="css/docs.css">
+</head>
 
 Remember: vc6 has one regfile, not a and b
 
@@ -13,16 +11,15 @@ Remember: vc6 has one regfile, not a and b
 
 --------------------
 
-mesa2, src/broadcom/qpu/qpu\_instr.h:
-```
-struct v3d_qpu_input {
-        union {
-                enum v3d_qpu_mux mux; /* V3D 4.x */
-                uint8_t raddr; /* V3D 7.x */
-        };
-        enum v3d_qpu_input_unpack unpack;
-};
-```
+mesa2, `src/broadcom/qpu/qpu\_instr.h`:
+
+    struct v3d_qpu_input {
+      union {
+        enum v3d_qpu_mux mux; /* V3D 4.x */
+        uint8_t raddr; /* V3D 7.x */
+      };
+      enum v3d_qpu_input_unpack unpack;
+    };
 
 `mux` maps to fields `add\_a/b` and `mul\_a/b'.
 
@@ -35,15 +32,14 @@ The latter contains `raddr\_a/b`
 
 --------------------
 
-mesa2, src/broadcom/qpu/qpu\_instr.h, struct `v3d\_qpu_sig`:
-```
-...
-        bool small_imm_a:1; /* raddr_a (add a), since V3D 7.x */
-        bool small_imm_b:1; /* raddr_b (add b) */
-        bool small_imm_c:1; /* raddr_c (mul a), since V3D 7.x */
-        bool small_imm_d:1; /* raddr_d (mul b), since V3D 7.x */
-...
-```
+mesa2, `src/broadcom/qpu/qpu\_instr.h`, struct `v3d\_qpu_sig`:
+
+    ...
+    bool small_imm_a:1; /* raddr_a (add a), since V3D 7.x */
+    bool small_imm_b:1; /* raddr_b (add b) */
+    bool small_imm_c:1; /* raddr_c (mul a), since V3D 7.x */
+    bool small_imm_d:1; /* raddr_d (mul b), since V3D 7.x */
+    ...
 
 Previously, there was only one field `small\_imm`; this maps to `small\_imm\_b`.
 So in `mesa`, only `raddr\_b` could be used for small imm.
