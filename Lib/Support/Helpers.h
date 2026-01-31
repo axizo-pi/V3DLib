@@ -5,10 +5,15 @@
 namespace V3DLib {
 
 float random_float();
-std::string indentBy(int indent);
 void to_file(std::string const &filename, std::string const &content);
 void sleep(int sec);
+
+//
+// String functions
+//
+std::string indentBy(int indent);
 bool contains(std::string const &s1, std::string const &s2);	
+std::vector<std::string> split(std::string& s, const std::string& delimiter);
 
 }  // namespace V3DLib
 
