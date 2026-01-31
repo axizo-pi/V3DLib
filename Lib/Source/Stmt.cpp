@@ -11,7 +11,7 @@ using ::operator<<;  // C++ weirdness
 
 namespace {
 
-bool contains(std::string const &s1, std::string const &s2) {	
+MAYBE_UNUSED bool contains(std::string const &s1, std::string const &s2) {	
 	if (s1.find(s2) != std::string::npos) {
     //std::cout << "found!" << '\n';
 		return true;
@@ -58,24 +58,10 @@ std::string make_comment(std::string &str) {
 
 }  // anon namespace
 
+
 // ============================================================================
 // Class Stmt
 // ============================================================================
-
-/**
- * Replacement initializer for this class,
- * because a class with unions can not have a ctor.
- *
- * TODO union has been removed, dissolve this method
- */
-void Stmt::init(Tag in_tag) {
-  clear_comments();  // TODO prob not necessary, check
-
-  assert(SKIP <= in_tag && in_tag <= DMA_START_WRITE);
-  assertq(tag == SKIP, "Stmt::init(): can't reassign tag once assigned");
-  tag = in_tag;
-}
-
 
 Stmt::~Stmt() {
 /*	
@@ -263,15 +249,12 @@ void Stmt::inc(Array const &arr) {
 
 
 /**
- * Debug routine for easier display of instance contents during debugging
+ * Dump output for current statement.
+ *
+ * @return Text representation of current statement.
  */
 std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_comments) const {
   std::string ret;
-
-	if (contains(InstructionComment::comment(), "barrier")) {
-		breakpoint;
-	}
-
 
   switch (tag) {
     case SKIP:
@@ -345,24 +328,27 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_com
       // There is no ELSE for while
     break;
 
-    case GATHER_PREFETCH:  ret << "GATHER_PREFETCH";  break;
-    case FOR:              ret << "FOR";              break;
-    case LOAD_RECEIVE:     ret << "LOAD_RECEIVE";     break;
+    case GATHER_PREFETCH:  ret << "GATHER_PREFETCH"; break;
+    case FOR:              ret << "FOR";             break;
+    case LOAD_RECEIVE:     ret << "LOAD_RECEIVE";    break;
+    case BARRIER:          ret << "BARRIER";         break;
 
     default: {
-        std::string tmp = DMA::disp(tag);
-				warn << "disp_intern default: " << tmp;
-        if (tmp.empty()) {
-          std::string msg;
-          msg << "Unknown tag '" << tag << "' in Stmt::disp_intern()";
+        std::string tmp = DMA::disp(tag);  // Check for unhandled DMA stuff
 
-          if (tag < 0 || tag > DMA_START_WRITE) {
+        if (!tmp.empty()) {
+					cdebug  << "Stmt::disp_intern() default DMA: " << tmp;
+        } else {
+          std::string msg;
+          msg << "Stmt::disp_intern() "
+              << "Unknown tag '" << tag << "'";
+
+          if (tag < 0 || tag >= NUM_TAGS) {
             msg << "; tag out of range";
           }
 
           assertq(false, msg, true);
-        }
-        ret << tmp;
+				}
       }
       break;
   }
@@ -381,6 +367,7 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_com
 			out << "           ; " << c;
 		}
 
+		assert(!out.empty());
   	return out;
 	}
 
@@ -389,16 +376,14 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_com
 
 
 Stmt::Ptr Stmt::create(Tag in_tag) {
-  Ptr ret(new Stmt());
-  ret->init(in_tag);
+  Ptr ret(new Stmt(in_tag));
   return ret;
 }
 
 
 Stmt::Ptr Stmt::create(Tag in_tag, Expr::Ptr e0, Expr::Ptr e1) {
   // Intention: assert(!DMA::Stmt::is_dma_tag(in_tag);  - and change default below
-  Ptr ret(new Stmt());
-  ret->init(in_tag);
+  Ptr ret(new Stmt(in_tag));
 
   switch (in_tag) {
     case ASSIGN:

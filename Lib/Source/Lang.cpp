@@ -107,6 +107,17 @@ void ForBody_() {
 }
 
 
+/**
+ * Has no inputs, only an output, which is always magic reg SYNCB.
+ *
+ * `barrier` is v3d-specific. vc4 will need a different implementation,
+ * most likely with semaphores.
+ */
+void barrier() {
+	stmtStack().push(Stmt::create(Stmt::BARRIER));
+}
+
+
 //=============================================================================
 // Comments and breakpoints
 //=============================================================================

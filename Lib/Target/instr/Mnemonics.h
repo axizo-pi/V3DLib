@@ -58,6 +58,8 @@ Instr itof(Reg dst, RegOrImm const &src);
 Instr branch(Label label);
 Instr label(Label in_label);
 
+Instr barrier();
+
 //
 // SFU functions
 //

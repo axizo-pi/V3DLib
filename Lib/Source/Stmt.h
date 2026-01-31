@@ -74,6 +74,8 @@ struct Stmt : public InstructionComment {
     DMA_START_READ,
     DMA_START_WRITE,
 
+		BARRIER,
+
     NUM_TAGS
   };
 
@@ -81,6 +83,8 @@ struct Stmt : public InstructionComment {
   public:
     std::string dump(bool show_comments = false) const;
   };
+
+  Stmt(Tag in_tag) : tag(in_tag) {}
 
   ~Stmt();
 
@@ -143,7 +147,6 @@ private:
   bool m_break_point = false;
 
   static Ptr create(Tag in_tag, Ptr s0, Ptr s1);
-  void init(Tag in_tag);
   std::string disp_intern(bool with_linebreaks, int seq_depth = 0, bool show_comments = false) const;
   bool check_blocks() const;
 };

@@ -521,16 +521,6 @@ void set_at(Float &dst, Int n, Float const &src) {
 
 
 /**
- * Has no inputs, only an output, which is always magic reg SYNCB.
- *
- * Actually not sure if return value required.
- */
-IntExpr barrier() {
-  return mkApply(Op(BARRIER, INT32)); 
-}
-
-
-/**
  * Let QPUs wait for each other.
  *
  * This is a busy wait!

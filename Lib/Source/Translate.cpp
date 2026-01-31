@@ -480,25 +480,25 @@ void translateIf(Instr::List &seq, Stmt &s) {
   using namespace Target::instr;
 
   Label endifLabel = freshLabel();
-  BranchCond cond  = condExp(seq, *s.if_cond());  // Compile condition
+  BranchCond cond  = condExp(seq, *s.if_cond());           // Compile condition
     
   if (s.else_block().empty()) {
     seq << branch(endifLabel).branch_cond(cond.negate());  // Branch over 'then' statement
-    stmts(&seq, s.then_block());                  // Compile 'then' statement
+    stmts(&seq, s.then_block());                           // Compile 'then' statement
   } else {
     Label elseLabel = freshLabel();
 
     seq << branch(elseLabel).branch_cond(cond.negate());   // Branch to 'else' statement
 
-    stmts(&seq, s.then_block());                  // Compile 'then' statement
+    stmts(&seq, s.then_block());                           // Compile 'then' statement
 
-    seq << branch(endifLabel)                  // Branch to endif
-        << label(elseLabel);                   // Label for 'else' statement
+    seq << branch(endifLabel)                              // Branch to endif label
+        << label(elseLabel);                               // Label for 'else' statement
 
-    stmts(&seq, s.else_block());                  // Compile 'else' statement
+    stmts(&seq, s.else_block());                           // Compile 'else' statement
   }
   
-  seq << label(endifLabel);                    // Label for endif
+  seq << label(endifLabel);                                // Label for endif
 }
 
 
@@ -516,17 +516,32 @@ void translateWhile(Instr::List &seq, Stmt &s) {
   condExp(seq, *s.loop_cond());                        // Compute condition again
                                                        // TODO why is this necessary?
 
-  seq << branch(startLabel).branch_cond(cond)          // Branch to start
+  seq << branch(startLabel).branch_cond(cond)          // Branch to start label
       << label(endLabel);                              // End label
 }
 
 
 // ============================================================================
-// Statements
+// Statement Handling
 // ============================================================================
 
+/**
+ * Translate a Source-level statement to Target-level statements.
+ *
+ * The conversion can emit multiple Target-level statements, or none at all.
+ *
+ * Source-level statements may contain blocks of statements; in that case,
+ * this method is called recursively via `stmts()`.
+ *
+ * @param seq Sequence of Target-level statements to which to add conversion of 
+ *            Source-level statement. 
+ * @param s   Pointer to Source-level statement to handle.
+ */
 void stmt(Instr::List *seq, Stmt::Ptr s) {
+	assert(s != nullptr);
   if (s == nullptr) return;
+
+  using namespace Target::instr;
 
   switch (s->tag) {
     case Stmt::GATHER_PREFETCH:          // Remove if still present
@@ -550,14 +565,17 @@ void stmt(Instr::List *seq, Stmt::Ptr s) {
       }
       break;
     case Stmt::LOAD_RECEIVE:             // 'receive(e)', where e is an expr
-      using Target::instr::recv;
-
       assert(s->address()->tag() == Expr::VAR);
       *seq << recv(s->address()->var());
       break;
+
+    case Stmt::BARRIER:
+      *seq << barrier();
+      break;
+
     default:
       if (!getSourceTranslate().stmt(*seq, s)) {
-        assert(false); // Should not be reachable
+				Log::cerr << "stmt() unhandled Stmt tag: " << s->tag << Log::thrw;
       }
       break;
   }

@@ -321,6 +321,22 @@ Instr branch(Label label) {
 }
 
 
+/**
+ * Target-level definition of a `barrier` instruction.
+ *
+ * The goal of `barrier` is for multi-QPU programs:
+ * If one QPU reaches it, it waits for all other QPU's to get here.
+ *
+ * When all QPU's have reached it, execution of all QPU's continues.
+ *
+ * `vc4` has no barrier instruction; the best implementation is probably
+ * by using semaphores (which don't exist on `v3d`).
+ */
+Instr barrier() {
+  return Instr(BARRIER);
+}
+
+
 Instr::List recipsqrt(Var dst, Var srcA) {
 	if (Platform::compiling_for_vc7()) {
 		Instr::List ret;
