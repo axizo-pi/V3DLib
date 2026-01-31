@@ -137,6 +137,11 @@ void add_init(Instr::List &code) {
 
 
 /**
+ * Process statements which are specific for v3d.
+ *
+ * For v3d, the only thing that happens is that DMA is blocked
+ * <i>(which feels a bit useless IMHO)</i>.
+ *
  * @return true if statement handled, false otherwise
  */
 bool SourceTranslate::stmt(Instr::List &seq, Stmt::Ptr s) {

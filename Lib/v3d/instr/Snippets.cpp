@@ -14,6 +14,7 @@ Instructions set_qpu_id(uint8_t reg_qpu_id) {
   return ret;
 }
 
+
 Instructions set_qpu_num(uint8_t num_qpus, uint8_t reg_qpu_num) {
   Instructions ret;
 

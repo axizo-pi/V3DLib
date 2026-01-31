@@ -47,13 +47,6 @@ void StmtStack::PrefetchContext::resolve_prefetches() {
   for (int i = 0; i < Platform::gather_limit() &&  i < (int) m_assigns.size(); ++i) {
     auto assign = m_assigns[i];
 
-/*
-  std::cout << "===== assign stack =====\n"
-            << assign->dump()
-            << "========================\n"
-            << std::endl;
-*/
-
     assert(assign->size() == 1);
     auto &assigns = *assign->top();
 
@@ -100,7 +93,6 @@ void StmtStack::PrefetchContext::add_prefetch_label(Stmt::Ptr pre) {
 ///////////////////////////////////////////////////////////////////////////////
 // Class StmtStack
 ///////////////////////////////////////////////////////////////////////////////
-
 
 void StmtStack::add_prefetch_label(int prefetch_label) {
   auto pre = Stmt::create(Stmt::GATHER_PREFETCH);

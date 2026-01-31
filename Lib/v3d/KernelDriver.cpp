@@ -563,9 +563,13 @@ Instructions encodeInstr(V3DLib::Instr instr) {
     }
     break;
 
-    case LI:           ret << encode_LI(instr);   break;
-    case ALU:          ret << encodeALUOp(instr); break;
-    case NO_OP:        ret << nop();              break;
+    //
+    // Regular instructions 
+    //
+    case LI:                ret << encode_LI(instr);   break;
+    case ALU:               ret << encodeALUOp(instr); break;
+		case InstrTag::BARRIER: ret << barrier();          break;
+    case NO_OP:             ret << nop();              break;
 
     default:
       fatal("v3d: missing case in encodeInstr");

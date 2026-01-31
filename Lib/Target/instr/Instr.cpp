@@ -81,10 +81,11 @@ std::string dump_instr(Instr const &instr) {
                    << " goto L" << instr.branch_label();
     break;
 
-    case LAB:  buf << "L"     << instr.label();               break;
-    case RECV: buf << "RECV(" << instr.dest().dump() << ")";  break;
-    case SINC: buf << "SINC " << instr.semaId;                break;
-    case SDEC: buf << "SDEC " << instr.semaId;                break;
+    case LAB:     buf << "L"         << instr.label();               break;
+    case RECV:    buf << "RECV("     << instr.dest().dump() << ")";  break;
+    case SINC:    buf << "SINC "     << instr.semaId;                break;
+    case SDEC:    buf << "SDEC "     << instr.semaId;                break;
+    case BARRIER: buf << "barrier()";                                break;
 
     case INIT_BEGIN:
     case INIT_END:
@@ -131,7 +132,8 @@ std::string BranchTarget::to_string() const {
 /**
  * Initialize the fields per selected instruction tag.
  *
- * Done like this, because union members can't have non-trivial constructors.
+ * Done like this, because union members can't have non-trivial constructors.  
+ * **TODO** I'm pretty sure this class doesn't use unions, check this.
  */
 Instr::Instr(InstrTag in_tag) {
   switch (in_tag) {
@@ -157,6 +159,7 @@ Instr::Instr(InstrTag in_tag) {
   case InstrTag::RECV:
   case InstrTag::END:
   case InstrTag::VPM_STALL:
+  case InstrTag::BARRIER:
     tag = in_tag;
     break;
 
@@ -823,30 +826,6 @@ void check_instruction_tag_for_platform(InstrTag tag, bool for_vc4) {
     std::string msg = "Instruction tag ";
     msg << dump_instr_tag(tag) << "(" + std::to_string(tag) + ")" << " can not be used on " << platform;
     fatal(msg);
-  }
-}
-
-
-/**
- * Debug function - check for presence of zero-instructions in instruction sequence
- *
- */
-void check_zeroes(Instr::List const &instrs) {
-  bool success = true;
-
-  for (int i = 0; i < instrs.size(); ++i ) {
-    if (instrs[i].isZero()) {
-      std::string msg = "Zero instruction encountered at position ";
-      // Grumbl not working:  msg << i;
-      msg += std::to_string(i);
-      warning(msg.c_str());
-
-      success = false;
-    }
-  }
-
-  if (!success) {
-    ::error("zeroes encountered in instruction sequence", true);
   }
 }
 

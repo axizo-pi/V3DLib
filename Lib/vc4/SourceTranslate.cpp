@@ -33,6 +33,8 @@ void SourceTranslate::regAlloc(Instr::List &instrs) {
 
 
 /**
+ * Process statements which are specific for vc4.
+ *
  * @return true if statement handled, false otherwise
  */
 bool SourceTranslate::stmt(Instr::List &seq, Stmt::Ptr s) {

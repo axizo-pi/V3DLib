@@ -3,7 +3,6 @@
 #include "Support/basics.h"
 #include "Support/Platform.h"
 #include "Source/StmtStack.h"
-#include "Source/Pretty.h"
 #include "Source/Translate.h"
 #include "Source/Lang.h"            // initStmt
 #include "Support/Timer.h"
@@ -92,11 +91,9 @@ void KernelDriver::compile(std::function<void()> create_ast) {
 		Log::warn << "runtime_error e_msg: " << e_msg;
 
     std::string msg = "runtime error occurred during compilation: ";
-
     msg << e_msg;
 
     clearStack();
-
     errors << msg;
   } catch (...) {
 		std::string msg = "Unknown exception occurred during compilation";

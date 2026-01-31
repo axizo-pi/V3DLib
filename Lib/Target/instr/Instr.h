@@ -57,6 +57,8 @@ enum InstrTag {
   NO_OP,                // No-op
   SKIP,                 // For internal use during optimization
 
+	BARRIER,              // QPU's wait until all QPU's have reached this point
+
   // ==================================================
   // vc4-only instructions
   // ==================================================
@@ -226,9 +228,6 @@ private:
   Label        m_branch_label;      // Label to jump to in BRL instruction
   Label        m_label;             // Label denoting branch target
 };
-
-
-void check_zeroes(Instr::List const &instrs);
 
 }  // namespace Target
 }  // namespace V3DLib
