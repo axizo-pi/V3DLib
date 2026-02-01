@@ -1,6 +1,7 @@
 #include "settings.h"
 #include "scalar.h"
 #include "kernel.h"
+#include "stlfile.h"
 
 using namespace std;
 using namespace kernels;
@@ -33,9 +34,10 @@ void run_kernel(int kernel_index) {
 
 int main(int argc, const char *argv[]) {
   settings.init(argc, argv);
+	if (settings.show_info) return 0;
 
-	if (!settings.show_info) {
-  	run_kernel(settings.kernel);
-	}
+	load_stl(settings.stl_file);
+ 	run_kernel(settings.kernel);
+
   return 0;
 }

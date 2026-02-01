@@ -16,10 +16,12 @@ namespace {
 CmdParameters params = {
   "Rot3D\n"
   "\n"
-  "Rotates a number of vectors by a given angle.\n"
-  "The kernel is IO-bound, the data transfer time dominates over the calculation during execution.\n"
-  "It is therefore an indicator of data transfer speed, "
-  "and is used for performance comparisons of platforms and configurations.\n",
+  "Rotates a number of vectors in three dimensions.\n"
+  "Three rotations can be specified, namely around the x-, y- and/or z-axis."
+  "The rotations can be combined.\n"
+  "\n"
+  "You can load an STL-file to rotate, and save the result to file.\n"
+  "If no STL is specified, some fairly arbitrary test data is rotated.\n",
   {{
     "Kernel",
     "-k=",
@@ -41,7 +43,7 @@ CmdParameters params = {
     {"info"},
     ParamType::NONE,
     "Show extended information for this application, in particular the calculation used.\n"
-		"The actual computation will not run."
+		"The actual computation will not run"
   }, {
     "Rotate X",
     {"-rotate_x=", "-rx="},
@@ -63,6 +65,17 @@ CmdParameters params = {
     "Rotate around the z-axis by the given angle.\n"
 		"The input value is a multiple of PI",
 		0.0f
+  }, {
+    "Load STL File",
+    "-load_stl=",
+    ParamType::STRING,
+    "Read in an STL file to rotate"
+  }, {
+    "Save STL File",
+    "-save_stl",
+    ParamType::NONE,
+    "Store current STL data to file 'out.stl'. "
+    "A file will only be outputted if STL data is present"
   }}
 };
 
@@ -71,6 +84,13 @@ void info() {
 	// Source: https://en.wikipedia.org/wiki/Rotation_matrix 
 
 	std::string msg = "\n"
+"Additional Info\n"
+"===============\n"
+"\n"
+"The kernel is IO-bound, the data transfer time dominates over the calculation during execution.\n"
+"It is therefore an indicator of data transfer speed, "
+"and is used for performance comparisons of platforms and configurations.\n"
+"\n"
 "There are three rotations allowed on the command line, namely:\n"
 "\n"
 "  - clockwise around the x axis (param rotate_x)\n"
@@ -116,6 +136,9 @@ bool Rot3DSettings::init_params() {
   rot_x        = p["Rotate X"]->get_float_value();
   rot_y        = p["Rotate Y"]->get_float_value();
   rot_z        = p["Rotate Z"]->get_float_value();
+
+  stl_file     = p["Load STL File"]->get_string_value();
+  save_stl     = p["Save STL File"]->get_bool_value();
 
   if (num_vertices % 16 != 0) {
     cout << "ERROR: Number of vertices must be a multiple of 16.\n";

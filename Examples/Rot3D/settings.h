@@ -14,6 +14,9 @@ struct Rot3DSettings : public V3DLib::Settings {
 	float rot_y;
 	float rot_z;
 
+	std::string stl_file;
+	bool        save_stl;
+
   Rot3DSettings();
 
   bool init_params() override;

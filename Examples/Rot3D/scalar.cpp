@@ -4,6 +4,7 @@
 #include "Support/Timer.h"
 #include "Kernels/Rot3D.h"
 #include <iostream>
+#include "stlfile.h"
 
 using namespace std;
 using namespace V3DLib;
@@ -52,7 +53,7 @@ void init_arrays(float *x, float *y, float *z, int size) {
 void disp_arrays(float *x, float *y, float *z, int size) {
   if (!settings.show_results) return;
 
-  for (int i = 0; i < settings.num_vertices; i++) {
+  for (int i = 0; i < size; i++) {
 		cout << x[i] << ", " << y[i] << ", " << z[i] << "\n";
   }
 }
@@ -60,26 +61,75 @@ void disp_arrays(float *x, float *y, float *z, int size) {
 } // anon namespace
 
 
-void run_scalar_kernel() {
-  const int size = settings.num_vertices;
+// ============================================================================
+// Struct ScalarData
+// ============================================================================
 
-  // Allocate and initialise
-  float* x = new float[size];
-  float* y = new float[size];
-  float* z = new float[size];
-  init_arrays(x, y, z, size);
-  disp_arrays(x, y, z, size);
+ScalarData::ScalarData(int size) : m_size(size) {
+	assert(size > 0);
+
+ 	x = new float[size];
+ 	y = new float[size];
+ 	z = new float[size];
+}
+
+
+ScalarData::~ScalarData() {
+ 	delete [] z;
+ 	delete [] y;
+ 	delete [] x;
+}
+
+
+void ScalarData::init() {
+ 	init_arrays(x, y, z, m_size);
+}
+
+
+/**
+ * @param show_number Max number of items to show.
+ *                    If default is set, show all items.
+ */
+void ScalarData::disp(int show_number) {
+	assert(show_number <= m_size);  // disp() trying to show more items than present
+	if (show_number == -1) show_number = m_size;
+
+ 	disp_arrays(x, y, z, show_number);
+}
+
+
+// ============================================================================
+// Main routine
+// ============================================================================
+
+void run_scalar_kernel() {
+  int size = settings.num_vertices;
+	bool have_stl = (stl_num_coords() > 0);
+
+	if (have_stl) {
+  	size = stl_num_coords();
+	}
+
+	ScalarData data(size);
+
+	if (have_stl) {
+		stl_load_data(data);
+	} else {
+		data.init();
+	}
+
+	data.disp(20);
 
   if (!settings.compile_only) {
     Timer timer;  // Time the run only
-    rot3D(size, settings.rot_x, settings.rot_y, settings.rot_z, x, y, z);
+    rot3D(data.m_size, settings.rot_x, settings.rot_y, settings.rot_z, data.x, data.y, data.z);
     timer.end(!settings.silent);
   }
 
-  disp_arrays(x, y, z, size);
+	data.disp(20);
 
-  delete [] z;
-  delete [] y;
-  delete [] x;
+  if (settings.save_stl) {
+		stl_save_data(data, true);
+	}
 }
 
