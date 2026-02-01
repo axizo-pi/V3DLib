@@ -1,3 +1,6 @@
+/**
+ * Itsy-bitsy little test program for STL handling.
+ */
 #include "stl_int.h"
 
 using namespace std;
