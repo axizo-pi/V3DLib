@@ -38,6 +38,7 @@ void compareResults(
       REQUIRE(x1[i] == x2[i]);
       REQUIRE(y1[i] == y2[i]);
     } else {
+      INFO("x1[" << i << "]: " << x1[i]);
       REQUIRE(x1[i] == doctest::Approx(x2[i]).epsilon(0.001));
       REQUIRE(y1[i] == doctest::Approx(y2[i]).epsilon(0.001));
     }
@@ -57,10 +58,11 @@ TEST_CASE("Test working of Rot3D example [rot3d]") {
   /**
    * Check that the Rot3D kernels return precisely what we expect.
    *
-   * The scalar version of the algorithm may return slightly different
-   * values than the actual QPU's, but they should be close. This is
-   * because the hardware QPU's round downward in floating point
-   * calculations
+   * vc4: The scalar version of the algorithm may return slightly different
+   *      values than the actual QPU's, but they should be close. This is
+   *      because the hardware QPU's round downward in floating point
+   *      calculations.
+   * vc6, vc7: No rounding errors, calc's should match exact.
    *
    * If the code is compiled for emulator only (QPU_MODE=0), this
    * test will fail.
@@ -75,6 +77,7 @@ TEST_CASE("Test working of Rot3D example [rot3d]") {
    *
    * For this reason, separate contexts are used for each kernel. This results in the BO being completely
    * cleared for the next kernel.
+   *
    */
   SUBCASE("All kernel versions should return the same") {
     //

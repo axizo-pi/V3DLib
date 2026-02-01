@@ -6,6 +6,7 @@ obj*
 *.ppm
 *.bmp
 *.swp
+*.stl
 *.org~
 .~lock.*
 *_code.txt

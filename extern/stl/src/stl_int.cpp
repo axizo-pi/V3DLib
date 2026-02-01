@@ -73,17 +73,22 @@ namespace stl {
 
 /**
  * Read STL from file
+ *
+ * @return true if file open succeeded, false otherwise
  */
-void read(std::string const &filename, std::vector<openstl::Triangle> &triangles) {
+bool read(std::string const &filename, std::vector<openstl::Triangle> &triangles) {
 
 	std::ifstream file(filename, std::ios::binary);
 	if (!file.is_open()) {
-    std::cerr << "Error: Unable to open file '" << filename << "'" << std::endl;
+    //std::cerr << "Error: Unable to open file '" << filename << "'" << std::endl;
+		return false;
 	}
 
 	// Deserialize the triangles in either binary or ASCII format
 	triangles = openstl::deserializeStl(file);
 	file.close();
+
+	return true;
 }
 
 

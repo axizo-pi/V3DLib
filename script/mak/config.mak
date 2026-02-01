@@ -1,7 +1,5 @@
 BASE=~/projects/V3DLib
-WRI=1
-
-#VIDEOCORE_VERSION=6
+#WRI=1
 
 ROOT=$(BASE)/Lib
 
@@ -12,11 +10,11 @@ VCSM_DIR=$(BASE)/extern/userland/build/lib
 MESA_LIB=$(BASE)/obj/mesa/bin/libmesa.a
 VCSM_LIB=$(VCSM_DIR)/libvcsm.a
 
-INCLUDE_EXTERN= \
+INCLUDE_EXTERN+= \
  -I $(BASE)/../CmdParameter/Lib \
  -I $(BASE)/extern/bitmap
 
-LIB_EXTERN= \
+LIB_EXTERN+= \
  -L $(VCSM_DIR) -lvcsm \
  -l pthread
 
@@ -45,11 +43,7 @@ CXX_FLAGS = \
  -D HAVE_SECURE_GETENV \
  -D HAVE_STRUCT_TIMESPEC
 
- #-D VIDEOCORE_VERSION=$(VIDEOCORE_VERSION) \
- # -MMD -MP -MF"$(@:%.o=%.d)" \
-
 # NOTE: Last items after single \ required in mesa lib include files
-
 
 CXX= g++
 LINK= g++
