@@ -336,7 +336,6 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_com
 			out << "           ; " << c;
 		}
 
-		assert(!out.empty());
   	return out;
 	}
 
