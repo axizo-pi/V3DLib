@@ -34,6 +34,9 @@ def rrand
 end
 
 
+#
+# Return a pseudo-random float value between -1 and 1.
+#
 def frrand
 	val = rrand
 	return (-1.0 + 2.0*val/($s_m))
@@ -189,24 +192,36 @@ end
 
 # initializing the weights randomly
 def generate_wt(x, y)
-	Matrix.build(x, y) {|row, col| rand }
+	Matrix.build(x, y) {|row, col| frrand }
 end
 
 
+#
+# The original model is tiny:
+#   - 30 input nodes
+#   -  5 hidden nodes
+#   -  3 output nodes
+#
+# This is smaller than the resolution of the QPU's,
+# which deal with blocks of 16 values.
+#
+# Try values for alpha:
+#   0.01 - doesn't work, always C
+#   0.1  - is OK, fails SOMETIMES
+#   1    - works great
+#   10   - doesn't work, always C
+#
 class NeuralNetwork
-	#
-	# alpha:
-	# 0.01 - doesn't work, always C
-	# 0.1  - is OK, fails SOMETIMES
-	# 1    - works great
-	# 10   - doesn't work, always C
-	#
-	#
-	def initialize hidden_size = 5, in_alpha = 1	
-		@w1    = generate_wt(30, hidden_size)
-		@w2    = generate_wt(hidden_size, 3)
+
+	NUM_INPUT_NODES  = 32 #30
+	NUM_HIDDEN_NODES = 16 # 5 
+	NUM_OUTPUT_NODES = 16 # 3 
+
+	def initialize hidden_size = NUM_HIDDEN_NODES, in_alpha = 1	
+		@w1    = generate_wt(NUM_INPUT_NODES, hidden_size)
+		@w2    = generate_wt(hidden_size, NUM_OUTPUT_NODES)
 		@bias1 = generate_wt(1, hidden_size)
-		@bias2 = generate_wt(1, 3)
+		@bias2 = generate_wt(1, NUM_OUTPUT_NODES)
 
 		@alpha = in_alpha
 	end
@@ -223,20 +238,21 @@ class NeuralNetwork
 	def bias2= val; @bias2 = val; end
 
 	# Creating the Feed forward neural network
-	def f_forward(x)
-		puts dump_matrix   x, "f_forward x" 
-		puts dump_matrix @w1, "f_forward @w1" 
+	def f_forward(input)
+		#puts dump_matrix input, "f_forward input" 
+		#puts dump_matrix @w1  , "f_forward @w1" 
 
 		# hidden
-		z1 = x * @w1 + @bias1    # input from layer 1
-		@a1 = sigmoid_m(z1)      # output of layer 2
-		z2 = @a1 * @w2 + @bias2  # input of out layer
-		a2 = sigmoid_m(z2)       # output of out layer
+		z1 = input * @w1 + @bias1 # input from layer 1
+		@a1 = sigmoid_m(z1)       # output of layer 2
+		z2 = @a1 * @w2 + @bias2   # input of out layer
+		a2 = sigmoid_m(z2)        # output of out layer
 
 		a2
 	end
 
 end
+
 
 def size m
 	puts "(#{m.row(0).size}, #{m.row_count}))"
@@ -244,40 +260,87 @@ end
 
 
 ##################################################################
+# Input data and desired outputs
+##################################################################
 
-# A
-a = Matrix[[ 
+# Letter A
+a = [ 
 			0, 0, 1, 1, 0, 0,
    		0, 1, 0, 0, 1, 0,
    		1, 1, 1, 1, 1, 1,
    		1, 0, 0, 0, 0, 1,
    		1, 0, 0, 0, 0, 1
-]]
-# B
-b = Matrix[[
+]
+
+# Letter B
+b = [
 			0, 1, 1, 1, 1, 0,
    		0, 1, 0, 0, 1, 0,
    		0, 1, 1, 1, 1, 0,
    		0, 1, 0, 0, 1, 0,
    		0, 1, 1, 1, 1, 0
-		]]
-# C
-c = Matrix[[ 
+]
+
+# Letter C
+c = [ 
 			0, 1, 1, 1, 1, 0,
    		0, 1, 0, 0, 0, 0,
    		0, 1, 0, 0, 0, 0,
    		0, 1, 0, 0, 0, 0,
    		0, 1, 1, 1, 1, 0
-		]]
+]
 
-# Creating labels
-y = Matrix[
-			[1, 0, 0],
-   		[0, 1, 0],
-   		[0, 0, 1]
-		]
 
-x = [ a, b, c]
+#
+# Labels - contrived plural to indicate that there are multiple values
+#
+label_a =	[1, 0, 0]
+label_b =	[0, 1, 0]
+label_c =	[0, 0, 1]
+
+
+
+#
+# Adjust input and desired value to the dimensions of the model
+#
+raise "Inputs larger than input size of model " if a.size > NeuralNetwork::NUM_INPUT_NODES
+
+if a.size < NeuralNetwork::NUM_INPUT_NODES
+	diff = NeuralNetwork::NUM_INPUT_NODES - a.size
+	v_add =  Vector.zero(diff)
+
+	a +=  v_add.to_a
+	b +=  v_add.to_a
+	c +=  v_add.to_a
+end
+
+raise "Labels larger than output size of model " if label_a.size > NeuralNetwork::NUM_OUTPUT_NODES
+
+if label_a.size < NeuralNetwork::NUM_OUTPUT_NODES
+	diff = NeuralNetwork::NUM_OUTPUT_NODES - label_a.size
+	v_add =  Vector.zero(diff)
+
+	label_a +=  v_add.to_a
+	label_b +=  v_add.to_a
+	label_c +=  v_add.to_a
+end
+
+
+inputs = [
+	Matrix[a],
+	Matrix[b],
+	Matrix[c]
+]
+
+desireds = Matrix[
+	label_a,
+	label_b,
+	label_c
+]
+
+##################################################################
+# Support Methods
+##################################################################
 
 # activation function
 def sigmoid x
@@ -322,14 +385,14 @@ end
 # d1 <-- f(w2, d2, a1)
 # w1 <-- f( x, d1)
 #
-def back_prop(x, y, nn)
-	a2 = nn.f_forward x
+def back_prop(input, desired, nn)
+	a2 = nn.f_forward input 
 
 	#
 	# output layer to hidden layer
 	#
-	d2        = a2 - y                  # error in output layer
-	puts "back_prop " + dump_matrix_header(d2, "d2")
+	d2        = a2 - desired            # error in output layer
+	#puts "back_prop " + dump_matrix_header(d2, "d2")
 
 	w2_adj    = nn.a1.t * d2            # gradient, outer product
 	w2_tmp    = nn.w2 - nn.alpha*w2_adj
@@ -338,27 +401,26 @@ def back_prop(x, y, nn)
 	#
 	# Hidden layer adjusting w1
 	#
+=begin	
 	puts "
 #######################################
 # back_prop: Hidden layer adjusting w1
 #######################################"
+=end
 
 	tmp1 = (nn.w2 * d2.t).t
 	#puts dump_matrix_header nn.w2, "w2" 
-	puts dump_matrix nn.w2, "w2" 
-	puts dump_matrix d2, "d2" 
-
-	# Following also works, but has no multiline formatting
-	#puts nn.w2
+	#puts dump_matrix nn.w2, "w2" 
+	#puts dump_matrix d2, "d2" 
 
 	#puts dump_matrix_header tmp1, "tmp1" 
-	puts dump_matrix tmp1, "tmp1" 
+	#puts dump_matrix tmp1, "tmp1" 
 
 	tmp2 = nn.a1.collect {|el| el*(1 - el) }    # sigmoid derivative
 	d1   = tmp1.combine(tmp2) {|a, b| a*b}
 
-	w1_adj = x.t * d1  # gradient, outer product
-	puts dump_matrix w1_adj, "w1_adj" 
+	w1_adj = input.t * d1  # gradient, outer product
+	#puts dump_matrix w1_adj, "w1_adj" 
 
 	nn.w1 -= nn.alpha*w1_adj
 	nn.bias1 -= nn.alpha * d1
@@ -368,20 +430,28 @@ end
 
 ###########################################
 
-def train(x, y, nn, epoch = 10)
+def train(inputs, desireds, nn, epoch = 10)
 	acc =[]
 	losss =[]
+
+	# Restrict epoch output somewhat
+	skip_epoch = 1
+	if epoch >= 1000
+		skip_epoch = 50 
+	elsif epoch >= 100
+		skip_epoch = 10 
+	end
 
 	(0...epoch).each { |j|
 		l =[]
 
-		x.each_with_index { |xi, i|
-			out = nn.f_forward(xi)
+		inputs.each_with_index { |input, i|
+			out = nn.f_forward(input)
 
-			y_row = Matrix[y.row(i)]
+			desired = Matrix[desireds.row(i)]
 
-			l.append loss(out, y_row)
-			back_prop(xi, y_row, nn)
+			l.append loss(out, desired)
+			back_prop(input, desired, nn)
 		}
 
 		sum = 0
@@ -389,9 +459,9 @@ def train(x, y, nn, epoch = 10)
 			sum += n
 		}
 
-		avg_tmp = 1.0*sum/x.length
+		avg_tmp = 1.0*sum/inputs.length
 
-		if j % 10 == 0
+		if j % skip_epoch == 0
 			puts "epochs: #{j} ======== acc: #{(1 - avg_tmp)*100}"
 		end
 
@@ -405,8 +475,8 @@ end
 
 ###########################################
 
-def predict(x, nn)
-	out = nn.f_forward(x)
+def predict(input, nn)
+	out = nn.f_forward(input)
 	maxm = 0
 	k = 0
 	r = out.row(0)
@@ -434,7 +504,7 @@ end
 # Main
 ####################
 nn = NeuralNetwork.new
-puts dump_matrix_header nn.w2, "nn.w2" 
+# puts dump_matrix_header nn.w2, "nn.w2" 
 
 # To compare pseudo-random values with C++
 #if true
@@ -446,18 +516,15 @@ puts dump_matrix_header nn.w2, "nn.w2"
 #	return
 #end
 
-if true
+if false
 	test_back_prop
 	return
 end
 
-# epoch:
-# 100  - 99.98% acc 
-# 1000 - 99.999% acc 
-NumEpochs = 1  #1000
-acc, losss = train(x, y, nn, NumEpochs)
+NumEpochs = 1000
+acc, losss = train(inputs, desireds, nn, NumEpochs)
 
 # Example: Predicting for letter 'B'
-predict(x[0], nn)
-predict(x[1], nn)
-predict(x[2], nn)
+predict(inputs[0], nn)
+predict(inputs[1], nn)
+predict(inputs[2], nn)
