@@ -7,7 +7,6 @@ Frequently Asked Questions
 
 # Table of Contents
 
-- [What are the differences between VideoCore IV and VI?](#what-are-the-differences-between-videocore-iv-and-vi)
 - [Differences in Execution](#differences-in-execution)
 - [Calculated theoretical max FLOPs per QPU](#calculated-theoretical-max-flops-per-qpu)
 - [Function `compile()` is not Thread-Safe](#not-thread-safe)
@@ -16,23 +15,7 @@ Frequently Asked Questions
 
 -----
 
-
-# What are the differences between VideoCore IV and VI?
-
-There is no architecture specification available yet for `VideoCore VI`.
-The stuff below is cobbled from whatever I and others have found out.
-The strategy appears to be to investigate the available open source drivers.
-
-[Source](https://www.raspberrypi.org/forums/viewtopic.php?t=244519)
-
-## What remains the same
-- The QPU pipeline stays mostly the same
-- You still have an add ALU and a multiply ALU and it can issue two ALU OPs per cycle.
-- There is still 4 SIMD lanes, interleaved over 4 cycles.
-- The theoretical max FLOPs per QPU remains the same at two per cycle
-
-
-## What is different
+# Overview 
 
 Here is an overview for the easily comparable stuff:
 
@@ -68,11 +51,91 @@ Previous version:
 | 2 threads            | 32 registers    | 64 registers     | |
 | 4 threads            | *not supported* | 32 registers     | |
 
-- There was also a 'VideoCore V' (let's call it `vc5`), which was skipped in the Pis.
+
+# Changes Between `VideoCore` versions
+
+## Similarities between all versions 
+
+- Every QPU has an add ALU and a multiply ALU which operate in parallel.
+  A QPU can thus execute two ALU OP's per cycle.
+- Every ALU has two input fields and one output field.
+  These need not be all used, depending on the operation performed.
+- There 4 SIMD lanes, interleaved over 4 cycles.
+  This means that a operation takes 4 clock cycles to complete, but execution
+  of sequential operations overlaps.
+  The result is that the throughput is still one operation per clock cycle.
+
+## Significant Changes From `vc6` to `vc7`
+
+- The accumulator registers have been removed. The input fields are now either
+  a register address or a small immediate.
+- Related to previous, all input fields can contain a distinct register address.
+  This is different from `vc6`, where there can only be only _at most two distinct
+  addresses_ over all input fields.
+
+e.g.:
+
+     add rf2, rf0, rf1 ; mul rf5, rf3, rf4     # Legal on vc7, invalid on vc6
+     add rf2, rf0, rf0 ; mul rf5, rf0, rf1     # Legal on vc6
+
+- The `SFU` (Special Functions Unit) has been dropped. All functions of the `SFU`
+  are now done on the Add ALU.
+
+
+## Significant Changes From `vc4` to `vc6`
+
+- `vc6` has a single 64-register register file. `vc4` has two 32-register register files, A and B.
+  You still only get an A read and a B read per instruction, but they read from one big register file.
+- Special (hardware) registers are not mapped any more in the register file memory address.
+  This means that you can _not do read operations on special registers_ any more in operations.
+  Writes to special registers are still possible.
+- Operations that read _and_ write to the register file now take 1 program cycle.
+  On `vc4`, the operation stalls one cycle.
+
+e.g.:
+
+     add rf1, rf0, 1     # Two cycles on vc4, 1 on vc6
+
+- Several instruction types have been dropped. `vc4` has the following distinct types:
+  * `alu`
+  * `alu small imm`
+  * `branch`
+  * `load imm 32`
+  * `load imm per-elmt signed`
+  * `load imm per-elmt unsigned`
+  * `Semaphore`
+
+Of those, only `alu` and `branch` remain on `vc6`.
+The functionality of `alu small imm` has been merged into `alu`.
+
+- Float multiplication has been improved.
+	* On `vc4`, float multiplication on the QPU _always rounds downwards_
+	* On `vc6`, float multiplication rounds to the nearest value of the result
+
+In other words, `vc6` will multiply as you would normally expect.
+The result will be identical to float multiplication on the `ARM` processor.  
+With `vc4` however, small differences creep in, which accumulate with continued computation.
+
+### Further Changes
+
+Only `vc4` has an architecture specification.
+The stuff below is cobbled from whatever I and others have found out.
+The main strategy appears to be to investigate the available open source drivers.
+
+[Source](https://www.raspberrypi.org/forums/viewtopic.php?t=244519)
+
+
+It is perhaps necessary to note that there was also a 'VideoCore V' (let's call it `vc5`),
+which was skipped in the Pi's.
+
+- `vc5` has significant differences with `vc4`. `vc6` is an incremental change over `vc5`
 - `vc5` added four threads per QPU mode, with 16 registers per thread.
+
+### What remains the same
+
+- The QPU pipeline stays mostly the same
 - Using threads in the QPU has effect upon the available resources: e.g. for two threads, the
   TMU depth is halved (to 4) and only half the registers in a register file are available.
-- `vc4` has two 32-register register files, A and B. `v3d` has a single 64-register register file.
 
 `V3DLib` **does not implement multi-threading** and never will.
 The complexity is not worth it IMHO, and the benefits dubious.
@@ -80,16 +143,11 @@ I believe that there is no performance gain to be found here, quite the contrary
 
 Further:
 
-- vc6 is clearly derived from vc4, but it is significantly different. vc6 is only a slight extension over vc5
 - The instruction encoding for the QPUs is different, but the core instructions are the same.
 - Instructions for packed 8 bit int math has been dropped, along with most of the pack modes.
 - Instructions for packed 16 bit float math has been added (2 floats at in a single operation)
 - the multiply ALU can now fadd, so you can issue two fadds per instruction.
 - the add ALU has gained a bunch of new instructions.
-- the A and B register files have been merged.
-  You still only get an A read and a B read per instruction, but they read from one big register filei
-  (which means the underlying memory block has gone from two sets of "one read port, one write port" to one "two read ports, one write port" block)
-- It looks like a lot of effort has been put putting the theoretical FLOPs to better use.
 - Most of the design changes have gone to improving the fixed function hardware around the QPUs.
 - A fixed function blend unit has been added, which should reduce load on the QPUs when doing alpha blending.
 - Some concern if software blending is still possible.
@@ -100,82 +158,50 @@ Further:
 - All the features needed for opengl es 3.2 and vulkan 1.1
 - With the threading improvements, the QPUs should spent much less time idle waiting for memory requests.
 
-## Differences in Execution
+----
+
+# Differences in Execution
 
 This section records differences between the `vc4` and `v3d` QPU hardware and consequently in the instructions.
 
 The `vc4`-specific items can be found in the "VideoCore IV Architecture Reference Guide";
 the corresponding `v3d` stuff has mostly been found due to empirical research and hard thinking.
 
-### Data Transfer
+## Data Transfer
 
 There are two transfer options, **VPM (DMA)** and **TMU**
 
 - `vc4` has VPM for read/write and *read-only* TMU 
-- `v3d` has *no* VPM<sup>[I]</sup>, and uses TMU for read/write
+- `v3d` has *no* VPM[^1], and uses TMU for read/write
 
-**VPM** can execute one read and on write in parallel, but multiple reads and multiple writes block each other.
-The QPU will stall if a read has to wait on a read, or a write has to wait on a write.
-It has the advantage of being able to handle multiple 16-vectors in one go.
+[^1]: *VPM IS mentioned in the QPU registers though, so it might be that I just never encountered*
+      *its usage for `v3d`. This might be something I may investigate when bored and nothing else to do.*
 
-**TMU** does not block *and* operations can overlap, up to a limit.
-Up to 4 (`vc4`) or 8 (`v3d`) read operations can be performed together,
-and (apparently) an unlimited number of writes.
-The read/write can perform in parallel with the QPU execution.
-The QPU does not need to stall at all (but it *is* possible).
-However, only one 16-vector is handled per go.
+**VPM**:
 
-**[I]**: *VPM IS mentioned in the QPU registers though, so it might be that I just never encountered*
-       *its usage for `v3d`. This might be something I may investigate when bored and nothing else to do.*
+- can execute one read and on write in parallel,
+- but multiple reads and multiple writes block each other.
+- The QPU will stall if a read has to wait on a read, or a write has to wait on a write.
+- It has the advantage of being able to handle multiple 16-vectors in one go.
 
-#### Comparing VPM and TMU
+**TMU**:
 
-The following statements are the standard syntax used for transferring a 16-vector
-(a block of 16 float or int values, size 64 bytes) between QPU and main memory:
+- does not block *and* operations can overlap, up to a limit.
+- Up to 4 (`vc4`) or 8 (`v3d`) read operations can be performed together, and
+- (apparently) an unlimited number of writes.
+- The read/write can perform in parallel with the QPU execution.
+- The QPU does not need to stall at all (but it *is* possible).
+- However, only one 16-vector is handled per go.
 
-    a = *ptr;
-    *ptr = a;
-
-On `vc4`, VPM was used for this by default. 
-I have lived under the assumption that VPM is faster than TMU, due to online hearsay,
-but I have now taken the time to check it.
-
-I took two IO-intensive kernels and changed the memory access to TMU while keeping
-the rest of the logic intact. This is the result:
-
-
-![VPM vs TMU](./images/vpm_tmu_compare.png)
-
-It turns out that TMU usage is actually faster.
-
-I examined further combinations as well with multiple QPU's:
-
-![VPM vs TMU multi-QPU](./images/vpm_tmu_compare_multi_qpu.png)
-
-*Various execution combinations for kernel Rot3D*
-
-To be honest, I was expecting more of a difference here between VPM and TMU.
-I expected TMU to be vastly better here.
-
-Of special note is that with kernels not optimized for multi-QPU usage, performance actually gets
-worse if more QPUs are added.
-
-In any case, the conclusion is inescapable:
-
------
+On a rainy day, I did a [performance comparison between VPM and TMU](Profiling/ComparingVMPandTMU.html).
+The conclusion is:
 
 **For regular usage, TMU is always faster than VPM**
 
------
-
-It might be the case that TMU is still faster if more than one 16-vector is loaded per go,
-but I'm not going there.
-
-Based on this, I am making TMU usage the default for `vc4`. DMA will still be supported and checked in
-the unit tests.
+So it doesn't surpise me that VPM is dropped from `vc6` onward.
 
 
-### Setting of condition flags
+## Setting of condition flags
 
 - `vc4` - all conditions are set together, on usage condition to test is specified
 - `v3d` - a specific condition to set is specified, on usage a generic condition flag is read
@@ -205,30 +231,15 @@ The previous value of `a` is put in `b`.
 See: My brain after finally figuring this out.
 
 
-### Float multiplication
-
-- `vc4`: Float multiplication on the QPU always rounds downwards
-- `v3d`: Float multiplication rounds to the nearest value of the result
-
-In other words, `v3d` will multiply as you would normally expect. The result will be identical to float multiplication on the `ARM` processor.
-With `vc` however, small differences can creep in, which can accumulate with continued computation.
-
-**Expect results to differ between CPU and QPU calculations for `vc4`.**
-
-Of special note: the interpreter and emulator run on the ARM CPU, meaning that the outcome may be different from that from the `vc4` QPU's .
-
-
-### Integer multiplication
+## Integer multiplication
 
 - `vc4`: multiplication of negative integers will produce unexpected results
 - `v3d`: works as expected
 
 The following source code statements yield different results for `vc4` and `v3d`
 
-```
     a = 16
     b = -1 * a
-```
 
 - For `vc4`, the result is `268435440`
 - For `v3d`, the result is `-16`
@@ -238,6 +249,7 @@ Thus, a negative value gets its ones-complement prefix chopped off, and whatever
 
 
 -----
+
 # Calculated theoretical max FLOPs per QPU
 
 From the [VideoCore® IV 3D Architecture Reference Guide](https://docs.broadcom.com/doc/12358545):
@@ -266,6 +278,7 @@ So, calculation:
 
 
 -----
+
 # <a name="not-thread-safe">Function `compile()` is not Thread-Safe</a>
 Function `compile()` is used to compile a kernel from a class generator definition into a format that is runnable on a QPU. This uses *global* heaps internally for e.g. generating the AST and for storing the resulting statements.
 
@@ -278,28 +291,30 @@ As long a you run `compile()` on a single thread at a time, you're OK.
 
 
 -----
+
 # Handling privileges
 
 In order to use the `VideoCore`, special privileges are required to access certain devices files.  The default way is to run the applications with `sudo`.
 
 You might run into the following situation (e.g.):
-```
-> obj-qpu/bin/detectPlatform 
-Detected platform: Raspberry Pi 2 Model B Rev 1.1
-Can't open device file: /dev/vcio
-Try creating a device file with: sudo mknod /dev/vcio c 100 0
-```
+
+     > obj-qpu/bin/detectPlatform 
+    Detected platform: Raspberry Pi 2 Model B Rev 1.1
+    Can't open device file: /dev/vcio
+    Try creating a device file with: sudo mknod /dev/vcio c 100 0
+
 The solution for this is to become a member of group `video`:
-```
-> sudo useradd -g video <user>
-```
+
+     > sudo useradd -g video <user>
+
 
 Where you fill in  a relevant user name for `<user>`. To enable this, logout and login, or start a new shell.
 
 Unfortunately, this solution will not work for access to `/dev/mem`. You will still need to run with `sudo` for any application that uses the `VideoCore` hardware.
 
 
-----
+-------------------
+
 # Issues with Old Distributions and Compilers
 
 Following is known to occur with `Raspbian wheezy`.
@@ -312,31 +327,7 @@ Following prototypes are missing in in `/opt/vc/include/bcm_host.h`:
   - `bcm_host_get_peripheral_size()`
 
 
-## Compiler Limitations
-
-When compiling with `-std=c++0x`, the following issues occur:
-
-* Inline initialization of class variables is not allowed. E.g.:
-
-```c++
-class Klass {
-   Klass(): m_value(0) {}   // <-- Use this instead
-
-  int m_value{0};           // <-- This won't compile
-}
-```
-
-* Some function definitions need explicit includes.
-
-Known cases (there may be more):
-
-| Function       | Needs include         |
-| -              | -                     |
-| `exit(int)`    | `#include <stdlib.h>` |
-| `errno()`      | `#include <errno.h>`  |
-| `printf()` etc | `#include <stdio.h>`  |
-
-===================
+-------------------
 
 ## <a name="useful-commands">Useful Commands</a>
 

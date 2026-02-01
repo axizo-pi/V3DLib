@@ -10,7 +10,7 @@ require_relative "#{WebGen}/WebController"
 GenLog.log_level 'info'
 
 
-TARGET_DIR   = '../generated/website'
+TARGET_DIR   = '../generated/Doc'
 TEMPLATE_DIR = '../template'
 TMP_DIR      = '../generated/tmp'
 
@@ -48,7 +48,8 @@ class GenPages < WebController
 			"Profiling.md",
 			"TODO.md",
 			"ArchitectureAndDesign.md",
-		  "Mesa2.md"
+		  "Mesa2.md",
+			"Profiling/ComparingVMPandTMU.md"
   	].each { |f|
     	#puts "generating page for #{f}"
       init_inline_parts
