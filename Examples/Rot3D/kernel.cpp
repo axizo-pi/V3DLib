@@ -3,47 +3,60 @@
 #include "Support/Timer.h"
 #include <V3DLib.h>
 #include <math.h>            // sinf(), cosf()
+#include "stlfile.h"
 
 using namespace kernels;
 using namespace V3DLib;
 
 namespace {
 
-// ============================================================================
-// Local functions
-// ============================================================================
+struct KernelData : public StlData {
+  Float::Array x;
+	Float::Array y;
+	Float::Array z;
 
-template<typename Arr>
-void init_arrays(Arr &x, Arr &y) {
-  for (int i = 0; i < settings.num_vertices; i++) {
-    x[i] = (float) i;
-    y[i] = (float) i;
-  }
-}
+	KernelData(int in_size);
+
+	float xc(int index) const override { return x[index]; }
+	float yc(int index) const override { return y[index]; }
+	float zc(int index) const override { return z[index]; }
+
+	void xc(int index, float rhs) override { x[index] = rhs; }
+	void yc(int index, float rhs) override { y[index] = rhs; }
+	void zc(int index, float rhs) override { z[index] = rhs; }
+};
 
 
-template<typename Arr>
-void disp_arrays(Arr &x, Arr &y) {
-  if (settings.show_results) {
-    for (int i = 0; i < settings.num_vertices; i++)
-      printf("%f %f\n", x[i], y[i]);
-  }
+KernelData::KernelData(int in_size) : StlData(in_size) {
+  // Allocate and initialise arrays shared between ARM and GPU
+	// size will change if an stl file is loaded
+  x.alloc(size());
+	y.alloc(size());
+	z.alloc(size());
 }
 
 } // anon namespace
 
 
 void run_qpu_kernel(KernelType &kernel) {
-  auto k = compile(kernel, settings);  // Construct kernel
+  auto k = compile(kernel, settings);
   k.setNumQPUs(settings.num_qpus);
 
-  // Allocate and initialise arrays shared between ARM and GPU
-  Float::Array x(settings.num_vertices), y(settings.num_vertices);
-  init_arrays(x, y);
+	KernelData data(settings.num_vertices);
+  data.init();
+  data.disp();
 
   Timer timer;
-  k.load(settings.num_vertices, cosf(settings.THETA), sinf(settings.THETA), &x, &y).run();
+  k.load(
+		data.size(),
+		settings.rot_x/2, settings.rot_y/2, settings.rot_z/2,
+		&data.x, &data.y, &data.z
+	).run();
   timer.end(!settings.silent);
 
-  disp_arrays(x, y);
+  data.disp();
+
+  if (settings.save_stl) {
+		stl_save_data(data, true);
+	}
 }

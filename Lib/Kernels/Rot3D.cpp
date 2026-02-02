@@ -82,52 +82,98 @@ void scalar_rot3D(int n, float rot_x, float rot_y, float rot_z, float *x, float 
 }
 
 
+namespace {
+
 // ============================================================================
 // Kernel Helpers
 // ============================================================================
 
 /**
- * Subprogram to perform the rotations on a single item
- *
- * TODO make this fully 3D
+ * Rotation around x-axis.
  */
-void rotate_item(Float &cos_z, Float &sin_z, Float::Ptr x, Float::Ptr y) {
-	// Rotation around z-axis
-  Float x_prev = *x;
-  Float y_prev = *y;
-  *x = x_prev * cos_z - y_prev * sin_z;
-  *y = y_prev * cos_z + x_prev * sin_z;
+void rotate_x(Float &y_prev, Float &z_prev, Float &cos_x, Float &sin_x, Float::Ptr y, Float::Ptr z) {
+  Float y_new = y_prev * cos_x - z_prev * sin_x;
+  Float z_new = y_prev * sin_x + z_prev * cos_x;
+
+	*y = y_new;
+	*z = z_new;
+
+	y_prev = y_new;
+	z_prev = z_new;
 }
+
+
+/**
+ * Rotation around y-axis.
+ */
+void rotate_y(Float &x_prev, Float &z_prev, Float &cos_y, Float &sin_y, Float::Ptr x, Float::Ptr z) {
+  Float x_new = x_prev *    cos_y + z_prev * sin_y;
+  Float z_new = x_prev * -1*sin_y + z_prev * cos_y;
+
+	*x = x_new;
+	*z = z_new;
+
+	x_prev = x_new;
+	z_prev = z_new;
+}
+
+
+/**
+ * Rotation around z-axis.
+ */
+void rotate_z(Float &x_prev, Float &y_prev, Float &cos_z, Float &sin_z, Float::Ptr &x, Float::Ptr &y) {
+  Float x_new = x_prev * cos_z - y_prev * sin_z;
+  Float y_new = x_prev * sin_z + y_prev * cos_z;
+
+	*x = x_new;
+	*y = y_new;
+
+	x_prev = x_new;
+	y_prev = y_new;
+}
+
+}  // anon namespace
+
 
 
 // ============================================================================
 // Vector Kernel
 // ============================================================================
 
-
-void vector_rot3D(Int n, Float cosTheta, Float sinTheta, Float::Ptr x, Float::Ptr y) {
+/**
+ *
+ * Incoming angle values must be multiples of 2*PI.
+ */
+void vector_rot3D(Int n, Float rot_x, Float rot_y, Float rot_z, Float::Ptr x, Float::Ptr y, Float::Ptr z) {
 
   Int step = numQPUs() << 4;
   x += me()*16;
   y += me()*16;
+  z += me()*16;
 
-  auto read = [] (Float &dst, Float::Ptr &src) {
-    dst = *src;
-    //gather(src);
-    //receive(dst);
-  };
+	Float cos_x = cos(rot_x);
+	Float sin_x = sin(rot_x);
+	Float cos_y = cos(rot_y);
+	Float sin_y = sin(rot_y);
+	Float cos_z = cos(rot_z);
+	Float sin_z = sin(rot_z);
+
+  Float x_prev;
+  Float y_prev;
+  Float z_prev;
 
   For (Int i = 0, i < n, i += step)
-    Float xOld;
-    Float yOld;
+    x_prev = *x;
+    y_prev = *y;
+    z_prev = *z;
 
-    read(xOld, x);
-    read(yOld, y);
-
-		rotate_item(cosTheta, sinTheta, x, y);
+		rotate_x(y_prev, z_prev, cos_x, sin_x, y, z);
+		rotate_y(x_prev, z_prev, cos_y, sin_y, x, z);
+		rotate_z(x_prev, y_prev, cos_z, sin_z, x, y);
 
     x += step;
     y += step;
+    z += step;
   End
 }
 
