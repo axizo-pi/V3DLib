@@ -4,6 +4,9 @@
 // These are kept in a separate file so that they can also be used
 // in the unit tests.
 //
+// After judicious profiling, kernel 1a has been selected as best vector kernel.
+// This will now be the standard, all other vector kernels die.
+//
 // ============================================================================
 #include "Rot3D.h"
 #include "Source/Functions.h"
@@ -39,7 +42,7 @@ using namespace V3DLib;
  * @param x     Array containing y-component of vectors to rotate
  * @param z     Array containing z-component of vectors to rotate
  */
-void rot3D(int n, float rot_x, float rot_y, float rot_z, float *x, float *y, float *z) {
+void scalar_rot3D(int n, float rot_x, float rot_y, float rot_z, float *x, float *y, float *z) {
   const float PI = (float) 3.14159;
 
 	rot_x *= PI;
@@ -52,7 +55,7 @@ void rot3D(int n, float rot_x, float rot_y, float rot_z, float *x, float *y, flo
   for (int i = 0; i < n; i++) {
     float x_prev;
     float y_prev;
-/*		
+		
     float z_prev;
 
 		// Rotation around x-axis
@@ -68,7 +71,7 @@ void rot3D(int n, float rot_x, float rot_y, float rot_z, float *x, float *y, flo
 
     x[i] = x_prev *  cos(rot_y) + z_prev * sin(rot_y);
     z[i] = x_prev * -sin(rot_y) + z_prev * cos(rot_y);
-*/
+
 		// Rotation around z-axis
     x_prev = x[i];
     y_prev = y[i];
@@ -98,17 +101,11 @@ void rotate_item(Float &cos_z, Float &sin_z, Float::Ptr x, Float::Ptr y) {
 
 
 // ============================================================================
-// Kernel version 1
+// Vector Kernel
 // ============================================================================
 
-void rot3D_1(Int n, Float cosTheta, Float sinTheta, Float::Ptr x, Float::Ptr y) {
-  For (Int i = 0, i < n, i += 16)
-		rotate_item(cosTheta, sinTheta, (x + i), (y + i));
-  End
-}
 
-
-void rot3D_1a(Int n, Float cosTheta, Float sinTheta, Float::Ptr x, Float::Ptr y) {
+void vector_rot3D(Int n, Float cosTheta, Float sinTheta, Float::Ptr x, Float::Ptr y) {
 
   Int step = numQPUs() << 4;
   x += me()*16;
@@ -132,95 +129,6 @@ void rot3D_1a(Int n, Float cosTheta, Float sinTheta, Float::Ptr x, Float::Ptr y)
     x += step;
     y += step;
   End
-}
-
-
-// ============================================================================
-// Kernel version 2
-// ============================================================================
-
-void rot3D_2(Int n, Float cosTheta, Float sinTheta, Float::Ptr x, Float::Ptr y) {
-  Int inc = numQPUs() << 4;
-  Float::Ptr p = x + me()*16;
-  Float::Ptr q = y + me()*16;
-
-  gather(p); gather(q);
- 
-  Float x_prev, y_prev;
-
-  For (Int i = 0, i < n, i += inc)
-    gather(p+inc); gather(q+inc); 
-    receive(x_prev); receive(y_prev);
-
-    *p = x_prev * cosTheta - y_prev * sinTheta;
-    *q = y_prev * cosTheta + x_prev * sinTheta;
-
-		// Can't do this directly
-		//rotate_item(cosTheta, sinTheta, p, q);
-
-    p += inc; q += inc;
-  End
-
-  receive(x_prev); receive(y_prev);
-}
-
-
-// ============================================================================
-// Kernel version 3
-// ============================================================================
-
-namespace {
-  int N       = -1;  // Number of elements in incoming arrays for rot3D_3
-  int numQPUs = -1;  // Number of QPUs to use for rot3D_3
-}  // anon namespace
-
-
-void rot3D_3(Float cosTheta, Float sinTheta, Float::Ptr x, Float::Ptr y) {
-  assert(N != -1);
-  assert(numQPUs != -1);
-  assertq(N % (16*numQPUs) == 0, "N must be a multiple of '16*numQPUs'");
-
-  int size = N/numQPUs;
-  Int count = size >> 4;
-
-  Int adjust = me()*size;
-
-  Float::Ptr p_src = x + adjust;
-  Float::Ptr q_src = y + adjust;
-  Float::Ptr p_dst = x + adjust;
-  Float::Ptr q_dst = y + adjust;
-
-  gather(p_src, q_src);
- 
-  Float x_prev, y_prev;
-
-  For (Int i = 0, i < count, i++)
-    receive(x_prev, p_src);
-    receive(y_prev, q_src);
-
-    *p_dst = x_prev * cosTheta - y_prev * sinTheta;
-    *q_dst = y_prev * cosTheta + x_prev * sinTheta;
-
-    p_dst.inc();
-    q_dst.inc();
-  End
-
-  receive();
-}
-
-
-/**
- * Using decorator to avoid `N/numQPUs()` in source language code.
- * TODO retest to see effect of that division, optimize it if a problem. 
- */
-FuncType *rot3D_3_decorator(int dimension, int in_numQPUs) {
-  assert(dimension > 0);
-  assertq(dimension % 16 == 0, "dimension must be a multiple of 16");
-  // TODO perhaps assert in_numQPUs as well
-
-  N = dimension;
-  numQPUs = in_numQPUs;
-  return rot3D_3;
 }
 
 }  // namespace kernels

@@ -12,10 +12,7 @@ using namespace kernels;
  */
 void run_kernel(int kernel_index) {
   switch (kernel_index) {
-    case 0: run_qpu_kernel(rot3D_2);  break;  
-    case 1: run_qpu_kernel_3();       break;  
-    case 2: run_qpu_kernel(rot3D_1);  break;  
-    case 3: run_qpu_kernel(rot3D_1a); break;  
+    case 0: run_qpu_kernel(vector_rot3D);  break;  
     case 4: run_scalar_kernel();      break;
   }
 

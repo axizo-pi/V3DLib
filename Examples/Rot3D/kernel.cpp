@@ -47,19 +47,3 @@ void run_qpu_kernel(KernelType &kernel) {
 
   disp_arrays(x, y);
 }
-
-
-void run_qpu_kernel_3() {
-  auto k = compile(rot3D_3_decorator(settings.num_vertices, settings.num_qpus), settings);
-  k.setNumQPUs(settings.num_qpus);
-
-  // Allocate and initialise arrays shared between ARM and GPU
-  Float::Array x(settings.num_vertices), y(settings.num_vertices);
-  init_arrays(x, y);
-
-  Timer timer;
-  k.load(cosf(settings.THETA), sinf(settings.THETA), &x, &y).run();
-  timer.end(!settings.silent);
-
-  disp_arrays(x, y);
-}

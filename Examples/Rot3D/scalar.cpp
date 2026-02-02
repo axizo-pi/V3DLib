@@ -122,7 +122,7 @@ void run_scalar_kernel() {
 
   if (!settings.compile_only) {
     Timer timer;  // Time the run only
-    rot3D(data.m_size, settings.rot_x, settings.rot_y, settings.rot_z, data.x, data.y, data.z);
+    scalar_rot3D(data.m_size, settings.rot_x, settings.rot_y, settings.rot_z, data.x, data.y, data.z);
     timer.end(!settings.silent);
   }
 

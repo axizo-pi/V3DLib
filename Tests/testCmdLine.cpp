@@ -155,17 +155,10 @@ TEST_CASE("Check correct output example programs for all three run options [cmdl
   // In addition, at time of writing the multi-QPU version of kernel 2 is not working
 
   if (running_on_v3d()) {
-    SUBCASE("Check output Rot3D")   { check_output_example("Rot3D", "-d -k=2"); }
-    SUBCASE("Check output Rot3D")   { check_output_example("Rot3D", "-d -k=1"); }
+    SUBCASE("Check output Rot3D")   { check_output_example("Rot3D", "-d"); }
   } else {
     // These should be no problem
-    check_output_run("Rot3D", INTERPRETER, "-d -k=1");
-    check_output_run("Rot3D", EMULATOR,    "-d -k=1");
-    check_output_run("Rot3D", INTERPRETER, "-d -k=2");
-    check_output_run("Rot3D", EMULATOR,    "-d -k=2");
-
-    // Running on QPU will fail due to rounding errors
-    // This gets checked in `testRot3D`, where the kernels are run directly
-    //check_output_run("Rot3D", QPU, "-d -k=1");
+    check_output_run("Rot3D", INTERPRETER, "-d");
+    check_output_run("Rot3D", EMULATOR,    "-d");
   }
 }

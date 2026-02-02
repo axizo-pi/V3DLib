@@ -9,7 +9,7 @@ using namespace std;
 // Command line handling
 // ============================================================================
 
-std::vector<const char *> const kernel_id = { "2", "3", "1", "1a", "cpu" };  // First is default
+std::vector<const char *> const kernel_id = { "gpu", "cpu" };  // First is default
 
 namespace {
 
