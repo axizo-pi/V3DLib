@@ -1,7 +1,7 @@
 
 XX_FLAGS = -MMD -MP -MF"$(@:%.o=%.d)"
 
-CFLAGS = -g -Wall -Wno-unused-function -O3 -pthread \
+CFLAGS = -std=c++17 -g -Wall -Wno-unused-function -O3 -pthread \
 $(XX_FLAGS)
 
 LINK := g++
