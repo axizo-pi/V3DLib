@@ -50,7 +50,7 @@ void compareResults(
 // The actual tests
 // ============================================================================
 
-TEST_CASE("Test working of Rot3D example [rot3d]") {
+TEST_CASE("Test working of Rot3D example [rot3d][pass2]") {
   // Number of vertices and angle of rotation
   const int N = 16*12*10;  // 1920
   const float THETA = (float) 3.14159;
@@ -101,7 +101,7 @@ TEST_CASE("Test working of Rot3D example [rot3d]") {
     // Compare scalar with output of vector kernel with 1 QPU - may not be exact
 		//
     {
-      INFO("Running kernel 1 (always 1 QPU)");
+      INFO("Running kernel 1 QPU");
       Float::Array x(N), y(N);
       initArrays(x, y, N);
 
@@ -114,6 +114,7 @@ TEST_CASE("Test working of Rot3D example [rot3d]") {
         x_1[i] = x[i];
         y_1[i] = y[i];
       }
+
     }
 
 		//
@@ -129,7 +130,7 @@ TEST_CASE("Test working of Rot3D example [rot3d]") {
 
       k.load(N, cosf(THETA), sinf(THETA), &x, &y).run();
 			INFO("Loaded and ran the kernel");
-      compareResults(x_scalar, y_scalar, x, y, N, "Rot3D_3 8 QPUs", false);
+      compareResults(x_1, y_1, x, y, N, "Rot3D_3 8 QPUs", false);
     }
 
     delete [] x_1;
