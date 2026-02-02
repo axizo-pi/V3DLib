@@ -1,5 +1,5 @@
 <head>
-	<link rel="stylesheet" type="text/css" href="css/docs.css">
+	<link rel="stylesheet" type="text/css" href="../css/docs.css">
 </head>
 
 # Profiling Matrix multiplication
@@ -24,19 +24,19 @@ There is no need for this yet, so I will leave it for now.
 
 ## Comparison of number of used QPUs
 
-| ![vc4 full multiplication](./images/vc4_full_mult_qpus.png) | ![vc4 block multiplication](./images/vc4_block_mult_qpus.png) |
+| ![vc4 full multiplication](.i./images/vc4_full_mult_qpus.png) | ![vc4 block multiplication](../images/vc4_block_mult_qpus.png) |
 
 What you see here, is that the performance scales nicely with the number of used QPUs.
 This is true for the full matrix calculation as well as the block calculation.
 
 The calculation also scales for `v3d`:
-![v3d multiplication](./images/v3d_mult_qpus.png)
+![v3d multiplication](../images/v3d_mult_qpus.png)
 
 From here on, the profiling times for the maximum number of QPUs will be compared for `v3d` and `vc4`.
 
 ## Comparing full and block multiplication for `vc4`
 
-![vc4 comparing full and block multiplication](./images/vc4_full_block_mult.png)
+![vc4 comparing full and block multiplication](../images/vc4_full_block_mult.png)
 
 Eventually, both full and block multiplications fail due to 'insuffient register capacity'.
 The full multiplication fails at dimension 832x832, block multiplication fails at 864x864.
@@ -49,7 +49,7 @@ this is the basis of many Fast Fourier Transforms (FFT).
 
 # Comparing full and block multiplication for `v3d`
 
-![v3d comparing full and block multiplication](./images/v3d_full_block_mult.png)
+![v3d comparing full and block multiplication](../images/v3d_full_block_mult.png)
 
 The full multiplication fails at dimension 832x832 due to not enough registers available.
 Block multiplication fails at 1024x1024, but due to not enough shared memory being available
@@ -71,7 +71,7 @@ While doing this profiling, it struck me that the first block multiplication doe
 to retrieve result values for addition, since these are zero anyway.
 Implementing this results in:
 
-![v3d first block mult without reads](./images/v3d_block_first_mult_noreads.png)
+![v3d first block mult without reads](../images/v3d_block_first_mult_noreads.png)
 
 For `v3d`, the throughput is overall faster and more stable.
 
@@ -80,7 +80,7 @@ matrices before failing with the register allocation.
 This can be overcome by using more block matrices for the multiplication.
 This is now trivial to implement, and might be done if a use case for it comes along.
 
-![vc4 first block mult without reads](./images/vc4_block_first_mult_noreads.png)
+![vc4 first block mult without reads](../images/vc4_block_first_mult_noreads.png)
 
 For `vc4`, the difference is not too staggering. This rould be expected, I guess.
 As a very minor point, block mult just slightly beats full mult for dimension <= 544.

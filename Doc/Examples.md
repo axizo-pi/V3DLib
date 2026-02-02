@@ -27,13 +27,6 @@
 
 ## Overview of Examples
 
-To build and run an example:
-
-    make QPU=1 <name>
-    sudo obj/qpu/bin/<name>
-
-Interesting examples (there are more):
-
 - **GCD**       - [Euclid's algorithm](https://en.wikipedia.org/wiki/Euclidean_algorithm), The GCD's of some random pairs of integers
 - **Tri**       - Computes [triangular numbers](https://en.wikipedia.org/wiki/Triangular_number), using two kernels:
   1. with integer in- and output
@@ -117,10 +110,6 @@ This example introduces a number of concepts:
     only elements in vector `a` for which `a > b` holds will be
     modified.
 
-It's worth reiterating that `V3dLib` is just standard C++ code: there
-are no pre-processors being used other than the standard C pre-processor.
-All the `V3DLib` language constructs are simply classes, functions, and macros exported by `V3DLib`.  
-This kind of language is called a [Embedded Domain Specific Language](https://wiki.c2.com/?EmbeddedDomainSpecificLanguage){:target="_blank"}.
 
 ### Invoking the QPUs
 

@@ -9,7 +9,6 @@ Frequently Asked Questions
 
 - [Differences in Execution](#differences-in-execution)
 - [Calculated theoretical max FLOPs per QPU](#calculated-theoretical-max-flops-per-qpu)
-- [Function `compile()` is not Thread-Safe](#not-thread-safe)
 - [Handling privileges](#handling-privileges)
 - [Issues with Old Distributions and Compilers](#issues-with-old-distributions-and-compilers)
 
@@ -86,6 +85,8 @@ e.g.:
 
 - `vc6` has a single 64-register register file. `vc4` has two 32-register register files, A and B.
   You still only get an A read and a B read per instruction, but they read from one big register file.
+- The VPM module, which handles DMA transfers, has been dropped. TMU is now read/write, on `vc4`
+  this is read-only.
 - Special (hardware) registers are not mapped any more in the register file memory address.
   This means that you can _not do read operations on special registers_ any more in operations.
   Writes to special registers are still possible.
@@ -133,13 +134,8 @@ which was skipped in the Pi's.
 
 ### What remains the same
 
-- The QPU pipeline stays mostly the same
 - Using threads in the QPU has effect upon the available resources: e.g. for two threads, the
   TMU depth is halved (to 4) and only half the registers in a register file are available.
-
-`V3DLib` **does not implement multi-threading** and never will.
-The complexity is not worth it IMHO, and the benefits dubious.
-I believe that there is no performance gain to be found here, quite the contrary. 
 
 Further:
 
@@ -166,40 +162,6 @@ This section records differences between the `vc4` and `v3d` QPU hardware and co
 
 The `vc4`-specific items can be found in the "VideoCore IV Architecture Reference Guide";
 the corresponding `v3d` stuff has mostly been found due to empirical research and hard thinking.
-
-## Data Transfer
-
-There are two transfer options, **VPM (DMA)** and **TMU**
-
-- `vc4` has VPM for read/write and *read-only* TMU 
-- `v3d` has *no* VPM[^1], and uses TMU for read/write
-
-[^1]: *VPM IS mentioned in the QPU registers though, so it might be that I just never encountered*
-      *its usage for `v3d`. This might be something I may investigate when bored and nothing else to do.*
-
-**VPM**:
-
-- can execute one read and on write in parallel,
-- but multiple reads and multiple writes block each other.
-- The QPU will stall if a read has to wait on a read, or a write has to wait on a write.
-- It has the advantage of being able to handle multiple 16-vectors in one go.
-
-**TMU**:
-
-- does not block *and* operations can overlap, up to a limit.
-- Up to 4 (`vc4`) or 8 (`v3d`) read operations can be performed together, and
-- (apparently) an unlimited number of writes.
-- The read/write can perform in parallel with the QPU execution.
-- The QPU does not need to stall at all (but it *is* possible).
-- However, only one 16-vector is handled per go.
-
-On a rainy day, I did a [performance comparison between VPM and TMU](Profiling/ComparingVMPandTMU.html).
-The conclusion is:
-
-**For regular usage, TMU is always faster than VPM**
-
-So it doesn't surpise me that VPM is dropped from `vc6` onward.
-
 
 ## Setting of condition flags
 
@@ -275,20 +237,6 @@ So, calculation:
 
 - The improved hardware in `v3d` compensates for performance.
 - v3d adds multi-gpu core support, each with their own set of QPUs. However, there is only one core in `v3d`.
-
-
------
-
-# <a name="not-thread-safe">Function `compile()` is not Thread-Safe</a>
-Function `compile()` is used to compile a kernel from a class generator definition into a format that is runnable on a QPU. This uses *global* heaps internally for e.g. generating the AST and for storing the resulting statements.
-
-Because the heaps are global, running `compile()` parallel on different threads will lead to problems. The result of the compile, however, should be fine, so it's possible to have multiple kernel instances on different threads.
-
-As long a you run `compile()` on a single thread at a time, you're OK.
-
-
-**TODO:** examine further.
-
 
 -----
 

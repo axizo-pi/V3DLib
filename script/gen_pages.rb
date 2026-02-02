@@ -45,11 +45,12 @@ class GenPages < WebController
 			"FAQ.md",
 			"Links.md",
 			"Issues.md",
-			"Profiling.md",
 			"TODO.md",
 			"ArchitectureAndDesign.md",
+			"DMAVPM.md",
 		  "Mesa2.md",
-			"Profiling/ComparingVMPandTMU.md"
+			"Profiling/ComparingVMPandTMU.md",
+			"Profiling/BlockMatrix.md"
   	].each { |f|
     	#puts "generating page for #{f}"
       init_inline_parts

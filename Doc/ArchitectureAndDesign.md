@@ -8,31 +8,46 @@ This document explains the basics of the QPU architecture and documents some des
 
 -----
 
-# Naming and other Conventions
+# VideoCore Overview
 
-The following naming is used within the project:
+There are three distinct versions of the `VideoCore` GPU:
 
-- The `VideoCore IV` is referred to as `vc4`,
-- The `VideoCore VI` as `vc6`,
-- The `VideoCore VII` as `vc7`.
-- `vc6` and `vc7` are collectively referred to as `v3d`[^1]. 
+- **VideoCore IV**  - Used on all Pi's prior to the `Pi4`, and on the `Zero` 
+- **VideoCore VI**  - Used on The `Pi4`
+- **VideoCore VII** - Used on The `Pi5`
 
-[^1]: This comes from the Mesa library. `vc6` and `vc7` are handled by a common driver called `v3d`.
+The VideoCore is a [vector processor](https://en.wikipedia.org/wiki/Vector_processor)
+developed by [Broadcom](http://www.broadcom.com/) with
+instructions that operate on 16-element vectors of 32-bit integer or floating point values.  
+In other words. the VideCore is an **SIMD processor** ('Single Instruction, Multiple Data').
 
-- The earliest Debian version supported is **Debian 10 Buster**.
-- 32-bits continues to be supported. This is required for the early PI's and `Zero`.
-- The C++ code is currently compiled with language version `c++17`. There is no overriding reason
-  to hold on to this, give me a good reason and I will happily up the C++ version.
-- Indent is two spaces. Not because I want it to (I vastly prefer tabs), but because `github`
-  otherwise makes a mess of the source display, especially when tabs and spaces are mixed.
-- A program running on a VideoCore is named a [(compute) kernel](https://en.wikipedia.org/wiki/Compute_kernel).
-	I leave out 'compute' when describing kernels.
-  This is different from the Broadcomm and Mesa terminology, where programs are called **shaders**.
-- Values passed from a CPU program into a kernel are called *uniform values* or **uniforms**.
+The basic hardware unit in the VideoCore is the **Quad Processing Unit (QPU)**.
 
-Kernel programs are compiled dynamically, so that a given program can run unchanged on any version
-of the RaspBerry Pi.
-The kernels are generated inline and offloaded to the GPU's at runtime.
+- The `Pi4` has 8 QPU's 
+- The `Pi5` has 16
+- All other Pi's have 12
+
+Due to the hardware improvements, the `Pi4` GPU is still faster than in previous versions of the Pi.  
+Performance-wise, the `Pi5` absolutely destroys all previous models.
+
+To get an idea of what VideoCore programming looks like, please view the [Basics Page](Basics.md).
+
+## Personal Notes/Gripes
+
+- The QPUs are part of the Raspberry Pi's graphics pipeline.  If you're
+interested in doing cool graphics on the Pi then you probably want **OpenGL ES**.
+The added value of `V3DLib` is _accelerating non-graphics parts_ of your Pi projects.
+- `V3DLib` **does not implement multi-threading** on the QPU level and never will.
+The complexity is not worth it IMHO, and the benefits dubious.
+I believe that there is no performance gain to be found here, quite the contrary. 
+- `V3DLib` **is not thread-safe**.
+  In particular, function `compile()` is used to compile a kernel from a class generator definition into
+  a format that is runnable on a QPU. This uses *global* heaps internally for e.g. generating
+  the AST and for storing the resulting statements. Because the heaps are global, running
+ `compile()` parallel on different threads will lead to problems.
+- The user-level language is an [Embedded Domain Specific Language](https://wiki.c2.com/?EmbeddedDomainSpecificLanguage){:target="_blank"}.
+  There are no pre-processors being used other than the standard C pre-processor.
+  The output is standard C++ code.
 
 
 # Supported Pi's
@@ -56,27 +71,37 @@ The notable omissions in this list:
 - **Raspberry PI Compute Module 5**: As far as I can tell, this is a Pi5 in a sexy casing.
 	I will buy it eventually, but currently I don't see the point.
 
+# Conventions
 
-# VideoCore Background
+The following naming is used within the project:
 
-For an overview of the VideoCore functionality, please view the [Basics Page](Basics.md).
+- The `VideoCore IV` is referred to as `vc4`,
+- The `VideoCore VI` as `vc6`,
+- The `VideoCore VII` as `vc7`.
+- `vc6` and `vc7` are collectively referred to as `v3d`[^1]. 
 
-The VideoCore is a [vector processor](https://en.wikipedia.org/wiki/Vector_processor)
-developed by [Broadcom](http://www.broadcom.com/) with
-instructions that operate on 16-element vectors of 32-bit integer or
-floating point values.
+[^1]: This comes from the Mesa library. `vc6` and `vc7` are handled by a common driver called `v3d`.
 
-All Pi's prior to the `Pi 4` have a **VideoCore IV**. The `Pi 4` itself has a **VideoCore VI**,
-which has many improvements. 
+- The earliest Debian version supported is **Debian 10 Buster**.
+- 32-bits continues to be supported. This is required for the early PI's and `Zero`.
+- The C++ code is currently compiled with language version `c++17`. There is no overriding reason
+  to hold on to this, give me a good reason and I will happily up the C++ version.
+- Indent is two spaces. Not because I want it to (I vastly prefer tabs), but because `github`
+  otherwise makes a mess of the source display, especially when tabs and spaces are mixed.
+- A program running on a VideoCore is named a [(compute) kernel](https://en.wikipedia.org/wiki/Compute_kernel).
+	I leave out 'compute' when describing kernels.
+  This is different from the Broadcomm and Mesa terminology, where programs are called **shaders**.
+- A naming convention which has grown historically:
+  * **scalar kernel** - A kernel written in standard C++, runs on CPU. 'scalar' for short
+  * **vector kernel** - A kernel written to run on the QPU's. 'vector' for short
+- Values passed from a CPU program into a kernel are called *uniform values* or **uniforms**.
+- Any method or function which generates debug output is named `dump()` (or uses `dump` as prefix).
+  The utility of this is apparent when you run `dbg` a lot.
 
-The basic hardware unit in the VideoCore is the **Quad Processing Unit (QPU)**.
-The `Pi 4` had 8 of these, all previous Pi's have 12.
-Due to the hardware improvements, the `Pi 4` GPU is still faster than in previous versions of the Pi.
+Kernel programs are compiled dynamically, so that a given program can run unchanged on any version
+of the RaspBerry Pi.
+The kernels are generated inline and offloaded to the GPU's at runtime.
 
-The QPUs are part of the Raspberry Pi's graphics pipeline.  If you're
-interested in doing efficient graphics on the Pi then you probably want
-[OpenGL ES](https://www.raspberrypi.org/documentation/usage/demos/hello-teapot.md).
-The added value of `V3DLib` is accelerating non-graphics parts of your Pi projects.
 
 
 # QPU Registers
@@ -152,192 +177,19 @@ When using multiple QPUs, you could load consecutive blocks of values into separ
 
 Adding `index()` to uniform pointers is so common in kernel code, that I made the following design decision:
 
-**all uniform pointers are initialized with an index offset**
+**All uniform pointers are initialized with an index offset**
 
-I.e. you don't need to do it yourself.
+This means that if a parameter `Int::Ptr ptr` is passed into a kernel with an assigned memory address value `addr`,
+It will be initialized as:
 
-For most applications, the adjustment is useful and required.
-However, it is good to be aware of this pointer adjustment, as it is conceivable
-that you might need something different in your own code
-(the FFT calculation is an example of this).
+    ptr = <addr addr+4 addr+8 addr+12 addr+16 addr+20 addr+24 addr+28 addr+32 addr+36 addr+40 addr+44 addr+48 addr+52 addr+56 addr+60>
 
-Automatic uniform pointer initialization places restrictions on pointer usage:
+You are free to adjust the offsets as required in your application.
+A nice example is **Cursors**.
 
-- All accessed memory blocks must be a number of elements which is a multiple of 16.
+If you really need a single address in the code, do the following in the kernel:
 
-Not adhering to this may lead to reads and writes outside the memory blocks.
-This is not necessarily fatal, but you can expect wild and unexpected results.
-
-
-# DMA and VPM (`vc4` only)
-
-*There's a shitload of complexity here, most of which I don't want to deal with.
-This section documents the stuff I need to know now ('now' being a moving target).*
-
-See the example program `DMA` for basic usage, which is a level deeper than the regular use in the
-source language. Normally, you won't explicitly use DMA and VPM at all.
-
-`DMA` is just what you would expect, given the acronym.
-
-The `VPM` (Vertex Pipe Memory) is a 12KB storage buffer, used to load and save data processed by the QPUs.
-This buffer is shared by all QPUs, so there's plenty of opportunity for screwups in accessing it in a 
-multi-QPU situation.
-
-There are several memory mappings possible for the VPM, use of which is pretty arcane
-(see the `VC IV Architecture reference Guide`).
-I don't want to delve into this and just stick to the way `V3DLib` uses the VPM (which has been
-inherited from `QPULib`). In particular, `V3DLib` restricts itself to *horizontal* memory accesses.
-
-Loading values from shared main memory to QPUs is a two-stage process:
-
-1. Start a DMA load to VPM
-2. Load values from VPM into QPU registers
-
-Saving values from QPUs to shared main memory is the process in reverse.
-
-## DMA Usage
-
-DMA deals with *bytes*.
-
-- DMA read/write can operate in parallel with QPU execution. You will need to juggle a bit for
-  optimal performance.
-- Per QPU, a single DMA read and a single DMA write can execute in parallel.
-- Multiple reads need to be processed sequentially. Either you wait for the previous read to finish,
-  of the subsequent read blocks until the current read is finished.
-- Likewise for multiple writes.
-
-
-### Load example in source language (taken from example `DMA`)
-
-The DMA load is first configured, then you start it and wait for it to complete.
-
-To load 16 consecutive 16-byte vectors from shared main memory to (byte) address 0 in the VPM:
-
-    dmaSetReadPitch(64);               // 64: size of one 16-byte vector
-    dmaSetupRead(HORIZ, 16, 0);        // 16: number of vectors to load; 0: target address in VPM
-    
-    dmaStartRead(p);                   // p:  source pointer in shared memory
-    dmaWaitRead();                     // Wait until load complete
-
-C++ pseudo code:
-
-     byte *p         = <assigned value>;
-     byte *vpm       = 0;
-     int pitch       = 64;
-     int num_vectors = 16;
-
-     for (int i = 0; i < num_vectors; i++) {
-       for (int j = 0; j < pitch; j++) {
-         *(vpm + j) = *(p + j);
-       }
-       vpm += pitch;
-       p   += pitch;
-     }
-
-
-
-### Store example in source language (adapted from example `DMA`)
-
-The DMA store is first configured, then you start it and wait for it to complete.
-
-This example is a bit more elaborate, to better illustrate how the stride works.
-For full vector transfers, the call to `dmaSetWriteStride()` is removed, as well as 
-the last parameter to `dmaSetupWrite()` (see example program `DMA`).
-
-To move **the first 3 values** of 16 consecutive 16-byte vectors
-from (byte) address 256 in VPM to shared main memory:
-
-    dmaSetWriteStride(13*4);           // Skip 13 values of vector
-    dmaSetupWrite(HORIZ, 16, 256, 3);  // 16:  number of vectors to handle;
-                                       // 256: start address for read;
-                                       // 3:   number of consecutive values to transfer
-    dmaStartWrite(p);                  // p:   target address in shared main memory
-    dmaWaitWrite();                    // Wait until store complete
-
-Note the discrepancy in parameter types:
-- in `dmaSetWriteStride()`, the parameter is in **bytes**
-- in `dmaSetupWrite()`, the final parameter is in **words**, i.e. the number of 4-byte elements
-
-This is a source language thing which could be changed, but I do not want to go there.
-I just want to understand it.
-
-C++ pseudo code:
-
-    // Assume that word size is 4 bytes
-    
-    byte *p         = <assigned value>;
-    byte *vpm       = 256;
-    int num_elems   = 3;
-    int stride      = 13*4;  // i.e. 16 - num_bytes
-    int num_vectors = 16;
-    
-    for (int i = 0; i < num_vectors; i++) {
-      for (int j = 0; j < num_elems; j++) {
-        *((word *) p) = *((word *) vpm);
-        vpm += sizeof(word);
-        p   += sizeof(word);
-      }
-      vpm += stride;
-      p   += stride;
-    }
-
-
-## VPM Usage
-
-VPM deals with 64-byte *vectors*.
-
-Sizes and VPM addresses are defined in terms of these vectors, i.e. a size of '1' means one 64-byte vector,
-and and address of '1' means the VPM data location of the second vector in a sequence.
-
-VPM load/store is configured initially; this sets up offset values which are updated on every access.
-
-The example `DMA` combines the load and store in an artful manner.
-
-### Example of loading values to QPU:
-
-Load 16 consecutive values from VPM into a QPU register:
-
-    Int a;                             // Variable which is assigned to a QPU register on compile
-    vpmSetupRead(HORIZ, 16, 0);        // 16: number of vectors to load; 0: start index of vectors
-    
-    for (int i = 0; i < 16; i++) {     // Read each vector
-      a = vpmGetInt();
-      // Do some operation on value here
-    }
-
-C++ pseudo code:
-
-    vector *vpm_in  = 0;   // vector: 64-byte data structure; 0: starting index of vectors
-    int num_vectors = 16;
-    
-    for (int i = 0; i < num_vectors; i++) {
-      a = *vpm_in;
-      vpm_in++;
-      // Do some operation on value here
-    }
-
-
-### Example of saving values from QPU:
-
-    vpmSetupWrite(HORIZ, 16);          // 16: vector index to store at
-    
-    Int a = 0;
-    for (int i = 0; i < 16; i++) {     // write back values of a
-      vpmPut(a);
-      a++;
-    }
-
-C++ pseudo code:
-
-    vector *vpm_out = 16;                // vector: 64-byte data structure; 16: starting index of vectors
-    int num_vectors = 16;
-    
-    Int a = 0;
-    for (int i = 0; i < num_vectors; i++) {
-      *vpm_out = a;
-      vpm_out++;
-      a += 1;
-    }
+    ptr -= index();
 
 -----
 
@@ -366,72 +218,6 @@ So:
 - vc4 `if all(nc)...` -> ANDC
 - vc4 `nc` - negative clear, ie. >= 0
 - vc4 `ns` - negative set,   ie.  < 0
-
-
------
-
-# Things to Remember
-
-*Just plain skip this if you're browsing. It's only useful for archaological purposes. Must rid myself of this hoarding tendency one day.*
-
-## vc4 DMA write: destination pointer is impervious to offset changes
-
-For `vc4`, when doing DMA writes, the index offset is taken into account
-in the DMA setup, therefore there is no need to add it.
-In fact, the added offset is completely disregarded.
-
-This came to light in a previous version of the `DSL` unit test.
-The following was done before a write (kernel source code):
-
-    outIndex = index();
-    ...
-    result[outIndex] = res;
-    outIndex = outIndex + 16;
-
-I would expect DMA to write to wrong locations, **but it doesn't**.
-The DMA write ignores this offset and writes to the correct location, i.e. just like:
-
-    ...
-    *result = res;
-    ...
-
-My working hypothesis is that only the pointer value for vector index 0 is used to
-initialize DMA.
-
-
-## Initialization of stride for `vc4` at the level of the target language
-
-This places the initialization code in the INIT-block, after translation of source to target.
-The INIT-block therefore needs to be added first.
-
-The pointer offset is only effective for TMU accesses.
-When VPM/DMA is used, the index number is compensated for automatically, hence no need for it.
-
-    void SourceTranslate::add_init(Seq<Instr> &code) {
-    	using namespace V3DLib::Target::instr;
-
-    	int insert_index = get_init_begin_marker(code);
-
-    	Seq<Instr> ret;
-
-    /*
-      // Previous version, adding an offset for multiple QPUs
-      // This was silly idea and has been removed. Kept here for reference
-      // offset = 4 * (vector_id + 16 * qpu_num);
-      ret << shl(ACC1, rf(RSV_QPU_ID), 4) // Avoid ACC0 here, it's used for getting QPU_ID and ELEM_ID (next stmt)
-          << mov(ACC0, ELEM_ID)
-          << add(ACC1, ACC1, ACC0)
-          << shl(ACC0, ACC1, 2)           // offset now in ACC0
-          << add_uniform_pointer_offset(code);
-    */
-
-      // offset = 4 * vector_id;
-      ret << mov(ACC0, ELEM_ID)
-          << shl(ACC0, ACC0, 2)             // offset now in ACC0
-          << add_uniform_pointer_offset(code);
-    
-    	 code.insert(insert_index + 1, ret);  // Insert init code after the INIT_BEGIN marker
-    }
 
 -----
 

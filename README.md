@@ -44,9 +44,7 @@ I fully acknowledge his work for the `VideoCore IV` and am grateful for what he 
 
 - Scan the example programs to get an idea of the high-level programming language.
   Start with program `Examples/Hello`, perhaps the simplest possible program.
-- The VideCore is an **SIMD processor**.
-  If the term `SIMD`[^2] is new to you, please look at the [Basics Page](Doc/Basics.md), as it applies
-  to this project.
+ -To get a grip of what VideoCore programming looks like, view the [Basics Page](Basics.md).
 - To install a PI with `V3DLib`, see the [Install Instructions](Doc/install.md).
 - If you want to help in development, you are more than welcome. I warn you that it will be an uphill battle
   * Scan the coding conventions at the top of the [Architecture and Design Page](Doc/ArchitectureAndDesign.md). Read the rest at your own leisure.
@@ -54,6 +52,3 @@ I fully acknowledge his work for the `VideoCore IV` and am grateful for what he 
 
 --------------------------
 
-[^1]: This is not entirely true; there is *one* unit test which can not be run within the context of all unit tests. However, it runs fine when run on its own.
-
-[^2]: SIMD: Single Instruction, Multiple Data. The VideoCore does operations on 16 values in one go.

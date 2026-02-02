@@ -43,6 +43,9 @@ specified with **index()**. For example:
     End
    
 ...will set locations 0..7 to value 2 in register `RF0`. The remaining locations will be unchanged.
+So the previous `RF0` will become:
+
+    RF0 = <2 2 2 2 2 2 2 2 46 48 50 52 54 56 58 60>
 
 
 ## Register Files
@@ -56,6 +59,8 @@ A and B, each containing 32 registers, `v3d` has a single register file with 64 
 In addition, there are 6 **accumulators**, dubbed `r0` to `r5`. Usage of these can improve the
 efficiency of the operations, especially for `vc4`. `r4` and `r5` have specific usage for IO and
 some extended operations.
+
+**NOTE: Accumulators have been dropped on `vc7`.**
 
 
 ## Arithmetic Logic Units
