@@ -13,6 +13,7 @@ require 'matrix'
 
 $seed = 0
 $s_m = 6012119
+$s_frrand_count = 0
 
 #
 # Sample random numbers using a linear congruential generator.
@@ -38,8 +39,14 @@ end
 # Return a pseudo-random float value between -1 and 1.
 #
 def frrand
+	$s_frrand_count += 1
 	val = rrand
 	return (-1.0 + 2.0*val/($s_m))
+end
+
+
+def frrand_count
+	$s_frrand_count
 end
 
 
@@ -61,7 +68,7 @@ end
 def dump_matrix matrix, label
 	puts "#{dump_matrix_header(matrix, label)}:\n"
 
-	if false
+	if true
 		buf = "0: "
 		cur_row = 0 
 		matrix.each_with_index do |e, row, col|
@@ -222,8 +229,9 @@ class NeuralNetwork
 		@w2    = generate_wt(hidden_size, NUM_OUTPUT_NODES)
 		@bias1 = generate_wt(1, hidden_size)
 		@bias2 = generate_wt(1, NUM_OUTPUT_NODES)
-
 		@alpha = in_alpha
+
+
 	end
 
 	def w1; return @w1; end
@@ -237,13 +245,18 @@ class NeuralNetwork
 	def bias2; return @bias2; end
 	def bias2= val; @bias2 = val; end
 
+	#
 	# Creating the Feed forward neural network
+	#
 	def f_forward(input)
-		#puts dump_matrix input, "f_forward input" 
-		#puts dump_matrix @w1  , "f_forward @w1" 
+		#puts "frrand_count: #{frrand_count}"
+		puts dump_matrix @w1, "w1" 
+		z1 = input * @w1          # input from layer 1
+		puts dump_matrix z1, "z1" 
+		abort("Till Here");
 
-		# hidden
-		z1 = input * @w1 + @bias1 # input from layer 1
+
+		z1 += @bias1
 		@a1 = sigmoid_m(z1)       # output of layer 2
 		z2 = @a1 * @w2 + @bias2   # input of out layer
 		a2 = sigmoid_m(z2)        # output of out layer
@@ -503,18 +516,25 @@ end
 ####################
 # Main
 ####################
-nn = NeuralNetwork.new
-# puts dump_matrix_header nn.w2, "nn.w2" 
 
 # To compare pseudo-random values with C++
-#if true
-#	(0...1000).step(1) do |n|
-#		puts frrand.truncate(6)
-#		#puts rrand
-#	end
-#
-#	return
-#end
+if false
+	buf= ""
+
+	(0...1000).step(1) do |n|
+		buf += frrand.truncate(6).to_s + ", "
+
+		if (n % 32 == 0) 
+			buf += "\n"
+		end
+	end
+
+	puts "#{buf}\n"
+
+	return
+end
+
+nn = NeuralNetwork.new
 
 if false
 	test_back_prop

@@ -7,6 +7,7 @@
 float frand();
 unsigned rrand();
 float frrand();
+unsigned frrand_count();
 
 std::string vector_dump(
 	V3DLib::Float::Array const &src,

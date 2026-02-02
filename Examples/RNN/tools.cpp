@@ -57,8 +57,9 @@ Settings &settings() { return _settings; }
 
 namespace {
 
-unsigned s_seed = 0;
-unsigned const s_m = 6012119;
+unsigned       s_seed         = 0;
+unsigned const s_m            = 6012119;
+unsigned       s_frrand_count = 0;
 
 /**
  * Sample random numbers using a linear congruential generator.
@@ -85,6 +86,13 @@ unsigned rrand() {
 
 
 float frrand() {
+	s_frrand_count++;
 	unsigned val = rrand();
 	return -1.0f + 2.0f*((float) val)/((float) s_m);
 }
+
+
+unsigned frrand_count() {
+	return s_frrand_count;
+}
+

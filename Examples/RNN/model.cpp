@@ -2,21 +2,20 @@
 
 model::model(int n_size, int m_size) : s_tmp(n_size) {
 	w1.frand();
-	bias1.frand();
 	w2.frand();
+	bias1.frand();
 	bias2.frand();
 }
 
 
 vector model::forward(vector const &input) {
-  //Timer timer("Matrix mult");
-
- 	warn << "input: " << input.dump();
- 	warn << "w1:\n"     << w1.dump();
-
+ 	//warn << "frrand_count:" << frrand_count();
+ 	warn << "w1: " << w1.dump();
   z1 = w1 * input;
+ 	warn << "z1: " << z1.dump();
+	warn << "Till Here" << thrw;
+
 	//scalar::mult(input.arr(), w1.arr(), s_tmp);
- 	//warn << "z1       : " << z1.dump();
   //warn << "scalar z1: " << vector_dump(s_tmp, 16);
 
   //warn << "bias1: " << bias1.dump();
@@ -35,17 +34,6 @@ vector model::forward(vector const &input) {
   //warn << "kernel sigmoid: " << a2.dump();
   //warn << "scalar sigmoid: " << vector_dump(s_tmp, 16);
 
-/*
-	// TODO generalize FLOP calculations for all operations.
-	//      Stuff below is embryonic.
-  timer.end();
-
-  int flops = 2*M*(16*N + 16*(N - 1));  // matrix num_rows*(num_mults + num_adds);
-	flops    += 2*M*6;                    // sigmoid (1.0/(1.0 + exp(-1.0*x + bias)));
-
-  //warn << "MFLOPS: " << ((float) flops)/timer.diff()/1.0e6;
-  //warn << "Timer diff: " << timer.diff();
-*/		
 	return a2;
 }
 

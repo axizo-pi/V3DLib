@@ -22,7 +22,7 @@ const int NumOutputNodes = 3;
 struct model {
 	model(int n_size, int m_size);
 
-	float alpha = 0.1f;  // ruby version works fine with value 1
+	float alpha = 1.0f;  // ruby version works fine with value 1
 
 	matrix w1{16*N, M};
 	vector z1{16};

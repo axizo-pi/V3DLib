@@ -118,19 +118,24 @@ void predict(vector const &input, model &k_model) {
 int main(int argc, const char *argv[]) {
   settings().init(argc, argv);
 
-/*
  	// To compare pseudo-random values with ruby	 
-	if (true) {
+	if (false) {
 		std::cout.precision(6);
+
+		std::string buf;
 		for (int x = 0; x < 1000; ++x) {
-			std::cout << frrand() << "\n";
-			//std::cout << rrand() << "\n";
+			buf << frrand() << ", ";
+
+			if (x % 32 == 0) {
+				buf << "\n";
+			}
 		}
+
+		std::cout << buf << "\n";
 		return 0;
 	}
-*/	
 
-	if (true) {
+	if (false) {
 		test_back_propagation(vector::op_kernel());
 		//test_outer_product(vector::op_kernel(), true);
 		//test_vector();

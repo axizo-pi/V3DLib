@@ -1,5 +1,6 @@
 #include "matrix.h"
 #include "scalar.h"
+#include "tools.h"  // frrand()
 
 
 ////////////////////////////////////////////////
@@ -70,7 +71,8 @@ void matrix::frand() {
 	assert(arr().size() > 0);
 
  	for (int i = 0; i < (int) arr().size(); ++i) {
-    arr()[i] = ::frand();
+    arr()[i] = frrand();
+    //arr()[i] = ::frand();
  	}
 }
 
