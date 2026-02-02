@@ -81,8 +81,6 @@ else
   CXX_FLAGS += -DNDEBUG -s
 endif
 
-LIB_DEPEND=
-
 ifeq ($(DEBUG), 1)
 	LIB_EXTERN += -L ${BASE}/../CmdParameter/obj-debug -lCmdParameter
 	LIB_DEPEND += ${BASE}/../CmdParameter/obj-debug/libCmdParameter.a
