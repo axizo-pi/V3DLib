@@ -7,7 +7,7 @@
 Updated this on **20260202** to add `pi5` and to adjust values for current version of library.
 
 At time of writing, there were several `Rot3D` kernels present.  
-The original performance comparison was to argue that the `gather-retrieve` usage was better
+The original performance comparison was to argue that the `gather-receive` usage was better
 than naive read-write. This turns out to be only true for `vc4`, because it needs to use DMA.
 
 **NOTE:** TMU-write is now default. This probably skews the recent results.
@@ -20,7 +20,7 @@ measuring computing performance with respect to scaling.
 
 ## Kernels
 
-### Scalar version</a>
+### Scalar version
 
 The following function will rotate `n` vertices about the Z axis by
 &theta; degrees.
@@ -203,6 +203,7 @@ Values are the median of at least 5 runs.
 > **Non-blocking loads (Kernel 2) give a significant performance boost: in this case a factor of 2.**
 
 This is totally true for `vc4`. For `v3d` this does not really hold. Nifty coding can compensate.
+See kernel 1a.
 
 - Note that the performance does not increase much when using multiple kernels for
   kernel versions > 1. This is totally an indication that the calculation is _IO-bound_.
