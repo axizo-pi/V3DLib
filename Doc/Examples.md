@@ -216,136 +216,13 @@ If this is applied to the vertices of
 |:---:|:---:|
 | &theta; = 0&deg; | &theta; = 180&deg; |
 
-### <a name="scalar-version-1">Scalar version</a>
+`Rot3D` profiling for the several kernels which were present can be found [here](Profiling/Rot3D.html).
 
-The following function will rotate `n` vertices about the Z axis by
-&theta; degrees.
-
-    void rot3D(int n, float cosTheta, float sinTheta, float* x, float* y) {
-      for (int i = 0; i < n; i++) {
-        float xOld = x[i];
-        float yOld = y[i];
-        x[i] = xOld * cosTheta - yOld * sinTheta;
-        y[i] = yOld * cosTheta + xOld * sinTheta;
-      }
-    }
-
-### <a name="vector-version-1-1"></a>  Vector version 1
-
-This first vector version is almost identical to the scalar version above.
-The only difference is that each loop iteration now processes 16 vertices at a time rather than a single vertex.
-
-    void rot3D_1(Int n, Float cosTheta, Float sinTheta, Float::Ptr x, Float::Ptr y) {
-      For (Int i = 0, i < n, i += 16)
-        Float xOld = x[i];
-        Float yOld = y[i];
-        x[i] = xOld * cosTheta - yOld * sinTheta;
-        y[i] = yOld * cosTheta + xOld * sinTheta;
-      End
-    }
-
-This simple solution will spend a lot of time blocking on the memory subsystem, waiting for vector reads and write to complete.
-The next section explores how to improve performance by overlapping memory access with computation.
-
-
-### Vector version 2: non-blocking memory access 
-
-`V3DLib` supports explicit non-blocking loads through these functions:
-
-| Operation        | Description                                                                  |
-|------------------|------------------------------------------------------------------------------|
-| `gather(p)`      | Given a vector of addresses `p`, *request* the value at each address in `p`. |
-|                  | A maximum of 8 gather calls can be outstanding at any one time.              |
-|                  | For more than 8, the QPU will block *(TODO verify)*.                         |
-| `receive(x)`     | Loads values collected by `gather(p)` and stores these in `x`.               |
-|                  | Will block if the values are not yet available.                              |
-| `prefetch(x, p)` | Combines `gather` and `receive` in an efficient manner. `gather` is          |
-|                  | performed as early as possible. There are restrictions to its usage *(TODO)* |
-
-These are all read operations, the write operation can not be optimized.
-
- - On `vc4` a write operation has to wait for a previous write operation to complete.
- - On `v3d`, a write operation does not block and always overlaps with QPU computation.
-
-Between `gather(p)` and `receive(x)` the program is free to perform computation *in parallel*
-with the memory accesses.
-
-Inside the QPU, an 8-element FIFO, called the **TMU**, is used to hold `gather` requests:
-each call to `gather` will enqueue the FIFO, and each call to `receive` will dequeue it.
-This means that a maximum of eight `gather` calls may be issued before a `receive` must be called.
-
-A vectorised rotation routine that overlaps memory access with computation might be as follows:
-
-    void rot3D_2(Int n, Float cosTheta, Float sinTheta, Float::Ptr x, Float::Ptr y) {
-      Int inc = numQPUs() << 4;
-      Float::Ptr p = x + me()*16;
-      Float::Ptr q = y + me()*16;
-    
-      gather(p); gather(q);
-     
-      Float xOld, yOld;
-      For (Int i = 0, i < n, i += inc)
-        gather(p+inc); gather(q+inc); 
-        receive(xOld); receive(yOld);
-    
-        *p = xOld * cosTheta - yOld * sinTheta;
-        *q = yOld * cosTheta + xOld * sinTheta;
-        p += inc; q += inc;
-      End
-    
-      receive(xOld); receive(yOld);
-    }
-
-_(**TODO** same example with `prefetch()`)_
-
-While the outputs from one iteration are being computed and written to
-memory, the inputs for the *next* iteration are being loaded *in parallel*.
-
-Variable `inc` is there to take into account multiple QPU's running.
-Each QPU will handle a distinct block of 16 elements.
 
 
 ### Performance
 
-Times taken to rotate an object with 192,000 vertices:
-
-**Raspberry Pi 3 Model B Rev 1.2 (vc4):**
-
-  Version  | Number of QPUs | Run-time (s) |
-  ---------| -------------- | ------------ |
-  Scalar   |  0             | 0.020532     |
-  Kernel 1 |  1             | 0.032531     |
-  Kernel 2 |  1             | 0.015441     |
-  Kernel 2 |  4             | 0.013367     |
-  Kernel 2 |  8             | 0.013368     |
-  Kernel 2 | 12             | 0.013386     |
-
-**Raspberry Pi 4 Model B Rev 1.1 (64-bits, v3d):**
-
-  Version  | Number of QPUs | Run-time (s) |
-  ---------| -------------- | ------------ |
-  Scalar   |  0             | 0.008814     |
-  Kernel 1 |  1             | 0.008867     |
-  Kernel 2 |  1             | 0.00566      |
-  Kernel 2 |  8             | 0.001803     |
-
-
-![Rot3D Profiling](./images/rot3d_profiling.png)
-
-
-Non-blocking loads (Kernel 2) give a significant performance boost: in this case a factor of 2.
-
-On `vc4`, this program does not scale well to multiple QPUs.
-This is likely because the compute-to-memory ratio is too low:
-only 3 arithmetic operations (2 multiplications, 1 addition/substraction)
-are done for every memory access, perhaps overwhelming the memory subsystem.
-
-Example `Mandelbrot` had a much better compute-to-memory ratio, and is therefore a better candidate for
-measuring computing performance with respect to scaling.
-
-On `v3d`, this *does* scale with the QPUs. This is a good indication that the memory handling has been improved in this model.
-In addition, it is significantly faster overall.
-
+The profiling for `Rot3D` has been updated and moved to [Rot3D Profiling](Profiling/Rot3D.html).
 
 ## Example 3: 2D Convolution (Heat Transfer)
 
