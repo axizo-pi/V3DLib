@@ -132,7 +132,6 @@ On `pi`:
 	sudo apt-get install -y libdrm-dev
 	sudo apt-get install -y ruby
 
-
 	mkdir ~/projects
 	mkdir ~/tmp
 

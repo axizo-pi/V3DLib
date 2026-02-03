@@ -13,7 +13,8 @@ using namespace kernels;
 void run_kernel(int kernel_index) {
   switch (kernel_index) {
     case 0: run_qpu_kernel(vector_rot3D);  break;  
-    case 4: run_scalar_kernel();      break;
+    case 1: run_scalar_kernel();      break;
+		default: assert(false);
   }
 
   auto name = kernel_id[kernel_index];

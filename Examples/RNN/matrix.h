@@ -16,17 +16,17 @@ using namespace V3DLib;
 /**
  * Width must be in multiples of 16.
  *
- * Case width x height = 16*16 x 16:
+ * Case columns x rows = 16*16 x 16:
  * - has been shown to work
  * - are dimension which I consider to efficiently use the QPU
  */
 struct matrix {
 
-	matrix(int width, int height);
+	matrix(int rows, int columns);
 	matrix(matrix &rhs);
 
-	int width() const  { return m_width; }
-	int height() const { return m_height; }
+	int columns() const  { return m_columns; }
+	int rows() const     { return m_rows; }
 
 	Float::Array &operator &();
 	Float::Array &arr();
@@ -40,22 +40,22 @@ struct matrix {
 	matrix operator-(matrix const &rhs);
 	matrix &operator-=(matrix const &rhs);
 	matrix operator*(float rhs);
-	matrix operator*(matrix const &rhs);
+	matrix operator*(matrix const &rhs) const;
 	matrix sigmoid_derivative(matrix const &rhs);
 	matrix transpose() const;
 
 	std::string dump(bool output_int = false) const;
 
 protected:
-	void width(int rhs) { m_width = rhs; }
+	void columns(int rhs) { m_columns = rhs; }
 
 	void transfer(matrix const &rhs);
 
 	std::shared_ptr<Float::Array> m_arr;
 
 private:
-	int m_width  = 0;
-	int m_height = 0;
+	int m_rows     = 0;
+	int m_columns  = 0;
 
 	static BaseKernel *m_mult_vec;
 
@@ -76,7 +76,7 @@ matrix operator*(float scalar, matrix /* const */ &mat);
 struct vector : public matrix {
 
 	vector(vector &rhs);
-	vector(int height);
+	vector(int rows);
 
 	void set(float *rhs, int in_size);
 	void set(float init_val);

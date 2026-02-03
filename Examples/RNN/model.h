@@ -5,8 +5,8 @@
 
 using namespace V3DLib;
 
-const int M = 16; // Num of rows in matrix
-const int N = 2;  // Width of matrix and length of vector, in blocks of 16
+const int N = 2;  // Columns of matrix and length of vector, in blocks of 16
+const int M = 16; // Num of columns in matrix
 
 const int NumOutputNodes = 3;
 

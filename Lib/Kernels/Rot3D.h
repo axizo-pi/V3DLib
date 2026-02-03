@@ -7,7 +7,7 @@ namespace kernels {
 using namespace V3DLib;
 
 void scalar_rot3D(int n, float rot_x, float rot_y, float rot_z, float *x, float *y, float *z);
-void vector_rot3D(Int n, Float cosTheta, Float sinTheta, Float::Ptr x, Float::Ptr y);
+void vector_rot3D(Int n, Float rot_x, Float rot_y, Float rot_z, Float::Ptr x, Float::Ptr y, Float::Ptr z);
 
 }  // namespace kernels
 
