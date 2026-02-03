@@ -2,13 +2,9 @@
 	<link rel="stylesheet" type="text/css" href="css/docs.css">
 </head>
 
-# Architecture and Design
+# Overview
 
-This document explains the basics of the QPU architecture and documents some design decisions within `V3DLib` to deal with it.
-
------
-
-# VideoCore Overview
+## VideoCore Basics
 
 There are three distinct versions of the `VideoCore` GPU:
 
@@ -32,7 +28,7 @@ Performance-wise, the `Pi5` absolutely destroys all previous models.
 
 To get an idea of what VideoCore programming looks like, please view the [Basics Page](Basics.md).
 
-## Personal Notes/Gripes
+### Personal Notes/Gripes
 
 - The QPUs are part of the Raspberry Pi's graphics pipeline.  If you're
 interested in doing cool graphics on the Pi then you probably want **OpenGL ES**.
@@ -102,95 +98,6 @@ Kernel programs are compiled dynamically, so that a given program can run unchan
 of the RaspBerry Pi.
 The kernels are generated inline and offloaded to the GPU's at runtime.
 
-
-
-# QPU Registers
-
-## Vector Offsets
-
-In a kernel, when loading values in a register in a manner that would be considered intuitive for a programmer:
-
-    Int a = 2;
-
-...you end up with a 16-vector containing the same values:
-
-    a = <2 2 2 2 2 2 2 2 2 2 2 2 2 2 2 2>
-
-In order to use the vector processing capabalities effectively, you want to be able to perform the calculations
-with different values.
-
-The following functions at source code level are supplied to deal this:
-
-### Function `index()`
-
-Returns an index value unique to each vector element, in the range `0..15`.
-
-The following user-level code:
-
-    Int a = index();
-
-Results in: 
-
-    a = <0 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15>
-
-### Function `me()`
-
-Returns an index value unique to each QPU participating in a calculation.
-A single running QPU would have `me() == 0`, any further QPU's are indexed sequentially.
-
-### Function `numQPUs()` 
-
-Returns  number of QPU's participating in a calculation.
-
-The possible values depend on the VideoCore used:
-
-- `vc4`: 1...12
-- `vc6`: 1 or 8
-- `vc7`: 1...16
-
-### Vector offset calculation
-
-The previous functions are useful to differentiate pointers to memory addresses.
-The following is a method to load in consective values from shared main memory:
-
-    void kernel(Ptr<Int> x) {
-      x = x + index();
-      a = *x;
-    }
-
-*Keep in mind that Int and Float values are 4 bytes. Pointer arithmetic takes this into account.*
-
-The incoming value `x` is a pointer to an address in shared memory (i.e. accessible by both the CPU and the QPU's).
-By adding `index()`, each vector element of `x` will point to consecutive values.
-On the assignment to `a`, these consecutive values will be loaded into the vector elements of `a`.
-
-
-When using multiple QPUs, you could load consecutive blocks of values into separate QPUs int the following way:
-
-    void kernel(Ptr<Float> x) {
-      x = x + index() + (me() << 4);
-      a = *x;
-    }
-
-
-## Automatic Uniform Pointer Initialization
-
-Adding `index()` to uniform pointers is so common in kernel code, that I made the following design decision:
-
-**All uniform pointers are initialized with an index offset**
-
-This means that if a parameter `Int::Ptr ptr` is passed into a kernel with an assigned memory address value `addr`,
-It will be initialized as:
-
-    ptr = <addr addr+4 addr+8 addr+12 addr+16 addr+20 addr+24 addr+28 addr+32 addr+36 addr+40 addr+44 addr+48 addr+52 addr+56 addr+60>
-
-You are free to adjust the offsets as required in your application.
-A nice example is **Cursors**.
-
-If you really need a single address in the code, do the following in the kernel:
-
-    ptr -= index();
-
 -----
 
 # Setting of Branch Conditions
@@ -219,6 +126,6 @@ So:
 - vc4 `nc` - negative clear, ie. >= 0
 - vc4 `ns` - negative set,   ie.  < 0
 
------
+----
 
 #### Footnotes
