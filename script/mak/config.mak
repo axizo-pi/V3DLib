@@ -1,5 +1,4 @@
 BASE=~/projects/V3DLib
-#WRI=1
 
 ROOT=$(BASE)/Lib
 
