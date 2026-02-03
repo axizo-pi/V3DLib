@@ -2,6 +2,8 @@
 #
 # This is a reference app for RNN's.
 #
+# This program demonstrably works, so the C++ is adjusted to the working of this program.
+#
 # Adapted from: https://www.geeksforgeeks.org/numpy/implementation-of-neural-network-from-scratch-using-numpy/
 #
 ##################################################################

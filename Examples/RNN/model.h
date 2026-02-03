@@ -24,7 +24,7 @@ struct model {
 
 	float alpha = 1.0f;  // ruby version works fine with value 1
 
-	matrix w1{16*N, M};
+	matrix w1{M, 16*N};
 	vector z1{16};
   vector bias1{16};
   vector a1{16};

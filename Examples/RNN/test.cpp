@@ -5,6 +5,7 @@
 using namespace V3DLib;
 
 namespace {
+
 // Values for testing purposes
 const int primes_size = 2*16;
 
@@ -12,6 +13,7 @@ float primes[primes_size] = {
   2,	3,	5,	7,	11,	13,	17,	19,	23,	29,	31,	37,	41,	43,	47,	53,	59,	61,	67,	71,
  73, 79,	83,	89,	97,	101,	103,	107,	109,	113,	127,	131 //	137	139	149	151	157	163	167	173
 };
+
 
 void init_input(Float::Array &input, float *a,  int n) {
   for (int h = 0; h < n; ++h) {
@@ -82,7 +84,7 @@ void test_back_propagation(V3DLib::BaseKernel &op) {
 	//	
 	// Hidden layer adjusting w1
 	//
-	matrix w2(16, 32);   // !!! Params reversed wrt ruby Matrix
+	matrix w2(32, 16);
 	w2.set(0.5);
  	warn << "w2: " << w2.dump();
 
@@ -116,7 +118,7 @@ void test_back_propagation(V3DLib::BaseKernel &op) {
 	w1_adj = tmp2;
  	warn << "w1_adj transposed:\n" << w1_adj.dump(true);
 
-	matrix w1(32, 16);
+	matrix w1(16, 32);
 	w1.set(1);
  	warn << "w1:\n" << w1.dump();
 

@@ -96,10 +96,10 @@ class NeuralNetwork
 	#
 	def f_forward(input)
 		#puts "frrand_count: #{frrand_count}"
-#		puts dump_matrix @w1, "w1" 
+		puts dump_matrix @w1, "w1" 
 		z1 = input * @w1          # input from layer 1
-#		puts dump_matrix z1, "z1" 
-#		abort("Till Here");
+		puts dump_matrix z1, "z1" 
+		abort("Till Here");
 
 
 		z1 += @bias1

@@ -33,7 +33,8 @@ def dump_matrix matrix, label
 		row_vec = [] 
 		matrix.each_with_index do |e, row, col|
 			if cur_row != row
-				buf << "  [#{row_vec.join(", ")}],\n"
+				tmp = row_vec.collect { |n| n.truncate(6) }   # Truncate values to better compare with C++
+				buf << "  [#{tmp.join(", ")}],\n"
 				row_vec = [] 
 
 				cur_row = row
@@ -42,7 +43,8 @@ def dump_matrix matrix, label
 			row_vec << e
 		end
 
-		buf << "  [#{row_vec.join(", ")}]\n"
+		tmp = row_vec.collect { |n| n.truncate(6) }
+		buf << "  [#{tmp.join(", ")}]\n"
 		buf << "]"
 		puts buf
 	end
