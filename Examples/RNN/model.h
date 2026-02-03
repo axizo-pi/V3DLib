@@ -5,8 +5,8 @@
 
 using namespace V3DLib;
 
-const int M = 16; // Num of rows in matrix
-const int N = 2;  // Width of matrix and length of vector, in blocks of 16
+const int N = 2;  // Columns of matrix and length of vector, in blocks of 16
+const int M = 16; // Num of columns in matrix
 
 const int NumOutputNodes = 3;
 
@@ -24,7 +24,7 @@ struct model {
 
 	float alpha = 1.0f;  // ruby version works fine with value 1
 
-	matrix w1{M, 16*N};
+	matrix w1{16*N, M};
 	vector z1{16};
   vector bias1{16};
   vector a1{16};

@@ -8,45 +8,38 @@ model::model(int n_size, int m_size) : s_tmp(n_size) {
 }
 
 
+/**
+ * Do a forward step given the input.
+ *
+ * ------
+ *
+ * NOTES
+ * -----
+ *
+ * mat.transpose() * vec;  - is equivalent to 'vec * mat' in model.rb
+ *
+ * It does however add overhead due to the transposition. **MAKE IT WORK** is where we're at.
+ */
 vector model::forward(vector const &input) {
- 	//warn << "frrand_count:" << frrand_count();
- 	warn << "w1: " << w1.dump();
-  z1 = w1 * input;
- 	warn << "z1: " << z1.dump();
-	warn << "Till Here" << thrw;
-
-	//scalar::mult(input.arr(), w1.arr(), s_tmp);
-  //warn << "scalar z1: " << vector_dump(s_tmp, 16);
-
-  //warn << "bias1: " << bias1.dump();
-	a1 = z1.sigmoid(bias1);
-	//scalar::sigmoid(z1.arr(), bias1.arr(), s_tmp);
-  //warn << "kernel sigmoid: " << a1.dump();
-  //warn << "scalar sigmoid: " << vector_dump(s_tmp, 16);
-
-  z2 = w2 * a1;
-	//scalar::mult(a1.arr(), w2.arr(), s_tmp);
-  //warn << "kernel z2: " << z2.dump();
-  //warn << "scalar z2: " << vector_dump(s_tmp, 16);
-
-	a2 = z2.sigmoid(bias2);
-	//scalar::sigmoid(z2.arr(), bias2.arr(), s_tmp);
-  //warn << "kernel sigmoid: " << a2.dump();
-  //warn << "scalar sigmoid: " << vector_dump(s_tmp, 16);
+  z1 = w1.transpose() * input;    // Input from layer 1 
+	a1 = z1.sigmoid(bias1);         // Output of layer 2
+  z2 = w2.transpose() * a1;
+	a2 = z2.sigmoid(bias2);         // Output of out layer
 
 	return a2;
 }
 
 
 void model::back_prop(vector const &input, vector const &desired) {
- 	//warn << "Pre  a2: " << a2.dump();
 	auto la2 = forward(input);  // Same as member a2; expected
- 	//warn << "Post la2: " << la2.dump();
 
 	//
 	// Output layer to hidden layer
 	//
 	auto d2 = la2 - desired;                // error in output layer
+
+ 	warn << "d2: " << d2.dump();
+	warn << "Till Here" << thrw;
 
  	// Only top 3 elements of error (d2) are significant, zap the rest
 	for (int i = NumOutputNodes; i < d2.size(); ++i) {

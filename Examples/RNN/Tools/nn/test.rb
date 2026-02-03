@@ -34,7 +34,7 @@ def dump_matrix matrix, label
 		matrix.each_with_index do |e, row, col|
 			if cur_row != row
 				tmp = row_vec.collect { |n| n.truncate(6) }   # Truncate values to better compare with C++
-				buf << "  [#{tmp.join(", ")}],\n"
+				buf << "#{cur_row}:  [#{tmp.join(", ")}],\n"
 				row_vec = [] 
 
 				cur_row = row
@@ -44,8 +44,7 @@ def dump_matrix matrix, label
 		end
 
 		tmp = row_vec.collect { |n| n.truncate(6) }
-		buf << "  [#{tmp.join(", ")}]\n"
-		buf << "]"
+		buf << "#{cur_row}:  [#{tmp.join(", ")}]\n" << "]"
 		puts buf
 	end
 end

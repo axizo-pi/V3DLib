@@ -40,7 +40,7 @@ struct matrix {
 	matrix operator-(matrix const &rhs);
 	matrix &operator-=(matrix const &rhs);
 	matrix operator*(float rhs);
-	matrix operator*(matrix const &rhs);
+	matrix operator*(matrix const &rhs) const;
 	matrix sigmoid_derivative(matrix const &rhs);
 	matrix transpose() const;
 

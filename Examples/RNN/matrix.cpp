@@ -117,11 +117,19 @@ matrix matrix::operator*(float rhs) {
 }
 
 
-matrix matrix::operator*(matrix const &rhs) {
+matrix matrix::operator*(matrix const &rhs) const {
 	//warn << "Called matrix matrix::operator*()";
 	assert(m_columns > 0);
 	assert(m_rows > 0);
-	assert(m_columns == rhs.rows());    // Inner dimension must match
+
+	if (m_columns != rhs.rows()) {
+		cerr << "Matrix::operator*() Inner dimension does not match. "
+				 << "this(rows, columns): (" << m_rows << ", " << m_columns << "), "
+				 << "rhs(rows, columns):  (" << rhs.rows() << ", " << rhs.columns() << ")"
+		 		 << thrw;
+	}
+	//assert(m_columns == rhs.rows());    // Inner dimension must match
+
 	assert((m_columns % 16) == 0);      // Inner dimension must be multiple of 16
 
 	matrix ret(m_rows, 1);
@@ -156,7 +164,7 @@ matrix matrix::sigmoid_derivative(matrix const &rhs) {
 
 
 matrix matrix::transpose() const {
-	matrix ret(m_rows, m_columns);
+	matrix ret(m_columns, m_rows);
 
 	for (int h = 0; h < m_rows; ++h) {
 		for (int w = 0; w < m_columns; ++w) {
@@ -172,16 +180,16 @@ std::string matrix::dump(bool output_int) const {
 	assert(m_arr != nullptr);
 	std::string ret;
 
-	ret << "(" << m_columns << ", " << m_rows << ") ";
+	ret << "Here (" << m_rows << ", " << m_columns << ") ";
 
 	if (m_columns == 1) {
 		ret << "(tr) ";
-		ret << vector_dump(*m_arr, m_rows, 0, output_int);
+		ret << "[" << vector_dump(*m_arr, m_rows, 0, output_int) << "]";
 	} else {
 		ret << "\n";
 
 		for (int h = 0; h < m_rows; ++h) {
-		 	ret << h << ": " << vector_dump(*m_arr, m_columns, h*m_rows, output_int) << "\n";
+		 	ret << h << ": [" << vector_dump(*m_arr, m_columns, h*m_columns, output_int) << "]\n";
 		}
 	}
 

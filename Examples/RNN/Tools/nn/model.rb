@@ -95,17 +95,12 @@ class NeuralNetwork
 	# Creating the Feed forward neural network
 	#
 	def f_forward(input)
-		#puts "frrand_count: #{frrand_count}"
-		puts dump_matrix @w1, "w1" 
-		z1 = input * @w1          # input from layer 1
-		puts dump_matrix z1, "z1" 
-		abort("Till Here");
-
-
+		z1  = input * @w1         # Input from layer 1
 		z1 += @bias1
-		@a1 = sigmoid_m(z1)       # output of layer 2
-		z2 = @a1 * @w2 + @bias2   # input of out layer
-		a2 = sigmoid_m(z2)        # output of out layer
+		@a1 = sigmoid_m(z1)       # Output of layer 2
+		z2  = @a1 * @w2
+		z2 += @bias2
+		a2 = sigmoid_m(z2)        # Output of out layer
 
 		a2
 	end
@@ -129,7 +124,9 @@ def back_prop(input, desired, nn)
 	# output layer to hidden layer
 	#
 	d2        = a2 - desired            # error in output layer
-	#puts "back_prop " + dump_matrix_header(d2, "d2")
+
+	puts dump_matrix d2, "d2" 
+	abort("Till Here");
 
 	w2_adj    = nn.a1.t * d2            # gradient, outer product
 	w2_tmp    = nn.w2 - nn.alpha*w2_adj
