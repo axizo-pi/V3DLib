@@ -61,7 +61,7 @@ void train(vector const *inputs, vector const *desired, model &k_model) {
 
 	int epoch_step = 1;
 	if (NumEpochs >= 1000) {
-		epoch_step = 20;
+		epoch_step = 50;
 	} else if (NumEpochs >= 400) {
 		epoch_step = 10;
 	}
@@ -91,7 +91,8 @@ void train(vector const *inputs, vector const *desired, model &k_model) {
 
 void predict(vector const &input, model &k_model) {
 	auto result = k_model.forward(input);
-	warn << "predict result: " << result.dump();
+	//warn << "predict result: " << result.dump();
+	//warn << "Till Here" << thrw;
 
 	float maxm = 0;
 	int k = 0;
@@ -157,9 +158,9 @@ int main(int argc, const char *argv[]) {
 
 	train(inputs, desired, k_model);
 
-	predict(inputs[0], k_model);
-	predict(inputs[1], k_model);
 	predict(inputs[2], k_model);
+	predict(inputs[1], k_model);
+	predict(inputs[0], k_model);
 
   return 0;
 }

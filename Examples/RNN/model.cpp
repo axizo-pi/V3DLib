@@ -36,55 +36,20 @@ void model::back_prop(vector const &input, vector const &desired) {
 	//
 	// Output layer to hidden layer
 	//
-	auto d2 = la2 - desired;                // error in output layer
-
- 	warn << "d2: " << d2.dump();
-	warn << "Till Here" << thrw;
-
- 	// Only top 3 elements of error (d2) are significant, zap the rest
-	for (int i = NumOutputNodes; i < d2.size(); ++i) {
-		d2[i] = 0;
-	}
- 	//warn << "d2: " << d2.dump();
-
-	auto w2_adj = a1.outer(d2);             // gradient, outer product
- 	//warn << "w2_adj:\n" << w2_adj.dump();
-
+	auto d2     = la2 - desired;             // error in output layer
+	auto w2_adj = a1.outer(d2);              // gradient, outer product
 	auto w2_tmp = w2 - alpha*w2_adj;
- 	//warn << "w2_tmp:\n" << w2_tmp.dump();
-	
-	bias2 -= alpha * d2;
- 	//warn << "bias2: " << bias2.dump();
+	bias2      -= alpha * d2;
 
 	//	
 	// Hidden layer adjusting w1
 	//
-	auto tmp1 = w2 * d2;
- 	//warn << "tmp1: " << tmp1.dump();
+	auto tmp1   = w2 * d2;
+	auto d1     = a1.sigmoid_derivative(tmp1);
+	auto w1_adj = input.outer(d1);           // gradient, outer product;
+	w1         -= alpha*w1_adj;
+	bias1      -= alpha * d1;
+	w2          = w2_tmp;
 
-	auto d1 = a1.sigmoid_derivative(tmp1);
-	warn << "d1: " << d1.dump();
-
-	auto w1_adj = input.outer(d1);        // gradient, outer product; result transposed
- 	warn << "w1_adj:\n" << w1_adj.dump();
-	auto tmp2 = w1_adj.transpose();
-	w1_adj = tmp2;
- 	warn << "w1_adj transposed:\n" << w1_adj.dump(true);
-
-	//w1 -= alpha*w1_adj;
-	auto tmp = alpha*w1_adj;
- 	warn << "tmp:\n" << tmp.dump();
- 	warn << "w1:\n" << w1.dump();
-
-	warn <<  "### Till Here ###";
-
-	w1 -= alpha*w1_adj;
-
- 	//warn << "w1 post:\n" << w1.dump();
-
- 	//warn << "bias1 pre :" << bias1.dump();
-	bias1 -= alpha * d1;
- 	//warn << "bias1 post:" << bias1.dump();
-
-	w2 = w2_tmp;
+// 	warn << "w2: " << w2.dump();
 }

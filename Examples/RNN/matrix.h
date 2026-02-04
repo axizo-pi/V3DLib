@@ -50,6 +50,7 @@ protected:
 	void columns(int rhs) { m_columns = rhs; }
 
 	void transfer(matrix const &rhs);
+	std::string dump_dimensions() const;
 
 	std::shared_ptr<Float::Array> m_arr;
 
