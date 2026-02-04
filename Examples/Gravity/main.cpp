@@ -2,11 +2,9 @@
 #include "scalar.h"
 #include "kernel.h"
 #include "Support/Timer.h"
-#include "Support/Settings.h"
+#include "settings.h"
 
 using namespace Log;
-
-V3DLib::Settings settings;
 
 
 ///////////////////////////////////////////////////////////////
@@ -15,6 +13,8 @@ V3DLib::Settings settings;
 
 int main(int argc, const char *argv[]) {
   settings.init(argc, argv);
+
+	warn << "Num qpu's: " << settings.num_qpus;
 
 	Image img(512, 512);
 	img.set_conversion_factor(IMG_CONVERSION_FACTOR);
@@ -29,7 +29,11 @@ int main(int argc, const char *argv[]) {
 		init_orbital_entities();
 		scalar_run(img);
 
-		img.save("gravity.bmp");
+		// The plot image is always filled in,
+		// output is optional.
+		if (settings.output_orbits) {
+			img.save("gravity.bmp");
+		}
 	}
 
 
@@ -43,6 +47,8 @@ int main(int argc, const char *argv[]) {
 	//warn << m.dump_pos();
 
 	auto k = compile(kernel_gravity, settings);
+  //k.setNumQPUs(settings.num_qpus);
+
 	k.load(
 		&m.x, &m.y, &m.z,
 		&m.v_x, &m.v_y, &m.v_z,
@@ -64,7 +70,12 @@ int main(int argc, const char *argv[]) {
 
 		//warn << m.dump_acc();
 		//warn << m.dump_pos();
-		m.save_img();
+
+		// The plot image is always filled in,
+		// output is optional.
+		if (settings.output_orbits) {
+			m.save_img();
+		}
 	}
 
   return 0;
