@@ -167,18 +167,19 @@ void kernel_step(
 
 	header("Start kernel_step");
 
-  Int step = numQPUs() << 4;
-  p_x     += me()*16;
-  p_y     += me()*16;
-  p_z     += me()*16;
-  p_v_x   += me()*16;
-  p_v_y   += me()*16;
-  p_v_z   += me()*16;
-  p_acc_x += me()*16;
-  p_acc_y += me()*16;
-  p_acc_z += me()*16;
+  Int step         = numQPUs() << 4;
+	Int start_offset = me()*16;
 
-	//For (Int cur_block = 0 /*me()*16*/, cur_block < (num_entities >> 4), cur_block++ /* += step*/)
+  p_x     += start_offset;
+  p_y     += start_offset;
+  p_z     += start_offset;
+  p_v_x   += start_offset;
+  p_v_y   += start_offset;
+  p_v_z   += start_offset;
+  p_acc_x += start_offset;
+  p_acc_y += start_offset;
+  p_acc_z += start_offset;
+
 	For (Int cur_block = me(), cur_block < (num_entities >> 4), cur_block += numQPUs())
 		Float x     = *p_x;
 		Float y     = *p_y;
@@ -206,17 +207,6 @@ void kernel_step(
 		*p_z = z;
 
 		comment("kernel_step do pointer increments");
-/*		
-		p_x.inc();
-		p_y.inc();
-		p_z.inc();
-		p_v_x.inc();
-		p_v_y.inc();
-		p_v_z.inc();
-		p_acc_x.inc();
-		p_acc_y.inc();
-		p_acc_z.inc();
-*/		
 		p_x     += step;
 		p_y     += step;
 		p_z     += step;
