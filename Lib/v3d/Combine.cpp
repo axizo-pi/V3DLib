@@ -881,7 +881,7 @@ bool skip_to_launch_point(Instr const &bottom, int &line_index) {
 
 void combine(Instructions &instr) {
 	cdebug << "Entered Combine::combine()";
-	//return; // Disable till we find out what the problem is here
+	return; // Disable till we find out what the problem is here
 
 try {
 	int start = find_program_start(instr);
