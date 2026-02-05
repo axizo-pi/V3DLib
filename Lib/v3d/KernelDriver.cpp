@@ -387,7 +387,7 @@ bool translateRotate(V3DLib::Instr const &instr, Instructions &ret) {
 		//  - Thing to rotate is in add a
 		//  - rot value is a small imm in add a
 		//  - nop not required after rotate
-		cdebug << "translateRotate vc7 input instr: " << instr.dump();
+		//cdebug << "translateRotate vc7 input instr: " << instr.dump();
 
 		assert(dst_reg->is_rf());
 		assert(src_a->is_rf());

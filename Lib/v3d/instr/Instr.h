@@ -155,6 +155,7 @@ public:
 
 
 	bool has_small_imm() const;
+	int small_imm_value() const;
 
   bool mux_in_use(CheckSrc check_src, v3d_qpu_mux mux) const;
 	bool check_safe(BaseSource const &src, CheckSrc check_src) const;

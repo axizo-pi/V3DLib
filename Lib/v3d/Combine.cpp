@@ -108,10 +108,6 @@ bool add_register_conflict(Instr const &top, Instr const &bottom, bool check_sur
 
   // warn << "dst top: " << top.alu_add_dst().dump() << ", bottom: " << bottom. alu_add_dst().dump();
 
-  //
-  // TODO: take empty reg's into account
-  //       eg. in a mov, the b src is not used
-  //
   if (!top.add_nop()) {
   	if (top.alu_add_dst() == bottom.alu_add_dst()) return true;
 
@@ -488,10 +484,12 @@ int remove_useless(Instructions &instr) {
 			if (!ret) return false;
     }
 
+/*		
     Log::debug
 			<< "Useless move at line " << line_number << ": " << instr.mnemonic(false)
 			<< " dst: " << dst.dump()
 		;
+*/
 
 		return true;
   };
@@ -595,22 +593,43 @@ int remove_useless(Instructions &instr) {
   return remove_skips(instr);
 }
 
+namespace {
 
-void combine(Instructions &instr) {
-	cdebug << "Entered Combine::combine()";
-	return; // Disable till we find out what the problem is here
+///////////////////////////////////////////////////////
+// Support for combine()
+//
+// Goals:
+//
+// - Raise level of abstraction
+// - Isolate functionality for other applications.
+//   E.g. I want to combine add-ops on the app-ALU
+//   (instead of moving add-opst to mul-ALU).
+///////////////////////////////////////////////////////
 
-try {
-
-  //
-  // Find the start of the main program.
-  // This was a while-loop and sometimes resulted in error:
-  //
-	// Cannot create a lazy string with address 0x0, and a non-zero length.
-  //
-  // The hypothesis is that the search went over the end of the instructions list.
-  //
+/**
+ * Find the start of the main program.
+ *
+ * This skips the loading of the uniforma and the general initialization.
+ * If start not found, combine will run from the start of the program.
+ *
+ * @return index of instruction where actual program starts,
+ *         0 otherwise.
+ *
+ * -------------------
+ *
+ * Notes
+ * -----
+ *
+ * This was a while-loop and sometimes resulted in error:
+ * 
+ *      Cannot create a lazy string with address 0x0, and a non-zero length.
+ *
+ * The hypothesis is that the search went over the end of the instructions list.
+ *
+ */
+int find_program_start(Instructions const &instr) {
   int start = -1;
+
   for (int i = 0; i < (int) instr.size(); ++i) {
     if (instr[i].header() == "Main program") {
       start = i;
@@ -623,6 +642,250 @@ try {
     start = 0;
   }
 
+	return start;
+}
+
+
+/**
+ * Check if given instruction should be skipped in the combine evaluation.
+ *
+ * Will also throw for certain combinations.
+ *
+ * @return true if instruction should be skipped, false otherwise
+ */
+bool skip_instruction(Instr const &bottom, int line_index) {
+  if (bottom.add_nop() ) return true; 
+  if (!bottom.mul_nop()) return true; 
+  if (bottom.skip()    ) return true; 
+
+  if (!bottom.add_nop() && !bottom.mul_nop()) {
+    // instruction efficient already, don't bother (both add and mul used).
+    // This could in fact be optimized by moving up add and/or mul
+    // separately; not going there right now.
+    return true;
+  }
+
+  if (
+    bottom.flag_push_set() ||
+    bottom.flag_cond_set() ||
+    bottom.flag_uf_set() 
+  ) {
+    //cerr << "Deal with flags later on. instr:\n"
+    //     <<  bottom.mnemonic() << thrw;
+    return true;;
+  }
+
+  if (bottom.alu_add_dst() == instr::tmua) {
+    //warn << "Skipping tmua mov";
+    return true;
+  }
+
+  if (bottom.has_magic_registers()) {
+/*		
+    cdebug << "magic write to special register set on instr:\n"
+           << "  " << bottom.mnemonic() << "\n"
+           << "  - Deal with this later on";
+*/					 
+    return true;
+  }
+
+  if (bottom.add_nop() && bottom.mul_nop()) {
+	  // Skip full NOP's
+    return true;
+	}
+
+  if (bottom.has_signal()) {
+	  if (!bottom.sig.thrsw && !bottom.sig.ldtmu) {
+	    // Warn me about any other signals
+	    warn << "Deal with signals later on, instr:\n"
+           << line_index << "; " << bottom.mnemonic() << "\n" << thrw;
+		}
+	}
+
+	return false;
+}	
+
+
+/**
+ * Check if an add operation can be a mul-operation.
+ *
+ * This does not check if the current instruction has
+ * an empty mul-op. The move could be to any instruction,
+ * including self.
+ *
+ * ==================================================
+ * 
+ * Possible conversions add <-> mul:
+ *
+ *   V3D_QPU_A_ADD  <-> V3D_QPU_M_ADD,
+ *   V3D_QPU_A_SUB  <-> V3D_QPU_M_SUB,
+ *   V3D_QPU_A_FMOV <-> V3D_QPU_M_FMOV,  // vc7 rhs only
+ *   V3D_QPU_A_MOV  <-> V3D_QPU_M_MOV,   // vc7 rhs only
+ *   V3D_QPU_A_NOP  <-> V3D_QPU_M_NOP,
+ */
+bool alu_add_could_be_mul(Instr const &instr) {
+	switch(instr.alu.add.op) {
+		case V3D_QPU_A_ADD:
+		case V3D_QPU_A_SUB:
+		case V3D_QPU_A_FMOV:
+		case V3D_QPU_A_MOV:
+		//case V3D_QPU_A_NOP:   // Testing this doesn't make sense
+			return true;
+
+		default:
+			return false;
+	}
+}
+
+/**
+ * Check if dst of lhs is same as any src of rhs.
+ *
+ *  All combinations of add and mul are checked here.
+ *
+ * @return true if lhs dst used as rhs src,
+ *         false otherwise.
+ */
+bool dst_matches_src(Instr const &lhs, Instr const &rhs) {
+	return
+		(lhs.alu_add_dst() == rhs.alu_add_a() || lhs.alu_add_dst() == rhs.alu_add_b()) ||
+		(lhs.alu_add_dst() == rhs.alu_mul_a() || lhs.alu_add_dst() == rhs.alu_mul_b()) ||
+		(lhs.alu_mul_dst() == rhs.alu_add_a() || lhs.alu_mul_dst() == rhs.alu_add_b()) ||
+		(lhs.alu_mul_dst() == rhs.alu_mul_a() || lhs.alu_mul_dst() == rhs.alu_mul_b());
+}
+
+
+/**
+ * Check if bottom add op can equal or surpass the top add/mul op.
+ *
+ * ** NOTE**: overlap with add_register_conflict()
+ *
+ * @return true if can equal or surpass, false otherwise
+ */
+bool add_can_equal_or_surpass(Instr const &top, Instr const &bottom) {
+  assert(!bottom.add_nop());  // expand to bottom mul later on
+  assert(bottom.mul_nop());   // idem
+
+	// Dst registers can not be the same;
+	// also can not assign bottom before top.
+  if (
+	  (top.alu_add_dst() == bottom.alu_add_dst())  ||
+	  (top.alu_add_dst() == bottom.alu_mul_dst())
+	) {
+		//cdebug << "add_can_equal_or_surpass() dst bottom and top same, can't equal or surpass.";
+		return false;
+	}
+
+
+	//
+	// Check src and dst
+	//
+
+	// if bottom src same as top dst, can't equal or surpass,
+ 	if (dst_matches_src(top, bottom)) {
+		cdebug << "add_can_equal_or_surpass() bottom src is top dst, can't equal or surpass.";
+		return false;
+	}
+
+	return true;
+}
+
+
+/**
+ * Check if the bottom add op can be combined in the top instruction.
+ *
+ * @return true if can equal , false otherwise
+ */
+bool add_can_equal(Instr const &top, Instr const &bottom) {
+
+	//
+	// Check small immediates - applies to both add and mul
+	//
+	if (bottom.has_small_imm() && top.has_small_imm() ) {
+		// Can be surpassed for both vc6 and vc7.
+
+		if (Platform::compiling_for_vc7()) {
+			// Never equal; small imm's can never be combined for vc7.
+		  //cdebug << "add_can_equal() vc7 can't combine small imm's.";
+			return false;
+		} else {
+			// vc6: if small imm values are the same, it's OK.
+	   if (bottom.small_imm_value() != top.small_imm_value()) {
+		   //cdebug << "add_can_equal() vc6 can't combine small imm's.";
+			 return false;
+		 }
+		}
+	}
+
+
+	//
+	// Check combining operations
+	//
+	assert(!bottom.add_nop());  // Warn me if this happens
+
+	if (!top.add_nop()) {
+		// Can one add op be moved out of the way?
+		if (alu_add_could_be_mul(top) && top.mul_nop()) {
+			//cdebug << "add_can_equal() top add could be moved to top mul.";
+			return true;
+		}
+
+		if (alu_add_could_be_mul(bottom) && top.mul_nop()) {  // Note: *top* mul checked for NOP
+			cdebug << "add_can_equal() bottom add could be moved to top mul.";
+			return true;
+		}
+
+		return false;
+	}
+
+	return true;
+}
+
+
+/**
+ * Skip a branch instruction.
+ *
+ * @param line_index current instruction indec. Will be adjusted
+ *                   to the launch point if a branch detected.
+ *
+ * @return true if branch detected, false if not present.
+ */
+bool skip_to_launch_point(Instr const &bottom, int &line_index) {
+  if (bottom.is_branch()) {
+/*			
+    warn << "Branch detected at line " << line_index << ", skipping to launch point";
+
+		// WRI DEBUG: show next 10 instructions
+		{
+			std::string buf;
+
+			for (int k = 0; k < 10; ++k) {
+       	buf <<  (i + k)  << "; " << instr[i + k].mnemonic() << "\n";
+			}
+
+			cdebug << "Next 10 instructions:\n"
+						 << buf;
+		}
+*/			
+		// For some reason, an extra NOP is added after a branch
+		int const Skip = 5;
+
+    line_index += Skip + 1;
+		return true;
+  }
+
+	return false;
+}
+
+}  // anon namespace
+
+
+void combine(Instructions &instr) {
+	cdebug << "Entered Combine::combine()";
+	//return; // Disable till we find out what the problem is here
+
+try {
+	int start = find_program_start(instr);
+
   // TODO: better specify end program. This should be on barrierid
   int end = (int) instr.size();
 
@@ -631,80 +894,15 @@ try {
   for (int i = start + 1; i < end; ++i) {
     auto &bottom = instr[i];
 
-    if (bottom.add_nop() ) continue; 
-    if (!bottom.mul_nop()) continue; 
-    if (bottom.skip()    ) continue; 
+		if (skip_instruction(bottom, i)) continue;
 
-    if (bottom.is_branch()) {
-      cdebug << "Branch detected at line " << i << ", skipping to launch point";
-/*			
-			// WRI DEBUG: show next 10 instructions
-			{
-				std::string buf;
-
-				for (int k = 0; k < 10; ++k) {
-        	buf <<  (i + k)  << "; " << instr[i + k].mnemonic() << "\n";
-				}
-
-				cdebug << "Next 10 instructions:\n"
-							 << buf;
-			}
-*/			
-
-			// For some reason, an extra NOP is added after a branch
-			int const Skip = 5;
-
-			start = i + Skip;        // Can't move instructions upward beyond this point
-      i = start + 1;
-      assert(i <  end);
+		if (skip_to_launch_point(bottom, i)) {
+			start = i;          // Can't move instructions upward beyond this point
+    	assert(i <  end);
 			continue;
-    }
-
-    if (!bottom.add_nop() && !bottom.mul_nop()) {
-      // instruction efficient already, don't bother (both add and mul used).
-      // This could in fact be optimized by moving up add and/or mul
-      // separately; not going there right now.
-      continue;
-    }
-
-    int final_top = -1;
-
-    // Skipping the hard parts for later on
-    assertq(!bottom.skip(), "Deal with skips later on");
-
-
-    if (bottom.has_signal()) {
-			if (!bottom.sig.thrsw && !bottom.sig.ldtmu) {
-				// Warn me about any other signals
-				warn << "Deal with signals later on, instr:\n"
-  	         <<  i << "; " << bottom.mnemonic() << "\n" << thrw;
-			}
 		}
 
-    if (
-      bottom.flag_push_set() ||
-      bottom.flag_cond_set() ||
-      bottom.flag_uf_set() 
-    ) {
-      //cerr << "Deal with flags later on. instr:\n"
-      //     <<  bottom.mnemonic() << thrw;
-      continue;
-    }
-
-
-    if (bottom.alu_add_dst() == instr::tmua) {
-      //warn << "Skipping tmua mov";
-      continue;
-    }
-
-    if (bottom.has_magic_registers()) {
-      cdebug << "magic write to special register set on instr:\n"
-             << "  " << bottom.mnemonic() << "\n"
-             << "  - Deal with this later on";
-      continue;
-    }
-
-    if (bottom.add_nop() && bottom.mul_nop()) continue;  // Skip full NOP's
+    int final_top = -1; // If set, a candidate is found
 
 		//
     // Try to move instructions as far up as possible
@@ -713,13 +911,29 @@ try {
       auto &top    = instr[j];
 
       if (top.skip()) continue;
-/*
+      if (bottom.add_nop() && bottom.mul_nop()) break;  // Nothing to do 
+
+			//
+			// Check bottom add op
+			//
+			if (bottom.add_nop()) break; // Don't bother. This must be changed for mul op
+
+			if (!add_can_equal_or_surpass(top, bottom)) {
+				break; // No point in continuing
+			}
+
+			if (!add_can_equal(top, bottom)) {
+				continue;
+			}
+      final_top = j;
+
       cdebug << "Considering following:\n"
              << "  " << j << ": " << top.mnemonic()    << "\n"
              << "  " << i << ": " << bottom.mnemonic()
       ;
-*/			
 
+
+/*
       if (bottom.add_nop() || !bottom.mul_nop()) {
         cerr << "combine: only add op's in bottom handled now.\n" 
              << "  " << j << ": " << top.mnemonic()    << "\n"
@@ -735,6 +949,7 @@ try {
       if (!can_surpass(top, bottom)) {
         break;  // Don't look further
       }
+*/		
     }
 
     if (final_top == -1) continue;
@@ -743,14 +958,29 @@ try {
     // Move forward again to find the best place
     //
     for (int k = final_top; k < i; ++ k) {
-      auto &ftop    = instr[k];
+      auto &ftop = instr[k];
+
+      std::string buf;
+      buf << "Move forward again:\n"
+				  << "  " << k << ": " << ftop.mnemonic()    << "\n"
+          << "  " << i << ": " << bottom.mnemonic();
+
+			if (ftop.mul_nop() && alu_add_could_be_mul(ftop)) {
+				cdebug << "Move forward could move ftop add to ftop mul. Skipping for now";
+				break;
+			}
+
+ 			if (dst_matches_src(bottom, ftop)) {
+				cdebug << "Move forward bottom dst is top src, could combine but skipping for now.";
+				break;
+			}
+
+			cdebug << buf;
+  		cdebug << "skip got till: " << k;
+		  return;
 
       if (ftop.skip()) continue;
       if (!ftop.mul_nop()) continue;
-
-      std::string buf;
-      buf << "  " << k << ": " << ftop.mnemonic()    << "\n"
-          << "  " << i << ": " << bottom.mnemonic();
 
       if (alu_to_mul_alu(bottom, ftop)) {
         cdebug << "combine: adding bottom to top succeeded.\n"

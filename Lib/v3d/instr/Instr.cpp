@@ -164,10 +164,47 @@ bool Instr::is_branch() const {
  * Return true if any of the small_imm flags are set (there are four).
  */
 bool Instr::has_small_imm() const {
-	return sig.small_imm_a  // This is actually vc7. Problem?
-	    || sig.small_imm_b
-	    || sig.small_imm_c
-	    || sig.small_imm_d;
+	if (Platform::compiling_for_vc7()) {
+ 		// vc7: Check any of the small_imm flags are set
+		return sig.small_imm_a
+		    || sig.small_imm_b
+	  	  || sig.small_imm_c
+	    	|| sig.small_imm_d;
+	} else {
+		// vc6: only check the raddr_b flag
+		return sig.small_imm_b;
+	}
+}
+
+/**
+ * Get the small imm value, if any, in the instruction.
+ *
+ * If no small imm present, returns an illegal value.
+ * small imm's are signed 6-bit, so any value outside is an indicator.A
+ *
+ * Small imm's can be float or signed int; the return value is the
+ * **coded** value, for comparisons purposes only.
+ *
+ * @return coded value of small imm if present, +128 otherwise.
+ */
+int Instr::small_imm_value() const {
+	int const NO_SMALL_IMM = 128;
+
+	if (!has_small_imm()) return NO_SMALL_IMM;
+
+	if (Platform::compiling_for_vc7()) {
+ 		// vc7
+		if (sig.small_imm_a) return alu.add.a.raddr;
+		if (sig.small_imm_b) return alu.add.b.raddr;
+		if (sig.small_imm_c) return alu.mul.a.raddr;
+		if (sig.small_imm_d) return alu.mul.b.raddr;
+	} else {
+		// vc6
+		if (sig.small_imm_b) return raddr_b;
+	}
+
+	assert(false); // Not expecting to get here, warn me if it  happens.
+	if (!has_small_imm()) return NO_SMALL_IMM;
 }
 
 
