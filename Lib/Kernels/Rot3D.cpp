@@ -146,10 +146,12 @@ void rotate_z(Float &x_prev, Float &y_prev, Float &cos_z, Float &sin_z, Float::P
  */
 void vector_rot3D(Int n, Float rot_x, Float rot_y, Float rot_z, Float::Ptr x, Float::Ptr y, Float::Ptr z) {
 
-  Int step = numQPUs() << 4;
-  x += me()*16;
-  y += me()*16;
-  z += me()*16;
+  Int step         = numQPUs() << 4;
+	Int start_offset = me()*16;
+
+  x += start_offset;
+  y += start_offset;
+  z += start_offset;
 
 	Float cos_x = cos(rot_x);
 	Float sin_x = sin(rot_x);
@@ -162,6 +164,14 @@ void vector_rot3D(Int n, Float rot_x, Float rot_y, Float rot_z, Float::Ptr x, Fl
   Float y_prev;
   Float z_prev;
 
+	//
+	// Still errors in output.
+	//
+	// Loop taken from Gravity kernel_step().
+	// Expected to be better but isn't
+	// Try insisting that n is multiple of 16
+	//For (Int i = me(), i < (n >> 4), i += numQPUs())
+	//
   For (Int i = 0, i < n, i += step)
     x_prev = *x;
     y_prev = *y;
