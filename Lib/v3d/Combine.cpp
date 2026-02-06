@@ -347,11 +347,13 @@ bool alu_to_mul_alu(Instr const &src, Instr &dst) {
 
 
 /**
- * Check if an add operation can be a mul-operation.
+ * Convert add op to mul op if all possible.
  *
- * This does not check if the current instruction has
- * an empty mul-op. The move could be to any instruction,
- * including self.
+ * @param mul_op output param; mul op if conversion succesfull.
+ * @param add_op input param; add op to convert
+ *
+ * @return true if conversion possible, false otherwise
+ *         If possible, output param dst is set.
  *
  * --------------------------------------------------
  * 
@@ -363,18 +365,34 @@ bool alu_to_mul_alu(Instr const &src, Instr &dst) {
  *   V3D_QPU_A_MOV  <-> V3D_QPU_M_MOV,   // vc7 rhs only
  *   V3D_QPU_A_NOP  <-> V3D_QPU_M_NOP,
  */
-bool alu_add_could_be_mul(Instr const &instr) {
-	switch(instr.alu.add.op) {
-		case V3D_QPU_A_ADD:
-		case V3D_QPU_A_SUB:
-		case V3D_QPU_A_FMOV:
-		case V3D_QPU_A_MOV:
-		//case V3D_QPU_A_NOP:   // Testing this doesn't make sense
-			return true;
+bool add_op_to_mul_op(v3d_qpu_mul_op &mul_op, v3d_qpu_add_op add_op) {
+	switch(add_op) {
+		case V3D_QPU_A_ADD:  mul_op = V3D_QPU_M_ADD;  return true;
+		case V3D_QPU_A_SUB:  mul_op = V3D_QPU_M_SUB;  return true;
+		case V3D_QPU_A_FMOV: mul_op = V3D_QPU_M_FMOV; return true;
+		case V3D_QPU_A_MOV:  mul_op = V3D_QPU_M_MOV;  return true;
+		case V3D_QPU_A_NOP:  mul_op = V3D_QPU_M_NOP;  return true; // Included for completeness
 
-		default:
-			return false;
+		default: return false;
 	}
+}
+
+
+/**
+ * Check if an add operation can be a mul-operation.
+ *
+ * This does not check if the current instruction has
+ * an empty mul-op. The move could be to any instruction,
+ * including self.
+ */
+bool alu_add_could_be_mul(Instr const &instr) {
+	v3d_qpu_mul_op mul_op;
+
+	if (!add_op_to_mul_op(mul_op, instr.alu.add.op)) return false;
+	// post: previous call succeeded
+
+	if (mul_op == V3D_QPU_M_NOP) return false;   // Testing this doesn't make sense
+	return true;
 }
 
 
@@ -382,7 +400,7 @@ bool alu_add_could_be_mul(Instr const &instr) {
  *
  * @param instr1 First instruction to combine
  * @param instr2 Second instruction to combine
- * @param ret    Ouput parameter; contains result if combine succeeds
+ * @param ret    Output parameter; contains result if combine succeeds
  *
  * @return true instructions are combined, false otherwise.
  *         If true, param ret is set.
@@ -453,7 +471,7 @@ bool combine_instruction(Instr &ret, Instr const &instr1, Instr const &instr2) {
 	//assert(!instr2.has_flags());
 
 	assert(!instr1.is_label());   // This could actually be handled by transferring the label
-	assert(!instr2.is_label());   // idem. Warn me when this happens
+	assert(!instr2.is_label());   // idem. Warn me when these happen
 
 	//
 	// Deal with signals when they happen.
@@ -528,7 +546,6 @@ bool combine_instruction(Instr &ret, Instr const &instr1, Instr const &instr2) {
 		assert(false);  // Deal with this when it happens
 	}
 
-
 	// Handle small imm
   if (Platform::compiling_for_vc7()) {
 		// vc7
@@ -551,7 +568,6 @@ bool combine_instruction(Instr &ret, Instr const &instr1, Instr const &instr2) {
 
 	ret.alu.mul = mul.alu.mul;
 	// branch is in a union with alu, don't copy
-
 	// Comments are handled  downstream
 
 	//cdebug << "combine_instruction ret: " << ret.mnemonic(true);
@@ -805,6 +821,7 @@ int remove_useless(Instructions &instr) {
 
   return remove_skips(instr);
 }
+
 
 namespace {
 
@@ -1102,14 +1119,145 @@ bool skip_to_launch_point(Instr const &bottom, int &line_index) {
 	return false;
 }
 
+/**
+ * Move bottom add op to top mul op.
+ *
+ * This is initally to combine mov tmud/tmua for tmu write,
+ * but I'm trying hard to make it as general as possible.
+ *
+ * @param bottom First instruction to combine
+ * @param top Second instruction to combine
+ * @param ret    Output parameter; contains result if combine succeeds
+ *
+ * @return true instructions are combined, false otherwise.
+ *         If true, param ret is set.
+ */
+bool bottom_add_to_top_mul(Instr &ret, Instr const &bottom, Instr const &top) {
+	// Restrict input ot our use case (tmud/tmua)
+	assert(!bottom.add_nop());
+	assert(bottom.mul_nop());
+	assert(!top.add_nop());
+	assert(top.mul_nop());
+
+	// Following are to warn me when it happens
+	assert(!bottom.has_small_imm());
+	assert(!top.has_small_imm());
+  assert(Platform::compiling_for_vc7());  // vc6 must be handled separately
+
+	if (!(top.mul_nop() && alu_add_could_be_mul(bottom))) return false;
+
+	//
+	// Do actual combine
+	//
+	ret = top;
+
+	// Copy add flags 
+	ret.flags.mc  =  bottom.flags.ac;
+	ret.flags.mpf =  bottom.flags.apf;
+	ret.flags.muf =  bottom.flags.auf;
+
+  v3d_qpu_mul_op mul_op;
+	if (!add_op_to_mul_op(mul_op, bottom.alu.add.op)) return false;
+
+	ret.alu.mul.op          = mul_op;
+	ret.alu.mul.a           = bottom.alu.add.a;
+	ret.alu.mul.b           = bottom.alu.add.b;
+	ret.alu.mul.waddr       = bottom.alu.add.waddr;
+	ret.alu.mul.magic_write = bottom.alu.add.magic_write;
+	ret.alu.mul.output_pack = bottom.alu.add.output_pack;
+
+	return true;
+}
+
+
+void combine_read_write(Instructions &instr) {
+	warn << "\n----------------------------\n"
+		   <<   "Entered combine_read_write()\n"
+			 <<   "----------------------------";
+	using namespace V3DLib::v3d::instr;
+
+  int end = (int) instr.size();
+
+	auto is_tmua = [] (Instr const &instr) -> bool {
+	 	return (instr.alu.add.op == V3D_QPU_A_MOV  && instr.alu_add_dst() == tmua);
+	};
+
+	auto is_tmud = [] (Instr const &instr) -> bool {
+	 	return (instr.alu.add.op == V3D_QPU_A_MOV  && instr.alu_add_dst() == tmud);
+	};
+
+	auto is_tmwt = [] (Instr const &instr) -> bool {
+	 	return (instr.alu.add.op == V3D_QPU_A_TMUWT);
+	};
+
+  for (int i = 0; i < end; ++i) {
+		auto &n = instr[i];
+
+		if (is_tmud(instr[i]) && is_tmua(instr[i + 1]) && is_tmwt(instr[i + 2])) {
+			warn << "combine_read_write tmu write detected\n"
+				   << "  " << i       << ": " << instr[i].mnemonic(true)      << "\n"
+				   << "  " << (i + 1) << ": " << instr[i + 1].mnemonic(true)  << "\n"
+				   << "  " << (i + 2) << ": " << instr[i + 2].mnemonic(true)
+			;
+
+			//
+			// Move tmua to mul op
+			//
+    	auto &bottom = instr[i + 1];
+    	auto &top    = instr[i];
+			Instr ret;
+
+			if (bottom_add_to_top_mul(ret, bottom, top)) {
+				warn << "combine success:\n"
+					   << "  " << ret.mnemonic(true)      << "\n";
+
+				top = ret;
+				bottom.skip(true);
+			} else {
+				assert(false); // Deal with this when it happens
+			}
+
+			i += 2; // NB ++ in for
+			continue;
+		}
+
+		if (is_tmua(n)) {
+			// Check integrity tmu read
+
+			if (!n.sig.thrsw) {
+				warn << "combine_read_write assert sig failed\n"
+					   << "  " << i       << ": " << n.mnemonic(true)        << "\n";
+			}
+			assert(n.sig.thrsw);
+
+			assert(instr[i + 3].sig.ldtmu);
+
+			warn << "combine_read_write tmu read detected\n"
+				   << "  " << i << ": " << n.mnemonic(true);
+			;
+
+			i += 3; // NB ++ in for
+			continue;
+		}
+
+		// Not expecting these separately after previous steps
+		assert(!is_tmud(n));
+		assert(!is_tmua(n));
+		assert(!is_tmwt(n));
+	}
+}
+
 }  // anon namespace
 
 
 void combine(Instructions &instr) {
-	warn << "\n--------------------------\n"
-		   <<   "Entered Combine::combine()\n"
-			 <<   "--------------------------";
-	//return; // <============== Disable till this works
+	//combine_read_write(instr);
+
+	return; // <============== 
+
+	warn << "\n----------------------------\n"
+		   <<   "Entered combine()\n"
+			 <<   "----------------------------";
 
 	// OLD left for reference.
 	// max 34
