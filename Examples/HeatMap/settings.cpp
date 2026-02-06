@@ -18,8 +18,8 @@ CmdParameters params = {
   "The edges are set at zero temperature, and a number of hot points are placed randomly over the surface.\n"
   "The lower border can be broader than 1 pixel, depending on the number of QPU's running. This is due to\n"
   "preventing image overrun."
-  "\n",
-  "In addition, this application is a showcase for implementing cursors.\n",
+  "\n"
+  "In addition, this application is a showcase for implementing cursors.\n"
   "\n",
   {{
     "Kernel",

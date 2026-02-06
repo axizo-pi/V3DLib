@@ -262,6 +262,17 @@ bool Instr::flag_push_set() const { return (flags.apf || flags.mpf); }
 bool Instr::flag_cond_set() const { return (flags.ac  || flags.mc ); }
 bool Instr::flag_uf_set()   const { return (flags.auf || flags.muf); }
 
+bool Instr::has_flags()  const {
+	return !(
+		flags.ac  == V3D_QPU_COND_NONE &&
+		flags.mc  == V3D_QPU_COND_NONE &&
+		flags.apf == V3D_QPU_PF_NONE   &&
+		flags.mpf == V3D_QPU_PF_NONE   &&
+		flags.auf == V3D_QPU_UF_NONE   &&
+		flags.muf == V3D_QPU_UF_NONE
+	);	
+}
+
 
 /**
  * Set the condition tags during translation.
@@ -413,6 +424,9 @@ std::string Instr::dump_internal() const {
       ret << indent((int) ret.size()) << "; rot";
     }
   }
+
+	// Skips should never ever happen in output, so I want to know
+	if (skip()) ret << "  SKIP";
 
   return ret;
 }

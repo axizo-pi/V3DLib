@@ -90,7 +90,7 @@ bool check_small_imm_usage(Instr const &top, Instr const &bottom) {
  *
  * @return true if there is a conflict, false otherwise
  *
- * ==============================================================
+ * --------------------------------------------------------------
  *
  * - If the registers are disjunct, there is no problem
  * - reads from same register are never a problem
@@ -343,6 +343,219 @@ bool alu_to_mul_alu(Instr const &src, Instr &dst) {
 	}
 */
   return true;
+}
+
+
+/**
+ * Check if an add operation can be a mul-operation.
+ *
+ * This does not check if the current instruction has
+ * an empty mul-op. The move could be to any instruction,
+ * including self.
+ *
+ * --------------------------------------------------
+ * 
+ * Possible conversions add <-> mul:
+ *
+ *   V3D_QPU_A_ADD  <-> V3D_QPU_M_ADD,
+ *   V3D_QPU_A_SUB  <-> V3D_QPU_M_SUB,
+ *   V3D_QPU_A_FMOV <-> V3D_QPU_M_FMOV,  // vc7 rhs only
+ *   V3D_QPU_A_MOV  <-> V3D_QPU_M_MOV,   // vc7 rhs only
+ *   V3D_QPU_A_NOP  <-> V3D_QPU_M_NOP,
+ */
+bool alu_add_could_be_mul(Instr const &instr) {
+	switch(instr.alu.add.op) {
+		case V3D_QPU_A_ADD:
+		case V3D_QPU_A_SUB:
+		case V3D_QPU_A_FMOV:
+		case V3D_QPU_A_MOV:
+		//case V3D_QPU_A_NOP:   // Testing this doesn't make sense
+			return true;
+
+		default:
+			return false;
+	}
+}
+
+
+/**
+ *
+ * @param instr1 First instruction to combine
+ * @param instr2 Second instruction to combine
+ * @param ret    Ouput parameter; contains result if combine succeeds
+ *
+ * @return true instructions are combined, false otherwise.
+ *         If true, param ret is set.
+ *
+ * ---------------------------------------------
+ * Current implementation deal with cases where one instruction is add and the other mul.
+ *
+ * Possible combinations:
+ *
+ * - Combines only possible if instr1 and instr2 have at most two operations together.
+ * - 'nt' postfix: operation is not transferrable to other side (add -> mul or vice versa).
+ *   Left out if not relevant.
+ *
+ * I really made an exhaustive list and this is what remains!
+ *
+ *      instr1         instr2
+ *      -----------   -----------
+ *      nop  ,nop     nop  ,nop    - trivial cases
+ *      nop  ,nop     nop  ,mul
+ *      nop  ,nop     add  ,nop
+ *      nop  ,nop     add  ,mul
+ *      nop  ,mul     nop  ,nop
+ *      add  ,nop     nop  ,nop
+ *      add  ,mul     nop  ,nop
+ *
+ *      nop  ,mul     add  ,nop    - Handled here
+ *      add  ,nop     nop  ,mul
+ *
+ *      nop  ,mul     nop  ,mul
+ *      nop  ,mul     nop  ,mulnt
+ *      nop  ,mulnt   nop  ,mul
+ *      nop  ,mulnt   nop  ,mulnt  - Can't combine
+ *
+ *      add  ,nop     add  ,nop
+ *      add  ,nop     addnt,nop
+ *      addnt,nop     add  ,nop
+ *      addnt,nop     addnt,nop    - Can't combine
+ * ---------------------------------------------
+ *
+ * - TODO 'sig_addr' usage should also be added to the list!
+ *   This field is independent of src/dst. The only issue is when it interferes with the dst fields.
+ * - Non-transferrable add-ops have been filtered out beforehand.
+ * - In theory, you could check on transferrable mul-ops.
+ */
+bool combine_instruction(Instr &ret, Instr const &instr1, Instr const &instr2) {
+	// Can't combine if too many operations present
+	int op_count = 0;
+	if (!instr1.add_nop()) ++op_count;
+	if (!instr1.mul_nop()) ++op_count;
+	if (!instr2.add_nop()) ++op_count;
+	if (!instr2.mul_nop()) ++op_count;
+	if (op_count >= 3) return false;
+
+	assert(!instr1.is_branch());  // So it's an alu instr
+	assert(!instr2.is_branch());  // idem
+
+	if (instr1.skip() || instr2.skip()) {
+			warn << "combine_instruction assert on skip fails:\n"
+			     << "  instr2: " << instr2.mnemonic()    << "\n"
+           << "  instr1: " << instr1.mnemonic();
+	}
+	assert(!instr1.skip());
+	assert(!instr2.skip());
+
+	// a single instruction with flags should be OK. No flags even better
+	if (instr1.has_flags() && instr2.has_flags()) return false; 
+	//assert(!instr1.has_flags());
+	//assert(!instr2.has_flags());
+
+	assert(!instr1.is_label());   // This could actually be handled by transferring the label
+	assert(!instr2.is_label());   // idem. Warn me when this happens
+
+	//
+	// Deal with signals when they happen.
+	//
+	// Signal: It should be possible to let a **single** tmu load happen.
+	//
+	// - Small imm flags **must be handled**.
+	// - Also, rotate sig may need separate handling. Not sure if used at all
+	//
+	assert(!instr1.sig.rotate);
+	assert(!instr2.sig.rotate);
+
+	if (instr1.has_signal() || instr2.has_signal()) {
+			warn << "combine_instruction assert on signals fails:\n"
+			     << "  instr2: " << instr2.mnemonic()    << "\n"
+           << "  instr1: " << instr1.mnemonic();
+	}
+	assert(!instr1.has_signal());
+	assert(!instr2.has_signal());
+
+	// m_external_init skipped, should be OK 
+
+	// Input should each have one alu instruction
+	// For the time being, one is add and the other is mul
+	bool switch_instr = false;
+
+	if (instr1.mul_nop()) {
+		// instr1 must be add op
+		assert(!instr1.add_nop());
+
+		if (!instr2.add_nop()) {
+			// both instr1 and instr2 have add op's
+			if (!alu_add_could_be_mul(instr1) && !alu_add_could_be_mul(instr2)) return false;
+
+			warn << "combine_instruction assert fails:\n"
+			     << "  instr2: " << instr2.mnemonic()    << "\n"
+           << "  instr1: " << instr1.mnemonic();
+		}
+		assert(instr2.add_nop());
+
+		// instr1 has add, instr2 nop add
+		// add can be moved up, irrespective of mul op, which could be nop
+		switch_instr = false;
+	} else {
+		// instr1 must be mul op
+		assert(instr1.add_nop());
+		assert(!instr2.add_nop());
+		assert(instr2.mul_nop());
+		switch_instr = true;
+	}
+	
+	// Set output to add op
+	Instr mul = switch_instr?instr1:instr2;
+	ret       = switch_instr?instr2:instr1;
+	//cdebug << "mul: " << mul.mnemonic(true);
+	//cdebug << "ret: " << ret.mnemonic(true);
+
+	assert(!mul.alu_add_a_set());
+	assert(!mul.alu_add_b_set());
+	assert(!ret.alu_mul_a_set());
+	assert(!ret.alu_mul_b_set());
+
+	//
+	// The actual combine
+	//
+
+	//sig_addr and sig_magic intenionally skipped, will be picked up when sig assert above fires.
+
+  if (!Platform::compiling_for_vc7()) {
+		// vc6: Needs special tests for raddr fields
+		// raddr_a/b can be ignored for vc7
+		assert(false);  // Deal with this when it happens
+	}
+
+
+	// Handle small imm
+  if (Platform::compiling_for_vc7()) {
+		// vc7
+		if (ret.has_small_imm()) {
+			if (mul.has_small_imm()) return false;   // multiple small imm's can *never* be combined
+		} else if (mul.has_small_imm()) {
+			assert(!ret.has_small_imm());
+			ret.sig.small_imm_c = mul.sig.small_imm_c;
+			ret.sig.small_imm_d = mul.sig.small_imm_d;
+		}
+	} else {
+		// vc6
+		assert(false);  // Deal with this when it happens
+	}
+
+	// Copy mul flags 
+	ret.flags.mc  =  mul.flags.mc;
+	ret.flags.mpf =  mul.flags.mpf;
+	ret.flags.muf =  mul.flags.muf;
+
+	ret.alu.mul = mul.alu.mul;
+	// branch is in a union with alu, don't copy
+
+	// Comments are handled  downstream
+
+	//cdebug << "combine_instruction ret: " << ret.mnemonic(true);
+	return true;
 }
 
 
@@ -658,6 +871,11 @@ bool skip_instruction(Instr const &bottom, int line_index) {
   if (!bottom.mul_nop()) return true; 
   if (bottom.skip()    ) return true; 
 
+  if (bottom.add_nop() && bottom.mul_nop()) {
+	  // Skip full NOP's
+    return true;
+	}
+
   if (!bottom.add_nop() && !bottom.mul_nop()) {
     // instruction efficient already, don't bother (both add and mul used).
     // This could in fact be optimized by moving up add and/or mul
@@ -681,61 +899,23 @@ bool skip_instruction(Instr const &bottom, int line_index) {
   }
 
   if (bottom.has_magic_registers()) {
-/*		
     cdebug << "magic write to special register set on instr:\n"
            << "  " << bottom.mnemonic() << "\n"
            << "  - Deal with this later on";
-*/					 
     return true;
   }
 
-  if (bottom.add_nop() && bottom.mul_nop()) {
-	  // Skip full NOP's
-    return true;
-	}
-
   if (bottom.has_signal()) {
-	  if (!bottom.sig.thrsw && !bottom.sig.ldtmu) {
+	  if (!bottom.sig.thrsw && !bottom.uses_sig_dst()) {
 	    // Warn me about any other signals
 	    warn << "Deal with signals later on, instr:\n"
-           << line_index << "; " << bottom.mnemonic() << "\n" << thrw;
+           << line_index << ": " << bottom.mnemonic() << "\n" << thrw;
+			return true;
 		}
 	}
 
 	return false;
 }	
-
-
-/**
- * Check if an add operation can be a mul-operation.
- *
- * This does not check if the current instruction has
- * an empty mul-op. The move could be to any instruction,
- * including self.
- *
- * ==================================================
- * 
- * Possible conversions add <-> mul:
- *
- *   V3D_QPU_A_ADD  <-> V3D_QPU_M_ADD,
- *   V3D_QPU_A_SUB  <-> V3D_QPU_M_SUB,
- *   V3D_QPU_A_FMOV <-> V3D_QPU_M_FMOV,  // vc7 rhs only
- *   V3D_QPU_A_MOV  <-> V3D_QPU_M_MOV,   // vc7 rhs only
- *   V3D_QPU_A_NOP  <-> V3D_QPU_M_NOP,
- */
-bool alu_add_could_be_mul(Instr const &instr) {
-	switch(instr.alu.add.op) {
-		case V3D_QPU_A_ADD:
-		case V3D_QPU_A_SUB:
-		case V3D_QPU_A_FMOV:
-		case V3D_QPU_A_MOV:
-		//case V3D_QPU_A_NOP:   // Testing this doesn't make sense
-			return true;
-
-		default:
-			return false;
-	}
-}
 
 /**
  * Check if dst of lhs is same as any src of rhs.
@@ -746,11 +926,32 @@ bool alu_add_could_be_mul(Instr const &instr) {
  *         false otherwise.
  */
 bool dst_matches_src(Instr const &lhs, Instr const &rhs) {
-	return
+	return (
 		(lhs.alu_add_dst() == rhs.alu_add_a() || lhs.alu_add_dst() == rhs.alu_add_b()) ||
 		(lhs.alu_add_dst() == rhs.alu_mul_a() || lhs.alu_add_dst() == rhs.alu_mul_b()) ||
 		(lhs.alu_mul_dst() == rhs.alu_add_a() || lhs.alu_mul_dst() == rhs.alu_add_b()) ||
-		(lhs.alu_mul_dst() == rhs.alu_mul_a() || lhs.alu_mul_dst() == rhs.alu_mul_b());
+		(lhs.alu_mul_dst() == rhs.alu_mul_a() || lhs.alu_mul_dst() == rhs.alu_mul_b()) ||
+		(lhs.sig_dst()     == rhs.alu_add_a() || lhs.alu_mul_dst() == rhs.alu_add_b()) ||
+		(lhs.sig_dst()     == rhs.alu_mul_a() || lhs.alu_mul_dst() == rhs.alu_mul_b())
+	);
+}
+
+
+/**
+ * All dst's are handled here.
+ */
+bool dst_fields_overlap(Instr const &top, Instr const &bottom) {
+  return (
+	  (top.alu_add_dst() == bottom.alu_add_dst())  ||
+	  (top.alu_add_dst() == bottom.alu_mul_dst())  ||
+	  (top.alu_add_dst() == bottom.sig_dst()    )  ||
+	  (top.alu_mul_dst() == bottom.alu_add_dst())  ||
+	  (top.alu_mul_dst() == bottom.alu_mul_dst())  ||
+	  (top.alu_mul_dst() == bottom.sig_dst()    )  ||
+	  (top.sig_dst()     == bottom.alu_add_dst())  ||
+	  (top.sig_dst()     == bottom.alu_mul_dst())  ||
+	  (top.sig_dst()     == bottom.sig_dst()    )
+	);
 }
 
 
@@ -765,12 +966,30 @@ bool add_can_equal_or_surpass(Instr const &top, Instr const &bottom) {
   assert(!bottom.add_nop());  // expand to bottom mul later on
   assert(bottom.mul_nop());   // idem
 
-	// Dst registers can not be the same;
-	// also can not assign bottom before top.
-  if (
-	  (top.alu_add_dst() == bottom.alu_add_dst())  ||
-	  (top.alu_add_dst() == bottom.alu_mul_dst())
-	) {
+	//
+	// Write operations should never ever be moved
+	//
+	using namespace V3DLib::v3d::instr;
+
+	if (!bottom.add_nop()) {
+		// Following for vc7
+	 	if (bottom.alu.add.op == V3D_QPU_A_MOV) { 
+  		if ((bottom.alu_add_dst() == tmua) || (bottom.alu_add_dst() == tmud)) return false;
+		}
+
+		// Following more likely for vc6; also for completeness on vc7
+	 	if (bottom.alu.mul.op == V3D_QPU_M_MOV) { 
+  		if ((bottom.alu_mul_dst() == tmua) || (bottom.alu_mul_dst() == tmud)) return false;
+		}
+
+	 	if (bottom.alu.add.op == V3D_QPU_A_TMUWT) return false;
+	}
+
+	//
+	// Dst registers can not be the same.
+	// Also can not assign bottom before top.
+	//
+	if (dst_fields_overlap(top, bottom)) {
 		//cdebug << "add_can_equal_or_surpass() dst bottom and top same, can't equal or surpass.";
 		return false;
 	}
@@ -782,7 +1001,14 @@ bool add_can_equal_or_surpass(Instr const &top, Instr const &bottom) {
 
 	// if bottom src same as top dst, can't equal or surpass,
  	if (dst_matches_src(top, bottom)) {
-		cdebug << "add_can_equal_or_surpass() bottom src is top dst, can't equal or surpass.";
+		//cdebug << "add_can_equal_or_surpass() bottom src is top dst, can't equal or surpass.";
+		return false;
+	}
+
+	// if bottom dst same as top scr, can't surpass.
+	// It *could* equal. TODO look at this later
+ 	if (dst_matches_src(bottom, top)) {
+		cdebug << "add_can_equal_or_surpass() bottom dst is top src, can't equal or surpass.";
 		return false;
 	}
 
@@ -880,8 +1106,17 @@ bool skip_to_launch_point(Instr const &bottom, int &line_index) {
 
 
 void combine(Instructions &instr) {
-	cdebug << "Entered Combine::combine()";
-	return; // Disable till we find out what the problem is here
+	warn << "\n--------------------------\n"
+		   <<   "Entered Combine::combine()\n"
+			 <<   "--------------------------";
+	//return; // <============== Disable till this works
+
+	// OLD left for reference.
+	// max 34
+	// <= 30 works
+	// 24 fails
+	const int MAX_COMBINE_COUNT = -1;
+	int combine_count = 0;
 
 try {
 	int start = find_program_start(instr);
@@ -911,7 +1146,7 @@ try {
       auto &top    = instr[j];
 
       if (top.skip()) continue;
-      if (bottom.add_nop() && bottom.mul_nop()) break;  // Nothing to do 
+      if (bottom.add_nop() && bottom.mul_nop()) break;    // Nothing to do 
 
 			//
 			// Check bottom add op
@@ -922,18 +1157,28 @@ try {
 				break; // No point in continuing
 			}
 
+			//
+			// top already filled, no point
+			//
+			// This **must** be after add_can_equal_or_surpass(),
+			// because src/dst's still must be tested
+			//
+      if (!top.add_nop() && !top.mul_nop()) continue;
+
 			if (!add_can_equal(top, bottom)) {
 				continue;
 			}
       final_top = j;
-
+/*
       cdebug << "Considering following:\n"
              << "  " << j << ": " << top.mnemonic()    << "\n"
              << "  " << i << ": " << bottom.mnemonic()
       ;
-
+*/
 
 /*
+	 		// Previous
+
       if (bottom.add_nop() || !bottom.mul_nop()) {
         cerr << "combine: only add op's in bottom handled now.\n" 
              << "  " << j << ": " << top.mnemonic()    << "\n"
@@ -960,24 +1205,79 @@ try {
     for (int k = final_top; k < i; ++ k) {
       auto &ftop = instr[k];
 
+      if (ftop.skip()) continue;
+
       std::string buf;
-      buf << "Move forward again:\n"
-				  << "  " << k << ": " << ftop.mnemonic()    << "\n"
+      buf << "  " << k << ": " << ftop.mnemonic()    << "\n"
           << "  " << i << ": " << bottom.mnemonic();
 
+			if (ftop.mul_nop() && alu_add_could_be_mul(bottom)) {
+/*				
+				// TODO examine this when all is stable
+				cdebug << "Move forward could move bottom add to ftop mul. Skipping for now\n"
+				       << "  " << k << ": " << ftop.mnemonic()    << "\n"
+               << "  " << i << ": " << bottom.mnemonic();
+*/							 
+				continue;
+			}
+
 			if (ftop.mul_nop() && alu_add_could_be_mul(ftop)) {
-				cdebug << "Move forward could move ftop add to ftop mul. Skipping for now";
-				break;
+/*				
+				// TODO examine this when all is stable
+				cdebug << "Move forward could move ftop add to ftop mul. Skipping for now\n"
+				       << "  " << k << ": " << ftop.mnemonic()    << "\n"
+               << "  " << i << ": " << bottom.mnemonic();
+*/							 
+				continue;
 			}
 
  			if (dst_matches_src(bottom, ftop)) {
-				cdebug << "Move forward bottom dst is top src, could combine but skipping for now.";
-				break;
+				cdebug << "Move forward bottom dst is top src, could combine but skipping for now.\n"
+				       << "  " << k << ": " << ftop.mnemonic()    << "\n"
+               << "  " << i << ": " << bottom.mnemonic();
+				continue;
 			}
 
-			cdebug << buf;
-  		cdebug << "skip got till: " << k;
-		  return;
+			Instr ret;
+		  if (combine_instruction(ret, bottom, ftop)) {
+				//
+				// Comment handling
+				//
+
+				// bottom comment most likely belong to a block; move comment to next op
+        instr[i + 1].header(bottom.header());
+        instr[i + 1].comment(bottom.comment());
+
+				// retain only the comments of ftop
+				ret.clear_comments();
+        ret.header(ftop.header());
+        ret.comment(ftop.comment());
+
+  			warn << "Combine success.\n"
+             << "Pre:\n"
+             << buf << "\n"
+             << "Post:\n"
+             << "  " << final_top << ": " << ret.mnemonic() << "\n"
+             << "== Combine SUCCESS ==";
+
+				// Consolidate the conversion
+				ftop = ret;
+				bottom.skip(true);
+
+				combine_count++;
+				if (MAX_COMBINE_COUNT != -1 && combine_count >= MAX_COMBINE_COUNT) {
+					throw std::runtime_error("Reached max combine count");
+				}
+
+        break;
+			} else {
+				continue;
+			}
+
+      cdebug << "Move forward again:\n"
+			       << buf;
+  		cdebug << "skip got till: " << i;
+			return;
 
       if (ftop.skip()) continue;
       if (!ftop.mul_nop()) continue;
@@ -1002,12 +1302,16 @@ try {
 } catch(V3DLib::Exception const &e) {
   cerr << "\nV3DLib exception during Combine::combine(). Aborting further combination. err:\n"
        << e.what();
-} catch(std:: runtime_error &e) {
+} catch(std::runtime_error &e) {
   cerr << "\nruntime_error exception during Combine::combine(). Aborting further combination. err:\n"
        << e.what();
 } catch(...) {
   cerr << "\nUnknown exception during Combine::combine(). Aborting further combination.\n";
 }
+
+	if (MAX_COMBINE_COUNT != -1) {
+		warn << "Final combine_count: " << combine_count;
+	}
 
 }
 

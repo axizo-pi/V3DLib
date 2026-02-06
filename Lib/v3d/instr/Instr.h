@@ -95,7 +95,7 @@ public:
   bool is_nop()     const { return add_nop() && mul_nop(); }  // This does not include signals having sig_addr set 
   bool add_nocond() const { return flags.ac == V3D_QPU_COND_NONE; }
   bool mul_nocond() const { return flags.mc == V3D_QPU_COND_NONE; }
-
+	bool has_flags()  const;
 
   static bool compare_codes(uint64_t code1, uint64_t code2);
 
