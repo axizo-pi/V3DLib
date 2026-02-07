@@ -1,5 +1,13 @@
 # Doxyfile 1.9.4
 
+#
+# WRI: Significant changes are labelled with WRI.
+#
+# Empirical observation:
+#
+# - '///' In code will be added to function comment.
+#
+
 # This file describes the settings to be used by the documentation system
 # doxygen (www.doxygen.org) for a project.
 #
@@ -504,7 +512,19 @@ EXTRACT_ALL            = NO
 # be included in the documentation.
 # The default value is: NO.
 
-EXTRACT_PRIVATE        = NO
+#
+# WRI
+#
+# Show specific documented hidden functions/members.
+# - Use @internal as the first line for the documentation of private members
+#   should not be shown I do not want to show.
+# - `/* */` (no `**`*) is also an option.
+# -  Also added `EXTRACT_ANON_NSPACES   = YES`
+#
+# Source: https://stackoverflow.com/a/50646130/1223531
+#
+#
+EXTRACT_PRIVATE        = YES
 
 # If the EXTRACT_PRIV_VIRTUAL tag is set to YES, documented private virtual
 # methods of a class will be included in the documentation.
@@ -547,7 +567,7 @@ EXTRACT_LOCAL_METHODS  = NO
 # are hidden.
 # The default value is: NO.
 
-EXTRACT_ANON_NSPACES   = NO
+EXTRACT_ANON_NSPACES   = YES
 
 # If this flag is set to YES, the name of an unnamed parameter in a declaration
 # will be determined by the corresponding definition. By default unnamed
@@ -562,7 +582,7 @@ RESOLVE_UNNAMED_PARAMS = YES
 # section is generated. This option has no effect if EXTRACT_ALL is enabled.
 # The default value is: NO.
 
-HIDE_UNDOC_MEMBERS     = NO
+HIDE_UNDOC_MEMBERS     = YES
 
 # If the HIDE_UNDOC_CLASSES tag is set to YES, doxygen will hide all
 # undocumented classes that are normally visible in the class hierarchy. If set
@@ -911,6 +931,7 @@ INPUT                  =            \
 	../Lib/Source/                    \
   ../Lib/Kernel.h                   \
   ../Lib/Support/Helpers.cpp        \
+  ../Lib/v3d/Combine.cpp            \
   ../Lib/Target/instr/Mnemonics.cpp
 
 # This tag can be used to specify the character encoding of the source files

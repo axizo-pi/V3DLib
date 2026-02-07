@@ -5,10 +5,29 @@
 #include "instr/Mnemonics.h"  // instr::tmua
 #include <set>
 
+/** 
+ * @file
+ * Routines for optimizing v3d instructions.
+ *
+ * The main operations here:
+ *
+ * - Remove useless instructions
+ * - Combine alu op's so that both `add` and `mul` are use in a single operation.
+ *
+ * Unofrtunately, not all works well. Most of them time, routines are disabled.
+ * to keep the library stable
+ */
+
 using namespace Log;
 
 namespace V3DLib {
 namespace v3d {
+
+/**
+ * @namespace Combine
+ *
+ * Interface to `v3d` instruction optimization.
+ */
 namespace Combine {
 
 using V3DLib::v3d::instr::BaseSource;
@@ -67,8 +86,8 @@ bool check_small_imm_usage(Instr const &top, Instr const &bottom) {
   }
 
   if (top_add_a_imm != -1 && bottom_add_b_imm != -1) {
-    ///warn << "comparing imm's top.add.a with bottom.add.b: "
-    ///     << top_add_a_imm << " != " << bottom_add_b_imm;
+    //warn << "comparing imm's top.add.a with bottom.add.b: "
+    //     << top_add_a_imm << " != " << bottom_add_b_imm;
     if (top_add_a_imm != bottom_add_b_imm) return false; 
   }
 
@@ -77,8 +96,8 @@ bool check_small_imm_usage(Instr const &top, Instr const &bottom) {
   }
 
   if (top_add_b_imm != -1 && bottom_add_b_imm != -1) {
-    ///warn << "comparing imm's top.add.a with bottom.add.b: "
-    ///     << top_add_a_imm << " != " << bottom_add_b_imm;
+    //warn << "comparing imm's top.add.a with bottom.add.b: "
+    //     << top_add_a_imm << " != " << bottom_add_b_imm;
     if (top_add_b_imm != bottom_add_b_imm) return false; 
   }
 
@@ -187,13 +206,66 @@ bool add_register_conflict(Instr const &top, Instr const &bottom, bool check_sur
 }
 
 
+
+/**
+ * Convert add op to mul op if possible.
+ *
+ * @param mul_op output param; mul op if conversion succesfull.
+ * @param add_op input param; add op to convert
+ *
+ * @return true if conversion possible, false otherwise
+ *         If possible, output param dst is set.
+ *
+ * --------------------------------------------------
+ * 
+ * Possible conversions add <-> mul (from mesa2 qpu_instr.h):
+ *
+ *   V3D_QPU_A_ADD  <-> V3D_QPU_M_ADD,
+ *   V3D_QPU_A_SUB  <-> V3D_QPU_M_SUB,
+ *   V3D_QPU_A_FMOV <-> V3D_QPU_M_FMOV,  // vc7 rhs only
+ *   V3D_QPU_A_MOV  <-> V3D_QPU_M_MOV,   // vc7 rhs only
+ *   V3D_QPU_A_NOP  <-> V3D_QPU_M_NOP,
+ */
+bool add_op_to_mul_op(v3d_qpu_mul_op &mul_op, v3d_qpu_add_op add_op) {
+	switch(add_op) {
+		case V3D_QPU_A_ADD:  mul_op = V3D_QPU_M_ADD;  return true;
+		case V3D_QPU_A_SUB:  mul_op = V3D_QPU_M_SUB;  return true;
+		case V3D_QPU_A_FMOV: mul_op = V3D_QPU_M_FMOV; return true;
+		case V3D_QPU_A_MOV:  mul_op = V3D_QPU_M_MOV;  return true;
+		case V3D_QPU_A_NOP:  mul_op = V3D_QPU_M_NOP;  return true; // Included for completeness
+
+		default: return false;
+	}
+}
+
+
+/**
+ * Check if an add operation can be a mul-operation.
+ *
+ * This does not check if the current instruction has
+ * an empty mul-op. The move could be to any instruction,
+ * including self.
+ */
+bool alu_add_could_be_mul(Instr const &instr) {
+	v3d_qpu_mul_op mul_op;
+
+	if (!add_op_to_mul_op(mul_op, instr.alu.add.op)) return false;
+	// post: previous call succeeded
+
+	if (mul_op == V3D_QPU_M_NOP) return false;   // Testing this doesn't make sense
+	return true;
+}
+
+
 /**
  * Find corresponding mul op for a given add op
+ *
+ * **TODO**: merge with `add_op_to_mul_op()`.
  *
  * @return true if found, false otherwise
  */
 bool convert_alu_op_to_mul_op(v3d_qpu_mul_op &mul_op, v3d::instr::Instr const &add_instr) {
-	// Op's common to both vc6 and vc7
+	// Op's are commong common to both vc6 and vc7 unless otherwise specified
   switch (add_instr.alu.add.op) {
     case V3D_QPU_A_OR: {
 			if (Platform::compiling_for_vc7()) {
@@ -206,18 +278,11 @@ bool convert_alu_op_to_mul_op(v3d_qpu_mul_op &mul_op, v3d::instr::Instr const &a
       return true;
 		}
 
-    case V3D_QPU_A_ADD:
-      mul_op = V3D_QPU_M_ADD;
-      return true;
-
-    case V3D_QPU_A_SUB:
-      mul_op = V3D_QPU_M_SUB;
-      return true;
-
-		// vc7 - This broke Tri previously
-    case V3D_QPU_A_MOV:
-      mul_op = V3D_QPU_M_MOV;
-      return true;
+    case V3D_QPU_A_ADD:  mul_op = V3D_QPU_M_ADD;  return true;
+    case V3D_QPU_A_SUB:  mul_op = V3D_QPU_M_SUB;  return true;
+		case V3D_QPU_A_FMOV: mul_op = V3D_QPU_M_FMOV; return true;
+    case V3D_QPU_A_MOV:  mul_op = V3D_QPU_M_MOV;  return true;  // vc7 only
+		case V3D_QPU_A_NOP:  mul_op = V3D_QPU_M_NOP;  return true; // Included for completeness
 
     default: break;
   }
@@ -242,6 +307,7 @@ bool can_surpass(Instr const &top, Instr const &bottom) {
 
 
 /**
+ * @internal
  * This can't fail as long as both instructions are alu add
  */
 void alu_add_copy_src(Instr const &src, Instr &dst) {
@@ -267,10 +333,9 @@ void alu_add_copy_src(Instr const &src, Instr &dst) {
  *
  * There are pleny of limitations which are taken into account here.
  *
- * @param in_instr instruction that will be combined
- * @param dst      instruct that will contain the add and mul instruction (inshalla)
- *
- * @return true if combine succeeded, false otherwise
+ * @param src  instruction that will be combined
+ * @param dst  instruct that will contain the add and mul instruction (inshalla)
+ * @return     true if combine succeeded, false otherwise
  */
 bool alu_to_mul_alu(Instr const &src, Instr &dst) {
 	// Perhaps TODO: change these assert's int 'if () return false'
@@ -347,56 +412,6 @@ bool alu_to_mul_alu(Instr const &src, Instr &dst) {
 
 
 /**
- * Convert add op to mul op if all possible.
- *
- * @param mul_op output param; mul op if conversion succesfull.
- * @param add_op input param; add op to convert
- *
- * @return true if conversion possible, false otherwise
- *         If possible, output param dst is set.
- *
- * --------------------------------------------------
- * 
- * Possible conversions add <-> mul:
- *
- *   V3D_QPU_A_ADD  <-> V3D_QPU_M_ADD,
- *   V3D_QPU_A_SUB  <-> V3D_QPU_M_SUB,
- *   V3D_QPU_A_FMOV <-> V3D_QPU_M_FMOV,  // vc7 rhs only
- *   V3D_QPU_A_MOV  <-> V3D_QPU_M_MOV,   // vc7 rhs only
- *   V3D_QPU_A_NOP  <-> V3D_QPU_M_NOP,
- */
-bool add_op_to_mul_op(v3d_qpu_mul_op &mul_op, v3d_qpu_add_op add_op) {
-	switch(add_op) {
-		case V3D_QPU_A_ADD:  mul_op = V3D_QPU_M_ADD;  return true;
-		case V3D_QPU_A_SUB:  mul_op = V3D_QPU_M_SUB;  return true;
-		case V3D_QPU_A_FMOV: mul_op = V3D_QPU_M_FMOV; return true;
-		case V3D_QPU_A_MOV:  mul_op = V3D_QPU_M_MOV;  return true;
-		case V3D_QPU_A_NOP:  mul_op = V3D_QPU_M_NOP;  return true; // Included for completeness
-
-		default: return false;
-	}
-}
-
-
-/**
- * Check if an add operation can be a mul-operation.
- *
- * This does not check if the current instruction has
- * an empty mul-op. The move could be to any instruction,
- * including self.
- */
-bool alu_add_could_be_mul(Instr const &instr) {
-	v3d_qpu_mul_op mul_op;
-
-	if (!add_op_to_mul_op(mul_op, instr.alu.add.op)) return false;
-	// post: previous call succeeded
-
-	if (mul_op == V3D_QPU_M_NOP) return false;   // Testing this doesn't make sense
-	return true;
-}
-
-
-/**
  *
  * @param instr1 First instruction to combine
  * @param instr2 Second instruction to combine
@@ -440,7 +455,7 @@ bool alu_add_could_be_mul(Instr const &instr) {
  *      addnt,nop     addnt,nop    - Can't combine
  * ---------------------------------------------
  *
- * - TODO 'sig_addr' usage should also be added to the list!
+ * - **TODO**: 'sig_addr' usage should also be added to the list!
  *   This field is independent of src/dst. The only issue is when it interferes with the dst fields.
  * - Non-transferrable add-ops have been filtered out beforehand.
  * - In theory, you could check on transferrable mul-ops.
@@ -538,7 +553,7 @@ bool combine_instruction(Instr &ret, Instr const &instr1, Instr const &instr2) {
 	// The actual combine
 	//
 
-	//sig_addr and sig_magic intenionally skipped, will be picked up when sig assert above fires.
+	//sig_addr and sig_magic intentionally skipped, will be picked up when sig assert above fires.
 
   if (!Platform::compiling_for_vc7()) {
 		// vc6: Needs special tests for raddr fields
@@ -575,9 +590,11 @@ bool combine_instruction(Instr &ret, Instr const &instr1, Instr const &instr2) {
 }
 
 
-//
-// Return true if instruction passes filter
-//
+/**
+ * @internal
+ *
+ * @return true if instruction passes filter
+ */
 bool filter_move(Instr const &instr) {
   if (instr.skip()) return false;
 
@@ -642,6 +659,16 @@ int remove_skips(Instructions &instr) {
 }
 
 
+/**
+ * Remove instructions which do not do anything.
+ *
+ * Example:
+ *
+ *     mov rf0, rf0
+ *
+ * @param instr  List of instruction to check for being useless
+ * @return       Number of useless instructions to skip
+ */
 int remove_useless(Instructions &instr) {
   //
   // Detect useless moves, eg: or  rf2, rf2, rf2    ; nop
@@ -934,6 +961,7 @@ bool skip_instruction(Instr const &bottom, int line_index) {
 	return false;
 }	
 
+
 /**
  * Check if dst of lhs is same as any src of rhs.
  *
@@ -955,6 +983,7 @@ bool dst_matches_src(Instr const &lhs, Instr const &rhs) {
 
 
 /**
+ * @internal
  * All dst's are handled here.
  */
 bool dst_fields_overlap(Instr const &top, Instr const &bottom) {
@@ -975,7 +1004,7 @@ bool dst_fields_overlap(Instr const &top, Instr const &bottom) {
 /**
  * Check if bottom add op can equal or surpass the top add/mul op.
  *
- * ** NOTE**: overlap with add_register_conflict()
+ * **NOTE**: Resolve overlap with `add_register_conflict()`.
  *
  * @return true if can equal or surpass, false otherwise
  */
@@ -1087,10 +1116,13 @@ bool add_can_equal(Instr const &top, Instr const &bottom) {
 /**
  * Skip a branch instruction.
  *
+ * If the passed instruction `bottom` is a branch, skip to launch point.  
+ * Nothing happens if this is not a branch.
+ *
+ * @param bottom     instruction to check for branch.
  * @param line_index current instruction indec. Will be adjusted
  *                   to the launch point if a branch detected.
- *
- * @return true if branch detected, false if not present.
+ * @return           true if branch detected, false if not present.
  */
 bool skip_to_launch_point(Instr const &bottom, int &line_index) {
   if (bottom.is_branch()) {
@@ -1118,6 +1150,7 @@ bool skip_to_launch_point(Instr const &bottom, int &line_index) {
 
 	return false;
 }
+
 
 /**
  * Move bottom add op to top mul op.
@@ -1170,6 +1203,52 @@ bool bottom_add_to_top_mul(Instr &ret, Instr const &bottom, Instr const &top) {
 }
 
 
+/**
+ * Optimize read/write operations for `v3d`.
+ *
+ * @param instr  List of instructions to scan.
+ *
+ * -------------------
+ *
+ * **Read operation:**
+ *
+ *     mov tmua, rf20                ; nop                         ; thrsw
+ *     nop                           ; nop                         
+ *     nop                           ; nop                         
+ *     nop                           ; nop                         ; ldtmu.rf20
+ *
+ * The issue here is the overhead of the `nop`'s.
+ * Things to do with this:
+ *
+ * - Move up lower instructions to fill up the `nop`'s.
+ *   This is something that the regular `combine()` instruction can deal with.
+ * - Put `tmua mov`'s after each other.
+ *   This should work fine as long as the TMU FIFO is not filled
+ *   (in which case, the reads will block).
+ *
+ * **Write operation:**
+ *
+ *     mov tmud, rf23                ; nop                         # store_var v3d
+ *     mov tmua, rf20                ; nop                         
+ *     tmuwt rf63                    ; nop     
+ *
+ * The goal in this method is to combine the `mov`'s:
+ *
+ *     mov tmud, rf23                ; mov tmua, rf20              # store_var v3d
+ *     tmuwt rf63                    ; nop     
+ *
+ * Notes
+ * =====
+ *
+ * 1. The combination of the `mov`'s for the read **does not work**  
+ *    The instruction merge is accepted by the compile, but _there is no output_.  
+ *    Even worse, this persists when the kernel is re-run.
+ *
+ * This indicates that there is some state issue involved here, on the hardware level
+ * (I can not rule out that it is a code issue).  
+ * Running other kernels in between, however, works fine. I am perplexed.
+ *    
+ */
 void combine_read_write(Instructions &instr) {
 	warn << "\n----------------------------\n"
 		   <<   "Entered combine_read_write()\n"
@@ -1201,7 +1280,7 @@ void combine_read_write(Instructions &instr) {
 			;
 
 			//
-			// Move tmua to mul op
+			// Move tmua to mul op. Not working, see Note 1!
 			//
     	auto &bottom = instr[i + 1];
     	auto &top    = instr[i];
@@ -1248,6 +1327,7 @@ void combine_read_write(Instructions &instr) {
 }
 
 }  // anon namespace
+
 
 
 void combine(Instructions &instr) {
@@ -1811,6 +1891,9 @@ void combine_old(Instructions &instructions) {
 } // anon namespace
 
 
+/**
+ * Entry point for `v3d` instruction optimization.
+ */
 int optimize(Instructions &instrs) {
 	int count = 0;
 
