@@ -13,6 +13,11 @@ CmdParameters params = {
     "-orbits",
     ParamType::NONE,
     "Output an image of the combined orbits of all entities"
+	 }, {
+    "Kernel",
+    "-k=",
+		{ "gpu", "cpu" },
+    "Select the kernel to use"
 	}}
 };
 
@@ -24,6 +29,7 @@ bool GravitySettings::init_params() {
   auto const &p = parameters();
 
   output_orbits = p["Output orbit image" ]->get_bool_value();
+  kernel        = p["Kernel"]->get_int_value();
 
   return true;
 }
