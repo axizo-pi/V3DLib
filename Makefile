@@ -150,10 +150,16 @@ make_test: runTests ID Hello Rot3D ReqRecv GCD Tri detectPlatform OET
 # Running it separately appears to work fine.
 # The infuriating bit is 'sometimes'.
 #
+# [rot3d] is similar, works fine when run separately, *sometimes* issues otherwise.
+# I am incline to believe this is an issue with doctest.
+#
+# "*[pass*" - sic, intentional
+#
 test : make_test
 	@echo Running unit tests with \'$(SUDO) $(UNIT_TESTS)\'
-	@$(SUDO) $(UNIT_TESTS) -tce="*[pass2]*"
+	@$(SUDO) $(UNIT_TESTS) -tce="*[pass*"
 	@$(SUDO) $(UNIT_TESTS) -tc="*[pass2]*"
+	@$(SUDO) $(UNIT_TESTS) -tc="*[pass3]*"
 
 
 ###############################
