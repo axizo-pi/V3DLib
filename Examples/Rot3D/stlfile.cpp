@@ -18,9 +18,9 @@ StlData::StlData(int size) : m_size(size) {
 	assert(size > 0, "size must be positive");
 
 	bool have_stl = (stl_num_coords() > 0);
-	warn << "StlData ctor stl present, overriding size";
 
 	if (have_stl) {
+		warn << "StlData ctor stl present, overriding size";
   	m_size = stl_num_coords();
 	}
 }
@@ -111,6 +111,7 @@ void load_stl(std::string const &filename) {
  * Therefore the number of coordinatesi (3D) is triple the number of triangles.
  */
 int stl_num_coords() {
+	//warn << "stl_num_coords triangles size: " << triangles.size();
 	return (int) (triangles.size() * 3);
 }
 
