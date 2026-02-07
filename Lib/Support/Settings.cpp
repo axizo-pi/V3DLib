@@ -72,7 +72,7 @@ CmdParameters base_params = {
   }, {
     "Select run type",
     "-r=",
-    {"default", "emulator", "interpreter"},
+    {"QPU", "emulator", "interpreter"},
     "Run the kernel on the QPU, emulator or on the interpreter"
   }, {
     "Disable logging",

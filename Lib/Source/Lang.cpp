@@ -1,6 +1,5 @@
 #include "Lang.h"
 #include <stdio.h>
-//#include "Support/basics.h"  // fatal()
 #include "Source/Int.h"
 #include "StmtStack.h"
 #include "global/log.h"
