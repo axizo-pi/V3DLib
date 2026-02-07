@@ -91,11 +91,12 @@ The following naming is used within the project:
 	I leave out 'compute' when describing kernels.
   This is different from the Broadcomm and Mesa terminology, where programs are called **shaders**.
 - A naming convention which has grown historically:
-  * **scalar kernel** - A kernel written in standard C++, runs on CPU. 'scalar' for short
-  * **vector kernel** - A kernel written to run on the QPU's. 'vector' for short
+  * **scalar kernel** - A kernel written in standard C++, runs on CPU. 'scalar' for short.
+  * **vector kernel** - A kernel written to run on the QPU's. 'kernel' for short.
 - Values passed from a CPU program into a kernel are called *uniform values* or **uniforms**.
+  Their usage is totally comparable to command-line parameters for a console app.
 - Any method or function which generates debug output is named `dump()` (or uses `dump` as prefix).
-  The utility of this is apparent when you run `dbg` a lot.
+  The utility of this is obvious when you use `dbg` a lot.
 
 -------------------
 
@@ -159,6 +160,16 @@ e.g.:
      add rf2, rf0, rf1 ; mul rf5, rf3, rf4     # Legal on vc7, invalid on vc6
      add rf2, rf0, rf0 ; mul rf5, rf0, rf1     # Legal on vc6
 
+- Any input field can now contain a **small immediate**. On `vc6` this is limited to
+  `raddr_b` (I realize this term might be unknown, but it is relevant).
+  There still are limitations to the number of small immediates you can use in an
+  operation, the limit still appears to be 1 at most.
+
+There is an unfortunate consequence to this, as it appears that usage of small immediates
+for `vc6` is actually more flexible. E.g.:
+
+    shl rf0, 4, 4   # Legal on vc6, invalid on vc7
+
 - The `SFU` (Special Functions Unit) has been dropped. All functions of the `SFU`
   are now done on the Add ALU.
 
@@ -190,7 +201,7 @@ e.g.:
   * `load imm per-elmt unsigned`
   * `Semaphore`
 
-Of those, only `alu` and `branch` remain on `vc6`.
+Of these, only `alu` and `branch` remain on `vc6`.
 The functionality of `alu small imm` has been merged into `alu`.
 
 ### Stuff I discovered during coding
@@ -208,13 +219,13 @@ With `vc4` however, small differences creep in, which accumulate with continued 
 
 The following code yields different results for `vc4` and `vc6`
 
-    a = 16
-    b = -1 * a
+    Int a = 16;
+    Int b = -1 * a;
     # vc4: b = 268435440
-    # vc6: b= -16
+    # vc6: b = -16
 
 This has to do with the integer multiply instruction working only on the lower 24 bits of integers.
-Thus, a negative value gets its ones-complement prefix chopped off,
+As a consequence, a negative value gets its ones-complement prefix chopped off,
 and whatever is left is treated as an integer.
 
 #### - Setting of condition flags has changed
@@ -227,7 +238,7 @@ To elaborate:
 
 - `N` - Negative
 - `Z` - Zero
-- `C` - Complement? By the looks of it `>= 0`, but you tell me
+- `C` - Complement? By the looks of it `>= 0`, but you tell me. _(might be Carry)_
 
 These are set with a single bitfield in an ALU instruction.
 Each flag is explicitly tested in conditions.  

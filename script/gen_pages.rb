@@ -48,7 +48,6 @@ class GenPages < WebController
 			"TODO.md",
 			"Overview.md",
 			"DMAVPM.md",
-		  "Mesa2.md",
 			"Profiling/ComparingVMPandTMU.md",
 			"Profiling/BlockMatrix.md",
 			"Profiling/Rot3D.md",

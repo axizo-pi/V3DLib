@@ -78,6 +78,59 @@ Following works on `Pi2`, should be OK on other Pi's:
 
 -------------------
 
+## Mesa2 Investigations
+
+### Regfile read/write
+
+Remember: vc6 has one regfile, not a and b
+
+| raddr\_a | read address from regfile a |
+| raddr\_b | read address from regfile b |
+| waddr\_a | write address to regfile a |
+| waddr\_b | write address to regfile b |
+
+- vc4: a/b's really read/write to regfile a/b
+- vc6: all read/writes to the central regfile
+
+**mux:**
+
+mesa2, `src/broadcom/qpu/qpu_instr.h`:
+
+    struct v3d_qpu_input {
+      union {
+        enum v3d_qpu_mux mux; /* V3D 4.x */
+        uint8_t raddr; /* V3D 7.x */
+      };
+      enum v3d_qpu_input_unpack unpack;
+    };
+
+`mux` maps to fields `add_a/b` and `mul_a/b'.  
+Mux values are removed in vc7. By implication, accumulator registers have been discarded.
+
+`vc6`, both mesa libs:
+
+Struct `v3d_qpu_input` used in `v3d_qpu_alu_instr`, part of  `v3d_qpu_instr`.
+The latter contains `raddr_a/b`.
+
+### Small imm's
+
+mesa2, `src/broadcom/qpu/qpu_instr.h`, struct `v3d_qpu_sig`:
+
+    ...
+    bool small_imm_a:1; /* raddr_a (add a), since V3D 7.x */
+    bool small_imm_b:1; /* raddr_b (add b) */
+    bool small_imm_c:1; /* raddr_c (mul a), since V3D 7.x */
+    bool small_imm_d:1; /* raddr_d (mul b), since V3D 7.x */
+    ...
+
+Previously, there was only one field `small_imm`; this maps to `small_imm_b`.
+So in `mesa`, only `raddr_b` could be used for small imm.
+
+In `mesa2`, for `V2D 7`, all raddr fields can be used for small_imm,
+_but not at the same time_ (empirical observation).
+
+-------------------
+
 ## Setting of Branch Conditions
 
 **TODO:** Make this a coherent text.

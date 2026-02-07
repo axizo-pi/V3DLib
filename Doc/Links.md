@@ -4,18 +4,26 @@
 
 # Useful Links
 
-## References
+## RNN
 
-The following works were *very* helpful in the development.
+* Considering `tanh()` because it makes for a good sigmoid funtion.
+  - [tanh numeric approximation] - tricky to vectorize due to if-blocks
+  - [Approximation using exp()](https://stackoverflow.com/q/29239343/12235310) - Wikipedia
+  - Taylor approximation: [Wikipedia hyperbolic functions], scroll to **Taylor series expressions**
+* Tutorial [RNN on MNIST](https://github.com/dmlc/minpy/blob/master/examples/tutorials/rnn_mnist.ipynb)
+* [mnist-from-scratch](https://github.com/CermakM/mnist-from-scratch/tree/master) - implemntation in C++
+* [LSTM](https://en.wikipedia.org/wiki/Long_short-term_memory) - 'Long Short-Term Memory'; alternative to RNN
 
-### VideoCore IV 
+## VideoCore IV 
+
 * The [VideoCore IV Reference Manual] by Broadcom. [Errata].
 * The [documentation, demos, and assembler](https://github.com/hermanhermitage/videocoreiv-qpu)
   by Herman Hermitage.
 * The [FFT implementation](http://www.aholme.co.uk/GPU_FFT/Main.htm)
   by Andrew Holme. [Blog](https://www.raspberrypi.org/blog/accelerating-fourier-transforms-using-the-gpu/)
 
-### VideoCore VI 
+## VideoCore VI 
+
 * [v3d driver code in the linux kernel repository] - [v3d in kernel on github].
   Of special interest: [v3d_gem.c], [v3d_drm.h]. `vc4` code is  on same level
 * [MESA v3d driver] - [github], `vc4` on same level
@@ -29,6 +37,7 @@ The following works were *very* helpful in the development.
 
 ## Tools
 
+* [Online STL Viewer](https://www.viewstl.com/#!)
 * [vcgencmd](https://www.raspberrypi.org/documentation/raspbian/applications/vcgencmd.md)
 * [doctest](https://github.com/onqtam/doctest) - unit test framework, [Documentation links](https://github.com/onqtam/doctest#documentation)
 
@@ -38,6 +47,8 @@ The following works were *very* helpful in the development.
 
 --------------------------
 
+[Wikipedia hyperbolic functions]: https://en.wikipedia.org/wiki/Hyperbolic_functions
+[tanh numeric approximation]: https://github.com/rrottmann/anguita/blob/0e6247694d09f1331389d720e39301c94df831d4/anguita/__init__.py#L9
 [VideoCore IV Reference Manual]: https://docs.broadcom.com/docs-and-downloads/docs/support/videocore/VideoCoreIV-AG100-R.pdf
 [Errata]: https://www.elinux.org/VideoCore_IV_3D_Architecture_Reference_Guide_errata
 [v3d driver code in the linux kernel repository]: https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git/tree/drivers/gpu/drm/v3d
