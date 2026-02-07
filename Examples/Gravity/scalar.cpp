@@ -128,12 +128,14 @@ void init_orbital_entities() {
 
 	for (int i = 0; i < N_ASTEROIDS; ++i) {
 /*		
+		// Chaos: random asteroid placement with random speeds
 		o[N_PLANETS + i] = {
 			Asteroid_Dist*Vector3::random(),
 			Asteroid_Speed*Vector3::random(),
 			Asteroid_Mass
 		};
 */		
+		// Ordered model with equidistant asteroids in the orbital plane
 		o[N_PLANETS + i] = {
 			Asteroid_Dist + 9e10*i, 0, 0,
 			0, Asteroid_Speed, 0,

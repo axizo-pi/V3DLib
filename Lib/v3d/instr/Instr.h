@@ -95,7 +95,7 @@ public:
   bool is_nop()     const { return add_nop() && mul_nop(); }  // This does not include signals having sig_addr set 
   bool add_nocond() const { return flags.ac == V3D_QPU_COND_NONE; }
   bool mul_nocond() const { return flags.mc == V3D_QPU_COND_NONE; }
-
+	bool has_flags()  const;
 
   static bool compare_codes(uint64_t code1, uint64_t code2);
 
@@ -155,6 +155,7 @@ public:
 
 
 	bool has_small_imm() const;
+	int small_imm_value() const;
 
   bool mux_in_use(CheckSrc check_src, v3d_qpu_mux mux) const;
 	bool check_safe(BaseSource const &src, CheckSrc check_src) const;

@@ -50,7 +50,7 @@ void kernel_calc_acc(
 
 	header("Start loop kernel_calc_acc");
 
-	For (Int cur_index = 0, cur_index < num_entities, cur_index++)
+	For (Int cur_index = me(), cur_index < num_entities, cur_index += numQPUs())
 		Int ptr_offset = cur_index - index();
 
 		Float::Ptr px0    = in_x    + ptr_offset;
@@ -167,7 +167,20 @@ void kernel_step(
 
 	header("Start kernel_step");
 
-	For (Int cur_block = 0, cur_block < (num_entities >> 4), cur_block++)
+  Int step         = numQPUs() << 4;
+	Int start_offset = me()*16;
+
+  p_x     += start_offset;
+  p_y     += start_offset;
+  p_z     += start_offset;
+  p_v_x   += start_offset;
+  p_v_y   += start_offset;
+  p_v_z   += start_offset;
+  p_acc_x += start_offset;
+  p_acc_y += start_offset;
+  p_acc_z += start_offset;
+
+	For (Int cur_block = me(), cur_block < (num_entities >> 4), cur_block += numQPUs())
 		Float x     = *p_x;
 		Float y     = *p_y;
 		Float z     = *p_z;
@@ -182,7 +195,8 @@ void kernel_step(
 			x    , y    , z,
 			v_x  , v_y  , v_z,
 			acc_x, acc_y, acc_z,
-			delta_t);
+			delta_t
+		);
 
 		*p_v_x = v_x;
 		*p_v_y = v_y;
@@ -192,15 +206,17 @@ void kernel_step(
 		*p_y = y;
 		*p_z = z;
 
-		p_x.inc();      comment("kernel_step do pointer increments");
-		p_y.inc();
-		p_z.inc();
-		p_v_x.inc();
-		p_v_y.inc();
-		p_v_z.inc();
-		p_acc_x.inc();
-		p_acc_y.inc();
-		p_acc_z.inc();
+		comment("kernel_step do pointer increments");
+		p_x     += step;
+		p_y     += step;
+		p_z     += step;
+		p_v_x   += step;
+		p_v_y   += step;
+		p_v_z   += step;
+		p_acc_x += step;
+		p_acc_y += step;
+		p_acc_z += step;
+
 	End
 }
 
@@ -228,7 +244,7 @@ void kernel_gravity(
 			num_entities
 		);
 
-		barrier();  comment("barrier()");
+		barrier();
 
 		// kernel_step() adjusts pointers, reset to start before calling	
 		Float::Ptr x = in_x;
@@ -247,5 +263,7 @@ void kernel_gravity(
 		 	acc_x, acc_y, acc_z,
 			num_entities
 		);
+
+		barrier();
 	End
 }

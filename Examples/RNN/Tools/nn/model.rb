@@ -26,13 +26,7 @@ end
 # y is vector of length n
 #
 def loss(out, y)
-	#p out
-	#p y
 	s = out.combine(y) {|a, b| (a - b)*(a - b) }
-
-	#s = out.each_with_index do |e, row, col|
-	#	(e - y[col])*(e - y[col])
-	#end
 
 	sum = 0
 	s.each do |e|
@@ -123,43 +117,23 @@ def back_prop(input, desired, nn)
 	#
 	# output layer to hidden layer
 	#
-	d2        = a2 - desired            # error in output layer
-
-	puts dump_matrix d2, "d2" 
-	abort("Till Here");
-
-	w2_adj    = nn.a1.t * d2            # gradient, outer product
+	d2        = a2 - desired                        # error in output layer
+	w2_adj    = nn.a1.t * d2                        # gradient, outer product
 	w2_tmp    = nn.w2 - nn.alpha*w2_adj
 	nn.bias2 -= nn.alpha * d2
 
 	#
 	# Hidden layer adjusting w1
 	#
-=begin	
-	puts "
-#######################################
-# back_prop: Hidden layer adjusting w1
-#######################################"
-=end
-
-	tmp1 = (nn.w2 * d2.t).t
-	#puts dump_matrix_header nn.w2, "w2" 
-	#puts dump_matrix nn.w2, "w2" 
-	#puts dump_matrix d2, "d2" 
-
-	#puts dump_matrix_header tmp1, "tmp1" 
-	#puts dump_matrix tmp1, "tmp1" 
-
-	tmp2 = nn.a1.collect {|el| el*(1 - el) }    # sigmoid derivative
-	d1   = tmp1.combine(tmp2) {|a, b| a*b}
-
-	w1_adj = input.t * d1  # gradient, outer product
-	#puts dump_matrix w1_adj, "w1_adj" 
-
-	nn.w1 -= nn.alpha*w1_adj
+	tmp1      = (nn.w2 * d2.t).t
+	tmp2      = nn.a1.collect {|el| el*(1 - el) }   # sigmoid derivative
+	d1        = tmp1.combine(tmp2) {|a, b| a*b}
+	w1_adj    = input.t * d1                        # gradient, outer product
+	nn.w1    -= nn.alpha*w1_adj
 	nn.bias1 -= nn.alpha * d1
+	nn.w2     = w2_tmp
 
-	nn.w2 = w2_tmp
+#	puts dump_matrix nn.w2, "w2" 
 end
 
 ###########################################
@@ -211,11 +185,12 @@ end
 
 def predict(input, nn)
 	out = nn.f_forward(input)
+	#puts "out: #{out}"
+	#abort("Till Here");
+
 	maxm = 0
 	k = 0
 	r = out.row(0)
-
-	p out
 
 	r.each_with_index { |n, i|
 		if (maxm < n)

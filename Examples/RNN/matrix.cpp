@@ -176,11 +176,18 @@ matrix matrix::transpose() const {
 }
 
 
+std::string matrix::dump_dimensions() const {
+	std::string ret;
+	ret << "(" << m_rows << ", " << m_columns << ") ";
+	return ret;
+}
+
+
 std::string matrix::dump(bool output_int) const {
 	assert(m_arr != nullptr);
 	std::string ret;
 
-	ret << "Here (" << m_rows << ", " << m_columns << ") ";
+	ret << "Here " << dump_dimensions();
 
 	if (m_columns == 1) {
 		ret << "(tr) ";
@@ -294,7 +301,7 @@ vector vector::operator-(vector const &rhs) {
 	assert(rows() == rhs.rows());
 	if ((rows() & 0xf) != 0) { cerr << "vector sub: rows must be a multiple of 16" << thrw; }
 
-	vector ret(columns());
+	vector ret(rows());
 
 	m_sub->load(&arr(), &rhs.arr(), &ret.arr(), rows()/16).run();
 	return ret;
@@ -329,7 +336,11 @@ vector vector::sigmoid(vector const &bias) {
 
 
 std::string vector::dump(bool output_int) const {
- 	return vector_dump(arr(), rows(), 0, output_int);
+	std::string ret;
+	ret << dump_dimensions()
+ 	    << vector_dump(arr(), rows(), 0, output_int);
+
+	return ret;
 }
 
 
