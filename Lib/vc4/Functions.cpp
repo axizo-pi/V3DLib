@@ -46,6 +46,10 @@ void hostIRQ() {
  * The implementation uses semaphores internally.
  * This is code for the Source level. It should be called within kernels.
  *
+ * **NOT WORKING**. The final `barrier()` call on end of program is OK, within the 
+ * program it blocks (Gravity example).  
+ * Obviously, I don't understand it well enough.
+ *
  * ---------------------------------
  *
  * Note that most semaphore stuff is under DMA.
