@@ -1246,7 +1246,12 @@ bool bottom_add_to_top_mul(Instr &ret, Instr const &bottom, Instr const &top) {
  *
  * This indicates that there is some state issue involved here, on the hardware level
  * (I can not rule out that it is a code issue).  
- * Running other kernels in between, however, works fine. I am perplexed.
+ * Running other kernels in between, however, works fine. I am perplexed.  
+ * _NB:_ Restarting the Pi(5) fixes this. It is perplexing nevertheless.
+ *
+ * **TODO**: Find a way to reset the `vc7` hardware.
+ *           This exists for `vc6` and I have implemented it.
+ *           However, this does **not** work for `vc7`.
  *    
  */
 void combine_read_write(Instructions &instr) {
