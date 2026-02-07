@@ -303,7 +303,7 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_com
     case BARRIER:          ret << "BARRIER";         break;
 
     default: {
-        std::string tmp = DMA::disp(tag);  // Check for unhandled DMA stuff
+        std::string tmp = DMA::dump_tag(tag);  // Check for unhandled DMA stuff
 
         if (!tmp.empty()) {
 					cdebug  << "Stmt::disp_intern() default DMA: " << tmp;

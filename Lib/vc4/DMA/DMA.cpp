@@ -174,7 +174,7 @@ std::string Stmt::dump(int indent, int in_tag) {
 /**
  * TODO test
  */
-std::string disp(int in_tag) {
+std::string dump_tag(int in_tag) {
   auto tag = to_tag(in_tag);
   std::string ret;
 

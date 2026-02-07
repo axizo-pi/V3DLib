@@ -46,9 +46,6 @@ void dmaSetupRead(Dir dir, int numRows, IntExpr vpmAddr, int rowLen = 16, int vp
 void dmaSetupWrite(Dir dir, int numRows, IntExpr vpmAddr, IntExpr rowLen = 16);
 void dmaWaitRead();
 void dmaWaitWrite();
-void semaInc(int semaId);
-void semaDec(int semaId);
-void hostIRQ();
 
 }  // namespace V3DLib
 

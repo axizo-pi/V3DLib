@@ -15,6 +15,7 @@
 #include "global/log.h"
 #include "Instr.h"
 
+
 using namespace Log;
 
 namespace V3DLib {
@@ -101,16 +102,7 @@ void KernelDriver::kernelFinish() {
   dmaWaitRead();                header("Kernel termination");
                                 comment("Ensure outstanding DMAs have completed");
   dmaWaitWrite();
-
-  If (me() == 0)
-    Int n = numQPUs()-1;        comment("QPU 0 wait for other QPUs to finish");
-    For (Int i = 0, i < n, i++)
-      semaDec(15);
-    End
-    hostIRQ();                  comment("Send host IRQ");
-  Else
-    semaInc(15);
-  End
+	barrier();
 }
 
 

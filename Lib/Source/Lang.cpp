@@ -1,8 +1,10 @@
 #include "Lang.h"
 #include <stdio.h>
-#include "Support/basics.h"  // fatal()
+//#include "Support/basics.h"  // fatal()
 #include "Source/Int.h"
 #include "StmtStack.h"
+#include "global/log.h"
+#include "vc4/Functions.h"
 
 namespace V3DLib {
 namespace {
@@ -114,7 +116,14 @@ void ForBody_() {
  * most likely with semaphores.
  */
 void barrier() {
-	stmtStack().push(Stmt::create(Stmt::BARRIER));
+	if (Platform::compiling_for_vc4()) {
+		Log::warn << "barrier compiling for vc4";
+		// vc4 - Stmt::BARRIER will not be passed on
+		vc4::barrier();
+	} else {
+		// v3d
+		stmtStack().push(Stmt::create(Stmt::BARRIER));
+	}
 }
 
 
