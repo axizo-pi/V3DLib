@@ -220,11 +220,11 @@ bool add_register_conflict(Instr const &top, Instr const &bottom, bool check_sur
  * 
  * Possible conversions add <-> mul (from mesa2 qpu_instr.h):
  *
- *   V3D_QPU_A_ADD  <-> V3D_QPU_M_ADD,
- *   V3D_QPU_A_SUB  <-> V3D_QPU_M_SUB,
- *   V3D_QPU_A_FMOV <-> V3D_QPU_M_FMOV,  // vc7 rhs only
- *   V3D_QPU_A_MOV  <-> V3D_QPU_M_MOV,   // vc7 rhs only
- *   V3D_QPU_A_NOP  <-> V3D_QPU_M_NOP,
+ *     V3D_QPU_A_ADD  <-> V3D_QPU_M_ADD,
+ *     V3D_QPU_A_SUB  <-> V3D_QPU_M_SUB,
+ *     V3D_QPU_A_FMOV <-> V3D_QPU_M_FMOV,  // vc7 rhs only
+ *     V3D_QPU_A_MOV  <-> V3D_QPU_M_MOV,   // vc7 rhs only
+ *     V3D_QPU_A_NOP  <-> V3D_QPU_M_NOP,
  */
 bool add_op_to_mul_op(v3d_qpu_mul_op &mul_op, v3d_qpu_add_op add_op) {
 	switch(add_op) {
@@ -245,6 +245,8 @@ bool add_op_to_mul_op(v3d_qpu_mul_op &mul_op, v3d_qpu_add_op add_op) {
  * This does not check if the current instruction has
  * an empty mul-op. The move could be to any instruction,
  * including self.
+ *
+ * @return true if add op in `instr` could be mul. False otherwise.
  */
 bool alu_add_could_be_mul(Instr const &instr) {
 	v3d_qpu_mul_op mul_op;
@@ -1563,7 +1565,9 @@ bool have_dependency(v3d::instr::Instr const &first, v3d::instr::Instr const &se
 
 
 /**
- * NOTE: small imm not checked, perhaps this gets fixed downstream
+ * @internal
+ *
+ * **NOTE**: small imm not checked, perhaps this gets fixed downstream.
  */
 template<typename AddAlu>
 bool can_be_mul_alu(AddAlu const &add_alu) {
