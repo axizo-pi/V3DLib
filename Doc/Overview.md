@@ -288,6 +288,30 @@ Further:
 
 -----
 
+# Compile times on all Pi's
+
+To give you an idea of how long full compilation takes,
+the following commands are used (20260207):
+
+    > git pull
+    > make clean
+    > time make all runTest
+
+
+Results per platform, time in seconds
+
+| Platform | real (s) | user (s) |
+|----------|----------|----------|
+| Pi-1     | 6903     | 6036     |
+| Zero     | 4288     | 4099     |
+| Pi-2     | 1914     | 1798     |
+| Pi-3     | 1011     |  886     |
+| Pi-4     |  795     |  640     |
+| Pi-5     |  130     |  119     |
+
+
+-----
+
 # Calculated theoretical max FLOPs
 
 Let's be honest, the max FLOPs is totally unattainable in real life...
