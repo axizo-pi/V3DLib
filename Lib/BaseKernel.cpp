@@ -29,15 +29,52 @@ V3DLib::KernelDriver const &BaseKernel::driver() const {
 }
 
 
-void BaseKernel::compile_init(bool do_vc4) {
+void BaseKernel::compile_init() {
+	//Log::info << "Called compile_init()";
   assert(m_driver.get() == nullptr);
 
-  if (do_vc4) {
-    m_driver.reset(new vc4::KernelDriver);
+	enum SelectKernel {
+		None,
+		vc4,
+		v3d
+	};
+
+	SelectKernel select_kernel = None;
+
+ 	//cdebug << "m_settings.run_type: " << m_settings.run_type;
+ 	//cdebug << "Platform::compiling_for_vc4(): " << Platform::compiling_for_vc4(); 
+	//cdebug << "m_settings.compile_only: " << m_settings.compile_only;
+
+ 	if (m_settings.run_type != 0) {
+		select_kernel = vc4;
+  }
+
+#ifdef QPU_MODE
+	if (!m_settings.compile_only) {
+  	if (Platform::use_main_memory() && m_settings.run_type == 0) {
+			Log::info << "Main memory selected in QPU mode, running on emulator instead of QPU.";
+  	  m_settings.run_type = 1;
+			select_kernel = vc4;
+  	}
+	}
+#endif
+
+  if (m_settings.run_type != 0 || Platform::run_vc4()) {   // Compile vc4
+	  //Log::warn << "compile_init for vc4";
+		select_kernel = vc4;
+  } else {                                                 // Compile v3d
+	  //Log::warn << "compile_init for v3d";
+		select_kernel = v3d;
+  }
+
+	assert(select_kernel != None);	
+
+  if (select_kernel == vc4) {
     Platform::compiling_for_vc4(true);
+    m_driver.reset(new vc4::KernelDriver);
   } else {
-    m_driver.reset(new v3d::KernelDriver);
     Platform::compiling_for_vc4(false);
+    m_driver.reset(new v3d::KernelDriver);
   }
 
   driver().init_compile();
@@ -64,7 +101,9 @@ void BaseKernel::run(bool wait_complete) {
         fatal("Main memory selected in QPU mode and not compiled for vc4, can not run.");
       }
 		} else {
-      cdebug << "Main memory selected in QPU mode, running on emulator instead of QPU.";
+ 		  if (!m_settings.compile_only) {
+      	cdebug << "Main memory selected in QPU mode, running on emulator instead of QPU.";
+			}
       m_settings.run_type = 1;
 		}
   }

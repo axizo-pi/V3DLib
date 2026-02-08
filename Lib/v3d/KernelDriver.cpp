@@ -81,9 +81,9 @@ void checkSpecialIndex(V3DLib::Instr const &src_instr) {
     return;
   }
 
-	if (srca.is_none() || srcb.is_none()) {
-		return;
-	}
+  if (srca.is_none() || srcb.is_none()) {
+    return;
+  }
 
 	// Following probably outdated since None sources were introduced
   assertq((a_is_special && b_is_special), "src a and src b must both be special for QPU and ELEM nums");
@@ -144,41 +144,41 @@ bool handle_special_index(V3DLib::Instr const &src_instr, Instructions &ret) {
 namespace {
 
 Instructions tmua_brainfart(Mnemonic &instr, bool prev_is_tmud) {
-	Instructions ret;
+  Instructions ret;
 
-	bool changed = false;
+  bool changed = false;
 
-	// prev_is_tmud: Do for write only
-	//warn << "is tmua: " << (instr.add_dest() == tmua);
+  // prev_is_tmud: Do for write only
+  //warn << "is tmua: " << (instr.add_dest() == tmua);
 
-	if (Platform::compiling_for_vc7() && instr.add_dest() == tmua) {
-		if (!prev_is_tmud) {
-			//warn << "Doing tmua brainfart";
+  if (Platform::compiling_for_vc7() && instr.add_dest() == tmua) {
+    if (!prev_is_tmud) {
+      //warn << "Doing tmua brainfart";
 
-			// Following thrsw and nop's absolutely required on vc7, verified
-			instr.thrsw();
-			ret << instr << nop() << nop();
-			changed = true;
-		}
-	}
+      // Following thrsw and nop's absolutely required on vc7, verified
+      instr.thrsw();
+      ret << instr << nop() << nop();
+      changed = true;
+    }
+  }
 
-	if (!changed) {
-		ret << instr;
-	}
+  if (!changed) {
+    ret << instr;
+  }
 
-	return ret;
+  return ret;
 }
 
 } // anon namespace
 
 
 bool translateOpcode(Target::Instr const &src, Instructions &ret) {
-	static bool prev_is_tmud = false;
+  static bool prev_is_tmud = false;
 
   if (handle_special_index(src, ret)) {
-		prev_is_tmud = false;
-		return true;
-	}
+    prev_is_tmud = false;
+    return true;
+  }
 
   bool did_something = true;
 
@@ -194,16 +194,16 @@ bool translateOpcode(Target::Instr const &src, Instructions &ret) {
 
 
   switch (op) {
-	  case Enum::A_FSIN:   assert(num_ops == 1); ret << fsin(*dst_reg, reg_a);   break;
-  	case Enum::A_FFLOOR: assert(num_ops == 1); ret << ffloor(*dst_reg, reg_a); break;
-  	case Enum::A_TMUWT:  assert(num_ops == 0); ret << tmuwt();                 break;
-  	case Enum::A_EIDX:   assert(num_ops == 0); ret << eidx(*dst_reg);          break;
+    case Enum::A_FSIN:   assert(num_ops == 1); ret << fsin(*dst_reg, reg_a);   break;
+    case Enum::A_FFLOOR: assert(num_ops == 1); ret << ffloor(*dst_reg, reg_a); break;
+    case Enum::A_TMUWT:  assert(num_ops == 0); ret << tmuwt();                 break;
+    case Enum::A_EIDX:   assert(num_ops == 0); ret << eidx(*dst_reg);          break;
 
-  	case Enum::A_TIDX:
-    	breakpoint  // Apparently never called?
-    	assert(num_ops == 0);
-    	ret << tidx(*dst_reg);
-    	break;
+    case Enum::A_TIDX:
+      breakpoint  // Apparently never called?
+      assert(num_ops == 0);
+      ret << tidx(*dst_reg);
+    break;
 
   	case Enum::A_MOV: {
     	assert(num_ops == 1);
@@ -519,6 +519,7 @@ v3d::instr::Instr encodeBranchLabel(V3DLib::Instr src_instr) {
  * **Pre:** All instructions not meant for v3d are detected beforehand and flagged as error.
  */
 Instructions encodeInstr(V3DLib::Instr instr) {
+	Log::warn << "Called v3d encodeInstr()";
   Instructions ret;
 
   // Encode core instruction
@@ -578,6 +579,7 @@ Instructions encodeInstr(V3DLib::Instr instr) {
   assert(!ret.empty());
 
   if (!ret.empty()) {
+		Log::warn << "v3d encodeInstr() transferring comments";
     ret.front().transfer_comments(instr);
   } else {
 		if (instr.has_comments()) {
@@ -649,6 +651,7 @@ bool checkUniformAtTop(V3DLib::Instr::List const &instrs) {
  * Translate instructions from target to v3d
  */
 void _encode(V3DLib::Instr::List const &instrs, Instructions &instructions) {
+  warn << "Called _encode()";
 #ifdef DEBUG	
   assertq(checkUniformAtTop(instrs), "_encode(): checkUniformAtTop() failed (v3d)", true);
 #endif
@@ -732,6 +735,8 @@ KernelDriver::KernelDriver() : V3DLib::KernelDriver(V3dBuffer) { //, m_code(code
 
 
 void KernelDriver::encode() {
+  warn << "Called KernelDriver::encode()";
+
   if (instructions.size() > 0) return;  // Don't bother if already encoded
   if (has_errors()) return;              // Don't do this if compile errors occured
   assert(!m_code.allocated());

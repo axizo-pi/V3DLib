@@ -50,10 +50,9 @@ void compareResults(
 // The actual tests
 // ============================================================================
 
-TEST_CASE("Test working of Rot3D example [rot3d][pass2]") {
+TEST_CASE("Test working of Rot3D example [rot3d][pass3]") {
   // Number of vertices and angle of rotation
   const int N = 16*12*10;  // 1920
-  const float THETA = (float) 3.14159;
 
   /**
    * Check that the Rot3D kernels return precisely what we expect.
@@ -102,11 +101,12 @@ TEST_CASE("Test working of Rot3D example [rot3d][pass2]") {
 		//
     {
       INFO("Running kernel 1 QPU");
-      Float::Array x(N), y(N);
+      Float::Array x(N), y(N), z(N);  // z not used for output
       initArrays(x, y, N);
 
       auto k = compile(vector_rot3D);
-      k.load(N, cosf(THETA), sinf(THETA), &x, &y).run();
+      //k.load(N, cosf(THETA), sinf(THETA), &x, &y).run();
+			k.load(N, 0.0f, 0.0f, 0.5f /* == PI */, &x, &y, &z).run();
       compareResults(x_scalar, y_scalar, x, y, N, "Rot3D", false);
 
       // Save results for compare with other kernels 
@@ -122,13 +122,14 @@ TEST_CASE("Test working of Rot3D example [rot3d][pass2]") {
 		//
     {
       INFO("Running kernel with 8 QPUs");
-      Float::Array x(N), y(N);
+      Float::Array x(N), y(N), z(N);  // z not used for output
       initArrays(x, y, N);
 
       auto k = compile(vector_rot3D);
       k.setNumQPUs(8);
 
-      k.load(N, cosf(THETA), sinf(THETA), &x, &y).run();
+      //k.load(N, cosf(THETA), sinf(THETA), &x, &y).run();
+			k.load(N, 0.0f, 0.0f, 0.5f /* == PI */, &x, &y, &z).run();
 			INFO("Loaded and ran the kernel");
       compareResults(x_1, y_1, x, y, N, "Rot3D_3 8 QPUs", false);
     }

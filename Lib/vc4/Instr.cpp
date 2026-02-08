@@ -449,7 +449,6 @@ void Instr::encode(Target::Instr const &instr) {
           assert(n >= 1 || n <= 15);
           _raddr_b += n;
 #pragma GCC diagnostic pop
-
         }
 
         enc     = ALU_SMALL_IMM;
@@ -676,8 +675,8 @@ std::string Instr::dump() const {
 
 namespace {
 
-std::string opcodes(uint64_t const *data, int size) {
-  std::string ret;
+std::vector<std::string> opcodes(uint64_t const *data, int size) {
+  std::vector<std::string> ret;
 
   if (size == 0) {
     ret << "<No opcodes to print>\n";
@@ -703,22 +702,36 @@ std::string opcodes(uint64_t const *data, int size) {
   // Read the file line by line into a string
   string line;
   while (getline(file, line)) {
-    ret << line << "\n";
+    ret << line;
   }
 
   file.close();
+
+  warn << "opcodes ret size: " << ret.size();
+  return ret;
+}
+
+
+std::string to_string(std::vector<std::string> const &list) {
+  std::string ret;
+
+  for (int i = 0; i < (int) list.size(); ++i) {
+    ret << list[i] << "\n";
+  }
 
   return ret;
 }
 
 } // anon namespace
 
-std::string opcodes(Code const &code) {
-  return opcodes(code.ptr(), code.size());
+std::vector<std::string> opcodes(Code const &code) {
+ return opcodes(code.ptr(), code.size());
 }
 
+
 std::string opcodes(std::vector<uint64_t> const &code) {
-  return opcodes(code.data(), (int) code.size());
+  std::vector<std::string> list = opcodes(code.data(), (int) code.size());
+  return to_string(list);
 }
 
 }  // namespace vc4

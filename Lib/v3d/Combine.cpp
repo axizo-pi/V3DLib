@@ -35,6 +35,14 @@ using ::operator<<;  // C++ weirdness
 
 namespace {
 
+// OLD left for reference.
+// max 34
+// <= 30 works
+// 24 fails
+const int MAX_COMBINE_COUNT = -1;
+int combine_count = 0;
+
+
 /**
  * vc6-specific.
  *
@@ -293,7 +301,7 @@ bool convert_alu_op_to_mul_op(v3d_qpu_mul_op &mul_op, v3d::instr::Instr const &a
 }
 
 
-bool can_equal(Instr const &top, Instr const &bottom) {
+MAYBE_UNUSED bool can_equal(Instr const &top, Instr const &bottom) {
   if (add_register_conflict(top, bottom, false)) return false;
 
   v3d_qpu_mul_op tmp;
@@ -303,7 +311,7 @@ bool can_equal(Instr const &top, Instr const &bottom) {
 }
 
 
-bool can_surpass(Instr const &top, Instr const &bottom) {
+MAYBE_UNUSED bool can_surpass(Instr const &top, Instr const &bottom) {
   return !add_register_conflict(top, bottom, true);
 }
 
@@ -1219,6 +1227,9 @@ bool bottom_add_to_top_mul(Instr &ret, Instr const &bottom, Instr const &top) {
  *     nop                           ; nop                         
  *     nop                           ; nop                         ; ldtmu.rf20
  *
+ * There must be *at least* 2 `nop`'s between the `mov tmua` and the `ldtmu`.
+ * It can be more, e.g. when using `gather/receive`.
+ *
  * The issue here is the overhead of the `nop`'s.
  * Things to do with this:
  *
@@ -1248,13 +1259,24 @@ bool bottom_add_to_top_mul(Instr &ret, Instr const &bottom, Instr const &top) {
  *
  * This indicates that there is some state issue involved here, on the hardware level
  * (I can not rule out that it is a code issue).  
- * Running other kernels in between, however, works fine. I am perplexed.
+ * Running other kernels in between, however, works fine. I am perplexed.  
+ * _NB:_ Restarting the Pi(5) fixes this. It is perplexing nevertheless.
+ *
+ * switching `mov tmua/tmud` does not solve anything. It's worse, because, the
+ * kernel call does not return.
+ *
+ * **TODO**: Find a way to reset the `vc7` hardware.
+ *           This exists for `vc6` and I have implemented it.
+ *           However, this does **not** work for `vc7`.
  *    
  */
-void combine_read_write(Instructions &instr) {
+MAYBE_UNUSED void combine_read_write(Instructions &instr) {
+	assertq(false, "Don't call combine_read_write() for now, too many issues");
+
 	warn << "\n----------------------------\n"
 		   <<   "Entered combine_read_write()\n"
 			 <<   "----------------------------";
+
 	using namespace V3DLib::v3d::instr;
 
   int end = (int) instr.size();
@@ -1281,6 +1303,7 @@ void combine_read_write(Instructions &instr) {
 				   << "  " << (i + 2) << ": " << instr[i + 2].mnemonic(true)
 			;
 
+if (false) {			
 			//
 			// Move tmua to mul op. Not working, see Note 1!
 			//
@@ -1297,6 +1320,7 @@ void combine_read_write(Instructions &instr) {
 			} else {
 				assert(false); // Deal with this when it happens
 			}
+}			
 
 			i += 2; // NB ++ in for
 			continue;
@@ -1311,6 +1335,8 @@ void combine_read_write(Instructions &instr) {
 			}
 			assert(n.sig.thrsw);
 
+			// Following assumes that the ldtmu is placed exactly here; this is
+			// not true for gather/receive.
 			assert(instr[i + 3].sig.ldtmu);
 
 			warn << "combine_read_write tmu read detected\n"
@@ -1333,22 +1359,11 @@ void combine_read_write(Instructions &instr) {
 
 
 void combine(Instructions &instr) {
-	//combine_read_write(instr);
-
-	return; // <============== 
 
 	warn << "\n----------------------------\n"
 		   <<   "Entered combine()\n"
 			 <<   "----------------------------";
 
-	// OLD left for reference.
-	// max 34
-	// <= 30 works
-	// 24 fails
-	const int MAX_COMBINE_COUNT = -1;
-	int combine_count = 0;
-
-try {
 	int start = find_program_start(instr);
 
   // TODO: better specify end program. This should be on barrierid
@@ -1528,21 +1543,6 @@ try {
       }
     }
   }
-
-} catch(V3DLib::Exception const &e) {
-  cerr << "\nV3DLib exception during Combine::combine(). Aborting further combination. err:\n"
-       << e.what();
-} catch(std::runtime_error &e) {
-  cerr << "\nruntime_error exception during Combine::combine(). Aborting further combination. err:\n"
-       << e.what();
-} catch(...) {
-  cerr << "\nUnknown exception during Combine::combine(). Aborting further combination.\n";
-}
-
-	if (MAX_COMBINE_COUNT != -1) {
-		warn << "Final combine_count: " << combine_count;
-	}
-
 }
 
 
@@ -1901,16 +1901,33 @@ void combine_old(Instructions &instructions) {
 int optimize(Instructions &instrs) {
 	int count = 0;
 
+try {
+
   count += remove_useless(instrs);
 
-	// When disabled, RNN runs on vc7
-	//warn << instrs.dump();
-  combine(instrs);
-  count += remove_skips(instrs);
+	//combine_read_write(instrs);
+  //count += remove_skips(instrs);
+
+  //combine(instrs);
+  //count += remove_skips(instrs);
 
 	if (!Platform::compiling_for_vc7()) {  // Doesn't work (any more) on vc7
 	  combine_old(instrs);
 	  count += remove_skips(instrs);
+	}
+
+} catch(V3DLib::Exception const &e) {
+  cerr << "\nV3DLib exception during Combine::combine(). Aborting further combination. err:\n"
+       << e.what();
+} catch(std::runtime_error &e) {
+  cerr << "\nruntime_error exception during Combine::combine(). Aborting further combination. err:\n"
+       << e.what();
+} catch(...) {
+  cerr << "\nUnknown exception during Combine::combine(). Aborting further combination.\n";
+}
+
+	if (MAX_COMBINE_COUNT != -1) {
+		warn << "Final combine_count: " << combine_count;
 	}
 
 	return count;

@@ -1,6 +1,13 @@
 #ifndef _EXAMPLE_SUPPORT_BMP_H
 #define _EXAMPLE_SUPPORT_BMP_H
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+
 #include "bitmap_image.hpp"
+
+#pragma GCC diagnostic pop
+
 #include <cassert>
 
 /*
@@ -89,7 +96,7 @@ void output_bmp(
 			//const unsigned int index = static_cast<unsigned int>
       //            (1000.0 * log2(1.75 + i - log2(log2(z))) / log2(max_iterations));
 
-			float val    = arr[x + width*y];
+			float val   = (float) arr[x + width*y];
 			rgb_t color = {0, 0, 0};
 
 			unsigned index;

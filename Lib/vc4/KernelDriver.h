@@ -20,10 +20,7 @@ public:
   int kernel_size() const override;
 
 private:
-
-  void kernelFinish();
   void compile_intern() override;
-
 	std::string emit_opcodes() override;
 };
 

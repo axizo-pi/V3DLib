@@ -524,9 +524,13 @@ void set_at(Float &dst, Int n, Float const &src) {
  * Let QPUs wait for each other.
  *
  * This is a busy wait!
+ * It is also an **ugly hack** for something which should be supported by hardware.  
+ * The only reason it works is that the `signal` value is retained in the L2 cache.
  *
- * Intended for v3d, where I don't see a hardware signal function as in vc4.
- * Works fine with vc4 also.
+ * On `v3d` this is superseded by `barrier()`, which works fine.  
+ * On `vc4`, the same should be possible by use of semaphores, but that doesn't work right now (20260207).
+ *
+ * In any case, last I looked it worked on `vc4` also.
  */
 void sync_qpus(Int::Ptr signal) {
   If (numQPUs() != 1) // Don't bother syncing if only one qpu

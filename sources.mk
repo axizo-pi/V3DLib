@@ -1,7 +1,7 @@
 #
 # This file is generated!  Editing it directly is a bad idea.
 #
-# Generated on: Sat Jan 31 07:34:49 AM CET 2026
+# Generated on: Sat Feb  7 04:44:23 PM CET 2026
 #
 ###############################################################################
 
@@ -68,6 +68,7 @@ OBJ := \
   vc4/DMA/Helpers.o  \
   vc4/DMA/Operations.o  \
   vc4/vc4.o  \
+  vc4/Functions.o  \
   vc4/Instr.o  \
   vc4/RegAlloc.o  \
   vc4/KernelDriver.o  \

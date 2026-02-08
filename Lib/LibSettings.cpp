@@ -11,7 +11,7 @@ int  _heap_size                 = -1;     // bytes, size of shared (CPU-GPU) mem
 int  _qpu_timeout               = -1;     // seconds, time to wait for response from QPU
 bool _use_tmu_for_load          = true;   // vc4 only, ignored for v3d. If false, use DMA
 bool _use_high_precision_sincos = false;  // If true, add extra precision to sin/cos calculation for function version
-bool _dump_line_numbers         = false;  // output line numbers for dump()
+bool _dump_line_numbers         = true;  // output line numbers for dump()
 
 }  // anon namespace
 

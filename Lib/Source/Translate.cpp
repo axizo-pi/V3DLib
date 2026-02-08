@@ -728,7 +728,7 @@ Expr::Ptr putInVar(Instr::List *seq, Expr::Ptr e) {
  * Entry point for translation of statements.
  */
 void translate_stmt(Instr::List &seq, Stmts &s) {
-  assert(seq.empty());  // TODO perhaps move this test up, or seq as return value
+  assert(seq.empty());
 
   for (int i = 0; i < (int) s.size(); i++) {
     stmt(&seq, s[i]);

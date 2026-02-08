@@ -31,7 +31,7 @@ public:
   void invoke(int numQPUs, IntList &params, bool wait_complete = true) override;
   void encode() override;
   int kernel_size() const override { return (int) instructions.size(); }
-	void wait_complete() override;
+  void wait_complete() override;
 
 private:
   Instructions  instructions;
@@ -45,7 +45,7 @@ private:
 
   void allocate();
   ByteCode to_opcodes();
-	std::string emit_opcodes() override;
+  std::string emit_opcodes() override;
 };
 
 }  // namespace v3d

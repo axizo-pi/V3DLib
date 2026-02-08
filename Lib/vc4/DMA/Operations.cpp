@@ -88,30 +88,4 @@ void dmaWaitWrite() {
   stmtStack() << Stmt::create(Stmt::DMA_WRITE_WAIT);
 }
 
-
-//=============================================================================
-// Semaphore access
-//=============================================================================
-
-void semaInc(int semaId) {
-  Stmt::Ptr s = Stmt::create(Stmt::SEMA_INC);
-  s->dma.semaId(semaId);
-  stmtStack() << s;
-}
-
-void semaDec(int semaId) {
-  Stmt::Ptr s = Stmt::create(Stmt::SEMA_DEC);
-  s->dma.semaId(semaId);
-  stmtStack() << s;
-}
-
-
-//=============================================================================
-// Host IRQ
-//=============================================================================
-
-void hostIRQ() {
-  stmtStack() << Stmt::create(Stmt::SEND_IRQ_TO_HOST);
-}
-
 }  // namespace V3DLib

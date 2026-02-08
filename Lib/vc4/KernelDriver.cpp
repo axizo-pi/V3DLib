@@ -5,15 +5,16 @@
 #include "Source/Translate.h"
 #include "Target/RemoveLabels.h"
 #include "vc4.h"
-#include "DMA/Operations.h"
+//#include "DMA/Operations.h"
 #include "Target/instr/Mnemonics.h"
 #include "SourceTranslate.h"  // add_uniform_pointer_offset()
 #include "Target/Satisfy.h"
 #include "RegAlloc.h"
-#include <stdio.h>
-#include <stdlib.h>
 #include "global/log.h"
 #include "Instr.h"
+#include "LibSettings.h"
+#include "Support/Helpers.h"
+#include "Functions.h"
 
 using namespace Log;
 
@@ -93,28 +94,6 @@ int KernelDriver::kernel_size() const {
 
 
 /**
- * Add the postfix code to the kernel.
- *
- * Note that this emits kernel code.
- */
-void KernelDriver::kernelFinish() {
-  dmaWaitRead();                header("Kernel termination");
-                                comment("Ensure outstanding DMAs have completed");
-  dmaWaitWrite();
-
-  If (me() == 0)
-    Int n = numQPUs()-1;        comment("QPU 0 wait for other QPUs to finish");
-    For (Int i = 0, i < n, i++)
-      semaDec(15);
-    End
-    hostIRQ();                  comment("Send host IRQ");
-  Else
-    semaInc(15);
-  End
-}
-
-
-/**
  * Encode target instructions
  *
  * Assumption: code in a kernel, once allocated, does not change.
@@ -139,12 +118,45 @@ void KernelDriver::encode() {
 
 std::string KernelDriver::emit_opcodes() {
   encode();
-  return vc4::opcodes(m_code);
+
+  auto list = vc4::opcodes(m_code);
+
+  if ((int) list.size() != m_targetCode.size()) {
+    Log::cerr << "vc4 emit_opcodes() discrepancy in opcode and target code size."
+              << "opcode size: " << list.size() << ", "
+              << "target code size: " << m_targetCode.size()
+              << thrw
+    ;
+  }
+
+  int max_size = 0;
+  for (int i = 0; i < (int) list.size(); ++i) {
+    if (max_size < (int) list[i].size()) {
+      max_size = (int) list[i].size();
+    }
+  }
+
+  std::string ret;
+  for (int i = 0; i < (int) list.size(); ++i) {
+    auto const &t = m_targetCode[i];
+
+    ret << t.emit_header();
+
+    if (LibSettings::dump_line_numbers()) {
+      ret << i << ": ";
+    }
+
+    ret << list[i]
+        << t.emit_comment(list[i].size(), max_size)
+        << "\n";
+  }
+
+  return ret;
 }
 
 
 void KernelDriver::compile_intern() {
-  kernelFinish();
+  vc4::kernelFinish();
 
   // NOTE During debugging, I noticed that the sequence on the statement stack is duplicated here.
   //      I can not discover why, it's benevolent, it's not clean but I'm leaving it for now.

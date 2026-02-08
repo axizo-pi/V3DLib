@@ -69,7 +69,7 @@ private:
   void address_internal(Expr::Ptr e0);
 };
 
-std::string disp(int in_tag);
+std::string dump_tag(int in_tag);
 
 }  // namespace DMA
 }  // namespace V3DLib
