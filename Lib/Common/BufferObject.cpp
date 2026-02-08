@@ -26,7 +26,7 @@ uint32_t BufferObject::alloc_array(uint32_t size_in_bytes, uint8_t *&array_start
 
 
 uint32_t BufferObject::phy_address() const {
-	return m_phyaddr;
+  return m_phyaddr;
 }
 
 

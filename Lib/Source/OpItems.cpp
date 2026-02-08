@@ -37,12 +37,12 @@ std::vector<OpItem> m_list = {
   {EXP,       "exp",       true, Enum::A_EXP,   Enum::OP_UNDEFINED, false, 1},
   {LOG,       "log",       true, Enum::A_LOG,   Enum::OP_UNDEFINED, false, 1},
 
-	// Derived instructions
+  // Derived instructions
   {EXP_E,     "exp_e",     true, Enum::OP_UNDEFINED,    Enum::OP_UNDEFINED, false, 1},
 
-	//
-	// Following are not direct instructions in the source language
-	//
+  //
+  // Following are not direct instructions in the source language
+  //
   {_DUMMY,    "",         false, Enum::A_TMUWT, Enum::OP_UNDEFINED, false, 0},
   {_DUMMY,    "",         false, Enum::A_TIDX,  Enum::OP_UNDEFINED, false, 0},
   {_DUMMY,    "",         false, Enum::A_EIDX,  Enum::OP_UNDEFINED, false, 0},
@@ -172,19 +172,19 @@ Enum opcode(Op const &op) {
 
 
 int num_operands_by_op(Enum op) {
-	assert(op != Enum::OP_UNDEFINED);
-	assert(op != Enum::NOP);
+  assert(op != Enum::OP_UNDEFINED);
+  assert(op != Enum::NOP);
 
-	int num = -1;
+  int num = -1;
   for (auto &it : m_list) {
-  	if (it.aluop_float() == op) { num = it.num_params(); break; }
-  	if (it.aluop_int()   == op) { num = it.num_params(); break; }
+    if (it.aluop_float() == op) { num = it.num_params(); break; }
+    if (it.aluop_int()   == op) { num = it.num_params(); break; }
   }
 
-	if (num == -1) {
-		breakpoint;
-	}
-	return num;
+  if (num == -1) {
+    breakpoint;
+  }
+  return num;
 }
 
 } // namespace OpItems

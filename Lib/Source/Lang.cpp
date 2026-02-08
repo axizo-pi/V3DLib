@@ -3,7 +3,6 @@
 #include "Source/Int.h"
 #include "StmtStack.h"
 #include "global/log.h"
-#include "vc4/Functions.h"
 
 namespace V3DLib {
 namespace {
@@ -49,7 +48,7 @@ void Else_() {
 //=============================================================================
 
 void End_() {
-	stmtStack().merge_top_block();
+  stmtStack().merge_top_block();
 }
 
 
@@ -105,24 +104,6 @@ void ForBody_() {
   s->inc(*inc);
 
   stmtStack().push();
-}
-
-
-/**
- * Has no inputs, only an output, which is always magic reg SYNCB.
- *
- * `barrier` is v3d-specific. vc4 will need a different implementation,
- * most likely with semaphores.
- */
-void barrier() {
-	if (Platform::compiling_for_vc4()) {
-		Log::warn << "barrier compiling for vc4";
-		// vc4 - Stmt::BARRIER will not be passed on
-		vc4::barrier();
-	} else {
-		// v3d
-		stmtStack().push(Stmt::create(Stmt::BARRIER));
-	}
 }
 
 

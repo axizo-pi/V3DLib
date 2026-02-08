@@ -54,11 +54,11 @@ public:
 
   std::string dump() const;
 
-	void merge_top_block();
+  void merge_top_block();
 
-	//
-	// Prefetch Support - If I get the chance to remove prefetches, I will grab that chance
-	//
+  //
+  // Prefetch Support - If I get the chance to remove prefetches, I will grab that chance
+  //
   void first_prefetch(int prefetch_label);
 
   void add_prefetch(Pointer &exp, int prefetch_label);

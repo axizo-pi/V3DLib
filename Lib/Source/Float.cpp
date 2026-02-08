@@ -16,8 +16,8 @@ FloatExpr unary_float_op(OpId op_id, FloatExpr a) {
 // ============================================================================
 
 FloatExpr::FloatExpr(float x) {
-	//Log::warn << "FloatExpr ctor val: " << x;
-	m_expr = std::make_shared<Expr>(x);
+  //Log::warn << "FloatExpr ctor val: " << x;
+  m_expr = std::make_shared<Expr>(x);
 }
 
 
@@ -49,7 +49,7 @@ Float::Float() { assign_intern(); }
 
 
 Float::Float(float x) {
-	//Log::warn << "Float ctor val: " << x;
+  //Log::warn << "Float ctor val: " << x;
   auto a = std::make_shared<Expr>(x);
   assign_intern(a);
 }
@@ -69,7 +69,7 @@ bool Float::passParam(IntList &uniforms, float val) {
 
 uint32_t Float::param_value(float val) {
   int32_t* bits = (int32_t*) &val;
-	return *bits;
+  return *bits;
 }
 
 

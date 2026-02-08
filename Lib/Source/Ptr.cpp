@@ -26,7 +26,7 @@ PointerExpr PointerExpr::add(IntExpr b) {
 namespace {
 
 PointerExpr bare_addself(Pointer &self, IntExpr b) {
-	return mkApply(self.expr(), Op(ADD, INT32), b.expr());
+  return mkApply(self.expr(), Op(ADD, INT32), b.expr());
 }
 
 }  // anon namespace
@@ -72,18 +72,18 @@ void Pointer::reset_increment() {
 
 
 void Pointer::inc() {
-	if (Platform::compiling_for_vc4()) {
-  	//std::unique_ptr<IntExpr> e;
-  	int const INC = 16*4;  // for getting next block for a sequential pointer
-  	//e.reset(new IntExpr(INC));  comment("pointer increment");
+  if (Platform::compiling_for_vc4()) {
+    //std::unique_ptr<IntExpr> e;
+    int const INC = 16*4;  // for getting next block for a sequential pointer
+    //e.reset(new IntExpr(INC));  comment("pointer increment");
 
-  	self() = bare_addself(*this, IntExpr(INC));  // comment("increment pointer");
-	} else {
-		// Use global var with value 64 to increment ptr
-  	Expr::Ptr e = std::make_shared<Expr>(Var_64());
+    self() = bare_addself(*this, IntExpr(INC));  // comment("increment pointer");
+  } else {
+    // Use global var with value 64 to increment ptr
+    Expr::Ptr e = std::make_shared<Expr>(Var_64());
 
-  	self() = bare_addself(*this, e);  // comment("increment pointer");
-	}
+    self() = bare_addself(*this, e);  // comment("increment pointer");
+  }
 }
 
 
@@ -95,7 +95,7 @@ void Pointer::inc() {
  * add directly.
  */
 PointerExpr Pointer::offset(IntExpr b) {
-	return mkApply(expr(), Op(ADD, INT32), b.expr());
+  return mkApply(expr(), Op(ADD, INT32), b.expr());
 }
 
 

@@ -20,11 +20,11 @@ public:
   void dealloc();
   bool allocated() const;
   uint32_t getAddress() const;
-	std::string dump() const;
+  std::string dump() const;
 
-	/**
-	 * @return number of elements contained
-	 */
+  /**
+   * @return number of elements contained
+   */
   uint32_t size() const { return m_num_elems; }
   bool empty() const { return m_mem_size == 0; }
 
@@ -43,7 +43,7 @@ private:
   BufferObject *m_heap    = nullptr;  // Reference to used heap
   uint8_t *m_usraddr      = nullptr;  // Start of the heap in main memory, as seen by the CPU
   uint32_t m_phyaddr      = 0;        // Starting index of memory in GPU space
-	uint32_t m_mem_size     = 0;        // Allocated memory in bytes
+  uint32_t m_mem_size     = 0;        // Allocated memory in bytes
   uint32_t const m_element_size;
   uint32_t m_num_elems    = 0;        // Number of contained elements (not memory size!)
   bool     m_is_heap_view = false;
@@ -79,9 +79,9 @@ public:
   SharedArray &operator=(SharedArray &&a) = default; 
 
   ~SharedArray() {
-		//Log::warn << "Called SharedArray ctor";
-		Parent::dealloc();
-	}
+    //Log::warn << "Called SharedArray ctor";
+    Parent::dealloc();
+  }
 
   T const *ptr() const { return (T const *) usraddr(); }  // Return pointer to data in main memory
   T *ptr() { return (T *) usraddr(); }
@@ -139,10 +139,10 @@ public:
   }
 
 
-	SharedArray<T> &operator=(SharedArray<T> const &rhs) {
-  	copyFrom(rhs);
-		return *this;
-	}
+  SharedArray<T> &operator=(SharedArray<T> const &rhs) {
+    copyFrom(rhs);
+    return *this;
+  }
 
 
   void copyTo(std::vector<T> &dst) {
@@ -377,17 +377,17 @@ private:
 //////////////////////////////////////////////////
 
 class Code : public SharedArray<uint64_t> {
-	using Parent = SharedArray<uint64_t>;
+  using Parent = SharedArray<uint64_t>;
 
-public:	
-	Code() : Parent() {}
-	Code(uint32_t n, BufferObject &heap) : Parent(n, heap) {}
+public: 
+  Code() : Parent() {}
+  Code(uint32_t n, BufferObject &heap) : Parent(n, heap) {}
 
-	using Parent::copyFrom;
+  using Parent::copyFrom;
 
   void alloc(uint32_t n);
   void copyFrom(std::vector<uint64_t> const &src);
-	std::string dump() const;
+  std::string dump() const;
 };
 
 

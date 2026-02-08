@@ -47,7 +47,7 @@ struct Float : public BaseExpr {
 
   static Float mkArg();
   static bool passParam(IntList &uniforms, float val);
-	static uint32_t param_value(float val);
+  static uint32_t param_value(float val);
 
   void as_float(IntExpr rhs);
   operator FloatExpr() const;
