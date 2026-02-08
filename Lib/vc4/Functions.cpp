@@ -2,6 +2,7 @@
 #include "Source/Lang.h"
 #include "Source/Stmt.h"
 #include "Source/StmtStack.h"
+#include "DMA/Operations.h"
 
 /**
  * @file
@@ -50,23 +51,41 @@ void hostIRQ() {
  * program it blocks (Gravity example).  
  * Obviously, I don't understand it well enough.
  *
+ * @param do_irq  if set, set a host interrupt
+ *
  * ---------------------------------
  *
  * Note that most semaphore stuff is under DMA.
  * Strictly speaking, this is not necessary, because semaphore are not explicitly linked to DMA.
  * But I see no reason to make semaphores more explicit.
  */
-void barrier() {
+void barrier(bool do_irq) {
   If (me() == 0)               
     Int n = numQPUs() - 1;       comment("Start vc4 barrier");
 		 	                           comment("QPU 0 wait for other QPUs to finish");
     For (Int i = 0, i < n, i++)
       semaDec(15);
     End
-    hostIRQ();                   comment("Send host IRQ");
+
+    if (do_irq) {
+      hostIRQ();                   comment("Send host IRQ");
+    }
   Else
     semaInc(15);
   End
+}
+
+
+/**
+ * Add the postfix code to the vc kernel.
+ *
+ * This is code for the Source level. It should be called within kernels.
+ */
+void kernelFinish() {
+  dmaWaitRead();                header("Kernel termination");
+                                comment("Ensure outstanding DMAs have completed");
+  dmaWaitWrite();
+	barrier(true);
 }
 
 

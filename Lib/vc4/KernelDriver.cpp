@@ -5,17 +5,16 @@
 #include "Source/Translate.h"
 #include "Target/RemoveLabels.h"
 #include "vc4.h"
-#include "DMA/Operations.h"
+//#include "DMA/Operations.h"
 #include "Target/instr/Mnemonics.h"
 #include "SourceTranslate.h"  // add_uniform_pointer_offset()
 #include "Target/Satisfy.h"
 #include "RegAlloc.h"
-#include <stdio.h>
-#include <stdlib.h>
 #include "global/log.h"
 #include "Instr.h"
 #include "LibSettings.h"
 #include "Support/Helpers.h"
+#include "Functions.h"
 
 using namespace Log;
 
@@ -95,19 +94,6 @@ int KernelDriver::kernel_size() const {
 
 
 /**
- * Add the postfix code to the kernel.
- *
- * Note that this emits kernel code.
- */
-void KernelDriver::kernelFinish() {
-  dmaWaitRead();                header("Kernel termination");
-                                comment("Ensure outstanding DMAs have completed");
-  dmaWaitWrite();
-	barrier();
-}
-
-
-/**
  * Encode target instructions
  *
  * Assumption: code in a kernel, once allocated, does not change.
@@ -170,7 +156,7 @@ std::string KernelDriver::emit_opcodes() {
 
 
 void KernelDriver::compile_intern() {
-  kernelFinish();
+  vc4::kernelFinish();
 
   // NOTE During debugging, I noticed that the sequence on the statement stack is duplicated here.
   //      I can not discover why, it's benevolent, it's not clean but I'm leaving it for now.
