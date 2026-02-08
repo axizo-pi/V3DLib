@@ -26,16 +26,11 @@ void kernel_update(
 }
 
 
-/**
- * Pre: num_entities multiple of 16
- *
- * Using ref's doesn't increase performance.
- */
-void kernel_calc_acc(
-  Float::Ptr &in_x, Float::Ptr &in_y, Float::Ptr &in_z,
-  Float::Ptr &out_acc_x, Float::Ptr &out_acc_y, Float::Ptr &out_acc_z,
-  Float::Ptr &in_mass,
-  Int &num_entities
+void vector_calc_acc(
+  Float x0, Float y0, Float z0,
+  Float &accum_x, Float &accum_y, Float &accum_z,
+  Int vec_index, Int entity_index, Int num_entitiesa,
+  Float::Ptr &px, Float::Ptr &py, Float::Ptr &pz,
 ) {
   //
   // These conversion factors are here to prevent Inf values.
@@ -47,30 +42,16 @@ void kernel_calc_acc(
 
   Float ACC_CONSTANT = ((float) BIG_G) * DIST_FACTOR / MASS_FACTOR * DIST_FACTOR;
 
-  header("Start loop kernel_calc_acc");
+  header("Start vector_calc_acc");
 
-  For (Int cur_index = me(), cur_index < num_entities, cur_index += numQPUs())
-    Int ptr_offset = cur_index - index();
-
-    Float::Ptr px0    = in_x    + ptr_offset;
-    Float::Ptr py0    = in_y    + ptr_offset; 
-    Float::Ptr pz0    = in_z    + ptr_offset; 
-    Float::Ptr pmass0 = in_mass + ptr_offset;
-
-    Float x0    = *px0    * DIST_FACTOR;
-    Float y0    = *py0    * DIST_FACTOR;
-    Float z0    = *pz0    * DIST_FACTOR;
-    Float mass0 = *pmass0 * MASS_FACTOR;
+  x0    *= DIST_FACTOR;
+  y0    *= DIST_FACTOR;
+  z0    *= DIST_FACTOR;
 
     // Accumulated acceleration vector
     Float x0_acc = 0;
     Float y0_acc = 0;
     Float z0_acc = 0;
-
-    Float::Ptr px    = in_x;   comment("Local entity coordinate ptrs and mass");
-    Float::Ptr py    = in_y;
-    Float::Ptr pz    = in_z;
-    Float::Ptr pmass = in_mass;
 
     For (Int cur_block = 0, cur_block < (num_entities >> 4), cur_block++)
       Float x    = *px    * DIST_FACTOR; comment("Get entity coordinates");
@@ -102,21 +83,21 @@ void kernel_calc_acc(
 
       // Post vc4: denom nonzero, acceleration zero for all intents and purposes
 
-
-      //acceleration *= ACC_CONSTANT;
+      acceleration *= ACC_CONSTANT;
       comment("Calc force factor");
 
+/*
       // DEBUG
       //acceleration = 0.5f;
       nx1 = 0.1f;
       ny1 = 0.1f;
       nz1 = 0.1f;
+*/
 
       // Normalize the acceleration vector
       nx1 *= denom;  comment("Normalize the acc vector"); 
       ny1 *= denom; 
       nz1 *= denom; 
-
 
       // Set the force component
       nx1 *= acceleration; 
@@ -136,6 +117,57 @@ void kernel_calc_acc(
     End
 
     //
+    // Sum up and store in acc accumulators
+    //
+    rotate_sum(accum_x, x0_acc);
+    rotate_sum(accum_y, y0_acc);
+    rotate_sum(accum_z, z0_acc);
+}
+
+
+/**
+ * Pre: num_entities multiple of 16
+ *
+ * Using ref's doesn't increase performance.
+ */
+void kernel_calc_acc(
+  Float::Ptr &in_x, Float::Ptr &in_y, Float::Ptr &in_z,
+  Float::Ptr &out_acc_x, Float::Ptr &out_acc_y, Float::Ptr &out_acc_z,
+  Float::Ptr &in_mass,
+  Int &num_entities
+) {
+  header("Start loop kernel_calc_acc");
+
+  For (Int cur_index = me(), cur_index < num_entities, cur_index += numQPUs())
+    Int ptr_offset = cur_index - index();
+
+    Float::Ptr px0    = in_x    + ptr_offset;
+    Float::Ptr py0    = in_y    + ptr_offset; 
+    Float::Ptr pz0    = in_z    + ptr_offset; 
+    Float::Ptr pmass0 = in_mass + ptr_offset;
+
+    Float x0    = *px0;
+    Float y0    = *py0;
+    Float z0    = *pz0;
+
+    Float::Ptr px    = in_x;   comment("Local entity coordinate ptrs and mass");
+    Float::Ptr py    = in_y;
+    Float::Ptr pz    = in_z;
+    Float::Ptr pmass = in_mass;
+
+    // Accumulated acceleration vector
+    Float x0_acc = 0;
+    Float y0_acc = 0;
+    Float z0_acc = 0;
+
+    void vector_calc_acc(
+      x0, y0, z0,
+      x0_acc, y0_acc, z0_acc,
+      Int vec_index, Int entity_index, num_entities,
+      px, py, pz
+    );
+
+    //
     // Sum up and return the acceleration
     //
     // I tried updating speed and position for entity 0
@@ -146,15 +178,12 @@ void kernel_calc_acc(
     // 
     // An option might be to use double buffering for speed and position.
     //
-    rotate_sum(x0_acc, x0_acc);
     Float::Ptr pacc_x = out_acc_x + ptr_offset;
     *pacc_x = x0_acc;
 
-    rotate_sum(y0_acc, y0_acc);
     Float::Ptr pacc_y = out_acc_y + ptr_offset;
     *pacc_y = y0_acc;
 
-    rotate_sum(z0_acc, z0_acc);
     Float::Ptr pacc_z = out_acc_z + ptr_offset;
     *pacc_z = z0_acc;
   End
@@ -230,6 +259,65 @@ void kernel_step(
 }
 
 } // anon namespace
+
+/*
+
+/ **
+ * Handle the entities in blocks of 16
+ * /
+void handle_vector(
+  Int num_entities,
+  Float::Ptr  in_x, Float::Ptr  in_y, Float::Ptr  in_z, Float::Ptr in_mass,
+  Float::Ptr acc_x, Float::Ptr acc_y, Float::Ptr acc_z,
+) {
+
+  For (Int i = 0, i < (num_entities >> 4), i += 16)
+    Float vec_x0 = *in_x;
+    Float vec_y0 = *in_y;
+    Float vec_z0 = *in_z;
+    Float vec_mass0 = *in_mass;
+
+    Float accum_x = 0;
+    Float accum_y = 0;
+    Float accum_z = 0;
+
+    For (Int n = 0, i < 16, i++)
+      // Prepare next entity to use
+      Float x0 = 0;
+      Float y0 = 0;
+      Float z0 = 0;
+
+      Where (index() == n)
+        x0 = vec_x0;
+        y0 = vec_y0;
+        z0 = vec_z0;
+      End
+
+      rotate_sum(x0, x0);
+      rotate_sum(y0, y0);
+      rotate_sum(z0, z0);
+
+      vector_calc_acc(
+        x0, y0, z0,
+        accum_x, accum_y, accum_z,
+        n, ((i << 4) + n)
+      );
+    End
+
+    *acc_x = accum_x;
+    *acc_y = accum_y;
+    *acc_z = accum_z;
+
+    accum_x.inc();
+    accum_y.inc();
+    accum_z.inc();
+    in_x.inc();
+    in_y.inc();
+    in_z.inc();
+  End
+}
+
+ */
 
 
 /**
