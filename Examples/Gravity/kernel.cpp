@@ -29,8 +29,8 @@ void kernel_update(
 void vector_calc_acc(
   Float x0, Float y0, Float z0,
   Float &accum_x, Float &accum_y, Float &accum_z,
-  Int vec_index, Int entity_index, Int num_entitiesa,
-  Float::Ptr &px, Float::Ptr &py, Float::Ptr &pz,
+  Int entity_index, Int num_entities,
+  Float::Ptr &px, Float::Ptr &py, Float::Ptr &pz, Float::Ptr &pmass
 ) {
   //
   // These conversion factors are here to prevent Inf values.
@@ -48,80 +48,80 @@ void vector_calc_acc(
   y0    *= DIST_FACTOR;
   z0    *= DIST_FACTOR;
 
-    // Accumulated acceleration vector
-    Float x0_acc = 0;
-    Float y0_acc = 0;
-    Float z0_acc = 0;
+  // Accumulated acceleration vector
+  Float x0_acc = 0;
+  Float y0_acc = 0;
+  Float z0_acc = 0;
 
-    For (Int cur_block = 0, cur_block < (num_entities >> 4), cur_block++)
-      Float x    = *px    * DIST_FACTOR; comment("Get entity coordinates");
-      Float y    = *py    * DIST_FACTOR;
-      Float z    = *pz    * DIST_FACTOR;
-      Float mass = *pmass * MASS_FACTOR;
+  For (Int cur_block = 0, cur_block < (num_entities >> 4), cur_block++)
+    Float x    = *px    * DIST_FACTOR; comment("Get entity coordinates");
+    Float y    = *py    * DIST_FACTOR;
+    Float z    = *pz    * DIST_FACTOR;
+    Float mass = *pmass * MASS_FACTOR;
 
-      // Acceleration vector
-      Float nx1 = x0 - x;          comment("Calc acceleration vector");
-      Float ny1 = y0 - y; 
-      Float nz1 = z0 - z; 
+    // Acceleration vector
+    Float nx1 = x0 - x;          comment("Calc acceleration vector");
+    Float ny1 = y0 - y; 
+    Float nz1 = z0 - z; 
 
-      // Gravity/Acceleration components
-      Float dx1 = nx1 * nx1;
-      Float dy1 = ny1 * ny1;
-      Float dz1 = nz1 * nz1;
+    // Gravity/Acceleration components
+    Float dx1 = nx1 * nx1;
+    Float dy1 = ny1 * ny1;
+    Float dz1 = nz1 * nz1;
 
-      Float d1 = dx1 + dy1 + dz1;  comment("Calc distance denominator");
+    Float d1 = dx1 + dy1 + dz1;  comment("Calc distance denominator");
 
-      // Set the force/acceleration to zero for current entity,
-      // calculate the rest.
-      Float denom = 0;
-      Float acceleration = 1;
+    // Set the force/acceleration to zero for current entity,
+    // calculate the rest.
+    Float denom = 0;
+    Float acceleration = 1;
 
-      Where (((cur_block << 4) + index()) != cur_index)
-        denom = recipsqrt(d1);
-        acceleration = -1 * mass * recip(d1);
-      End
-
-      // Post vc4: denom nonzero, acceleration zero for all intents and purposes
-
-      acceleration *= ACC_CONSTANT;
-      comment("Calc force factor");
-
-/*
-      // DEBUG
-      //acceleration = 0.5f;
-      nx1 = 0.1f;
-      ny1 = 0.1f;
-      nz1 = 0.1f;
-*/
-
-      // Normalize the acceleration vector
-      nx1 *= denom;  comment("Normalize the acc vector"); 
-      ny1 *= denom; 
-      nz1 *= denom; 
-
-      // Set the force component
-      nx1 *= acceleration; 
-      ny1 *= acceleration; 
-      nz1 *= acceleration; 
-
-      // Add to total
-      x0_acc += nx1;
-      y0_acc += ny1;
-      z0_acc += nz1;
-
-      // Do next iteration
-      px.inc();
-      py.inc();
-      pz.inc();
-      pmass.inc();
+    Where (((cur_block << 4) + index()) != entity_index)
+      denom = recipsqrt(d1);
+      acceleration = -1 * mass * recip(d1);
     End
 
-    //
-    // Sum up and store in acc accumulators
-    //
-    rotate_sum(accum_x, x0_acc);
-    rotate_sum(accum_y, y0_acc);
-    rotate_sum(accum_z, z0_acc);
+    // Post vc4: denom nonzero, acceleration zero for all intents and purposes
+
+    acceleration *= ACC_CONSTANT;
+    comment("Calc force factor");
+
+/*
+    // DEBUG
+    //acceleration = 0.5f;
+    nx1 = 0.1f;
+    ny1 = 0.1f;
+    nz1 = 0.1f;
+*/
+
+    // Normalize the acceleration vector
+    nx1 *= denom;  comment("Normalize the acc vector"); 
+    ny1 *= denom; 
+    nz1 *= denom; 
+
+    // Set the force component
+    nx1 *= acceleration; 
+    ny1 *= acceleration; 
+    nz1 *= acceleration; 
+
+    // Add to total
+    x0_acc += nx1;
+    y0_acc += ny1;
+    z0_acc += nz1;
+
+    // Do next iteration
+    px.inc();
+    py.inc();
+    pz.inc();
+    pmass.inc();
+  End
+
+  //
+  // Sum up and store in acc accumulators
+  //
+  rotate_sum(accum_x, x0_acc);
+  rotate_sum(accum_y, y0_acc);
+  rotate_sum(accum_z, z0_acc);
 }
 
 
@@ -160,11 +160,11 @@ void kernel_calc_acc(
     Float y0_acc = 0;
     Float z0_acc = 0;
 
-    void vector_calc_acc(
+    vector_calc_acc(
       x0, y0, z0,
       x0_acc, y0_acc, z0_acc,
-      Int vec_index, Int entity_index, num_entities,
-      px, py, pz
+      cur_index, num_entities,
+      px, py, pz, in_mass
     );
 
     //
