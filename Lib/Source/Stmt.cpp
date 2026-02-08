@@ -13,16 +13,16 @@ using ::operator<<;  // C++ weirdness
 namespace {
 
 std::string make_comment(std::string &str) {
-	std::vector<std::string> lines = split(str, "\n");
+  std::vector<std::string> lines = split(str, "\n");
 
   std::string ret;
-	ret << "\n#\n";
+  ret << "\n#\n";
   for (int i = 0; i < (int) lines.size(); i++) {
-		ret << "# " << lines[i] << "\n";
-	}
-	ret << "#\n";
+    ret << "# " << lines[i] << "\n";
+  }
+  ret << "#\n";
 
-	return ret;
+  return ret;
 }
 
 }  // anon namespace
@@ -33,15 +33,15 @@ std::string make_comment(std::string &str) {
 // ============================================================================
 
 Stmt::~Stmt() {
-/*	
-	// Useful only for debug
-	if (!InstructionComment::transferred()) {
-		warn << "Stmt dtor comments not transferred\n"
-				 << "     stmt: " << dump() << "\n"
-				 << "   header: " << InstructionComment::header()  << "\n"
-				 << "  comment: " << InstructionComment::comment() << "\n";
-	}
-*/	
+/*  
+  // Useful only for debug
+  if (!InstructionComment::transferred()) {
+    warn << "Stmt dtor comments not transferred\n"
+         << "     stmt: " << dump() << "\n"
+         << "   header: " << InstructionComment::header()  << "\n"
+         << "  comment: " << InstructionComment::comment() << "\n";
+  }
+*/  
 }
 
 
@@ -120,7 +120,7 @@ bool Stmt::check_blocks() const {
 
 
 Stmt::Array const &Stmt::then_block() const {
-	// Following is bullshit. then_block can also appear for WHILE
+  // Following is bullshit. then_block can also appear for WHILE
   //assertq(tag == IF || tag == WHERE, "Then-statement only valid for IF, and WHERE", true);
   assert(check_blocks());
 
@@ -276,7 +276,7 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_com
     case WHERE:
       assert(m_where_cond.get() != nullptr);
       ret << "WHERE (" << m_where_cond->dump() << ")\n"
-			    << "  THEN " << then_block().dump(show_comments);
+          << "  THEN " << then_block().dump(show_comments);
       if (!else_block().empty()) {
         ret << "\n  ELSE " << else_block().dump(show_comments);
       }
@@ -291,9 +291,9 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_com
     case WHILE:
       assert(m_cond.get() != nullptr);
       if (!then_block().empty()) {
-      	ret << "WHILE (" << m_cond->dump() << ")\n"
-					  << "  " << then_block().dump(show_comments);
-			}
+        ret << "WHILE (" << m_cond->dump() << ")\n"
+            << "  " << then_block().dump(show_comments);
+      }
       // There is no ELSE for while
     break;
 
@@ -306,7 +306,7 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_com
         std::string tmp = DMA::dump_tag(tag);  // Check for unhandled DMA stuff
 
         if (!tmp.empty()) {
-					cdebug  << "Stmt::disp_intern() default DMA: " << tmp;
+          cdebug  << "Stmt::disp_intern() default DMA: " << tmp;
         } else {
           std::string msg;
           msg << "Stmt::disp_intern() "
@@ -317,27 +317,27 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_com
           }
 
           assertq(false, msg, true);
-				}
+        }
       }
       break;
   }
 
-	if (show_comments) {
-		std::string out;
-		auto h = InstructionComment::header(); 
-		if (!h.empty()) {
-			out << make_comment(h);
-		}
+  if (show_comments) {
+    std::string out;
+    auto h = InstructionComment::header(); 
+    if (!h.empty()) {
+      out << make_comment(h);
+    }
 
-		out << ret; 
+    out << ret; 
 
-		auto c = InstructionComment::comment(); 
-		if (!c.empty()) {
-			out << "           ; " << c;
-		}
+    auto c = InstructionComment::comment(); 
+    if (!c.empty()) {
+      out << "           ; " << c;
+    }
 
-  	return out;
-	}
+    return out;
+  }
 
   return ret;
 }
@@ -431,40 +431,40 @@ std::string Stmt::Array::dump(bool show_comments) const {
 std::string Stmts::dump() const {
   if (empty()) return "<Empty>";
 
-	bool do_line_numbers = LibSettings::dump_line_numbers();
+  bool do_line_numbers = LibSettings::dump_line_numbers();
   std::string buf = Array::dump(true);
-	std::vector<std::string> lines = split(buf, "\n");
+  std::vector<std::string> lines = split(buf, "\n");
 
-	int count = 0;
+  int count = 0;
   std::string ret;
-	std::string pre = "#";
-	std::string sp = "  ";
+  std::string pre = "#";
+  std::string sp = "  ";
 
   for (int i = 0; i < (int) lines.size(); i++) {
-		// Skip empty lines
-		if (lines[i].empty()) {
-	  	ret << "\n";
-			continue;
-		}
+    // Skip empty lines
+    if (lines[i].empty()) {
+      ret << "\n";
+      continue;
+    }
 
-		// Skip line numbers for lines starting with spaces
-		if (lines[i].compare(0, sp.size(), sp) == 0) {
-	  	ret << lines[i] << "\n";
-			continue;
-		}
+    // Skip line numbers for lines starting with spaces
+    if (lines[i].compare(0, sp.size(), sp) == 0) {
+      ret << lines[i] << "\n";
+      continue;
+    }
 
-		// Skip line numbers for comment lines
-		if (lines[i].compare(0, pre.size(), pre) == 0) {
-	  	ret << lines[i] << "\n";
-			continue;
-		}
+    // Skip line numbers for comment lines
+    if (lines[i].compare(0, pre.size(), pre) == 0) {
+      ret << lines[i] << "\n";
+      continue;
+    }
 
-		if (do_line_numbers) {
-	  	ret << count << ": ";
-		}
+    if (do_line_numbers) {
+      ret << count << ": ";
+    }
 
-	  ret << lines[i] << "\n";
-		count++;
+    ret << lines[i] << "\n";
+    count++;
   }
 
   return ret;

@@ -172,7 +172,7 @@ void Liveness::compute_liveness(Instr::List &instrs) {
             //
             AssignCond assign_cond = instr.assign_cond();
             for (int j = item.first_usage(); j <= item.last_usage(); j++) {
-							if (instrs[j].isNop()) continue;
+              if (instrs[j].isNop()) continue;
 
               assertq((assign_cond == instrs[j].assign_cond())            // expected usage
                    || (instrs[j].is_always() && !instrs[j].is_branch()),  // Interim basic usage allowed (happens)
@@ -311,15 +311,15 @@ void Liveness::optimize(Instr::List &instrs, int numVars) {
     live.compute(instrs);  // instructions have changed, redo liveness
   }
 
-	//
-	// vc7 has no general purpose accumulators,
-	// So we won't bother replacing variables with them
-	//
-	if (!Platform::compiling_for_vc7()) {
-	  int prev_count_skips = count_skips(instrs);
-	  compile_data.num_accs_introduced = introduceAccum(live, instrs);
-	  assertq(prev_count_skips == count_skips(instrs), "SKIP count changed after introduceAccum()");
-	}
+  //
+  // vc7 has no general purpose accumulators,
+  // So we won't bother replacing variables with them
+  //
+  if (!Platform::compiling_for_vc7()) {
+    int prev_count_skips = count_skips(instrs);
+    compile_data.num_accs_introduced = introduceAccum(live, instrs);
+    assertq(prev_count_skips == count_skips(instrs), "SKIP count changed after introduceAccum()");
+  }
 
   // Times for following (now) insignificant
 

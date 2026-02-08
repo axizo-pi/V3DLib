@@ -95,7 +95,7 @@ int tag_64 = -1;
 void VarGen::reset(int val) {
   assert(val >= 0);
   globalVarId = val;
-	tag_64 = -1;  // Needs to be reset before each new kernel compile!
+  tag_64 = -1;  // Needs to be reset before each new kernel compile!
 }
 
 
@@ -108,15 +108,15 @@ void VarGen::reset(int val) {
  * See also the _64 reg.
  */
 Var Var_64() {
-	if (Platform::compiling_for_vc4()) {
-		cerr << "Don't use the 64 global var on vc4" << thrw;
-	}
+  if (Platform::compiling_for_vc4()) {
+    cerr << "Don't use the 64 global var on vc4" << thrw;
+  }
 
-	if (tag_64 == -1) {
- 		tag_64 = V3DLib::VarGen::fresh_tag();
-	}
+  if (tag_64 == -1) {
+    tag_64 = V3DLib::VarGen::fresh_tag();
+  }
 
- 	return Var(STANDARD, tag_64);
+  return Var(STANDARD, tag_64);
 }
 
 }  // namespace V3DLib

@@ -74,7 +74,7 @@ struct Stmt : public InstructionComment {
     DMA_START_READ,
     DMA_START_WRITE,
 
-		BARRIER,
+    BARRIER,
 
     NUM_TAGS
   };
@@ -154,7 +154,7 @@ private:
 
 class Stmts : public Stmt::Array {
 public:
-	std::string dump() const;
+  std::string dump() const;
 };
 
 }  // namespace V3DLib

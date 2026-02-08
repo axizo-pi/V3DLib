@@ -115,7 +115,7 @@ IntExpr _INF() {
     Int tmp = 4;   comment("Load INF");  // Important that comment is AFTER first statement
     tmp = tmp << 15;
     tmp = tmp << 14;
-	 	tmp = (tmp ^ -1);  // -1 = 0xffffffff
+    tmp = (tmp ^ -1);  // -1 = 0xffffffff
 
     Return(tmp);
   });
@@ -218,28 +218,28 @@ void integer_division(Int &Q, Int &R, IntExpr in_a, IntExpr in_b) {
  */
 IntExpr integer_division_f(IntExpr in_a, IntExpr in_b) {
   return create_function_snippet([in_a, in_b] {
-  	Float a = toFloat(in_a);    comment("Start integer division by float");
-	  Float b	= toFloat(in_b);
+    Float a = toFloat(in_a);    comment("Start integer division by float");
+    Float b = toFloat(in_b);
 
-		Int res;
+    Int res;
 
-		Where (in_b == 0)
-			res = _INF();
-		Else
+    Where (in_b == 0)
+      res = _INF();
+    Else
       // Doing it like this (all in one line) leads to multiple generations of
       // this function in the output. No clue why.
-		  // res = toInt(functions::ffloor(a / b));  // ffloor() fixes rounding up 
+      // res = toInt(functions::ffloor(a / b));  // ffloor() fixes rounding up 
 
       // This works as expected
-		  Float tmp = a/b;
-		  tmp = functions::ffloor(tmp);  // ffloor() fixes rounding up 
-		  res = toInt(tmp);
-		End
+      Float tmp = a/b;
+      tmp = functions::ffloor(tmp);  // ffloor() fixes rounding up 
+      res = toInt(tmp);
+    End
 
-  	comment("End integer division by float");
+    comment("End integer division by float");
 
-		//return res;
-		return Return(res);
+    //return res;
+    return Return(res);
   });
 }
 
@@ -274,7 +274,7 @@ float cos(float x_in, bool extra_precision) noexcept {
   x *= 16. * (std::abs(x) - .5);
 
   if (extra_precision) {
-		//Log::warn << "doing extra precision 2";
+    //Log::warn << "doing extra precision 2";
     x += .225 * x * (std::abs(x) - 1.0f);
   }
 
@@ -309,7 +309,7 @@ FloatExpr cos(FloatExpr x_in, bool extra_precision) {
   x *= 16.0f * (fabs(x) - 0.5f);
 
   if (extra_precision) {
-		//Log::warn << "doing extra precision";
+    //Log::warn << "doing extra precision";
     x += 0.225f * x * (fabs(x) - 1.0f);
   }
 
@@ -318,7 +318,7 @@ FloatExpr cos(FloatExpr x_in, bool extra_precision) {
 
 
 FloatExpr sin(FloatExpr x_in, bool extra_precision) {
-	return cos(0.25f - x_in, extra_precision);
+  return cos(0.25f - x_in, extra_precision);
 }
 
 
@@ -373,7 +373,7 @@ FloatExpr sin(FloatExpr x_in, bool extra_precision) {
  *   Okay, that was real interesting.
  */
 FloatExpr sin_v3d(FloatExpr x_in) {
-	//Log::warn << "using v3d sin";
+  //Log::warn << "using v3d sin";
 
   return create_float_function_snippet([x_in] {
     Float tmp = x_in;                    comment("Start source lang v3d sin");
@@ -446,7 +446,7 @@ FloatExpr ffloor(FloatExpr x) {
     }
 
     //return ret;
-		return Return(ret);
+    return Return(ret);
   });
 }
 
@@ -569,26 +569,26 @@ void sync_qpus(Int::Ptr signal) {
  * most likely with semaphores.
  */
 void barrier() {
-	if (Platform::compiling_for_vc4()) {
-		Log::warn << "barrier compiling for vc4";
-		// vc4 - Stmt::BARRIER will not be passed on
-		vc4::barrier();
-	} else {
-		// v3d
-		stmtStack().push(Stmt::create(Stmt::BARRIER));
-	}
+  if (Platform::compiling_for_vc4()) {
+    Log::warn << "barrier compiling for vc4";
+    // vc4 - Stmt::BARRIER will not be passed on
+    vc4::barrier();
+  } else {
+    // v3d
+    stmtStack().push(Stmt::create(Stmt::BARRIER));
+  }
 }
 
 
 void barrier(Int::Ptr &signal) {
-	if (Platform::compiling_for_vc4()) {
-		Log::warn << "barrier vc4 using sync_qpus()";
-		// vc4 - Stmt::BARRIER will not be passed on
+  if (Platform::compiling_for_vc4()) {
+    Log::warn << "barrier vc4 using sync_qpus()";
+    // vc4 - Stmt::BARRIER will not be passed on
     sync_qpus(signal);
-	} else {
-		// v3d
-		stmtStack().push(Stmt::create(Stmt::BARRIER));
-	}
+  } else {
+    // v3d
+    stmtStack().push(Stmt::create(Stmt::BARRIER));
+  }
 }
 
 }  // namespace V3DLib

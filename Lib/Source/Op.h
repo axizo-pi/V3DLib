@@ -41,7 +41,7 @@ enum OpId {
   BARRIER,
   FFLOOR,
 
-	_DUMMY  // Indicates not an instruction 
+  _DUMMY  // Indicates not an instruction 
 };
 
 

@@ -15,8 +15,8 @@ using ::operator<<;  // C++ weirdness
 Int::Int()              { assign_intern(); }
 
 Int::Int(int x)         {
-	//Log::warn << "Int ctor val: " << x;
-	assign_intern(mkIntLit(x));
+  //Log::warn << "Int ctor val: " << x;
+  assign_intern(mkIntLit(x));
 }
 
 Int::Int(Deref<Int> d)  { assign_intern(d.expr()); }

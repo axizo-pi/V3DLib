@@ -75,7 +75,7 @@ void CoreState::store_to_heap(Vec const &index, Vec &val) {
   assert(writeStride == 0);  // usage of writeStride is probably wrong!
 /*
   int const show_count = 3;
-*/	
+*/  
 
   if (!index.is_uniform()) {
     // NOTE: This part will not work for vc4 DMA output!

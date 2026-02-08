@@ -189,7 +189,7 @@ template<
   typename T = typename std::conditional<std::is_same<Ptr, Float::Ptr>::value, Float, Complex>::type
 >
 void matrix_mult(Ptr dst, Ptr a, Ptr b) {
-	//Log::warn << "matrix_mult() &dst: " << Log::hex << (unsigned long) (&dst);
+  //Log::warn << "matrix_mult() &dst: " << Log::hex << (unsigned long) (&dst);
 
   using DotVecType = typename std::conditional<std::is_same<Ptr, Float::Ptr>::value, DotVector, ComplexDotVector>::type;
   auto &settings = get_matrix_settings();
@@ -345,13 +345,13 @@ void create_block_kernel(Int const &in_offset, std::function<void (Int const &of
 template<typename Ptr>
 void matrix_mult_block(Ptr in_dst, Ptr in_a, Ptr in_b, Int in_offset) {
   create_block_kernel(in_offset, [&] (Int const &offset, bool zero_offset) {
-		//Log::warn << "matrix_mult_block() &in_dst: " << Log::hex << (unsigned long) (&in_dst);
+    //Log::warn << "matrix_mult_block() &in_dst: " << Log::hex << (unsigned long) (&in_dst);
 
-		if (zero_offset) {
-			matrix_mult<Ptr>(in_dst, in_a, in_b);
-		} else {
-			matrix_mult<Ptr>(in_dst, in_a + offset, in_b + offset);
-		}
+    if (zero_offset) {
+      matrix_mult<Ptr>(in_dst, in_a, in_b);
+    } else {
+      matrix_mult<Ptr>(in_dst, in_a + offset, in_b + offset);
+    }
   });
 }
 
@@ -402,9 +402,9 @@ public:
 
 
   ResultArray &result() {
-		//Log::warn << "&result(): " << Log::hex << (unsigned long) (&m_result);
-		return m_result;
-	}
+    //Log::warn << "&result(): " << Log::hex << (unsigned long) (&m_result);
+    return m_result;
+  }
 
   BlockKernelType &kernel() { return *m_k; }
   void compile()            { init_block(CALL); }
@@ -472,10 +472,10 @@ public:
     if constexpr (std::is_same<Array, Float::Array2D>::value) {
       zero = 0.0f;
     }
-		//Log::warn << "call() pre m_result: " << m_result.dump();
+    //Log::warn << "call() pre m_result: " << m_result.dump();
     m_result.fill(zero);  // Apparently necessary; 1-ones mult -> final element is + 1 for some reason
-		//Log::warn << "&call() after fill() m_result: " << Log::hex << (unsigned long) (&m_result);
-		//Log::warn << "call() after fill() m_result: " << m_result.dump();
+    //Log::warn << "&call() after fill() m_result: " << Log::hex << (unsigned long) (&m_result);
+    //Log::warn << "call() after fill() m_result: " << m_result.dump();
 
     if (m_k_first.get() != nullptr) m_k_first->setNumQPUs(m_num_qpus);
     if (m_k.get()       != nullptr) m_k->setNumQPUs(m_num_qpus);
@@ -501,7 +501,7 @@ public:
       //warning("single block");
       load(m_k, 0);
       k_call();
-			//Log::warn << "k_call() m_result: " << m_result.dump();
+      //Log::warn << "k_call() m_result: " << m_result.dump();
     }
   }
 
@@ -518,7 +518,7 @@ public:
 
     auto &settings = kernels::get_matrix_settings();
 
-		ret << "  sett. add_result : " << (settings.add_result?"yes":"no")                << "\n";
+    ret << "  sett. add_result : " << (settings.add_result?"yes":"no")                << "\n";
 
     if (m_k_first) {
       ret << "  First kernel     :" << m_k_first->info();
@@ -536,8 +536,8 @@ public:
   }
 
   std::string k_dump() const {
-		return m_k->dump();
-	}
+    return m_k->dump();
+  }
 
 
 protected:
@@ -591,11 +591,11 @@ protected:
     m_k.reset(new BlockKernelType(V3DLib::compile(kernel)));
 
     if (m_k->has_errors()) {
-			Log::cerr << "Compile failed of block kernel";
+      Log::cerr << "Compile failed of block kernel";
       m_k.reset(nullptr);
     } else {
-			//Log::warn << "Compile succeeded of block kernel";
-		}
+      //Log::warn << "Compile succeeded of block kernel";
+    }
   }
 
 
@@ -624,14 +624,14 @@ private:
 
 
   void k_first_call() {
-		//Log::warn << "Called k_first_call()";
+    //Log::warn << "Called k_first_call()";
     assert(m_k_first);
     m_k_first->run();
   }
 
 
   void k_call() {
-		//Log::warn << "Called k_call()";
+    //Log::warn << "Called k_call()";
     assert(m_k);
     m_k->run();
   }
@@ -655,7 +655,7 @@ public:
   }
 
   void load(std::unique_ptr<BlockKernelType> &k, int offset) override {
-		//Log::warn << "load() &Parent::result(): " << Log::hex << (unsigned long) (&Parent::result());
+    //Log::warn << "load() &Parent::result(): " << Log::hex << (unsigned long) (&Parent::result());
     k->load(&Parent::result(), &m_a, &m_b, offset);
   } 
 
@@ -664,17 +664,17 @@ public:
     settings.use_multi_kernel_calls = Parent::use_multi_kernel_calls(call_type); 
 
     Parent::init_block_kernels(kernels::matrix_mult_block<Ptr>, call_type);
-		//Log::warn << "init_block() &Parent::result(): " << Log::hex << (unsigned long) (&Parent::result());
+    //Log::warn << "init_block() &Parent::result(): " << Log::hex << (unsigned long) (&Parent::result());
   }
 
-	std::string dump() {
-		std::string ret;
+  std::string dump() {
+    std::string ret;
 
-		ret << "m_a: " << m_a.dump()
-		    << "m_b: " << m_b.dump();
+    ret << "m_a: " << m_a.dump()
+        << "m_b: " << m_b.dump();
 
-		return ret;
-	}
+    return ret;
+  }
 
 private:
   Array2D &m_a;

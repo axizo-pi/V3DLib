@@ -187,13 +187,13 @@ void create_block_kernel(Int const &in_offset, std::function<void (Int const &of
 
     // First call doesn't need to get the result values for addition; they are zero anyway
     settings.add_result = false;
-		//Log::warn << "create_block_kernel() first call offset 0";
+    //Log::warn << "create_block_kernel() first call offset 0";
     f(0, true);
 
     if (settings.num_blocks() == 2) {
       settings.add_result = true;
       Int offset = settings.width();
-			//Log::warn << "create_block_kernel() 2 blocks offset " << settings.width();
+      //Log::warn << "create_block_kernel() 2 blocks offset " << settings.width();
       f(offset, false);
     }
   }

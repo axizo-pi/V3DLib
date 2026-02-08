@@ -242,13 +242,13 @@ void StmtStack::merge_top_block() {
   auto block_ptr = top();  // Remove top-level item
   pop();
 
-	// Merge into next item in stack
+  // Merge into next item in stack
   Stmt::Ptr s = last_stmt();
   if (!s->add_block(*block_ptr)) {
     error("Syntax error: unexpected block", true);
   }
 
-	// TODO: I think following is not necessary, the top stack item is changed while still on the stack.
+  // TODO: I think following is not necessary, the top stack item is changed while still on the stack.
   //       Examine this
   pop();
   append(s);
@@ -273,16 +273,16 @@ void clearStack() {
 
 void initStack(StmtStack &stmtStack) {
   if (p_stmtStack != nullptr) {
-		//
-		// This can happen if a compilation of a preceding kernel fails
-		//
-		// Another option is that tempStack() was called, which means that an malloc'd intance
-		// is pointed to by p_stmtStack.
-		// We ignore this option, it occurs under very specific circumstances
-		//
+    //
+    // This can happen if a compilation of a preceding kernel fails
+    //
+    // Another option is that tempStack() was called, which means that an malloc'd intance
+    // is pointed to by p_stmtStack.
+    // We ignore this option, it occurs under very specific circumstances
+    //
 
-		Log::cerr << "initStack(): p_stmtStack set on entry. Ignoring.";
-	}
+    Log::cerr << "initStack(): p_stmtStack set on entry. Ignoring.";
+  }
 
   stmtStack.reset();
   p_stmtStack = &stmtStack;
