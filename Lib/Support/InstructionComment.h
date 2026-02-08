@@ -18,7 +18,7 @@ public:
   std::string const &comment() const { return m_comment; }
 
   std::string emit_header() const;
-  std::string emit_comment(int instr_size) const;
+  std::string emit_comment(int instr_size, int max_size = -1) const;
 	bool transferred() const;
 
 protected:

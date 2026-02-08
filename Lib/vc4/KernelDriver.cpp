@@ -14,7 +14,8 @@
 #include <stdlib.h>
 #include "global/log.h"
 #include "Instr.h"
-
+#include "LibSettings.h"
+#include "Support/Helpers.h"
 
 using namespace Log;
 
@@ -131,7 +132,40 @@ void KernelDriver::encode() {
 
 std::string KernelDriver::emit_opcodes() {
   encode();
-  return vc4::opcodes(m_code);
+
+  auto list = vc4::opcodes(m_code);
+
+  if ((int) list.size() != m_targetCode.size()) {
+    Log::cerr << "vc4 emit_opcodes() discrepancy in opcode and target code size."
+              << "opcode size: " << list.size() << ", "
+              << "target code size: " << m_targetCode.size()
+              << thrw
+    ;
+  }
+
+  int max_size = 0;
+  for (int i = 0; i < (int) list.size(); ++i) {
+    if (max_size < (int) list[i].size()) {
+      max_size = (int) list[i].size();
+    }
+  }
+
+  std::string ret;
+  for (int i = 0; i < (int) list.size(); ++i) {
+    auto const &t = m_targetCode[i];
+
+    ret << t.emit_header();
+
+    if (LibSettings::dump_line_numbers()) {
+      ret << i << ": ";
+    }
+
+    ret << list[i]
+        << t.emit_comment(list[i].size(), max_size)
+        << "\n";
+  }
+
+  return ret;
 }
 
 

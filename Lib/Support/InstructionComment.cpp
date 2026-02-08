@@ -75,7 +75,7 @@ std::string InstructionComment::emit_header() const {
   if (m_header.empty()) return "";
 
   std::string ret;
-  ret << "\n# " << header() << "\n";
+  ret << "\n#\n# " << header() << "\n#\n";
   return ret;
 }
 
@@ -83,15 +83,19 @@ std::string InstructionComment::emit_header() const {
 /**
  * Return comment as string with leading spaces
  *
- * NOTE: this does not take into account multi-line comments (don't occur at time of writing)
+ * **NOTE**: this does not take into account multi-line comments (don't occur at time of writing)
  *
  * @param instr_size  size of the associated instruction in bytes
+ * @param max_size    If specified, maximum instruction size of the encompassing instruction list
  */
-std::string InstructionComment::emit_comment(int instr_size) const {
+std::string InstructionComment::emit_comment(int instr_size, int max_size) const {
   if (m_comment.empty()) return "";
 
   const int COMMENT_INDENT = 60;
-  int spaces = COMMENT_INDENT - instr_size;
+
+  if (max_size == -1 ) max_size = COMMENT_INDENT;
+
+  int spaces = 2 + max_size - instr_size;
   if (spaces < 2) spaces = 2;
 
   std::string ret;
