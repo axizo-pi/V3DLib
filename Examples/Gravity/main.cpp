@@ -43,17 +43,19 @@ int main(int argc, const char *argv[]) {
 		Model m;
 		m.init();
 		m.plot();
-		//warn << m.dump_pos();
+
+    Int::Array signal;
 
 		auto k = compile(kernel_gravity, settings);
-	  //k.setNumQPUs(settings.num_qpus);
+	  k.setNumQPUs(settings.num_qpus);
 
 		k.load(
 			&m.x, &m.y, &m.z,
 			&m.v_x, &m.v_y, &m.v_z,
 			&m.mass,
 			&m.acc_x, &m.acc_y, &m.acc_z,
-			NUM
+			NUM,
+      &signal
 		);
 
 	 	{

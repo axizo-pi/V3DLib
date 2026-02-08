@@ -12,6 +12,7 @@
 #include "StmtStack.h"
 #include "Lang.h"
 #include "LibSettings.h"
+#include "vc4/Functions.h"
 
 namespace V3DLib {
 namespace functions {
@@ -558,6 +559,36 @@ void sync_qpus(Int::Ptr signal) {
       End
     End
   End
+}
+
+
+/**
+ * Has no inputs, only an output, which is always magic reg SYNCB.
+ *
+ * `barrier` is v3d-specific. vc4 will need a different implementation,
+ * most likely with semaphores.
+ */
+void barrier() {
+	if (Platform::compiling_for_vc4()) {
+		Log::warn << "barrier compiling for vc4";
+		// vc4 - Stmt::BARRIER will not be passed on
+		vc4::barrier();
+	} else {
+		// v3d
+		stmtStack().push(Stmt::create(Stmt::BARRIER));
+	}
+}
+
+
+void barrier(Int::Ptr &signal) {
+	if (Platform::compiling_for_vc4()) {
+		Log::warn << "barrier vc4 using sync_qpus()";
+		// vc4 - Stmt::BARRIER will not be passed on
+    sync_qpus(signal);
+	} else {
+		// v3d
+		stmtStack().push(Stmt::create(Stmt::BARRIER));
+	}
 }
 
 }  // namespace V3DLib

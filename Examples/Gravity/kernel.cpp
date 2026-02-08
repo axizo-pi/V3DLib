@@ -231,7 +231,8 @@ void kernel_gravity(
 	Float::Ptr in_v_x, Float::Ptr in_v_y, Float::Ptr in_v_z,
  	Float::Ptr in_mass,
  	Float::Ptr in_acc_x, Float::Ptr in_acc_y, Float::Ptr in_acc_z,
-	Int num_entities
+	Int num_entities,
+  Int::Ptr signal
 ) {
 	Int Count = BATCH_STEPS;
 
@@ -244,7 +245,7 @@ void kernel_gravity(
 			num_entities
 		);
 
-		barrier();
+		barrier(); // barrier(signal);
 
 		// kernel_step() adjusts pointers, reset to start before calling	
 		Float::Ptr x = in_x;
@@ -264,6 +265,6 @@ void kernel_gravity(
 			num_entities
 		);
 
-		barrier();
+		barrier(); // barrier(signal);
 	End
 }
