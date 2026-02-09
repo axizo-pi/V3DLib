@@ -443,7 +443,7 @@ Instr::List _encode_imm(Reg dst, Imm imm) {
 }  // anon namespace
 
 
-Instr::List encode_imm(V3DLib::Instr const &instr) {
+Instr::List encode_imm(V3DLib::Instr &instr) {
   Instr::List ret;
 
 	bool do_li = false;
@@ -487,21 +487,18 @@ Instr::List encode_imm(V3DLib::Instr const &instr) {
 		return ret;
 	}
 
+	//
+	// Explicit encoding of immediate value
+	//
   ret = _encode_imm(dst, imm);
 	assert(!ret.empty());
 
-	if (ret.size() == 1 && ret[0] == instr) {
-		// No conversion
-		breakpoint;  // Shouldn't really happen, warn me
-		return ret;
-	}
-
 	if (!do_li) {
+		breakpoint; // Warn me when this happens
 		auto new_instr = instr;
 		new_instr.ALU.srcA = dst;
 		ret << new_instr;
 	}
-
 
   if (instr.set_cond().flags_set()) {
     breakpoint;  // to check what flags need to be set - case not handled yet
@@ -510,6 +507,8 @@ Instr::List encode_imm(V3DLib::Instr const &instr) {
 	for (int i = 0; i < ret.size(); ++i) {
 	  ret.get(i).cond(instr.assign_cond());
 	}
+
+	ret.front().transfer_comments(instr);
 
 	return ret;
 }
@@ -521,7 +520,7 @@ void adjust_immediates(Instr::List &instrs) {
 	Instr::List res;
 
   for (int i = 0; i < instrs.size(); i++) {
-		Instr const &instr = instrs[i];
+		Instr &instr = instrs[i];
 
 		if ( instr.tag == LI || instr.tag == ALU) {
 			res << encode_imm(instr);

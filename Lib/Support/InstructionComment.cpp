@@ -1,6 +1,8 @@
 #include "InstructionComment.h"
 #include "Support/basics.h"
 
+using namespace Log;
+
 namespace V3DLib {
 
 void InstructionComment::transfer_comments(InstructionComment &rhs) {
@@ -44,10 +46,18 @@ bool InstructionComment::has_comments() const {
  */
 void InstructionComment::header(std::string const &msg) {
   if (msg.empty()) return;
-  assertq(m_header.empty(), "Header comment already has a value when setting it", true);
 
-  m_header = msg;
-  findAndReplaceAll(m_header, "\n", "\n# ");
+  if (!m_header.empty()) {
+	  warn << "header() Header comment already has a value when setting it\n"
+			   << "current: " << m_header << "\n"
+			   << "new: "     << msg      << "\n"
+		;
+	}
+
+  if (!m_header.empty()) {
+  	m_header << "\n";
+	}
+  m_header <<  msg;
 }
 
 
@@ -61,21 +71,23 @@ void InstructionComment::header(std::string const &msg) {
 void InstructionComment::comment(std::string msg) {
   if (msg.empty()) return;
 
-  findAndReplaceAll(msg, "\n", "\n# ");
+	auto prev = m_comment;
+	m_comment = msg;
 
-  if (!m_comment.empty()) {
-    m_comment += "; ";
-  }
-
-  m_comment += msg;
+ 	if (!prev.empty()) {
+	  m_comment <<  "; " << prev;
+	}
 }
 
 
 std::string InstructionComment::emit_header() const {
   if (m_header.empty()) return "";
 
+	std::string buf = header();
+  findAndReplaceAll(buf, "\n", "\n# ");
+
   std::string ret;
-  ret << "\n#\n# " << header() << "\n#\n";
+  ret << "\n#\n# " << buf << "\n#\n";
   return ret;
 }
 
