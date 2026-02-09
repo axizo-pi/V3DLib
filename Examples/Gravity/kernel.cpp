@@ -40,6 +40,7 @@ void vector_calc_acc(
   Float DIST_FACTOR  = 1e-12f;  comment("Init DIST_FACTOR");
   Float MASS_FACTOR  = 1e-18f;  comment("Init MASS_FACTOR");
 
+	comment("Init ACC_CONSTANT");
   Float ACC_CONSTANT = ((float) BIG_G) * DIST_FACTOR / MASS_FACTOR * DIST_FACTOR;
 
   header("Start vector_calc_acc");
@@ -78,12 +79,12 @@ void vector_calc_acc(
 
     Where (((cur_block << 4) + index()) != entity_index)
       denom = recipsqrt(d1);
-      acceleration = -1 * mass * recip(d1);
+      acceleration = -1 * mass * ACC_CONSTANT * recip(d1);
     End
 
     // Post vc4: denom nonzero, acceleration zero for all intents and purposes
 
-    acceleration *= ACC_CONSTANT;
+    //acceleration *= ACC_CONSTANT;
     comment("Calc force factor");
 /*
     // DEBUG
@@ -179,7 +180,7 @@ void kernel_calc_acc(
       x0, y0, z0,
       x0_acc, y0_acc, z0_acc,
       cur_index, num_entities,
-      px, py, pz, in_mass
+      px, py, pz, pmass
     );
 
     //
@@ -251,8 +252,7 @@ void kernel_step(
     *p_y = y;
     *p_z = z;
 
-    comment("kernel_step do pointer increments");
-    p_x     += step;
+    p_x     += step;   header("kernel_step do pointer increments");
     p_y     += step;
     p_z     += step;
     p_v_x   += step;
