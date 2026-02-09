@@ -60,7 +60,8 @@ void Model::save_img() {
 std::string Model::dump_pos() const {
   std::string ret;
 
-  ret << "x: " << x.dump() << "\n"
+  ret << "\n"
+      << "x: " << x.dump() << "\n"
       << "y: " << y.dump() << "\n"
       << "z: " << z.dump() << "\n";
 
@@ -71,7 +72,8 @@ std::string Model::dump_pos() const {
 std::string Model::dump_acc() const {
   std::string ret;
 
-  ret << "acc_x: " << acc_x.dump() << "\n"
+  ret << "\n"
+      << "acc_x: " << acc_x.dump() << "\n"
       << "acc_y: " << acc_y.dump() << "\n"
       << "acc_z: " << acc_z.dump() << "\n";
 

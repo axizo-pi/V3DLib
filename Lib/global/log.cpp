@@ -286,7 +286,7 @@ void log_to_cout(bool val) {
 }
 
 
-void assert(bool condition, const std::string &msg) {
+void assertq(bool condition, const std::string &msg) {
 	if (condition) return;
 	fatal << msg << "\n";
 }

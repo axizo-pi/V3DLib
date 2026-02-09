@@ -27,9 +27,9 @@ void kernel_update(
 
 
 void vector_calc_acc(
-  Float x0, Float y0, Float z0,
+  Float &x0, Float &y0, Float &z0,
   Float &accum_x, Float &accum_y, Float &accum_z,
-  Int entity_index, Int num_entities,
+  Int &entity_index, Int &num_entities,
   Float::Ptr &px, Float::Ptr &py, Float::Ptr &pz, Float::Ptr &pmass
 ) {
   //
@@ -60,7 +60,7 @@ void vector_calc_acc(
     Float mass = *pmass * MASS_FACTOR;
 
     // Acceleration vector
-    Float nx1 = x0 - x;          comment("Calc acceleration vector");
+    Float nx1 = x0 - x;                comment("Calc acceleration vector");
     Float ny1 = y0 - y; 
     Float nz1 = z0 - z; 
 
@@ -69,12 +69,12 @@ void vector_calc_acc(
     Float dy1 = ny1 * ny1;
     Float dz1 = nz1 * nz1;
 
-    Float d1 = dx1 + dy1 + dz1;  comment("Calc distance denominator");
+    Float d1 = dx1 + dy1 + dz1;        comment("Calc distance denominator");
 
     // Set the force/acceleration to zero for current entity,
     // calculate the rest.
-    Float denom = 0;
-    Float acceleration = 1;
+    Float denom        = 0;
+    Float acceleration = 0;
 
     Where (((cur_block << 4) + index()) != entity_index)
       denom = recipsqrt(d1);
@@ -85,14 +85,13 @@ void vector_calc_acc(
 
     acceleration *= ACC_CONSTANT;
     comment("Calc force factor");
-
 /*
     // DEBUG
     //acceleration = 0.5f;
     nx1 = 0.1f;
     ny1 = 0.1f;
     nz1 = 0.1f;
-*/
+*/		
 
     // Normalize the acceleration vector
     nx1 *= denom;  comment("Normalize the acc vector"); 
@@ -116,12 +115,17 @@ void vector_calc_acc(
     pmass.inc();
   End
 
+// DEBUG
+//    x0_acc = 0.1e-5f;
+//    y0_acc = 0.2e-5f;
+//    z0_acc = 0.3e-5f;
+
   //
   // Sum up and store in acc accumulators
   //
-  rotate_sum(accum_x, x0_acc);
-  rotate_sum(accum_y, y0_acc);
-  rotate_sum(accum_z, z0_acc);
+  rotate_sum(x0_acc, accum_x);  // NB second param is the output (result) param
+  rotate_sum(y0_acc, accum_y);
+  rotate_sum(z0_acc, accum_z);
 }
 
 
@@ -129,6 +133,17 @@ void vector_calc_acc(
  * Pre: num_entities multiple of 16
  *
  * Using ref's doesn't increase performance.
+ *
+ * -------------------
+ *
+ * Notes
+ * =====
+ *
+ * 1. For _Sum up and return the acceleration_:  
+ *    I tried updating speed and position for entity 0 here, the result is completely distorted.  
+ *    This is unfortunate; I was hoping to make using multiple QPU's easier.  
+ *    An option might be to use double buffering for speed and position.
+ *
  */
 void kernel_calc_acc(
   Float::Ptr &in_x, Float::Ptr &in_y, Float::Ptr &in_z,
@@ -168,15 +183,7 @@ void kernel_calc_acc(
     );
 
     //
-    // Sum up and return the acceleration
-    //
-    // I tried updating speed and position for entity 0
-    // here, the result is completely distorted.
-    //
-    // This is unfortunate; I was hoping to make using multiple QPU's
-    // easier.
-    // 
-    // An option might be to use double buffering for speed and position.
+    // Sum up and return the acceleration. See Note 1.
     //
     Float::Ptr pacc_x = out_acc_x + ptr_offset;
     *pacc_x = x0_acc;
@@ -260,7 +267,15 @@ void kernel_step(
 
 } // anon namespace
 
+
 /*
+ //
+ // Start of the kernel which will be more efficient on vc4,
+ // to compensate the DMA write.
+ //
+ // For small number of entities, this perform less than current kernel,
+ // because 16 entities are processed per thread
+ //
 
 / **
  * Handle the entities in blocks of 16

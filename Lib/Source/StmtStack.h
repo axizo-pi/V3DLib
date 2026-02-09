@@ -43,7 +43,7 @@ public:
 
   void push();
   void push(Stmt::Ptr s);
-  Stmt::Ptr last_stmt();
+  Stmt::Ptr last_stmt(bool do_assert = true);
 
   void reset();
   void append(Stmt::Ptr stmt);

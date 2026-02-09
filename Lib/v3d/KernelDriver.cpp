@@ -519,7 +519,7 @@ v3d::instr::Instr encodeBranchLabel(V3DLib::Instr src_instr) {
  * **Pre:** All instructions not meant for v3d are detected beforehand and flagged as error.
  */
 Instructions encodeInstr(V3DLib::Instr instr) {
-	Log::warn << "Called v3d encodeInstr()";
+	//Log::debug << "Called v3d encodeInstr()";
   Instructions ret;
 
   // Encode core instruction
@@ -579,7 +579,7 @@ Instructions encodeInstr(V3DLib::Instr instr) {
   assert(!ret.empty());
 
   if (!ret.empty()) {
-		Log::warn << "v3d encodeInstr() transferring comments";
+		//Log::warn << "v3d encodeInstr() transferring comments";
     ret.front().transfer_comments(instr);
   } else {
 		if (instr.has_comments()) {

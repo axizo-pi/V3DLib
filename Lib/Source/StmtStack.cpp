@@ -2,6 +2,9 @@
 #include <iostream>          // std::cout
 #include "Support/basics.h"
 #include "Source/gather.h"
+#include "global/log.h"
+
+using namespace Log;
 
 namespace V3DLib {
 namespace {
@@ -162,16 +165,30 @@ void StmtStack::push(Stmt::Ptr s) {
  * because the stack items are **sequences of statements**.
  * The last added statement will be the last statement in the top item of the stack.
  *
- * @return Pointer to the last added statement.
+ * Param `do_assert` is added to retain original working, while giving flexibility
+ * to handle null pointers for absent items.
+ *
+ * @param do_assert  if true, assert if last statement not found.
+ * @return           Pointer to the last added statement,
+ *                   `nullptr` if not present and assertions not enabled.
  */
-Stmt::Ptr StmtStack::last_stmt() {
-  assert(!empty());
-  auto level = Parent::top();
-  assert(level != nullptr);
-  assert(!level->empty());
+Stmt::Ptr StmtStack::last_stmt(bool do_assert) {
+	if (empty()) {
+		assertq(!do_assert, "last_stmt() stack is empty");
+		return nullptr;
+	}
 
-  auto ptr = level->back();
-  assert(ptr.get() != nullptr);  // Not expecting 'level' to be empty
+  auto level = Parent::top();  // Should be non-null due to check empty(); we check anyway
+  if (level == nullptr || level->empty()) {
+		assertq(!do_assert, "last_stmt() top statement is empty");
+		return nullptr;
+	}
+
+  auto ptr = level->back();    // Should be non-null due to previous test; we check anyway
+  if (ptr.get() == nullptr) {
+		assertq(!do_assert, "last_stmt() first back statement is empty");
+		return nullptr;
+	}
 
   return ptr;
 }
@@ -245,7 +262,7 @@ void StmtStack::merge_top_block() {
   // Merge into next item in stack
   Stmt::Ptr s = last_stmt();
   if (!s->add_block(*block_ptr)) {
-    error("Syntax error: unexpected block", true);
+    cerr << "Syntax error: unexpected block" << thrw;
   }
 
   // TODO: I think following is not necessary, the top stack item is changed while still on the stack.
