@@ -130,9 +130,6 @@ struct Stmt : public InstructionComment {
   Tag tag;
   DMA::Stmt dma;
 
-  void break_point() { m_break_point = true; }
-  bool do_break_point() const { return m_break_point; }
-
 private:
   BExpr::Ptr m_where_cond;
 
@@ -143,8 +140,6 @@ private:
   Array m_stmts_b;
 
   CExpr::Ptr m_cond;
-
-  bool m_break_point = false;
 
   static Ptr create(Tag in_tag, Ptr s0, Ptr s1);
   std::string disp_intern(bool with_linebreaks, int seq_depth = 0, bool show_comments = false) const;

@@ -13,13 +13,9 @@ void kernel(Int x, Int::Ptr result) {
 
 
 MAYBE_UNUSED void run_kernel() {
-  auto k = compile(kernel);
-  //cout << k.dump();
-  cout << vc4::opcodes(k.code());
-  //k.setNumQPUs(settings.num_qpus);
-
 	Int::Array result(16);
 
+  auto k = compile(kernel);
 	k.load(2, &result);
 	k.run();
 

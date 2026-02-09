@@ -43,8 +43,6 @@ inline void header(std::string const &str) { header(str.c_str()); }
 void comment(char const *str);
 inline void comment(std::string const &str) { comment(str.c_str()); }
 
-void break_point(bool val = true);
-
 }  // namespace V3DLib
 
 #endif  // _V3DLIB_SOURCE_LANG_H_

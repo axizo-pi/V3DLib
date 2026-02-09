@@ -587,10 +587,6 @@ void stmt(Instr::List *seq, Stmt::Ptr s) {
       Log::warn << "stmt() comments not transferred, no sequence output";
     }
   }
-
-  if (s->do_break_point()) {
-    seq->back().break_point();
-  }
 }
 
 }  // anon namespace

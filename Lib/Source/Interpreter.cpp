@@ -502,13 +502,6 @@ void exec(InterpreterState &is, int core_index) {
     return;
   }
 
-  if (stmt->do_break_point()) {
-#ifdef DEBUG
-    printf("Interpreter: hit breakpoint for stmt: %s\n", stmt->dump().c_str());
-    breakpoint
-#endif
-  }
-
   switch (stmt->tag) {
     case Stmt::GATHER_PREFETCH: // Ignore
     case Stmt::SKIP:

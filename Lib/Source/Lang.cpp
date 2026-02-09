@@ -134,11 +134,4 @@ void comment(char const *str) {
 	}
 }
 
-
-void break_point(bool val) {
-  if (val) {
-    stmtStack().last_stmt()->break_point();
-  }
-}
-
 }  // namespace V3DLib
