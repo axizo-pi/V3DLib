@@ -4,6 +4,38 @@
 namespace {
 
 /**
+ * Global constants and values for this kernel.
+ *
+ * The main goal of this struct is to define constants at the top-level of the kernel,
+ * so that they get calculated only once.
+ * This avoids recalculating them within loops.
+ */
+struct Context {
+	Context(Int &in_num_entities) {
+	  DIST_FACTOR  = 1e-12f;  comment("Init DIST_FACTOR");
+  	MASS_FACTOR  = 1e-18f;  comment("Init MASS_FACTOR");
+
+  	ACC_CONSTANT = ((float) BIG_G) * DIST_FACTOR / MASS_FACTOR * DIST_FACTOR;
+		comment("Init ACC_CONSTANT");
+
+  	Count        = BATCH_STEPS;
+		num_entities = in_num_entities;
+	}
+
+  //
+  // These conversion factors exist to prevent Inf values.
+  // Distance and mass values are quite huge and calculations
+  // go over the max float value without breaking a sweat.
+  //
+  Float DIST_FACTOR;
+  Float MASS_FACTOR;
+  Float ACC_CONSTANT;
+
+  Int Count;   // Number of times to do the complete calculation
+  Int num_entities;
+};
+
+/**
  * Update speed and position.
  *
  * Param references important here!
@@ -29,36 +61,28 @@ void kernel_update(
 void vector_calc_acc(
   Float &x0, Float &y0, Float &z0,
   Float &accum_x, Float &accum_y, Float &accum_z,
-  Int &entity_index, Int &num_entities,
-  Float::Ptr &px, Float::Ptr &py, Float::Ptr &pz, Float::Ptr &pmass
+  Int &entity_index,
+  Float::Ptr &px, Float::Ptr &py, Float::Ptr &pz, Float::Ptr &pmass,
+	Context &c
 ) {
-  //
-  // These conversion factors are here to prevent Inf values.
-  // Distance and mass values are quite huge and calculations
-  // go over the max float value without breaking a sweat.
-  //
-  Float DIST_FACTOR  = 1e-12f;  comment("Init DIST_FACTOR");
-  Float MASS_FACTOR  = 1e-18f;  comment("Init MASS_FACTOR");
 
-	comment("Init ACC_CONSTANT");
-  Float ACC_CONSTANT = ((float) BIG_G) * DIST_FACTOR / MASS_FACTOR * DIST_FACTOR;
 
   header("Start vector_calc_acc");
 
-  x0    *= DIST_FACTOR;
-  y0    *= DIST_FACTOR;
-  z0    *= DIST_FACTOR;
+  x0    *= c.DIST_FACTOR;
+  y0    *= c.DIST_FACTOR;
+  z0    *= c.DIST_FACTOR;
 
   // Accumulated acceleration vector
   Float x0_acc = 0;
   Float y0_acc = 0;
   Float z0_acc = 0;
 
-  For (Int cur_block = 0, cur_block < (num_entities >> 4), cur_block++)
-    Float x    = *px    * DIST_FACTOR; comment("Get entity coordinates");
-    Float y    = *py    * DIST_FACTOR;
-    Float z    = *pz    * DIST_FACTOR;
-    Float mass = *pmass * MASS_FACTOR;
+  For (Int cur_block = 0, cur_block < (c.num_entities >> 4), cur_block++)
+    Float x    = *px    * c.DIST_FACTOR; comment("Get entity coordinates");
+    Float y    = *py    * c.DIST_FACTOR;
+    Float z    = *pz    * c.DIST_FACTOR;
+    Float mass = *pmass * c.MASS_FACTOR;
 
     // Acceleration vector
     Float nx1 = x0 - x;                comment("Calc acceleration vector");
@@ -79,12 +103,12 @@ void vector_calc_acc(
 
     Where (((cur_block << 4) + index()) != entity_index)
       denom = recipsqrt(d1);
-      acceleration = -1 * mass * ACC_CONSTANT * recip(d1);
+      acceleration = -1 * mass * c.ACC_CONSTANT * recip(d1);
     End
 
     // Post vc4: denom nonzero, acceleration zero for all intents and purposes
 
-    //acceleration *= ACC_CONSTANT;
+    //acceleration *= c.ACC_CONSTANT;
     comment("Calc force factor");
 /*
     // DEBUG
@@ -131,7 +155,7 @@ void vector_calc_acc(
 
 
 /**
- * Pre: num_entities multiple of 16
+ * Pre: c.num_entities multiple of 16
  *
  * Using ref's doesn't increase performance.
  *
@@ -150,11 +174,11 @@ void kernel_calc_acc(
   Float::Ptr &in_x, Float::Ptr &in_y, Float::Ptr &in_z,
   Float::Ptr &out_acc_x, Float::Ptr &out_acc_y, Float::Ptr &out_acc_z,
   Float::Ptr &in_mass,
-  Int &num_entities
+	Context &c
 ) {
   header("Start loop kernel_calc_acc");
 
-  For (Int cur_index = me(), cur_index < num_entities, cur_index += numQPUs())
+  For (Int cur_index = me(), cur_index < c.num_entities, cur_index += numQPUs())
     Int ptr_offset = cur_index - index();
 
     Float::Ptr px0    = in_x    + ptr_offset;
@@ -179,8 +203,9 @@ void kernel_calc_acc(
     vector_calc_acc(
       x0, y0, z0,
       x0_acc, y0_acc, z0_acc,
-      cur_index, num_entities,
-      px, py, pz, pmass
+      cur_index,
+      px, py, pz, pmass,
+			c
     );
 
     //
@@ -343,20 +368,19 @@ void kernel_gravity(
   Float::Ptr in_v_x, Float::Ptr in_v_y, Float::Ptr in_v_z,
   Float::Ptr in_acc_x, Float::Ptr in_acc_y, Float::Ptr in_acc_z,
   Float::Ptr in_mass,
-  Int num_entities,
+  Int in_num_entities,
   Int::Ptr signal
 ) {
-  Int Count = BATCH_STEPS;
+	Context c(in_num_entities);
 
-  For (Int i = 0, i < Count, i++)
+  For (Int i = 0, i < c.Count, i++)
 
     kernel_calc_acc(
       in_x, in_y, in_z,
       in_acc_x, in_acc_y, in_acc_z,
       in_mass,
-      num_entities
+			c
     );
-
 
     // Not tested yet
 //    barrier(); // barrier(signal);
@@ -376,7 +400,7 @@ void kernel_gravity(
       x, y, z,
       v_x, v_y, v_z,
       acc_x, acc_y, acc_z,
-      num_entities
+      c.num_entities
     );
 
 //    barrier(); // barrier(signal);

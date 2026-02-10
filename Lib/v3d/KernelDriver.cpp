@@ -582,7 +582,7 @@ Instructions encodeInstr(V3DLib::Instr instr) {
 		if (ret.empty()) {
 			Log::warn << "encodeInstr() comments not transferred, no output instructions";
 	  } else {
-			Log::warn << "v3d encodeInstr() transferring comments: " << instr.mnemonic(true);
+			//Log::warn << "v3d encodeInstr() transferring comments: " << instr.mnemonic(true);
 	    ret.front().transfer_comments(instr);
 		}
 	}

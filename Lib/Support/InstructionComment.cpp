@@ -12,7 +12,7 @@ void InstructionComment::transfer_comments(InstructionComment &rhs) {
   }
 
   if (!rhs.comment().empty()) {
-		Log::warn << "transfer_comments comment: " << rhs.comment();
+		//Log::warn << "transfer_comments comment: " << rhs.comment();
     comment(rhs.comment());
   }
 
@@ -75,7 +75,7 @@ void InstructionComment::comment(std::string msg) {
 	m_comment = msg;
 
  	if (!prev.empty()) {
-		warn << "\ncomment() comment already present: '" << prev << "'; adding: '" << msg << "'\n";
+		//warn << "comment() comment already present: '" << prev << "'; adding: '" << msg << "'";
 	  m_comment <<  "; " << prev;
 	}
 }
