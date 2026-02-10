@@ -12,6 +12,7 @@
 #include <sstream>          // std::stringstream
 #include <fstream>
 #include <filesystem>
+//#include <iomanip>
 
 namespace Log {
 namespace {
@@ -206,7 +207,10 @@ LogItem &LogItem::operator<<(unsigned long n) {
 
 
 LogItem &LogItem::operator<<(float n) {
-  m_log.buf() << n;
+	// Following untested
+  m_log.buf().setf(std::ios_base::scientific, std::ios_base::floatfield);
+
+	m_log.buf()	<< n;
 	return *this;
 }
 

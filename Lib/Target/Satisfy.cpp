@@ -271,6 +271,9 @@ bool encode_int_immediate(Instr::List &output, Reg dst, int in_value) {
   assert(!ret.empty());
   if (ret.empty()) return false;  // Not expected, but you never know
 
+/*
+	// Commenting moved up with expliciti labelling of  int/float
+
   std::string cmt;
   cmt << "Start full load imm " << in_value;
   ret.front().comment(cmt);
@@ -278,6 +281,7 @@ bool encode_int_immediate(Instr::List &output, Reg dst, int in_value) {
   std::string cmt2;
   cmt2 << "End full load imm " << in_value;
   ret.back().comment(cmt2);
+*/	
 
   output << ret;
   return true;
@@ -327,6 +331,16 @@ bool encode_int(Instr::List &ret, Reg dst, int value) {
 
   if (!encode_int_immediate(tmp, dst, value)) {
     return false;                                      // Conversion failed
+	}
+
+	{
+    std::string cmt;
+    cmt << "Load full imm int " << value;
+	  tmp.front().comment(cmt);
+
+		cmt ="";
+    cmt << "End load full imm int " << value;
+	  tmp.back().comment(cmt);
 	}
 
 	if (is_neg) {
@@ -380,20 +394,26 @@ bool encode_float(Instr::List &ret, Reg dst, float value) {
 	Reg r1(VarGen::fresh());  // temp value
 
   int int_value = *((int *) &value);
-  if (encode_int_immediate(ret, r1, int_value)) {
+  if (!encode_int_immediate(ret, r1, int_value)) {
+		return false;
+	}
+
+  tmp << mov(dst, r1);          // Result is int but will be handled as float downstream
+  ret << tmp;
+
+	{
+		//warn << "encode_float: " <<  value;
     std::string cmt;
-    cmt << "Load full float imm " << value;
+    cmt << "Load full imm float " << value;
 
-		// warn << "encode_float: " <<  cmt;
+	  ret.front().comment(cmt);
 
-    tmp << mov(dst, r1);          // Result is int but will be handled as float downstream
-	  tmp.front().comment(cmt);
-
-	  ret << tmp;
-  	return true;
+    cmt = "";
+    cmt << "End load full imm float " << value;
+	  ret.back().comment(cmt);
   }
 
-  return false;
+  return true;
 }
 
 

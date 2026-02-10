@@ -651,12 +651,15 @@ int remove_skips(Instructions &instr) {
   int skip_count = 0;
 
   for (int i = 0; i < (int) instr.size(); i++) {
-    auto const &cur_instr = instr[i];
+    auto &cur = instr[i];
 
-    if (cur_instr.skip()) {
+    if (cur.skip()) {
+    	auto &next = instr[i + 1];
+	    next.transfer_comments(cur);
+
       skip_count++;
     } else {
-      ret << cur_instr;
+      ret << cur;
     }
   }
 
