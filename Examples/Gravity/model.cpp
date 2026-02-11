@@ -20,9 +20,12 @@ void Model::init() {
   v_y.alloc(NUM);
   v_z.alloc(NUM);
   mass.alloc(NUM);
-  acc_z.alloc(NUM);
-  acc_x.alloc(NUM);
-  acc_y.alloc(NUM);
+
+	// Stride 16 for DMA
+  acc_x.alloc(16*NUM);
+  acc_y.alloc(16*NUM);
+  acc_z.alloc(16*NUM);
+
   dummy.alloc(16);
 
   auto &o = orbital_entities;
@@ -72,10 +75,21 @@ std::string Model::dump_pos() const {
 std::string Model::dump_acc() const {
   std::string ret;
 
+	auto dump_with_stride = [] (Float::Array const &vec) -> std::string {
+		std::string ret;
+
+		for (int i = 0; i < 16; ++i) {
+			ret << vec[i*16] << ", ";
+		}
+
+		return ret;
+	};
+
   ret << "\n"
-      << "acc_x: " << acc_x.dump() << "\n"
-      << "acc_y: " << acc_y.dump() << "\n"
-      << "acc_z: " << acc_z.dump() << "\n";
+      << "acc_x: " << dump_with_stride(acc_x) << "\n"
+      << "acc_y: " << dump_with_stride(acc_y) << "\n"
+      << "acc_z: " << dump_with_stride(acc_z) << "\n"
+	;
 
   return ret;
 }

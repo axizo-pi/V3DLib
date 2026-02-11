@@ -12,7 +12,6 @@
 #include <sstream>          // std::stringstream
 #include <fstream>
 #include <filesystem>
-//#include <iomanip>
 
 namespace Log {
 namespace {
@@ -127,7 +126,11 @@ protected:
 
 		ofstream of;
 		of.open(path.str(), ios::app);
-		assert(!of.fail(), "Could not open logfile for appending");
+
+		// For multiple kernel calls, this is called for every call anyway.
+		// Can't see why. TODO examine and fix.
+		assert(!of.fail(), "Can not open logfile for appending");
+
     of << msg;
     of.close();
 	}

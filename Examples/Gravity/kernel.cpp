@@ -12,14 +12,15 @@ namespace {
  */
 struct Context {
 	Context(Int &in_num_entities) {
-	  DIST_FACTOR  = 1e-12f;  comment("Init DIST_FACTOR");
-  	MASS_FACTOR  = 1e-18f;  comment("Init MASS_FACTOR");
+	  DIST_FACTOR   = 1e-12f;         comment("Init DIST_FACTOR");
+  	MASS_FACTOR   = 1e-18f;         comment("Init MASS_FACTOR");
 
-  	ACC_CONSTANT = ((float) BIG_G) * DIST_FACTOR / MASS_FACTOR * DIST_FACTOR;
+  	ACC_CONSTANT  = ((float) BIG_G) * DIST_FACTOR / MASS_FACTOR * DIST_FACTOR;
 		comment("Init ACC_CONSTANT");
 
   	Count        = BATCH_STEPS;
-		num_entities = in_num_entities;
+		num_entities = in_num_entities; // Must be multiple of 16
+  	delta_t      = (float) dt;      comment("init delta_t");
 	}
 
   //
@@ -31,14 +32,14 @@ struct Context {
   Float MASS_FACTOR;
   Float ACC_CONSTANT;
 
-  Int Count;   // Number of times to do the complete calculation
-  Int num_entities;
+  Int   Count;          // Number of times to do the complete calculation per kernel call
+  Int   num_entities;
+  Float delta_t;				// Time between full calculations. Default is 1 day
 };
+
 
 /**
  * Update speed and position.
- *
- * Param references important here!
  */
 void kernel_update(
   Float &x    , Float &y    , Float &z,
@@ -65,8 +66,6 @@ void vector_calc_acc(
   Float::Ptr &px, Float::Ptr &py, Float::Ptr &pz, Float::Ptr &pmass,
 	Context &c
 ) {
-
-
   header("Start vector_calc_acc");
 
   x0    *= c.DIST_FACTOR;
@@ -110,13 +109,6 @@ void vector_calc_acc(
 
     //acceleration *= c.ACC_CONSTANT;
     comment("Calc force factor");
-/*
-    // DEBUG
-    //acceleration = 0.5f;
-    nx1 = 0.1f;
-    ny1 = 0.1f;
-    nz1 = 0.1f;
-*/		
 
     // Normalize the acceleration vector
     nx1 *= denom;  comment("Normalize the acc vector"); 
@@ -140,11 +132,6 @@ void vector_calc_acc(
     pmass.inc();
   End
 
-// DEBUG
-//    x0_acc = 0.1e-5f;
-//    y0_acc = 0.2e-5f;
-//    z0_acc = 0.3e-5f;
-
   //
   // Sum up and store in acc accumulators
   //
@@ -155,9 +142,6 @@ void vector_calc_acc(
 
 
 /**
- * Pre: c.num_entities multiple of 16
- *
- * Using ref's doesn't increase performance.
  *
  * -------------------
  *
@@ -211,6 +195,10 @@ void kernel_calc_acc(
     //
     // Sum up and return the acceleration. See Note 1.
     //
+
+		// Following works for TMU, not for VPM(DMA).
+		// VPM can not deal with vector offsets
+/*
     Float::Ptr pacc_x = out_acc_x + ptr_offset;
     *pacc_x = x0_acc;
 
@@ -219,22 +207,33 @@ void kernel_calc_acc(
 
     Float::Ptr pacc_z = out_acc_z + ptr_offset;
     *pacc_z = z0_acc;
+*/
+
+		{
+			Int offset = (cur_index << 4);
+
+	    Float::Ptr pacc_x = out_acc_x + offset;
+	    *pacc_x = x0_acc;
+
+	    Float::Ptr pacc_y = out_acc_y + offset;
+	    *pacc_y = y0_acc;
+
+	    Float::Ptr pacc_z = out_acc_z + offset;
+	    *pacc_z = z0_acc;
+		}
   End
 }
 
 
 /**
- * Pre: num_entities multiple of 16
  *
- * Using ref's doesn't increase performance.
  */
 void kernel_step(
   Float::Ptr &p_x    , Float::Ptr &p_y    , Float::Ptr &p_z,
   Float::Ptr &p_v_x  , Float::Ptr &p_v_y  , Float::Ptr &p_v_z,
   Float::Ptr &p_acc_x, Float::Ptr &p_acc_y, Float::Ptr &p_acc_z,
-  Int &num_entities
+	Context &c
 ) {
-  Float delta_t = (float) dt;
 
   header("Start kernel_step");
 
@@ -247,26 +246,31 @@ void kernel_step(
   p_v_x   += start_offset;
   p_v_y   += start_offset;
   p_v_z   += start_offset;
-  p_acc_x += start_offset;
-  p_acc_y += start_offset;
-  p_acc_z += start_offset;
 
-  For (Int cur_block = me(), cur_block < (num_entities >> 4), cur_block += numQPUs())
+  Int dma_offset = index()*16;
+  Int dma_step   = 16*16;
+
+  p_acc_x += dma_offset;
+  p_acc_y += dma_offset;
+  p_acc_z += dma_offset;
+
+  For (Int cur_block = me(), cur_block < (c.num_entities >> 4), cur_block += numQPUs())
     Float x     = *p_x;
     Float y     = *p_y;
     Float z     = *p_z;
     Float v_x   = *p_v_x;
     Float v_y   = *p_v_y;
     Float v_z   = *p_v_z;
-    Float acc_x = *p_acc_x;
-    Float acc_y = *p_acc_y;
-    Float acc_z = *p_acc_z;
+
+    Float acc_x = *(p_acc_x + cur_block*dma_step);
+    Float acc_y = *(p_acc_y + cur_block*dma_step);
+    Float acc_z = *(p_acc_z + cur_block*dma_step);
 
     kernel_update(
       x    , y    , z,
       v_x  , v_y  , v_z,
       acc_x, acc_y, acc_z,
-      delta_t
+      c.delta_t
     );
 
     *p_v_x = v_x;
@@ -283,10 +287,6 @@ void kernel_step(
     p_v_x   += step;
     p_v_y   += step;
     p_v_z   += step;
-    p_acc_x += step;
-    p_acc_y += step;
-    p_acc_z += step;
-
   End
 }
 
@@ -296,10 +296,11 @@ void kernel_step(
 /*
  //
  // Start of the kernel which will be more efficient on vc4,
- // to compensate the DMA write.
+ // to compensate for the DMA write.
  //
- // For small number of entities, this perform less than current kernel,
- // because 16 entities are processed per thread
+ // For small number of entities, this will perform less than current kernel,
+ // because 16 entities are processed per QPU. Entities can thus not
+ // be spread out over QPU's.
  //
 
 / **
@@ -361,7 +362,7 @@ void handle_vector(
 
 
 /**
- * Pre: num_entities multiple of 16
+ * Main entry point kernel
  */
 void kernel_gravity(
   Float::Ptr in_x, Float::Ptr in_y, Float::Ptr in_z,
@@ -383,7 +384,7 @@ void kernel_gravity(
     );
 
     // Not tested yet
-//    barrier(); // barrier(signal);
+    barrier(); // barrier(signal);
 
     // kernel_step() adjusts pointers, reset to start before calling  
     Float::Ptr x = in_x;
@@ -400,10 +401,10 @@ void kernel_gravity(
       x, y, z,
       v_x, v_y, v_z,
       acc_x, acc_y, acc_z,
-      c.num_entities
+      c
     );
 
-//    barrier(); // barrier(signal);
+    barrier(); // barrier(signal);
 
   End
 }

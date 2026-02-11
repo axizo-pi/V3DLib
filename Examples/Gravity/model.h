@@ -20,7 +20,12 @@ using namespace V3DLib;
  *      ERROR: execute_qpu(): mbox_property call failed
  *
  * What happened is that the DMA write on the _last_ buffer in the model failed.
- * Reason completely unknown.
+ *
+ * This because of how DMA works:
+ * - Only the first value (index 0) in a vector value is used
+ * - All other pointer values are consecutive from first.
+ *
+ * If the DMA write is defined properly, buffer `dummy` can be removed.
  */
 struct Model {
   Float::Array x;
