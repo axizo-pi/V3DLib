@@ -373,6 +373,7 @@ void kernel_gravity(
   Int::Ptr signal
 ) {
 	Context c(in_num_entities);
+  comment("Start Count loop");
 
   For (Int i = 0, i < c.Count, i++)
 
@@ -383,8 +384,8 @@ void kernel_gravity(
 			c
     );
 
-    // Not tested yet
-    barrier(); // barrier(signal);
+    barrier();
+    //barrier(signal);
 
     // kernel_step() adjusts pointers, reset to start before calling  
     Float::Ptr x = in_x;
@@ -404,7 +405,8 @@ void kernel_gravity(
       c
     );
 
-    barrier(); // barrier(signal);
+    barrier();
+    //barrier(signal);
 
   End
 }

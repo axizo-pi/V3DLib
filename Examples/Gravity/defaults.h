@@ -21,16 +21,16 @@
  */
 
 float const IMG_CONVERSION_FACTOR = 2.5e13f;
-int const BATCH_STEPS = 150;
+int const BATCH_STEPS = 2;
 
 const int N_PLANETS   = 9;                       // Also includes the sun, pluto missing
 const int N_ASTEROIDS = 23;
 const int NUM         = N_PLANETS + N_ASTEROIDS; // Total number of gravitational entities
 
-double const dt    = 86400;
-double const DECADE = 86400 * 365 * 10; // approximately a decade in seconds
+double const dt    = 86400;                      // 1 day
+double const DECADE = 86400 * 365 * 10;          // approximately a decade in seconds
 double const t_end = ((double) 25) * DECADE;
-double const BIG_G = 6.67e-11; // gravitational constant, (m^3⋅kg^−1⋅s^−2)
+double const BIG_G = 6.67e-11;                   // gravitational constant, (m^3⋅kg^−1⋅s^−2)
 
 
 #endif //  _V3DLIB_GRAVITY_DEFAULTS_H
