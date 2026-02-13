@@ -94,11 +94,10 @@ void mandelbrot_multi(
   Int yMax = numStepsHeight - numQPUs();
 
   For (Int c = 0, c < count, c++)
-    For (Int yStep = 0, yStep < yMax, yStep += numQPUs())
-      Int yIndex = yStep + me();
+    For (Int yIndex = me(), yIndex < yMax, yIndex += numQPUs())
       Int::Ptr dst = result + yIndex*numStepsWidth;
 
-      For (Int xStep = 0, xStep < numStepsWidth - 16, xStep += 16)
+      For (Int xStep = 0, xStep < numStepsWidth, xStep += 16)
         Int xIndex = xStep + index();
 
         mandelbrotCore(
