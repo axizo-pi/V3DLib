@@ -254,7 +254,7 @@ void kernel_step(
   p_acc_y += dma_offset;
   p_acc_z += dma_offset;
 
-  For (Int cur_block = me(), cur_block < (c.num_entities >> 4), cur_block += numQPUs())
+  For (Int cur_block2 = me(), cur_block2 < (c.num_entities >> 4), cur_block2 += numQPUs())
     Float x     = *p_x;
     Float y     = *p_y;
     Float z     = *p_z;
@@ -262,9 +262,9 @@ void kernel_step(
     Float v_y   = *p_v_y;
     Float v_z   = *p_v_z;
 
-    Float acc_x = *(p_acc_x + cur_block*dma_step);
-    Float acc_y = *(p_acc_y + cur_block*dma_step);
-    Float acc_z = *(p_acc_z + cur_block*dma_step);
+    Float acc_x = *(p_acc_x + cur_block2*dma_step);
+    Float acc_y = *(p_acc_y + cur_block2*dma_step);
+    Float acc_z = *(p_acc_z + cur_block2*dma_step);
 
     kernel_update(
       x    , y    , z,
@@ -407,6 +407,5 @@ void kernel_gravity(
 
     barrier();
     //barrier(signal);
-
   End
 }
