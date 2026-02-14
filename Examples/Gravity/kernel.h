@@ -13,7 +13,8 @@ void kernel_gravity(
   Float::Ptr in_v_x, Float::Ptr in_v_y, Float::Ptr in_v_z,
   Float::Ptr in_acc_x, Float::Ptr in_acc_y, Float::Ptr in_acc_z,
   Float::Ptr in_mass,
-  Int num_entities
+  Int num_entities,
+  Int::Ptr signal
 );
 
 

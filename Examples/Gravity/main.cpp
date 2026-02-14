@@ -13,10 +13,13 @@ using namespace Log;
 ///////////////////////////////////////////////////////////////
 
 int main(int argc, const char *argv[]) {
-  RegisterMap::L2Cache_enable(false);
-  warn << "L2CacheEnabled(): " << RegisterMap::L2CacheEnabled();
-
   settings.init(argc, argv);
+
+  if (Platform::compiling_for_vc4()) {
+    // Disable L2 cache: this ensure that DMA and TMU can work together
+    RegisterMap::L2Cache_enable(false);
+    warn << "L2CacheEnabled(): " << RegisterMap::L2CacheEnabled();
+  }
 
   warn << "Num qpu's: " << settings.num_qpus;
 
@@ -48,6 +51,8 @@ int main(int argc, const char *argv[]) {
     m.init();
     m.plot();
 
+    Int::Array signal(16);
+
     auto k = compile(kernel_gravity, settings);
     k.setNumQPUs(settings.num_qpus);
 
@@ -56,7 +61,8 @@ int main(int argc, const char *argv[]) {
       &m.v_x, &m.v_y, &m.v_z,
       &m.acc_x, &m.acc_y, &m.acc_z,
       &m.mass,
-      NUM
+      NUM,
+      &signal
     );
 
     {

@@ -572,7 +572,7 @@ void barrier() {
   if (Platform::compiling_for_vc4()) {
     Log::warn << "barrier compiling for vc4";
     // vc4 - Stmt::BARRIER will not be passed on
-    vc4::barrier();
+    vc4::barrier(true);
   } else {
     // v3d
     stmtStack().push(Stmt::create(Stmt::BARRIER));
