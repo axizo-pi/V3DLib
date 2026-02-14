@@ -234,7 +234,6 @@ void kernel_step(
   Float::Ptr &p_acc_x, Float::Ptr &p_acc_y, Float::Ptr &p_acc_z,
 	Context &c
 ) {
-
   header("Start kernel_step");
 
   Int step         = numQPUs() << 4;
@@ -369,14 +368,12 @@ void kernel_gravity(
   Float::Ptr in_v_x, Float::Ptr in_v_y, Float::Ptr in_v_z,
   Float::Ptr in_acc_x, Float::Ptr in_acc_y, Float::Ptr in_acc_z,
   Float::Ptr in_mass,
-  Int in_num_entities,
-  Int::Ptr signal
+  Int in_num_entities
 ) {
 	Context c(in_num_entities);
   comment("Start Count loop");
 
   For (Int i = 0, i < c.Count, i++)
-
     kernel_calc_acc(
       in_x, in_y, in_z,
       in_acc_x, in_acc_y, in_acc_z,

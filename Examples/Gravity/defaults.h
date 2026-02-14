@@ -21,7 +21,7 @@
  */
 
 float const IMG_CONVERSION_FACTOR = 2.5e13f;
-int const BATCH_STEPS = 3;
+int const BATCH_STEPS = 10;
 
 const int N_PLANETS   = 9;                       // Also includes the sun, pluto missing
 const int N_ASTEROIDS = 23;
