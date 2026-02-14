@@ -262,17 +262,6 @@ When VPM/DMA is used, the index number is compensated for automatically, hence n
 
     	Seq<Instr> ret;
 
-    /*
-      // Previous version, adding an offset for multiple QPUs
-      // This was silly idea and has been removed. Kept here for reference
-      // offset = 4 * (vector_id + 16 * qpu_num);
-      ret << shl(ACC1, rf(RSV_QPU_ID), 4) // Avoid ACC0 here, it's used for getting QPU_ID and ELEM_ID (next stmt)
-          << mov(ACC0, ELEM_ID)
-          << add(ACC1, ACC1, ACC0)
-          << shl(ACC0, ACC1, 2)           // offset now in ACC0
-          << add_uniform_pointer_offset(code);
-    */
-
       // offset = 4 * vector_id;
       ret << mov(ACC0, ELEM_ID)
           << shl(ACC0, ACC0, 2)             // offset now in ACC0
