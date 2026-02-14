@@ -293,6 +293,20 @@ unsigned qpu_enable(int file_desc, unsigned enable)
 /**
  * @param control  address of launch message
  * @param fd       file descriptor of the vc4 mailbox
+ *
+ * ----------------------
+ *
+ * Notes
+ * =====
+ *
+ * - if a mailbox error occurs here, the entire system blocks,
+ *   even for consequent calls to other kernels.
+ *   You need to restart the Pi to continue.
+ *   **TODO**: Find a way to reset a Pi after this or similar errors.
+ *
+ * - Confirmed reason to getting a mailbox error here:  
+ * Accessing a buffer object outside of its assigned range.
+ * This happened with a misaligned DMA write.
  */
 unsigned execute_qpu(int fd, unsigned num_qpus, unsigned control, unsigned noflush, unsigned timeout) {
 /*

@@ -519,7 +519,7 @@ v3d::instr::Instr encodeBranchLabel(V3DLib::Instr src_instr) {
  * **Pre:** All instructions not meant for v3d are detected beforehand and flagged as error.
  */
 Instructions encodeInstr(V3DLib::Instr instr) {
-	Log::warn << "Called v3d encodeInstr()";
+	//Log::debug << "Called v3d encodeInstr()";
   Instructions ret;
 
   // Encode core instruction
@@ -578,12 +578,12 @@ Instructions encodeInstr(V3DLib::Instr instr) {
 
   assert(!ret.empty());
 
-  if (!ret.empty()) {
-		Log::warn << "v3d encodeInstr() transferring comments";
-    ret.front().transfer_comments(instr);
-  } else {
-		if (instr.has_comments()) {
+	if (instr.has_comments()) {
+		if (ret.empty()) {
 			Log::warn << "encodeInstr() comments not transferred, no output instructions";
+	  } else {
+			//Log::warn << "v3d encodeInstr() transferring comments: " << instr.mnemonic(true);
+	    ret.front().transfer_comments(instr);
 		}
 	}
 
@@ -649,8 +649,11 @@ bool checkUniformAtTop(V3DLib::Instr::List const &instrs) {
 
 /**
  * Translate instructions from target to v3d
+ *
+ * @param instrs  Input list of Target instructions
+ * @param dst     output list of v3d instructions
  */
-void _encode(V3DLib::Instr::List const &instrs, Instructions &instructions) {
+void _encode(V3DLib::Instr::List const &instrs, Instructions &dst) {
   warn << "Called _encode()";
 #ifdef DEBUG	
   assertq(checkUniformAtTop(instrs), "_encode(): checkUniformAtTop() failed (v3d)", true);
@@ -667,7 +670,7 @@ void _encode(V3DLib::Instr::List const &instrs, Instructions &instructions) {
     if (instr.tag == INIT_BEGIN) {
       prev_was_init_begin = true;
     } else if (instr.tag == INIT_END) {
-      instructions << encode_init();
+      dst << encode_init();
       prev_was_init_end = true;
     } else {
       Instructions ret = v3d::encodeInstr(instr);
@@ -682,12 +685,12 @@ void _encode(V3DLib::Instr::List const &instrs, Instructions &instructions) {
         prev_was_init_end = false;
       }
 
-      instructions << ret;
+      dst << ret;
     }
   }
 
-  instructions << sync_tmu()
-               << end_program();
+  dst << sync_tmu()
+      << end_program();
 }
 
 
@@ -904,11 +907,18 @@ std::string KernelDriver::emit_opcodes() {
 
 	int count = 0;
   for (auto const &instr : instructions) {
+		auto buf = instr.mnemonic(false);
+		int size = (int) buf.size();
+
+    ret << instr.emit_header();
+
 		if (do_line_numbers) {
    		ret << count << ": ";
 		}
 
-    ret << instr.mnemonic(true) << "\n";
+    ret << buf 
+        << instr.emit_comment(size)
+		    << "\n";
 	  count++;
   }
 

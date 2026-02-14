@@ -32,7 +32,7 @@ void BaseSettings::process(BaseKernel &k) {
   //       this will prevent dumping the v3d code (mnemonics, actually) on every call.
   if (output_code) {
     if (output_count == 0) {
-			warn << "BaseSettings outputting code";
+			cdebug << "BaseSettings outputting code";
 
       assert(!name.empty());
       std::string code_filename = name + "_code.txt";

@@ -116,6 +116,7 @@ public:
   static int numTMUPerSlice();
   static int VPMMemorySize();
   static int L2CacheEnabled();
+  static void L2Cache_enable(bool enable);
 
   static SchedulerRegisterValues SchedulerRegisters();
   static void SchedulerRegisters(SchedulerRegisterValues values);

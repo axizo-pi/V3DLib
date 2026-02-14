@@ -408,7 +408,7 @@ bool open() {
 
   if (fd0 <= 0 && fd1 <= 0) {
     std::string msg = "Could not open v3d device, did you forget 'sudo'?";
-    assertq(false, msg);
+		Log::assertq(false, msg);
     return false;
   }
 

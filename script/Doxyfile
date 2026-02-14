@@ -954,6 +954,7 @@ INPUT                  =            \
   ../Lib/Support/Helpers.cpp        \
   ../Lib/v3d/Combine.cpp            \
   ../Lib/vc4/Functions.cpp          \
+  ../Lib/vc4/RegisterMap.cpp        \
   ../Lib/Target/instr/Mnemonics.cpp
 
 # This tag can be used to specify the character encoding of the source files

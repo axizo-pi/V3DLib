@@ -4,6 +4,8 @@
 #include "StmtStack.h"
 #include "global/log.h"
 
+using namespace Log;
+
 namespace V3DLib {
 namespace {
 
@@ -36,7 +38,7 @@ void Else_() {
   Stmt::Ptr s = stmtStack().last_stmt();
 
   if (!s->then_block(*block_ptr)) {
-    error("Syntax error: 'Else' without preceding 'If' or 'Where'");
+    cerr << "Syntax error: 'Else' without preceding 'If' or 'Where'";
   }
 
   stmtStack().push();  // Set top stack item for else-block
@@ -112,19 +114,24 @@ void ForBody_() {
 //=============================================================================
 
 void header(char const *str) {
-  stmtStack().last_stmt()->header(str);
+	auto stmt = stmtStack().last_stmt(false);
+
+	if (stmt == nullptr) {
+		cerr << "header() no statement to add to for string: '" << str << "'";
+	} else {
+		stmt->header(str);
+	}
 }
 
 
 void comment(char const *str) {
-  stmtStack().last_stmt()->comment(str);
-}
+	auto stmt = stmtStack().last_stmt(false);
 
-
-void break_point(bool val) {
-  if (val) {
-    stmtStack().last_stmt()->break_point();
-  }
+	if (stmt == nullptr) {
+		cerr << "comment() no statement to add to for string: '" << str << "'";
+	} else {
+		stmt->comment(str);
+	}
 }
 
 }  // namespace V3DLib

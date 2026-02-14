@@ -126,7 +126,11 @@ protected:
 
 		ofstream of;
 		of.open(path.str(), ios::app);
-		assert(!of.fail(), "Could not open logfile for appending");
+
+		// For multiple kernel calls, this is called for every call anyway.
+		// Can't see why. TODO examine and fix.
+		assert(!of.fail(), "Can not open logfile for appending");
+
     of << msg;
     of.close();
 	}
@@ -206,7 +210,10 @@ LogItem &LogItem::operator<<(unsigned long n) {
 
 
 LogItem &LogItem::operator<<(float n) {
-  m_log.buf() << n;
+	// Following untested
+  m_log.buf().setf(std::ios_base::scientific, std::ios_base::floatfield);
+
+	m_log.buf()	<< n;
 	return *this;
 }
 
@@ -286,7 +293,7 @@ void log_to_cout(bool val) {
 }
 
 
-void assert(bool condition, const std::string &msg) {
+void assertq(bool condition, const std::string &msg) {
 	if (condition) return;
 	fatal << msg << "\n";
 }

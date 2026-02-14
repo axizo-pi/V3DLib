@@ -271,6 +271,9 @@ bool encode_int_immediate(Instr::List &output, Reg dst, int in_value) {
   assert(!ret.empty());
   if (ret.empty()) return false;  // Not expected, but you never know
 
+/*
+	// Commenting moved up with expliciti labelling of  int/float
+
   std::string cmt;
   cmt << "Start full load imm " << in_value;
   ret.front().comment(cmt);
@@ -278,6 +281,7 @@ bool encode_int_immediate(Instr::List &output, Reg dst, int in_value) {
   std::string cmt2;
   cmt2 << "End full load imm " << in_value;
   ret.back().comment(cmt2);
+*/	
 
   output << ret;
   return true;
@@ -327,6 +331,16 @@ bool encode_int(Instr::List &ret, Reg dst, int value) {
 
   if (!encode_int_immediate(tmp, dst, value)) {
     return false;                                      // Conversion failed
+	}
+
+	{
+    std::string cmt;
+    cmt << "Load full imm int " << value;
+	  tmp.front().comment(cmt);
+
+		cmt ="";
+    cmt << "End load full imm int " << value;
+	  tmp.back().comment(cmt);
 	}
 
 	if (is_neg) {
@@ -380,20 +394,26 @@ bool encode_float(Instr::List &ret, Reg dst, float value) {
 	Reg r1(VarGen::fresh());  // temp value
 
   int int_value = *((int *) &value);
-  if (encode_int_immediate(ret, r1, int_value)) {
+  if (!encode_int_immediate(ret, r1, int_value)) {
+		return false;
+	}
+
+  tmp << mov(dst, r1);          // Result is int but will be handled as float downstream
+  ret << tmp;
+
+	{
+		//warn << "encode_float: " <<  value;
     std::string cmt;
-    cmt << "Load full float imm " << value;
+    cmt << "Load full imm float " << value;
 
-		// warn << "encode_float: " <<  cmt;
+	  ret.front().comment(cmt);
 
-    tmp << mov(dst, r1);          // Result is int but will be handled as float downstream
-	  tmp.front().comment(cmt);
-
-	  ret << tmp;
-  	return true;
+    cmt = "";
+    cmt << "End load full imm float " << value;
+	  ret.back().comment(cmt);
   }
 
-  return false;
+  return true;
 }
 
 
@@ -443,7 +463,7 @@ Instr::List _encode_imm(Reg dst, Imm imm) {
 }  // anon namespace
 
 
-Instr::List encode_imm(V3DLib::Instr const &instr) {
+Instr::List encode_imm(V3DLib::Instr &instr) {
   Instr::List ret;
 
 	bool do_li = false;
@@ -487,21 +507,18 @@ Instr::List encode_imm(V3DLib::Instr const &instr) {
 		return ret;
 	}
 
+	//
+	// Explicit encoding of immediate value
+	//
   ret = _encode_imm(dst, imm);
 	assert(!ret.empty());
 
-	if (ret.size() == 1 && ret[0] == instr) {
-		// No conversion
-		breakpoint;  // Shouldn't really happen, warn me
-		return ret;
-	}
-
 	if (!do_li) {
+		breakpoint; // Warn me when this happens
 		auto new_instr = instr;
 		new_instr.ALU.srcA = dst;
 		ret << new_instr;
 	}
-
 
   if (instr.set_cond().flags_set()) {
     breakpoint;  // to check what flags need to be set - case not handled yet
@@ -510,6 +527,8 @@ Instr::List encode_imm(V3DLib::Instr const &instr) {
 	for (int i = 0; i < ret.size(); ++i) {
 	  ret.get(i).cond(instr.assign_cond());
 	}
+
+	ret.front().transfer_comments(instr);
 
 	return ret;
 }
@@ -521,7 +540,7 @@ void adjust_immediates(Instr::List &instrs) {
 	Instr::List res;
 
   for (int i = 0; i < instrs.size(); i++) {
-		Instr const &instr = instrs[i];
+		Instr &instr = instrs[i];
 
 		if ( instr.tag == LI || instr.tag == ALU) {
 			res << encode_imm(instr);

@@ -566,9 +566,10 @@ std::vector<Indexes16> indexes_to_16vectors(std::vector<Offsets> const &fft_inde
   }
 
   if (!(valid_count == 0 || valid_count == (int) ret.size())) {
-    std::string msg = "Valid count failed: ";
-    msg << valid_count << " out of " << ret.size() << " valid";
-    assertq(false, msg);
+    cerr << "Valid count failed: "
+         << valid_count << " out of " << ret.size() << " valid"
+				 << thrw
+		;
   }
   
 

@@ -51,3 +51,15 @@ std::string title(std::string const &str) {
 
   return ret;
 }
+
+
+std::string &operator<<(std::string &a, float val) {
+//	a += std::to_string(val);
+
+	// Output in scientific notation
+	std::stringstream out;
+  out << std::scientific;
+  out << val;
+  a += out.str();
+	return a;
+}

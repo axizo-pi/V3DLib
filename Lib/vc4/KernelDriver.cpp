@@ -5,7 +5,6 @@
 #include "Source/Translate.h"
 #include "Target/RemoveLabels.h"
 #include "vc4.h"
-//#include "DMA/Operations.h"
 #include "Target/instr/Mnemonics.h"
 #include "SourceTranslate.h"  // add_uniform_pointer_offset()
 #include "Target/Satisfy.h"
@@ -147,7 +146,7 @@ std::string KernelDriver::emit_opcodes() {
     }
 
     ret << list[i]
-        << t.emit_comment(list[i].size(), max_size)
+        << t.emit_comment((int) list[i].size(), max_size)
         << "\n";
   }
 

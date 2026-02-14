@@ -74,11 +74,14 @@ void set_log_dir(std::string const &path);
 void set_log_file(std::string const &file);
 void log_to_cout(bool val);
 
+void assertq(bool condition, const std::string &msg);
 
 #pragma push_macro("assert")
 #undef assert
 
-void assert(bool condition, const std::string &msg);
+inline void assert(bool condition, const std::string &msg) {
+	assertq(condition, msg);
+}
 
 #pragma pop_macro("assert")
 

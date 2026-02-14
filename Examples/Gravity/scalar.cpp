@@ -141,6 +141,7 @@ void init_orbital_entities() {
 			0, Asteroid_Speed, 0,
 			Asteroid_Mass
 		};
+		
 	}
 }
 

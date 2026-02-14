@@ -621,13 +621,6 @@ void emulate(int numQPUs, Instr::List &instrs, int maxReg, IntList &uniforms, Bu
         //
         Instr const instr = instrs.get(s->pc++);
 
-        if (instr.break_point()) {
-#ifdef DEBUG
-          printf("Emulator: hit breakpoint\n");
-          breakpoint
-#endif
-        }
-
         switch (instr.tag) {
           case LI: {
             Vec imm(instr.LI.imm);

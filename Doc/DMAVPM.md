@@ -17,15 +17,21 @@ There are two transfer options:
 [^1]: *VPM IS mentioned in the QPU registers though, so it might be that I just never encountered*
       *its usage for `v3d`. This might be something I may investigate when bored and nothing else to do.*
 
-**VPM**:
+### VPM
 
 - can execute one read and on write in parallel,
 - but multiple reads and multiple writes block each other.
 - The QPU will stall if a read has to wait on a read, or a write has to wait on a write.
 - It has the advantage of being able to handle multiple 16-vectors in one go.
 
-**TMU**:
+**IMPORTANT: The `DMA` sidesteps the L2 cache**
 
+The L2 cache is not refreshed after a `DMA` write.
+This is an issue when `VPM` and `TMU` are used on the same buffer object with a kernel execution.
+
+### TMU
+
+- Uses a single L2 cache for all slices.
 - does not block *and* operations can overlap, up to a limit.
 - Up to 4 (`vc4`) or 8 (`v3d`) read operations can be performed together, and
 - (apparently) an unlimited number of writes.
