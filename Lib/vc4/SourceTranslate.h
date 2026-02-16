@@ -15,6 +15,7 @@ public:
   bool stmt(Instr::List &seq, Stmt::Ptr s) override; 
 };
 
+void add_init_block(Instr::List &code);
 
 }  // namespace vc4
 }  // namespace V3DLib

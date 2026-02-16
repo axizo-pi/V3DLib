@@ -594,13 +594,13 @@ void stmt(Instr::List *seq, Stmt::Ptr s) {
 
 /**
  * Insert markers for initialization code
- *
- * Only used for `v3d`.
  */
 void insertInitBlock(Instr::List &code) {
   int index = code.lastUniformOffset();
   Instr::List ret;
-  ret << Instr(INIT_BEGIN) << Instr(INIT_END);
+
+  ret << Instr(INIT_BEGIN)
+      << Instr(INIT_END);
 
   code.insert(index + 1, ret);
 }

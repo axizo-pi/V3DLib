@@ -38,7 +38,7 @@ void loadStorePass(Target::Instr::List &instrs) {
   for (int i = 0; i < instrs.size(); i++) {
     Target::Instr instr = instrs[i];
 
-		auto acc4 = ACC4();   // Should not be converted to rf here
+    auto acc4 = ACC4();   // Should not be converted to rf here
 
     if (instr.tag == RECV && instr.dest() != acc4) {
       Target::Instr::List tmp(2);
@@ -65,7 +65,7 @@ void loadStorePass(Target::Instr::List &instrs) {
 void compile_postprocess(Target::Instr::List &targetCode) {
   assertq(!targetCode.empty(), "compile_postprocess(): passed target code is empty");
 
-	loadStorePass(targetCode);
+  loadStorePass(targetCode);
   //compile_data.target_code_before_regalloc = targetCode.dump();
 
   // Perform register allocation
@@ -80,9 +80,9 @@ void compile_postprocess(Target::Instr::List &targetCode) {
 
 
 KernelDriver::KernelDriver() : V3DLib::KernelDriver(Vc4Buffer) {
-	assert(Platform::compiling_for_vc4());
-	Log::debug << "selecting vc4 as kernel type";
-	m_type = vc4;
+  assert(Platform::compiling_for_vc4());
+  Log::debug << "selecting vc4 as kernel type";
+  m_type = vc4;
 }
 
 
@@ -120,9 +120,10 @@ std::string KernelDriver::emit_opcodes() {
 
   auto list = vc4::opcodes(m_code);
 
-  if ((int) list.size() != m_targetCode.size()) {
+  // Following takes tags INIT_BEGIN/INIT_END into account
+  if ((int) (list.size() + 2) != m_targetCode.size()) {
     Log::cerr << "vc4 emit_opcodes() discrepancy in opcode and target code size."
-              << "opcode size: " << list.size() << ", "
+              << "opcode size: " << list.size() << " (plus INIT), "
               << "target code size: " << m_targetCode.size()
               << thrw
     ;
@@ -136,8 +137,15 @@ std::string KernelDriver::emit_opcodes() {
   }
 
   std::string ret;
-  for (int i = 0; i < (int) list.size(); ++i) {
-    auto const &t = m_targetCode[i];
+  int t_i = 0;
+  for (int i = 0; i < (int) list.size(); ++i, t_i++) {
+    auto &t = m_targetCode[t_i];
+
+    // Skip the init block markers
+    if (t.tag == INIT_BEGIN || t.tag == INIT_END) {
+      ++t_i;
+      t = m_targetCode[t_i];
+    }
 
     ret << t.emit_header();
 
@@ -164,37 +172,28 @@ void KernelDriver::compile_intern() {
   obtain_ast();
 
   V3DLib::translate_stmt(m_targetCode, m_body);
+  assert(!m_targetCode.empty());
+  insertInitBlock(m_targetCode);
 
+  // Add final dummy uniform handling - See Note 1, function `invoke()` in `vc4/Invoke.cpp`,
   {
     using namespace V3DLib::Target::instr;  // for mov()
-    // Add final dummy uniform handling - See Note 1, function `invoke()` in `vc4/Invoke.cpp`,
-    // and uniform ptr index offsets
 
-    // _64 not working well on vc4
-    //Reg _r64 = _64();
     Reg tmp1 = VarGen::fresh();
-    //Reg tmp2 = VarGen::fresh();
 
     Target::Instr::List ret;
-    ret << mov(tmp1, Var(UNIFORM))
-        << add_uniform_pointer_offset(m_targetCode);  // !!! NOTE: doesn't take dummy in previous into account
-                                                      // This should not be a problem
-/*
-        << mov(tmp2,1)                                // Init global 64
-        << shl(_r64, tmp2, 6);
-*/
-		ret.front().comment("Last uniform load is dummy value");
+    ret << mov(tmp1, Var(UNIFORM));
+    ret.front().comment("Last uniform load is dummy value");
 
     int index = m_targetCode.lastUniformOffset();
     assert(index > 0);
     m_targetCode.insert(index + 1, ret);
   }
 
+  vc4::add_init_block(m_targetCode);
+
   m_targetCode << Target::Instr(END);
-
   compile_postprocess(m_targetCode);
-
-  // Translate branch-to-labels to relative branches
   removeLabels(m_targetCode);
 
   encode();
@@ -208,9 +207,9 @@ void KernelDriver::invoke(int numQPUs, IntList &params, bool wait_complete) {
     fatal("Errors during kernel compilation/encoding, can't continue.");
   }
 
-	if (!wait_complete) {
-		warn << "run(): disabling wait completion only works for v3d. Ignoring for vc4.";
-	}
+  if (!wait_complete) {
+    warn << "run(): disabling wait completion only works for v3d. Ignoring for vc4.";
+  }
 
   MailBoxInvoke::invoke(numQPUs, m_code, params);
 }

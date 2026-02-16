@@ -12,7 +12,7 @@ public:
   bool stmt(Instr::List &seq, Stmt::Ptr s) override; 
 };
 
-void add_init(Instr::List &code);
+void add_init_block(Instr::List &code);
 
 }  // namespace v3d
 }  // namespace V3DLib

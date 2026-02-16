@@ -65,8 +65,8 @@ Instr::List sfu_function(Reg dst, RegOrImm const &srcA, Reg const &sfu_reg, cons
 
   Instr nop;
   auto mov1 = mov(sfu_reg, srcA);
-	assert(mov1.size() == 1);
-	mov1.back().comment(cmt);
+  assert(mov1.size() == 1);
+  mov1.back().comment(cmt);
 
   Instr::List ret;
   ret << mov1
@@ -82,7 +82,7 @@ Reg const ACC4_(ACC, 4);
 
 
 Instr _mov(Reg dst, RegOrImm const &src) {
-	return genInstr(Enum::A_MOV, dst, src); //.comment("_mov");
+  return genInstr(Enum::A_MOV, dst, src); //.comment("_mov");
 }
 
 }  // anon namespace
@@ -110,17 +110,17 @@ Reg const None(NONE, 0);
  =================================================================*/
 
 Reg ACC0() {
-	if (Platform::compiling_for_vc7()) {
-		assert(V3DLib::VarGen::count() != 0);
-	 	return Reg(V3DLib::VarGen::fresh());
-	} else {
-		return ACC0_;
-	}
+  if (Platform::compiling_for_vc7()) {
+    assert(V3DLib::VarGen::count() != 0);
+    return Reg(V3DLib::VarGen::fresh());
+  } else {
+    return ACC0_;
+  }
 }
 
 
 Reg _64() {
- 	return Reg(Var_64());
+  return Reg(Var_64());
 }
 
 
@@ -129,12 +129,12 @@ Reg _64() {
  * It is not on vc7.
  */
 Reg ACC4() {
-	if (Platform::compiling_for_vc7()) {
-		assert(V3DLib::VarGen::count() != 0);
-	 	return Reg(V3DLib::VarGen::fresh());
-	} else {
-		return ACC4_;
-	}
+  if (Platform::compiling_for_vc7()) {
+    assert(V3DLib::VarGen::count() != 0);
+    return Reg(V3DLib::VarGen::fresh());
+  } else {
+    return ACC4_;
+  }
 }
 
 
@@ -181,7 +181,7 @@ Reg const TMUD(SPECIAL, SPECIAL_VPM_WRITE);
  *     Appears to add result to src on output
  *     The src param does not appear to do anything. It matters that TMUAU is written to
  * - TMUC:
- * 		It looks like TMUC performs some kind of rotate on output; It doesn't appear to be consistent though.
+ *    It looks like TMUC performs some kind of rotate on output; It doesn't appear to be consistent though.
  *    Also, the value appears to carry over to subsequent kernel calls; so global?
  *
  *    Trying out various values for param to TMUC:
@@ -217,24 +217,24 @@ Reg rf(uint8_t index) {
 Instr::List mov(Reg dst, RegOrImm const &src) {
   dst.can_write(true);
 
-	Instr::List ret;
+  Instr::List ret;
 
-	//Log::debug << "dst: " << dst.dump() << "; " << "tag: " << dst.tag;   
-	//Log::warn << "mov src: " << src.dump();   
+  //Log::debug << "dst: " << dst.dump() << "; " << "tag: " << dst.tag;   
+  //Log::warn << "mov src: " << src.dump();   
 
-	if (src.is_reg() && src.reg().tag == SPECIAL) {
-		// The logic for special reg's is under bor(), so we 
-		// need to redirect there
+  if (src.is_reg() && src.reg().tag == SPECIAL) {
+    // The logic for special reg's is under bor(), so we 
+    // need to redirect there
     ret <<  bor(dst, src, src);
-	} else if (Platform::compiling_for_vc7()) {
+  } else if (Platform::compiling_for_vc7()) {
     ret <<  _mov(dst, src);
-	} else if (src.is_imm()) {
+  } else if (src.is_imm()) {
     ret << li(dst, src.imm());
   } else {
     ret << bor(dst, src, src);
   }
 
-	return ret;
+  return ret;
 }
 
 
@@ -270,7 +270,7 @@ Instr shr(Reg dst, Reg srcA, int n) {
  * Generate addition instruction.
  */
 Instr add(Reg dst, Reg srcA, Reg srcB) {
-	return genInstr(Enum::A_ADD, dst, srcA, srcB);
+  return genInstr(Enum::A_ADD, dst, srcA, srcB);
 }
 
 
@@ -350,16 +350,16 @@ Instr barrier() {
 
 
 Instr::List recipsqrt(Var dst, Var srcA) {
-	if (Platform::compiling_for_vc7()) {
-		Instr::List ret;
+  if (Platform::compiling_for_vc7()) {
+    Instr::List ret;
 
- 		// We also have Enum::A_RSQRT2d
- 		ret << genInstr(Enum::A_RSQRT, dst, srcA);
+    // We also have Enum::A_RSQRT2d
+    ret << genInstr(Enum::A_RSQRT, dst, srcA);
 
-		return ret;
-	} else {
-		return sfu_function(dst, srcA, SFU_RECIPSQRT, "recipsqrt");
-	}
+    return ret;
+  } else {
+    return sfu_function(dst, srcA, SFU_RECIPSQRT, "recipsqrt");
+  }
 }
 
 
@@ -367,24 +367,24 @@ Instr::List recipsqrt(Var dst, Var srcA) {
  * This returns the log2 of the given value
  */
 Instr::List blog(Reg dst, RegOrImm const &srcA) {
-	if (Platform::compiling_for_vc7()) {
-		Instr::List ret;
- 		ret << genInstr(Enum::A_LOG, dst, srcA);
-		return ret;
-	} else {
-		return sfu_function(dst, srcA, SFU_LOG, "log");
-	}
+  if (Platform::compiling_for_vc7()) {
+    Instr::List ret;
+    ret << genInstr(Enum::A_LOG, dst, srcA);
+    return ret;
+  } else {
+    return sfu_function(dst, srcA, SFU_LOG, "log");
+  }
 }
 
 
 Instr::List recip(Reg dst, RegOrImm const &srcA) {
-	if (Platform::compiling_for_vc7()) {
-		Instr::List ret;
-  	ret << genInstr(Enum::A_RECIP, dst, srcA);
-		return ret;
-	} else {
-		return sfu_function(dst, srcA, SFU_RECIP    , "recip");
-	}
+  if (Platform::compiling_for_vc7()) {
+    Instr::List ret;
+    ret << genInstr(Enum::A_RECIP, dst, srcA);
+    return ret;
+  } else {
+    return sfu_function(dst, srcA, SFU_RECIP    , "recip");
+  }
 }
 
 
@@ -392,28 +392,28 @@ Instr::List recip(Reg dst, RegOrImm const &srcA) {
  * This returns 2 to the power of srA.
  */
 Instr::List bexp(Var dst, RegOrImm const &srcA) {
-	if (Platform::compiling_for_vc7()) {
-		Instr::List ret;
- 		ret << genInstr(Enum::A_EXP, dst, srcA);
-		return ret;
-	} else {
-		return sfu_function(dst, srcA, SFU_EXP      , "exp");
-	}
+  if (Platform::compiling_for_vc7()) {
+    Instr::List ret;
+    ret << genInstr(Enum::A_EXP, dst, srcA);
+    return ret;
+  } else {
+    return sfu_function(dst, srcA, SFU_EXP      , "exp");
+  }
 }
 
 
 Instr::List bexp_e(Var dst, RegOrImm const &srcA) {
-	const float e_const = 2.71828f;
+  const float e_const = 2.71828f;
 
-	Imm e(e_const);
-	Reg tmp(V3DLib::VarGen::fresh());
+  Imm e(e_const);
+  Reg tmp(V3DLib::VarGen::fresh());
 
-	Instr::List ret;
-	ret << blog(tmp, e);
-	ret << fmul(tmp, srcA, tmp)
-	    << bexp(dst, tmp);
+  Instr::List ret;
+  ret << blog(tmp, e);
+  ret << fmul(tmp, srcA, tmp)
+      << bexp(dst, tmp);
 
-	return ret;
+  return ret;
 }
 
 

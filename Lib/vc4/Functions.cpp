@@ -52,20 +52,6 @@ void hostIRQ() {
  *
  * ---------------------------------
  *
- * NOT WORKING
- * -----------
-
- * The final `barrier()` call on end of program is OK, within the 
- * program it blocks (See Gravity example).
- *
- * The error on `vc4`:
- *
- *     ERROR: mbox_property() ioctl failed, ret: -1, error: Unknown error -1
- *     ERROR: execute_qpu(): mbox_property call failed
- *
- * Making the host interrupt conditional didn't help.
- * Obviously, I don't understand it well enough.
- *
  * NOTES
  * -----
  *
@@ -74,6 +60,7 @@ void hostIRQ() {
  * But I see no reason to make semaphores more explicit.
  */
 void barrier(bool do_irq) {
+   // The issue here is that QPU 0 may not be the first QPU to reach this code.
   If (me() == 0)               
     Int n = numQPUs() - 1;       comment("Start vc4 barrier");
 		 	                           comment("QPU 0 wait for other QPUs to finish");

@@ -6,7 +6,8 @@
 namespace V3DLib {
 
 /**
- * Remove labels
+  @brief Translate branch-to-labels to relative branches.
+ *       The labels are removed.
  *
  * Remove all labels, replacing absolute branch-label instructions
  * with relative branch-target instructions.

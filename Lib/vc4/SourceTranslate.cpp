@@ -54,5 +54,24 @@ bool SourceTranslate::stmt(Instr::List &seq, Stmt::Ptr s) {
   return ret;
 }
 
+
+/**
+ * Add initialization code after uniform loads
+ */
+void add_init_block(Instr::List &code) {
+  // Add uniform ptr index offsets
+  Target::Instr::List ret;
+  ret << add_uniform_pointer_offset(code);
+
+  // add header comments;
+  ret.front().header("Init block");
+
+  int insert_index = code.tag_index(INIT_END);
+  assertq(insert_index >= 0, "Expecting init end marker");
+
+  code[insert_index + 1].header("Main program");
+  code.insert(insert_index, ret);
+}
+
 }  // namespace vc4
 }  // namespace V3DLib

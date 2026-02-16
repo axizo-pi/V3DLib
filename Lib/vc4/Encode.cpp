@@ -55,6 +55,7 @@ uint64_t encodeInstr(Target::Instr &instr) {
 
   vc4::Instr vc4_instr;
   vc4_instr.encode(instr); 
+  vc4_instr.transfer_comments(instr); 
 
   return vc4_instr.encode();
 }
@@ -74,7 +75,7 @@ CodeList encode(Target::Instr::List &instrs) {
     check_instruction_tag_for_platform(instr.tag, true);
 
     if (instr.tag == INIT_BEGIN || instr.tag == INIT_END) {
-      continue;  // Don't encode these block markers
+      continue;  // Don't encode block markers
     }
 
     code << encodeInstr(instr);
