@@ -66,6 +66,8 @@ public:
     VPM_ST_WAIT     = 50,      // rfB rd
     VPM_LD_ADDR     = 50,      // rfA wr
     VPM_ST_ADDR     = 50,      // rfB wr
+    MUTEX_ACQUIRE   = 51,      // rfA/B rd
+    MUTEX_RELEASE   = 51,      // rfA/B wr
     SFU_RECIP       = 52,      // rfA/B wr
     SFU_RECIPSQRT   = 53,      // "
     SFU_EXP         = 54,      // "

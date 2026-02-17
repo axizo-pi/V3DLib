@@ -38,11 +38,12 @@ void hostIRQ() {
   stmtStack() << Stmt::create(Stmt::SEND_IRQ_TO_HOST);
 }
 
-} // anon namespace
-
 
 /**
- * `vc4` implementation of `barrier()`.
+ * Wait for all QPU's to complete; `vc4`-specific.
+ *
+ * This is the original QPU wait routine, used in the final part of a kernel.
+ * It is inadequate for usage as `barrier()`, see discussion below.
  *
  * The implementation uses semaphores internally.
  * This is code for the Source level. It should be called within kernels.
@@ -52,14 +53,25 @@ void hostIRQ() {
  *
  * ---------------------------------
  *
- * NOTES
+ * NOT WORKING AS BARRIER
+ * ----------------------
+ *
+ * This is not a clean implementation of `barrier()`.
+ * Consider QPU 1 comes before QPU 0: it zooms straight through.
+ *
+ * If `QPU 0` comes first anyway, what can happen is that the next QPU increments
+ * the semaphore while `QPU 0` is in the For-loop and passes. 
+ *
+ * The best you can say is that `QPU 0` waits for all other QPU's to pass.
+ *
+ * Notes
  * -----
  *
  * Note that most semaphore stuff is under DMA.
  * Strictly speaking, this is not necessary, because semaphore are not explicitly linked to DMA.
  * But I see no reason to make semaphores more explicit.
  */
-void barrier(bool do_irq) {
+void wait_qpu() {
    // The issue here is that QPU 0 may not be the first QPU to reach this code.
   If (me() == 0)               
     Int n = numQPUs() - 1;       comment("Start vc4 barrier");
@@ -68,12 +80,17 @@ void barrier(bool do_irq) {
       semaDec(15);
     End
 
-    if (do_irq) {
-      hostIRQ();                   comment("Send host IRQ");
-    }
+    hostIRQ();                   comment("Send host IRQ");
   Else
     semaInc(15);
   End
+}
+
+} // anon namespace
+
+
+void barrier() {
+  // TODO
 }
 
 
@@ -86,7 +103,7 @@ void kernelFinish() {
   dmaWaitRead();                header("Kernel termination");
                                 comment("Ensure outstanding DMAs have completed");
   dmaWaitWrite();
-	barrier(true);
+	wait_qpu();
 }
 
 

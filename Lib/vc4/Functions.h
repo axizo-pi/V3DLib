@@ -4,7 +4,7 @@
 namespace V3DLib {
 namespace vc4 {
 
-void barrier(bool do_irq = false);
+void barrier();
 void kernelFinish();
 
 }  // namespace vc4
