@@ -8,26 +8,28 @@ namespace {
 
 char const *specialStr(RegId rid) {
   switch ((Special) rid) {
-    case SPECIAL_UNIFORM:       return "UNIFORM";
-    case SPECIAL_ELEM_NUM:      return "ELEM_NUM";
-    case SPECIAL_QPU_NUM:       return "QPU_NUM";
-    case SPECIAL_RD_SETUP:      return "RD_SETUP";
-    case SPECIAL_WR_SETUP:      return "WR_SETUP";
-    case SPECIAL_DMA_ST_ADDR:   return "DMA_ST_ADDR";
-    case SPECIAL_DMA_LD_ADDR:   return "DMA_LD_ADDR";
-    case SPECIAL_DMA_ST_WAIT:   return "DMA_ST_WAIT";
-    case SPECIAL_DMA_LD_WAIT:   return "DMA_LD_WAIT";
-    case SPECIAL_VPM_READ:      return "VPM_READ";
-    case SPECIAL_VPM_WRITE:     return "VPM_WRITE";
-    case SPECIAL_HOST_INT:      return "HOST_INT";
-    case SPECIAL_TMUA:          return "TMUA";
-    case SPECIAL_SFU_RECIP:     return "SFU_RECIP";
-    case SPECIAL_SFU_RECIPSQRT: return "SFU_RECIPSQRT";
-    case SPECIAL_SFU_EXP:       return "SFU_EXP";
-    case SPECIAL_SFU_LOG:       return "SFU_LOG";
-    case SPECIAL_TMUAU:         return "TMUAU";    // vc7 only?
-    case SPECIAL_TMUC:          return "TMUC";     // vc7 only?
-    case SPECIAL_TMUL:          return "TMUL";     // vc7 only?
+    case SPECIAL_UNIFORM:        return "UNIFORM";
+    case SPECIAL_ELEM_NUM:       return "ELEM_NUM";
+    case SPECIAL_QPU_NUM:        return "QPU_NUM";
+    case SPECIAL_RD_SETUP:       return "RD_SETUP";
+    case SPECIAL_WR_SETUP:       return "WR_SETUP";
+    case SPECIAL_DMA_ST_ADDR:    return "DMA_ST_ADDR";
+    case SPECIAL_DMA_LD_ADDR:    return "DMA_LD_ADDR";
+    case SPECIAL_DMA_ST_WAIT:    return "DMA_ST_WAIT";
+    case SPECIAL_DMA_LD_WAIT:    return "DMA_LD_WAIT";
+    case SPECIAL_VPM_READ:       return "VPM_READ";
+    case SPECIAL_VPM_WRITE:      return "VPM_WRITE";
+    case SPECIAL_MUTEX_ACQUIRE:  return "MUTEX_ACQUIRE";
+    case SPECIAL_MUTEX_RELEASE:  return "MUTEX_RELEASE";
+    case SPECIAL_HOST_INT:       return "HOST_INT";
+    case SPECIAL_TMUA:           return "TMUA";
+    case SPECIAL_SFU_RECIP:      return "SFU_RECIP";
+    case SPECIAL_SFU_RECIPSQRT:  return "SFU_RECIPSQRT";
+    case SPECIAL_SFU_EXP:        return "SFU_EXP";
+    case SPECIAL_SFU_LOG:        return "SFU_LOG";
+    case SPECIAL_TMUAU:          return "TMUAU";    // vc7 only?
+    case SPECIAL_TMUC:           return "TMUC";     // vc7 only?
+    case SPECIAL_TMUL:           return "TMUL";     // vc7 only?
   }
 
   // Unreachable
@@ -38,37 +40,28 @@ char const *specialStr(RegId rid) {
 
 void var_to_reg(Var var, Reg &r) {
   switch (var.tag()) {
-    case UNIFORM:
-      r.tag     = SPECIAL;
-      r.regId   = SPECIAL_UNIFORM;
-      r.isUniformPtr = var.is_uniform_ptr();
-      break;
-    case QPU_NUM:
-      r.tag     = SPECIAL;
-      r.regId   = SPECIAL_QPU_NUM;
-      break;
-    case ELEM_NUM:
-      r.tag     = SPECIAL;
-      r.regId   = SPECIAL_ELEM_NUM;
-      break;
-    case VPM_READ:
-      r.tag     = SPECIAL;
-      r.regId   = SPECIAL_VPM_READ;
-      break;
     case STANDARD:
       r.tag   = REG_A;
       r.regId = var.id();
       break;
+    case UNIFORM:
+      r = Target::instr::UNIFORM_READ;
+      r.isUniformPtr = var.is_uniform_ptr();
+      break;
+
+    case QPU_NUM:       r = Target::instr::QPU_ID;        break;
+    case ELEM_NUM:      r = Target::instr::ELEM_ID;       break;
+    case VPM_READ:      r = Target::instr::VPM_READ;      break;
+    case VPM_WRITE:     r = Target::instr::VPM_WRITE;     break;
+    case MUTEX_ACQUIRE: r = Target::instr::MUTEX_ACQUIRE; break;
+    case MUTEX_RELEASE: r = Target::instr::MUTEX_RELEASE; break;
+    case TMU0_ADDR:     r = Target::instr::TMUA;          break;
+
     case DUMMY:
       r.tag   = NONE;
       r.regId = var.id();
       break;
-    case VPM_WRITE:
-      r = Target::instr::VPM_WRITE;
-      break;
-    case TMU0_ADDR:
-      r = Target::instr::TMUA;
-      break;
+
     default:
       assertq(false, "srcReg(): Unhandled Var-tag");
       break;
@@ -106,6 +99,9 @@ bool Reg::operator<(Reg const &rhs) const {
 RegTag Reg::regfile() const {
   if (!Platform::compiling_for_vc4()) return REG_A;  // There is no REG_B for v3d, only REG_A
 
+  if (tag > SPECIAL) {
+    Log::cerr << "Reg::regfile() invalid tag: " << dump();
+  }
   assert(tag <= SPECIAL);
 
   if (tag == REG_A) return REG_A;
@@ -135,7 +131,7 @@ RegTag Reg::regfile() const {
 
 
 bool Reg::is_none() const {
-	return *this == Target::instr::None;
+  return *this == Target::instr::None;
 }
 
 
@@ -144,10 +140,10 @@ bool Reg::can_read(bool check) const {
 
   if (tag == SPECIAL) {
     if (
-			regId == SPECIAL_VPM_WRITE ||
-			regId == SPECIAL_TMUA ||
-			regId == SPECIAL_TMUC
-		) {
+      regId == SPECIAL_VPM_WRITE ||
+      regId == SPECIAL_TMUA ||
+      regId == SPECIAL_TMUC
+    ) {
       ret = false;
     }
   }

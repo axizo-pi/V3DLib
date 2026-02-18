@@ -48,9 +48,6 @@ void hostIRQ() {
  * The implementation uses semaphores internally.
  * This is code for the Source level. It should be called within kernels.
  *
- *
- * @param do_irq  if set, set a host interrupt
- *
  * ---------------------------------
  *
  * NOT WORKING AS BARRIER
@@ -89,8 +86,17 @@ void wait_qpu() {
 } // anon namespace
 
 
-void barrier() {
-  // TODO
+void mutex_acquire() {
+  assert(Platform::compiling_for_vc4());
+
+  Log::assertq(false, "TODO mutex_acquire");
+}
+
+
+void mutex_release() {
+  assert(Platform::compiling_for_vc4());
+
+  Log::assertq(false, "TODO mutex_release");
 }
 
 

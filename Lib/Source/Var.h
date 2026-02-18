@@ -10,18 +10,22 @@ namespace V3DLib {
 
 // What kind of variable is it
 enum VarTag {
-    STANDARD     // A standard variable that can be stored
-                 // in a general-purpose register on a QPU
-  , UNIFORM      // (Read-only.)  Reading this variable will consume a value
-                 // (replicated 16 times) from the QPU's UNIFORM FIFO
-                 // (this is how parameters are passed to kernels).
-  , QPU_NUM      // (Read-only.) Reading this variable will yield the
-                 // QPU's unique id (replicated 16 times).
-  , ELEM_NUM     // (Read-only.) Reading this variable will yield a vector
-                 // containing the integers from 0 to 15.
-  , VPM_READ     // (Read-only.) Read a vector from the VPM.
-  , VPM_WRITE    // (Write-only.) Write a vector to the VPM.
-  , TMU0_ADDR    // (Write-only.) Initiate load via TMU
+    STANDARD      // A standard variable that can be stored
+                  // in a general-purpose register on a QPU
+  , UNIFORM       // (Read-only)  Reading this variable will consume a value
+                  // (replicated 16 times) from the QPU's UNIFORM FIFO
+                  // (this is how parameters are passed to kernels).
+  , QPU_NUM       // (Read-only) Reading this variable will yield the
+                  // QPU's unique id (replicated 16 times).
+  , ELEM_NUM      // (Read-only) Reading this variable will yield a vector
+                  // containing the integers from 0 to 15.
+  , VPM_READ      // (Read-only) Read a vector from the VPM.
+  , VPM_WRITE     // (Write-only) Write a vector to the VPM.
+
+  , MUTEX_ACQUIRE // (Read-only) Get the mutex. vc4 only
+  , MUTEX_RELEASE // (Write-only) Return the mutex. vc4 only
+
+  , TMU0_ADDR     // (Write-only) Initiate load via TMU
 
   , DUMMY        // No variable. As a source variable, it indicates that given operation has no input
                  // TODO: As a destination variable, it indicates that the result can be ignored

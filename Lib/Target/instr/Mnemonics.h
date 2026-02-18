@@ -18,6 +18,8 @@ extern Reg const TMUAU;
 extern Reg const TMUC;
 extern Reg const VPM_WRITE;
 extern Reg const VPM_READ;
+extern Reg const MUTEX_ACQUIRE;
+extern Reg const MUTEX_RELEASE;
 extern Reg const WR_SETUP;
 extern Reg const RD_SETUP;
 extern Reg const DMA_LD_WAIT;
