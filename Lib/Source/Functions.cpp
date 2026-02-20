@@ -523,49 +523,6 @@ void set_at(Float &dst, Int n, Float const &src) {
 }
 
 
-namespace {
-
-/**
- * Let QPUs wait for each other.
- *
- * This is a busy wait!
- * It is also an **ugly hack** for something which should be supported by hardware.  
- * The only reason it works is that the `signal` value is retained in the L2 cache.
- *
- * On `v3d` this is superseded by `barrier()`, which works fine.  
- * On `vc4`, the same should be possible by use of semaphores, but that doesn't work right now (20260207).
- *
- * In any case, last I looked it worked on `vc4` also.
- */
-MAYBE_UNUSED void sync_qpus(Int::Ptr signal) {
-  If (numQPUs() != 1) // Don't bother syncing if only one qpu
-    *(signal - index() + me()) = 1;
-
-    header("Start QPU sync");
-
-    If (me() == 0)
-      Int expected = 0;   comment("QPU 0: Wait till all signals are set");
-      Where (index() < numQPUs())
-        expected = 1;
-      End 
-
-      Int tmp = *signal;
-      While (expected != tmp)
-        tmp = *signal;
-      End
-
-      *signal = 0;        comment("QPU 0 done waiting, let other qpus continue");
-    Else
-      Int tmp = *signal;  comment("Other QPUs: Wait till all signals are cleared");
-
-      While (0 != tmp)
-        tmp = *signal;
-      End
-    End
-  End
-}
-
-
 /**
  * **TODO*: not implemented in emulator, consider.
  */
@@ -583,7 +540,7 @@ void mutex_acquire() {
 /**
  * **TODO*: not implemented in emulator, consider.
  *
- * Can't use DUMMY as src var. Fails on Taget translation.
+ * Can't use DUMMY as src var. Fails on Target translation.
  */
 void mutex_release() {
   assert(Platform::compiling_for_vc4());
@@ -594,6 +551,8 @@ void mutex_release() {
   stmtStack().push(ptr);
 }
 
+
+namespace {
 
 /**
  * @brief barrier implementation for `vc4`
@@ -660,17 +619,18 @@ void vc4_barrier(Int::Ptr signal) {
 
     If (leader_signal == 0)
       // I am the barrier leader
-      *leader_ptr = 1;
+      *leader_ptr = 1;      comment("I am the barrier leader");
 
       // Wait for all signals to be set
-      Int all_signals_set;
+      Int all_signals_set;  comment("Wait for all signals to be set");
       check_signals(all_signals_set);
       While (all_signals_set == 0)
         check_signals(all_signals_set);
       End
 
       // We're all here, release the mutex
-      mutex_release();  comment("mutex_release");
+      mutex_release();      comment("mutex_release");
+      Int dummy  = 0;       comment("Release all signals in loop");
 
       //
       // Reset all signals in main memory for next round
@@ -679,7 +639,7 @@ void vc4_barrier(Int::Ptr signal) {
       // are released before the leader signal is reset.
       // 
       For (Int i = 0, i < (numQPUs() + 1), i++) 
-        *signal = 0;      comment("Release all signals in loop");
+        *signal = 0;
         signal.inc();
       End
     Else
@@ -694,10 +654,9 @@ void vc4_barrier(Int::Ptr signal) {
 
 
 /**
- * Has no inputs, only an output, which is always magic reg SYNCB.
+ * @brief Generic version of `barrier()`
  *
- * `barrier` is v3d-specific. vc4 will need a different implementation,
- * most likely with semaphores.
+ * **Still in development.**
  */
 void barrier(Int::Ptr &signal) {
   if (Platform::compiling_for_vc4()) {
@@ -709,6 +668,64 @@ void barrier(Int::Ptr &signal) {
     // v3d
     stmtStack().push(Stmt::create(Stmt::BARRIER));
   }
+}
+
+
+/**
+ * @brief v3d-specific version of barrier
+ *
+ * Has no inputs, only an output, which is always magic reg SYNCB.
+ *
+ * `barrier` is v3d-specific. vc4 will need a different implementation,
+ * most likely with semaphores.
+ */
+void barrier() {
+  assert(!Platform::compiling_for_vc4());
+  stmtStack().push(Stmt::create(Stmt::BARRIER));
+}
+
+
+/**
+ * Let QPUs wait for each other.
+ *
+ * **TODO**: Get rid of this. Currently used in testFFT.
+ *
+ * This is a busy wait!
+ * It is also an **ugly hack** for something which should be supported by hardware.  
+ * The only reason it works is that the `signal` value is retained in the L2 cache.
+ *
+ * On `v3d` this is superseded by `barrier()`, which works great.  
+ * On `vc4`, the same should be possible by use of semaphores,
+ * but that doesn't work right now (20260207).
+ *
+ * In any case, last I looked it worked on `vc4` also.
+ */
+void sync_qpus(Int::Ptr signal) {
+  If (numQPUs() != 1) // Don't bother syncing if only one qpu
+    *(signal - index() + me()) = 1;
+
+    header("Start QPU sync");
+
+    If (me() == 0)
+      Int expected = 0;   comment("QPU 0: Wait till all signals are set");
+      Where (index() < numQPUs())
+        expected = 1;
+      End 
+
+      Int tmp = *signal;
+      While (expected != tmp)
+        tmp = *signal;
+      End
+
+      *signal = 0;        comment("QPU 0 done waiting, let other qpus continue");
+    Else
+      Int tmp = *signal;  comment("Other QPUs: Wait till all signals are cleared");
+
+      While (0 != tmp)
+        tmp = *signal;
+      End
+    End
+  End
 }
 
 }  // namespace V3DLib

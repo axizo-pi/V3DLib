@@ -35,6 +35,7 @@ void dummy_calculation(Float *dummy) {
 
 /**
  * **Current Hypothesis:**  
+ * None. Help.
  * 
  * ---------------------------------------------------------------
  *
@@ -118,6 +119,10 @@ void loop_kernel(Int::Ptr dst, Float::Ptr in_dummy_ptr) {
 // This is a testbed for sorting out what is happening.
 //
 TEST_CASE("Test loop counter [loop]") {
+  if (Platform::compiling_for_vc4()) {
+    warn << "The used version of barrier() is only for v3d";
+    return;
+  }
 
   SUBCASE("Test loop with context") {
     Float::Array dummy(16);

@@ -1,7 +1,7 @@
 #
 # This file is generated!  Editing it directly is a bad idea.
 #
-# Generated on: Wed 11 Feb 2026 07:14:44 AM CET
+# Generated on: Fri 20 Feb 2026 04:41:28 AM CET
 #
 ###############################################################################
 
@@ -154,6 +154,7 @@ TESTS_FILES := \
   Tests/testDFT.o  \
   Tests/testConditionCodes.o  \
   Tests/testMain.o  \
+  Tests/testMutex.o  \
   Tests/testDSL.o  \
   Tests/testCmdLine.o  \
   Tests/support/qpu_disasm.o  \
