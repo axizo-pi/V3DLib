@@ -137,14 +137,11 @@ std::string KernelDriver::emit_opcodes() {
   }
 
   std::string ret;
-  int t_i = 0;
-  for (int i = 0; i < (int) list.size(); ++i, t_i++) {
-    auto &t = m_targetCode[t_i];
+  for (int i = 0; i < (int) list.size(); ++i) {
+    auto &t = m_targetCode[i];
 
-    // Skip the init block markers
     if (t.tag == INIT_BEGIN || t.tag == INIT_END) {
-      ++t_i;
-      t = m_targetCode[t_i];
+      warn << "emit_opcodes() detected INIT marker";
     }
 
     ret << t.emit_header();
