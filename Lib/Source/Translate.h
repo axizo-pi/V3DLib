@@ -5,7 +5,7 @@
 
 namespace V3DLib {
 
-void translate_stmt(Instr::List &seq, Stmts &s);
+void encode_target(Instr::List &target, Stmt::Array const &source);
 void insertInitBlock(Instr::List &code);
 
 //

@@ -168,8 +168,10 @@ void KernelDriver::compile_intern() {
 
   obtain_ast();
 
-  V3DLib::translate_stmt(m_targetCode, m_body);
+  assert(m_targetCode.empty());
+  V3DLib::encode_target(m_targetCode, m_body);
   assert(!m_targetCode.empty());
+
   insertInitBlock(m_targetCode);
 
   // Add final dummy uniform handling - See Note 1, function `invoke()` in `vc4/Invoke.cpp`,

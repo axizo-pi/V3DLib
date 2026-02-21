@@ -807,7 +807,8 @@ ByteCode KernelDriver::to_opcodes() {
 void KernelDriver::compile_intern() {
   obtain_ast();
 
-  translate_stmt(m_targetCode, m_body);
+  assert(m_targetCode.empty());
+  encode_target(m_targetCode, m_body);
   assert(!m_targetCode.empty());
 
   insertInitBlock(m_targetCode);
