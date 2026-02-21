@@ -85,7 +85,7 @@ void checkSpecialIndex(V3DLib::Instr const &src_instr) {
     return;
   }
 
-	// Following probably outdated since None sources were introduced
+  // Following probably outdated since None sources were introduced
   assertq((a_is_special && b_is_special), "src a and src b must both be special for QPU and ELEM nums");
   assertq(srca == srcb, "checkSpecialIndex(): src a and b must be the same if they are both special num's");
 }
@@ -184,7 +184,7 @@ bool translateOpcode(Target::Instr const &src, Instructions &ret) {
 
   auto reg_a  = src.ALU.srcA;
   auto reg_b  = src.ALU.srcB;
-	auto op     = src.ALU.op.value(); 
+  auto op     = src.ALU.op.value(); 
   int num_ops = src.ALU.num_operands();
 
   assertq(op != Enum::A_FSIN || (reg_a.is_reg() && reg_b.is_reg()), "sin has smallims");
@@ -205,77 +205,77 @@ bool translateOpcode(Target::Instr const &src, Instructions &ret) {
       ret << tidx(*dst_reg);
     break;
 
-  	case Enum::A_MOV: {
-    	assert(num_ops == 1);
+    case Enum::A_MOV: {
+      assert(num_ops == 1);
 
-    	auto tmp = mov(*dst_reg, reg_a);
-			ret << tmua_brainfart(tmp, prev_is_tmud);
-	 	}
-   	break;
+      auto tmp = mov(*dst_reg, reg_a);
+      ret << tmua_brainfart(tmp, prev_is_tmud);
+    }
+    break;
 
-	  default: {
-  	  // Handle general case
- 			Mnemonic tmp;
+    default: {
+      // Handle general case
+      Mnemonic tmp;
 
-	    if (!tmp.alu_set(src)) {
-	      did_something = false;
-				break;
-			}
+      if (!tmp.alu_set(src)) {
+        did_something = false;
+        break;
+      }
 
-			bool changed = false;
+      bool changed = false;
 
-			if (Platform::compiling_for_vc7() && *dst_reg == tmua) {
-  			assert(!reg_a.is_imm());
-				//warn << "default src: " << src.dump();
-				//warn << "default tmp: " << tmp.dump();
+      if (Platform::compiling_for_vc7() && *dst_reg == tmua) {
+        assert(!reg_a.is_imm());
+        //warn << "default src: " << src.dump();
+        //warn << "default tmp: " << tmp.dump();
 
-  			if (op == Enum::A_ADD && reg_b.is_imm()) {
-					//warn << "translateOpcode(): add(tmua, dst, imm) does not work for vc7, adjusting";
+        if (op == Enum::A_ADD && reg_b.is_imm()) {
+          //warn << "translateOpcode(): add(tmua, dst, imm) does not work for vc7, adjusting";
 
-					// It is very probable that the PointExpr addition has been done beforehand,
-					// but is not being used. Ignoring that for now. TODO: examine 
+          // It is very probable that the PointExpr addition has been done beforehand,
+          // but is not being used. Ignoring that for now. TODO: examine 
 
-					// Do an interim add so that a mov can be used for tmua
-					std::unique_ptr<Location> src_p = encodeSrcReg(reg_a.reg());
-					auto tmp2  = add(*src_p, reg_a, reg_b);
-					auto tmp3  = mov(*dst_reg, reg_a);
-					auto tmp4  = sub(*src_p, reg_a, reg_b);
+          // Do an interim add so that a mov can be used for tmua
+          std::unique_ptr<Location> src_p = encodeSrcReg(reg_a.reg());
+          auto tmp2  = add(*src_p, reg_a, reg_b);
+          auto tmp3  = mov(*dst_reg, reg_a);
+          auto tmp4  = sub(*src_p, reg_a, reg_b);
 
-					Instructions tmp_ret;
-					tmp_ret << tmp2
-									<< tmua_brainfart(tmp3, prev_is_tmud)
-						      << tmp4;
+          Instructions tmp_ret;
+          tmp_ret << tmp2
+                  << tmua_brainfart(tmp3, prev_is_tmud)
+                  << tmp4;
 
-					ret << tmp_ret;
+          ret << tmp_ret;
 
-					changed = true;
-				} else {
-					//warn << "default brainfart";
-					ret << tmua_brainfart(tmp, prev_is_tmud);
-					changed = true;
-				}
-			}
+          changed = true;
+        } else {
+          //warn << "default brainfart";
+          ret << tmua_brainfart(tmp, prev_is_tmud);
+          changed = true;
+        }
+      }
 
-			if (!changed) {
-				ret << tmp;
-			}
+      if (!changed) {
+        ret << tmp;
+      }
 
-			break;
-	  }
+      break;
+    }
   }
 
   if (did_something) {
-		prev_is_tmud = (*dst_reg == tmud);
-		//warn << "did_something: " << prev_is_tmud;
-		return true;
-	} else {
-		warn << "NOT did_something";
-	}
+    prev_is_tmud = (*dst_reg == tmud);
+    //warn << "did_something: " << prev_is_tmud;
+    return true;
+  } else {
+    warn << "NOT did_something";
+  }
 
   auto const &src_alu = src.ALU;
   cerr  << "op: " << src_alu.op.value()
         << ", instr: " << src.dump()
-				<< thrw;
+        << thrw;
 
   return false;
 }
@@ -293,7 +293,7 @@ void handle_condition_tags(V3DLib::Instr const &src_instr, Instructions &ret) {
   auto setCond = src_instr.set_cond();
 
   if (!setCond.flags_set() && !ret.empty()) {
-		// Only set final instruction! This is the assignment of the result of the  preceding operations
+    // Only set final instruction! This is the assignment of the result of the  preceding operations
     ret.back().set_cond_tag(cond);
 
     //
@@ -328,11 +328,11 @@ void handle_condition_tags(V3DLib::Instr const &src_instr, Instructions &ret) {
   // In this case, condition flag must be pushed for both add and mul alu.
   //
 
-/*		
+/*    
     warn << "handle_condition_tags(): detected final where condition: '"
            << src_instr.dump() << "'\n"
            << "v3d: " << ret.back().mnemonic() << "'\n";
-*/					 
+*/           
 
   ret.back().set_push_tag(setCond);
 
@@ -347,7 +347,7 @@ void handle_condition_tags(V3DLib::Instr const &src_instr, Instructions &ret) {
   warn << "handle_condition_tags() "
        << "v3d final: " << ret.back().mnemonic() << "'\n"
        << "v3d tmp: " << tmp_instr.mnemonic() << "'\n";
-*/			 
+*/       
 }
 
 
@@ -373,7 +373,7 @@ void handle_condition_tags(V3DLib::Instr const &src_instr, Instructions &ret) {
 bool translateRotate(V3DLib::Instr const &instr, Instructions &ret) {
   if (!instr.ALU.op.isRot()) return false;
 
-	auto dst_reg = encodeDestReg(instr);
+  auto dst_reg = encodeDestReg(instr);
   assert(dst_reg);
 
   auto reg_a = instr.ALU.srcA;
@@ -381,57 +381,57 @@ bool translateRotate(V3DLib::Instr const &instr, Instructions &ret) {
   auto reg_b = instr.ALU.srcB;                  // reg b is either r5 or small imm
 
 
-	if (Platform::compiling_for_vc7()) {
-		// Assumptions
-		//  - waddr is an rf register (logical)
-		//  - Thing to rotate is in add a
-		//  - rot value is a small imm in add a
-		//  - nop not required after rotate
-		//cdebug << "translateRotate vc7 input instr: " << instr.dump();
+  if (Platform::compiling_for_vc7()) {
+    // Assumptions
+    //  - waddr is an rf register (logical)
+    //  - Thing to rotate is in add a
+    //  - rot value is a small imm in add a
+    //  - nop not required after rotate
+    //cdebug << "translateRotate vc7 input instr: " << instr.dump();
 
-		assert(dst_reg->is_rf());
-		assert(src_a->is_rf());
-		assert(reg_b.is_imm());  // rf not handled yet
-		assert(0 <= reg_b.imm().intVal() && reg_b.imm().intVal() < 16);;
+    assert(dst_reg->is_rf());
+    assert(src_a->is_rf());
+    assert(reg_b.is_imm());  // rf not handled yet
+    assert(0 <= reg_b.imm().intVal() && reg_b.imm().intVal() < 16);;
 
-		// vc7 rotates in the other direction! Hoodathunk.
-		// Reverse the rotation order
-		int tmp_b = 16 - reg_b.imm().intVal();
-	
-		Instr dst_instr;
-		dst_instr.alu.add.op = V3D_QPU_A_ROT;
-  	dst_instr.alu_add_set(*dst_reg, *src_a, tmp_b);
+    // vc7 rotates in the other direction! Hoodathunk.
+    // Reverse the rotation order
+    int tmp_b = 16 - reg_b.imm().intVal();
+  
+    Instr dst_instr;
+    dst_instr.alu.add.op = V3D_QPU_A_ROT;
+    dst_instr.alu_add_set(*dst_reg, *src_a, tmp_b);
 
-		//warn << "translateRotate vc7 instruction: " << dst_instr.mnemonic(false);
+    //warn << "translateRotate vc7 instruction: " << dst_instr.mnemonic(false);
 
-		ret << dst_instr;
+    ret << dst_instr;
 
-	} else {
-  	// dest is location where r1 (result of rotate) must be stored 
-	  assertq(dst_reg->to_mux() != V3D_QPU_MUX_R1, "Rotate can not have destination register r1", true);
+  } else {
+    // dest is location where r1 (result of rotate) must be stored 
+    assertq(dst_reg->to_mux() != V3D_QPU_MUX_R1, "Rotate can not have destination register r1", true);
 
-	  if (src_a->to_mux() != V3D_QPU_MUX_R0) {
-	    ret << mov(r0, *src_a).comment("moving param 2 of rotate to r0. WARNING: r0 might already be in use, check!");
-	  }
+    if (src_a->to_mux() != V3D_QPU_MUX_R0) {
+      ret << mov(r0, *src_a).comment("moving param 2 of rotate to r0. WARNING: r0 might already be in use, check!");
+    }
 
-	  // TODO: the Target source step already adds a nop.
-	  //       With the addition of previous mov to r0, the 'other' nop becomes useless, remove that one for v3d.
-	  ret << nop().comment("NOP required for rotate");
+    // TODO: the Target source step already adds a nop.
+    //       With the addition of previous mov to r0, the 'other' nop becomes useless, remove that one for v3d.
+    ret << nop().comment("NOP required for rotate");
 
-	  if (reg_b.is_reg()) {
-	    breakpoint  // Not called yet
+    if (reg_b.is_reg()) {
+      breakpoint  // Not called yet
 
-	    assert(instr.ALU.srcB.reg().tag == ACC && instr.ALU.srcB.reg().regId == 5);  // reg b must be r5
-	    auto src_b = encodeSrcReg(reg_b.reg());
+      assert(instr.ALU.srcB.reg().tag == ACC && instr.ALU.srcB.reg().regId == 5);  // reg b must be r5
+      auto src_b = encodeSrcReg(reg_b.reg());
 
-	    ret << rotate(r1, r0, *src_b);
+      ret << rotate(r1, r0, *src_b);
 
-	  } else {
-	    ret << rotate(r1, r0, reg_b.imm());
-	  }
+    } else {
+      ret << rotate(r1, r0, reg_b.imm());
+    }
 
-	  ret << bor(*dst_reg, r1, r1);
-	}
+    ret << bor(*dst_reg, r1, r1);
+  }
 
   return true;
 }
@@ -519,7 +519,7 @@ v3d::instr::Instr encodeBranchLabel(V3DLib::Instr src_instr) {
  * **Pre:** All instructions not meant for v3d are detected beforehand and flagged as error.
  */
 Instructions encodeInstr(V3DLib::Instr instr) {
-	//Log::debug << "Called v3d encodeInstr()";
+  //Log::debug << "Called v3d encodeInstr()";
   Instructions ret;
 
   // Encode core instruction
@@ -569,7 +569,7 @@ Instructions encodeInstr(V3DLib::Instr instr) {
     //
     case LI:                ret << encode_LI(instr);   break;
     case ALU:               ret << encodeALUOp(instr); break;
-		case InstrTag::BARRIER: ret << barrier();          break;
+    case InstrTag::BARRIER: ret << barrier();          break;
     case NO_OP:             ret << nop();              break;
 
     default:
@@ -578,14 +578,14 @@ Instructions encodeInstr(V3DLib::Instr instr) {
 
   assert(!ret.empty());
 
-	if (instr.has_comments()) {
-		if (ret.empty()) {
-			Log::warn << "encodeInstr() comments not transferred, no output instructions";
-	  } else {
-			//Log::warn << "v3d encodeInstr() transferring comments: " << instr.mnemonic(true);
-	    ret.front().transfer_comments(instr);
-		}
-	}
+  if (instr.has_comments()) {
+    if (ret.empty()) {
+      Log::warn << "encodeInstr() comments not transferred, no output instructions";
+    } else {
+      //Log::warn << "v3d encodeInstr() transferring comments: " << instr.mnemonic(true);
+      ret.front().transfer_comments(instr);
+    }
+  }
 
   return ret;
 }
@@ -655,11 +655,9 @@ bool checkUniformAtTop(V3DLib::Instr::List const &instrs) {
  */
 void _encode(V3DLib::Instr::List const &instrs, Instructions &dst) {
   warn << "Called _encode()";
-#ifdef DEBUG	
+#ifdef DEBUG  
   assertq(checkUniformAtTop(instrs), "_encode(): checkUniformAtTop() failed (v3d)", true);
 #endif
-  bool prev_was_init_begin = false;
-  bool prev_was_init_end   = false;
 
   // Main loop
   for (int i = 0; i < instrs.size(); i++) {
@@ -668,23 +666,10 @@ void _encode(V3DLib::Instr::List const &instrs, Instructions &dst) {
     check_instruction_tag_for_platform(instr.tag, false);
 
     if (instr.tag == INIT_BEGIN) {
-      prev_was_init_begin = true;
     } else if (instr.tag == INIT_END) {
       dst << encode_init();
-      prev_was_init_end = true;
     } else {
       Instructions ret = v3d::encodeInstr(instr);
-
-      if (prev_was_init_begin) {
-        ret.front().header("Init block");
-        prev_was_init_begin = false;
-      }
-
-      if (prev_was_init_end) {
-        ret.front().header("Main program");
-        prev_was_init_end = false;
-      }
-
       dst << ret;
     }
   }
@@ -705,7 +690,7 @@ void load_uniforms(Data &unif, int numQPUs, Data const &devnull, Data const &don
   unif[offset++] = devnull.getAddress();  // Memory location for values to be discarded
 
   for (int j = 0; j < params.size(); j++) {
-		//Log::warn << "load_uniforms param " << j << ": " << params[j];
+    //Log::warn << "load_uniforms param " << j << ": " << params[j];
     unif[offset++] = params[j];
   }
 
@@ -725,15 +710,15 @@ void load_uniforms(Data &unif, int numQPUs, Data const &devnull, Data const &don
 ///////////////////////////////////////////////////////////////////////////////
 
 KernelDriver::KernelDriver() : V3DLib::KernelDriver(V3dBuffer) { //, m_code(code_bo)  { // Why is last item  here?
-	assert(!Platform::compiling_for_vc4());
+  assert(!Platform::compiling_for_vc4());
 
-	if(Platform::compiling_for_vc7()) {
-		cdebug << "selecting vc7 as kernel type";
-		m_type = vc7;
-	} else {
-		cdebug << "selecting vc6 as kernel type";
-		m_type = vc6;
-	}
+  if(Platform::compiling_for_vc7()) {
+    cdebug << "selecting vc7 as kernel type";
+    m_type = vc7;
+  } else {
+    cdebug << "selecting vc6 as kernel type";
+    m_type = vc6;
+  }
 }
 
 
@@ -748,30 +733,30 @@ void KernelDriver::encode() {
   _encode(m_targetCode, instructions);
 
 #ifdef DEBUG
-	// Check if src's are set for the instructions we expect
-	for (int i = 0; i < (int) instructions.size(); ++i) {
-		auto const &instr = instructions[i];
+  // Check if src's are set for the instructions we expect
+  for (int i = 0; i < (int) instructions.size(); ++i) {
+    auto const &instr = instructions[i];
 
-		if (instr.is_branch()) continue;
-  	if (instr.add_nop() && instr.mul_nop()) continue;
+    if (instr.is_branch()) continue;
+    if (instr.add_nop() && instr.mul_nop()) continue;
 
-  	if (!instr.add_nop()) {
-			int num_oper = Oper::num_operands(instr.alu.add.op);
-			if (num_oper > 0) {
-				assert(instr.alu_add_a_set());
-			}
+    if (!instr.add_nop()) {
+      int num_oper = Oper::num_operands(instr.alu.add.op);
+      if (num_oper > 0) {
+        assert(instr.alu_add_a_set());
+      }
 
-			if (num_oper > 1) {
-				assert(instr.alu_add_b_set());
-			}
-		}
+      if (num_oper > 1) {
+        assert(instr.alu_add_b_set());
+      }
+    }
 
-  	if (!instr.mul_nop()) {  // Assumption: always 2 operands
-			assert(instr.alu_mul_a_set());
-			assert(instr.alu_mul_b_set());
-		}
+    if (!instr.mul_nop()) {  // Assumption: always 2 operands
+      assert(instr.alu_mul_a_set());
+      assert(instr.alu_mul_b_set());
+    }
 
-	}
+  }
 #endif // DEBUG
 
   compile_data.num_instructions_combined += Combine::optimize(instructions);
@@ -807,13 +792,14 @@ ByteCode KernelDriver::to_opcodes() {
 void KernelDriver::compile_intern() {
   obtain_ast();
 
-  translate_stmt(m_targetCode, m_body);
+  assert(m_targetCode.empty());
+  encode_target(m_targetCode, m_body);
   assert(!m_targetCode.empty());
 
   insertInitBlock(m_targetCode);
-  add_init(m_targetCode);
+  add_init_block(m_targetCode);
 
-	adjust_immediates(m_targetCode);
+  adjust_immediates(m_targetCode);
 
   // Perform register allocation
   v3d_SourceTranslate().regAlloc(m_targetCode);
@@ -831,9 +817,9 @@ void KernelDriver::allocate() {
   // Assumption: code in a kernel, once allocated, doesn't change
   if (m_code.allocated()) {
     if (instructions.size() > m_code.size()) {
-			cerr << "KernelDriver::allocate(): Discrepancy between instruction size: " << (int) instructions.size()
-  	       << " and m_code size: " << m_code.size();
-		}
+      cerr << "KernelDriver::allocate(): Discrepancy between instruction size: " << (int) instructions.size()
+           << " and m_code size: " << m_code.size();
+    }
     assert(instructions.size() <= m_code.size());  // Tentative check, not perfect
                                                         // actual opcode seq can be smaller due to removal labels
   } else {
@@ -861,19 +847,19 @@ void KernelDriver::invoke(int numQPUs, IntList &params, bool wait_complete) {
   }
 
 
-	if (numQPUs <= 0) {
-	    cerr << "Zero or negative QPU's selected" << thrw;
-	}
+  if (numQPUs <= 0) {
+      cerr << "Zero or negative QPU's selected" << thrw;
+  }
 
-	if (Platform::compiling_for_vc7()) {
-	  if (numQPUs > 16) {
-	    cerr << "Num QPU's exceeded; Max QPU's is 16 for vc7" << thrw;
-		}
-	} else {
-	  if (numQPUs != 1 && numQPUs != 8) {
-	    cerr << "Num QPU's must be 1 or 8 for vc6" << thrw;
-	  }
-	}
+  if (Platform::compiling_for_vc7()) {
+    if (numQPUs > 16) {
+      cerr << "Num QPU's exceeded; Max QPU's is 16 for vc7" << thrw;
+    }
+  } else {
+    if (numQPUs != 1 && numQPUs != 8) {
+      cerr << "Num QPU's must be 1 or 8 for vc6" << thrw;
+    }
+  }
 
   assertq(!has_errors(), "v3d kernels has errors, can not invoke");
 
@@ -886,15 +872,15 @@ void KernelDriver::invoke(int numQPUs, IntList &params, bool wait_complete) {
   }
 
   uniforms.alloc(params.size() + 4);
-	done.alloc(1);
+  done.alloc(1);
   done[0] = 0;
 
-	load_uniforms(uniforms, numQPUs, devnull, done, params);
+  load_uniforms(uniforms, numQPUs, devnull, done, params);
 
   drv.add_bo(getBufferObject().getHandle());
   drv.execute(m_code, &uniforms, numQPUs, wait_complete);
 
-	//Log::warn << "KernelDriver::invoke() done: " << done.dump(); 
+  //Log::warn << "KernelDriver::invoke() done: " << done.dump(); 
 #endif  // QPU_MODE
 }
 
@@ -902,40 +888,40 @@ void KernelDriver::invoke(int numQPUs, IntList &params, bool wait_complete) {
 std::string KernelDriver::emit_opcodes() {
   if (instructions.empty()) return "<No opcodes to print>\n";
 
-	bool do_line_numbers = LibSettings::dump_line_numbers();
-	std::string ret;
+  bool do_line_numbers = LibSettings::dump_line_numbers();
+  std::string ret;
 
-	int count = 0;
+  int count = 0;
   for (auto const &instr : instructions) {
-		auto buf = instr.mnemonic(false);
-		int size = (int) buf.size();
+    auto buf = instr.mnemonic(false);
+    int size = (int) buf.size();
 
     ret << instr.emit_header();
 
-		if (do_line_numbers) {
-   		ret << count << ": ";
-		}
+    if (do_line_numbers) {
+      ret << count << ": ";
+    }
 
     ret << buf 
         << instr.emit_comment(size)
-		    << "\n";
-	  count++;
+        << "\n";
+    count++;
   }
 
-	return ret;
+  return ret;
 }
 
 
 void KernelDriver::wait_complete() {
-	if (drv.num_handles() == 0) {
-		warn << "wait_complete(): nothing to wait for";
-		return;
-	}
+  if (drv.num_handles() == 0) {
+    warn << "wait_complete(): nothing to wait for";
+    return;
+  }
 
-	warn << "wait_complete done: " << done[0];
+  warn << "wait_complete done: " << done[0];
 
-	warn << "wait_complete(): waiting for completion.";
-	drv.wait_bo();
+  warn << "wait_complete(): waiting for completion.";
+  drv.wait_bo();
 }
 
 }  // namespace v3d

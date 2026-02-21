@@ -32,9 +32,6 @@ Instr::List ISourceTranslate::load_var(Var &in_dst, Expr &e) {
   Reg src(e.deref_ptr()->var());
   Reg dst(in_dst);
 
-	if (Platform::compiling_for_vc7()) {
-	}
-
   ret << mov(TMUA, src)
       << recv(dst);
 

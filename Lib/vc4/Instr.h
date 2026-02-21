@@ -4,11 +4,12 @@
 #include "Target/instr/Instr.h"
 #include "Common/SharedArray.h"  // Code
 #include <vector>
+#include "Support/InstructionComment.h"
 
 namespace V3DLib {
 namespace vc4 {
 
-class Instr {
+class Instr : public InstructionComment {
 public:
 
   enum Encoding {
@@ -65,6 +66,8 @@ public:
     VPM_ST_WAIT     = 50,      // rfB rd
     VPM_LD_ADDR     = 50,      // rfA wr
     VPM_ST_ADDR     = 50,      // rfB wr
+    MUTEX_ACQUIRE   = 51,      // rfA/B rd
+    MUTEX_RELEASE   = 51,      // rfA/B wr
     SFU_RECIP       = 52,      // rfA/B wr
     SFU_RECIPSQRT   = 53,      // "
     SFU_EXP         = 54,      // "
@@ -184,7 +187,7 @@ public:
 
   void encode(Target::Instr const &instr);
   uint64_t encode() const;
-  std::string dump() const;
+  std::string dump(bool show_comments = false) const;
 
   static uint8_t encodeDestReg(Reg reg, RegTag* file);
   static uint8_t encodeSrcReg(Reg reg, RegTag file, uint8_t &mux);
@@ -192,6 +195,7 @@ public:
 private:
   uint32_t high() const;
   uint32_t low() const;
+  std::string dump_instr() const;
 };
 
 

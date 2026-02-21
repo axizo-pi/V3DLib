@@ -299,6 +299,7 @@ uint8_t Instr::encodeDestReg(Reg reg, RegTag* file) {
         case SPECIAL_DMA_LD_ADDR:   *file = REG_A; return VPM_LD_ADDR;
         case SPECIAL_DMA_ST_ADDR:   *file = REG_B; return VPM_ST_ADDR;
         case SPECIAL_VPM_WRITE:     *file = AorB;  return VPM_WRITE;
+        case SPECIAL_MUTEX_RELEASE: *file = AorB;  return MUTEX_RELEASE;
         case SPECIAL_HOST_INT:      *file = AorB;  return HOST_INT;
         case SPECIAL_TMUA:          *file = AorB;  return TMU0_S;
         case SPECIAL_SFU_RECIP:     *file = AorB;  return SFU_RECIP;
@@ -396,16 +397,19 @@ uint8_t Instr::encodeSrcReg(Reg reg, RegTag file, uint8_t &mux) {
 
     case SPECIAL:
       switch (reg.regId) {
-        case SPECIAL_UNIFORM:     mux = AorB;                         return UNIFORM_READ;
-        case SPECIAL_ELEM_NUM:    assert(file == REG_A); mux = MUX_A; return ELEMENT_NUMBER;
-        case SPECIAL_QPU_NUM:     assert(file == REG_B); mux = MUX_B; return QPU_NUMBER;
-        case SPECIAL_VPM_READ:    mux = AorB;                         return VPM_READ;
-        case SPECIAL_DMA_LD_WAIT: assert(file == REG_A); mux = MUX_A; return VPM_LD_WAIT;
-        case SPECIAL_DMA_ST_WAIT: assert(file == REG_B); mux = MUX_B; return VPM_ST_WAIT;
+        case SPECIAL_UNIFORM:       mux = AorB;                         return UNIFORM_READ;
+        case SPECIAL_ELEM_NUM:      assert(file == REG_A); mux = MUX_A; return ELEMENT_NUMBER;
+        case SPECIAL_QPU_NUM:       assert(file == REG_B); mux = MUX_B; return QPU_NUMBER;
+        case SPECIAL_VPM_READ:      mux = AorB;                         return VPM_READ;
+        case SPECIAL_MUTEX_ACQUIRE: mux = AorB;                         return MUTEX_ACQUIRE;
+        case SPECIAL_DMA_LD_WAIT:   assert(file == REG_A); mux = MUX_A; return VPM_LD_WAIT;
+        case SPECIAL_DMA_ST_WAIT:   assert(file == REG_B); mux = MUX_B; return VPM_ST_WAIT;
       }
 
-    default:
+    default: {
+      Log::cerr << "encodeSrcReg missing case, reg: " << reg.dump();
       fatal("V3DLib: missing case in encodeSrcReg");
+    }
       return 0;
   }
 }
@@ -530,7 +534,7 @@ void Instr::encode(Target::Instr const &instr) {
 }
 
 
-std::string Instr::dump() const {
+std::string Instr::dump_instr() const {
   std::string ret;
 
   auto mux_to_str = [*this] (uint8_t mux) -> std::string {
@@ -673,6 +677,22 @@ std::string Instr::dump() const {
 }
 
 
+std::string Instr::dump(bool show_comments) const {
+  std::string tmp = dump_instr();
+  std::string ret;
+
+  if (show_comments) {
+    ret << emit_header()
+        << tmp
+        << emit_comment(tmp.size());
+  } else {
+    ret = tmp;
+  }
+
+  return ret;
+}
+
+
 namespace {
 
 std::vector<std::string> opcodes(uint64_t const *data, int size) {
@@ -680,23 +700,23 @@ std::vector<std::string> opcodes(uint64_t const *data, int size) {
 
   if (size == 0) {
     ret << "<No opcodes to print>\n";
-		return ret;
-	}
+    return ret;
+  }
 
   std::string filename = "vc4_code_tmp.txt";
 
   //
-	// dump_instr() is redirected to a file, make it first
+  // dump_instr() is redirected to a file, make it first
   //
   FILE *f = fopen(filename.c_str(), "w");
- 	assert(f != nullptr);
+  assert(f != nullptr);
 
   dump_instr(f, data, size);
 
   fclose(f);
 
-	// Load redirected file int ret
-	std::ifstream file(filename);
+  // Load redirected file int ret
+  std::ifstream file(filename);
   assert(file.is_open());
 
   // Read the file line by line into a string

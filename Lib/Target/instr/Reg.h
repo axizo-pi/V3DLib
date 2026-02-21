@@ -55,7 +55,11 @@ enum Special {
 	// vc7 tmu read
   SPECIAL_TMUAU,
   SPECIAL_TMUC,
-  SPECIAL_TMUL
+  SPECIAL_TMUL,
+
+  // vc4 mutex
+  SPECIAL_MUTEX_ACQUIRE,
+  SPECIAL_MUTEX_RELEASE
 };
 
 

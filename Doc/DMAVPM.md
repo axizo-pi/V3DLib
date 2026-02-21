@@ -17,15 +17,21 @@ There are two transfer options:
 [^1]: *VPM IS mentioned in the QPU registers though, so it might be that I just never encountered*
       *its usage for `v3d`. This might be something I may investigate when bored and nothing else to do.*
 
-**VPM**:
+### VPM
 
 - can execute one read and on write in parallel,
 - but multiple reads and multiple writes block each other.
 - The QPU will stall if a read has to wait on a read, or a write has to wait on a write.
 - It has the advantage of being able to handle multiple 16-vectors in one go.
 
-**TMU**:
+**IMPORTANT: The `DMA` sidesteps the L2 cache**
 
+The L2 cache is not refreshed after a `DMA` write.
+This is an issue when `VPM` and `TMU` are used on the same buffer object with a kernel execution.
+
+### TMU
+
+- Uses a single L2 cache for all slices.
 - does not block *and* operations can overlap, up to a limit.
 - Up to 4 (`vc4`) or 8 (`v3d`) read operations can be performed together, and
 - (apparently) an unlimited number of writes.
@@ -261,17 +267,6 @@ When VPM/DMA is used, the index number is compensated for automatically, hence n
     	int insert_index = get_init_begin_marker(code);
 
     	Seq<Instr> ret;
-
-    /*
-      // Previous version, adding an offset for multiple QPUs
-      // This was silly idea and has been removed. Kept here for reference
-      // offset = 4 * (vector_id + 16 * qpu_num);
-      ret << shl(ACC1, rf(RSV_QPU_ID), 4) // Avoid ACC0 here, it's used for getting QPU_ID and ELEM_ID (next stmt)
-          << mov(ACC0, ELEM_ID)
-          << add(ACC1, ACC1, ACC0)
-          << shl(ACC0, ACC1, 2)           // offset now in ACC0
-          << add_uniform_pointer_offset(code);
-    */
 
       // offset = 4 * vector_id;
       ret << mov(ACC0, ELEM_ID)

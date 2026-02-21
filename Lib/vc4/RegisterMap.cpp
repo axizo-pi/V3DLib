@@ -14,7 +14,19 @@
 
 namespace V3DLib {
 namespace {
+
 std::unique_ptr<RegisterMap> _instance;
+
+/**
+ * Masks for bitfields of register V3D_L2CACTL
+ */
+enum V3D_L2CACTL_bits {
+  L2CCLR = 0x4,  // L2 Cache Clear, Write ‘1’ to clear the L2 Cache     (write only)
+  L2CDIS = 0x2,  // L2 Cache Disable, Write ‘1’ to disable the L2 Cache (write only)
+  L2CENA = 0x1,  // L2 Cache Enable, Reads state of cache enable bit.   (read/write)
+                 // Write ‘1’ to enable the L2 Cache (write of ‘0’ has no effect)
+};
+
 }  // anon namespace
 
 
@@ -152,7 +164,42 @@ int RegisterMap::VPMMemorySize() {
 
 
 int RegisterMap::L2CacheEnabled() {
-  return (readRegister(V3D_L2CACTL) & 0x1);
+  return (readRegister(V3D_L2CACTL) & L2CENA);
+}
+
+
+/**
+ * @brief Enable or disable the L2 cache.
+ *
+ * @param enable  if true, cache is enabled, if false cache is disabled.
+ *
+ * ----------------------
+ * 
+ * Notes
+ * =====
+ *
+ * - A reason to disable the cache, is when `VPM`(DMA) write are combined with
+ *   with `TMU` writes on the same buffer object. This is unavoidable on `vc4`.  
+ *   **The `DMA` sidesteps the L2 cache**. The L2 cache is not refreshed after
+ *   a `DMA` write.
+ *   
+ *   This happened with program `Gravity`, which stores acceleration values
+ *   in a buffer object within the same kernel execution.
+ *   
+ *   This is not an issue for `v3d`, which uses `TMU` exclusively.
+ *
+ * - Thankfully, the performance of disabling the cache is not severe
+ *   (At least, for `Gravity`).
+ *
+ * - Also thankfully, the L2 cache is enabled automatically between runs
+ *   of programs calling kernels.
+ */
+void RegisterMap::L2Cache_enable(bool enable) {
+  if (enable) {
+    writeRegister(V3D_L2CACTL, L2CENA);
+  } else {
+    writeRegister(V3D_L2CACTL, L2CDIS);
+  }
 }
 
 

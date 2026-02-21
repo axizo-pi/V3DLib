@@ -1,4 +1,5 @@
 #include "SourceTranslate.h"
+#include "Source/Translate.h"
 #include "Support/debug.h"
 #include "Target/instr/Mnemonics.h"
 #include "Target/Subst.h"
@@ -52,6 +53,18 @@ bool SourceTranslate::stmt(Instr::List &seq, Stmt::Ptr s) {
   }
 
   return ret;
+}
+
+
+/**
+ * Add initialization code after uniform loads
+ */
+void add_init_block(Instr::List &code) {
+  // Add uniform ptr index offsets
+  Target::Instr::List ret;
+  ret << add_uniform_pointer_offset(code);
+
+	insert_init_block(code, ret);
 }
 
 }  // namespace vc4

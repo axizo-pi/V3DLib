@@ -234,7 +234,6 @@ void kernel_step(
   Float::Ptr &p_acc_x, Float::Ptr &p_acc_y, Float::Ptr &p_acc_z,
 	Context &c
 ) {
-
   header("Start kernel_step");
 
   Int step         = numQPUs() << 4;
@@ -254,7 +253,7 @@ void kernel_step(
   p_acc_y += dma_offset;
   p_acc_z += dma_offset;
 
-  For (Int cur_block = me(), cur_block < (c.num_entities >> 4), cur_block += numQPUs())
+  For (Int cur_block2 = me(), cur_block2 < (c.num_entities >> 4), cur_block2 += numQPUs())
     Float x     = *p_x;
     Float y     = *p_y;
     Float z     = *p_z;
@@ -262,9 +261,9 @@ void kernel_step(
     Float v_y   = *p_v_y;
     Float v_z   = *p_v_z;
 
-    Float acc_x = *(p_acc_x + cur_block*dma_step);
-    Float acc_y = *(p_acc_y + cur_block*dma_step);
-    Float acc_z = *(p_acc_z + cur_block*dma_step);
+    Float acc_x = *(p_acc_x + cur_block2*dma_step);
+    Float acc_y = *(p_acc_y + cur_block2*dma_step);
+    Float acc_z = *(p_acc_z + cur_block2*dma_step);
 
     kernel_update(
       x    , y    , z,
@@ -373,9 +372,9 @@ void kernel_gravity(
   Int::Ptr signal
 ) {
 	Context c(in_num_entities);
+  comment("Start Count loop");
 
   For (Int i = 0, i < c.Count, i++)
-
     kernel_calc_acc(
       in_x, in_y, in_z,
       in_acc_x, in_acc_y, in_acc_z,
@@ -383,8 +382,7 @@ void kernel_gravity(
 			c
     );
 
-    // Not tested yet
-    barrier(); // barrier(signal);
+    barrier(signal);
 
     // kernel_step() adjusts pointers, reset to start before calling  
     Float::Ptr x = in_x;
@@ -404,7 +402,6 @@ void kernel_gravity(
       c
     );
 
-    barrier(); // barrier(signal);
-
+    barrier(signal);
   End
 }

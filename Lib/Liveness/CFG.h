@@ -3,6 +3,7 @@
 #include <set>
 #include <vector>
 #include "Target/instr/Instr.h"
+#include "Support/RegIdSet.h"
 #include "Range.h"
 
 namespace V3DLib {

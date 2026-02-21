@@ -9,10 +9,12 @@
 #include <iostream>
 #include <cmath>
 #include "Support/Platform.h"
+#include "global/log.h"
 #include "StmtStack.h"
 #include "Lang.h"
 #include "LibSettings.h"
 #include "vc4/Functions.h"
+#include "vc4/RegisterMap.h"
 
 namespace V3DLib {
 namespace functions {
@@ -522,14 +524,179 @@ void set_at(Float &dst, Int n, Float const &src) {
 
 
 /**
+ * **TODO*: not implemented in emulator, consider.
+ */
+void mutex_acquire() {
+  assert(Platform::compiling_for_vc4());
+
+  Expr::Ptr dummy = mkVar(Var(DUMMY));
+  Expr::Ptr mutex = mkVar(Var(MUTEX_ACQUIRE));  // Read A/B
+
+  Stmt::Ptr ptr = Stmt::create_assign(dummy, mutex);
+  stmtStack().push(ptr);
+}
+
+
+/**
+ * **TODO*: not implemented in emulator, consider.
+ *
+ * Can't use DUMMY as src var. Fails on Target translation.
+ */
+void mutex_release() {
+  assert(Platform::compiling_for_vc4());
+
+  Expr::Ptr mutex = mkVar(Var(MUTEX_RELEASE));  // Write A/B
+
+  Stmt::Ptr ptr = Stmt::create_assign(mutex, IntExpr(0).expr() /*dummy*/);
+  stmtStack().push(ptr);
+}
+
+
+namespace {
+
+/**
+ * @brief barrier implementation for `vc4`
+ *
+ * You can't assume that `QPU 0` enters this routine first.
+ *
+ * **Pre**: signal vectors in main memory are set to zero.
+ *
+ * ---------------------------------------------
+ *
+ * Notes
+ * -----
+ *
+ * - This code is for `vc4`. `v3d` has a `barrier` operation, which
+ *   is much more convenient.
+ *
+ * - This code requires that:
+ *   * _either_ the L2 cache is disabled
+ *   * _or_ DMA reads are used
+ */
+void vc4_barrier(Int::Ptr signal) {
+  assert(Platform::compiling_for_vc4());
+  Log::assertq(!LibSettings::use_tmu_for_load() || !RegisterMap::L2CacheEnabled(),
+    "vc4_barrier(): For this call to work, either use DMA for read, "
+    "or disable the L2 cache."
+  );
+
+  auto check_signals = [&signal] (Int &all_signals_set) {
+    Int dummy = 1;   comment("Check all signals");  // TODO replace with Source NOP
+    all_signals_set = 1;
+
+    For (Int i = 0, i < numQPUs(), i++)
+      Int tmp = *(signal + 16*i);
+
+      // TODO: implement operator&& for Int's
+      If (tmp == 0) 
+        all_signals_set = 0;
+      End
+    End
+  };
+
+
+  // 'I' refers to the QPU currently within this code
+  // 'We' refers to all QPU's participating
+
+  // Following is a placeholder for setting the header.
+  // Better would be to add NOP at the source level.
+  // TODO: implement Source NOP. Alternatively, add NOP for header() if no stmt present.
+  Int dummy = 1;   header("vc4 barrier");
+
+  If (numQPUs() != 1)                     // Don't bother if only one QPU
+    //
+    // Grab the mutex, setting the signals beforehand
+    //
+    *(signal + 16*me()) = 1;              // Signal that I am here
+    
+    Int::Ptr leader_ptr = (signal + 16*(numQPUs() + 1));
+
+    // Strong assumption: only one QPU can grab the mutex at any time
+    mutex_acquire();  comment("mutex_acquire");
+    //Log::warn << "mutex_acquire: " << stmtStack().last_stmt()->dump();
+
+    Int leader_signal = *leader_ptr;
+
+    If (leader_signal == 0)
+      // I am the barrier leader
+      *leader_ptr = 1;      comment("I am the barrier leader");
+
+      // Wait for all signals to be set
+      Int all_signals_set;  comment("Wait for all signals to be set");
+      check_signals(all_signals_set);
+      While (all_signals_set == 0)
+        check_signals(all_signals_set);
+      End
+
+      // We're all here, release the mutex
+      mutex_release();      comment("mutex_release");
+      Int dummy  = 0;       comment("Release all signals in loop");
+
+      //
+      // Reset all signals in main memory for next round
+      //
+      // There _may_ be a race condition here, since other QPU's
+      // are released before the leader signal is reset.
+      // 
+      For (Int i = 0, i < (numQPUs() + 1), i++) 
+        *signal = 0;
+        signal.inc();
+      End
+    Else
+      // I am not the barrier leader.
+      // Wait till the mutex is acquired and release for the rest.
+      mutex_release();  comment("mutex_release");
+    End
+  End
+}
+
+} // anon namespace
+
+
+/**
+ * @brief Generic version of `barrier()`
+ *
+ * **Still in development.**
+ */
+void barrier(Int::Ptr &signal) {
+  if (Platform::compiling_for_vc4()) {
+    Log::warn << "barrier vc4";
+    // vc4 - Stmt::BARRIER will not be passed on
+    vc4_barrier(signal);
+    //sync_qpus(signal);
+  } else {
+    // v3d
+    stmtStack().push(Stmt::create(Stmt::BARRIER));
+  }
+}
+
+
+/**
+ * @brief v3d-specific version of barrier
+ *
+ * Has no inputs, only an output, which is always magic reg SYNCB.
+ *
+ * `barrier` is v3d-specific. vc4 will need a different implementation,
+ * most likely with semaphores.
+ */
+void barrier() {
+  assert(!Platform::compiling_for_vc4());
+  stmtStack().push(Stmt::create(Stmt::BARRIER));
+}
+
+
+/**
  * Let QPUs wait for each other.
+ *
+ * **TODO**: Get rid of this. Currently used in testFFT.
  *
  * This is a busy wait!
  * It is also an **ugly hack** for something which should be supported by hardware.  
  * The only reason it works is that the `signal` value is retained in the L2 cache.
  *
- * On `v3d` this is superseded by `barrier()`, which works fine.  
- * On `vc4`, the same should be possible by use of semaphores, but that doesn't work right now (20260207).
+ * On `v3d` this is superseded by `barrier()`, which works great.  
+ * On `vc4`, the same should be possible by use of semaphores,
+ * but that doesn't work right now (20260207).
  *
  * In any case, last I looked it worked on `vc4` also.
  */
@@ -559,36 +726,6 @@ void sync_qpus(Int::Ptr signal) {
       End
     End
   End
-}
-
-
-/**
- * Has no inputs, only an output, which is always magic reg SYNCB.
- *
- * `barrier` is v3d-specific. vc4 will need a different implementation,
- * most likely with semaphores.
- */
-void barrier() {
-  if (Platform::compiling_for_vc4()) {
-    Log::warn << "barrier compiling for vc4";
-    // vc4 - Stmt::BARRIER will not be passed on
-    vc4::barrier();
-  } else {
-    // v3d
-    stmtStack().push(Stmt::create(Stmt::BARRIER));
-  }
-}
-
-
-void barrier(Int::Ptr &signal) {
-  if (Platform::compiling_for_vc4()) {
-    Log::warn << "barrier vc4 using sync_qpus()";
-    // vc4 - Stmt::BARRIER will not be passed on
-    sync_qpus(signal);
-  } else {
-    // v3d
-    stmtStack().push(Stmt::create(Stmt::BARRIER));
-  }
 }
 
 }  // namespace V3DLib

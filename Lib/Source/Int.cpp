@@ -54,6 +54,7 @@ IntExpr Int::operator=(IntExpr rhs) {
 Int &Int::operator+=(IntExpr rhs) { *this = *this + rhs; return *this; }
 Int &Int::operator-=(IntExpr rhs) { *this = *this - rhs; return *this; }
 Int &Int::operator|=(IntExpr rhs) { *this = *this | rhs; return *this; }
+Int &Int::operator/=(IntExpr rhs) { *this = *this / rhs; return *this; }
 
 
 //

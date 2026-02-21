@@ -3,6 +3,7 @@
 #include "kernel.h"
 #include "Support/Timer.h"
 #include "settings.h"
+#include "vc4/RegisterMap.h"
 
 using namespace Log;
 
@@ -13,6 +14,12 @@ using namespace Log;
 
 int main(int argc, const char *argv[]) {
   settings.init(argc, argv);
+
+  if (Platform::compiling_for_vc4()) {
+    // Disable L2 cache: this ensure that DMA and TMU can work together
+    RegisterMap::L2Cache_enable(false);
+    warn << "L2CacheEnabled(): " << RegisterMap::L2CacheEnabled();
+  }
 
   warn << "Num qpu's: " << settings.num_qpus;
 
@@ -44,7 +51,9 @@ int main(int argc, const char *argv[]) {
     m.init();
     m.plot();
 
-    Int::Array signal;
+    // Last vector signals that a barrier leader is present
+    Int::Array signal(16*(settings.num_qpus + 1));
+    signal.fill(0);
 
     auto k = compile(kernel_gravity, settings);
     k.setNumQPUs(settings.num_qpus);
@@ -69,11 +78,11 @@ int main(int argc, const char *argv[]) {
         t += BATCH_STEPS*dt;
       }
 
+      warn << "L2CacheEnabled(): " << RegisterMap::L2CacheEnabled();
       warn << m.dump_acc();
       warn << m.dump_pos();
 
-      // The plot image is always filled in,
-      // output is optional.
+      // The plot image is always filled in, output is optional.
       if (settings.output_orbits) {
         m.save_img();
       }

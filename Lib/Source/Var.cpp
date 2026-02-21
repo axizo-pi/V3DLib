@@ -21,40 +21,34 @@ bool Var::is_uniform_ptr() const { return m_is_uniform_ptr; }
 
 
 std::string Var::dump() const {
+  //warn << "Called Var dump(), tag: " << m_tag;
+
   std::string ret;
+  bool found_it = true;
 
   switch(m_tag) {
-    case STANDARD:
-      ret << "v" << m_id;
-    break;
+    case STANDARD:       ret << "v" << m_id;    break;
+
     case UNIFORM:
       ret << "Uniform";
       if (m_is_uniform_ptr) {
         ret << " Ptr";
       }
     break;
-    case QPU_NUM:
-      ret << "QPU_NUM";
-    break;
-    case ELEM_NUM:
-      ret << "ELEM_NUM";
-    break;
-    case VPM_READ:
-      ret << "VPM_READ";
-    break;
-    case VPM_WRITE:
-      ret << "VPM_WRITE";
-    break;
-    case TMU0_ADDR:
-      ret << "TMU0_ADDR";
-    break;
-    case DUMMY:
-      ret << "Dummy";
-    break;
-    default:
-      assert(false);
-    break;
+
+    case QPU_NUM:       ret << "QPU_NUM";       break;
+    case ELEM_NUM:      ret << "ELEM_NUM";      break;
+    case VPM_READ:      ret << "VPM_READ";      break;
+    case VPM_WRITE:     ret << "VPM_WRITE";     break;
+    case MUTEX_ACQUIRE: ret << "MUTEX_ACQUIRE"; break;
+    case MUTEX_RELEASE: ret << "MUTEX_RELEASE"; break;
+    case TMU0_ADDR:     ret << "TMU0_ADDR";     break;
+    case DUMMY:         ret << "Dummy";         break;
+
+    default:            found_it = false;       break;
   }
+
+  assert(found_it);
 
   return ret;
 }

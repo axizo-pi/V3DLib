@@ -64,28 +64,32 @@ Expr::Ptr simplify(Instr::List *seq, Expr::Ptr e) {
 // ============================================================================
 
 /**
- * @param seq      Target instruction sequence to extend
- * @param lhsExpr  Expression on left-hand side
+ * @brief Encode assign statements to Target code
+ *
+ * @param target   Target instruction sequence to extend
+ * @param lhs      Expression on left-hand side
  * @param rhs      Expression on right-hand side
  */
-void assign(Instr::List *seq, Expr::Ptr lhsExpr, Expr::Ptr rhs) {
-  Expr lhs = *lhsExpr;
+void assign(Instr::List &target, Expr::Ptr lhs, Expr::Ptr rhs) {
+  Log::warn << "assign lhs: '" << lhs->dump() << "', rhs: " << rhs->dump();
 
   // -----------------------------------------------------------
   // Case: v := rhs, where v is a variable and rhs an expression
   // -----------------------------------------------------------
-  if (lhs.tag() == Expr::VAR) {
-    *seq << varAssign(lhs.var(), rhs);
+  if (lhs->tag() == Expr::VAR) {
+    auto tmp = varAssign(lhs->var(), rhs);
+    Log::warn << "VAR target: " << tmp.dump();
+    target << tmp;
     return;
   }
 
   // ---------------------------------------------------------
   // Case: *lhs := rhs where lhs is not a var or rhs not a var
   // ---------------------------------------------------------
-  if (lhs.tag() == Expr::DEREF && (lhs.deref_ptr()->tag() != Expr::VAR || rhs->tag() != Expr::VAR)) {
-    assert(!lhs.deref_ptr()->isLit());
-    lhs.deref_ptr(simplify(seq, lhs.deref_ptr()));
-    rhs = putInVar(seq, rhs);
+  if (lhs->tag() == Expr::DEREF && (lhs->deref_ptr()->tag() != Expr::VAR || rhs->tag() != Expr::VAR)) {
+    assert(!lhs->deref_ptr()->isLit());
+    lhs->deref_ptr(simplify(&target, lhs->deref_ptr()));
+    rhs = putInVar(&target, rhs);
   }
 
   // -------------------------------------------------
@@ -94,9 +98,9 @@ void assign(Instr::List *seq, Expr::Ptr lhsExpr, Expr::Ptr rhs) {
 
   // Strictly speaking, the two VAR tests are not necessary; it is the only possible case
   // (According to previous code, that is)
-  bool handle_case = (lhs.tag() == Expr::DEREF && (lhs.deref_ptr()->tag() == Expr::VAR || rhs->tag() == Expr::VAR));
-  if (handle_case) {
-    *seq << getSourceTranslate().store_var(lhs.deref_ptr()->var(), rhs->var());
+  if (lhs->tag() == Expr::DEREF
+  && (lhs->deref_ptr()->tag() == Expr::VAR || rhs->tag() == Expr::VAR)) {
+    target << getSourceTranslate().store_var(lhs->deref_ptr()->var(), rhs->var());
     return;
   }
 
@@ -322,11 +326,17 @@ BranchCond condExp(Instr::List &seq, CExpr &c) {
 
 Instr::List whereStmt(Stmt::Ptr s, Var condVar, AssignCond cond, bool saveRestore);
 
-Instr::List whereStmt(Stmt::Array const &stmts, Var condVar, AssignCond cond, bool saveRestore, bool first_true = false) {
+Instr::List whereStmt(
+  Stmt::Array const &src,
+  Var condVar,
+  AssignCond cond,
+  bool saveRestore,
+  bool first_true = false
+) {
   Instr::List ret;
 
-  for (int i = 0; i < (int) stmts.size(); i++) {
-    ret << whereStmt(stmts[i], condVar, cond, (i == 0 && first_true)?true:saveRestore);
+  for (int i = 0; i < (int) src.size(); i++) {
+    ret << whereStmt(src[i], condVar, cond, (i == 0 && first_true)?true:saveRestore);
   }
 
   return ret;
@@ -344,7 +354,7 @@ Instr::List whereStmt(Stmt::Ptr s, Var condVar, AssignCond cond, bool saveRestor
   // Case: v = e, where v is a variable and e an expression
   // ------------------------------------------------------
   if (s->tag == Stmt::ASSIGN && s->assign_lhs()->tag() == Expr::VAR) {
-    assign(&ret, s->assign_lhs(), s->assign_rhs());
+    assign(ret, s->assign_lhs(), s->assign_rhs());
     ret.back().cond(cond); //.comment("Assign var in Where");
     return ret;
   }
@@ -353,7 +363,7 @@ Instr::List whereStmt(Stmt::Ptr s, Var condVar, AssignCond cond, bool saveRestor
   // Case: *v = e, where v is a pointer and e an expression
   // ------------------------------------------------------
   if (s->tag == Stmt::ASSIGN && s->assign_lhs()->tag() == Expr::DEREF) {
-    assign(&ret, s->assign_lhs(), s->assign_rhs());
+    assign(ret, s->assign_lhs(), s->assign_rhs());
     ret.back().cond(cond); // .comment("Assign *var (deref) in Where");
     return ret;
   }
@@ -463,7 +473,10 @@ Instr::List whereStmt(Stmt::Ptr s, Var condVar, AssignCond cond, bool saveRestor
 }
 
 
-void stmt(Instr::List *seq, Stmt::Ptr s);  // Forward declaration
+// Forward declaration
+
+/*
+void stmt(Instr::List *seq, Stmt::Ptr s);
 
 
 void stmts(Instr::List *seq, Stmt::Array const &stmts) {
@@ -471,34 +484,37 @@ void stmts(Instr::List *seq, Stmt::Array const &stmts) {
     stmt(seq, stmts[i]);
   }
 }
+*/
 
 
 /**
- * Translate if-then-else statement to target code
+ * @brief Translate if-then-else statement to target code
+ *
+ * @param target write-parameter; list of converted target statements
  */
-void translateIf(Instr::List &seq, Stmt &s) {
+void translateIf(Instr::List &target, Stmt &s) {
   using namespace Target::instr;
 
   Label endifLabel = freshLabel();
-  BranchCond cond  = condExp(seq, *s.if_cond());           // Compile condition
+  BranchCond cond  = condExp(target, *s.if_cond());          // Compile condition
     
   if (s.else_block().empty()) {
-    seq << branch(endifLabel).branch_cond(cond.negate());  // Branch over 'then' statement
-    stmts(&seq, s.then_block());                           // Compile 'then' statement
+    target << branch(endifLabel).branch_cond(cond.negate()); // Branch over 'then' statement
+    encode_target(target, s.then_block());                   // Compile 'then' statement
   } else {
     Label elseLabel = freshLabel();
 
-    seq << branch(elseLabel).branch_cond(cond.negate());   // Branch to 'else' statement
+    target << branch(elseLabel).branch_cond(cond.negate());  // Branch to 'else' statement
 
-    stmts(&seq, s.then_block());                           // Compile 'then' statement
+    encode_target(target, s.then_block());                   // Compile 'then' statement
 
-    seq << branch(endifLabel)                              // Branch to endif label
-        << label(elseLabel);                               // Label for 'else' statement
+    target << branch(endifLabel)                             // Branch to endif label
+           << label(elseLabel);                              // Label for 'else' statement
 
-    stmts(&seq, s.else_block());                           // Compile 'else' statement
+    encode_target(target, s.else_block());                   // Compile 'else' statement
   }
   
-  seq << label(endifLabel);                                // Label for endif
+  target << label(endifLabel);                               // Label for endif
 }
 
 
@@ -512,7 +528,9 @@ void translateWhile(Instr::List &seq, Stmt &s) {
   seq << branch(endLabel).branch_cond(cond.negate())   // Branch over loop body
       << label(startLabel);                            // Start label
 
-  if (!s.body().empty()) stmts(&seq, s.body());        // Compile body
+  if (!s.body().empty()) {                             // Compile body
+    encode_target(seq, s.body());
+  }
   condExp(seq, *s.loop_cond());                        // Compute condition again
                                                        // TODO why is this necessary?
 
@@ -526,18 +544,17 @@ void translateWhile(Instr::List &seq, Stmt &s) {
 // ============================================================================
 
 /**
- * Translate a Source-level statement to Target-level statements.
+ * @brief Translate one Source statement to Target statements.
  *
  * The conversion can emit multiple Target-level statements, or none at all.
  *
  * Source-level statements may contain blocks of statements; in that case,
- * this method is called recursively via `stmts()`.
+ * this method is called recursively via `encode_target()`.
  *
- * @param seq Sequence of Target-level statements to which to add conversion of 
- *            Source-level statement. 
- * @param s   Pointer to Source-level statement to handle.
+ * @param target  write-parameter; list of encoded Target statements
+ * @param s       Source statement to encode.
  */
-void stmt(Instr::List *seq, Stmt::Ptr s) {
+void encode(Instr::List &target, Stmt::Ptr s) {
   assert(s != nullptr);
   if (s == nullptr) return;
 
@@ -548,40 +565,44 @@ void stmt(Instr::List *seq, Stmt::Ptr s) {
     case Stmt::SKIP:
       break;
     case Stmt::ASSIGN:                   // 'lhs = rhs', where lhs and rhs are expressions
-      assign(seq, s->assign_lhs(), s->assign_rhs());
+      assign(target, s->assign_lhs(), s->assign_rhs());
       break;
     case Stmt::SEQ:                      // 's0 ; s1', where s1 and s2 are statements
-      stmts(seq, s->body());
+      encode_target(target, s->body());
       break;
     case Stmt::IF:                       // 'if (c) s0 s1', where c is a condition, and s0, s1 statements
-      translateIf(*seq, *s);
+      translateIf(target, *s);
       break;
     case Stmt::WHILE:                    // 'while (c) s', where c is a condition, and s a statement
-      translateWhile(*seq, *s);
+      translateWhile(target, *s);
       break;
-    case Stmt::WHERE: {                  // 'where (b) s0 s1', where c is a boolean expr, and s0, s1 statements
-        Var condVar = VarGen::fresh();   // This is the top-level definition of condVar
-        *seq << whereStmt(s, condVar, always, false);
-      }
-      break;
+
+    case Stmt::WHERE: {                  // 'where (b) s0 s1', where c is a boolean expr,
+                                         // and s0, s1 are statements
+
+      Var condVar = VarGen::fresh();   // This is the top-level definition of condVar
+      target << whereStmt(s, condVar, always, false);
+    }
+    break;
+
     case Stmt::LOAD_RECEIVE:             // 'receive(e)', where e is an expr
       assert(s->address()->tag() == Expr::VAR);
-      *seq << recv(s->address()->var());
+      target << recv(s->address()->var());
       break;
 
     case Stmt::BARRIER:
-      *seq << barrier();
+      target << barrier();
       break;
 
     default:
-      if (!getSourceTranslate().stmt(*seq, s)) {
+      if (!getSourceTranslate().stmt(target, s)) {
         Log::cerr << "stmt() unhandled Stmt tag: " << s->tag << Log::thrw;
       }
       break;
   }
 
-  if (!seq->empty()) {
-    seq->back().transfer_comments(*s);
+  if (!target.empty()) {
+    target.back().transfer_comments(*s);
   } else {
     if (s->has_comments()) {
       Log::warn << "stmt() comments not transferred, no sequence output";
@@ -593,16 +614,38 @@ void stmt(Instr::List *seq, Stmt::Ptr s) {
 
 
 /**
- * Insert markers for initialization code
- *
- * Only used for `v3d`.
+ * @brief Insert markers for initialization code
  */
 void insertInitBlock(Instr::List &code) {
   int index = code.lastUniformOffset();
   Instr::List ret;
-  ret << Instr(INIT_BEGIN) << Instr(INIT_END);
+
+  ret << Instr(INIT_BEGIN)
+      << Instr(INIT_END);
 
   code.insert(index + 1, ret);
+}
+
+
+/**
+ * @brief Insert the init block code into the Target program
+ *
+ * Also adds header comments for the init block and the main program
+ * in the Target code.
+ *
+ * @param code  program compiled to Target language
+ * @param init   list of operations for the init block
+ */
+void insert_init_block(Instr::List &code, Instr::List &init) {
+  init.front().header("Init block");
+
+  int insert_index = code.tag_index(INIT_BEGIN);
+  assertq(insert_index >= 0, "Expecting init begin marker");
+  code.insert(insert_index + 1, init);  // Insert init code after the INIT_BEGIN marker
+
+  insert_index = code.tag_index(INIT_END);
+  assertq(insert_index >= 0, "Expecting init end marker");
+  code[insert_index + 1].header("Main program");
 }
 
 
@@ -611,13 +654,13 @@ void insertInitBlock(Instr::List &code) {
 // ============================================================================
 
 /**
- * Variable assignments
+ * @brief Encode variable assignments to Target code
  *
- * Translate the conditional assignment of a variable to an expression.
+ * Translates the (conditional) assignment of a variable to an expression.
  *
  * @param cond  Condition on assignment
- * @param v     Variable on LHS
- * @param expr  Expression on RHS
+ * @param v     Variable on lhs
+ * @param expr  Expression on rhs
  *
  * @return  A sequence of instructions
  */
@@ -627,7 +670,7 @@ Instr::List varAssign(AssignCond cond, Var v, Expr::Ptr expr) {
   Expr e = *expr;
 
   switch (e.tag()) {
-    case Expr::VAR: {                                                   // 'v := w', where v and w are variables
+    case Expr::VAR: {                                                // 'v := w', v and w variables
         auto tmp = mov(v, e.var());
         assert(tmp.size() ==1);
         tmp.back().cond(cond);
@@ -635,40 +678,41 @@ Instr::List varAssign(AssignCond cond, Var v, Expr::Ptr expr) {
         ret << tmp; 
       }
       break;
-    case Expr::INT_LIT:                                               // 'v := i', where i is an integer literal
+    case Expr::INT_LIT:                                              // 'v := i', i is an integer literal
       ret << li(v, e.intLit).cond(cond);
       break;
-    case Expr::FLOAT_LIT:                                             // 'v := f', where f is a float literal
+    case Expr::FLOAT_LIT:                                            // 'v := f', f is a float literal
       ret << li(v, e.floatLit).cond(cond);
       break;
-    case Expr::APPLY: {                                               // 'v := x op y'
-      if (!e.lhs()->isSimple() || !e.rhs()->isSimple()) { // x or y are not simple
+    case Expr::APPLY: {                                              // 'v := x op y'
+      if (!e.lhs()->isSimple() || !e.rhs()->isSimple()) {            // x or y are not simple
         e.lhs(simplify(&ret, e.lhs()));
         e.rhs(simplify(&ret, e.rhs()));
       }
 
-      if (e.lhs()->isLit() && e.rhs()->isLit()) {         // x and y are both literals
+      if (e.lhs()->isLit() && e.rhs()->isLit()) {                    // x and y are both literals
         Var tmpVar = VarGen::fresh();
         ret << varAssign(cond, tmpVar, e.lhs());
         e.lhs(mkVar(tmpVar));
       }
 
-      switch (e.apply_op().op) {                          // x and y are simple
-      case RECIP:     ret << recip(v, e.lhs()->var());     break;
-      case RECIPSQRT: ret << recipsqrt(v, e.lhs()->var()); break;
-      case EXP:       ret << bexp(v, e.lhs()->var());      break;
-      case EXP_E:     ret << bexp_e(v, e.lhs()->var());    break;
-      case LOG:       ret << blog(v, e.lhs()->var());      break;
-      default:
-        // Everything else is considered to be a single binary operation
-        Instr instr(ALU);
-        instr.ALU.op    = ALUOp(e.apply_op());
-        instr.ALU.srcA  = operand(e.lhs());
-        instr.ALU.srcB  = operand(e.rhs());
-        instr.assign_cond(cond);
-        instr.dest(v);
+      switch (e.apply_op().op) {                                     // x and y are simple
+        case RECIP:     ret << recip(v, e.lhs()->var());     break;
+        case RECIPSQRT: ret << recipsqrt(v, e.lhs()->var()); break;
+        case EXP:       ret << bexp(v, e.lhs()->var());      break;
+        case EXP_E:     ret << bexp_e(v, e.lhs()->var());    break;
+        case LOG:       ret << blog(v, e.lhs()->var());      break;
 
-        ret << instr;
+        default:
+          // Everything else is considered to be a single binary operation
+          Instr instr(ALU);
+          instr.ALU.op    = ALUOp(e.apply_op());
+          instr.ALU.srcA  = operand(e.lhs());
+          instr.ALU.srcB  = operand(e.rhs());
+          instr.assign_cond(cond);
+          instr.dest(v);
+
+          ret << instr;
         break;
       }
     }
@@ -706,28 +750,32 @@ Instr::List varAssign(Var v, Expr::Ptr expr) {
  * Similar to 'simplify' but ensure that the result is a variable.
  */
 Expr::Ptr putInVar(Instr::List *seq, Expr::Ptr e) {
-  debug("Put in var");
+  Log::cdebug << "Called PutInVar()";
+
   if (e->tag() == Expr::VAR) {
     return e;
   }
 
   Var tmp = VarGen::fresh();
-  //seq->back().comment("putInVar starts next");
   *seq << varAssign(tmp, e);
   return mkVar(tmp);
 }
 
 
 /**
- * Translate to target code
+ * @brief Translate a list of Source statements to Target code
  *
  * Entry point for translation of statements.
+ * Is also called recursively internally.
+ *
+ * @param target write-parameter; list of converted Target statements
+ * @param source read-parameter; list of Source statements to convert 
  */
-void translate_stmt(Instr::List &seq, Stmts &s) {
-  assert(seq.empty());
+void encode_target(Instr::List &target, Stmt::Array const &source) {
+  assert(!source.empty());
 
-  for (int i = 0; i < (int) s.size(); i++) {
-    stmt(&seq, s[i]);
+  for (int i = 0; i < (int) source.size(); i++) {
+    encode(target, source[i]);
   }
 }
 
