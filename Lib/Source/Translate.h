@@ -7,6 +7,7 @@ namespace V3DLib {
 
 void encode_target(Instr::List &target, Stmt::Array const &source);
 void insertInitBlock(Instr::List &code);
+void insert_init_block(Instr::List &code, Instr::List &init);
 
 //
 // Following exposed for source translates.

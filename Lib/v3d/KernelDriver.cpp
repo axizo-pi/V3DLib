@@ -658,8 +658,6 @@ void _encode(V3DLib::Instr::List const &instrs, Instructions &dst) {
 #ifdef DEBUG  
   assertq(checkUniformAtTop(instrs), "_encode(): checkUniformAtTop() failed (v3d)", true);
 #endif
-  bool prev_was_init_begin = false;
-  bool prev_was_init_end   = false;
 
   // Main loop
   for (int i = 0; i < instrs.size(); i++) {
@@ -668,23 +666,10 @@ void _encode(V3DLib::Instr::List const &instrs, Instructions &dst) {
     check_instruction_tag_for_platform(instr.tag, false);
 
     if (instr.tag == INIT_BEGIN) {
-      prev_was_init_begin = true;
     } else if (instr.tag == INIT_END) {
       dst << encode_init();
-      prev_was_init_end = true;
     } else {
       Instructions ret = v3d::encodeInstr(instr);
-
-      if (prev_was_init_begin) {
-        ret.front().header("Init block");
-        prev_was_init_begin = false;
-      }
-
-      if (prev_was_init_end) {
-        ret.front().header("Main program");
-        prev_was_init_end = false;
-      }
-
       dst << ret;
     }
   }

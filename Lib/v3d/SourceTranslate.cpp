@@ -87,9 +87,6 @@ Instr label(Label in_label) {
 void add_init_block(Instr::List &code) {
   using namespace V3DLib::Target::instr;
 
-  int insert_index = code.tag_index(INIT_BEGIN);
-  assertq(insert_index >= 0, "Expecting init begin marker");
-
   Reg acc  = ACC0();
   Reg _r64 = _64();
 
@@ -132,7 +129,7 @@ void add_init_block(Instr::List &code) {
 
   ret << add_uniform_pointer_offset(code);
 
-  code.insert(insert_index + 1, ret);  // Insert init code after the INIT_BEGIN marker
+	insert_init_block(code, ret);
 }
 
 

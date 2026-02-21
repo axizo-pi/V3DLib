@@ -614,7 +614,7 @@ void encode(Instr::List &target, Stmt::Ptr s) {
 
 
 /**
- * Insert markers for initialization code
+ * @brief Insert markers for initialization code
  */
 void insertInitBlock(Instr::List &code) {
   int index = code.lastUniformOffset();
@@ -624,6 +624,28 @@ void insertInitBlock(Instr::List &code) {
       << Instr(INIT_END);
 
   code.insert(index + 1, ret);
+}
+
+
+/**
+ * @brief Insert the init block code into the Target program
+ *
+ * Also adds header comments for the init block and the main program
+ * in the Target code.
+ *
+ * @param code  program compiled to Target language
+ * @param init   list of operations for the init block
+ */
+void insert_init_block(Instr::List &code, Instr::List &init) {
+  init.front().header("Init block");
+
+  int insert_index = code.tag_index(INIT_BEGIN);
+  assertq(insert_index >= 0, "Expecting init begin marker");
+  code.insert(insert_index + 1, init);  // Insert init code after the INIT_BEGIN marker
+
+  insert_index = code.tag_index(INIT_END);
+  assertq(insert_index >= 0, "Expecting init end marker");
+  code[insert_index + 1].header("Main program");
 }
 
 

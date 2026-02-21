@@ -1,4 +1,5 @@
 #include "SourceTranslate.h"
+#include "Source/Translate.h"
 #include "Support/debug.h"
 #include "Target/instr/Mnemonics.h"
 #include "Target/Subst.h"
@@ -63,14 +64,7 @@ void add_init_block(Instr::List &code) {
   Target::Instr::List ret;
   ret << add_uniform_pointer_offset(code);
 
-  // add header comments;
-  ret.front().header("Init block");
-
-  int insert_index = code.tag_index(INIT_END);
-  assertq(insert_index >= 0, "Expecting init end marker");
-
-  code[insert_index + 1].header("Main program");
-  code.insert(insert_index, ret);
+	insert_init_block(code, ret);
 }
 
 }  // namespace vc4
