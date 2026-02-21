@@ -67,9 +67,6 @@ int main(int argc, const char *argv[]) {
         m.plot();
   
         t += BATCH_STEPS*dt;
-
-      	//warn << m.dump_acc();
-      	//warn << m.dump_pos();
       }
 
       warn << m.dump_acc();
