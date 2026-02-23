@@ -514,7 +514,6 @@ Instr::List encode_imm(V3DLib::Instr &instr) {
 	assert(!ret.empty());
 
 	if (!do_li) {
-		breakpoint; // Warn me when this happens
 		auto new_instr = instr;
 		new_instr.ALU.srcA = dst;
 		ret << new_instr;
