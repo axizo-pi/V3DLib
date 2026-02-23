@@ -117,10 +117,10 @@ CmdParameters numqpu_params = {
     "Max QPU's",
     "-nmax",
     ParamType::NONE,
-		"Use the maximum available number of QPU's on the current platform.\n"
-		"The maximum number for the VideoCore versions are: "
-		"vc4: 12, vc6: 8, vc7: 16\n"
-		"This parameter overrides any value set by parameter '-n'"
+    "Use the maximum available number of QPU's on the current platform.\n"
+    "The maximum number for the VideoCore versions are: "
+    "vc4: 12, vc6: 8, vc7: 16\n"
+    "This parameter overrides any value set by parameter '-n'"
   }}
 };
 
@@ -167,8 +167,8 @@ void Settings::init(int argc, const char *argv[]) {
   check_params(m_all_params, argc, argv);
 
   set_loglevel(WARNING);
-	// No need to set log level for Log
- 	Log::set_log_dir("/home/wim/projects/V3DLib/log");
+  // No need to set log level for Log
+  Log::set_log_dir("/home/wim/projects/V3DLib/log");
   Log::set_log_file("V3DLib.log");
 }
 
@@ -205,10 +205,10 @@ void Settings::check_params(CmdParameters &params, int argc, char const *argv[])
     exit(CmdParameters::EXIT_ERROR);
   }
 
-	Args args;
-	for (int i = 1; i < argc; ++i) {  // Skip first param, which is the program name
-		args.push_back(argv[i]);
-	}
+  Args args;
+  for (int i = 1; i < argc; ++i) {  // Skip first param, which is the program name
+    args.push_back(argv[i]);
+  }
 
   int ret = CmdParameters::EXIT_ERROR;
 
@@ -264,21 +264,21 @@ bool Settings::process() {
     num_qpus    = p["Num QPU's"]->get_int_value();
 
     if (p["Max QPU's"]->get_bool_value()) {
-    	if (run_type != 0 || Platform::run_vc4()) {
-      	num_qpus = 12;
-			}	else if (Platform::run_vc7()) {
-      	num_qpus = 16;
+      if (run_type != 0 || Platform::run_vc4()) {
+        num_qpus = 12;
+      } else if (Platform::run_vc7()) {
+        num_qpus = 16;
       } else {  // vc6
-      	num_qpus = 8;
+        num_qpus = 8;
       }
-		}
+    }
 
     if (run_type != 0 || Platform::run_vc4()) {
       if (num_qpus < 0 || num_qpus > 12) {
         printf("ERROR: For vc4 and emulator, the number of QPU's selected must be between 1 and 12 inclusive.\n");
         return false;
       }
-		}	else if (Platform::run_vc7()) {
+    } else if (Platform::run_vc7()) {
       if (num_qpus < 0 || num_qpus > 16) {
         printf("ERROR: For vc7, the number of QPU's selected must be between 1 and 16 inclusive.\n");
         return false;
@@ -292,15 +292,15 @@ bool Settings::process() {
   }
 
   if (run_type != 0) {
-		//printf("Settings: using main memory.\n");
+    //printf("Settings: using main memory.\n");
     Platform::use_main_memory(true);
     Platform::compiling_for_vc4(true);
   }
 
-	if (compile_only) {
-		Log::warn << "Only compiling, using main memory.";
- 		Platform::use_main_memory(true);
-	}
+  if (compile_only) {
+    Log::warn << "Only compiling, using main memory.";
+    Platform::use_main_memory(true);
+  }
 
   return true;
 }

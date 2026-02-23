@@ -12,7 +12,6 @@
 #include "global/log.h"
 #include "Instr.h"
 #include "LibSettings.h"
-#include "Support/Helpers.h"
 #include "Functions.h"
 
 using namespace Log;
@@ -68,11 +67,8 @@ void compile_postprocess(Target::Instr::List &targetCode) {
   loadStorePass(targetCode);
   //compile_data.target_code_before_regalloc = targetCode.dump();
 
-  // Perform register allocation
-  regAlloc(targetCode);
-
-  // Satisfy target code constraints
-  vc4_satisfy(targetCode);
+  regAlloc(targetCode);      // Perform register allocation
+  vc4_satisfy(targetCode);   // Satisfy target code constraints
 }
 
 
@@ -98,7 +94,7 @@ int KernelDriver::kernel_size() const {
  * Assumption: code in a kernel, once allocated, does not change.
  */
 void KernelDriver::encode() {
-  if (!m_code.empty()) return;  // Don't bother if already encoded
+  if (!m_code.empty()) return;      // Don't bother if already encoded
   if (has_errors()) return;         // Don't do this if compile errors occured
 
   CodeList code = V3DLib::vc4::encode(m_targetCode);
@@ -137,11 +133,14 @@ std::string KernelDriver::emit_opcodes() {
   }
 
   std::string ret;
-  for (int i = 0; i < (int) list.size(); ++i) {
-    auto &t = m_targetCode[i];
+  int t_i = 0;
+  for (int i = 0; i < (int) list.size(); ++i, ++t_i) {
+    auto t = m_targetCode[t_i];
 
     if (t.tag == INIT_BEGIN || t.tag == INIT_END) {
-      warn << "emit_opcodes() detected INIT marker";
+      cdebug << "emit_opcodes() detected INIT marker";
+      ++t_i;
+      t = m_targetCode[t_i];
     }
 
     ret << t.emit_header();
@@ -190,9 +189,10 @@ void KernelDriver::compile_intern() {
   }
 
   vc4::add_init_block(m_targetCode);
-
   m_targetCode << Target::Instr(END);
+
   compile_postprocess(m_targetCode);
+
   removeLabels(m_targetCode);
 
   encode();

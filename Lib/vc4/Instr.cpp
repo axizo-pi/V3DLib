@@ -726,8 +726,6 @@ std::vector<std::string> opcodes(uint64_t const *data, int size) {
   }
 
   file.close();
-
-  warn << "opcodes ret size: " << ret.size();
   return ret;
 }
 

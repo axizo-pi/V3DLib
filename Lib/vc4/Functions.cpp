@@ -88,14 +88,12 @@ void wait_qpu() {
 
 void mutex_acquire() {
   assert(Platform::compiling_for_vc4());
-
   Log::assertq(false, "TODO mutex_acquire");
 }
 
 
 void mutex_release() {
   assert(Platform::compiling_for_vc4());
-
   Log::assertq(false, "TODO mutex_release");
 }
 

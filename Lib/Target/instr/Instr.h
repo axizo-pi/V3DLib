@@ -173,7 +173,7 @@ struct Instr : public InstructionComment {
   Instr &src_a(RegOrImm const &rhs) { assert(tag == InstrTag::ALU); ALU.srcA = rhs;  return *this; }
   Instr &src_b(RegOrImm const &rhs) { assert(tag == InstrTag::ALU); ALU.srcB = rhs;  return *this; }
 
-  std::string mnemonic(bool with_comments = false, std::string const &pref = "") const;
+  std::string mnemonic(bool with_comments = false, std::string const &prefix = "") const;
   std::string dump() const;
   uint32_t get_acc_usage() const;
 

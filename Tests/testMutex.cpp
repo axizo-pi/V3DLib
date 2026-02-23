@@ -28,8 +28,11 @@ TEST_CASE("Test mutexes[mutex]") {
     return;
   }
 
+  Platform::use_main_memory(true);
+  info << "Unit test [mutex] using main memory";
+
   RegisterMap::L2Cache_enable(false);
-  warn << "L2CacheEnabled(): " << RegisterMap::L2CacheEnabled();
+  info << "L2CacheEnabled(): " << RegisterMap::L2CacheEnabled();
 
   SUBCASE("Test acquire/release") {
     int numQPUs = 1;
@@ -43,7 +46,9 @@ TEST_CASE("Test mutexes[mutex]") {
   }
 
   RegisterMap::L2Cache_enable(true);
-  warn << "L2CacheEnabled(): " << RegisterMap::L2CacheEnabled();
+  info << "L2CacheEnabled(): " << RegisterMap::L2CacheEnabled();
+
+  Platform::use_main_memory(false);
 }
 
 #endif  // QPU_MODE

@@ -218,11 +218,10 @@ Reg rf(uint8_t index) {
 
 Instr::List mov(Reg dst, RegOrImm const &src) {
   dst.can_write(true);
+  //Log::warn << "dst: " << dst.dump() << "; " << "tag: " << dst.tag;   
+  //Log::warn << "mov src: " << src.dump();   
 
   Instr::List ret;
-
-  //Log::debug << "dst: " << dst.dump() << "; " << "tag: " << dst.tag;   
-  //Log::warn << "mov src: " << src.dump();   
 
   if (src.is_reg() && src.reg().tag == SPECIAL) {
     // The logic for special reg's is under bor(), so we 

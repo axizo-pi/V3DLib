@@ -91,15 +91,15 @@ bool contains(std::string const &s1, std::string const &s2) {
 /**
  * Split a string into substrings at a given delimiter.
  *
- * Note that this is destructive on the input string.
- *
  * Source: https://stackoverflow.com/a/14266139/1223531
  *
  * @param s         String to split.
  * @param delimiter Substring to split on.
  * @return          Array of strings split on delimiter. The delimiter is left out.
  */
-std::vector<std::string> split(std::string& s, const std::string& delimiter) {
+std::vector<std::string> split(std::string s, std::string const &delimiter) {
+  // s is destroyed internally
+
   std::vector<std::string> tokens;
   size_t pos = 0;
   std::string token;
@@ -111,6 +111,12 @@ std::vector<std::string> split(std::string& s, const std::string& delimiter) {
   tokens.push_back(s);
 
   return tokens;
+}
+
+
+int num_newlines(std::string const &s) {
+  auto ret = split(s, "\n");
+  return (ret.size() - 1);
 }
 
 

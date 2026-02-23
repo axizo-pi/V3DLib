@@ -1,9 +1,12 @@
 #include "Translate.h"
 #include "Support/Platform.h"
+#include "Support/Helpers.h"   // contains()
 #include "SourceTranslate.h"
 #include "Target/SmallLiteral.h"
 #include "Target/instr/Mnemonics.h"
 #include "Support/basics.h"
+
+using namespace Log;
 
 namespace V3DLib {
 
@@ -71,14 +74,14 @@ Expr::Ptr simplify(Instr::List *seq, Expr::Ptr e) {
  * @param rhs      Expression on right-hand side
  */
 void assign(Instr::List &target, Expr::Ptr lhs, Expr::Ptr rhs) {
-  Log::warn << "assign lhs: '" << lhs->dump() << "', rhs: " << rhs->dump();
+  //Log::warn << "assign lhs: '" << lhs->dump() << "', rhs: " << rhs->dump();
 
   // -----------------------------------------------------------
   // Case: v := rhs, where v is a variable and rhs an expression
   // -----------------------------------------------------------
   if (lhs->tag() == Expr::VAR) {
     auto tmp = varAssign(lhs->var(), rhs);
-    Log::warn << "VAR target: " << tmp.dump();
+    //Log::warn << "VAR target: " << tmp.dump();
     target << tmp;
     return;
   }
@@ -473,20 +476,6 @@ Instr::List whereStmt(Stmt::Ptr s, Var condVar, AssignCond cond, bool saveRestor
 }
 
 
-// Forward declaration
-
-/*
-void stmt(Instr::List *seq, Stmt::Ptr s);
-
-
-void stmts(Instr::List *seq, Stmt::Array const &stmts) {
-  for (int i = 0; i < (int) stmts.size(); i++) {
-    stmt(seq, stmts[i]);
-  }
-}
-*/
-
-
 /**
  * @brief Translate if-then-else statement to target code
  *
@@ -551,63 +540,68 @@ void translateWhile(Instr::List &seq, Stmt &s) {
  * Source-level statements may contain blocks of statements; in that case,
  * this method is called recursively via `encode_target()`.
  *
- * @param target  write-parameter; list of encoded Target statements
- * @param s       Source statement to encode.
+ * @param s  Source statement to encode.
+ * @return   list of encoded Target statements for passed Source statement
  */
-void encode(Instr::List &target, Stmt::Ptr s) {
+Instr::List encode(Stmt::Ptr s) {
   assert(s != nullptr);
-  if (s == nullptr) return;
 
   using namespace Target::instr;
+
+  Instr::List ret;
 
   switch (s->tag) {
     case Stmt::GATHER_PREFETCH:          // Remove if still present
     case Stmt::SKIP:
       break;
     case Stmt::ASSIGN:                   // 'lhs = rhs', where lhs and rhs are expressions
-      assign(target, s->assign_lhs(), s->assign_rhs());
+      assign(ret, s->assign_lhs(), s->assign_rhs());
       break;
     case Stmt::SEQ:                      // 's0 ; s1', where s1 and s2 are statements
-      encode_target(target, s->body());
+      encode_target(ret, s->body());
       break;
     case Stmt::IF:                       // 'if (c) s0 s1', where c is a condition, and s0, s1 statements
-      translateIf(target, *s);
+      translateIf(ret, *s);
       break;
     case Stmt::WHILE:                    // 'while (c) s', where c is a condition, and s a statement
-      translateWhile(target, *s);
+      translateWhile(ret, *s);
       break;
 
     case Stmt::WHERE: {                  // 'where (b) s0 s1', where c is a boolean expr,
                                          // and s0, s1 are statements
 
       Var condVar = VarGen::fresh();   // This is the top-level definition of condVar
-      target << whereStmt(s, condVar, always, false);
+      ret << whereStmt(s, condVar, always, false);
     }
     break;
 
     case Stmt::LOAD_RECEIVE:             // 'receive(e)', where e is an expr
       assert(s->address()->tag() == Expr::VAR);
-      target << recv(s->address()->var());
+      ret << recv(s->address()->var());
       break;
 
     case Stmt::BARRIER:
-      target << barrier();
+      ret << barrier();
       break;
 
     default:
-      if (!getSourceTranslate().stmt(target, s)) {
+      if (!getSourceTranslate().stmt(ret, s)) {
         Log::cerr << "stmt() unhandled Stmt tag: " << s->tag << Log::thrw;
       }
       break;
   }
 
-  if (!target.empty()) {
-    target.back().transfer_comments(*s);
+  assert(!ret.empty());
+  if (!ret.empty()) {
+    ret.back().transfer_comments(*s);
   } else {
     if (s->has_comments()) {
       Log::warn << "stmt() comments not transferred, no sequence output";
     }
   }
+
+  //warn << "encode() ret:\n" << ret.dump();
+  return ret;
 }
 
 }  // anon namespace
@@ -669,6 +663,7 @@ Instr::List varAssign(AssignCond cond, Var v, Expr::Ptr expr) {
   Instr::List ret;
   Expr e = *expr;
 
+
   switch (e.tag()) {
     case Expr::VAR: {                                                // 'v := w', v and w variables
         auto tmp = mov(v, e.var());
@@ -679,6 +674,7 @@ Instr::List varAssign(AssignCond cond, Var v, Expr::Ptr expr) {
       }
       break;
     case Expr::INT_LIT:                                              // 'v := i', i is an integer literal
+      //Log::warn << "varAssign() c,expr: " << v.dump() << ", " << expr->dump();
       ret << li(v, e.intLit).cond(cond);
       break;
     case Expr::FLOAT_LIT:                                            // 'v := f', f is a float literal
@@ -775,7 +771,19 @@ void encode_target(Instr::List &target, Stmt::Array const &source) {
   assert(!source.empty());
 
   for (int i = 0; i < (int) source.size(); i++) {
-    encode(target, source[i]);
+    auto ret = encode(source[i]);
+    target << ret;
+/*
+    auto src_tmp = source[i]->dump();
+    auto ret_tmp = ret.dump();
+    warn << "encode_target() translated source op:\n"
+         << "  Source:"
+         << ((num_newlines(src_tmp) <= 1)?" ":"\n")
+         << src_tmp << "\n"
+         << "  Target:"
+         << ((num_newlines(ret_tmp) <= 1)?" ":"\n")
+         << ret_tmp;
+*/
   }
 }
 

@@ -21,12 +21,15 @@
 
 int main(int argc, char** argv) {
   set_loglevel(LogLevel::WARNING);
+  Log::set_log_dir("log");
+  Log::set_log_file("unit_tests.log");
 
   doctest::Context context;
   context.applyCommandLine(argc, argv);
-  int res = context.run(); // run
-  if(context.shouldExit()) // important - query flags (and --exit) rely on the user doing this
-    return res;          // propagate the result of the tests
+  int res = context.run();              // run
+  if(context.shouldExit()) {            // important - query flags (and --exit) rely on the user doing this
+    return res;                         // propagate the result of the tests
+  }
    
-return 0;
+  return 0;
 }

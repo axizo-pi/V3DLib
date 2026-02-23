@@ -11,6 +11,7 @@
 #include "Optimizations.h"
 #include "Support/Timer.h"
 #include "UseDef.h"
+#include "Support/Helpers.h"  // contains()
 
 namespace V3DLib {
 namespace {
@@ -95,7 +96,7 @@ void allocate_registers(Instr &instr, RegUsage const &alloc) {
  *        - remove() -> 28.557023s
  *        - new list -> 0.170661s
  */
-Instr::List  remove_replaced_instructions(Instr::List &instrs) {
+Instr::List remove_skips(Instr::List &instrs) {
   Instr::List ret;
 
   int cur   = 0;
@@ -310,7 +311,15 @@ void Liveness::optimize(Instr::List &instrs, int numVars) {
   if (combineImmediates(live, instrs)) {
     live.compute(instrs);  // instructions have changed, redo liveness
   }
-
+/*
+  // WRI DEBUG - Where does MUTEX_RELEASE go?
+  for (int i = 0; i < (int) instrs.size(); i++) {
+    auto buf = instrs[i].dump();
+    if (contains(buf, "MUTEX_")) {
+      Log::warn << "Mutex op: " << buf;
+    }
+  }
+*/
   //
   // vc7 has no general purpose accumulators,
   // So we won't bother replacing variables with them
@@ -323,7 +332,7 @@ void Liveness::optimize(Instr::List &instrs, int numVars) {
 
   // Times for following (now) insignificant
 
-  instrs = remove_replaced_instructions(instrs);
+  instrs = remove_skips(instrs);
   assertq(count_skips(instrs) == 0, "optimize(): SKIPs detected in instruction list after cleanup");
 
   compile_data.target_code_before_liveness = instrs.dump();

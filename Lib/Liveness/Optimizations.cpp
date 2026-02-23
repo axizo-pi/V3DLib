@@ -6,6 +6,7 @@
 #include "Support/Timer.h"
 #include "Support/basics.h"
 #include "global/log.h"
+#include "Support/Helpers.h"  // contains()
 
 using namespace Log;
 
@@ -210,6 +211,17 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
 
     if (instr.LI.imm.is_small_imm()) {
       auto const &reg_usage = live.reg_usage()[instr.dest().regId];
+/*
+      // WRI DEBUG  
+      auto buf = instr.dump();
+      if (contains(buf, "MUTEX_")) {
+        Log::warn << "combineImmediates: " << buf;
+      }
+*/
+      if (instr.dest().is_special()) {
+        info << "combineImmediates special dest register, not combinining, instr: " << instr.dump();
+        continue;
+      }
 
       if (reg_usage.assigned_once()) {
         assert(reg_usage.first_usage() == reg_usage.first_dst());
@@ -242,6 +254,7 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
         }
 
         if (can_remove) {
+          info << "combineImmediates can_remove, instr: " << instr.dump();
           instr.set_skip();
         }
       }
@@ -260,8 +273,8 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
         break;
       }
 
-      if (last_use + LAST_USE_LIMIT < j) {  // This is here for performance reasons, to avoid fully scanning
-                                            // huge kernels.
+      if (last_use + LAST_USE_LIMIT < j) {  // This is here for performance reasons,
+                                            // to avoid fully scanning huge kernels.
         break;
       }
 

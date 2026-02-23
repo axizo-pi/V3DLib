@@ -14,7 +14,8 @@ void sleep(int sec);
 //
 std::string indentBy(int indent);
 bool contains(std::string const &s1, std::string const &s2);	
-std::vector<std::string> split(std::string& s, const std::string& delimiter);
+std::vector<std::string> split(std::string s, std::string const &delimiter);
+int num_newlines(std::string const &s);
 
 }  // namespace V3DLib
 

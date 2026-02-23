@@ -306,8 +306,10 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_com
         std::string tmp = DMA::dump_tag(tag);  // Check for unhandled DMA stuff
 
         if (!tmp.empty()) {
-          cdebug  << "Stmt::disp_intern() default DMA: " << tmp;
+          // DMA
+          ret << tmp;
         } else {
+          // Unknown tag
           std::string msg;
           msg << "Stmt::disp_intern() "
               << "Unknown tag '" << tag << "'";
@@ -337,6 +339,10 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_com
     }
 
     return out;
+  }
+
+  if (ret.empty()) {
+    breakpoint;
   }
 
   return ret;

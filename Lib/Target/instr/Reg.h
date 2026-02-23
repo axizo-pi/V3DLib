@@ -82,6 +82,7 @@ struct Reg {
   bool can_read(bool check = false) const;
   bool can_write(bool check = false) const;
   bool is_rf_reg() const { return tag == REG_A || tag == REG_B; }
+  bool is_special() const { return tag == SPECIAL; }
   RegTag regfile() const; 
 
   std::string dump() const;
