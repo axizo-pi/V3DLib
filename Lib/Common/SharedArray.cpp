@@ -45,7 +45,7 @@ void BaseSharedArray::alloc(uint32_t n) {
       return;
     }
 
-    warn << "alloc(): reallocating shared array";
+    cdebug << "alloc(): reallocating shared array";
     dealloc();
   }
 

@@ -347,6 +347,8 @@ void Vec::assign(Vec const &rhs) {
 ///////////////////////////////////////////////////////////////////////////////
 
 Vec const EmuState::index_vec({0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15});
+int EmuState::m_mutex = -1;
+
 
 EmuState::EmuState(int in_num_qpus, IntList const &in_uniforms, bool add_dummy) :
   num_qpus(in_num_qpus),
@@ -410,6 +412,56 @@ bool EmuState::sema_dec(int sema_id) {
     sema[sema_id]--;
     return false;
   }
+}
+
+
+/**
+ * @return true if mutex acquired, false otherwise
+ */
+bool EmuState::mutex_acquire(int qpu_number) {
+  if (m_mutex == -1) {
+    m_mutex = qpu_number;
+    return true;
+  }
+
+  // This is called twice for an OR-operation reading SPECIAL_MUTEX_ACQUIRE,
+  // because the special register is both in add srcA and add srcB.
+  // So we need to allow multiple calls to this special register.
+  return false;
+}
+
+
+/**
+ * Only the QPU stored in the mutex member can release.
+ *
+ * @return true if mutex release, false otherwise
+ */
+bool EmuState::mutex_release(int qpu_number) {
+  // Not expecting mutex to be released when not acquired.
+  // Technically, it is possible. Deal with it if it happens.
+  if (m_mutex == -1) {
+    breakpoint;
+  }
+  assertq(m_mutex != -1, "mutex_release() called but was not acquired");
+
+  if (m_mutex == qpu_number) {
+    m_mutex = -1;
+    return true;
+  }
+ 
+  return false; 
+}
+
+
+/**
+ * @return true if QPU blocked, false otherwise
+ */
+bool EmuState::mutex_blocks(int qpu_number) {
+  if (m_mutex == -1) {
+    return false;
+  }
+
+  return (m_mutex != qpu_number);
 }
 
 }  // namespace V3DLib
