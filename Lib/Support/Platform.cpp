@@ -7,6 +7,7 @@
 #include "basics.h"
 
 namespace V3DLib {
+namespace Platform {
 namespace {
 
 /**
@@ -152,10 +153,10 @@ bool get_chip_version(std::string &model, std::string &revision) {
 }
 
 enum VideoCoreType {
-	UNKNOWN,
-	vc4,
-	vc6,
-	vc7
+  UNKNOWN,
+  vc4,
+  vc6,
+  vc7
 };
 
 
@@ -169,7 +170,7 @@ public:
 
   std::string model_number;
   std::string revision;
-	VideoCoreType vc_type = UNKNOWN;
+  VideoCoreType vc_type = UNKNOWN;
   std::string platform_id; 
 
   bool is_pi_platform;
@@ -179,7 +180,7 @@ public:
 
   int size_regfile() const;
   std::string output() const;
-	int max_qpus() const;
+  int max_qpus() const;
 };
 
 
@@ -191,8 +192,8 @@ PlatformInfo::PlatformInfo() {
 
   if (!platform_id.empty() && is_pi_platform) {
    vc_type = (platform_id.find("Pi 4") != platform_id.npos)? vc6:
-   	(platform_id.find("Pi 5") != platform_id.npos)? vc7:
-		vc4;
+     (platform_id.find("Pi 5") != platform_id.npos)? vc7:
+    vc4;
   }
 
 #ifndef QPU_MODE
@@ -200,8 +201,8 @@ PlatformInfo::PlatformInfo() {
   m_use_main_memory = true;
   vc_type = vc4;             // run vc4 code only
 #else
-	// As default, select compiling for the platform you are on.
-	// If you want to compile to vc4, you need to explicitly set this.
+  // As default, select compiling for the platform you are on.
+  // If you want to compile to vc4, you need to explicitly set this.
   m_compiling_for_vc4 = (vc_type == vc4);
 #endif
 }
@@ -224,17 +225,17 @@ std::string PlatformInfo::output() const {
     ret << "This is NOT a pi platform!\n";
   } else {
     ret << "This is a pi platform.\n";
-		ret << "GPU: ";
+    ret << "GPU: ";
 
-		switch (vc_type) {
-			case UNKNOWN: ret << "Unknown";             break;
-			case vc4:     ret << "vc4 (VideoCore IV)";  break;
-			case vc6:     ret << "v3d (VideoCore VI)";  break;
-			case vc7:     ret << "v3d (VideoCore VII)"; break;
-			default:      ret << "No clue!";
-		}
+    switch (vc_type) {
+      case UNKNOWN: ret << "Unknown";             break;
+      case vc4:     ret << "vc4 (VideoCore IV)";  break;
+      case vc6:     ret << "v3d (VideoCore VI)";  break;
+      case vc7:     ret << "v3d (VideoCore VII)"; break;
+      default:      ret << "No clue!";
+    }
 
-		ret << "\n";
+    ret << "\n";
   }
 
   return ret;
@@ -242,12 +243,12 @@ std::string PlatformInfo::output() const {
 
 
 int PlatformInfo::max_qpus() const {
-	switch (vc_type) {
-		case vc4: return 12;
-		case vc6: return 8; 
-		case vc7: return 16;
-		default:  return -1;
-	}
+  switch (vc_type) {
+    case vc4: return 12;
+    case vc6: return 8; 
+    case vc7: return 16;
+    default:  return -1;
+  }
 }
 
 
@@ -267,12 +268,7 @@ PlatformInfo &instance() {
 }  // anon namespace
 
 
-///////////////////////////////////////////////////////////////////////////////
-// Class Platform
-///////////////////////////////////////////////////////////////////////////////
-
-
-void Platform::use_main_memory(bool val) {
+void use_main_memory(bool val) {
 #ifdef QPU_MODE
   instance().m_use_main_memory = val;
 #else
@@ -291,12 +287,13 @@ void Platform::use_main_memory(bool val) {
  * This is distinct from the platform we are actually running on.
  * The compilation can occur on any platform, including non-pi.
  */
-void Platform::compiling_for_vc4(bool val) { 
+void compiling_for_vc4(bool val) { 
   //Log::debug << "compiling_for_vc4 val: " << val;
   instance().m_compiling_for_vc4 = val;
 }
 
-bool Platform::compiling_for_vc4() { return instance().m_compiling_for_vc4; }
+
+bool compiling_for_vc4() { return instance().m_compiling_for_vc4; }
 
 
 /**
@@ -308,18 +305,18 @@ bool Platform::compiling_for_vc4() { return instance().m_compiling_for_vc4; }
  * we are running on. It is possible to compile for any platform on any
  * platform.
  */
-bool Platform::compiling_for_vc7() {
+bool compiling_for_vc7() {
   // This overrides any device selection, due to emulator and interpreter
   if (instance().m_compiling_for_vc4) return false;
   return (instance().vc_type == vc7);  // This option is way easier
 }
 
 
-bool Platform::use_main_memory()      { return instance().m_use_main_memory; }
-std::string Platform::platform_info() { return instance().output(); }
-bool Platform::is_pi_platform()       { return instance().is_pi_platform; }
-bool Platform::run_vc4()         { return instance().vc_type == vc4; }
-bool Platform::run_vc7()         { return instance().vc_type == vc7; }
+bool use_main_memory()      { return instance().m_use_main_memory; }
+std::string platform_info() { return instance().output(); }
+bool is_pi_platform()       { return instance().is_pi_platform; }
+bool run_vc4()              { return instance().vc_type == vc4; }
+bool run_vc7()              { return instance().vc_type == vc7; }
 
 
 /**
@@ -341,22 +338,22 @@ bool Platform::run_vc7()         { return instance().vc_type == vc7; }
  * This all goes to show that something that appears to be exceedingly simple in
  * concept can actually be convoluted as f*** underwater.
  */
-int Platform::size_regfile() {
+int size_regfile() {
   if (compiling_for_vc4()) return 32;
-	return 64;  // v3d
+  return 64;  // v3d
 }
 
 
-int Platform::max_qpus() {
-	return instance().max_qpus();
+int max_qpus() {
+  return instance().max_qpus();
 }
 
 
 
-int Platform::gather_limit() {
+int gather_limit() {
   {
     static bool showed = false;
-  	if (!showed) debug("Platform::gather_limit(): add vc7.");
+    if (!showed) debug("Platform::gather_limit(): add vc7.");
     showed = true;
   }
 
@@ -371,7 +368,7 @@ int Platform::gather_limit() {
 /**
  * Return short string with main version of the current pi
  */
-std::string Platform::pi_version() {
+std::string pi_version() {
   std::string ret = "Not Pi";
   std::string val;
 
@@ -387,7 +384,9 @@ std::string Platform::pi_version() {
   }
 
   char version = val[prefix.length()];
-  if (version == 'M') {  // Pi1 has no explicit number in version string; this checks the 'M' in 'Raspberry Pi Model B Rev 2'
+  if (version == 'M') {
+    // Pi1 has no explicit number in version string;
+    // this checks the 'M' in 'Raspberry Pi Model B Rev 2'
     version = '1';
   }
   ret = "pi";
@@ -403,7 +402,8 @@ std::string Platform::pi_version() {
 }
 
 
-void Platform::running_emulator(bool val) { instance().m_running_emulator = val; }
-bool Platform::running_emulator() { return instance().m_running_emulator; }
+void running_emulator(bool val) { instance().m_running_emulator = val; }
+bool running_emulator() { return instance().m_running_emulator; }
 
+}  // namespace Platform
 }  // namespace V3DLib

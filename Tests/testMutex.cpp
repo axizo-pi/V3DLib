@@ -62,7 +62,7 @@ TEST_CASE("Test mutexes emulator[mutex]") {
     Int::Array expected(16);
 
     auto k = compile(mutex_kernel);
-		//to_file("mutex_kernel.txt", k.dump());
+    //to_file("mutex_kernel.txt", k.dump());
 
     INFO("Single QPU");
     run_mutex_kernel(result, expected, 1, k);
@@ -94,7 +94,7 @@ TEST_CASE("Test mutexes QPU[mutex]") {
     Int::Array expected(16);
 
     auto k = compile(mutex_kernel);
-		to_file("mutex_kernel.txt", k.dump());
+    to_file("mutex_kernel.txt", k.dump());
 
     INFO("Single QPU");
     run_mutex_kernel(result, expected, 1, k);

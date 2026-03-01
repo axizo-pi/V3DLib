@@ -53,9 +53,9 @@ void to_file(std::string const &filename, std::string const &content) {
   assert(!content.empty());
 
   FILE *f = fopen(filename.c_str(), "w");
- 	assert (f != nullptr);
-	fprintf(f, content.c_str());
-	fclose(f);
+   assert (f != nullptr);
+  fprintf(f, content.c_str());
+  fclose(f);
 }
 
 
@@ -78,13 +78,13 @@ void sleep(int sec) {
  * @param s1 String to scan for substring
  * @param s2 Substring to scan for.
  */
-bool contains(std::string const &s1, std::string const &s2) {	
-	if (s1.find(s2) != std::string::npos) {
+bool contains(std::string const &s1, std::string const &s2) {  
+  if (s1.find(s2) != std::string::npos) {
     //std::cout << "found!" << '\n';
-		return true;
-	}
+    return true;
+  }
 
-	return false;
+  return false;
 }
 
 

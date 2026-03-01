@@ -3,26 +3,25 @@
 #include <string>
 
 namespace V3DLib {
+namespace Platform {
 
-class Platform {
-public:
-  static bool is_pi_platform();
-  static std::string platform_info();
-  static std::string pi_version();
-  static bool run_vc4();
-  static bool run_vc7();
-  static void compiling_for_vc4(bool val);
-  static bool compiling_for_vc4();
-  static bool compiling_for_vc7();
-  static void use_main_memory(bool val);
-  static bool use_main_memory();
-  static int  size_regfile();
-  static int  max_qpus();
-  static int  gather_limit();
-  static void running_emulator(bool val);
-  static bool running_emulator();
-};
+bool is_pi_platform();
+std::string platform_info();
+std::string pi_version();
+bool run_vc4();
+bool run_vc7();
+void compiling_for_vc4(bool val);
+bool compiling_for_vc4();
+bool compiling_for_vc7();
+void use_main_memory(bool val);
+bool use_main_memory();
+int  size_regfile();
+int  max_qpus();
+int  gather_limit();
+void running_emulator(bool val);
+bool running_emulator();
 
+}  // namespace Platform
 }  // namespace V3DLib
 
 

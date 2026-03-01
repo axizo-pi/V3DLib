@@ -8,7 +8,7 @@
 #include "../Lib/vc4/RegisterMap.h"
 #include "../Lib/v3d/RegisterMapping.h"
 
-using V3DLib::Platform;
+using namespace V3DLib;
 
 TEST_CASE("Test correct working of RegisterMap [regmap]") {
 

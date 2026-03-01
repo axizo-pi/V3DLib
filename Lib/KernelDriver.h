@@ -12,11 +12,11 @@ namespace V3DLib {
 
 class KernelDriver {
 public:
-	enum KernelType {
-		vc4,
-		vc6,
-		vc7
-	};
+  enum KernelType {
+    vc4,
+    vc6,
+    vc7
+  };
 
   KernelDriver(BufferType in_buffer_type) : buffer_type(in_buffer_type) {}
   KernelDriver(KernelDriver &&k) = default;
@@ -34,18 +34,18 @@ public:
 
   Code const &code() const { return m_code; }
 
-	std::string dump();
+  std::string dump();
   std::string compile_info() const;
-	std::string dump_compile_data() const;
+  std::string dump_compile_data() const;
 
-	bool        is_v3d()      const { return m_type == vc6 || m_type == vc7; }
-	KernelType  kernel_type() const { return m_type; }
-	std::string kernel_type_str() const;
-	virtual int kernel_size() const = 0; 
-	virtual void wait_complete();
+  bool        is_v3d()      const { return m_type == vc6 || m_type == vc7; }
+  KernelType  kernel_type() const { return m_type; }
+  std::string kernel_type_str() const;
+  virtual int kernel_size() const = 0; 
+  virtual void wait_complete();
 
 protected:
-	KernelType  m_type;
+  KernelType  m_type;
   Instr::List m_targetCode; // Target code generated from AST
   Stmts       m_body;
 

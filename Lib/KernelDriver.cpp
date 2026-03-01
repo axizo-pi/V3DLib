@@ -62,16 +62,16 @@ void KernelDriver::obtain_ast() {
 void KernelDriver::compile(std::function<void()> create_ast) {
   try {
     create_ast();
-		//to_file("stack.txt", stmtStack().dump());
+    //to_file("stack.txt", stmtStack().dump());
 
     compile_intern();
     m_numVars = VarGen::count();
   } catch (V3DLib::Exception const &e) {
-		// TODO: I have the impression that this block is not reached any more.
-		//       I think that V3DLib::Exception is on its way out.
+    // TODO: I have the impression that this block is not reached any more.
+    //       I think that V3DLib::Exception is on its way out.
 
     std::string e_msg = e.msg();
-		Log::warn << "Exception e_msg: " << e_msg;
+    Log::warn << "Exception e_msg: " << e_msg;
 
     std::string msg   = "Exception occurred during compilation: ";
     msg << e_msg;
@@ -85,10 +85,10 @@ void KernelDriver::compile(std::function<void()> create_ast) {
       throw;  // Must be a fatal()
     }
   } catch (std::runtime_error const &e) {
-		// NOTE: Following handling derived from previous block for V3DLib::Exception
+    // NOTE: Following handling derived from previous block for V3DLib::Exception
 
     std::string e_msg = e.what();
-		Log::warn << "runtime_error e_msg: " << e_msg;
+    Log::warn << "runtime_error e_msg: " << e_msg;
 
     std::string msg = "runtime error occurred during compilation: ";
     msg << e_msg;
@@ -96,8 +96,8 @@ void KernelDriver::compile(std::function<void()> create_ast) {
     clearStack();
     errors << msg;
   } catch (...) {
-		std::string msg = "Unknown exception occurred during compilation";
-		Log::cerr << msg;
+    std::string msg = "Unknown exception occurred during compilation";
+    Log::cerr << msg;
     errors << msg;
   }
 
@@ -149,7 +149,7 @@ Stmts &KernelDriver::sourceCode() {
 * @param filename  if specified, print the output to this file. Otherwise, print to stdout
 */
 std::string KernelDriver::dump() {
-	std::string ret;
+  std::string ret;
 
   if (has_errors()) {
     ret << "=== There were errors during compilation, the output here is likely incorrect or incomplete  ===\n"
@@ -157,28 +157,28 @@ std::string KernelDriver::dump() {
         << "\n\n";
   }
 
-	ret << "Opcodes for " << kernel_type_str() << "\n"
-   	  << "===============\n"
+  ret << "Opcodes for " << kernel_type_str() << "\n"
+       << "===============\n"
       << emit_opcodes()
- 			<< "\n";
+       << "\n";
 
   ret << "Source for " << kernel_type_str() << "\n"
       << "===============\n"
-			<< m_body.dump()
+      << m_body.dump()
       << "\n"
 
-  		<< "Target for " << kernel_type_str() << "\n"
+      << "Target for " << kernel_type_str() << "\n"
       << "===============\n"
       << m_targetCode.mnemonics(true);
 
-	return ret;
+  return ret;
 }
 
 
 std::string KernelDriver::dump_compile_data() const {
   return m_compile_data.dump()
-  	+ ::title("ACC usage")
-  	+ m_targetCode.check_acc_usage();
+    + ::title("ACC usage")
+    + m_targetCode.check_acc_usage();
 }
 
 
@@ -194,17 +194,17 @@ std::string KernelDriver::compile_info() const {
 
 
 std::string KernelDriver::kernel_type_str() const {
-	switch(kernel_type()) {
-		case vc4: return "vc4";
-		case vc6: return "vc6";
-		case vc7: return "vc7";
-		default:  assert(false); return "none";  // Should never occur
-	}
+  switch(kernel_type()) {
+    case vc4: return "vc4";
+    case vc6: return "vc6";
+    case vc7: return "vc7";
+    default:  assert(false); return "none";  // Should never occur
+  }
 }
 
 
 void KernelDriver::wait_complete() {
-	/* Intentionally left blank */
+  /* Intentionally left blank */
 }
 
 }  // namespace V3DLib

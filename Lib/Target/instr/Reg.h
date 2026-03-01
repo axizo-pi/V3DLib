@@ -52,7 +52,7 @@ enum Special {
   SPECIAL_SFU_EXP,
   SPECIAL_SFU_LOG,
 
-	// vc7 tmu read
+  // vc7 tmu read
   SPECIAL_TMUAU,
   SPECIAL_TMUC,
   SPECIAL_TMUL,
@@ -78,7 +78,7 @@ struct Reg {
   bool operator!=(Reg const &rhs) const { return !(*this == rhs); }
   bool operator<(Reg const &rhs) const;
 
-	bool is_none() const;
+  bool is_none() const;
   bool can_read(bool check = false) const;
   bool can_write(bool check = false) const;
   bool is_rf_reg() const { return tag == REG_A || tag == REG_B; }

@@ -1,6 +1,8 @@
 #include "ProfileOutput.h"
 #include "Support/basics.h"
 
+using namespace V3DLib;
+
 std::string ProfileOutput::out_data::str() const {
   std::string ret;
   std::string params;

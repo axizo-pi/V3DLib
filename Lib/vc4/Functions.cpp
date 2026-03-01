@@ -72,7 +72,7 @@ void wait_qpu() {
    // The issue here is that QPU 0 may not be the first QPU to reach this code.
   If (me() == 0)               
     Int n = numQPUs() - 1;       comment("Start vc4 barrier");
-		 	                           comment("QPU 0 wait for other QPUs to finish");
+                                  comment("QPU 0 wait for other QPUs to finish");
     For (Int i = 0, i < n, i++)
       semaDec(15);
     End
@@ -107,7 +107,7 @@ void kernelFinish() {
   dmaWaitRead();                header("Kernel termination");
                                 comment("Ensure outstanding DMAs have completed");
   dmaWaitWrite();
-	wait_qpu();
+  wait_qpu();
 }
 
 

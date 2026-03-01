@@ -9,7 +9,6 @@
 
 class ProfileOutput {
   using Timer = V3DLib::Timer;
-  using Platform = V3DLib::Platform;
 
   struct out_data {
     out_data(

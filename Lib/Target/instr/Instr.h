@@ -57,7 +57,7 @@ enum InstrTag {
   NO_OP,                // No-op
   SKIP,                 // For internal use during optimization
 
-	BARRIER,              // QPU's wait until all QPU's have reached this point
+  BARRIER,              // QPU's wait until all QPU's have reached this point
 
   // ==================================================
   // vc4-only instructions
@@ -151,7 +151,7 @@ struct Instr : public InstructionComment {
   bool hasImm() const { return ALU.srcA.is_imm() || ALU.srcB.is_imm(); }
   bool isUniformLoad() const;
   bool isUniformPtrLoad() const;
-	bool isNop() const { return tag == NO_OP; }
+  bool isNop() const { return tag == NO_OP; }
   bool isRot() const;
   bool isZero() const;
   bool isLast() const;

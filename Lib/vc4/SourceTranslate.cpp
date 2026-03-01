@@ -64,7 +64,7 @@ void add_init_block(Instr::List &code) {
   Target::Instr::List ret;
   ret << add_uniform_pointer_offset(code);
 
-	insert_init_block(code, ret);
+  insert_init_block(code, ret);
 }
 
 }  // namespace vc4
