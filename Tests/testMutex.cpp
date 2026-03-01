@@ -29,6 +29,22 @@ void init_vector(Int::Array &arr) {
 }
 
 
+void run_mutex_kernel(Int::Array &result, Int::Array &expected, int numQPUs, BaseKernel &k) {
+  result.alloc(numQPUs*16);
+  result.fill(-1);
+
+  expected.alloc(numQPUs*16);
+  init_vector(expected);
+
+  k.load(&result);
+  k.setNumQPUs(numQPUs);
+  k.run();
+
+  warn << "result: " << result.dump();
+  REQUIRE(result == expected);
+}
+
+
 } // anon namespace
 
 
@@ -38,49 +54,21 @@ void init_vector(Int::Array &arr) {
  * Emulator should work fine on v3d, no need to block.
  */
 TEST_CASE("Test mutexes emulator[mutex]") {
-
   Platform::use_main_memory(true);
   INFO("Unit test [mutex] using main memory");
 
   SUBCASE("Test acquire/release") {
-    int numQPUs = 1;
     Int::Array result(16);
-
     Int::Array expected(16);
-    init_vector(expected);
 
     auto k = compile(mutex_kernel);
 		//to_file("mutex_kernel.txt", k.dump());
 
-    {
-      INFO("Single QPU");
-      result.fill(-1);
-      init_vector(expected);
+    INFO("Single QPU");
+    run_mutex_kernel(result, expected, 1, k);
 
-      k.load(&result);
-      k.setNumQPUs(numQPUs);
-      k.run();
-
-      REQUIRE(result == expected);
-    }
-
-    {
-      INFO("Multiple QPU's");
-      numQPUs = 8;
-
-      result.alloc(numQPUs*16);
-      result.fill(-1);
-
-      expected.alloc(numQPUs*16);
-      init_vector(expected);
-
-      k.load(&result);
-      k.setNumQPUs(numQPUs);
-      k.run();
-
-      //warn << "result: " << result.dump();
-      REQUIRE(result == expected);
-    }
+    INFO("Multiple QPU's");
+    run_mutex_kernel(result, expected, 8, k);
   }
 
   Platform::use_main_memory(false);
@@ -101,7 +89,19 @@ TEST_CASE("Test mutexes QPU[mutex]") {
   RegisterMap::L2Cache_enable(false);
   info << "L2CacheEnabled(): " << RegisterMap::L2CacheEnabled();
 
-  // TODO
+  SUBCASE("Test acquire/release") {
+    Int::Array result(16);
+    Int::Array expected(16);
+
+    auto k = compile(mutex_kernel);
+		to_file("mutex_kernel.txt", k.dump());
+
+    INFO("Single QPU");
+    run_mutex_kernel(result, expected, 1, k);
+
+    //INFO("Multiple QPU's");
+    //run_mutex_kernel(result, expected, 8, k);
+  }
 
   RegisterMap::L2Cache_enable(true);
   info << "L2CacheEnabled(): " << RegisterMap::L2CacheEnabled();
