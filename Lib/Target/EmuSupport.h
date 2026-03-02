@@ -26,7 +26,7 @@ union Word {
 
 
 /**
- * Vector values
+ * @brief Vector values
  */
 struct Vec {
   Vec() = default;

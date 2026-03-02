@@ -949,14 +949,13 @@ WARN_LOGFILE           =
 
 # WRI
 INPUT                  =            \
-	../Lib/Source/                    \
+  ../Lib/Source/                    \
   ../Lib/Kernel.h                   \
   ../Lib/Support/Helpers.cpp        \
   ../Lib/v3d/Combine.cpp            \
   ../Lib/vc4/Functions.cpp          \
   ../Lib/vc4/RegisterMap.cpp        \
-  ../Lib/Target/instr/Mnemonics.cpp \
-  ../Lib/Target/EmuSupport.cpp
+  ../Lib/Target/instr/Mnemonics.cpp 
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses

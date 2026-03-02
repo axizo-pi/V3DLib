@@ -7,6 +7,13 @@
 #include "Source/Op.h"
 #include <algorithm>  // std::find()
 
+/** \file 
+ * EmuSupport 
+ * ==========
+ *
+ * Helper functions for running the emulator.
+ */
+
 using namespace Log;
 
 namespace V3DLib {
@@ -47,7 +54,7 @@ Vec rotate(Vec v, int n) {
 
 
 // ============================================================================
-// Class Vec
+// Struct Vec
 // ============================================================================
 
 Vec::Vec(int val) {
@@ -263,20 +270,20 @@ bool Vec::apply(ALUOp const &op, Vec a, Vec b) {
     case Enum::A_BXOR:  d = x^y;            break;
     case Enum::A_BNOT:  d = ~x; break;
     case Enum::M_MUL24: {                           // Integer multiply (24-bit)
-			int x2 = (x & 0xffffff);  // Clip to 24 bits
-			int y2 = (y & 0xffffff);
+      int x2 = (x & 0xffffff);  // Clip to 24 bits
+      int y2 = (y & 0xffffff);
 
-			if (x != x2) {
-      	cerr << "EmuSupport MUL24: var x, clipped value "  << x2 << " is different from input value " << x;
-			}
+      if (x != x2) {
+        cerr << "EmuSupport MUL24: var x, clipped value "  << x2 << " is different from input value " << x;
+      }
 
-			if (y != y2) {
-      	cerr << "EmuSupport MUL24: var y, clipped value "  << y2 << " is different from input value " << y;
-			}
+      if (y != y2) {
+        cerr << "EmuSupport MUL24: var y, clipped value "  << y2 << " is different from input value " << y;
+      }
 
-			d = x2*y2;
-		}
-		break;
+      d = x2*y2;
+    }
+    break;
 
     case Enum::A_CLZ:    d = clz(x);         break; // Count leading zeros
 

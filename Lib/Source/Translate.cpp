@@ -480,6 +480,7 @@ Instr::List whereStmt(Stmt::Ptr s, Var condVar, AssignCond cond, bool saveRestor
  * @brief Translate if-then-else statement to target code
  *
  * @param target write-parameter; list of converted target statements
+ * @param s      statement to convert
  */
 void translateIf(Instr::List &target, Stmt &s) {
   using namespace Target::instr;
