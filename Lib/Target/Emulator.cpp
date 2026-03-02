@@ -276,7 +276,7 @@ Vec read_special_register(QPUState &s, State &g, Reg reg) {
       return Vec(s.id);
 
     case SPECIAL_MUTEX_ACQUIRE:
-      EmuState::mutex_acquire(s.id);
+      Mutex::acquire(s.id);
       break;
 
     default: {
@@ -523,7 +523,7 @@ void write_special_register(QPUState* s, State* g, bool setFlags, AssignCond con
 
     case SPECIAL_MUTEX_RELEASE:
       //warn << "read_special_register() handling SPECIAL_MUTEX_RELEASE";
-      EmuState::mutex_release(s->id);
+      Mutex::release(s->id);
       return;
 
     default:
@@ -641,7 +641,7 @@ void emulate(int numQPUs, Instr::List &instrs, int maxReg, IntList &uniforms, Bu
 
     // Execute an instruction in each active QPU
     for (int i = 0; i < numQPUs; i++) {
-      if (EmuState::mutex_blocks(i)) continue;
+      if (Mutex::blocks(i)) continue;
 
       QPUState* s = &state.qpu[i];
 

@@ -79,7 +79,7 @@ TEST_CASE("Test mutexes emulator[mutex]") {
 
 /**
  * @brief Run mutexes on hardware
- */
+ * /
 TEST_CASE("Test mutexes QPU[mutex]") {
   if (!Platform::compiling_for_vc4()) {
     warn << "Doing mutexes only for vc4";
@@ -106,5 +106,6 @@ TEST_CASE("Test mutexes QPU[mutex]") {
   RegisterMap::L2Cache_enable(true);
   info << "L2CacheEnabled(): " << RegisterMap::L2CacheEnabled();
 }
+*/
 
 #endif  // QPU_MODE

@@ -85,21 +85,24 @@ public:
   bool sema_inc(int sema_id);
   bool sema_dec(int sema_id);
 
-  static bool mutex_acquire(int qpu_number);
-  static bool mutex_release(int qpu_number);
-  static bool mutex_blocks(int qpu_number);
-
   static Vec const index_vec;
 
 private:
   IntList uniforms;        // Kernel parameters
   int sema[16];            // Semaphores
-  static int m_mutex;      // if acquired, contains the qpu number
 
   // Protection against locks due to semaphore waiting
   int const MAX_SEMAPHORE_WAIT = 1024;
   int semaphore_wait_count = 0;
 };
+
+namespace Mutex {
+
+bool acquire(int qpu_number);
+bool release(int qpu_number);
+bool blocks(int qpu_number);
+
+} // namespace Mutex
 
 
 // In-flight DMA request

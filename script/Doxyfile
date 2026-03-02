@@ -955,7 +955,8 @@ INPUT                  =            \
   ../Lib/v3d/Combine.cpp            \
   ../Lib/vc4/Functions.cpp          \
   ../Lib/vc4/RegisterMap.cpp        \
-  ../Lib/Target/instr/Mnemonics.cpp
+  ../Lib/Target/instr/Mnemonics.cpp \
+  ../Lib/Target/EmuSupport.cpp
 
 # This tag can be used to specify the character encoding of the source files
 # that doxygen parses. Internally doxygen uses the UTF-8 encoding. Doxygen uses
