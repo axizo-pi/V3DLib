@@ -575,9 +575,12 @@ namespace {
  */
 void vc4_barrier(Int::Ptr signal) {
   assert(Platform::compiling_for_vc4());
-  Log::assertq(!LibSettings::use_tmu_for_load() || !RegisterMap::L2CacheEnabled(),
-    "vc4_barrier(): For this call to work, either use DMA for read, "
-    "or disable the L2 cache."
+  Log::assertq(
+    !LibSettings::use_tmu_for_load() || !RegisterMap::L2CacheEnabled() || Platform::use_main_memory(),
+    "vc4_barrier(): For this call to work, do one of following:\n"
+    "  - use DMA for read\n"
+    "  - disable the L2 cache\n"
+    "  - Use main memory for compilation (will only run on emulator)"
   );
 
   auto check_signals = [&signal] (Int &all_signals_set) {
@@ -680,7 +683,7 @@ void barrier(Int::Ptr &signal) {
  * most likely with semaphores.
  */
 void barrier() {
-  assert(!Platform::compiling_for_vc4());
+  assertq(!Platform::compiling_for_vc4(), "This version of barrier runs only on v3d");
   stmtStack().push(Stmt::create(Stmt::BARRIER));
 }
 

@@ -1,6 +1,5 @@
 #include "Target/Emulator.h"
 #include <cmath>
-//#include "Support/basics.h"  // fatal()
 #include "global/log.h"
 #include "EmuSupport.h"
 #include "Common/SharedArray.h"

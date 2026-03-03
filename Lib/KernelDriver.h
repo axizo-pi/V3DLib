@@ -47,7 +47,7 @@ public:
 protected:
   KernelType  m_type;
   Instr::List m_targetCode; // Target code generated from AST
-  Stmts       m_body;
+  Stmts       m_body;       // Source code statements
 
   Code m_code;              // Memory region for QPU code
                             // Doesn't survive std::move, dtor gets called despite move ctor present

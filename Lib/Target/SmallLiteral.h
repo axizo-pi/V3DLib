@@ -1,10 +1,19 @@
 #ifndef _V3DLIB_SMALL_LITERAL_H_
 #define _V3DLIB_SMALL_LITERAL_H_
-#include "EmuSupport.h"  // Word
+#include <string>
 
 namespace V3DLib {
 
 class Expr;
+
+/**
+ * Type for representing the values in a vector
+ */
+union Word {
+  int32_t intVal = 0;
+  float floatVal; 
+};
+
 
 int encodeSmallInt(int val);
 int encodeSmallFloat(float val);

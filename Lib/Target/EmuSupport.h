@@ -3,7 +3,8 @@
 #include <stdint.h>
 #include <vector>
 #include "Common/Seq.h"
-#include "Target/instr/Imm.h"
+#include "instr/Imm.h"
+#include "SmallLiteral.h"  // Word
 
 
 /**
@@ -17,12 +18,6 @@ class ALUOp;
 const int NUM_LANES =   16;
 const int MAX_QPUS  =   12;
 const int VPM_SIZE  = 1024;
-
-// This is a type for representing the values in a vector
-union Word {
-  int32_t intVal = 0;
-  float floatVal; 
-};
 
 
 /**
