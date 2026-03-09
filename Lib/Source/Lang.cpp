@@ -117,7 +117,8 @@ void header(char const *str) {
 	auto stmt = stmtStack().last_stmt(false);
 
 	if (stmt == nullptr) {
-		cerr << "header() no statement to add to for string: '" << str << "'";
+		cerr << "header() no statement to add to for string: '" << str << "'. stack:\n"
+         << stmtStack().dump();
 	} else {
 		stmt->header(str);
 	}
@@ -128,7 +129,9 @@ void comment(char const *str) {
 	auto stmt = stmtStack().last_stmt(false);
 
 	if (stmt == nullptr) {
-		cerr << "comment() no statement to add to for string: '" << str << "'";
+		cerr << "comment() no statement to add to for string: '" << str << "'."
+		//     << " stack:\n" << stmtStack().dump()
+    ;
 	} else {
 		stmt->comment(str);
 	}

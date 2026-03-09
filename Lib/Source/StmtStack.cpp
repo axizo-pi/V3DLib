@@ -159,14 +159,12 @@ void StmtStack::push(Stmt::Ptr s) {
 
 
 /**
- * Return the last added statement on the stack.
+ * @brief Return the last added statement on the stack.
  *
- * This **does not mean** the current item at the top to the stack,
- * because the stack items are **sequences of statements**.
- * The last added statement will be the last statement in the top item of the stack.
- *
- * Param `do_assert` is added to retain original working, while giving flexibility
- * to handle null pointers for absent items.
+ * This is not necessarily the top item of the stack:
+ * - stack items are _sequences of statements_.
+ *   The last item would be the last in the sequence of the top-level item.
+ * - stack items may contain then/else blocks, which are also sequences of statements.
  *
  * @param do_assert  if true, assert if last statement not found.
  * @return           Pointer to the last added statement,

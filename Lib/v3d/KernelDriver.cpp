@@ -7,6 +7,7 @@
 #include "Target/RemoveLabels.h"
 #include "instr/Snippets.h"
 #include "Support/basics.h"
+#include "Support/Helpers.h"      // contains()
 #include "Support/Timer.h"
 #include "SourceTranslate.h"
 #include "instr/Encode.h"
@@ -316,7 +317,8 @@ void handle_condition_tags(V3DLib::Instr const &src_instr, Instructions &ret) {
   //
   assertq(cond.is_always(), "Currently expecting only ALWAYS here", true);
 
-  bool is_final_where_cond = src_instr.comment().find("where condition final") != src_instr.comment().npos;
+  auto str = src_instr.comment();
+  bool is_final_where_cond = contains(str, "where condition final");
 
   if (!is_final_where_cond) {
     ret.back().set_push_tag(setCond);

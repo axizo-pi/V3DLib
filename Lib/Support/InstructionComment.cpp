@@ -7,12 +7,12 @@ namespace V3DLib {
 
 void InstructionComment::transfer_comments(InstructionComment &rhs) {
   if (!rhs.header().empty()) {
-    //Log::warn << "transfer_comments header: " << rhs.header();
+    //Log::debug << "transfer_comments header: " << rhs.header();
     header(rhs.header());
   }
 
   if (!rhs.comment().empty()) {
-    //Log::warn << "transfer_comments comment: " << rhs.comment();
+    //Log::debug << "transfer_comments comment: " << rhs.comment();
     comment(rhs.comment());
   }
 

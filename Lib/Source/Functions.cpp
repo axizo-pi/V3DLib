@@ -587,13 +587,21 @@ void vc4_barrier(Int::Ptr signal) {
     Int dummy = 1;   comment("Check all signals");  // TODO replace with Source NOP
     all_signals_set = 1;
 
-    For (Int i = 0, i < numQPUs(), i++)
-      Int tmp = *(signal + 16*i);
+    Int::Ptr ptr = signal;
 
+    For (Int i = 0, i < numQPUs(), i++)
+//      Int tmp = *(signal + 16*i);
+      Int tmp = *ptr;
+
+      // TODO operator* for Int's
+      all_signals_set = all_signals_set * tmp;
+/*
       // TODO: implement operator&& for Int's
       If (tmp == 0) 
-        all_signals_set = 0;
+        all_signals_set = 0;  comment("clear all_signals_set");
       End
+*/
+      ptr.inc();
     End
   };
 
@@ -616,8 +624,7 @@ void vc4_barrier(Int::Ptr signal) {
 
     // Strong assumption: only one QPU can grab the mutex at any time
     mutex_acquire();  comment("mutex_acquire");
-    //Log::warn << "mutex_acquire: " << stmtStack().last_stmt()->dump();
-
+    Log::warn << "mutex_acquire: " << stmtStack().last_stmt()->dump();
     Int leader_signal = *leader_ptr;
 
     If (leader_signal == 0)
@@ -627,7 +634,8 @@ void vc4_barrier(Int::Ptr signal) {
       // Wait for all signals to be set
       Int all_signals_set;  comment("Wait for all signals to be set");
       check_signals(all_signals_set);
-      While (all_signals_set == 0)
+      While ((all_signals_set == 0))
+      //If (all_signals_set == 0)
         check_signals(all_signals_set);
       End
 
@@ -641,10 +649,13 @@ void vc4_barrier(Int::Ptr signal) {
       // There _may_ be a race condition here, since other QPU's
       // are released before the leader signal is reset.
       // 
+/*
       For (Int i = 0, i < (numQPUs() + 1), i++) 
         *signal = 0;
         signal.inc();
       End
+*/
+      *leader_ptr = 0;
     Else
       // I am not the barrier leader.
       // Wait till the mutex is acquired and release for the rest.

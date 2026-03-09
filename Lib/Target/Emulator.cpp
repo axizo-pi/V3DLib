@@ -78,7 +78,11 @@ private:
 };
 
 
-// State of a single QPU.
+/**
+ * @brief State of a single QPU.
+ *
+ * TMU is not implemented, only VPM/DMA.
+ */
 struct QPUState {
   int id = 0;                          // QPU id
   int nextUniform = -2;                // Pointer to next uniform to read

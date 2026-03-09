@@ -119,12 +119,28 @@ bool Stmt::check_blocks() const {
 }
 
 
+/**
+ * @brief Return then block, if any.
+ *
+ * Then-blocks can appear for at least IF, WHERE and WHILE (TODO you sure?).
+ * **TODO**: check if this list is exhaustive
+ */
 Stmt::Array const &Stmt::then_block() const {
   // Following is bullshit. then_block can also appear for WHILE
   //assertq(tag == IF || tag == WHERE, "Then-statement only valid for IF, and WHERE", true);
   assert(check_blocks());
 
   return m_stmts_a;
+}
+
+
+bool Stmt::then_block_empty() const {
+  return m_stmts_a.empty();
+}
+
+
+bool Stmt::else_block_empty() const {
+  return m_stmts_b.empty();
 }
 
 
@@ -143,7 +159,7 @@ Stmt::Array const &Stmt::else_block() const {
   assertq(tag == IF || tag == WHERE, "Else-statement only valid for IF and WHERE", true);
   // where and else stmt may not both be empty
   assert(!m_stmts_a.empty() || !m_stmts_b.empty());
-  return m_stmts_b; // May be null
+  return m_stmts_b;
 }
 
 
@@ -277,24 +293,39 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_com
       assert(m_where_cond.get() != nullptr);
       ret << "WHERE (" << m_where_cond->dump() << ")\n"
           << "  THEN " << then_block().dump(show_comments);
-      if (!else_block().empty()) {
+
+      if (!else_block_empty()) {
         ret << "\n  ELSE " << else_block().dump(show_comments);
       }
     break;
     case IF:
       assert(m_cond.get() != nullptr);
-      ret << "IF (" << m_cond->dump() << ") THEN " << then_block().dump(show_comments);
-      if (!else_block().empty()) {
-        ret << " ELSE " << else_block().dump(show_comments);
+      ret << "IF (" << m_cond->dump() << ") THEN\n"
+          << "  ";
+
+      if (then_block_empty()) {
+        ret << "<<NO THEN-BLOCK PRESENT>>";
+      } else {
+        ret << then_block().dump(show_comments);
+      }
+
+      if (!else_block_empty()) {
+        ret << "\nELSE\n"
+            << "  " << else_block().dump(show_comments);
       }
     break;
     case WHILE:
       assert(m_cond.get() != nullptr);
-      if (!then_block().empty()) {
-        ret << "WHILE (" << m_cond->dump() << ")\n"
-            << "  " << then_block().dump(show_comments);
+      ret << "WHILE (" << m_cond->dump() << ")\n"
+          << "  ";
+
+      if (then_block_empty()) {
+        ret << "<<NO THEN-BLOCK PRESENT>>";
+      } else {
+        ret << then_block().dump(show_comments);
       }
-      // There is no ELSE for while
+
+      // There is no ELSE for while. TODO: check, code elsewhere says otherwise
     break;
 
     case GATHER_PREFETCH:  ret << "GATHER_PREFETCH"; break;

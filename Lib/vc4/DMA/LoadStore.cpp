@@ -580,12 +580,12 @@ Instr::List loadRequest(Var &dst, Expr &e) {
   int setup = vpmSetupReadCode(1, 0, 1);
 
   Instr::List ret;
-  ret << genSetReadPitch(4).comment("Start DMA load var")                          // Setup DMA
+  ret << genSetReadPitch(4).comment("Start DMA load var")                   // Setup DMA
       << genSetupDMALoad(16, 1, 1, 1, QPU_ID)
-      << genStartDMALoad(reg)                                                      // Start DMA load
-      << genWaitDMALoad(false)                                                     // Wait for DMA
-      << genSetupVPMLoad(QPU_ID, setup)                                            // Setup VPM
-      << shl(dst, Target::instr::VPM_READ, 0).comment("End DMA load var");         // Get from VPM
+      << genStartDMALoad(reg)                                               // Start DMA load
+      << genWaitDMALoad(false)                                              // Wait for DMA
+      << genSetupVPMLoad(QPU_ID, setup)                                     // Setup VPM
+      << shl(dst, Target::instr::VPM_READ, 0).comment("End DMA load var");  // Get from VPM
 
   return ret;
 }
@@ -602,17 +602,17 @@ Instr::List storeRequest(Var dst_addr, Var src) {
 
   Instr::List ret;
 
-  ret << li(addr, 16).comment("Start DMA store request")                       // Setup VPM
+  ret << li(addr, 16).comment("Start DMA store request")               // Setup VPM
       << add(addr, addr, QPU_ID)
       << genSetupVPMStore(addr, 0, 1)
-      << li(storeAddr, 256)                                                    // Store address
+      << li(storeAddr, 256)                                            // Store address
       << add(storeAddr, storeAddr, QPU_ID)
-      << genWaitDMAStore()                                                  // Wait for any previous store to complete
+      << genWaitDMAStore()                                     // Wait for any previous store to complete
 
-      << genSetWriteStride(0)                                                  // Setup DMA
+      << genSetWriteStride(0)                                          // Setup DMA
       << genSetupDMAStore(16, 1, 1, storeAddr)
-      << shl(Target::instr::VPM_WRITE, src, 0)                                 // Put to VPM
-      << genStartDMAStore(dst_addr).comment("End DMA store request");          // Start DMA
+      << shl(Target::instr::VPM_WRITE, src, 0)                         // Put to VPM
+      << genStartDMAStore(dst_addr).comment("End DMA store request");  // Start DMA
 
   return ret;
 }

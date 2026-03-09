@@ -109,8 +109,10 @@ struct Stmt : public InstructionComment {
   Expr::Ptr address();
 
   Array const &then_block() const;
+  bool then_block_empty() const;
   bool then_block(Array const &in_block);
   Array const &else_block() const;
+  bool else_block_empty() const;
   bool add_block(Array const &in_block);
   Array const &body() const;
 
