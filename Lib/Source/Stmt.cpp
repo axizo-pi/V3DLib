@@ -25,6 +25,19 @@ std::string make_comment(std::string &str) {
   return ret;
 }
 
+
+const char *dump_stmt_tag(Stmt::Tag tag) {
+  switch(tag) {
+    case Stmt::SEQ:     return "SEQ";
+    case Stmt::WHILE:   return "WHILE";
+    case Stmt::FOR:     return "FOR";
+
+    default:
+      assert(false);  // Add other tags here as required
+      return "<UNKNOWN>";
+  }
+}
+
 }  // anon namespace
 
 
@@ -145,11 +158,15 @@ bool Stmt::else_block_empty() const {
 
 
 Stmt::Array const &Stmt::body() const {
-  assertq(tag == SEQ || tag == WHILE || tag == FOR, "Body-statement only valid for SEQ, WHILE and FOR", true);
-  assert(check_blocks());
+  assertq(tag == SEQ || tag == WHILE || tag == FOR,
+    "Body-statement only valid for SEQ, WHILE and FOR", true);
 
-  // must have then and no else
-  assert(!m_stmts_a.empty() && m_stmts_b.empty());
+  if (m_stmts_a.empty() || !m_stmts_b.empty()) {
+    warn << "body for tag " << dump_stmt_tag(tag) << " must have then-block and no else-block"
+         << thrw;
+  }
+
+  assert(check_blocks());  // Probably superfluous
 
   return m_stmts_a;
 }

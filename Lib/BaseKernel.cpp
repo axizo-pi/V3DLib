@@ -213,21 +213,6 @@ std::string BaseKernel::dump_compile_data() {
 }
 
 
-std::string BaseKernel::get_errors() const {
-  std::string ret;
-
-  if (has_driver() && driver().has_errors()) {
-    ret << driver().get_errors();
-  }
-
-  if (ret.empty()) {
-    ret = "<No Errors>";
-  }
-
-  return ret;
-}
-
-
 std::string BaseKernel::info() const {
   std::string ret;
 

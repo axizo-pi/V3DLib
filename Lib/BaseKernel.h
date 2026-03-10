@@ -81,7 +81,6 @@ public:
   std::string compile_info() const;
 	std::string dump_compile_data();
   bool has_errors() const;
-  std::string get_errors() const;
   std::string info() const;
 
   /**

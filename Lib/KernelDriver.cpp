@@ -67,12 +67,10 @@ void KernelDriver::compile(std::function<void()> create_ast) {
     compile_intern();
     m_numVars = VarGen::count();
   } catch (V3DLib::Exception const &e) {
-    // TODO: I have the impression that this block is not reached any more.
-    //       I think that V3DLib::Exception is on its way out.
-
-    std::string e_msg = e.msg();
-    Log::warn << "Exception e_msg: " << e_msg;
-
+    // TODO: Choose between this exception type and runtime_error
+    //       Looks like this one is not used.
+    std::string e_msg = e.what();
+    Log::warn << "Exception caught: " << e_msg;
     std::string msg   = "Exception occurred during compilation: ";
     msg << e_msg;
 
@@ -85,34 +83,17 @@ void KernelDriver::compile(std::function<void()> create_ast) {
       throw;  // Must be a fatal()
     }
   } catch (std::runtime_error const &e) {
-    // NOTE: Following handling derived from previous block for V3DLib::Exception
-
-    std::string e_msg = e.what();
-    Log::warn << "runtime_error e_msg: " << e_msg;
-
-    std::string msg = "runtime error occurred during compilation: ";
-    msg << e_msg;
-
     clearStack();
-    errors << msg;
+    errors << e.what();
   } catch (...) {
     std::string msg = "Unknown exception occurred during compilation";
     Log::cerr << msg;
     errors << msg;
   }
 
+  handle_errors();
+
   m_compile_data = compile_data;
-}
-
-
-std::string KernelDriver::get_errors() const {
-  std::string ret;
-
-  for (auto const &err : errors) {
-    ret << "  " << err << "\n";
-  }
-
-  return ret;
 }
 
 
@@ -125,9 +106,13 @@ bool KernelDriver::handle_errors() {
 
   if (errors.empty()) return false;
 
-  cout << "Errors encountered during compilation and/or encoding:\n"
-       << get_errors()
-       << "\nNot running the kernel" << endl;
+  cout << "\nErrors encountered during compilation and/or encoding:\n";
+
+  for (auto const &err : errors) {
+    cout << "  * " << err << "\n";
+  }
+
+  cout << "\nNot running the kernel" << endl;
 
   return true;      
 }
@@ -158,9 +143,9 @@ std::string KernelDriver::dump() {
   }
 
   ret << "Opcodes for " << kernel_type_str() << "\n"
-       << "===============\n"
+      << "===============\n"
       << emit_opcodes()
-       << "\n";
+      << "\n";
 
   ret << "Source for " << kernel_type_str() << "\n"
       << "===============\n"

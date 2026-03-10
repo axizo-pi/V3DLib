@@ -118,7 +118,7 @@ std::string KernelDriver::emit_opcodes() {
 
   // Following takes tags INIT_BEGIN/INIT_END into account
   if ((int) (list.size() + 2) != m_targetCode.size()) {
-    Log::cerr << "vc4 emit_opcodes() discrepancy in opcode and target code size."
+    Log::cerr << "vc4 emit_opcodes() discrepancy in opcode and target code size. "
               << "opcode size: " << list.size() << " (plus INIT), "
               << "target code size: " << m_targetCode.size()
               << thrw
@@ -161,10 +161,6 @@ std::string KernelDriver::emit_opcodes() {
 void KernelDriver::compile_intern() {
   vc4::kernelFinish();
 
-  // NOTE During debugging, I noticed that the sequence on the statement stack is duplicated here.
-  //      I can not discover why, it's benevolent, it's not clean but I'm leaving it for now.
-  // TODO Fix it one day (sigh)
-
   obtain_ast();
 
   assert(m_targetCode.empty());
@@ -202,7 +198,7 @@ void KernelDriver::compile_intern() {
 void KernelDriver::invoke(int numQPUs, IntList &params, bool wait_complete) {
   assert(params.size() != 0);
 
-  if (handle_errors()) {
+  if (has_errors()) {
     fatal("Errors during kernel compilation/encoding, can't continue.");
   }
 

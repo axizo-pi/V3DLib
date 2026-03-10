@@ -27,7 +27,6 @@ public:
   virtual void encode() = 0;
   virtual void invoke(int numQPUs, IntList &params, bool wait_complete = true) = 0;
   bool has_errors() const { return !errors.empty(); }
-  std::string get_errors() const;
   int numVars() const { return m_numVars; }
   Instr::List &targetCode() { return m_targetCode; }
   Stmts &sourceCode();
@@ -56,7 +55,6 @@ protected:
 
   virtual std::string emit_opcodes() { return ""; } 
   void obtain_ast();
-  bool handle_errors();
 
 private:
   BufferType const buffer_type;
@@ -66,6 +64,7 @@ private:
 
   virtual void compile_intern() = 0;
 
+  bool handle_errors();
   int numAccs() const { return m_compile_data.num_accs_introduced; }
 };
 

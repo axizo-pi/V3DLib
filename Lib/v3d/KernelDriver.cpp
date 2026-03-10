@@ -844,7 +844,7 @@ void KernelDriver::invoke(int numQPUs, IntList &params, bool wait_complete) {
 #else
   assert(params.size() != 0);
 
-  if (handle_errors()) {
+  if (has_errors()) {
     fatal("Errors during kernel compilation/encoding, can't continue.");
   }
 
