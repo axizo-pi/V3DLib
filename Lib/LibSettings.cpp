@@ -67,6 +67,7 @@ bool use_high_precision_sincos()         { return _use_high_precision_sincos; }
 void use_high_precision_sincos(bool val) { _use_high_precision_sincos = val; }
 
 bool dump_line_numbers() { return _dump_line_numbers; }
+void dump_line_numbers(bool val) { _dump_line_numbers = val; }
 
 } // namespace LibSettings
 }  // namespace V3DLib

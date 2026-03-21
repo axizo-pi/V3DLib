@@ -89,6 +89,19 @@ bool contains(std::string const &s1, std::string const &s2) {
 
 
 /**
+ * Source: https://stackoverflow.com/a/874160/1223531
+ */
+bool hasEnding (std::string const &fullString, std::string const &ending) {
+    if (fullString.length() >= ending.length()) {
+        return (0 == fullString.compare (fullString.length() - ending.length(), ending.length(), ending));
+    } else {
+        return false;
+    }
+}
+
+
+
+/**
  * Split a string into substrings at a given delimiter.
  *
  * Source: https://stackoverflow.com/a/14266139/1223531

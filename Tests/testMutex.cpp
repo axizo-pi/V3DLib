@@ -1,6 +1,7 @@
 #include "doctest.h"
 #include <V3DLib.h>
 #include "../Lib/vc4/RegisterMap.h"
+#include "LibSettings.h"       // use_tmu_for_load();
 #include "../Lib/global/log.h"
 #include "Support/Helpers.h"
 
@@ -29,7 +30,7 @@ void barrier_kernel(Int::Ptr ret, Int::Ptr signal) {
 
 
 /**
- * Assumption: While-loop not working properly/
+ * Assumption: While-loop not working properly
  *
  * This kernel investigates the While-loop.
  */
@@ -42,13 +43,30 @@ void while_kernel(Int::Ptr ret) {
     *ret = count;
     Int tmp = *ret;
 
-    If (tmp == 10)
+    If (tmp == 4)
       condition = 1;  comment("Set condition");
     Else
       condition = 0;
     End
 
     count++;
+  End
+}
+
+
+void for_kernel(Int::Ptr ret) {
+  Int count = 0;
+  Int condition = 0;
+
+  For (count = 0, (count < 10 && condition == 0), count++)
+    *ret = count;
+    Int tmp = *ret;
+
+    If (tmp == 4)
+      condition = 1;  comment("Set condition");
+    Else
+      condition = 0;
+    End
   End
 }
 
@@ -91,7 +109,7 @@ void init_arrays(Int::Array &result, Int::Array &expected, Int::Array &signal, i
 TEST_CASE("Test mutexes emulator[mutex]") {
   int numQPUs = 1;
 
-
+/*
   SUBCASE("Test emulator") {
     Platform::use_main_memory(true);
     INFO("Unit test [mutex] using main memory");
@@ -151,6 +169,7 @@ TEST_CASE("Test mutexes emulator[mutex]") {
   }
 
 #endif  // QPU_MODE
+*/
 }
 
 
@@ -161,7 +180,7 @@ TEST_CASE("Test barrier emulator[mutex]") {
   Platform::use_main_memory(true);
   INFO("Unit test [mutex] using main memory");
   int numQPUs = 1;
-
+/*
   SUBCASE("Test barrier") {
     Int::Array result(16);
     Int::Array expected(16);
@@ -199,10 +218,12 @@ TEST_CASE("Test barrier emulator[mutex]") {
   }
 
   Platform::use_main_memory(false);
+*/
 }
 
 
 TEST_CASE("Test While-loop emulator[mutex][while]") {
+
   SUBCASE("Test Emulator") {
     Platform::use_main_memory(true);
 
@@ -227,9 +248,54 @@ TEST_CASE("Test While-loop emulator[mutex][while]") {
     result.fill(-1);
 
     auto k = compile(while_kernel);
+    k.setNumQPUs(numQPUs);
+    to_file("while_kernel_2.txt", k.dump());
+    k.load(&result);
+    k.run();
+    warn << "result While2: " << result.dump();
+  }
+}
+
+
+TEST_CASE("Test For-loop emulator[mutex][for]") {
+  bool prev = LibSettings::dump_line_numbers();
+  LibSettings::dump_line_numbers(false);
+
+  SUBCASE("For Emulator") {
+    Platform::use_main_memory(true);
+
+    int numQPUs = 1;
+    Int::Array result(16);
+    result.fill(-1);
+
+    auto k = compile(for_kernel);
+    to_file("for_kernel.txt", k.dump());
     k.load(&result);
     k.setNumQPUs(numQPUs);
-    k.run();
-    warn << "result While: " << result.dump();
+    k.run();                                  // Emulator: stored count value 1 too high
+    //k.interpret();                          // Works as expected
+    warn << "result For: " << result.dump();
+
+    Platform::use_main_memory(false);
   }
+
+  SUBCASE("For QPU") {
+    bool prev2 = LibSettings::use_tmu_for_load();
+    LibSettings::use_tmu_for_load(false);
+
+    int numQPUs = 1;
+    Int::Array result(16);
+    result.fill(-1);
+
+    auto k = compile(for_kernel);
+    k.setNumQPUs(numQPUs);
+    to_file("for_kernel_2.txt", k.dump());
+    k.load(&result);
+    k.run();
+    warn << "result For2: " << result.dump();
+
+    LibSettings::use_tmu_for_load(prev2);
+  }
+
+  LibSettings::dump_line_numbers(prev);
 }

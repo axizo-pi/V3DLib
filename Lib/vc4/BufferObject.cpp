@@ -13,6 +13,8 @@
 #define GPU_MEM_FLG 0xC // cached=0xC; direct=0x4
 #define GPU_MEM_MAP 0x0 // cached=0x0; direct=0x20000000
 
+using namespace Log;
+
 namespace V3DLib {
 namespace vc4 {
 
@@ -55,7 +57,7 @@ void BufferObject::dealloc() {
     return;
   }
 
-  //debug("Deallocating memory for vc4 bo");
+  warn << "Deallocating memory for vc4 bo";
 
   int mb = getMailbox();  // Mailbox, for talking to vc4
 
@@ -63,11 +65,11 @@ void BufferObject::dealloc() {
   if (arm_base) unmapmem(arm_base, size());
   if (handle) {
     if (IOCTL_ERROR == mem_unlock(mb, handle)) {
-      warning("BufferObject::dealloc(): mem_unlock failed");
+      cerr << "BufferObject::dealloc(): mem_unlock failed";
     }
 
     if (IOCTL_ERROR == mem_free(mb, handle)) {
-      warning("BufferObject::dealloc(): mem_free failed");
+      cerr << "BufferObject::dealloc(): mem_free failed";
     }
   }
 

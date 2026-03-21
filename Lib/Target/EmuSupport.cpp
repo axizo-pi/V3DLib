@@ -260,7 +260,11 @@ bool Vec::apply(ALUOp const &op, Vec a, Vec b) {
     case Enum::A_ADD:   d = x+y;            break;
     case Enum::A_SUB:   d = x-y;            break;
     case Enum::A_ROR:   d = rotRight(x, y); break;
-    case Enum::A_SHL:   d = x<<y;           break;
+    case Enum::A_SHL: {
+      d = x << y;
+      //warn << "Vec::apply() A_SHL: d = x << y: " << d << " = " << x << " << " <<  y;
+    }
+    break;
     case Enum::A_SHR:   d = (int32_t) (((uint32_t) x) >> y); break;
     case Enum::A_ASR:   d = x >> y; break;
     case Enum::A_MIN:   d = x<y?x:y;        break;
@@ -419,6 +423,52 @@ bool EmuState::sema_dec(int sema_id) {
     sema[sema_id]--;
     return false;
   }
+}
+
+
+std::string EmuState::dump() const {
+  std::string ret;
+
+  ret << "vpm:\n";
+
+  int last_index   = -1;
+  int last_count   =  0;
+  int32_t last_val =  0;
+
+  auto disp = [&] () -> std::string {
+    std::string ret;
+
+    // Showing int only (for now)
+    std::string str_count;
+    if (last_count > 1) {
+      str_count << " " << last_count << " times";
+    }
+
+    ret << "  " << last_index << ": " << last_val << str_count << ",\n";
+    return ret;
+  };
+
+
+  for (int i = 0; i < VPM_SIZE; i++) {
+    if (last_index == -1) {
+      last_index = i;
+      last_count = 1;
+      last_val   = vpm[i].intVal;
+      continue;
+    } else if (vpm[i].intVal == last_val) {
+      last_count++;
+      continue;
+    }
+
+    ret << disp();
+
+    last_index = i;
+    last_count = 1;
+    last_val   = vpm[i].intVal;
+  }
+
+  ret << disp();
+  return ret;
 }
 
 

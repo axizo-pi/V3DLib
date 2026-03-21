@@ -21,6 +21,7 @@ bool use_high_precision_sincos();
 void use_high_precision_sincos(bool val);
 
 bool dump_line_numbers();
+void dump_line_numbers(bool val);
 
 } // namespace LibSettings
 } // namespace V3DLib

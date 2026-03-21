@@ -80,6 +80,8 @@ public:
   bool sema_inc(int sema_id);
   bool sema_dec(int sema_id);
 
+  std::string dump() const;
+
   static Vec const index_vec;
 
 private:
@@ -116,7 +118,7 @@ struct VPMLoadReq {
 
 // VPM store request
 struct VPMStoreReq {
-  bool hor;     // Horizintal or vertical access?
+  bool hor;     // Horizontal or vertical access?
   int addr;     // Address in VPM to load from
   int stride;   // Added to address after every vector written
 };

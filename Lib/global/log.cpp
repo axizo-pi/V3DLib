@@ -7,9 +7,9 @@
 #include "log.h"
 #include <stdexcept>
 #include <iostream>
-#include <cstdlib>          // abort()
-#include <time.h>           // strftime()
-#include <sstream>          // std::stringstream
+#include <cstdlib>            // abort()
+#include <time.h>             // strftime()
+#include <sstream>            // std::stringstream
 #include <fstream>
 #include <filesystem>
 

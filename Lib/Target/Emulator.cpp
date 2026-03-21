@@ -80,8 +80,6 @@ private:
 
 /**
  * @brief State of a single QPU.
- *
- * TMU is not implemented, only VPM/DMA.
  */
 struct QPUState {
   int id = 0;                          // QPU id
@@ -134,7 +132,45 @@ struct QPUState {
   void upkeep() {
     sfu.upkeep(accum[4]);
   }
+
+  std::string dump(int index = -1) const;
 };
+
+
+/**
+ * @brief Dump state of QPU with given index.
+ *
+ * This is not intended to be complete; will fill it in as I go.
+ */
+MAYBE_UNUSED std::string QPUState::dump(int index) const {
+  std::string ret;
+
+  ret << "Partial state QPU ";
+  if (index != -1) {
+    ret << index;
+  }
+
+  ret << "\n  running: ";
+
+  if (running) {
+    ret << "active\n";
+  } else {
+    ret << "halted\n";
+  } 
+
+  // Show content accumulator
+  for (int i = 0; i < 6; ++i) {
+    ret << "  ACC" << i << ": " << accum[i].dump() << "\n";
+  }
+
+  int count = 6;
+  ret << "Regfile A, first " << count << " values\n";
+  for (int i = 0; i < count; ++i) {
+    ret << "  " << i << ": " << regFileA[i].dump() << "\n";
+  }
+
+  return ret;
+}
 
 
 /**
@@ -302,6 +338,7 @@ Vec read_special_register(QPUState &s, State &g, Reg reg) {
  */
 Vec readReg(QPUState &s, State &g, Reg const &reg) {
   int r = reg.regId;
+  //warn << "readReg reg, r, tag: " << reg.dump() << ", " << r << ", " << reg.tag;
   Vec v(0);
 
   switch (reg.tag) {
@@ -316,9 +353,10 @@ Vec readReg(QPUState &s, State &g, Reg const &reg) {
       assert(r >= 0 && r < s.sizeRegFileB);
       return s.regFileB[reg.regId];
 
-    case ACC:
+    case ACC: {
       assert(r >= 0 && r <= 5);
       return s.accum[r];
+    }
 
     case SPECIAL:
       return read_special_register(s, g, reg);
@@ -413,7 +451,7 @@ void write_special_register(QPUState* s, State* g, bool setFlags, AssignCond con
         return;
       } else if ((setup & 0xc0000000) == 0) {
         // QPU only allows two VPM loads queued at a time
-        assert(! s->vpmLoadQueue.isFull());
+        assert(!s->vpmLoadQueue.isFull());
         // Create VPM load request
         VPMLoadReq req;
         req.numVecs = (setup >> 20) & 0xf;
@@ -489,6 +527,8 @@ void write_special_register(QPUState* s, State* g, bool setFlags, AssignCond con
           g->vpm[index] = v[i];
         }
       }
+
+      //warn << "SPECIAL_VPM_WRITE " << g->dump();
       req->addr = req->addr + req->stride;
       return;
     }
@@ -544,6 +584,7 @@ void write_special_register(QPUState* s, State* g, bool setFlags, AssignCond con
  * Write a vector to a register
  */
 void writeReg(QPUState* s, State* g, bool setFlags, AssignCond cond, Reg dest, Vec v) {
+
   switch (dest.tag) {
     case REG_A:
     case REG_B:
@@ -576,6 +617,7 @@ void writeReg(QPUState* s, State* g, bool setFlags, AssignCond cond, Reg dest, V
       return;
 
     case SPECIAL:
+      //warn << "writeReg SPECIAL v: " << v.dump();
       write_special_register(s, g, setFlags, cond, dest, v);
       return;
 
@@ -604,7 +646,8 @@ Vec evalSmallImm(QPUState* s, uint32_t imm) {
 
 Vec readRegOrImm(QPUState* s, State &state, RegOrImm const &src) {
   if (src.is_reg()) {
-    return readReg(*s, state, src.reg());
+    Vec ret = readReg(*s, state, src.reg());
+    return ret;
   } else {
     return evalSmallImm(s, src.encode());
   }
@@ -659,6 +702,11 @@ void emulate(int numQPUs, Instr::List &instrs, int maxReg, IntList &uniforms, Bu
         //
         Instr const instr = instrs.get(s->pc++);
 
+        warn << "emulate() instr: " << instr.dump();
+        //if (i == 0) {
+        //  warn << s->dump(i);
+        //}
+
         switch (instr.tag) {
           case LI: {
             Vec imm(instr.LI.imm);
@@ -679,8 +727,13 @@ void emulate(int numQPUs, Instr::List &instrs, int maxReg, IntList &uniforms, Bu
               b = readRegOrImm(s, state, instr.ALU.srcB);
             }
 
+            //warn << "ALU srcA, srcB: " << instr.ALU.srcA.dump() << ", " << instr.ALU.srcB.dump();
+            //warn << "ALU a, b      : " << a.dump() << ", " << b.dump();
+
             Vec result;
             result.apply(instr.ALU.op, a, b);
+
+            //warn << "ALU result: " << result.dump();
 
             writeReg(s, &state, instr.set_cond().flags_set(), instr.assign_cond(), instr.dest(), result);
           }
