@@ -1,5 +1,6 @@
 #include "Target/Emulator.h"
 #include <cmath>
+#include <iostream>              // std::cin
 #include "global/log.h"
 #include "EmuSupport.h"
 #include "Common/SharedArray.h"
@@ -145,12 +146,16 @@ struct QPUState {
 MAYBE_UNUSED std::string QPUState::dump(int index) const {
   std::string ret;
 
-  ret << "Partial state QPU ";
+  ret << "\nPartial state QPU ";
   if (index != -1) {
     ret << index;
   }
+  ret << "\n";
 
-  ret << "\n  running: ";
+  // pc incremented beforehand
+  ret << "PC: " << (pc - 1) << "\n";
+
+  ret << "running: ";
 
   if (running) {
     ret << "active\n";
@@ -158,15 +163,33 @@ MAYBE_UNUSED std::string QPUState::dump(int index) const {
     ret << "halted\n";
   } 
 
-  // Show content accumulator
+  ret << "negFlags : ";
+  for (int i = 0; i < NUM_LANES; ++i) {
+    ret << (negFlags[i]?"1":"0");
+  }
+  ret << "\n";
+
+  ret << "zeroFlags: ";
+  for (int i = 0; i < NUM_LANES; ++i) {
+    ret << (zeroFlags[i]?"1":"0");
+  }
+  ret << "\n";
+
+  // Show content accumulators
+  ret << "Accumulator:\n";
   for (int i = 0; i < 6; ++i) {
     ret << "  ACC" << i << ": " << accum[i].dump() << "\n";
   }
 
   int count = 6;
-  ret << "Regfile A, first " << count << " values\n";
+  ret << "Regfile A, first " << count << " values:\n";
   for (int i = 0; i < count; ++i) {
     ret << "  " << i << ": " << regFileA[i].dump() << "\n";
+  }
+
+  ret << "Regfile B, first " << count << " values:\n";
+  for (int i = 0; i < count; ++i) {
+    ret << "  " << i << ": " << regFileB[i].dump() << "\n";
   }
 
   return ret;
@@ -653,6 +676,91 @@ Vec readRegOrImm(QPUState* s, State &state, RegOrImm const &src) {
   }
 }
 
+
+/**
+ * @brief run the current instruction in the emulator for the selected QPU
+ */
+void run_instruction(QPUState *s, State &state, Instr const &instr) {
+  assert(s != nullptr);
+
+  auto ALWAYS = AssignCond::Tag::ALWAYS;
+
+  switch (instr.tag) {
+    case LI: {
+      Vec imm(instr.LI.imm);
+      writeReg(s, &state, instr.set_cond().flags_set(), instr.assign_cond(), instr.dest(), imm);
+    }
+    break;
+
+    case ALU:
+      if (!instr.ALU.op.isNOP()) {
+        Vec a;
+        Vec b;
+
+        if (instr.isUniformLoad()) {
+          a = state.get_uniform(s->id, s->nextUniform);
+          b = a; 
+        } else {
+          a = readRegOrImm(s, state, instr.ALU.srcA);
+          b = readRegOrImm(s, state, instr.ALU.srcB);
+        }
+
+        //warn << "ALU srcA, srcB: " << instr.ALU.srcA.dump() << ", " << instr.ALU.srcB.dump();
+        //warn << "ALU a, b      : " << a.dump() << ", " << b.dump();
+
+        Vec result;
+        result.apply(instr.ALU.op, a, b);
+
+        //warn << "ALU result: " << result.dump();
+
+        writeReg(s, &state, instr.set_cond().flags_set(), instr.assign_cond(), instr.dest(), result);
+      }
+    break;
+
+    case BR: {  // Branch to target
+      if (checkBranchCond(s, instr.branch_cond())) {
+        BranchTarget t = instr.branch_target();
+
+        if (t.relative && !t.useRegOffset) {
+          s->pc += 3 + t.immOffset;
+        } else {
+          fatal("V3DLib: found unsupported form of branch target");
+        }
+      }
+
+    }
+    break;
+
+    case RECV: {                             // receive load-via-TMU response
+      assert(s->loadBuffer.size() > 0);
+      Vec val = s->loadBuffer.remove(0);
+      AssignCond always;
+      always.tag = ALWAYS;
+      writeReg(s, &state, false, always, instr.dest(), val);
+    }
+    break;
+
+    case SINC: if (state.sema_inc(instr.semaId)) s->pc--; break;
+    case SDEC: if (state.sema_dec(instr.semaId)) s->pc--; break;
+
+    case END:                                // End program (halt)
+      s->running = false;
+    break;
+
+    case BRL:                                // Branch to label
+    case LAB:                                // Label
+      fatal("V3DLib: emulator does not support labels");
+      // Fall-thru
+    case NO_OP:
+    case IRQ:
+    case INIT_BEGIN:
+    case INIT_END:
+    break;  // ignore
+
+    default: assert(false);
+  }
+}
+
 }  // anon namespace
 
 
@@ -661,6 +769,10 @@ Vec readRegOrImm(QPUState* s, State &state, RegOrImm const &src) {
 // ============================================================================
 
 /**
+ * @brief Run the kernel code on the emulator.
+ *
+ * This runs over the target code.
+ *
  * @param numQPUs   Number of QPUs active
  * @param instrs    Instruction sequence
  * @param maxReg    Max reg id used
@@ -675,109 +787,78 @@ void emulate(int numQPUs, Instr::List &instrs, int maxReg, IntList &uniforms, Bu
   // Initialise state
   for (int i = 0; i < numQPUs; i++) {
     QPUState &q = state.qpu[i];
-    q.id                 = i;
+    q.id = i;
     q.init(maxReg);
   }
 
   bool anyRunning = true;
 
+  bool do_step = false;
+
   while (anyRunning) {
-    auto ALWAYS = AssignCond::Tag::ALWAYS;
     anyRunning = false;
 
     // Execute an instruction in each active QPU
     for (int i = 0; i < numQPUs; i++) {
       if (Mutex::blocks(i)) continue;
 
-      QPUState* s = &state.qpu[i];
+      QPUState *s = &state.qpu[i];
 
       if (s->running) {
-        anyRunning = true;
         assert(s->pc < instrs.size());
-
+        anyRunning = true;
         s->upkeep();
 
-        //
-        // Run next instruction
-        //
+        if (s->pc == 14) do_step = true;
+
         Instr const instr = instrs.get(s->pc++);
+        run_instruction(s, state, instr);
 
-        warn << "emulate() instr: " << instr.dump();
-        //if (i == 0) {
-        //  warn << s->dump(i);
-        //}
+        if (do_step) {
+          int cur_pc = s->pc;
 
-        switch (instr.tag) {
-          case LI: {
-            Vec imm(instr.LI.imm);
-            writeReg(s, &state, instr.set_cond().flags_set(), instr.assign_cond(), instr.dest(), imm);
-          }
-          break;
+          int first_pc = cur_pc - 1;
+          if (first_pc < 0) first_pc = 0;
+          int last_pc  = cur_pc + 1;
+          if (last_pc > instrs.size()) last_pc = instrs.size();
 
-          case ALU:
-          if (!instr.ALU.op.isNOP()) {
-            Vec a;
-            Vec b;
-
-            if (instr.isUniformLoad()) {
-              a = state.get_uniform(s->id, s->nextUniform);
-              b = a; 
+          for (int i = first_pc; i <= last_pc; ++i) {
+            if (i == cur_pc) {
+              std::cout << " > ";
             } else {
-              a = readRegOrImm(s, state, instr.ALU.srcA);
-              b = readRegOrImm(s, state, instr.ALU.srcB);
+              std::cout << "   ";
             }
-
-            //warn << "ALU srcA, srcB: " << instr.ALU.srcA.dump() << ", " << instr.ALU.srcB.dump();
-            //warn << "ALU a, b      : " << a.dump() << ", " << b.dump();
-
-            Vec result;
-            result.apply(instr.ALU.op, a, b);
-
-            //warn << "ALU result: " << result.dump();
-
-            writeReg(s, &state, instr.set_cond().flags_set(), instr.assign_cond(), instr.dest(), result);
+            std::cout << instrs.get(i).dump() << "\n";
           }
-          break;
 
-          case BR: {  // Branch to target
-            if (checkBranchCond(s, instr.branch_cond())) {
-              BranchTarget t = instr.branch_target();
-              if (t.relative && !t.useRegOffset) {
-                s->pc += 3+t.immOffset;
-              } else {
-                fatal("V3DLib: found unsupported form of branch target");
+          std::cout << s->dump()
+                    << "=============================================\n";
+
+          bool do_loop = true;
+          while (do_loop) {
+            std::string input_line;
+            std::cout << "> ";
+            getline(std::cin, input_line);
+
+            if (input_line.empty()) break;
+
+            switch (input_line[0]) {
+              case 'c':
+                do_step = false;
+                do_loop = false;
+                break;
+              case 'n':
+                do_loop = false;
+                break;
+              case '?': {
+                std::cout << "  ? - show help\n"
+                          << "  n - (or blank) run next instruction\n"
+                          << "  c - continue running\n";
               }
+              default:
+                std::cout << "Unknown command. Enter '?' for overview.\n";
             }
           }
-          break;
-
-          case RECV: {                             // receive load-via-TMU response
-            assert(s->loadBuffer.size() > 0);
-            Vec val = s->loadBuffer.remove(0);
-            AssignCond always;
-            always.tag = ALWAYS;
-            writeReg(s, &state, false, always, instr.dest(), val);
-          }
-          break;
-
-          case SINC: if (state.sema_inc(instr.semaId)) s->pc--; break;
-          case SDEC: if (state.sema_dec(instr.semaId)) s->pc--; break;
-
-          case END:                                // End program (halt)
-            s->running = false;
-            break;
-
-          case BRL:                                // Branch to label
-          case LAB:                                // Label
-            fatal("V3DLib: emulator does not support labels");
-            // Fall-thru
-          case NO_OP:
-          case IRQ:
-          case INIT_BEGIN:
-          case INIT_END:
-            break;  // ignore
-
-          default: assert(false);
         }
       }
     }

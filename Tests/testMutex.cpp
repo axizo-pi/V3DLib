@@ -258,8 +258,8 @@ TEST_CASE("Test While-loop emulator[mutex][while]") {
 
 
 TEST_CASE("Test For-loop emulator[mutex][for]") {
-  bool prev = LibSettings::dump_line_numbers();
-  LibSettings::dump_line_numbers(false);
+  //bool prev = LibSettings::dump_line_numbers();
+  //LibSettings::dump_line_numbers(false);
 
   SUBCASE("For Emulator") {
     Platform::use_main_memory(true);
@@ -297,5 +297,5 @@ TEST_CASE("Test For-loop emulator[mutex][for]") {
     LibSettings::use_tmu_for_load(prev2);
   }
 
-  LibSettings::dump_line_numbers(prev);
+  //LibSettings::dump_line_numbers(prev);
 }
