@@ -426,10 +426,10 @@ bool EmuState::sema_dec(int sema_id) {
 }
 
 
-std::string EmuState::dump() const {
+std::string EmuState::dump_vpm() const {
   std::string ret;
 
-  ret << "vpm:\n";
+  ret << "vpm:\n  ";
 
   int last_index   = -1;
   int last_count   =  0;
@@ -441,10 +441,10 @@ std::string EmuState::dump() const {
     // Showing int only (for now)
     std::string str_count;
     if (last_count > 1) {
-      str_count << " " << last_count << " times";
+      str_count << "," << last_count << "x";
     }
 
-    ret << "  " << last_index << ": " << last_val << str_count << ",\n";
+    ret << last_index << ":" << last_val << str_count << ", ";
     return ret;
   };
 
@@ -467,7 +467,7 @@ std::string EmuState::dump() const {
     last_val   = vpm[i].intVal;
   }
 
-  ret << disp();
+  ret << disp() << "\n";
   return ret;
 }
 

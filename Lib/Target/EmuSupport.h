@@ -80,7 +80,7 @@ public:
   bool sema_inc(int sema_id);
   bool sema_dec(int sema_id);
 
-  std::string dump() const;
+  std::string dump_vpm() const;
 
   static Vec const index_vec;
 
