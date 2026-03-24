@@ -1,7 +1,7 @@
 #
 # This file is generated!  Editing it directly is a bad idea.
 #
-# Generated on: Fri 20 Feb 2026 04:41:28 AM CET
+# Generated on: Tue 24 Mar 2026 09:24:19 AM CET
 #
 ###############################################################################
 
@@ -19,14 +19,11 @@ OBJ := \
   Target/instr/Imm.o  \
   Target/instr/Mnemonics.o  \
   Target/SmallLiteral.o  \
-  Target/EmuSupport.o  \
-  Target/Emulator.o  \
   Target/Satisfy.o  \
   BaseKernel.o  \
   Source/Lang.o  \
   Source/Cond.o  \
   Source/OpItems.o  \
-  Source/Interpreter.o  \
   Source/Translate.o  \
   Source/Ptr.o  \
   Source/BExpr.o  \
@@ -71,6 +68,14 @@ OBJ := \
   Liveness/Liveness.o  \
   Liveness/CFG.o  \
   Invoke.o  \
+  Emulator/Interpreter.o  \
+  Emulator/Debugger.o  \
+  Emulator/EmuState.o  \
+  Emulator/QPUState.o  \
+  Emulator/DMAAddr.o  \
+  Emulator/EmuSupport.o  \
+  Emulator/Mutex.o  \
+  Emulator/Emulator.o  \
   LibSettings.o  \
   v3d/PerformanceCounters.o  \
   v3d/driver/BOList.o  \

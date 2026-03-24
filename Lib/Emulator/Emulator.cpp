@@ -1,12 +1,13 @@
-#include "Target/Emulator.h"
+#include "Emulator.h"
+#include "QPUState.h"
+#include "Debugger.h"
 #include <cmath>
-#include <iostream>              // std::cin
-#include <algorithm>             // std::find
 #include "global/log.h"
 #include "EmuSupport.h"
+#include "Mutex.h"
 #include "Common/SharedArray.h"
 #include "Target/SmallLiteral.h"
-#include "BufferObject.h"
+#include "Target/BufferObject.h"
 
 namespace V3DLib {
 
@@ -14,196 +15,6 @@ using namespace Target;
 using namespace Log;
 
 namespace {
-
-/**
- * Very simple queue containing N elements of type T
- */
-template <int N, typename T> struct Queue {
-  T elems[N+1];
-  int front;
-  int back;
-  Queue() { front = back = 0; }
-  bool isEmpty() { return front == back; }
-  bool isFull() { return ((back+1)%(N+1)) == front; }
-  void enq(T elem) { elems[back] = elem; back = (back+1)%(N+1); }
-  T* first() { return &elems[front]; }
-  void deq() { front = (front+1)%(N+1); }
-};
-
-
-class SFU {
-public:
-
-  /**
-   * @return true if input handled, false otherwise
-   */
-  bool writeReg(Reg dest, Vec v) {
-    if (dest.tag != SPECIAL) return false;
-    bool handled = true;
-
-    switch (dest.regId) {
-    case SPECIAL_SFU_RECIP:     value = v.recip();      break;
-    case SPECIAL_SFU_RECIPSQRT: value = v.recip_sqrt(); break;
-    case SPECIAL_SFU_EXP:       value = v.exp();        break;
-    case SPECIAL_SFU_LOG:       value = v.log();        break;
-    default:
-      handled = false;
-      break;
-    }
-
-    if (handled) {
-      assertq(timer == -1, "SFU is running on SFU function call", true);
-      timer = 3;
-    }
-
-    return handled;
-  }
-
-
-  void upkeep(Vec &r4) {
-    if (timer > 0) {
-      timer--;
-    }
-
-    if (timer == 0) {
-      // finish pending SFU function
-      for (int i = 0; i < NUM_LANES; i++) {
-        r4[i].floatVal = value[i].floatVal;
-      }
-      timer = -1;
-    }
-  }
-
-private:
-  Vec value;       // Last result of SFU unit call
-  int timer = -1;  // Number of cycles to wait for SFU result.
-};
-
-
-/**
- * @brief State of a single QPU.
- */
-struct QPUState {
-  int id = 0;                          // QPU id
-  int nextUniform = -2;                // Pointer to next uniform to read
-  Seq<Vec> loadBuffer = 8;             // Load buffer for loads via TMU, 8 is initial size
-
-  int readPitch = 0;                   // Read pitch
-  int writeStride = 0;                 // Write stride
-
-  bool running = false;                // Is QPU active, or has it halted?
-  int pc = 0;                          // Program counter
-  Vec* regFileA = nullptr;             // Register file A
-  int sizeRegFileA = 0;                // (and size)
-  Vec* regFileB = nullptr;             // Register file B
-  int sizeRegFileB = 0;                // (and size)
-  Vec accum[6];                        // Accumulator registers
-  bool negFlags[NUM_LANES];            // Negative flags
-  bool zeroFlags[NUM_LANES];           // Zero flags
-
-  DMAAddr dmaLoad;                     // DMA load address
-  DMAAddr dmaStore;                    // DMA store address
-  DMALoadReq dmaLoadSetup;             // DMA load setup register
-  DMAStoreReq dmaStoreSetup;           // DMA store setup register
-  Queue<2, VPMLoadReq> vpmLoadQueue;   // VPM load queue
-  VPMStoreReq vpmStoreSetup;           // VPM store setup
-
-  SFU sfu;
-
-  QPUState() {
-    for (int i = 0; i < NUM_LANES; i++) negFlags[i] = false;
-    for (int i = 0; i < NUM_LANES; i++) zeroFlags[i] = false;
-  }
-
-
-  ~QPUState() {
-    delete [] regFileA;
-    delete [] regFileB;
-  }
-
-  void init(int maxReg) {
-    running            = true;
-    regFileA           = new Vec [maxReg+1];
-    sizeRegFileA       = maxReg+1;
-    regFileB           = new Vec [maxReg+1];
-    sizeRegFileB       = maxReg+1;
-  }
-
-  void upkeep() {
-    sfu.upkeep(accum[4]);
-    dmaLoad.upkeep();
-    dmaStore.upkeep();
-  }
-
-  std::string dump(int index = -1) const;
-};
-
-
-/**
- * @brief Dump state of QPU with given index.
- *
- * This is not intended to be complete; will fill it in as I go.
- */
-MAYBE_UNUSED std::string QPUState::dump(int index) const {
-  std::string ret;
-
-  auto disp_bool_array = [] (bool const *arr) -> std::string {
-    std::string ret;
-
-    for (int i = 0; i < NUM_LANES; ++i) {
-      ret << (arr[i]?"1":"0");
-    }
-    return ret;
-  };
-
-  ret << "\nPartial state QPU ";
-  if (index != -1) {
-    ret << index;
-  }
-
-  ret << "\n"
-      << "--------------------\n"
-      << "PC: " << pc << "\n"
-      << "running: " << ((running)?"active":"halted")
-      << "\n";
-
-  if (dmaLoad.active())  ret << "dmaLoad: " << dmaLoad.dump() << "\n";
-  if (dmaStore.active()) ret << "dmaStore: " << dmaStore.dump() << "\n";
-
-  ret << "negFlags : " << disp_bool_array(negFlags)  << "\n"
-      << "zeroFlags: " << disp_bool_array(zeroFlags) << "\n";
-
-  // Show content accumulators
-  ret << "Accumulators:\n";
-  for (int i = 0; i < 6; ++i) {
-    ret << "  ACC" << i << ": " << accum[i].dump() << "\n";
-  }
-
-  int count = 6;
-  ret << "Regfile A, first " << count << " values:\n";
-  for (int i = 0; i < count; ++i) {
-    ret << "  " << i << ": " << regFileA[i].dump() << "\n";
-  }
-
-  ret << "Regfile B, first " << count << " values:\n";
-  for (int i = 0; i < count; ++i) {
-    ret << "  " << i << ": " << regFileB[i].dump() << "\n";
-  }
-
-  return ret;
-}
-
-
-/**
- * State of the VideoCore
- */
-struct State : public EmuState {
-  QPUState qpu[MAX_QPUS];  // State of each QPU
-  Data emuHeap;
-
-  State(int in_num_qpus, IntList const &in_uniforms) : EmuState(in_num_qpus, in_uniforms, true) {}
-};
-
 
 void dma_load(QPUState *s, State *g) {
   DMALoadReq* req = &s->dmaLoadSetup;
@@ -694,15 +505,13 @@ Vec readRegOrImm(QPUState* s, State &state, RegOrImm const &src) {
 /**
  * @brief run the current instruction in the emulator for the selected QPU
  */
-void run_instruction(QPUState *s, State &state, Instr const &instr) {
-  assert(s != nullptr);
-
+void run_instruction(QPUState &s, State &state, Instr const &instr) {
   auto ALWAYS = AssignCond::Tag::ALWAYS;
 
   switch (instr.tag) {
     case LI: {
       Vec imm(instr.LI.imm);
-      writeReg(s, &state, instr.set_cond().flags_set(), instr.assign_cond(), instr.dest(), imm);
+      writeReg(&s, &state, instr.set_cond().flags_set(), instr.assign_cond(), instr.dest(), imm);
     }
     break;
 
@@ -712,53 +521,47 @@ void run_instruction(QPUState *s, State &state, Instr const &instr) {
         Vec b;
 
         if (instr.isUniformLoad()) {
-          a = state.get_uniform(s->id, s->nextUniform);
+          a = state.get_uniform(s.id, s.nextUniform);
           b = a; 
         } else {
-          a = readRegOrImm(s, state, instr.ALU.srcA);
-          b = readRegOrImm(s, state, instr.ALU.srcB);
+          a = readRegOrImm(&s, state, instr.ALU.srcA);
+          b = readRegOrImm(&s, state, instr.ALU.srcB);
         }
-
-        //warn << "ALU srcA, srcB: " << instr.ALU.srcA.dump() << ", " << instr.ALU.srcB.dump();
-        //warn << "ALU a, b      : " << a.dump() << ", " << b.dump();
 
         Vec result;
         result.apply(instr.ALU.op, a, b);
 
-        //warn << "ALU result: " << result.dump();
-
-        writeReg(s, &state, instr.set_cond().flags_set(), instr.assign_cond(), instr.dest(), result);
+        writeReg(&s, &state, instr.set_cond().flags_set(), instr.assign_cond(), instr.dest(), result);
       }
     break;
 
     case BR: {  // Branch to target
-      if (checkBranchCond(s, instr.branch_cond())) {
+      if (checkBranchCond(&s, instr.branch_cond())) {
         BranchTarget t = instr.branch_target();
 
         if (t.relative && !t.useRegOffset) {
-          s->pc += 3 + t.immOffset;
+          s.pc += 3 + t.immOffset;
         } else {
           fatal("V3DLib: found unsupported form of branch target");
         }
       }
-
     }
     break;
 
     case RECV: {                             // receive load-via-TMU response
-      assert(s->loadBuffer.size() > 0);
-      Vec val = s->loadBuffer.remove(0);
+      assert(s.loadBuffer.size() > 0);
+      Vec val = s.loadBuffer.remove(0);
       AssignCond always;
       always.tag = ALWAYS;
-      writeReg(s, &state, false, always, instr.dest(), val);
+      writeReg(&s, &state, false, always, instr.dest(), val);
     }
     break;
 
-    case SINC: if (state.sema_inc(instr.semaId)) s->pc--; break;
-    case SDEC: if (state.sema_dec(instr.semaId)) s->pc--; break;
+    case SINC: if (state.sema_inc(instr.semaId)) s.pc--; break;
+    case SDEC: if (state.sema_dec(instr.semaId)) s.pc--; break;
 
     case END:                                // End program (halt)
-      s->running = false;
+      s.running = false;
     break;
 
     case BRL:                                // Branch to label
@@ -773,287 +576,6 @@ void run_instruction(QPUState *s, State &state, Instr const &instr) {
 
     default: assert(false);
   }
-}
-
-
-class Debugger {
-public:
-  Debugger(State &state, Instr::List const &instrs) : m_state(state), m_instrs(instrs) {}
-
-  void step(int qpu_num);
-
-  void add_breakpoint(int line);
-
-private:
-  State &m_state;
-  Instr::List const &m_instrs;
-
-  bool do_step  = false;
-  bool disp_vpm = false;
-
-  std::vector<int> m_breakpoint;
-  bool breakpoint_present(int line) const;
-  std::string show_breakpoints() const;
-
-  std::vector<int> m_heap_view;
-  void add_heapview(int addr);
-  std::string show_heapviews() const;
-  std::string show_heap(int addr) const;
-
-  std::string show_help() const;
-
-  // Support routines
-  bool vector_present(std::vector<int> const &v, int val) const;
-  bool vector_add(std::vector<int> &v, int val);
-  void vector_remove(std::vector<int> &v, int val, const char *label);
-  int read_int(std::stringstream &ss, bool show_error = true);
-};
-
-
-std::string Debugger::show_help() const {
-  std::string ret;
-
-  ret << "  ?     - show this help\n"
-      << "  b     - show breakpoints\n"
-      << "  b <l> - add breakpoint at line <l>\n"
-      << "  B <l> - remove breakpoint at line <l>\n"
-      << "  c     - continue running\n"
-      << "  h <a> - add heap view at address <a>\n"
-      << "  H <a> - Remove heap view at address <a>\n"
-      << "  n     - (or blank) run next instruction\n"
-      << "  v     - show VPM\n"
-      << "  V     - hide VPM\n"
-      << "  q     - run till end, ignoring breakpoints\n";
-
-  return ret;
-}
-
-
-std::string Debugger::show_heapviews() const {
-  std::string ret;
-
-  for (int addr: m_heap_view) {
-    ret << show_heap(addr);
-  }
-
-  return ret;
-}
-
-
-std::string Debugger::show_heap(int addr) const {
-  std::string ret;
-
-  ret << "  " << addr << ": ";
-
-  for (int i = 0; i < 16; ++i) {
-    ret << m_state.emuHeap[addr + i] << ", ";
-  }
-
-  ret << "\n";
-
-  return ret;
-}
-
-
-bool Debugger::breakpoint_present(int line) const {
-  return vector_present(m_breakpoint, line);
-}
-
-
-bool Debugger::vector_present(std::vector<int> const &v, int val) const {
-  return (std::find(v.begin(), v.end(), val) != v.end());
-}
-
-
-void Debugger::add_breakpoint(int line) {
-  if (!vector_add(m_breakpoint, line)) {
-    warn << "add_breakpoint(): line " << line << " already present, not adding.";
-  }
-}
-
-
-void Debugger::add_heapview(int addr) {
-  warn << "Adding heap view at address " << addr;
-
-  if (addr < 0 || (addr + 16) > (int) m_state.emuHeap.size()) {
-    warn << "add_heapview(): address " << addr << " is outside of heap range, not adding.";
-    return;
-  }
-
-  if (!vector_add(m_heap_view, addr)) {
-    warn << "add_heapview(): address " << addr << " already present, not adding.";
-  }
-}
-
-
-/**
- * @return true if add succeeded, false otherwise.
- */
-bool Debugger::vector_add(std::vector<int> &v, int val) {
-  if (breakpoint_present(val)) {
-    return false;
-  }
-
-  v.push_back(val);
-  return true;
-}
-
-
-/**
- * @brief Remove given value from the vector
- */
-void Debugger::vector_remove(std::vector<int> &v, int val, const char *label) {
-   assert(label != nullptr);
-
-  if (!vector_present(v, val)) {
-    std::cerr << "Error: no " << label << " for " << val << "." << std::endl;
-  } else {
-    warn << "Removing " << label << " for " << val;
-    v.erase(std::remove(v.begin(), v.end(), val), v.end());
-  }
-}
-
-
-/**
- * @return integer value if read succeeded, -1 otherwise
- */
-int Debugger::read_int(std::stringstream &ss, bool show_error) {
-  int line;
-  ss >> line;
-  if (ss.fail()) {
-    if (show_error) {
-      std::cerr << "Error: no breakpoint at line " << line << "." << std::endl;
-    }
-    return -1;
-  } else {
-    return line;
-  }
-}
-
-
-std::string Debugger::show_breakpoints() const {
-  std::string ret;
-
-  ret << "Breakpoints: ";
-  for (int l: m_breakpoint) {
-    ret << l << ", ";
-  }
-  ret << "\n";
-
-  return ret;
-}
-
-
-void Debugger::step(int qpu_num) {
-  QPUState *s = &m_state.qpu[qpu_num];
-
-  int cur_pc = s->pc;
-  if (breakpoint_present(cur_pc)) do_step = true;
-
-  if (!do_step) return;
-
-  int first_pc = cur_pc - 2;
-  if (first_pc < 0) first_pc = 0;
-  int last_pc  = cur_pc + 2;
-  if (last_pc > m_instrs.size()) last_pc = m_instrs.size();
-
-  for (int i = first_pc; i <= last_pc; ++i) {
-    if (i == cur_pc) {
-      std::cout << " > ";
-    } else {
-      std::cout << "   ";
-    }
-    std::cout << i << ": " << m_instrs[i].dump() << "\n";
-  }
-
-  std::cout << s->dump(qpu_num);
-
-  if (!m_heap_view.empty()) {
-    std::cout << "Heap Views (heap size " << (int) m_state.emuHeap.size() << "):\n" 
-              << show_heapviews();
-  }
-
-  if (disp_vpm) {
-    std::cout << m_state.dump_vpm();
-  }
-  std::cout << "=============================================\n";
-
-  bool do_loop = true;
-  while (do_loop) {
-    std::string input_line;
-    std::cout << "> ";
-    getline(std::cin, input_line);
-
-    if (input_line.empty()) break;
-
-    std::stringstream ss(input_line);
-    char command;
-    ss >> command;
-            
-    switch (command) {
-      case 'b': {
-        int line = read_int(ss, false);
-        if (line == -1) {
-          std::cout << show_breakpoints();
-        } else {
-          warn << "Adding breakpoint at line " << line;
-          add_breakpoint(line);
-        }
-      }
-      break;
-
-      case 'B': {
-        int line = read_int(ss);
-        if (line != -1) {
-          vector_remove(m_breakpoint, line, "breakpoint");
-        }
-      }
-      break;
-
-      case 'h': {
-        int addr = read_int(ss);
-        if (addr != -1) {
-          add_heapview(addr);
-        }
-      }
-      break;
-
-      case 'H': {
-        int addr = read_int(ss);
-        if (addr != -1) {
-          vector_remove(m_heap_view, addr, "heap view");
-        }
-      }
-      break;
-
-      case 'c':
-        do_step = false;
-        do_loop = false;
-      break;
-
-              case 'q':
-                m_breakpoint.clear();
-                do_step = false;
-                do_loop = false;
-                break;
-              case 'n':
-                do_loop = false;
-                break;
-              case 'v':
-                disp_vpm = true;
-                std::cout << "Disp VPM enabled\n"; 
-                break;
-              case 'V':
-                std::cout << "Disp VPM disabled\n"; 
-                disp_vpm = false;
-                break;
-              case '?': 
-                std::cout << show_help();
-                break;
-              default:
-                std::cout << "Unknown command. Enter '?' for overview.\n";
-            }
-          }
 }
 
 }  // anon namespace
@@ -1100,18 +622,18 @@ void emulate(int numQPUs, Instr::List &instrs, int maxReg, IntList &uniforms, Bu
     for (int i = 0; i < numQPUs; i++) {
       if (Mutex::blocks(i)) continue;
 
-      QPUState *s = &state.qpu[i];
+      QPUState &s = state.qpu[i];
 
-      if (s->running) {
-        assert(s->pc < instrs.size());
+      if (s.running) {
+        assert(s.pc < instrs.size());
         anyRunning = true;
-        s->upkeep();
+        s.upkeep();
 
-        Instr const instr = instrs.get(s->pc);
+        Instr const instr = instrs.get(s.pc);
         run_instruction(s, state, instr);
 
         debugger.step(i);
-        s->pc++;
+        s.pc++;
       }
     }
   }

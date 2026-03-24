@@ -2,8 +2,8 @@
 #include "vc4/KernelDriver.h"
 #include "v3d/KernelDriver.h"
 #include "Support/basics.h"
-#include "Source/Interpreter.h"
-#include "Target/Emulator.h"
+#include "Emulator/Interpreter.h"  // interpreter()
+#include "Emulator/Emulator.h"     // emulate()
 
 using namespace Log;
 

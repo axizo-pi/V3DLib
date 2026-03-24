@@ -1,5 +1,5 @@
-#ifndef _V3DLIB_INTERPRETER_H_
-#define _V3DLIB_INTERPRETER_H_
+#ifndef _V3DLIB_EMULATOR_INTERPRETER_H_
+#define _V3DLIB_EMULATOR_INTERPRETER_H_
 #include <stdint.h>
 #include "Source/Stmt.h"
 

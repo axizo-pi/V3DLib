@@ -1,6 +1,6 @@
-#ifndef _V3DLIB_TARGET_EMULATOR_H_
-#define _V3DLIB_TARGET_EMULATOR_H_
-#include "instr/Instr.h"
+#ifndef _V3DLIB_EMULATOR_EMULATOR_H_
+#define _V3DLIB_EMULATOR_EMULATOR_H_
+#include "Target/instr/Instr.h"
 
 namespace V3DLib {
 
@@ -10,4 +10,4 @@ void emulate(int numQPUs, Target::Instr::List &instrs, int maxReg, IntList &unif
 
 }  // namespace V3DLib
 
-#endif  // _V3DLIB_TARGET_EMULATOR_H_
+#endif  // _V3DLIB_EMULATOR_EMULATOR_H_

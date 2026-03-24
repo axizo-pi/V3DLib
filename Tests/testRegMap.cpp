@@ -1,6 +1,5 @@
 #include "doctest.h"
 #include <cstdlib>
-#include "../Lib/Target/Emulator.h"  // MAX_QPUS
 #include "../Lib/Support/Platform.h"
 
 #ifdef QPU_MODE
