@@ -186,11 +186,14 @@ TEST_CASE("Test mutexes emulator[mutex]") {
 /**
  * @brief Run barrier on emulator
  */
-TEST_CASE("Test barrier emulator[mutex]") {
+TEST_CASE("Test barrier emulator[mutex][barrier]") {
+  bool prev2 = LibSettings::use_tmu_for_load();
+  LibSettings::use_tmu_for_load(false);
   Platform::use_main_memory(true);
+
   INFO("Unit test [mutex] using main memory");
   int numQPUs = 1;
-/*
+
   SUBCASE("Test barrier") {
     Int::Array result(16);
     Int::Array expected(16);
@@ -212,27 +215,25 @@ TEST_CASE("Test barrier emulator[mutex]") {
     REQUIRE(result == expected);
 
     INFO("Multiple QPU's");
-    if (true) {
-      warn << "Skipping multi-QPU barrier unit test for now";
-    } else {
-      numQPUs = 2;
-      init_arrays(result, expected, signal, numQPUs);
-      k.load(&result, &signal);
-      k.setNumQPUs(numQPUs);
-      k.run();
+    numQPUs = 8;
+    init_arrays(result, expected, signal, numQPUs);
+    k.load(&result, &signal);
+    k.setNumQPUs(numQPUs);
+    k.run();
 
-      warn << "result: " << result.dump();
-      warn << "signal: " << signal.dump();
-      REQUIRE(result == expected);
-    }
+    //warn << "result:\n" << result.dump();
+    //warn << "signal:\n" << signal.dump();
+    REQUIRE(result == expected);
   }
 
   Platform::use_main_memory(false);
-*/
+  LibSettings::use_tmu_for_load(prev2);
 }
 
 
 TEST_CASE("Test While-loop emulator[mutex][while]") {
+  bool prev2 = LibSettings::use_tmu_for_load();
+  LibSettings::use_tmu_for_load(false);
 
   SUBCASE("Test Emulator") {
     Platform::use_main_memory(true);
@@ -241,29 +242,43 @@ TEST_CASE("Test While-loop emulator[mutex][while]") {
     Int::Array result(16);
     result.fill(-1);
 
+    Int::Array expected(16);
+    expected.fill(4);
+
     auto k = compile(while_kernel);
-    to_file("while_kernel.txt", k.dump());
+    //to_file("while_kernel.txt", k.dump());
     k.load(&result);
     k.setNumQPUs(numQPUs);
     k.run();
     //k.interpret();
-    warn << "result While: " << result.dump();
+    //warn << "result While: " << result.dump();
+    REQUIRE(result == expected);
 
     Platform::use_main_memory(false);
   }
 
+  // Fails with mailbox error with TMU load, 
+  // Works fine with DMA load.
   SUBCASE("Test QPU") {
     int numQPUs = 1;
     Int::Array result(16);
     result.fill(-1);
 
+    Int::Array expected(16);
+    expected.fill(4);
+
     auto k = compile(while_kernel);
     k.setNumQPUs(numQPUs);
-    to_file("while_kernel_2.txt", k.dump());
+    //to_file("while_kernel_2.txt", k.dump());
     k.load(&result);
     k.run();
-    warn << "result While2: " << result.dump();
+
+    //warn << "result While2: " << result.dump();
+    REQUIRE(result == expected);
   }
+
+
+  LibSettings::use_tmu_for_load(prev2);
 }
 
 

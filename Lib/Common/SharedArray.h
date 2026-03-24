@@ -79,7 +79,7 @@ public:
   SharedArray &operator=(SharedArray &&a) = default; 
 
   ~SharedArray() {
-    Log::warn << "Called SharedArray dtor";
+    //Log::warn << "Called SharedArray dtor";
     Parent::dealloc();
   }
 

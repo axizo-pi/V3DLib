@@ -83,11 +83,8 @@ Vec DMA_readReg(QPUState* s, State* g, Reg reg, bool &handled) {
       // See Note 1
       //
       case SPECIAL_DMA_ST_WAIT: {
-        if (s->dmaStore.waiting()) {
+        if (s->dmaStore.waiting()) {  // Also happens
           s->waiting = true;
-
-          // Not expecting this to happen except in very contrived code; warn me if it happens
-          assertq(false, "SPECIAL_DMA_ST_WAIT wait triggered");
         }
         return v; // Return value unspecified
       }
@@ -563,9 +560,7 @@ void emulate(int numQPUs, Instr::List &instrs, int maxReg, IntList &uniforms, Bu
   bool anyRunning = true;
 
   Debugger debugger(state, instrs);
-
-  debugger.add_breakpoint(28);
-  debugger.add_breakpoint(41);
+//  debugger.add_breakpoint(7);
 
   while (anyRunning) {
     anyRunning = false;
