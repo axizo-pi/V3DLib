@@ -102,13 +102,31 @@ bool blocks(int qpu_number);
 } // namespace Mutex
 
 
-// In-flight DMA request
+/**
+ * @brief In-flight DMA request
+ */
 struct DMAAddr {
-  bool active;
   Word addr;
+
+  bool active() const   { return m_active; }
+  void active(bool val) { m_active = val; }
+  void start();
+  bool waiting() const  { return m_wait_count > 0; }
+
+  void upkeep();
+  std::string dump() const;
+
+private:
+  const int WaitCount = 4;  // Educated quess
+
+  bool m_active     = false;
+  int  m_wait_count = 0;
 };
 
-// VPM load request
+
+/**
+ * @brief VPM load request
+ */
 struct VPMLoadReq {
   int numVecs;  // Number of vectors to load
   bool hor;     // Horizintal or vertical access?
@@ -116,14 +134,20 @@ struct VPMLoadReq {
   int stride;   // Added to address after every vector read
 };
 
-// VPM store request
+
+/**
+ * @brief VPM store request
+ */
 struct VPMStoreReq {
   bool hor;     // Horizontal or vertical access?
   int addr;     // Address in VPM to load from
   int stride;   // Added to address after every vector written
 };
 
-// DMA load request
+
+/**
+ * @brief DMA load request
+ */
 struct DMALoadReq {
   bool hor;     // Horizintal or vertical access?
   int numRows;  // Number of rows in memory
@@ -132,7 +156,10 @@ struct DMALoadReq {
   int vpitch;   // Added to vpmAddr after each vector loaded
 };
 
-// DMA store request
+
+/**
+ * @brief DMA store request
+ */
 struct DMAStoreReq {
   bool hor;     // Horizintal or vertical access?
   int numRows;  // Number of rows in memory

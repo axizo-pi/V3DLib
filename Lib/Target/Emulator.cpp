@@ -111,8 +111,6 @@ struct QPUState {
   SFU sfu;
 
   QPUState() {
-    dmaLoad.active     = false;
-    dmaStore.active    = false;
     for (int i = 0; i < NUM_LANES; i++) negFlags[i] = false;
     for (int i = 0; i < NUM_LANES; i++) zeroFlags[i] = false;
   }
@@ -133,6 +131,8 @@ struct QPUState {
 
   void upkeep() {
     sfu.upkeep(accum[4]);
+    dmaLoad.upkeep();
+    dmaStore.upkeep();
   }
 
   std::string dump(int index = -1) const;
@@ -147,36 +147,34 @@ struct QPUState {
 MAYBE_UNUSED std::string QPUState::dump(int index) const {
   std::string ret;
 
+  auto disp_bool_array = [] (bool const *arr) -> std::string {
+    std::string ret;
+
+    for (int i = 0; i < NUM_LANES; ++i) {
+      ret << (arr[i]?"1":"0");
+    }
+    return ret;
+  };
+
   ret << "\nPartial state QPU ";
   if (index != -1) {
     ret << index;
   }
-  ret << "\n";
 
-  ret << "PC: " << pc << "\n";
+  ret << "\n"
+      << "--------------------\n"
+      << "PC: " << pc << "\n"
+      << "running: " << ((running)?"active":"halted")
+      << "\n";
 
-  ret << "running: ";
+  if (dmaLoad.active())  ret << "dmaLoad: " << dmaLoad.dump() << "\n";
+  if (dmaStore.active()) ret << "dmaStore: " << dmaStore.dump() << "\n";
 
-  if (running) {
-    ret << "active\n";
-  } else {
-    ret << "halted\n";
-  } 
-
-  ret << "negFlags : ";
-  for (int i = 0; i < NUM_LANES; ++i) {
-    ret << (negFlags[i]?"1":"0");
-  }
-  ret << "\n";
-
-  ret << "zeroFlags: ";
-  for (int i = 0; i < NUM_LANES; ++i) {
-    ret << (zeroFlags[i]?"1":"0");
-  }
-  ret << "\n";
+  ret << "negFlags : " << disp_bool_array(negFlags)  << "\n"
+      << "zeroFlags: " << disp_bool_array(zeroFlags) << "\n";
 
   // Show content accumulators
-  ret << "Accumulator:\n";
+  ret << "Accumulators:\n";
   for (int i = 0; i < 6; ++i) {
     ret << "  ACC" << i << ": " << accum[i].dump() << "\n";
   }
@@ -205,6 +203,79 @@ struct State : public EmuState {
 
   State(int in_num_qpus, IntList const &in_uniforms) : EmuState(in_num_qpus, in_uniforms, true) {}
 };
+
+
+void dma_load(QPUState *s, State *g) {
+  DMALoadReq* req = &s->dmaLoadSetup;
+
+  if (req->hor) {
+    //
+    // Horizontal access
+    //
+    uint32_t y = (req->vpmAddr >> 4) & 0x3f;
+    for (int r = 0; r < req->numRows; r++) {
+      uint32_t x = req->vpmAddr & 0xf;
+      for (int i = 0; i < req->rowLen; i++) {
+        uint32_t addr = (uint32_t) (s->dmaLoad.addr.intVal + (r * s->readPitch) + i*4);
+        g->vpm[y*16 + x].intVal = g->emuHeap.phy(addr >> 2);
+        x = (x + 1) % 16;
+      }
+      y = (y + 1) % 64;
+    }
+  } else {
+    //
+    // Vertical access
+    //
+    uint32_t x = req->vpmAddr & 0xf;
+    for (int r = 0; r < req->numRows; r++) {
+      uint32_t y = ((req->vpmAddr >> 4) + r*req->vpitch) & 0x3f;
+      for (int i = 0; i < req->rowLen; i++) {
+        uint32_t addr = (uint32_t) (s->dmaLoad.addr.intVal + (r * s->readPitch) + i*4);
+        g->vpm[y*16 + x].intVal = g->emuHeap.phy(addr >> 2);
+        y = (y + 1) % 64;
+      }
+      x = (x + 1) % 16;
+    }
+  }
+}
+
+
+void dma_store(QPUState *s, State *g) {
+  DMAStoreReq* req = &s->dmaStoreSetup;
+  uint32_t memAddr = s->dmaStore.addr.intVal;
+
+  if (req->hor) {
+    //
+    // Horizontal access
+    //
+    uint32_t y = (req->vpmAddr >> 4) & 0x3f;
+    for (int r = 0; r < req->numRows; r++) {
+      uint32_t x = req->vpmAddr & 0xf;
+      for (int i = 0; i < req->rowLen; i++) {
+        g->emuHeap.phy(memAddr >> 2) = g->vpm[y*16 + x].intVal;
+        x = (x + 1) % 16;
+        memAddr = memAddr + 4;
+      }
+      y = (y + 1) % 64;
+      memAddr += s->writeStride;
+    }
+  } else {
+    //
+    // Vertical access
+    //
+    uint32_t x = req->vpmAddr & 0xf;
+    for (int r = 0; r < req->numRows; r++) {
+      uint32_t y = (req->vpmAddr >> 4) & 0x3f;
+      for (int i = 0; i < req->rowLen; i++) {
+        g->emuHeap.phy(memAddr >> 2) = g->vpm[y*16 + x].intVal;
+        y = (y + 1) % 64;
+        memAddr = memAddr + 4;
+      }
+      x = (x + 1) % 16;
+      memAddr += s->writeStride;
+    }
+  }
+}
 
 
 Vec DMA_readReg(QPUState* s, State* g, Reg reg, bool &handled) {
@@ -244,71 +315,17 @@ Vec DMA_readReg(QPUState* s, State* g, Reg reg, bool &handled) {
 
       case SPECIAL_DMA_LD_WAIT: {
         // Perform DMA load to completion
-        if (s->dmaLoad.active == false) return v;
-        DMALoadReq* req = &s->dmaLoadSetup;
-        if (req->hor) {
-          // Horizontal access
-          uint32_t y = (req->vpmAddr >> 4) & 0x3f;
-          for (int r = 0; r < req->numRows; r++) {
-            uint32_t x = req->vpmAddr & 0xf;
-            for (int i = 0; i < req->rowLen; i++) {
-              uint32_t addr = (uint32_t) (s->dmaLoad.addr.intVal + (r * s->readPitch) + i*4);
-              g->vpm[y*16 + x].intVal = g->emuHeap.phy(addr >> 2);
-              x = (x+1) % 16;
-            }
-            y = (y+1) % 64;
-          }
-        } else {
-          // Vertical access
-          uint32_t x = req->vpmAddr & 0xf;
-          for (int r = 0; r < req->numRows; r++) {
-            uint32_t y = ((req->vpmAddr >> 4) + r*req->vpitch) & 0x3f;
-            for (int i = 0; i < req->rowLen; i++) {
-              uint32_t addr = (uint32_t) (s->dmaLoad.addr.intVal + (r * s->readPitch) + i*4);
-              g->vpm[y*16 + x].intVal = g->emuHeap.phy(addr >> 2);
-              y = (y+1) % 64;
-            }
-            x = (x+1) % 16;
-          }
-        }
-        s->dmaLoad.active = false;
+        if (!s->dmaLoad.active()) return v;
+        dma_load(s, g);
+        s->dmaLoad.active(false);
      }
      return v; // Return value unspecified
 
       case SPECIAL_DMA_ST_WAIT: {
         // Perform DMA store to completion
-        if (s->dmaStore.active == false) return v;
-        DMAStoreReq* req = &s->dmaStoreSetup;
-        uint32_t memAddr = s->dmaStore.addr.intVal;
-
-        if (req->hor) {
-          // Horizontal access
-          uint32_t y = (req->vpmAddr >> 4) & 0x3f;
-          for (int r = 0; r < req->numRows; r++) {
-            uint32_t x = req->vpmAddr & 0xf;
-            for (int i = 0; i < req->rowLen; i++) {
-              g->emuHeap.phy(memAddr >> 2) = g->vpm[y*16 + x].intVal;
-              x = (x+1) % 16;
-              memAddr = memAddr + 4;
-            }
-            y = (y+1) % 64;
-            memAddr += s->writeStride;
-          }
-        } else {
-          // Vertical access
-          uint32_t x = req->vpmAddr & 0xf;
-          for (int r = 0; r < req->numRows; r++) {
-            uint32_t y = (req->vpmAddr >> 4) & 0x3f;
-            for (int i = 0; i < req->rowLen; i++) {
-              g->emuHeap.phy(memAddr >> 2) = g->vpm[y*16 + x].intVal;
-              y = (y+1) % 64;
-              memAddr = memAddr + 4;
-            }
-            x = (x+1) % 16;
-            memAddr += s->writeStride;
-          }
-        }
-        s->dmaStore.active = false;
+        if (!s->dmaStore.active()) return v;
+        dma_store(s, g);
+        s->dmaStore.active(false);
         return v; // Return value unspecified
       }
 
@@ -557,17 +574,15 @@ void write_special_register(QPUState* s, State* g, bool setFlags, AssignCond con
 
     case SPECIAL_DMA_LD_ADDR: {
       // Initiate DMA load
-      assert(!s->dmaLoad.active);
-      s->dmaLoad.active = true;
-      s->dmaLoad.addr   = v[0];
+      s->dmaLoad.start();
+      s->dmaLoad.addr = v[0];
       return;
     }
 
     case SPECIAL_DMA_ST_ADDR: {
       // Initiate DMA store
-      assert(!s->dmaStore.active);
-      s->dmaStore.active = true;
-      s->dmaStore.addr   = v[0];
+      s->dmaStore.start();
+      s->dmaStore.addr = v[0];
       return;
       }
 
@@ -763,14 +778,14 @@ void run_instruction(QPUState *s, State &state, Instr const &instr) {
 
 class Debugger {
 public:
-  Debugger(State const &state, Instr::List const &instrs) : m_state(state), m_instrs(instrs) {}
+  Debugger(State &state, Instr::List const &instrs) : m_state(state), m_instrs(instrs) {}
 
-  void step(QPUState *s);
+  void step(int qpu_num);
 
   void add_breakpoint(int line);
 
 private:
-  State const &m_state;
+  State &m_state;
   Instr::List const &m_instrs;
 
   bool do_step  = false;
@@ -916,8 +931,6 @@ int Debugger::read_int(std::stringstream &ss, bool show_error) {
 }
 
 
-
-
 std::string Debugger::show_breakpoints() const {
   std::string ret;
 
@@ -931,7 +944,9 @@ std::string Debugger::show_breakpoints() const {
 }
 
 
-void Debugger::step(QPUState *s) {
+void Debugger::step(int qpu_num) {
+  QPUState *s = &m_state.qpu[qpu_num];
+
   int cur_pc = s->pc;
   if (breakpoint_present(cur_pc)) do_step = true;
 
@@ -951,7 +966,7 @@ void Debugger::step(QPUState *s) {
     std::cout << i << ": " << m_instrs[i].dump() << "\n";
   }
 
-  std::cout << s->dump();
+  std::cout << s->dump(qpu_num);
 
   if (!m_heap_view.empty()) {
     std::cout << "Heap Views (heap size " << (int) m_state.emuHeap.size() << "):\n" 
@@ -1075,6 +1090,7 @@ void emulate(int numQPUs, Instr::List &instrs, int maxReg, IntList &uniforms, Bu
 
   Debugger debugger(state, instrs);
   debugger.add_breakpoint(14);
+  debugger.add_breakpoint(28);
   debugger.add_breakpoint(41);
 
   while (anyRunning) {
@@ -1094,7 +1110,7 @@ void emulate(int numQPUs, Instr::List &instrs, int maxReg, IntList &uniforms, Bu
         Instr const instr = instrs.get(s->pc);
         run_instruction(s, state, instr);
 
-        debugger.step(s);
+        debugger.step(i);
         s->pc++;
       }
     }
