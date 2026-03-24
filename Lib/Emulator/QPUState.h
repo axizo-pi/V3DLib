@@ -6,6 +6,8 @@
 
 namespace V3DLib {
 
+class State;
+
 /**
  * @brief Very simple queue containing N elements of type T
  */
@@ -45,6 +47,7 @@ struct QPUState {
   int writeStride = 0;                 // Write stride
 
   bool running = false;                // Is QPU active, or has it halted?
+  bool waiting = false;                // True if DMA store/load waits
   int pc = 0;                          // Program counter
   Vec* regFileA = nullptr;             // Register file A
   int sizeRegFileA = 0;                // (and size)
@@ -67,7 +70,7 @@ struct QPUState {
   ~QPUState();
 
   void init(int maxReg);
-  void upkeep();
+  void upkeep(State &state);
   std::string dump(int index = -1) const;
 };
 

@@ -10,10 +10,11 @@ namespace V3DLib {
 struct DMAAddr {
   Word addr;
 
-  bool active() const   { return m_active; }
-  void active(bool val) { m_active = val; }
+  bool active() const        { return m_active; }
+  void active(bool val)      { m_active = val; }
   void start();
-  bool waiting() const  { return m_wait_count > 0; }
+  bool waiting() const       { return m_wait_count > 0; }
+  bool done_waiting() const  { return active() && m_wait_count == 0; }
 
   void upkeep();
   std::string dump() const;

@@ -1,7 +1,7 @@
 #
 # This file is generated!  Editing it directly is a bad idea.
 #
-# Generated on: Tue 24 Mar 2026 09:24:19 AM CET
+# Generated on: Tue 24 Mar 2026 10:27:04 AM CET
 #
 ###############################################################################
 
@@ -75,6 +75,7 @@ OBJ := \
   Emulator/DMAAddr.o  \
   Emulator/EmuSupport.o  \
   Emulator/Mutex.o  \
+  Emulator/DMA.o  \
   Emulator/Emulator.o  \
   LibSettings.o  \
   v3d/PerformanceCounters.o  \

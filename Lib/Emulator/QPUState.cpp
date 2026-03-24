@@ -1,8 +1,10 @@
 #include "QPUState.h"
 #include "Support/basics.h"
+#include "DMA.h"
 
 namespace V3DLib {
 
+using namespace Log;
 
 /**
  * @return true if input handled, false otherwise
@@ -69,10 +71,24 @@ void QPUState::init(int maxReg) {
 }
 
 
-void QPUState::upkeep() {
+void QPUState::upkeep(State &state) {
   sfu.upkeep(accum[4]);
+
   dmaLoad.upkeep();
+  if (dmaLoad.done_waiting()) {
+    cdebug << "QPUState::upkeep() DMA load done waiting";
+    DMA::load(this, &state);
+    dmaLoad.active(false);
+  }
+
   dmaStore.upkeep();
+  if (dmaStore.done_waiting()) {
+    cdebug << "QPUState::upkeep() DMA store done waiting";
+    DMA::store(this, &state);
+    dmaStore.active(false);
+  }
+
+  waiting = false;
 }
 
 
@@ -101,7 +117,7 @@ MAYBE_UNUSED std::string QPUState::dump(int index) const {
   ret << "\n"
       << "--------------------\n"
       << "PC: " << pc << "\n"
-      << "running: " << ((running)?"active":"halted")
+      << "running: " << (running?(waiting?"waiting":"active"):"halted")
       << "\n";
 
   if (dmaLoad.active())  ret << "dmaLoad: " << dmaLoad.dump() << "\n";

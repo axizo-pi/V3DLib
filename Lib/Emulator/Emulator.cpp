@@ -1,11 +1,11 @@
 #include "Emulator.h"
-#include "QPUState.h"
 #include "Debugger.h"
 #include <cmath>
 #include "global/log.h"
 #include "EmuSupport.h"
 #include "Mutex.h"
-#include "Common/SharedArray.h"
+#include "State.h"
+#include "DMA.h"
 #include "Target/SmallLiteral.h"
 #include "Target/BufferObject.h"
 
@@ -16,79 +16,21 @@ using namespace Log;
 
 namespace {
 
-void dma_load(QPUState *s, State *g) {
-  DMALoadReq* req = &s->dmaLoadSetup;
-
-  if (req->hor) {
-    //
-    // Horizontal access
-    //
-    uint32_t y = (req->vpmAddr >> 4) & 0x3f;
-    for (int r = 0; r < req->numRows; r++) {
-      uint32_t x = req->vpmAddr & 0xf;
-      for (int i = 0; i < req->rowLen; i++) {
-        uint32_t addr = (uint32_t) (s->dmaLoad.addr.intVal + (r * s->readPitch) + i*4);
-        g->vpm[y*16 + x].intVal = g->emuHeap.phy(addr >> 2);
-        x = (x + 1) % 16;
-      }
-      y = (y + 1) % 64;
-    }
-  } else {
-    //
-    // Vertical access
-    //
-    uint32_t x = req->vpmAddr & 0xf;
-    for (int r = 0; r < req->numRows; r++) {
-      uint32_t y = ((req->vpmAddr >> 4) + r*req->vpitch) & 0x3f;
-      for (int i = 0; i < req->rowLen; i++) {
-        uint32_t addr = (uint32_t) (s->dmaLoad.addr.intVal + (r * s->readPitch) + i*4);
-        g->vpm[y*16 + x].intVal = g->emuHeap.phy(addr >> 2);
-        y = (y + 1) % 64;
-      }
-      x = (x + 1) % 16;
-    }
-  }
-}
-
-
-void dma_store(QPUState *s, State *g) {
-  DMAStoreReq* req = &s->dmaStoreSetup;
-  uint32_t memAddr = s->dmaStore.addr.intVal;
-
-  if (req->hor) {
-    //
-    // Horizontal access
-    //
-    uint32_t y = (req->vpmAddr >> 4) & 0x3f;
-    for (int r = 0; r < req->numRows; r++) {
-      uint32_t x = req->vpmAddr & 0xf;
-      for (int i = 0; i < req->rowLen; i++) {
-        g->emuHeap.phy(memAddr >> 2) = g->vpm[y*16 + x].intVal;
-        x = (x + 1) % 16;
-        memAddr = memAddr + 4;
-      }
-      y = (y + 1) % 64;
-      memAddr += s->writeStride;
-    }
-  } else {
-    //
-    // Vertical access
-    //
-    uint32_t x = req->vpmAddr & 0xf;
-    for (int r = 0; r < req->numRows; r++) {
-      uint32_t y = (req->vpmAddr >> 4) & 0x3f;
-      for (int i = 0; i < req->rowLen; i++) {
-        g->emuHeap.phy(memAddr >> 2) = g->vpm[y*16 + x].intVal;
-        y = (y + 1) % 64;
-        memAddr = memAddr + 4;
-      }
-      x = (x + 1) % 16;
-      memAddr += s->writeStride;
-    }
-  }
-}
-
-
+/**
+ *
+ * -----------------------------
+ *
+ * Note 1
+ * ------
+ *
+ * Previously, the handling of `SPECIAL_DMA_LD_WAIT` and `SPECIAL_DMA_ST_WAIT`
+ * was used to complete the DMA load/store.  
+ * This is wrong and actually led to wrong results in the emulator.
+ *
+ * The DMA load/store operations actually run independent of the QPU execution.
+ * If `SPECIAL_DMA_LD_WAIT`, `SPECIAL_DMA_ST_WAIT` are called while and load/store
+ * is running, it should block on this operation until the DMA operation completes.
+ */
 Vec DMA_readReg(QPUState* s, State* g, Reg reg, bool &handled) {
   assert(reg.tag == SPECIAL);
 
@@ -124,19 +66,29 @@ Vec DMA_readReg(QPUState* s, State* g, Reg reg, bool &handled) {
       }
       return v;
 
+      //
+      // Wait for DMA load to complete.
+      // See Note 1
+      //
       case SPECIAL_DMA_LD_WAIT: {
-        // Perform DMA load to completion
-        if (!s->dmaLoad.active()) return v;
-        dma_load(s, g);
-        s->dmaLoad.active(false);
+        if (s->dmaLoad.waiting()) {
+          // This actually happens; see loadRequest() in LoadStore.cpp.
+          s->waiting = true;
+        }
+        return v; // Return value unspecified
      }
-     return v; // Return value unspecified
 
+      //
+      // Wait for DMA store to complete.
+      // See Note 1
+      //
       case SPECIAL_DMA_ST_WAIT: {
-        // Perform DMA store to completion
-        if (!s->dmaStore.active()) return v;
-        dma_store(s, g);
-        s->dmaStore.active(false);
+        if (s->dmaStore.waiting()) {
+          s->waiting = true;
+
+          // Not expecting this to happen except in very contrived code; warn me if it happens
+          assertq(false, "SPECIAL_DMA_ST_WAIT wait triggered");
+        }
         return v; // Return value unspecified
       }
 
@@ -395,7 +347,7 @@ void write_special_register(QPUState* s, State* g, bool setFlags, AssignCond con
       s->dmaStore.start();
       s->dmaStore.addr = v[0];
       return;
-      }
+    }
 
     case SPECIAL_HOST_INT: {
       return;
@@ -406,7 +358,7 @@ void write_special_register(QPUState* s, State* g, bool setFlags, AssignCond con
       Vec val;
       for (int i = 0; i < NUM_LANES; i++) {
         uint32_t a = (uint32_t) v[i].intVal;
-        val[i].intVal = g->emuHeap.phy(a>>2);
+        val[i].intVal = g->emuHeap.phy(a >> 2);
       }
       s->loadBuffer.append(val);
       return;
@@ -611,7 +563,7 @@ void emulate(int numQPUs, Instr::List &instrs, int maxReg, IntList &uniforms, Bu
   bool anyRunning = true;
 
   Debugger debugger(state, instrs);
-  debugger.add_breakpoint(14);
+
   debugger.add_breakpoint(28);
   debugger.add_breakpoint(41);
 
@@ -627,13 +579,16 @@ void emulate(int numQPUs, Instr::List &instrs, int maxReg, IntList &uniforms, Bu
       if (s.running) {
         assert(s.pc < instrs.size());
         anyRunning = true;
-        s.upkeep();
+        s.upkeep(state);
 
         Instr const instr = instrs.get(s.pc);
         run_instruction(s, state, instr);
 
         debugger.step(i);
-        s.pc++;
+
+        if (!s.waiting) {
+          s.pc++;
+        }
       }
     }
   }

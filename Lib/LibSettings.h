@@ -23,6 +23,8 @@ void use_high_precision_sincos(bool val);
 bool dump_line_numbers();
 void dump_line_numbers(bool val);
 
+void L2Cache_enable(bool enable);
+
 } // namespace LibSettings
 } // namespace V3DLib
 

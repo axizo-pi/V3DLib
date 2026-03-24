@@ -1,9 +1,7 @@
 #ifndef _V3DLIB_EMULATOR_DEBUGGER_H_
 #define _V3DLIB_EMULATOR_DEBUGGER_H_
 #include "Target/instr/Instr.h"
-#include "Common/SharedArray.h"  // Data
 #include "QPUState.h"
-#include "EmuState.h"
 
 namespace V3DLib {
 
@@ -39,17 +37,6 @@ private:
   bool vector_add(std::vector<int> &v, int val);
   void vector_remove(std::vector<int> &v, int val, const char *label);
   int read_int(std::stringstream &ss, bool show_error = true);
-};
-
-
-/**
- * @brief State of the VideoCore
- */
-struct State : public EmuState {
-  QPUState qpu[MAX_QPUS];  // State of each QPU
-  Data emuHeap;
-
-  State(int in_num_qpus, IntList const &in_uniforms) : EmuState(in_num_qpus, in_uniforms, true) {}
 };
 
 } // namespace V3DLib

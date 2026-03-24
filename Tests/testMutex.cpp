@@ -54,11 +54,21 @@ void while_kernel(Int::Ptr ret) {
 }
 
 
+/**
+ * @brief Test consecutive store/load under various circumstances.
+ *
+ * This kernel does *NOT* work for `vc4` with TMU load enabled.
+ * Unclear why, I gave up examining.
+ * The hypothesis is that the TMU load does not get the most recent value.
+ */
 void for_kernel(Int::Ptr ret) {
   Int count = 0;
   Int condition = 0;
 
   For (count = 0, (count < 10 && condition == 0), count++)
+    // The issue here is that the store and load follow very closely.
+    // It is possible (and actually happens here) that the store is not done
+    // when the load is executed.
     *ret = count;
     Int tmp = *ret;
 
@@ -257,41 +267,61 @@ TEST_CASE("Test While-loop emulator[mutex][while]") {
 }
 
 
-TEST_CASE("Test For-loop emulator[mutex][for]") {
+/**
+ * This tests issues with load/store timing.
+ * The trigger was an off-by-one error in the emulator.
+ *
+ * Result contained 5 instead of 4.
+ * Problem fixed, these tests are for regression.
+ *
+ * Not bothering with testing TMU load, doesn't work for
+ * for QPU and is off-by-1 one for emulator.
+ */
+TEST_CASE("Test For-loop[mutex][for]") {
   //bool prev = LibSettings::dump_line_numbers();
   //LibSettings::dump_line_numbers(false);
   bool prev2 = LibSettings::use_tmu_for_load();
   LibSettings::use_tmu_for_load(false);
 
-  SUBCASE("For Emulator") {
+  SUBCASE("Emulator with DMA load") {
     Platform::use_main_memory(true);
 
     int numQPUs = 1;
     Int::Array result(16);
     result.fill(-1);
 
+    Int::Array expected(16);
+    expected.fill(4);
+
     auto k = compile(for_kernel);
-    to_file("for_kernel.txt", k.dump());
+    //to_file("for_kernel.txt", k.dump());
     k.load(&result);
     k.setNumQPUs(numQPUs);
     k.run();                                  // Emulator: stored count value 1 too high
     //k.interpret();                          // Works as expected
-    warn << "result For: " << result.dump();
+
+    //warn << "result For: " << result.dump();
+    REQUIRE(result == expected);
 
     Platform::use_main_memory(false);
   }
 
-  SUBCASE("For QPU") {
+  SUBCASE("QPU with DMA load") {
     int numQPUs = 1;
     Int::Array result(16);
     result.fill(-1);
 
+    Int::Array expected(16);
+    expected.fill(4);
+
     auto k = compile(for_kernel);
     k.setNumQPUs(numQPUs);
-    to_file("for_kernel_2.txt", k.dump());
+    //to_file("for_kernel_2.txt", k.dump());
     k.load(&result);
     k.run();
-    warn << "result For2: " << result.dump();
+
+    //warn << "result For2: " << result.dump();
+    REQUIRE(result == expected);
   }
 
   LibSettings::use_tmu_for_load(prev2);

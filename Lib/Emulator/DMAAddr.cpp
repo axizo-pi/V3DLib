@@ -9,6 +9,7 @@ void DMAAddr::start() {
   m_wait_count = WaitCount;
 }
 
+
 void DMAAddr::upkeep() {
   if (m_active) {
     if (m_wait_count > 0) m_wait_count--;

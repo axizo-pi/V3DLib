@@ -1,7 +1,12 @@
 #include "LibSettings.h"
 #include "Support/basics.h"
+#include "Support/Platform.h"
+#include "vc4/RegisterMap.h"
 
 namespace V3DLib {
+
+using namespace Log;
+
 namespace {
 
 int const DEFAULT_HEAP_SIZE = 8*1024*1024;
@@ -68,6 +73,30 @@ void use_high_precision_sincos(bool val) { _use_high_precision_sincos = val; }
 
 bool dump_line_numbers() { return _dump_line_numbers; }
 void dump_line_numbers(bool val) { _dump_line_numbers = val; }
+
+/**
+ * @brief Enable or disable L2 Cache
+ *
+ * This is just a pass-through for the actual function `RegisterMap`.
+ * Added here because this is a logical place for a library setting;
+ * I kept on looking here for it.
+ *
+ * This is only meant for `vc4`.
+ */
+void L2Cache_enable(bool enable) {
+  if (Platform::running_emulator()) {
+    warn << "L2Cache_enable() running emulator, no need to adjust L2 cache.";
+    return;
+  }
+
+  if (!Platform::run_vc4()) {
+    warn << "L2Cache_enable() for vc4 only, ignoringi call.";
+    return;
+  }
+
+  warn << "Called L2Cache_enable(" << enable << ").";
+  RegisterMap::L2Cache_enable(enable);
+}
 
 } // namespace LibSettings
 }  // namespace V3DLib

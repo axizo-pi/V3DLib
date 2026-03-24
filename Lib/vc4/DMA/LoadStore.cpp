@@ -167,7 +167,6 @@ Instr genStartDMALoad(Reg memAddr) {
 }
 
 
-// TODO change var naming
 Instr genWaitDMALoad(bool might_be_end = false) {
 	Instr::List ret = mov(None, DMA_LD_WAIT);
 
@@ -529,23 +528,6 @@ Instr::List Stmt::setupDMAWrite() {
   Expr::Ptr e = address_internal();
 
   return genSetupDMAStore(numRows, rowLen, hor, e);
-
-/*
-  Instr::List ret;
-
-  if (e->tag() == Expr::INT_LIT) {
-    ret << genSetupDMAStore(numRows, rowLen, hor, e->intLit);
-  } else if (e->tag() == Expr::VAR) {
-    ret << genSetupDMAStore(numRows, rowLen, hor, e->var());
-  } else {
-    Var v = VarGen::fresh();
-
-    ret << varAssign(v, e)
-        << genSetupDMAStore(numRows, rowLen, hor, v);
-  }
-
-  return ret;
-*/
 }
 
 
@@ -582,8 +564,13 @@ Instr::List loadRequest(Var &dst, Expr &e) {
   Instr::List ret;
   ret << genSetReadPitch(4).comment("Start DMA load var")                   // Setup DMA
       << genSetupDMALoad(16, 1, 1, 1, QPU_ID)
+
+      // Note that the wait FOLLOWS directly on the start.
+      // This means that QPU will wait till this very DMA load completes.
+      // This is different from storeRequest().
       << genStartDMALoad(reg)                                               // Start DMA load
       << genWaitDMALoad(false)                                              // Wait for DMA
+
       << genSetupVPMLoad(QPU_ID, setup)                                     // Setup VPM
       << shl(dst, Target::instr::VPM_READ, 0).comment("End DMA load var");  // Get from VPM
 
@@ -607,6 +594,10 @@ Instr::List storeRequest(Var dst_addr, Var src) {
       << genSetupVPMStore(addr, 0, 1)
       << li(storeAddr, 256)                                            // Store address
       << add(storeAddr, storeAddr, QPU_ID)
+
+      // The wait PRECEDES the start.
+      // This means that the QPU will wait for the PREVIOUS DMA store to complete.
+      // This is different from loadRequest().
       << genWaitDMAStore()                                     // Wait for any previous store to complete
 
       << genSetWriteStride(0)                                          // Setup DMA
