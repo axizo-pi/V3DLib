@@ -185,16 +185,55 @@ TEST_CASE("Test mutexes emulator[mutex]") {
 
 /**
  * @brief Run barrier on emulator
+ *
+ * This is specifically meant for the `vc4` implementation of `barrier`,
+ * but should work on `v3d` as well.
  */
-TEST_CASE("Test barrier emulator[mutex][barrier]") {
-  bool prev2 = LibSettings::use_tmu_for_load();
-  LibSettings::use_tmu_for_load(false);
-  Platform::use_main_memory(true);
+TEST_CASE("Test barrier[mutex][barrier]") {
+//  bool prev2 = LibSettings::use_tmu_for_load();
+//  LibSettings::use_tmu_for_load(false);
+  LibSettings::tmu_load(false);
 
-  INFO("Unit test [mutex] using main memory");
   int numQPUs = 1;
 
-  SUBCASE("Test barrier") {
+  SUBCASE("Test barrier emulator") {
+    Platform::use_main_memory(true);
+
+    Int::Array result(16);
+    Int::Array expected(16);
+
+    // Last vector signals that a barrier leader is present
+    Int::Array signal(16*(numQPUs + 1));
+    signal.fill(0);
+
+    auto k = compile(barrier_kernel);
+
+    INFO("Single QPU");
+    numQPUs = 1;
+    init_arrays(result, expected, signal, numQPUs);
+    k.load(&result, &signal);
+    k.setNumQPUs(numQPUs);
+    k.run();
+
+    //warn << "result: " << result.dump();
+    REQUIRE(result == expected);
+
+    INFO("Multiple QPU's");
+    numQPUs = 8;
+    init_arrays(result, expected, signal, numQPUs);
+    k.load(&result, &signal);
+    k.setNumQPUs(numQPUs);
+    k.run();
+
+    //warn << "result:\n" << result.dump();
+    //warn << "signal:\n" << signal.dump();
+    REQUIRE(result == expected);
+
+    Platform::use_main_memory(false);
+  }
+
+/*
+  SUBCASE("Test barrier QPU") {
     Int::Array result(16);
     Int::Array expected(16);
 
@@ -211,23 +250,24 @@ TEST_CASE("Test barrier emulator[mutex][barrier]") {
     k.load(&result, &signal);
     k.setNumQPUs(numQPUs);
     k.run();
-    warn << "result: " << result.dump();
+
+    //warn << "result: " << result.dump();
     REQUIRE(result == expected);
 
     INFO("Multiple QPU's");
-    numQPUs = 8;
+    numQPUs = 2;
     init_arrays(result, expected, signal, numQPUs);
     k.load(&result, &signal);
     k.setNumQPUs(numQPUs);
     k.run();
 
-    //warn << "result:\n" << result.dump();
-    //warn << "signal:\n" << signal.dump();
+    warn << "result:\n" << result.dump();
+    warn << "signal:\n" << signal.dump();
     REQUIRE(result == expected);
   }
+*/
 
-  Platform::use_main_memory(false);
-  LibSettings::use_tmu_for_load(prev2);
+//  LibSettings::use_tmu_for_load(prev2);
 }
 
 

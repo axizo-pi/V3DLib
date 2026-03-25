@@ -64,8 +64,13 @@ void heap_size(int val) {
 }
 
 
-bool use_tmu_for_load()         { return _use_tmu_for_load; }
+/**
+ * @brief Enable/disable TMU for loading data from main memory.
+ *
+ * This is relevant only for `vc4`. `v3d` always uses TMU.
+ **/
 void use_tmu_for_load(bool val) { _use_tmu_for_load = val; }
+bool use_tmu_for_load()         { return _use_tmu_for_load; }
 
 
 bool use_high_precision_sincos()         { return _use_high_precision_sincos; }
@@ -97,6 +102,21 @@ void L2Cache_enable(bool enable) {
   warn << "Called L2Cache_enable(" << enable << ").";
   RegisterMap::L2Cache_enable(enable);
 }
+
+
+
+tmu_load::tmu_load(bool val) {
+  warn << "tmu_load setting to value " << val;
+  m_prev = use_tmu_for_load();
+  use_tmu_for_load(val);
+}
+
+
+tmu_load::~tmu_load() {
+  warn << "tmu_load restoring to previous value " << m_prev;
+  use_tmu_for_load(m_prev);
+}
+
 
 } // namespace LibSettings
 }  // namespace V3DLib

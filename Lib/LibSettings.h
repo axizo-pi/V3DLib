@@ -25,6 +25,16 @@ void dump_line_numbers(bool val);
 
 void L2Cache_enable(bool enable);
 
+
+class tmu_load {
+public:
+  tmu_load(bool val);
+  ~tmu_load();
+
+private:
+  bool m_prev;
+};
+
 } // namespace LibSettings
 } // namespace V3DLib
 

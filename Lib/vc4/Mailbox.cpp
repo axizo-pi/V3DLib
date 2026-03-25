@@ -304,9 +304,10 @@ unsigned qpu_enable(int file_desc, unsigned enable)
  *   You need to restart the Pi to continue.
  *   **TODO**: Find a way to reset a Pi after this or similar errors.
  *
- * - Confirmed reason to getting a mailbox error here:  
- * Accessing a buffer object outside of its assigned range.
- * This happened with a misaligned DMA write.
+ * - Confirmed reasons to getting a mailbox error here:  
+ *   * Accessing a buffer object outside of its assigned range.
+ *     This happened with a misaligned DMA write.
+ *   * On a consecutive DMA store and TMU load on the same main mem address.
  */
 unsigned execute_qpu(int fd, unsigned num_qpus, unsigned control, unsigned noflush, unsigned timeout) {
 /*
