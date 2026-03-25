@@ -31,6 +31,7 @@ bool SFU::writeReg(Reg dest, Vec v) {
   return handled;
 }
 
+
 void SFU::upkeep(Vec &r4) {
   if (timer > 0) {
     timer--;

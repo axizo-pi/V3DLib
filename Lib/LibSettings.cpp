@@ -104,7 +104,6 @@ void L2Cache_enable(bool enable) {
 }
 
 
-
 tmu_load::tmu_load(bool val) {
   warn << "tmu_load setting to value " << val;
   m_prev = use_tmu_for_load();
@@ -116,7 +115,6 @@ tmu_load::~tmu_load() {
   warn << "tmu_load restoring to previous value " << m_prev;
   use_tmu_for_load(m_prev);
 }
-
 
 } // namespace LibSettings
 }  // namespace V3DLib

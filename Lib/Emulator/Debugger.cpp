@@ -87,7 +87,7 @@ void Debugger::add_heapview(int addr) {
  * @return true if add succeeded, false otherwise.
  */
 bool Debugger::vector_add(std::vector<int> &v, int val) {
-  if (breakpoint_present(val)) {
+  if (vector_present(v, val)) {
     return false;
   }
 
@@ -228,29 +228,29 @@ void Debugger::step(int qpu_num) {
         do_loop = false;
       break;
 
-              case 'q':
-                m_breakpoint.clear();
-                do_step = false;
-                do_loop = false;
-                break;
-              case 'n':
-                do_loop = false;
-                break;
-              case 'v':
-                disp_vpm = true;
-                std::cout << "Disp VPM enabled\n"; 
-                break;
-              case 'V':
-                std::cout << "Disp VPM disabled\n"; 
-                disp_vpm = false;
-                break;
-              case '?': 
-                std::cout << show_help();
-                break;
-              default:
-                std::cout << "Unknown command. Enter '?' for overview.\n";
-            }
-          }
+      case 'q':
+        m_breakpoint.clear();
+        do_step = false;
+        do_loop = false;
+        break;
+      case 'n':
+        do_loop = false;
+        break;
+      case 'v':
+        disp_vpm = true;
+        std::cout << "Disp VPM enabled\n"; 
+        break;
+      case 'V':
+        std::cout << "Disp VPM disabled\n"; 
+        disp_vpm = false;
+        break;
+      case '?': 
+        std::cout << show_help();
+        break;
+      default:
+        std::cout << "Unknown command. Enter '?' for overview.\n";
+    }
+  }
 }
 
 } // namespace V3DLib

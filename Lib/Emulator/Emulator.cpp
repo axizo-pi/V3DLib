@@ -38,56 +38,37 @@ Vec DMA_readReg(QPUState* s, State* g, Reg reg, bool &handled) {
   handled = true;
 
   switch (reg.regId) {
-      case SPECIAL_VPM_READ: {
-        // Make sure there's a VPM load request waiting
-        assert(!s->vpmLoadQueue.isEmpty());
-        VPMLoadReq* req = s->vpmLoadQueue.first();
-        assert(req->numVecs > 0);
-        if (req->hor) {
-          // Horizontal load
-          for (int i = 0; i < NUM_LANES; i++) {
-            int index = (16*req->addr+i);
-            assert(index < VPM_SIZE);
-            v[i] = g->vpm[index];
-          }
-        } else {
-          // Vertical load
-          for (int i = 0; i < NUM_LANES; i++) {
-            uint32_t x = req->addr & 0xf;
-            uint32_t y = req->addr >> 4;
-            int index = (y*16*16 + x + i*16);
-            assert(index < VPM_SIZE);
-            v[i] = g->vpm[index];
-          }
-        }
-        req->numVecs--;
-        req->addr = req->addr + req->stride;
-        if (req->numVecs == 0) s->vpmLoadQueue.deq(); 
-      }
-      return v;
+    case SPECIAL_VPM_READ: {
+      // Make sure there's a VPM load request waiting
+      assert(!s->vpmLoadQueue.isEmpty());
+      VPMLoadReq* req = s->vpmLoadQueue.first();
+      req->read(g->vpm, v);
+      if (req->numVecs == 0) s->vpmLoadQueue.deq(); 
+    }
+    return v;
 
-      //
-      // Wait for DMA load to complete.
-      // See Note 1
-      //
-      case SPECIAL_DMA_LD_WAIT: {
-        if (s->dmaLoad.waiting()) {
-          // This actually happens; see loadRequest() in LoadStore.cpp.
-          s->waiting = true;
-        }
-        return v; // Return value unspecified
-     }
-
-      //
-      // Wait for DMA store to complete.
-      // See Note 1
-      //
-      case SPECIAL_DMA_ST_WAIT: {
-        if (s->dmaStore.waiting()) {  // Also happens
-          s->waiting = true;
-        }
-        return v; // Return value unspecified
+    //
+    // Wait for DMA load to complete.
+    // See Note 1
+    //
+    case SPECIAL_DMA_LD_WAIT: {
+      if (s->dmaLoad.waiting()) {
+        // This actually happens; see loadRequest() in LoadStore.cpp.
+        s->waiting = true;
       }
+      return v; // Return value unspecified
+    }
+
+    //
+    // Wait for DMA store to complete.
+    // See Note 1
+    //
+    case SPECIAL_DMA_ST_WAIT: {
+      if (s->dmaStore.waiting()) {  // Also happens
+        s->waiting = true;
+      }
+      return v; // Return value unspecified
+    }
 
     default:
       handled = false;
@@ -175,9 +156,12 @@ Vec readReg(QPUState &s, State &g, Reg const &reg) {
 // Check condition flags
 // ============================================================================
 
-// Given an assignment condition and an vector index, determine if the
-// condition is true at that index using the implicit condition flags.
-
+/**
+ * @brief Check the assignment condition
+ *
+ * Given an assignment condition and an vector index, determine if the
+ * condition is true at that index using the implicit condition flags.
+ */
 inline bool checkAssignCond(QPUState* s, AssignCond cond, int i) {
   using Tag = AssignCond::Tag;
 
@@ -252,14 +236,11 @@ void write_special_register(QPUState* s, State* g, bool setFlags, AssignCond con
       } else if ((setup & 0xc0000000) == 0) {
         // QPU only allows two VPM loads queued at a time
         assert(!s->vpmLoadQueue.isFull());
+
         // Create VPM load request
-        VPMLoadReq req;
-        req.numVecs = (setup >> 20) & 0xf;
-        if (req.numVecs == 0) req.numVecs = 16;
-        req.hor = ((setup >> 11) & 1);
-        req.addr = setup & 0xff;
-        req.stride = (setup >> 12) & 0x3f;
-        if (req.stride == 0) req.stride = 64;
+        VPMLoadReq req(setup);
+        warn << req.dump();
+
         // Add VPM load request to queue
         s->vpmLoadQueue.enq(req);
         return;
@@ -297,11 +278,8 @@ void write_special_register(QPUState* s, State* g, bool setFlags, AssignCond con
         req->vpmAddr = (setup >> 3) & 0x7ff;
         return;
       } else if ((setup & 0xc0000000) == 0) {
-        VPMStoreReq req;
-        req.hor = (setup >> 11) & 1;
-        req.addr = setup & 0xff;
-        req.stride = (setup >> 12) & 0x3f;
-        if (req.stride == 0) req.stride = 64;
+        VPMStoreReq req(setup);
+        warn << req.dump();
         s->vpmStoreSetup = req;
         return;
       }
@@ -309,26 +287,7 @@ void write_special_register(QPUState* s, State* g, bool setFlags, AssignCond con
     }
 
     case SPECIAL_VPM_WRITE: {
-      VPMStoreReq* req = &s->vpmStoreSetup;
-      if (req->hor) {
-        // Horizontal store
-        for (int i = 0; i < NUM_LANES; i++) {
-          int index = (16*req->addr+i);
-          assert(index < VPM_SIZE);
-          g->vpm[index] = v[i];
-        }
-      } else {
-        // Vertical store
-        uint32_t x = req->addr & 0xf;
-        uint32_t y = req->addr >> 4;
-        for (int i = 0; i < NUM_LANES; i++) {
-          int index = (y*16*16 + x + i*16);
-          assert(index < VPM_SIZE);
-          g->vpm[index] = v[i];
-        }
-      }
-
-      req->addr = req->addr + req->stride;
+      s->vpmStoreSetup.write(g->vpm, v);
       return;
     }
 
@@ -545,7 +504,14 @@ void run_instruction(QPUState &s, State &state, Instr const &instr) {
  * @param uniforms  Kernel parameters
  * @param heap
  */
-void emulate(int numQPUs, Instr::List &instrs, int maxReg, IntList &uniforms, BufferObject &heap) {
+void emulate(
+  int numQPUs,
+  Instr::List &instrs,
+  int maxReg,
+  IntList &uniforms,
+  BufferObject &heap,
+  bool do_debug
+) {
   Platform::running_emulator(true);
   State state(numQPUs, uniforms);
   state.emuHeap.heap_view(heap);
@@ -560,7 +526,7 @@ void emulate(int numQPUs, Instr::List &instrs, int maxReg, IntList &uniforms, Bu
   bool anyRunning = true;
 
   Debugger debugger(state, instrs);
-//  debugger.add_breakpoint(7);
+  if (do_debug) debugger.add_breakpoint(0);
 
   while (anyRunning) {
     anyRunning = false;

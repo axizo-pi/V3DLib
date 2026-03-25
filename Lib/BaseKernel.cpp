@@ -145,7 +145,7 @@ void BaseKernel::run(bool wait_complete) {
  *
  * The emulator runs vc4 code.
  */
-void BaseKernel::emu() {
+void BaseKernel::emu(bool do_debug) {
   assert(!m_settings.compile_only);    // Paranoia
 
   if (driver().has_errors()) {
@@ -154,7 +154,15 @@ void BaseKernel::emu() {
   }
 
   assert(uniforms.size() != 0);
-  emulate(numQPUs(), driver().targetCode(), driver().numVars(), uniforms, getBufferObject());
+
+  emulate(
+    numQPUs(),
+    driver().targetCode(),
+    driver().numVars(),
+    uniforms,
+    getBufferObject(),
+    do_debug
+  );
 }
 
 

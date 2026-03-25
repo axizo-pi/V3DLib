@@ -70,7 +70,7 @@ public:
 
   void run(bool wait_complete = true);
 
-  void emu();
+  void emu(bool do_debug = false);
   void interpret();
   void qpu(bool wait_complete = true);
 	void wait_complete() { driver().wait_complete(); }

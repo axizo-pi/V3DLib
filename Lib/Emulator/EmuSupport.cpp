@@ -352,4 +352,105 @@ void Vec::assign(Vec const &rhs) {
   }
 }
 
+
+VPMLoadReq::VPMLoadReq(int setup) {
+  assert((setup & 0xc0000000) == 0);
+
+  numVecs = (setup >> 20) & 0xf;
+  if (numVecs == 0) numVecs = 16;
+
+  hor    = (setup >> 11) & 1;
+  addr   = setup & 0xff;
+  stride = (setup >> 12) & 0x3f;
+  if (stride == 0) stride = 64;
+}
+
+
+void VPMLoadReq::read(Word const *vpm, Vec &v) {
+  assert(numVecs > 0);
+
+  if (hor) {
+    // Horizontal load
+    for (int i = 0; i < NUM_LANES; i++) {
+      int index = (16*addr+i);
+      assert(index < VPM_SIZE);
+      v[i] =vpm[index];
+    }
+  } else {
+    // Vertical load
+    for (int i = 0; i < NUM_LANES; i++) {
+      uint32_t x = addr & 0xf;
+      uint32_t y = addr >> 4;
+      int index = (y*16*16 + x + i*16);
+      assert(index < VPM_SIZE);
+      v[i] = vpm[index];
+    }
+  }
+
+  numVecs--;
+  addr += stride;
+}
+
+
+std::string VPMLoadReq::dump() const {
+  std::string ret;
+
+  ret << "VPMLoadReq: (" 
+      << "numVecs: " << numVecs << ", "
+      << (hor?"hor":"vert")     << ", "
+      << "addr: "    << addr    << ", "
+      << "stride: "  << stride
+      << ")"; 
+
+  return ret;
+}
+
+
+VPMStoreReq::VPMStoreReq(int setup) {
+  assert((setup & 0xc0000000) == 0);
+
+  hor    = (setup >> 11) & 1;
+  addr   = setup & 0xff;
+  stride = (setup >> 12) & 0x3f;
+  if (stride == 0) stride = 64;
+}
+
+
+void VPMStoreReq::write(Word *vpm, Vec const &v) {
+  assert(vpm != nullptr);
+
+  if (hor) {
+    // Horizontal store
+    for (int i = 0; i < NUM_LANES; i++) {
+      int index = (16*addr+i);
+      assert(index < VPM_SIZE);
+      vpm[index] = v[i];
+    }
+  } else {
+    // Vertical store
+    uint32_t x = addr & 0xf;
+    uint32_t y = addr >> 4;
+    for (int i = 0; i < NUM_LANES; i++) {
+      int index = (y*16*16 + x + i*16);
+      assert(index < VPM_SIZE);
+      vpm[index] = v[i];
+    }
+  }
+
+  addr += stride;
+}
+
+
+std::string VPMStoreReq::dump() const {
+  std::string ret;
+
+  ret << "VPMStoreReq: (" 
+      << (hor?"hor":"vert")    << ", "
+      << "addr: "    << addr   << ", "
+      << "stride: "  << stride
+      << ")"; 
+
+  return ret;
+}
+
 }  // namespace V3DLib

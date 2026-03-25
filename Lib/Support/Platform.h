@@ -21,6 +21,16 @@ int  gather_limit();
 void running_emulator(bool val);
 bool running_emulator();
 
+
+class main_mem {
+public:
+  main_mem(bool val);
+  ~main_mem();
+
+private:
+  bool m_prev;
+};
+
 }  // namespace Platform
 }  // namespace V3DLib
 

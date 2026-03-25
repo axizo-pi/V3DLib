@@ -575,6 +575,12 @@ namespace {
  */
 void vc4_barrier(Int::Ptr signal) {
   assert(Platform::compiling_for_vc4());
+/*
+  Log::warn << "vc4 assertq tmu_load: " << LibSettings::use_tmu_for_load();
+  Log::warn << "vc4 assertq L2 cache: " << RegisterMap::L2CacheEnabled();
+  Log::warn << "vc4 assertq main mem: " << Platform::use_main_memory();
+*/
+
   Log::assertq(
     !LibSettings::use_tmu_for_load() || !RegisterMap::L2CacheEnabled() || Platform::use_main_memory(),
     "vc4_barrier(): For this call to work, do one of following:\n"

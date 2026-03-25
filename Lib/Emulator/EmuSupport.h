@@ -74,10 +74,16 @@ private:
  * @brief VPM load request
  */
 struct VPMLoadReq {
-  int numVecs;  // Number of vectors to load
-  bool hor;     // Horizintal or vertical access?
-  int addr;     // Address in VPM to load from
-  int stride;   // Added to address after every vector read
+  VPMLoadReq() = default;
+  VPMLoadReq(int setup);
+
+  void read(Word const *vpm, Vec &v);
+  std::string dump() const;
+
+  int  numVecs;  // Number of vectors to load
+  bool hor;      // Horizintal or vertical access?
+  int  addr;     // Address in VPM to load from
+  int  stride;   // Added to address after every vector read
 };
 
 
@@ -85,6 +91,12 @@ struct VPMLoadReq {
  * @brief VPM store request
  */
 struct VPMStoreReq {
+  VPMStoreReq() = default;
+  VPMStoreReq(int setup);
+
+  void write(Word *vpm, Vec const &v);
+  std::string dump() const;
+
   bool hor;     // Horizontal or vertical access?
   int addr;     // Address in VPM to load from
   int stride;   // Added to address after every vector written
@@ -95,7 +107,7 @@ struct VPMStoreReq {
  * @brief DMA load request
  */
 struct DMALoadReq {
-  bool hor;     // Horizintal or vertical access?
+  bool hor;     // Horizontal or vertical access?
   int numRows;  // Number of rows in memory
   int rowLen;   // Length of each row in memory
   int vpmAddr;  // VPM address to write to
@@ -107,7 +119,7 @@ struct DMALoadReq {
  * @brief DMA store request
  */
 struct DMAStoreReq {
-  bool hor;     // Horizintal or vertical access?
+  bool hor;     // Horizontal or vertical access?
   int numRows;  // Number of rows in memory
   int rowLen;   // Length of each row in memory
   int vpmAddr;  // VPM address to load from

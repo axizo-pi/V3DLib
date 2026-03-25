@@ -190,14 +190,12 @@ TEST_CASE("Test mutexes emulator[mutex]") {
  * but should work on `v3d` as well.
  */
 TEST_CASE("Test barrier[mutex][barrier]") {
-//  bool prev2 = LibSettings::use_tmu_for_load();
-//  LibSettings::use_tmu_for_load(false);
-  LibSettings::tmu_load(false);
+  LibSettings::tmu_load tmu(false);
 
   int numQPUs = 1;
 
   SUBCASE("Test barrier emulator") {
-    Platform::use_main_memory(true);
+    Platform::main_mem mem(true);
 
     Int::Array result(16);
     Int::Array expected(16);
@@ -232,7 +230,6 @@ TEST_CASE("Test barrier[mutex][barrier]") {
     Platform::use_main_memory(false);
   }
 
-/*
   SUBCASE("Test barrier QPU") {
     Int::Array result(16);
     Int::Array expected(16);
@@ -254,6 +251,7 @@ TEST_CASE("Test barrier[mutex][barrier]") {
     //warn << "result: " << result.dump();
     REQUIRE(result == expected);
 
+/*
     INFO("Multiple QPU's");
     numQPUs = 2;
     init_arrays(result, expected, signal, numQPUs);
@@ -264,10 +262,8 @@ TEST_CASE("Test barrier[mutex][barrier]") {
     warn << "result:\n" << result.dump();
     warn << "signal:\n" << signal.dump();
     REQUIRE(result == expected);
-  }
 */
-
-//  LibSettings::use_tmu_for_load(prev2);
+  }
 }
 
 
@@ -317,7 +313,6 @@ TEST_CASE("Test While-loop emulator[mutex][while]") {
     REQUIRE(result == expected);
   }
 
-
   LibSettings::use_tmu_for_load(prev2);
 }
 
@@ -335,11 +330,10 @@ TEST_CASE("Test While-loop emulator[mutex][while]") {
 TEST_CASE("Test For-loop[mutex][for]") {
   //bool prev = LibSettings::dump_line_numbers();
   //LibSettings::dump_line_numbers(false);
-  bool prev2 = LibSettings::use_tmu_for_load();
-  LibSettings::use_tmu_for_load(false);
+  LibSettings::tmu_load tmu(false);
 
   SUBCASE("Emulator with DMA load") {
-    Platform::use_main_memory(true);
+    Platform::main_mem mem(true);
 
     int numQPUs = 1;
     Int::Array result(16);
@@ -352,13 +346,11 @@ TEST_CASE("Test For-loop[mutex][for]") {
     //to_file("for_kernel.txt", k.dump());
     k.load(&result);
     k.setNumQPUs(numQPUs);
-    k.run();                                  // Emulator: stored count value 1 too high
-    //k.interpret();                          // Works as expected
+    k.emu(true);
+    //k.interpret();
 
     //warn << "result For: " << result.dump();
     REQUIRE(result == expected);
-
-    Platform::use_main_memory(false);
   }
 
   SUBCASE("QPU with DMA load") {
@@ -379,6 +371,5 @@ TEST_CASE("Test For-loop[mutex][for]") {
     REQUIRE(result == expected);
   }
 
-  LibSettings::use_tmu_for_load(prev2);
   //LibSettings::dump_line_numbers(prev);
 }

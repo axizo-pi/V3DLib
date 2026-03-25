@@ -89,7 +89,12 @@ std::string EmuState::dump_vpm() const {
       str_count << "," << last_count << "x";
     }
 
-    ret << last_index << ":" << last_val << str_count << ", ";
+    if (last_val == 0) {
+      ret << "(" << last_val << str_count << ") ";
+    } else {
+      ret << last_index << ":" << last_val << str_count << ", ";
+    }
+
     return ret;
   };
 
