@@ -20,7 +20,7 @@ int find_in_vector(std::vector<int> const &vec, int element) {
   auto it = std::find(vec.begin(), vec.end(), element);
 
   if (it != vec.end()) {
-    int index = std::distance(vec.begin(), it);
+    int index = (int) std::distance(vec.begin(), it);
     //warn << "Element " << element << " found at index: " << index;
     return index;
   } else {
