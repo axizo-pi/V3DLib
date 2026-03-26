@@ -1,7 +1,7 @@
 #
 # This file is generated!  Editing it directly is a bad idea.
 #
-# Generated on: Tue 24 Mar 2026 10:27:04 AM CET
+# Generated on: Thu 26 Mar 2026 04:42:34 AM CET
 #
 ###############################################################################
 
@@ -110,6 +110,7 @@ OBJ := \
   vc4/RegisterMap.o  \
   vc4/Encode.o  \
   vc4/Instr.o  \
+  vc4/DMA/VPMRequest.o  \
   vc4/DMA/Helpers.o  \
   vc4/DMA/DMA.o  \
   vc4/DMA/LoadStore.o  \

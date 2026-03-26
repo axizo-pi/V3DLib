@@ -5,6 +5,7 @@
 #include "Common/Seq.h"
 #include "Target/instr/Imm.h"
 #include "Target/SmallLiteral.h"  // Word
+#include "vc4/DMA/VPMRequest.h"
 
 
 /**
@@ -71,39 +72,6 @@ private:
 
 
 /**
- * @brief VPM load request
- */
-struct VPMLoadReq {
-  VPMLoadReq() = default;
-  VPMLoadReq(int setup);
-
-  void read(Word const *vpm, Vec &v);
-  std::string dump() const;
-
-  int  numVecs;  // Number of vectors to load
-  bool hor;      // Horizintal or vertical access?
-  int  addr;     // Address in VPM to load from
-  int  stride;   // Added to address after every vector read
-};
-
-
-/**
- * @brief VPM store request
- */
-struct VPMStoreReq {
-  VPMStoreReq() = default;
-  VPMStoreReq(int setup);
-
-  void write(Word *vpm, Vec const &v);
-  std::string dump() const;
-
-  bool hor;     // Horizontal or vertical access?
-  int addr;     // Address in VPM to load from
-  int stride;   // Added to address after every vector written
-};
-
-
-/**
  * @brief DMA load request
  */
 struct DMALoadReq {
@@ -124,6 +92,9 @@ struct DMAStoreReq {
   int rowLen;   // Length of each row in memory
   int vpmAddr;  // VPM address to load from
 };
+
+void vpm_read(VPMLoadReq &req, Word const *vpm, Vec &v);
+void vpm_write(VPMStoreReq &req, Word *vpm, Vec const &v);
 
 }  // namespace V3DLib
 

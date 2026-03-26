@@ -42,7 +42,7 @@ Vec DMA_readReg(QPUState* s, State* g, Reg reg, bool &handled) {
       // Make sure there's a VPM load request waiting
       assert(!s->vpmLoadQueue.isEmpty());
       VPMLoadReq* req = s->vpmLoadQueue.first();
-      req->read(g->vpm, v);
+      vpm_read(*req, g->vpm, v);
       if (req->numVecs == 0) s->vpmLoadQueue.deq(); 
     }
     return v;
@@ -287,7 +287,7 @@ void write_special_register(QPUState* s, State* g, bool setFlags, AssignCond con
     }
 
     case SPECIAL_VPM_WRITE: {
-      s->vpmStoreSetup.write(g->vpm, v);
+      vpm_write(s->vpmStoreSetup, g->vpm, v);
       return;
     }
 
