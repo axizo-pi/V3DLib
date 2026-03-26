@@ -48,6 +48,9 @@ void InstructionComment::header(std::string const &msg) {
   if (msg.empty()) return;
 
   if (!m_header.empty()) {
+		// If input is same as current, ignore
+  	if (msg == m_header) return;
+
     warn << "header() Header comment already has a value when setting it\n"
          << "current: " << m_header << "\n"
          << "new: "     << msg      << "\n"
