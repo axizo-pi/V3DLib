@@ -8,13 +8,6 @@ namespace  {
 // VPM Setup
 //=============================================================================
 
-Stmt::Ptr vpmSetupReadCore(int n, IntExpr addr, bool hor, int stride) {
-  Stmt::Ptr s = Stmt::create(Stmt::SETUP_VPM_READ);
-  s->dma.setupVPMRead(n, addr.expr(), hor, stride);
-  return s;
-}
-
-
 Stmt::Ptr vpmSetupWriteCore(IntExpr addr, bool hor, int stride) {
   Stmt::Ptr s = Stmt::create(Stmt::SETUP_VPM_WRITE);
   s->dma.setupVPMWrite(addr.expr(), hor, stride);
@@ -42,7 +35,10 @@ void dmaStartWriteExpr(Expr::Ptr e) {
 
 
 void vpmSetupRead(Dir d, int n, IntExpr addr, int stride) {
-  stmtStack() << vpmSetupReadCore(n, addr, d == HORIZ ? 1 : 0, stride);
+  Stmt::Ptr s = Stmt::create(Stmt::SETUP_VPM_READ);
+  s->dma.setupVPMRead(n, addr.expr(), ((d == HORIZ)?1:0), stride);
+  stmtStack() << s;
+  //stmtStack() << vpmSetupReadCore(n, addr, d == HORIZ ? 1 : 0, stride);
 }
 
 

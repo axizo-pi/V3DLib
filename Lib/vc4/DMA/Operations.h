@@ -38,7 +38,9 @@ inline void dmaStartWrite(PtrExpr<T> memAddr) { dmaStartWriteExpr(memAddr.expr()
 template <typename Ptr>
 inline void dmaStartWrite(Ptr &memAddr)    { dmaStartWriteExpr(memAddr.expr()); }
 
+// Unused?
 void vpmSetupRead(Dir dir, int n, IntExpr addr, int stride = 1);
+
 void vpmSetupWrite(Dir dir, IntExpr addr, int stride = 1);
 void dmaSetReadPitch(IntExpr n);
 void dmaSetWriteStride(IntExpr n);
