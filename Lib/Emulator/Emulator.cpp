@@ -239,7 +239,7 @@ void write_special_register(QPUState* s, State* g, bool setFlags, AssignCond con
 
         // Create VPM load request
         VPMLoadReq req(setup);
-        warn << req.dump();
+        //warn << req.dump();
 
         // Add VPM load request to queue
         s->vpmLoadQueue.enq(req);
@@ -279,7 +279,7 @@ void write_special_register(QPUState* s, State* g, bool setFlags, AssignCond con
         return;
       } else if ((setup & 0xc0000000) == 0) {
         VPMStoreReq req(setup);
-        warn << req.dump();
+        //warn << req.dump();
         s->vpmStoreSetup = req;
         return;
       }

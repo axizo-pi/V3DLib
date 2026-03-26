@@ -410,14 +410,14 @@ bool running_emulator() { return instance().m_running_emulator; }
 
 
 main_mem::main_mem(bool val) {
-  warn << "main_mem setting to value " << val;
+  //warn << "main_mem setting to value " << val;
   m_prev = use_main_memory();
   use_main_memory(val);
 }
 
 
 main_mem::~main_mem() {
-  warn << "main_mem restoring to previous value " << m_prev;
+  //warn << "main_mem restoring to previous value " << m_prev;
   use_main_memory(m_prev);
 }
 

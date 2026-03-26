@@ -24,46 +24,25 @@ Reg freshReg() {
 // VPM setup
 // =============================================================================
 
-static int vpmSetupReadCode(int n, int hor, int stride) {
-  assert(n >= 1 && n <= 16); // A max of 16 vectors can be read
-  assert(stride >= 1 && stride <= 64); // Valid stride
-  assert(hor == 0 || hor == 1); // Horizontal or vertical
-
-  // Max values encoded as 0
-  if (n == 16) n = 0;
-  if (stride == 64) stride = 0;
-
-  // Setup code
-  int code = n << 20;
-  code |= stride << 12;
-  code |= hor << 11;
-  code |= 2 << 8;
-
-  return code;
-}
-
-
-Instr::List genSetupVPMLoad(int addr, int setup) {
-  warn << "Called genSetupVPMLoad()";
-
+Instr::List genSetupVPMLoad(int addr, VPMLoadReq const &req) {
+  warn << "Called addr genSetupVPMLoad()";
   assert(addr < 256);
-  setup |= (addr & 0xff);
 
   Instr::List ret;
-  ret << li(RD_SETUP, setup)
+  ret << li(RD_SETUP, req.code() | (addr & 0xff)).comment(req.dump())
       << Instr(VPM_STALL);
 
   return ret;
 }
 
 
-Instr::List genSetupVPMLoad(Reg addr, int setup) {
-  warn << "Called List genSetupVPMLoad()";
+Instr::List genSetupVPMLoad(Reg addr, VPMLoadReq const &req) {
+  warn << "Called Reg genSetupVPMLoad()";
 
   Reg tmp = freshReg();
 
   Instr::List ret;
-  ret << li(tmp, setup)
+  ret << li(tmp, req.code()).comment(req.dump())
       << bor(RD_SETUP, addr, tmp)
       << Instr(VPM_STALL);
 
@@ -76,7 +55,7 @@ Instr genSetupVPMStore(int addr, VPMStoreReq const &req) {
   //warn << "Called genSetupVPMStore()";
   assert(addr < 256);
 
-  return li(WR_SETUP, req.code() | (addr & 0xff));
+  return li(WR_SETUP, req.code() | (addr & 0xff)).comment(req.dump());
 }
 
 
@@ -85,7 +64,7 @@ Instr::List genSetupVPMStore(Reg addr, VPMStoreReq const &req) {
   Reg tmp = freshReg();
 
   Instr::List ret;
-  ret << li(tmp, req.code())
+  ret << li(tmp, req.code()).comment(req.dump())
       << bor(WR_SETUP, addr, tmp);
 
   return ret;
@@ -469,20 +448,16 @@ Instr sendIRQToHost() {
 Instr::List Stmt::setupVPMRead() {
   Instr::List ret;
 
-  int n       = m_setupVPMRead.numVecs;
   Expr::Ptr e = address_internal();
-  int hor     = m_setupVPMRead.hor;
-  int stride  = m_setupVPMRead.stride;
-  int setup   = vpmSetupReadCode(n, hor, stride);
 
   if (e->tag() == Expr::INT_LIT)
-    ret << genSetupVPMLoad(e->intLit, setup);
+    ret << genSetupVPMLoad(e->intLit, m_setupVPMRead);
   else if (e->tag() == Expr::VAR)
-    ret << genSetupVPMLoad(e->var(), setup);
+    ret << genSetupVPMLoad(e->var(), m_setupVPMRead);
   else {
     Var v = VarGen::fresh();
     ret << varAssign(v, e)
-        << genSetupVPMLoad(v, setup);
+        << genSetupVPMLoad(v, m_setupVPMRead);
   }
 
   return ret;
@@ -553,7 +528,6 @@ Instr::List loadRequest(Var &dst, Expr &e) {
   using namespace V3DLib::Target::instr;
 
   Reg reg(e.deref_ptr()->var());
-  int setup = vpmSetupReadCode(1, 0, 1);
 
   Instr::List ret;
   ret << genSetReadPitch(4).comment("Start DMA load var")                   // Setup DMA
@@ -565,7 +539,7 @@ Instr::List loadRequest(Var &dst, Expr &e) {
       << genStartDMALoad(reg)                                               // Start DMA load
       << genWaitDMALoad(false)                                              // Wait for DMA
 
-      << genSetupVPMLoad(QPU_ID, setup)                                     // Setup VPM
+      << genSetupVPMLoad(QPU_ID, VPMLoadReq(1, 0, 1))                       // Setup VPM
       << shl(dst, Target::instr::VPM_READ, 0).comment("End DMA load var");  // Get from VPM
 
   return ret;

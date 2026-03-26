@@ -9,16 +9,13 @@ namespace DMA {
 using ::operator<<;  // C++ weirdness
 
 void Stmt::setupVPMRead(int n, Expr::Ptr addr, bool hor, int stride) {
-  m_setupVPMRead.numVecs = n;
-  m_setupVPMRead.stride = stride;
-  m_setupVPMRead.hor = hor;
+  m_setupVPMRead.set(n, hor, stride); 
   address_internal(addr);
 }
 
 
 void Stmt::setupVPMWrite(Expr::Ptr addr, bool hor, int stride) {
-  m_setupVPMWrite.stride = stride;
-  m_setupVPMWrite.hor = hor;
+  m_setupVPMWrite.set(hor, stride); 
   address_internal(addr);
 }
 
@@ -100,21 +97,16 @@ std::string Stmt::dump(int indent, int in_tag) {
 
     case V3DLib::Stmt::SETUP_VPM_READ:
       ret << indentBy(indent)
-          << "vpmSetupRead("
-          << "numVecs=" << m_setupVPMRead.numVecs               << ","
-          << "dir="     << (m_setupVPMRead.hor ? "HOR" : "VIR") << ","
-          << "stride="  << m_setupVPMRead.stride                << ","
-          << address_internal()->dump()
-          << ");";
+          << m_setupVPMRead.dump() << ", "
+          << "address=" << address_internal()->dump()
+          << ";";
       break;
 
     case V3DLib::Stmt::SETUP_VPM_WRITE:
       ret << indentBy(indent)
-          << "vpmSetupWrite("
-          << "dir="    << (m_setupVPMWrite.hor ? "HOR" : "VIR") << ","
-          << "stride=" << m_setupVPMWrite.stride                << ","
-          << address_internal()->dump()
-          << ");";
+          << m_setupVPMWrite.dump() << ", "
+          << "address=" << address_internal()->dump()
+          << ";";
       break;
 
     case V3DLib::Stmt::DMA_READ_WAIT:

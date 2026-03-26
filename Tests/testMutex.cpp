@@ -343,7 +343,7 @@ TEST_CASE("Test For-loop[mutex][for]") {
     expected.fill(4);
 
     auto k = compile(for_kernel);
-    //to_file("for_kernel.txt", k.dump());
+    to_file("for_kernel.txt", k.dump());
     k.load(&result);
     k.setNumQPUs(numQPUs);
     k.emu();

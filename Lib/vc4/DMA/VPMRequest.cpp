@@ -14,6 +14,19 @@ VPMLoadReq::VPMLoadReq(int setup) {
   if (stride == 0) stride = 64;
 }
 
+
+VPMLoadReq::VPMLoadReq(int in_numVecs, int in_hor, int in_stride) :
+  numVecs(in_numVecs), hor(in_hor), stride(in_stride)
+{}
+
+
+void VPMLoadReq::set(int in_numVecs, int in_hor, int in_stride) { 
+  numVecs = in_numVecs;
+  hor     = in_hor;
+  stride  = in_stride;
+}
+
+
 int VPMLoadReq::code() const {
   assert(numVecs >= 1 && numVecs <= 16); // A max of 16 vectors can be read
   assert(stride >= 1 && stride <= 64); // Valid stride
@@ -42,10 +55,14 @@ std::string VPMLoadReq::dump() const {
   std::string ret;
 
   ret << "VPMLoadReq: (" 
-      << "numVecs: " << numVecs << ", "
       << (hor?"hor":"vert")     << ", "
-      << "addr: "    << addr    << ", "
-      << "stride: "  << stride
+      << "numVecs: " << numVecs << ", ";
+
+  if (addr != -1 ) {
+    ret << "addr: "    << addr    << ", ";
+  }
+
+  ret << "stride: "  << stride
       << ")"; 
 
   return ret;
@@ -64,6 +81,12 @@ VPMStoreReq::VPMStoreReq(int setup) {
   addr   = setup & 0xff;
   stride = (setup >> 12) & 0x3f;
   if (stride == 0) stride = 64;
+}
+
+
+void VPMStoreReq::set(int in_hor, int in_stride) { 
+  hor     = in_hor;
+  stride  = in_stride;
 }
 
 
@@ -93,9 +116,13 @@ std::string VPMStoreReq::dump() const {
   std::string ret;
 
   ret << "VPMStoreReq: (" 
-      << (hor?"hor":"vert")    << ", "
-      << "addr: "    << addr   << ", "
-      << "stride: "  << stride
+      << (hor?"hor":"vert")    << ", ";
+
+  if (addr != -1 ) {
+    ret << "addr: "    << addr    << ", ";
+  }
+
+  ret << "stride: "  << stride
       << ")"; 
 
   return ret;

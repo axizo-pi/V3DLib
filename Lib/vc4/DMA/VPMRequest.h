@@ -11,7 +11,9 @@ namespace V3DLib {
 struct VPMLoadReq {
   VPMLoadReq() = default;
   VPMLoadReq(int setup);
+  VPMLoadReq(int in_numVecs, int in_hor, int in_stride);
 
+  void set(int in_numVecs, int in_hor, int in_stride);
   int code() const;
   std::string dump() const;
 
@@ -30,6 +32,7 @@ struct VPMStoreReq {
   VPMStoreReq(int setup);
   VPMStoreReq(int in_addr, bool in_hor, int in_stride);
 
+  void set(int in_hor, int in_stride);
   int code() const;
   std::string dump() const;
 
