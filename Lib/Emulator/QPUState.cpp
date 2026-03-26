@@ -124,6 +124,15 @@ MAYBE_UNUSED std::string QPUState::dump(int index) const {
   if (dmaLoad.active())  ret << "dmaLoad: " << dmaLoad.dump() << "\n";
   if (dmaStore.active()) ret << "dmaStore: " << dmaStore.dump() << "\n";
 
+	auto const &v = vpmLoadQueue;
+	if (!v.isEmpty()) {
+		ret << "vpmLoadQueue: ";
+		for (int cur = v.front; cur != v.back; cur = (cur + 1)% v.size) {
+	 		ret<< v.elems[cur].dump() << ", ";
+		}
+		ret << "\n";
+	}
+
   ret << "negFlags : " << disp_bool_array(negFlags)  << "\n"
       << "zeroFlags: " << disp_bool_array(zeroFlags) << "\n";
 

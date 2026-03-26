@@ -14,6 +14,7 @@ enum Dir { HORIZ, VERT };
 //=============================================================================
 
 void vpmPutExpr(Expr::Ptr e);
+//void vpmGetInt(IntExpr lhs);
 void dmaStartReadExpr(Expr::Ptr e);
 void dmaStartWriteExpr(Expr::Ptr e);
 

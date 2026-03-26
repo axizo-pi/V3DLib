@@ -12,15 +12,17 @@ class State;
  * @brief Very simple queue containing N elements of type T
  */
 template <int N, typename T> struct Queue {
+	const int size = N;
+
   T elems[N+1];
   int front;
   int back;
   Queue() { front = back = 0; }
-  bool isEmpty() { return front == back; }
-  bool isFull() { return ((back+1)%(N+1)) == front; }
-  void enq(T elem) { elems[back] = elem; back = (back+1)%(N+1); }
+  bool isEmpty() const { return front == back; }
+  bool isFull() const { return ((back+1) % size) == front; }
+  void enq(T elem) { elems[back] = elem; back = (back+1) % size; }
   T* first() { return &elems[front]; }
-  void deq() { front = (front+1)%(N+1); }
+  void deq() { front = (front+1) % size; }
 };
 
 

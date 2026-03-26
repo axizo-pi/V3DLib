@@ -218,12 +218,16 @@ Reg rf(uint8_t index) {
 
 Instr::List mov(Reg dst, RegOrImm const &src) {
   dst.can_write(true);
-  //Log::warn << "dst: " << dst.dump() << "; " << "tag: " << dst.tag;   
-  //Log::warn << "mov src: " << src.dump();   
 
   Instr::List ret;
 
-  if (src.is_reg() && src.reg().tag == SPECIAL) {
+	if (src == VPM_READ) {
+		warn << "mov: " << src.dump();
+		// Don't use bor() for reading this special register,
+		// it will be read twice and will error, at least in
+		// the emulator
+    ret <<  shl(dst, src.reg(), 0);
+	} else if (src.is_reg() && src.reg().tag == SPECIAL) {
     // The logic for special reg's is under bor(), so we 
     // need to redirect there
     ret <<  bor(dst, src, src);

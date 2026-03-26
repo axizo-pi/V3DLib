@@ -21,6 +21,13 @@ void vpmPutExpr(Expr::Ptr e) {
   stmtStack() << Stmt::create_assign(mkVar(Var(VPM_WRITE)), e);
 }
 
+/*
+void vpmGetInt(IntExpr lhs) {
+  //auto var = mkVar(Var(VPM_WRITE));
+  stmtStack() << Stmt::create(Stmt::LOAD_RECEIVE, lhs.expr(), nullptr); //var);
+}
+*/
+
 
 void dmaStartReadExpr(Expr::Ptr e) {
   Stmt::Ptr s = Stmt::create(Stmt::DMA_START_READ, e, nullptr);

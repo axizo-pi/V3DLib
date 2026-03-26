@@ -44,6 +44,7 @@ Vec DMA_readReg(QPUState* s, State* g, Reg reg, bool &handled) {
       VPMLoadReq* req = s->vpmLoadQueue.first();
       vpm_read(*req, g->vpm, v);
       if (req->numVecs == 0) s->vpmLoadQueue.deq(); 
+			//TODO check if needed: s->loadBuffer.push(v);
     }
     return v;
 
@@ -238,6 +239,7 @@ void write_special_register(QPUState* s, State* g, bool setFlags, AssignCond con
         assert(!s->vpmLoadQueue.isFull());
 
         // Create VPM load request
+        warn << "Create VPM load request";
         VPMLoadReq req(setup);
         //warn << req.dump();
 

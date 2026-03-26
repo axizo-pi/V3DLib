@@ -1,8 +1,8 @@
 #include "doctest.h"
 #include <V3DLib.h>
-#include "../Lib/vc4/RegisterMap.h"
-#include "LibSettings.h"       // use_tmu_for_load();
-#include "../Lib/global/log.h"
+#include "vc4/RegisterMap.h"
+#include "LibSettings.h"
+#include "global/log.h"
 #include "Support/Helpers.h"
 
 using namespace Log;

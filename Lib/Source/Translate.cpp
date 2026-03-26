@@ -665,6 +665,12 @@ Instr::List varAssign(AssignCond cond, Var v, Expr::Ptr expr) {
   Instr::List ret;
   Expr e = *expr;
 
+	if (e.tag() == Expr::VAR) {
+		auto var = e.var();
+		if (var.tag() == VarTag::VPM_READ) {
+			warn << "varAssign: " << var.dump();
+		}
+	}
 
   switch (e.tag()) {
     case Expr::VAR: {                                                // 'v := w', v and w variables
