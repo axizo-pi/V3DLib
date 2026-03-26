@@ -129,7 +129,7 @@ std::vector<std::string> split(std::string s, std::string const &delimiter) {
 
 int num_newlines(std::string const &s) {
   auto ret = split(s, "\n");
-  return (ret.size() - 1);
+  return (int) (ret.size() - 1);
 }
 
 
