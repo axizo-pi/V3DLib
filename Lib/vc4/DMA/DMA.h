@@ -4,6 +4,7 @@
 #include "Source/Expr.h"
 #include "Source/Int.h"
 #include "Target/instr/Instr.h"
+#include "VPMRequest.h"
 
 namespace V3DLib {
 
@@ -43,11 +44,8 @@ private:
   // Semaphore id for increment / decrement
   int m_semaId;
 
-  // VPM read setup
-  struct { int numVecs; int hor; int stride; } m_setupVPMRead;
-
-  // VPM write setup
-  struct { int hor; int stride; } m_setupVPMWrite;
+  VPMLoadReq  m_setupVPMRead;   // VPM read setup
+  VPMStoreReq m_setupVPMWrite;  // VPM write setup
 
   // DMA read setup
   struct {

@@ -6,7 +6,9 @@
 
 namespace V3DLib {
 namespace DMA {
+
 using namespace V3DLib::Target::instr;
+using namespace Log;
 
 namespace {
 
@@ -40,23 +42,10 @@ static int vpmSetupReadCode(int n, int hor, int stride) {
   return code;
 }
 
-static int vpmSetupWriteCode(int hor, int stride) {
-  assert(stride >= 1 && stride <= 64); // Valid stride
-  assert(hor == 0 || hor == 1); // Horizontal or vertical
-
-  // Max values encoded as 0
-  if (stride == 64) stride = 0;
-  
-  // Setup code
-  int code = stride << 12;
-  code |= hor << 11;
-  code |= 2 << 8;
-  
-  return code;
-}
-
 
 Instr::List genSetupVPMLoad(int addr, int setup) {
+  warn << "Called genSetupVPMLoad()";
+
   assert(addr < 256);
   setup |= (addr & 0xff);
 
@@ -69,6 +58,8 @@ Instr::List genSetupVPMLoad(int addr, int setup) {
 
 
 Instr::List genSetupVPMLoad(Reg addr, int setup) {
+  warn << "Called List genSetupVPMLoad()";
+
   Reg tmp = freshReg();
 
   Instr::List ret;
@@ -81,32 +72,34 @@ Instr::List genSetupVPMLoad(Reg addr, int setup) {
 
 // Generate instructions to setup VPM store.
 
-Instr genSetupVPMStore(int addr, int hor, int stride) {
+Instr genSetupVPMStore(int addr, VPMStoreReq const &req) {
+  //warn << "Called genSetupVPMStore()";
   assert(addr < 256);
-  int setup = vpmSetupWriteCode(hor, stride) | (addr & 0xff);
 
-  return li(WR_SETUP, setup);
+  return li(WR_SETUP, req.code() | (addr & 0xff));
 }
 
 
-Instr::List genSetupVPMStore(Reg addr, int hor, int stride) {
+Instr::List genSetupVPMStore(Reg addr, VPMStoreReq const &req) {
+  //warn << "Called List genSetupVPMStore()";
   Reg tmp = freshReg();
-  int setup = vpmSetupWriteCode(hor, stride);
 
   Instr::List ret;
-  ret << li(tmp, setup)
+  ret << li(tmp, req.code())
       << bor(WR_SETUP, addr, tmp);
 
   return ret;
 }
 
+
 // =============================================================================
 // DMA setup
 // =============================================================================
 
+namespace {
+
 // (rowLen in bytes)
-static int dmaSetupStoreCode(int numRows, int rowLen, int hor)
-{
+int dmaSetupStoreCode(int numRows, int rowLen, int hor) {
   assert(numRows > 0 && numRows <= 128);
   assert(rowLen > 0 && rowLen <= 128);
   if (numRows == 128) numRows = 0;
@@ -119,9 +112,9 @@ static int dmaSetupStoreCode(int numRows, int rowLen, int hor)
   return setup;
 }
 
+
 // (rowLen in 32-bit words)
-static int dmaSetupLoadCode(int numRows, int rowLen, int hor, int vpitch)
-{
+int dmaSetupLoadCode(int numRows, int rowLen, int hor, int vpitch) {
   assert(numRows > 0 && numRows <= 16);
   assert(rowLen > 0 && rowLen <= 16);
   assert(vpitch > 0 && vpitch <= 16);
@@ -136,6 +129,9 @@ static int dmaSetupLoadCode(int numRows, int rowLen, int hor, int vpitch)
   setup |= (hor == 0 ? 1 : 0) << 11;
   return setup;
 }
+
+} // anon namespace
+
 
 // Generate instructions to setup DMA load.
 
@@ -535,17 +531,15 @@ Instr::List Stmt::setupVPMWrite() {
   Instr::List ret;
 
   Expr::Ptr e = address_internal();
-  int hor     = m_setupVPMWrite.hor;
-  int stride  = m_setupVPMWrite.stride;
 
   if (e->tag() == Expr::INT_LIT)
-    ret << genSetupVPMStore(e->intLit, hor, stride);
+    ret << genSetupVPMStore(e->intLit, m_setupVPMWrite);
   else if (e->tag() == Expr::VAR)
-    ret << genSetupVPMStore(e->var(), hor, stride);
+    ret << genSetupVPMStore(e->var(), m_setupVPMWrite);
   else {
     Var v = VarGen::fresh();
     ret << varAssign(v, e)
-        << genSetupVPMStore(v, hor, stride);
+        << genSetupVPMStore(v, m_setupVPMWrite);
   }
 
   return ret;
@@ -591,7 +585,7 @@ Instr::List storeRequest(Var dst_addr, Var src) {
 
   ret << li(addr, 16).comment("Start DMA store request")               // Setup VPM
       << add(addr, addr, QPU_ID)
-      << genSetupVPMStore(addr, 0, 1)
+      << genSetupVPMStore(addr, VPMStoreReq(-1, 0, 1))
       << li(storeAddr, 256)                                            // Store address
       << add(storeAddr, storeAddr, QPU_ID)
 

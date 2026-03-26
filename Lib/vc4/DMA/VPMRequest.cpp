@@ -14,6 +14,29 @@ VPMLoadReq::VPMLoadReq(int setup) {
   if (stride == 0) stride = 64;
 }
 
+int VPMLoadReq::code() const {
+  assert(numVecs >= 1 && numVecs <= 16); // A max of 16 vectors can be read
+  assert(stride >= 1 && stride <= 64); // Valid stride
+  assert(hor == 0 || hor == 1); // Horizontal or vertical
+
+  // Max values encoded as 0
+  int tmp_numVecs = numVecs;
+  int tmp_stride  = stride;
+  if (tmp_numVecs == 16) tmp_numVecs = 0;
+  if (tmp_stride == 64)  tmp_stride = 0;
+
+  // Setup code
+  int ret = tmp_numVecs << 20;
+  ret |= tmp_stride << 12;
+  ret |= hor << 11;
+  ret |= 2 << 8;
+
+  if (addr != -1) {
+    ret |= (addr & 0xff);
+  }
+
+  return ret;
+}
 
 std::string VPMLoadReq::dump() const {
   std::string ret;

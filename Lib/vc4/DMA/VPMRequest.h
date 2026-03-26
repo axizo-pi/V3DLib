@@ -12,12 +12,13 @@ struct VPMLoadReq {
   VPMLoadReq() = default;
   VPMLoadReq(int setup);
 
+  int code() const;
   std::string dump() const;
 
-  int  numVecs;  // Number of vectors to load
-  bool hor;      // Horizintal or vertical access?
-  int  addr;     // Address in VPM to load from
-  int  stride;   // Added to address after every vector read
+  int  numVecs;   // Number of vectors to load
+  bool hor;       // Horizontal or vertical access?
+  int  addr = -1; // Address in VPM to load from
+  int  stride;    // Added to address after every vector read
 };
 
 
