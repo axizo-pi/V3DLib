@@ -37,8 +37,7 @@ Instr::List genSetupVPMLoad(int addr, VPMLoadReq const &req) {
 
 
 Instr::List genSetupVPMLoad(Reg addr, VPMLoadReq const &req) {
-  warn << "Called Reg genSetupVPMLoad()";
-
+ // warn << "Called Reg genSetupVPMLoad()";
   Reg tmp = freshReg();
 
   Instr::List ret;

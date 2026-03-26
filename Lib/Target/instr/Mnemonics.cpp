@@ -222,10 +222,10 @@ Instr::List mov(Reg dst, RegOrImm const &src) {
   Instr::List ret;
 
 	if (src == VPM_READ) {
-		warn << "mov: " << src.dump();
+		//warn << "mov: " << src.dump();
 		// Don't use bor() for reading this special register,
 		// it will be read twice and will error, at least in
-		// the emulator
+		// the emulator.
     ret <<  shl(dst, src.reg(), 0);
 	} else if (src.is_reg() && src.reg().tag == SPECIAL) {
     // The logic for special reg's is under bor(), so we 

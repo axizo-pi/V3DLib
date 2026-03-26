@@ -21,7 +21,11 @@ void vpm_kernel(Int::Ptr ret) {
   vpmPut(tmp);
 
 	// Read other value from VPM
-  Int tmp2 = (me() + 1) % numQPUs();  comment("Read value from other QPU");
+  Int tmp2 = (me() + 1);  comment("Read value from other QPU");
+	Where (tmp2 == numQPUs())
+		tmp2 = 0;
+	End
+
   vpmSetupRead(HORIZ, 1, tmp2);   
 	Int tmp3 = vpmGetInt();
 
@@ -40,12 +44,14 @@ TEST_CASE("Test VPM memory [vpm]") {
   LibSettings::tmu_load tmu(false);
   Platform::main_mem mem(true);
 
-  int numQPUs = 3;
+  int numQPUs = 4;
   Int::Array result(numQPUs*16);
 
   auto k = compile(vpm_kernel);
   k.setNumQPUs(numQPUs);
   to_file("vpm_kernel.txt", k.dump());
   k.load(&result);
-  k.emu(true);
+  k.emu();
+
+	std::cout << result.dump() << "\n";
 }

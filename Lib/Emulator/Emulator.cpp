@@ -239,9 +239,8 @@ void write_special_register(QPUState* s, State* g, bool setFlags, AssignCond con
         assert(!s->vpmLoadQueue.isFull());
 
         // Create VPM load request
-        warn << "Create VPM load request";
+        //warn << "Create VPM load request";
         VPMLoadReq req(setup);
-        //warn << req.dump();
 
         // Add VPM load request to queue
         s->vpmLoadQueue.enq(req);
