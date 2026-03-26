@@ -42,26 +42,50 @@ void vpm_kernel(Int::Ptr ret) {
  */
 TEST_CASE("Test VPM memory [vpm]") {
   LibSettings::tmu_load tmu(false);
+	int numQPUs = 12;
 
-  SUBCASE("In emulator") {
-		// This works on v3d
-	  Platform::main_mem mem(true);
-
-	  int numQPUs = 12;
-	  Int::Array result(numQPUs*16);
-
-    Int::Array expected(numQPUs*16);
+	auto init_expected = [] (Int::Array &expected, int numQPUs) {
 		for (int i = 0; i < numQPUs; ++i) {
 			for (int j = 0; j < 16; ++j) {
 				expected[16*((i + (numQPUs - 1)) % numQPUs) + j] = 10*(i + 1);
 			}
 		}
+	};
+
+  SUBCASE("In emulator") {
+		// This works on v3d
+	  Platform::main_mem mem(true);
+
+	  Int::Array result(numQPUs*16);
+
+    Int::Array expected(numQPUs*16);
+		init_expected(expected, numQPUs);
+
+	  auto k = compile(vpm_kernel);
+	  k.setNumQPUs(numQPUs);
+	  k.load(&result);
+	  k.emu();
+
+		REQUIRE(result == expected);
+	}
+
+
+  SUBCASE("on QPUs") {
+		if (!Platform::compiling_for_vc4()) {
+			warn << "Not running VPM mem on QPU's for v3d";
+			return;
+		}
+
+	  Int::Array result(numQPUs*16);
+
+    Int::Array expected(numQPUs*16);
+		init_expected(expected, numQPUs);
 
 	  auto k = compile(vpm_kernel);
 	  //to_file("vpm_kernel.txt", k.dump());
 	  k.setNumQPUs(numQPUs);
 	  k.load(&result);
-	  k.emu();
+	  k.run();
 
 		//std::cout << result.dump() << "\n";
 		//std::cout << expected.dump() << "\n";
