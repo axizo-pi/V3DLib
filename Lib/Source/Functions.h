@@ -46,7 +46,6 @@ void mutex_acquire();
 void mutex_release();
 void barrier(Int::Ptr &signal);
 void barrier();
-void sync_qpus(Int::Ptr signal);
 
 }  // namespace V3DLib
 
