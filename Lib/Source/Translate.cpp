@@ -592,12 +592,13 @@ Instr::List encode(Stmt::Ptr s) {
       break;
   }
 
-  assert(!ret.empty());
+  //assert(!ret.empty());
   if (!ret.empty()) {
     ret.back().transfer_comments(*s);
   } else {
+    warn << "Translate encode(), no output for stmt: " << s->dump();
     if (s->has_comments()) {
-      Log::warn << "stmt() comments not transferred, no sequence output";
+      warn << "Translate encode(): comments present not transferred, no sequence output";
     }
   }
 

@@ -7,9 +7,27 @@ using namespace V3DLib;
 
 V3DLib::Settings settings;
 
+/**
+ *
+ * ============================
+ *
+ * Note 1
+ * ------
+ *
+ * 20260326 x values 0 on vc4x values 0 on vc4 with TMU load.  
+ * DMA load works fine.
+ *
+ * 0 assignment required; setting `y = 0` works as well.  
+ * Used to work, unclear why not now.
+ *
+ * It makes no sense because the acc used gets reset quite quickly after the 0 assignment.  
+ * The only association I see is that this acc is present in a mul NOP, which is in between.
+ * But this should do nothing.
+ *
+ */
 void kernel(Int::Ptr p) {
-  Int x = 0, y; // 0 assignment required (20260326 used to work, unclear why not now)
-                // Setting y = 0 works as well
+  Int x = 0, y; // See Note 1
+
   gather(p);
   gather(p + 16);
   receive(x);
@@ -20,12 +38,11 @@ void kernel(Int::Ptr p) {
 
 
 int main(int argc, const char *argv[]) {
-  //LibSettings::dump_line_numbers(false);
+  //LibSettings::use_tmu_for_load(false);
 
   settings.init(argc, argv);
 
   auto k = compile(kernel, settings);             // Construct kernel
-  //to_file("reqrecv_2.txt", k.dump());
 
   Int::Array array(2*16);                         // Alloc and init array shared between ARM and GPU
   for (int i = 0; i < (int) array.size(); i++) {
