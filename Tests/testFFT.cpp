@@ -932,7 +932,7 @@ void tiny_fft(Complex::Ptr &b, Complex::Ptr &devnull) {
  *  Conclusion: don't be afraid of NOP-overhead of loops.
  *     
  */
-void fft_kernel(Complex::Ptr b, Complex::Ptr devnull, Int::Ptr signal) {
+void fft_kernel(Complex::Ptr b, Complex::Ptr devnull) {
   assertq(!Platform::compiling_for_vc4(), "FFT kernel runs only on v3d");
 
   b -= index();
@@ -1025,7 +1025,8 @@ void fft_kernel(Complex::Ptr b, Complex::Ptr devnull, Int::Ptr signal) {
       w_phase += wm_phase*toFloat(j_offset);
     });
 
-    sync_qpus(signal);  // Interesting: kernel runs fine without this
+		// TODO: Is barrier needed here? Appears to work fine without it
+
     i += same_count_skipjs - 1;
   }
 }
@@ -1034,7 +1035,7 @@ void fft_kernel(Complex::Ptr b, Complex::Ptr devnull, Int::Ptr signal) {
 }  // anon namespace
 
 
-TEST_CASE("FFT test with scalar [fft]") {
+TEST_CASE("FFT test with scalar [fft][scalar]") {
   cx a[] = { cx(0,0), cx(1,1), cx(3,3), cx(4,4), cx(4, 4), cx(3, 3), cx(1,1), cx(0,0) };
 
   //
@@ -1076,14 +1077,11 @@ TEST_CASE("FFT test with scalar [fft]") {
 
     cx scalar_result[Dim];
     fft(a, scalar_result, log2n);
-    //scalar_dump(scalar_result, Dim);
 
     Complex::Array aa(16);
     aa.fill(V3DLib::complex(0.0f, 0.0f));
     Complex::Array result(16);
     Complex::Array devnull(16);
-    Int::Array signal(16);
-    signal.fill(0);
 
     for (int i=0; i < Dim; ++i) {
       aa.re()[i] = (float) a[i].real();
@@ -1097,7 +1095,7 @@ TEST_CASE("FFT test with scalar [fft]") {
 
     fft_context.init(log2n);
     auto k = compile(fft_kernel);
-    k.load(&result, &devnull, &signal);
+    k.load(&result, &devnull);
     k.run();
 
     float precision = 5.0e-5f;
@@ -1209,7 +1207,6 @@ TEST_CASE("FFT test with DFT [fft][test2][pass2]") {
     }
 
     Complex::Array devnull(16);
-    Int::Array signal(16);
     Complex::Array result_fft(size);
 
     {
@@ -1223,7 +1220,7 @@ TEST_CASE("FFT test with DFT [fft][test2][pass2]") {
       //k.dump_compile_data("./obj/test/fft_dump_v3d.txt");
 
       k.setNumQPUs(fft_context.num_qpus);
-      k.load(&result_fft, &devnull, &signal);
+      k.load(&result_fft, &devnull);
       k.run();
 
       INFO("comparing FFT with scalar");
@@ -1415,7 +1412,7 @@ void vecoffset_kernel(Int::Ptr dst, Int::Ptr src, Int::Ptr devnull) {
 }  // anon namespace
 
 
-TEST_CASE("FFT Support [fft]") {
+TEST_CASE("FFT Support [fft][support]") {
   SUBCASE("Test 16vec function") {
     std::vector<int> k_index = {0, 2, 4, 6};
     std::vector<int> k_m2_index = {1, 3, 5, 7};
