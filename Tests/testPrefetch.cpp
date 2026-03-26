@@ -1,6 +1,7 @@
 #include <V3DLib.h>
 #include "support/support.h"
 #include "Support/Helpers.h"
+#include "LibSettings.h"
 
 namespace {
 
@@ -79,6 +80,8 @@ void multi_prefetch_kernel(Int::Ptr result, Int::Ptr src) {
 
 
 TEST_CASE("Test prefetch on stmt stack [prefetch]") {
+  LibSettings::tmu_load tmu(false);  // TMU load fails, DMA load works fine
+
   int const N = 7;
 
   SUBCASE("Test prefetch with integers") {
