@@ -101,7 +101,7 @@ struct Instr : public InstructionComment {
     List() = default;
     List(int size) : Parent(size) {}
 
-    std::string dump(bool with_line_numbers = false) const;
+    std::string dump() const;
     std::string mnemonics(bool with_comments = false) const;
     int lastUniformOffset();
     int tag_index(InstrTag tag, bool ensure_one = true);
@@ -121,10 +121,18 @@ struct Instr : public InstructionComment {
 
   Instr clone() const { return Instr(*this); }
 
-  std::string header()  const  { return InstructionComment::header();  }  // grumbl hating that this is needed
-  std::string comment() const  { return InstructionComment::comment(); }  // idem
+  // grumbl hating that following is needed
+  std::string header()  const  { return InstructionComment::header();  }
+  std::string comment() const  { return InstructionComment::comment(); }
+  std::string emit_comment(int instr_size, int max_size = -1) const {
+    return InstructionComment::emit_comment(instr_size, max_size);
+  }
+
   Instr &header(std::string const &msg) { InstructionComment::header(msg);  return *this; }
   Instr &comment(std::string msg)       { InstructionComment::comment(msg); return *this; }
+  std::string emit_comment() const {
+    return InstructionComment::emit_comment(mnemonic(false).size());
+  }
 
   bool skip() const;
   void set_skip();

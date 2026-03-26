@@ -645,16 +645,20 @@ uint32_t Instr::get_acc_usage() const {
 // Class Instr::List
 ///////////////////////////////////////////////////////////////////////////////
 
-std::string Instr::List::dump(bool with_line_numbers) const {
-  //warn << "Called Instr::List::dump() with_line_numbers: " << with_line_numbers;
+std::string Instr::List::dump() const {
+  bool with_line_numbers = LibSettings::dump_line_numbers();
   std::string ret;
 
   for (int i = 0; i < size(); ++i ) {
+    auto const &instr = (*this)[i];
+
+    ret << instr.emit_header();
+
     if (with_line_numbers) {
       ret << i << ": ";
     }
 
-    ret << (*this)[i].dump() << "\n";
+    ret << instr.mnemonic(false) << instr.emit_comment() << "\n";
   }
 
   return ret;
@@ -844,7 +848,7 @@ std::string Instr::mnemonic(bool with_comments, std::string const &prefix) const
   ret << prefix << out;
 
   if (with_comments) {
-    ret << emit_comment((int) (out.size() + prefix.size()));
+    ret << InstructionComment::emit_comment((int) (out.size() + prefix.size()));
   }
 
   return ret;

@@ -154,7 +154,7 @@ std::string KernelDriver::dump() {
 
       << "Target for " << kernel_type_str() << "\n"
       << "===============\n"
-      << m_targetCode.mnemonics(true);
+      << m_targetCode.dump();
 
   return ret;
 }

@@ -1361,8 +1361,7 @@ if (false) {
 
 
 
-void combine(Instructions &instr) {
-
+MAYBE_UNUSED void combine(Instructions &instr) {
 	warn << "\n----------------------------\n"
 		   <<   "Entered combine()\n"
 			 <<   "----------------------------";

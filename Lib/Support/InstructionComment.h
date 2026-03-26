@@ -9,17 +9,17 @@ namespace V3DLib {
  */
 class InstructionComment {
 public:
-	InstructionComment() : m_header(""), m_comment("") {}
+  InstructionComment() : m_header(""), m_comment("") {}
 
   void transfer_comments(InstructionComment &rhs);
   void clear_comments();
-	bool has_comments() const;
+  bool has_comments() const;
   std::string const &header() const { return m_header; }
   std::string const &comment() const { return m_comment; }
 
   std::string emit_header() const;
   std::string emit_comment(int instr_size, int max_size = -1) const;
-	bool transferred() const;
+  bool transferred() const;
 
 protected:
   void header(std::string const &msg);
@@ -28,7 +28,7 @@ protected:
 private:
   std::string m_header;
   std::string m_comment;
-	bool m_transferred = false;
+  bool m_transferred = false;
 };
 
 }  // namespace V3DLib
