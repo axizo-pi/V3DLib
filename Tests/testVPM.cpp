@@ -42,16 +42,29 @@ void vpm_kernel(Int::Ptr ret) {
  */
 TEST_CASE("Test VPM memory [vpm]") {
   LibSettings::tmu_load tmu(false);
-  Platform::main_mem mem(true);
 
-  int numQPUs = 4;
-  Int::Array result(numQPUs*16);
+  SUBCASE("In emulator") {
+		// This works on v3d
+	  Platform::main_mem mem(true);
 
-  auto k = compile(vpm_kernel);
-  k.setNumQPUs(numQPUs);
-  to_file("vpm_kernel.txt", k.dump());
-  k.load(&result);
-  k.emu();
+	  int numQPUs = 12;
+	  Int::Array result(numQPUs*16);
 
-	std::cout << result.dump() << "\n";
+    Int::Array expected(numQPUs*16);
+		for (int i = 0; i < numQPUs; ++i) {
+			for (int j = 0; j < 16; ++j) {
+				expected[16*((i + (numQPUs - 1)) % numQPUs) + j] = 10*(i + 1);
+			}
+		}
+
+	  auto k = compile(vpm_kernel);
+	  //to_file("vpm_kernel.txt", k.dump());
+	  k.setNumQPUs(numQPUs);
+	  k.load(&result);
+	  k.emu();
+
+		//std::cout << result.dump() << "\n";
+		//std::cout << expected.dump() << "\n";
+		REQUIRE(result == expected);
+	}
 }
