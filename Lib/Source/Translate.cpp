@@ -554,7 +554,7 @@ Instr::List encode(Stmt::Ptr s) {
   switch (s->tag) {
     case Stmt::GATHER_PREFETCH:          // Remove if still present
     case Stmt::SKIP:
-      break;
+			return ret;
     case Stmt::ASSIGN:                   // 'lhs = rhs', where lhs and rhs are expressions
       assign(ret, s->assign_lhs(), s->assign_rhs());
       break;

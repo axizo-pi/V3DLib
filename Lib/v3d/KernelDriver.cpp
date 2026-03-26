@@ -656,7 +656,7 @@ bool checkUniformAtTop(V3DLib::Instr::List const &instrs) {
  * @param dst     output list of v3d instructions
  */
 void _encode(V3DLib::Instr::List const &instrs, Instructions &dst) {
-  warn << "Called _encode()";
+  //warn << "Called _encode()";
 #ifdef DEBUG  
   assertq(checkUniformAtTop(instrs), "_encode(): checkUniformAtTop() failed (v3d)", true);
 #endif
@@ -725,7 +725,7 @@ KernelDriver::KernelDriver() : V3DLib::KernelDriver(V3dBuffer) { //, m_code(code
 
 
 void KernelDriver::encode() {
-  warn << "Called KernelDriver::encode()";
+  //warn << "Called KernelDriver::encode()";
 
   if (instructions.size() > 0) return;  // Don't bother if already encoded
   if (has_errors()) return;              // Don't do this if compile errors occured

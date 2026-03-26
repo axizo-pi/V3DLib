@@ -415,7 +415,6 @@ Stmt::Ptr Stmt::create(Tag in_tag, Expr::Ptr e0, Expr::Ptr e1) {
       if (e1 == nullptr) {
         cerr << "Stmt::create(): e1 is null, variable might not be initialized" << thrw;
       }
-      //assertq(e0 != nullptr && e1 != nullptr, "create 1");
       ret->m_exp_a = e0;
       ret->m_exp_b = e1;
     break;
