@@ -131,7 +131,7 @@ struct Instr : public InstructionComment {
   Instr &header(std::string const &msg) { InstructionComment::header(msg);  return *this; }
   Instr &comment(std::string msg)       { InstructionComment::comment(msg); return *this; }
   std::string emit_comment() const {
-    return InstructionComment::emit_comment(mnemonic(false).size());
+    return InstructionComment::emit_comment((int) mnemonic(false).size());
   }
 
   bool skip() const;
