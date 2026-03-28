@@ -44,7 +44,7 @@ TEST_CASE("Test VPM memory [vpm]") {
   LibSettings::tmu_load tmu(false);
 	int numQPUs = 12;
 
-	auto init_expected = [] (Int::Array &expected, int numQPUs) {
+	auto init_expected = [numQPUs] (Int::Array &expected) {
 		for (int i = 0; i < numQPUs; ++i) {
 			for (int j = 0; j < 16; ++j) {
 				expected[16*((i + (numQPUs - 1)) % numQPUs) + j] = 10*(i + 1);
@@ -59,7 +59,7 @@ TEST_CASE("Test VPM memory [vpm]") {
 	  Int::Array result(numQPUs*16);
 
     Int::Array expected(numQPUs*16);
-		init_expected(expected, numQPUs);
+		init_expected(expected);
 
 	  auto k = compile(vpm_kernel);
 	  k.setNumQPUs(numQPUs);
@@ -79,7 +79,7 @@ TEST_CASE("Test VPM memory [vpm]") {
 	  Int::Array result(numQPUs*16);
 
     Int::Array expected(numQPUs*16);
-		init_expected(expected, numQPUs);
+		init_expected(expected);
 
 	  auto k = compile(vpm_kernel);
 	  //to_file("vpm_kernel.txt", k.dump());
