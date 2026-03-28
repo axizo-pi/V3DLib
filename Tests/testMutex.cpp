@@ -38,8 +38,12 @@ void barrier_kernel(Int::Ptr ret, Int::Ptr signal) {
 void add_nop() {
   // Can probably skip the nop's for emulator.
 
-  if (Platform::tag() == Platform::pi_zero) {
-    nop(20);
+	switch (Platform::tag()) {
+		case Platform::pi2:     break; // Probably not necessary
+		case Platform::pi_zero: nop(20); break;
+		default:
+			// Don't bother
+			break;
   }
 }
 

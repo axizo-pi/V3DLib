@@ -530,14 +530,14 @@ void translateWhile(Instr::List &seq, Stmt &s) {
 
 
 Instr::List translateNop(Stmt::Ptr s) {
-  Log::warn << "translateNop s: '" << s->dump();
+  //Log::warn << "translateNop s: " << s->dump();
   assert(s->lhs() == nullptr);
 
   Expr &e = *(s->rhs());
   assert(e.tag() == Expr::INT_LIT);
 
   int count = e.intLit;
-  warn << "translateNop count: " << count;
+  //warn << "translateNop count: " << count;
   assert(count >= 0);
 
   Instr cmd;  // Default tag is NO_OP

@@ -36,6 +36,10 @@ namespace {
  *     - 90: all filled
  *     - 80 #2 not filled, rest filled
  *     - 70 #2 not filled, rest filled
+ * * Pi2
+ *   + 4 QPU's, count:
+ *     - 100: all filled
+ *     -  90: all filled, #3 fails sometimes
  */
 void add_nop() {
   if (Platform::use_main_memory()) {
@@ -44,6 +48,14 @@ void add_nop() {
   }
 
   int count = 80;
+
+	switch (Platform::tag()) {
+		case Platform::pi2:     count = 100; break;
+		case Platform::pi_zero: count =  90; break;
+		default:
+			// Default
+			break;
+  }
 
   if (Platform::tag() == Platform::pi_zero) {
     count = 90;
