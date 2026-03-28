@@ -15,6 +15,8 @@ namespace {
  * Examination
  * -----------
  *
+ * vc4 only.
+ *
  * * pi3
  *   + 2 QPU's, count:
  *     - 10: #1 filled, #0 sometimes
@@ -29,17 +31,22 @@ namespace {
  *     - 10: only #3 filled
  *     -  0: only #3 filled
  *   + 8 QPU's, count:
- *     - 80: all filled except #3
- *     - 70: all filled except #3
+ *     - 80: all filled except #2
+ *     - 70: all filled except #2
+ * * Pi2
+ *   + 4 QPU's, count:
+ *     - 100: all filled
+ *     -  90: all filled, #2 fails sometimes
+ * * Pi1
+ *   + 4 QPU's, count:
+ *     - 100: all filled
+ *     -  90: all filled, #2 fails sporadically
+ *     -  80: #0, #1, #3 filled, #2 fails
  * * zero
  *   + 4 QPU's, count:
  *     - 90: all filled
  *     - 80 #2 not filled, rest filled
  *     - 70 #2 not filled, rest filled
- * * Pi2
- *   + 4 QPU's, count:
- *     - 100: all filled
- *     -  90: all filled, #3 fails sometimes
  */
 void add_nop() {
   if (Platform::use_main_memory()) {
@@ -49,12 +56,13 @@ void add_nop() {
 
   int count = 80;
 
-	switch (Platform::tag()) {
-		case Platform::pi2:     count = 100; break;
-		case Platform::pi_zero: count =  90; break;
-		default:
-			// Default
-			break;
+  switch (Platform::tag()) {
+    case Platform::pi1:     count = 100; break;
+    case Platform::pi2:     count = 100; break;
+    case Platform::pi_zero: count =  90; break;
+    default:
+      // Default
+      break;
   }
 
   if (Platform::tag() == Platform::pi_zero) {
@@ -76,24 +84,24 @@ void add_nop() {
  * VPM is vc4-only.
  */
 void vpm_kernel(Int::Ptr ret) {
-	Int tmp = 10*(me() + 1);
+  Int tmp = 10*(me() + 1);
 
-	// Write own value to VPM
+  // Write own value to VPM
   vpmSetupWrite(HORIZ, me());
   vpmPut(tmp);
 
   add_nop();  // TODO: Check if calling this just before vpmGetInt() makes a difference
 
-	// Read other value from VPM
+  // Read other value from VPM
   Int tmp2 = (me() + 1);  comment("Read value from other QPU");
-	Where (tmp2 == numQPUs())
-		tmp2 = 0;
-	End
+  Where (tmp2 == numQPUs())
+    tmp2 = 0;
+  End
 
   vpmSetupRead(HORIZ, 1, tmp2);   
-	Int tmp3 = vpmGetInt();
+  Int tmp3 = vpmGetInt();
 
-	*(ret + 16*me()) = tmp3;
+  *(ret + 16*me()) = tmp3;
 }
 
 }
@@ -108,55 +116,55 @@ TEST_CASE("Test VPM memory [vpm]") {
   warn << "tag: " << Platform::tag();
 
   LibSettings::tmu_load tmu(false);
-	int numQPUs = 4;
+  int numQPUs = 4;
 
-	auto init_expected = [numQPUs] (Int::Array &expected) {
-		for (int i = 0; i < numQPUs; ++i) {
-			for (int j = 0; j < 16; ++j) {
-				expected[16*((i + (numQPUs - 1)) % numQPUs) + j] = 10*(i + 1);
-			}
-		}
-	};
+  auto init_expected = [numQPUs] (Int::Array &expected) {
+    for (int i = 0; i < numQPUs; ++i) {
+      for (int j = 0; j < 16; ++j) {
+        expected[16*((i + (numQPUs - 1)) % numQPUs) + j] = 10*(i + 1);
+      }
+    }
+  };
 
   SUBCASE("In emulator") {
-		// This works on v3d
-	  Platform::main_mem mem(true);
+    // This works on v3d
+    Platform::main_mem mem(true);
 
-	  Int::Array result(numQPUs*16);
+    Int::Array result(numQPUs*16);
 
     Int::Array expected(numQPUs*16);
-		init_expected(expected);
+    init_expected(expected);
 
-	  auto k = compile(vpm_kernel);
-	  k.setNumQPUs(numQPUs);
-	  k.load(&result);
-	  k.emu();
+    auto k = compile(vpm_kernel);
+    k.setNumQPUs(numQPUs);
+    k.load(&result);
+    k.emu();
 
-		std::cout << result.dump() << "\n";
-		//std::cout << expected.dump() << "\n";
-		REQUIRE(result == expected);
-	}
+    std::cout << result.dump() << "\n";
+    //std::cout << expected.dump() << "\n";
+    REQUIRE(result == expected);
+  }
 
 
   SUBCASE("on QPUs") {
-		if (!Platform::compiling_for_vc4()) {
-			warn << "Not running VPM mem on QPU's for v3d";
-			return;
-		}
+    if (!Platform::compiling_for_vc4()) {
+      warn << "Not running VPM mem on QPU's for v3d";
+      return;
+    }
 
-	  Int::Array result(numQPUs*16);
+    Int::Array result(numQPUs*16);
 
     Int::Array expected(numQPUs*16);
-		init_expected(expected);
+    init_expected(expected);
 
-	  auto k = compile(vpm_kernel);
-	  to_file("vpm_kernel.txt", k.dump());
-	  k.setNumQPUs(numQPUs);
-	  k.load(&result);
-	  k.run();
+    auto k = compile(vpm_kernel);
+    to_file("vpm_kernel.txt", k.dump());
+    k.setNumQPUs(numQPUs);
+    k.load(&result);
+    k.run();
 
-		std::cout << result.dump() << "\n";
-		//std::cout << expected.dump() << "\n";
-		REQUIRE(result == expected);
-	}
+    std::cout << result.dump() << "\n";
+    //std::cout << expected.dump() << "\n";
+    REQUIRE(result == expected);
+  }
 }
