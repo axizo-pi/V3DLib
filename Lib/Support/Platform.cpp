@@ -330,8 +330,9 @@ Tag tag() {
   //warn << "pi_version: '" << tmp << "'";
 
   Tag tag = not_pi;
-       if (tmp == "pi2")    { tag = pi2;     }
-	else if (tmp == "pi3")    { tag = pi3;     }
+       if (tmp == "pi1")    { tag = pi1;     }
+  else if (tmp == "pi2")    { tag = pi2;     }
+  else if (tmp == "pi3")    { tag = pi3;     }
   else if (tmp == "piZ")    { tag = pi_zero; }
   else if (tmp == "pi4-64") { tag = pi4;     }
   else if (tmp == "pi5-64") { tag = pi5;     }
