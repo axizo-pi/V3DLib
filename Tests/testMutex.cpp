@@ -30,6 +30,21 @@ void barrier_kernel(Int::Ptr ret, Int::Ptr signal) {
 
 
 /**
+ * @brief add waiting NOP sequences if necessary.
+ *
+ * Revelation: DMA on Zero takes longer than on Pi3.
+ * Following adjusts particularly for Zero.
+ */
+void add_nop() {
+  // Can probably skip the nop's for emulator.
+
+  if (Platform::tag() == Platform::pi_zero) {
+    nop(20);
+  }
+}
+
+
+/**
  * Assumption: While-loop not working properly
  *
  * This kernel investigates the While-loop.
@@ -42,7 +57,7 @@ void while_kernel(Int::Ptr ret) {
     // write/read before setting condition
     *ret = count;
 
-    nop(20);
+    add_nop();
 
     Int tmp = *ret;
 
@@ -74,7 +89,7 @@ void for_kernel(Int::Ptr ret) {
     // when the load is executed.
     *ret = count;
 
-    nop(20);
+    add_nop();
 
     Int tmp = *ret;
 

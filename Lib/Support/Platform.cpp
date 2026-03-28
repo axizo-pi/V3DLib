@@ -332,7 +332,7 @@ Tag tag() {
   if (tmp == "pi3") {
     tag = pi3;
   } else {
-    warn << "Unknown pi_version: " << tmp << thrw;
+    warn << "Unknown pi_version: '" << tmp << "'" << thrw;
   }
 
 

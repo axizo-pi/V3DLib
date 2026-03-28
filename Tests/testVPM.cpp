@@ -45,7 +45,7 @@ void add_nop() {
 
   int count = 80;
 
-  if (Platform::tag() == pi_zero) {
+  if (Platform::tag() == Platform::pi_zero) {
     count = 90;
   }
 
