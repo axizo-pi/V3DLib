@@ -41,6 +41,9 @@ void while_kernel(Int::Ptr ret) {
   While (condition == 0)
     // write/read before setting condition
     *ret = count;
+
+    nop(20);
+
     Int tmp = *ret;
 
     If (tmp == 4)
@@ -70,6 +73,9 @@ void for_kernel(Int::Ptr ret) {
     // It is possible (and actually happens here) that the store is not done
     // when the load is executed.
     *ret = count;
+
+    nop(20);
+
     Int tmp = *ret;
 
     If (tmp == 4)
@@ -268,8 +274,7 @@ TEST_CASE("Test barrier[mutex][barrier]") {
 
 
 TEST_CASE("Test While-loop emulator[mutex][while]") {
-  bool prev2 = LibSettings::use_tmu_for_load();
-  LibSettings::use_tmu_for_load(false);
+  LibSettings::tmu_load tmu(false);
 
   SUBCASE("Test Emulator") {
     Platform::use_main_memory(true);
@@ -282,12 +287,12 @@ TEST_CASE("Test While-loop emulator[mutex][while]") {
     expected.fill(4);
 
     auto k = compile(while_kernel);
-    //to_file("while_kernel.txt", k.dump());
-    k.load(&result);
+    to_file("while_kernel.txt", k.dump());
     k.setNumQPUs(numQPUs);
+    k.load(&result);
     k.run();
     //k.interpret();
-    //warn << "result While: " << result.dump();
+    warn << "result While: " << result.dump();
     REQUIRE(result == expected);
 
     Platform::use_main_memory(false);
@@ -305,15 +310,13 @@ TEST_CASE("Test While-loop emulator[mutex][while]") {
 
     auto k = compile(while_kernel);
     k.setNumQPUs(numQPUs);
-    //to_file("while_kernel_2.txt", k.dump());
+    to_file("while_kernel_2.txt", k.dump());
     k.load(&result);
     k.run();
 
-    //warn << "result While2: " << result.dump();
+    warn << "result While2: " << result.dump();
     REQUIRE(result == expected);
   }
-
-  LibSettings::use_tmu_for_load(prev2);
 }
 
 
@@ -349,7 +352,7 @@ TEST_CASE("Test For-loop[mutex][for]") {
     k.emu();
     //k.interpret();
 
-    //warn << "result For: " << result.dump();
+    warn << "result For: " << result.dump();
     REQUIRE(result == expected);
   }
 
@@ -367,7 +370,7 @@ TEST_CASE("Test For-loop[mutex][for]") {
     k.load(&result);
     k.run();
 
-    //warn << "result For2: " << result.dump();
+    warn << "result For2: " << result.dump();
     REQUIRE(result == expected);
   }
 
