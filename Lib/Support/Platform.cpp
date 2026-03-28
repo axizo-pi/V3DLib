@@ -334,6 +334,7 @@ Tag tag() {
 	else if (tmp == "pi3")    { tag = pi3;     }
   else if (tmp == "piZ")    { tag = pi_zero; }
   else if (tmp == "pi4-64") { tag = pi4;     }
+  else if (tmp == "pi5-64") { tag = pi5;     }
   else {
     warn << "Unknown pi_version: '" << tmp << "'" << thrw;
   }
@@ -398,6 +399,7 @@ std::string pi_version() {
   if (!get_platform_string(val)) {
     return ret;
   }
+	//warn << "pi_version val: " << val;
 
   std::string const prefix = "Raspberry Pi ";
 
@@ -416,7 +418,7 @@ std::string pi_version() {
   ret = "pi";
   ret += version;
 
-  assertq(('1' <= version && version <= '4') || (version == 'Z'), "Unknown pi version number");
+  assertq(('1' <= version && version <= '5') || (version == 'Z'),"Unknown pi version number");
 
 #ifdef ARM64
   ret += "-64";

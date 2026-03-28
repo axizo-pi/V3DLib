@@ -52,13 +52,7 @@ void add_nop() {
 	switch (Platform::tag()) {
 		case Platform::pi2:     count = 100; break;
 		case Platform::pi_zero: count =  90; break;
-		default:
-			// Default
-			break;
-  }
-
-  if (Platform::tag() == Platform::pi_zero) {
-    count = 90;
+		default:                             break;
   }
 
   nop(count);  // Best value for #QPU=4
@@ -105,8 +99,6 @@ void vpm_kernel(Int::Ptr ret) {
  * Just don't do DMA when using VPM as mem.
  */
 TEST_CASE("Test VPM memory [vpm]") {
-  warn << "tag: " << Platform::tag();
-
   LibSettings::tmu_load tmu(false);
 	int numQPUs = 4;
 
