@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <sstream>
+#include <fstream>
 #include <V3DLib.h>
 #include "LibSettings.h"
 #include "Support/pgm.h"

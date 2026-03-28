@@ -138,7 +138,7 @@ TEST_CASE("Test VPM memory [vpm]") {
     k.load(&result);
     k.emu();
 
-    std::cout << result.dump() << "\n";
+    //std::cout << result.dump() << "\n";
     //std::cout << expected.dump() << "\n";
     REQUIRE(result == expected);
   }
@@ -161,7 +161,7 @@ TEST_CASE("Test VPM memory [vpm]") {
     k.load(&result);
     k.run();
 
-    std::cout << result.dump() << "\n";
+    //std::cout << result.dump() << "\n";
     //std::cout << expected.dump() << "\n";
     REQUIRE(result == expected);
   }

@@ -120,7 +120,7 @@ void loop_kernel(Int::Ptr dst, Float::Ptr in_dummy_ptr) {
 //
 TEST_CASE("Test loop counter [loop]") {
   if (Platform::compiling_for_vc4()) {
-    warn << "The used version of barrier() is only for v3d";
+    // The used version of barrier() is only for v3d
     return;
   }
 
@@ -133,8 +133,6 @@ TEST_CASE("Test loop counter [loop]") {
 		to_file("loop_kernel.txt", k.dump());
     k.load(&result, &dummy).run();
 
-    warn << "kernel size: " << k.code().size();
-  
     for (int i = 0; i < (int) result.size(); ++i) {
       INFO("i: " << i);
       REQUIRE(result[i] == COUNT);
