@@ -43,7 +43,13 @@ void add_nop() {
     return;
   }
 
-  nop(90);  // Best value for #QPU=4
+  int count = 80;
+
+  if (Platform::tag() == pi_zero) {
+    count = 90;
+  }
+
+  nop(count);  // Best value for #QPU=4
 }
 
 
@@ -64,7 +70,7 @@ void vpm_kernel(Int::Ptr ret) {
   vpmSetupWrite(HORIZ, me());
   vpmPut(tmp);
 
-  add_nop();  // TODO: Check if calling this just befpre vpmGetInt() makes a difference
+  add_nop();  // TODO: Check if calling this just before vpmGetInt() makes a difference
 
 	// Read other value from VPM
   Int tmp2 = (me() + 1);  comment("Read value from other QPU");
@@ -87,6 +93,8 @@ void vpm_kernel(Int::Ptr ret) {
  * Just don't do DMA when using VPM as mem.
  */
 TEST_CASE("Test VPM memory [vpm]") {
+  warn << "tag: " << Platform::tag();
+
   LibSettings::tmu_load tmu(false);
 	int numQPUs = 4;
 

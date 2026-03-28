@@ -323,6 +323,23 @@ bool run_vc7()              { return instance().vc_type == vc7; }
 
 
 /**
+ * @brief Return an indicator for the current platform
+ */
+Tag tag() {
+  auto tmp = pi_version();
+
+  Tag tag = not_pi;
+  if (tmp == "pi3") {
+    tag = pi3;
+  } else {
+    warn << "Unknown pi_version: " << tmp << thrw;
+  }
+
+
+  return tag;
+}
+
+/**
  * Returns the number of available registers in a register file for the current
  * target platform
  *
