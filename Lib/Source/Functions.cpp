@@ -704,4 +704,11 @@ void barrier() {
   stmtStack().push(Stmt::create(Stmt::BARRIER));
 }
 
+
+void nop(int num) {
+  assert(num >= 0);
+
+  stmtStack() << Stmt::create(Stmt::NOP, nullptr, IntExpr(num).expr());
+}
+
 }  // namespace V3DLib

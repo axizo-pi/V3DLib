@@ -529,6 +529,35 @@ void translateWhile(Instr::List &seq, Stmt &s) {
 }
 
 
+Instr::List translateNop(Stmt::Ptr s) {
+  Log::warn << "translateNop s: '" << s->dump();
+  assert(s->lhs() == nullptr);
+
+  Expr &e = *(s->rhs());
+  assert(e.tag() == Expr::INT_LIT);
+
+  int count = e.intLit;
+  warn << "translateNop count: " << count;
+  assert(count >= 0);
+
+  Instr cmd;  // Default tag is NO_OP
+  Instr::List ret;
+
+  if (count == 0) {
+    // Nothing to output
+    return ret;
+  }
+
+  for (int i = 0; i < count; ++i) {
+    ret << cmd;
+  }
+
+  ret.front().comment("Start nop's");
+
+  return ret;
+}
+
+
 // ============================================================================
 // Statement Handling
 // ============================================================================
@@ -583,6 +612,10 @@ Instr::List encode(Stmt::Ptr s) {
 
     case Stmt::BARRIER:
       ret << barrier();
+      break;
+
+    case Stmt::NOP:
+      ret << translateNop(s);
       break;
 
     default:
@@ -648,6 +681,7 @@ void insert_init_block(Instr::List &code, Instr::List &init) {
 // ============================================================================
 // Interface
 // ============================================================================
+
 
 /**
  * @brief Encode variable assignments to Target code

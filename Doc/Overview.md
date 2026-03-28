@@ -55,14 +55,15 @@ I have about 14 Pi's foraging around here, which I intend to cluster.
 
 Unit tests are run regularly on the following Pi versions:
 
-| Pi   | Version         | 32/64bits | Debian distro |
-| ---- | --------------- | --------- | ------------- |
-| Pi5  | Model B Rev 1.0 | 64        | 12 (bookworm) |
-| Pi4  | Model B Rev 1.1 | 64        | 12 (bookworm) |
-| Zero | W Rev 1.1       | 32        | 12 (bookworm) |
-| Pi3  | Model B Rev 1.2 | 32        | 10 (buster)   |
-| Pi2  | Model B Rev 1.1 | 32        | 12 (bookworm) |
-| Pi1  | Model B Rev 2   | 32        | 12 (bookworm) |
+| Pi   | Version         | 32/64bits | Debian distro | GPU | Model Number | Revision |
+| ---- | --------------- | --------- | ------------- | --- | ------------ | -------- |
+| Pi5  | Model B Rev 1.0 | 64        | 12 (bookworm) | vc7 | BCM2835      | c04170   |
+| Pi4  | Model B Rev 1.1 | 64        | 12 (bookworm) | vc6 | BCM2711      | b03111   |
+| Zero | W Rev 1.1       | 32        | 12 (bookworm) | vc4 | BCM2835      | 9000c1   |
+| Pi3  | Model B Rev 1.2 | 32        | 10 (buster)   | vc4 | BCM2837      | a02082   |
+| Pi2  | Model B Rev 1.1 | 32        | 12 (bookworm) | vc4 | BCM2836      | a01041   |
+| Pi1  | Model B Rev 2   | 32        | 12 (bookworm) | vc4 | BCM2835      | 000e     |
+
 
 The notable omissions in this list:
 
@@ -83,8 +84,7 @@ The following naming is used within the project:
 
 - The earliest Debian version supported is **Debian 10 Buster**.
 - 32-bits continues to be supported. This is required for the early PI's and `Zero`.
-- The C++ code is currently compiled with language version `c++17`. There is no overriding reason
-  to hold on to this, give me a good reason and I will happily up the C++ version.
+- The C++ code is currently compiled with language version `c++17`[^2]. 
 - Indent is two spaces. Not because I want it to (I vastly prefer tabs), but because `github`
   otherwise makes a mess of the source display, especially when tabs and spaces are mixed.
 - A program running on a VideoCore is named a [(compute) kernel](https://en.wikipedia.org/wiki/Compute_kernel).
@@ -97,6 +97,8 @@ The following naming is used within the project:
   Their usage is totally comparable to command-line parameters for a console app.
 - Any method or function which generates debug output is named `dump()` (or uses `dump` as prefix).
   The utility of this is obvious when you use `dbg` a lot.
+
+[^2]: There is no overriding reason to hold on to this, give me a good reason and I will happily up the C++ version.
 
 -------------------
 

@@ -5,11 +5,23 @@
 namespace V3DLib {
 namespace Platform {
 
+enum Tag {
+  not_pi,
+  pi1,
+  pi2,
+  pi3,
+  pi4,
+  pi_zero,
+  pi_5
+};
+
+
 bool is_pi_platform();
 std::string platform_info();
 std::string pi_version();
 bool run_vc4();
 bool run_vc7();
+Tag tag();
 void compiling_for_vc4(bool val);
 bool compiling_for_vc4();
 bool compiling_for_vc7();
