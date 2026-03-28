@@ -90,17 +90,21 @@ void Stmt::where_cond(BExpr::Ptr cond) {
 }
 
 
+Expr::Ptr Stmt::lhs() const { return m_exp_a; }
+Expr::Ptr Stmt::rhs() const { return m_exp_b; }
+
+
 Expr::Ptr Stmt::assign_lhs() const {
   assert(tag == ASSIGN);
   assert(m_exp_a.get() != nullptr);
-  return m_exp_a;
+  return lhs();
 }
 
 
 Expr::Ptr Stmt::assign_rhs() const {
   assert(tag == ASSIGN);
   assert(m_exp_b.get() != nullptr);
-  return m_exp_b;
+  return rhs();
 }
 
 
@@ -259,6 +263,9 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_com
   std::string ret;
 
   switch (tag) {
+    case NOP:
+      ret << "NOP(" << rhs()->dump() << ")";
+    break;
     case SKIP:
       ret << "SKIP";
     break;
@@ -419,8 +426,13 @@ Stmt::Ptr Stmt::create(Tag in_tag, Expr::Ptr e0, Expr::Ptr e1) {
       ret->m_exp_b = e1;
     break;
 
+    case NOP:
+      assertq(e0 == nullptr && e1 != nullptr, "create NOP");
+      ret->m_exp_b = e1;
+    break;
+
     case LOAD_RECEIVE:
-      assertq(e0 != nullptr && e1 == nullptr, "create 2");
+      assertq(e0 != nullptr && e1 == nullptr, "create LOAD_RECEIVE");
       ret->m_exp_a = e0;
     break;
 

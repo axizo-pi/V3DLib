@@ -31,8 +31,13 @@ uint32_t BufferObject::phy_address() const {
 
 
 void BufferObject::dealloc_array(uint32_t in_phyaddr, uint32_t in_size) {
-  assert(phy_address() <= in_phyaddr && in_phyaddr < (phy_address() + size()));
-  HeapManager::dealloc_array(in_phyaddr - phy_address(), in_size);
+  // Sporadically, this is called when the heap manager is already cleared up.
+  // This can notably happen on program exit.
+  // Don't bother deallocating if heap manager already clean.
+  if (!empty()) {
+    assert(phy_address() <= in_phyaddr && in_phyaddr < (phy_address() + size()));
+    HeapManager::dealloc_array(in_phyaddr - phy_address(), in_size);
+  }
 }
 
 

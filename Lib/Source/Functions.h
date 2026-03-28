@@ -47,6 +47,8 @@ void mutex_release();
 void barrier(Int::Ptr &signal);
 void barrier();
 
+void nop(int num);
+
 }  // namespace V3DLib
 
 #endif  // _V3DLIB_SOURCE_FUNCTIONS_H_

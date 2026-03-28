@@ -49,6 +49,7 @@ struct Stmt : public InstructionComment {
 
   enum Tag {
     SKIP,
+    NOP,
     ASSIGN,
     SEQ,
     WHERE,
@@ -104,6 +105,8 @@ struct Stmt : public InstructionComment {
   BExpr::Ptr where_cond() const;
   void where_cond(BExpr::Ptr cond);
 
+  Expr::Ptr lhs() const;
+  Expr::Ptr rhs() const;
   Expr::Ptr assign_lhs() const;
   Expr::Ptr assign_rhs() const;
   Expr::Ptr address();

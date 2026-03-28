@@ -11,6 +11,46 @@ using namespace V3DLib;
 namespace {
 
 /**
+ * ==================================================
+ * Examination
+ * -----------
+ *
+ * 2 QPU's, count:
+ * - 10: #1 filled, #0 sometimes
+ * - 30: all filled
+ *
+ * 4 QPU's, count:
+ * - 70: all filled
+ * - 60: #0, #1, #3 filled
+ * - 50: #0, #1, #3 filled
+ * - 40: #0, #1, #3 filled
+ * - 30: #0, #3 filled (once all filled)
+ * - 20: #0, #3 filled
+ * - 10: only #3 filled
+ * -  0: only #3 filled
+
+ * 8 QPU's, count:
+ * - 80: all filled except #3
+ * - 70: all filled except #3
+ */
+void add_nop() {
+  if (Platform::use_main_memory()) {
+    // Must be compiling for emulator, don't bother
+    return;
+  }
+
+  nop(70);  // Best value for #QPU=4
+}
+
+
+/**
+ * @brief Test using VPM as shared memory
+ *
+ * VPM is used to transfer values between QPU's.
+ *
+ * The issue here is that it take a non-zero time to fill the VPM.
+ * You need to add a delay between storing and retrieving.
+ *
  * VPM is vc4-only.
  */
 void vpm_kernel(Int::Ptr ret) {
@@ -20,6 +60,8 @@ void vpm_kernel(Int::Ptr ret) {
   vpmSetupWrite(HORIZ, me());
   vpmPut(tmp);
 
+  add_nop();  // TODO: Check if calling this just befpre vpmGetInt() makes a difference
+
 	// Read other value from VPM
   Int tmp2 = (me() + 1);  comment("Read value from other QPU");
 	Where (tmp2 == numQPUs())
@@ -28,6 +70,8 @@ void vpm_kernel(Int::Ptr ret) {
 
   vpmSetupRead(HORIZ, 1, tmp2);   
 	Int tmp3 = vpmGetInt();
+
+  //dummy = 11*tmp3 /7;
 
 	*(ret + 16*me()) = tmp3;
 }
@@ -42,7 +86,7 @@ void vpm_kernel(Int::Ptr ret) {
  */
 TEST_CASE("Test VPM memory [vpm]") {
   LibSettings::tmu_load tmu(false);
-	int numQPUs = 12;
+	int numQPUs = 4;
 
 	auto init_expected = [] (Int::Array &expected, int numQPUs) {
 		for (int i = 0; i < numQPUs; ++i) {
@@ -66,6 +110,8 @@ TEST_CASE("Test VPM memory [vpm]") {
 	  k.load(&result);
 	  k.emu();
 
+		std::cout << result.dump() << "\n";
+		//std::cout << expected.dump() << "\n";
 		REQUIRE(result == expected);
 	}
 
@@ -82,12 +128,12 @@ TEST_CASE("Test VPM memory [vpm]") {
 		init_expected(expected, numQPUs);
 
 	  auto k = compile(vpm_kernel);
-	  //to_file("vpm_kernel.txt", k.dump());
+	  to_file("vpm_kernel.txt", k.dump());
 	  k.setNumQPUs(numQPUs);
 	  k.load(&result);
 	  k.run();
 
-		//std::cout << result.dump() << "\n";
+		std::cout << result.dump() << "\n";
 		//std::cout << expected.dump() << "\n";
 		REQUIRE(result == expected);
 	}
