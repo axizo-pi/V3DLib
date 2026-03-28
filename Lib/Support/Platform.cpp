@@ -327,10 +327,13 @@ bool run_vc7()              { return instance().vc_type == vc7; }
  */
 Tag tag() {
   auto tmp = pi_version();
+  //warn << "pi_version: '" << tmp << "'";
 
   Tag tag = not_pi;
   if (tmp == "pi3") {
     tag = pi3;
+  } else if (tmp == "piZ") {
+    tag = pi_zero;
   } else {
     warn << "Unknown pi_version: '" << tmp << "'" << thrw;
   }
@@ -404,15 +407,16 @@ std::string pi_version() {
   }
 
   char version = val[prefix.length()];
+  // Pi1 and Zero have no explicit version numbers
   if (version == 'M') {
-    // Pi1 has no explicit number in version string;
-    // this checks the 'M' in 'Raspberry Pi Model B Rev 2'
-    version = '1';
+    version = '1';   // 'M' in 'Raspberry Pi Model B Rev 2'
+  } else if (version == 'Z') {
+    // OK; 'Z' in 'Raspberry Pi Zero W Rev 1.1'
   }
   ret = "pi";
   ret += version;
 
-  assertq('1' <= version && version <= '4', "Unknown pi version number");
+  assertq(('1' <= version && version <= '4') || (version == 'Z'), "Unknown pi version number");
 
 #ifdef ARM64
   ret += "-64";
