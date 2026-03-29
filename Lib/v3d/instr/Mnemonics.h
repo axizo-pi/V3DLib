@@ -72,7 +72,7 @@ Mnemonic &mnemonic(Location const &dst, Source const &srca, Source const &srcb) 
 #define REGULAR_INSTR_B(mnemonic, op) \
 Mnemonic &mnemonic(Location const &dst, Source const &srca, Source const &srcb) {\
   breakpoint; \
-	mul_alu_set(op, dst, srca, srcb); return *this; }
+  mul_alu_set(op, dst, srca, srcb); return *this; }
 
   REGULAR_INSTR(add,    V3D_QPU_M_ADD)
   REGULAR_INSTR(sub,    V3D_QPU_M_SUB)

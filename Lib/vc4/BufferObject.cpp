@@ -24,8 +24,9 @@ BufferObject heap;
 
 }
 
+
 /**
- * Allocate GPU memory and map it into ARM address space
+ * @brief Allocate GPU memory and map it into ARM address space
  */
 void BufferObject::alloc_mem(uint32_t size_in_bytes) {
   assert(handle == 0);
@@ -47,7 +48,6 @@ void BufferObject::alloc_mem(uint32_t size_in_bytes) {
 }
 
 
-// Deallocation
 void BufferObject::dealloc() {
   uint32_t const IOCTL_ERROR = (uint32_t) -1;
 

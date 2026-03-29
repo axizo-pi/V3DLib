@@ -121,25 +121,6 @@ std::vector<int_encoding> int_encodings = {
   { 31,  -1 },
 };
 
-
-/*
-uint32_t pack(uint8_t val) {
-  uint32_t ret;
-
-  if (small_imm_pack(val, &ret)) {
-    assert(ret <= 0xff);  // to be sure conversion is OK
-  } else {
-    printf("SmallImm::pack(): Can not pack value %d\n", val);
-    breakpoint
-    assert(false);
-  }
-
-  assert(ret < 64);
-
-  return ret;
-}
-*/
-
 }  // anon namepace
 
 
@@ -147,10 +128,10 @@ uint32_t pack(uint8_t val) {
  * Do a reverse lookup from encoding to int.
  */
 int SmallImm::to_int() const {
-	assert(m_val != 0xff);
+  assert(m_val != 0xff);
 
   bool found_it  = false;
-	int ret = 0;
+  int ret = 0;
 
   for (auto &item : int_encodings) {
     if (item.encoding == m_val) {
@@ -216,27 +197,15 @@ SmallImm::SmallImm(int val) {
     return;
   }
 
-
   // It might be an int encoded float value
   float val2 = *((float *) &val);
-  //warn << "SmallImm ctor, float from int val: 0x" << hex << val << " => float " << val2;
 
   if (float_to_opcode_value(val2, rep_value)) {
-    //warn << "SmallImm ctor, got float from int! val: 0x" << hex << val << " => float " << val2
-    //     << ", rep_value: " << rep_value;
-
     m_val = (uint8_t) rep_value;
     return;
   }
 
   cerr << "SmallImm ctor, int conversion to opcode failed. val: " << val << thrw;
-
-/*
-  assert(0 <= m_val && m_val < 64);
-
-  if (is_val) pack();
-  else m_index = (uint8_t) val;
-*/
 }
 
 
@@ -270,7 +239,6 @@ SmallImm::SmallImm(const Imm &val) {
     }
 
     m_val = (uint8_t) rep_value;
-    //warn << "SmallInt ctor float opcode: " << m_val;
   }
 
   if (!(0 <= m_val && m_val < 64)) {

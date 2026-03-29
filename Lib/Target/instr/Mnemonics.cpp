@@ -221,13 +221,12 @@ Instr::List mov(Reg dst, RegOrImm const &src) {
 
   Instr::List ret;
 
-	if (src == VPM_READ) {
-		//warn << "mov: " << src.dump();
-		// Don't use bor() for reading this special register,
-		// it will be read twice and will error, at least in
-		// the emulator.
+  if (src == VPM_READ) {
+    // Don't use bor() for reading this special register,
+    // it will be read twice and will error, at least in
+    // the emulator.
     ret <<  shl(dst, src.reg(), 0);
-	} else if (src.is_reg() && src.reg().tag == SPECIAL) {
+  } else if (src.is_reg() && src.reg().tag == SPECIAL) {
     // The logic for special reg's is under bor(), so we 
     // need to redirect there
     ret <<  bor(dst, src, src);
@@ -339,7 +338,7 @@ Instr branch(Label label) {
 
 
 /**
- * Target-level definition of a `barrier` instruction.
+ * @brief Target-level definition of a `barrier` instruction.
  *
  * The goal of `barrier` is for multi-QPU programs:
  * If one QPU reaches it, it waits for all other QPU's to get here.
@@ -369,7 +368,7 @@ Instr::List recipsqrt(Var dst, Var srcA) {
 
 
 /**
- * This returns the log2 of the given value
+ * @brief Return the log2 of the given value
  */
 Instr::List blog(Reg dst, RegOrImm const &srcA) {
   if (Platform::compiling_for_vc7()) {
@@ -394,7 +393,7 @@ Instr::List recip(Reg dst, RegOrImm const &srcA) {
 
 
 /**
- * This returns 2 to the power of srA.
+ * @brief Return 2 to the power of srcA.
  */
 Instr::List bexp(Var dst, RegOrImm const &srcA) {
   if (Platform::compiling_for_vc7()) {
@@ -423,7 +422,7 @@ Instr::List bexp_e(Var dst, RegOrImm const &srcA) {
 
 
 /**
- * Create label instruction.
+ * @brief Create label instruction
  *
  * This is a meta-instruction for Target source.
  */
@@ -437,7 +436,7 @@ Instr label(Label in_label) {
 
 
 /**
- * Load next value from TMU
+ * @brief Load next value from TMU
  */
 Instr recv(Reg dst) {
   Instr instr(RECV);
@@ -452,8 +451,6 @@ Instr recv(Reg dst) {
 Instr tmuwt() {
   return genInstr(Enum::A_TMUWT, None, None, None);
 }
-
-
 
 }  // namespace instr
 }  // namespace Target

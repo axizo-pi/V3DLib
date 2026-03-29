@@ -21,13 +21,6 @@ void vpmPutExpr(Expr::Ptr e) {
   stmtStack() << Stmt::create_assign(mkVar(Var(VPM_WRITE)), e);
 }
 
-/*
-void vpmGetInt(IntExpr lhs) {
-  //auto var = mkVar(Var(VPM_WRITE));
-  stmtStack() << Stmt::create(Stmt::LOAD_RECEIVE, lhs.expr(), nullptr); //var);
-}
-*/
-
 
 void dmaStartReadExpr(Expr::Ptr e) {
   Stmt::Ptr s = Stmt::create(Stmt::DMA_START_READ, e, nullptr);
@@ -45,7 +38,6 @@ void vpmSetupRead(Dir d, int n, IntExpr addr, int stride) {
   Stmt::Ptr s = Stmt::create(Stmt::SETUP_VPM_READ);
   s->dma.setupVPMRead(n, addr.expr(), ((d == HORIZ)?1:0), stride);
   stmtStack() << s;
-  //stmtStack() << vpmSetupReadCore(n, addr, d == HORIZ ? 1 : 0, stride);
 }
 
 

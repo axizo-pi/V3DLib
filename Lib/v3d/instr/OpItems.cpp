@@ -52,26 +52,6 @@ bool OpItems::get_mul_op(ALUInstruction const &add_alu, v3d_qpu_mul_op &dst ) {
   return true;
 }
 
-
-/**
- * Combination only possible if instructions not both add ALU or both mul ALU
- *
- * TODO Not used any more (20210614), check if should be removed
- */
-bool OpItems::valid_combine_pair(Instr const &instr, Instr const &next_instr, bool &do_converse) {
-  if (uses_add_alu(instr) && uses_mul_alu(next_instr)) {
-    do_converse = false;
-    return true;
-  }
-
-  if (uses_mul_alu(instr) && uses_add_alu(next_instr)) {
-    do_converse = true;
-    return true;
-  }
-
-  return false;
-}
-
 }  // namespace instr
 }  // namespace v3d
 }  // namespace V3DLib

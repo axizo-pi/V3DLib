@@ -3,11 +3,6 @@
 
 namespace V3DLib {
 
-// Globals
-//extern int mailbox;
-//extern int numQPUUsers;
-
-// Operations
 int getMailbox();
 void enableQPUs();
 void disableQPUs();

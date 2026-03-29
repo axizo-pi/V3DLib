@@ -82,7 +82,7 @@ Instr label(Label in_label) {
 
 
 /**
- * Add initialization code after uniform loads
+ * @brief Add initialization code after uniform loads
  */
 void add_init_block(Instr::List &code) {
   using namespace V3DLib::Target::instr;
@@ -129,7 +129,7 @@ void add_init_block(Instr::List &code) {
 
   ret << add_uniform_pointer_offset(code);
 
-	insert_init_block(code, ret);
+  insert_init_block(code, ret);
 }
 
 

@@ -18,11 +18,7 @@ BufferObject::~BufferObject() {
 }
 
 
-/**
- *
- */
 void BufferObject::alloc_mem(uint32_t size_in_bytes) {
-	//debug("Called BufferObject::alloc_mem()");
   assert(handle == 0);
 
   void    *tmp_addr = nullptr;
@@ -32,7 +28,6 @@ void BufferObject::alloc_mem(uint32_t size_in_bytes) {
     assertq(false, "Failed to allocate v3d shared memory");
   }
   arm_base = (uint8_t *) tmp_addr;
-	//warn << "v3d alloc_mem arm_base: " << hex << (unsigned long) arm_base;
 
   assert(handle != 0);
   assert(arm_base != nullptr);
@@ -70,7 +65,7 @@ void BufferObject::fill(uint32_t value) {
 
 
 /**
- * Scan heap for known value
+ * @brief Scan heap for known value
  *
  * This is a debug method, for testing
  */
@@ -86,7 +81,7 @@ void BufferObject::find_value(uint32_t in_val) {
 
 
 /**
- * Find assigned blocks within the heap
+ * @brief Find assigned blocks within the heap
  *
  * This is a debug method, for testing
  */
@@ -109,6 +104,7 @@ void BufferObject::detect_used_blocks() {
   }
 }
 
+
 namespace {
 
 // Defined as a smart ptr to avoid issues on program init
@@ -121,7 +117,6 @@ BufferObject &BufferObject::getHeap() {
   assertq(!Platform::run_vc4(), "Trying to run v3d code on a vc4");
 
   if (!mainHeap) {
-    //debug("Allocating main heap v3d\n");
     mainHeap.reset(new BufferObject());
     mainHeap->alloc_bo(LibSettings::heap_size());
   }
@@ -130,7 +125,6 @@ BufferObject &BufferObject::getHeap() {
 }
 
 
-// Subscript
 uint32_t &BufferObject::operator[] (int i) {
   assert(i >= 0);
   assert(size() > 0);

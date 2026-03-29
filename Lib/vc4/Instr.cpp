@@ -12,7 +12,7 @@ namespace vc4 {
 namespace {
 
 /**
- * Handle case where there are two source operands
+ * @brief Handle case where there are two source operands
  *
  * This is fairly convoluted stuff; apparently there are rules with regfile A/B usage
  * which I am not aware of.
@@ -206,8 +206,6 @@ uint32_t Instr::high() const {
 
 
 uint32_t Instr::low() const {
-  //assert(sig > SOFTWARE_BREAKPOINT);
-
   uint32_t ret = 0;
 
   if (enc == NONE) return ret;

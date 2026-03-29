@@ -57,8 +57,8 @@ void set_loglevel(LogLevel level) {
 void log_to_cout(bool val) {
   param_log_to_cout = val;
 
-	// Also set logging stuff in global/log.h
-	Log::log_to_cout(val);
+  // Also set logging stuff in global/log.h
+  Log::log_to_cout(val);
 }
 
 

@@ -43,7 +43,7 @@ int fd = 0;
 
 
 /**
- * Allocate and map a buffer object
+ * @brief Allocate and map a buffer object
  *
  * NOTE: This is an old-style alloc call and ideally would not be used 
  *       with the mesa alloc. However, it is used for testing a device in open()
@@ -112,16 +112,16 @@ bool alloc_intern(
   {
     // Returns offset to use for mmap() in mmap_bo
     int result = ioctl(fd, DRM_IOCTL_V3D_MMAP_BO, &mmap_bo);
-		if (result != 0) {
-     	cerr << "alloc_intern() mmap bo: " << strerror(errno);
-			return false;
-		}
+    if (result != 0) {
+       cerr << "alloc_intern() mmap bo: " << strerror(errno);
+      return false;
+    }
   }
 
   {
     void *result = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, (__off_t) mmap_bo.offset);
     if (result == MAP_FAILED) {
-     	cerr << "alloc_intern() mmap: " << strerror(errno); 
+       cerr << "alloc_intern() mmap: " << strerror(errno); 
       cerr << "mmap() failure, size: " << size << ", offset: " << (int) mmap_bo.offset;
       return false;
     }
@@ -146,7 +146,7 @@ bool alloc(uint32_t size, uint32_t &handle, uint32_t &phyaddr, void **usraddr) {
   assert(phyaddr == 0);
   assert(*usraddr == nullptr);
 
-	open();
+  open();
 
   return alloc_intern(fd, size, handle, phyaddr, usraddr);
 }
@@ -182,9 +182,9 @@ bool wait_bo(uint32_t handle, uint64_t timeout_ns) {
   };
 
   int ret = ioctl(fd, DRM_IOCTL_V3D_WAIT_BO, &st);
-	if (ret != 0) {
-  	cerr << "wait_bo(): " << strerror(errno); 
-	}
+  if (ret != 0) {
+    cerr << "wait_bo(): " << strerror(errno); 
+  }
   assertq(ret == 0, "wait_bo(): call iotctl failed");
   return (ret == 0);
 }
@@ -202,7 +202,7 @@ bool fd_is_open() { return ::v3d::get_fd() > 0; }
  *           -1 if call failed and likely due to sudo
  */
 int open_card(char const *card) {
-	//warn << "open_card() called, card: " << card;
+  //warn << "open_card() called, card: " << card;
 
   int fd = open(card , O_RDWR);  // This works without sudo
   if (fd == 0) {
@@ -230,7 +230,7 @@ int open_card(char const *card) {
 
   if (!success) {
     fd_close(fd);
-		set_fd(0);
+    set_fd(0);
     fd = -1;
     //printf("open_card(): alloc test FAILED for card %s\n", card);
   }
@@ -245,12 +245,12 @@ int open_card(char const *card) {
 
 
 void set_fd(int val) {
-	return s_screen::set_fd(val);
+  return s_screen::set_fd(val);
 }
 
 
 bool fd_is_open() {
-	return s_screen::fd_is_open();
+  return s_screen::fd_is_open();
 }
 
 namespace {
@@ -264,11 +264,11 @@ BOList s_bolist;
  *           -1 if call failed and likely due to sudo
  */
 int open_card(char const *card) {
-	s_screen::init();  // First thing that is called, good place to init
+  s_screen::init();  // First thing that is called, good place to init
 
   int fd = open(card , O_RDWR);  // This works without sudo
   if (fd == 0) return 0;
-	set_fd(fd);
+  set_fd(fd);
 
   //
   // Perform an operation on the device: allocate 16 bytes of memory.
@@ -281,13 +281,12 @@ int open_card(char const *card) {
 
   // Clean up bo
   if (handle != 0) {
-  	bool ret = s_bolist.delete_by_handle(handle);
-		assert(ret);
+    bool ret = s_bolist.delete_by_handle(handle);
+    assert(ret);
   } else {
     fd_close(fd);
-		set_fd(0);
+    set_fd(0);
     fd = -1;
-    //cerr << "open_card(): alloc test FAILED for card " << card;
   }
 
   return fd;
@@ -302,50 +301,48 @@ bool wait_bo(uint32_t handle, uint64_t timeout_ns) {
   assert(handle != 0);
   assert(timeout_ns > 0);
 
-	struct v3d_bo *bo = s_bolist.by_handle(handle);
-	assert(bo != nullptr);
+  struct v3d_bo *bo = s_bolist.by_handle(handle);
+  assert(bo != nullptr);
 
-	bool ret = v3d_bo_wait(bo, timeout_ns, nullptr);
+  bool ret = v3d_bo_wait(bo, timeout_ns, nullptr);
 
-	if (!ret) {
-		cerr << "v3d_bo_wait failed.";
-	}
+  if (!ret) {
+    cerr << "v3d_bo_wait failed.";
+  }
 
-	return ret;
+  return ret;
 }
 
 int get_fd() {
-	//assert(s_screen::get_fd() != 0);
-	return s_screen::get_fd();
+  //assert(s_screen::get_fd() != 0);
+  return s_screen::get_fd();
 }
 
 bool alloc(uint32_t size, uint32_t &out_handle, uint32_t &phyaddr, void **usraddr) {
-	bool ret = v3d::open();  // ensure open
-	assert(ret);
-	assert(fd_is_open());
+  bool ret = v3d::open();  // ensure open
+  assert(ret);
+  assert(fd_is_open());
 
   assert(size > 0);
   assert(out_handle == 0);
   assert(phyaddr == 0);
   assert(*usraddr == nullptr);
-	//v3d_set_dump_stats(true);
 
-	uint32_t handle = s_bolist.add_handle(size); 
-	assert(handle > 0);
+  uint32_t handle = s_bolist.add_handle(size); 
+  assert(handle > 0);
 
-	auto bo = s_bolist.by_handle(handle);
-	assert(bo != nullptr);
+  auto bo = s_bolist.by_handle(handle);
+  assert(bo != nullptr);
 
-	// Call map to get the user address
-	auto map = v3d_bo_map(bo);  // sets member map in bo
-	assert(map != nullptr);
+  // Call map to get the user address
+  auto map = v3d_bo_map(bo);  // sets member map in bo
+  assert(map != nullptr);
 
-	out_handle = handle;
-	phyaddr    = bo->offset;
-	*usraddr   = bo->map;
+  out_handle = handle;
+  phyaddr    = bo->offset;
+  *usraddr   = bo->map;
 
-	//v3d_set_dump_stats(false);
-	return true;
+  return true;
 }
 
 
@@ -355,12 +352,12 @@ bool alloc(uint32_t size, uint32_t &out_handle, uint32_t &phyaddr, void **usradd
  * Not dealing with this.
  */ 
 bool unmap(uint32_t size, uint32_t handle, void *usraddr) {
-	assert(usraddr != nullptr);
+  assert(usraddr != nullptr);
 
-	// bo may already have been removed, let it happen
-	s_bolist.delete_by_handle(handle);
+  // bo may already have been removed, let it happen
+  s_bolist.delete_by_handle(handle);
 
-	return true;
+  return true;
 }
 
 } // namespace v3d
@@ -376,9 +373,9 @@ namespace v3d {
 
 int submit_csd(drm_v3d_submit_csd &st) {
   int ret = ioctl(get_fd(), DRM_IOCTL_V3D_SUBMIT_CSD, &st);
-	if (ret != 0) {
-  	cerr << "v3d::submit_csd(): " << strerror(errno); 
-	}
+  if (ret != 0) {
+    cerr << "v3d::submit_csd(): " << strerror(errno); 
+  }
   return ret;
 }
 
@@ -392,12 +389,10 @@ int submit_csd(drm_v3d_submit_csd &st) {
  * @return true if opening succeeded, false otherwise
  */
 bool open() {
-	if (Platform::compiling_for_vc4()) {
-		cerr << "Running on vc4, not opening the v3d card.";
-		return true;
-	}
-
-	//warn << "v3d::open() called";
+  if (Platform::compiling_for_vc4()) {
+    cerr << "Running on vc4, not opening the v3d card.";
+    return true;
+  }
 
   if (fd_is_open()) return true;  // Already open, all is well
 
@@ -408,16 +403,15 @@ bool open() {
 
   if (fd0 <= 0 && fd1 <= 0) {
     std::string msg = "Could not open v3d device, did you forget 'sudo'?";
-		Log::assertq(false, msg);
+    Log::assertq(false, msg);
     return false;
   }
 
   int fd = (fd1 <= 0)? fd0: fd1;
-	cdebug << "Got fd: " << fd;
+  cdebug << "Got fd: " << fd;
   assert(fd > 0);
-	//warn << "open() got fd: " << fd;
 
-	set_fd(fd);
+  set_fd(fd);
   return true;
 }
 
@@ -428,10 +422,10 @@ bool open() {
  * TODO: Check if this is OK
  *
  * @return true if close executed, false if already closed
- */
+ * /
 bool close() {
-	breakpoint;
-	int fd = get_fd();
+  breakpoint;
+  int fd = get_fd();
   if (fd == 0) { return false; }
 
   fd_close(fd);
@@ -439,6 +433,7 @@ bool close() {
 
   return true;
 }
+*/
 
 
 int ioctl(unsigned cmd, void *param) {
@@ -451,7 +446,7 @@ int ioctl(unsigned cmd, void *param) {
     warn << "ioctl failed, error: " << strerror(ret);
   }
 
-	return ret;
+  return ret;
 }
 
 

@@ -64,13 +64,13 @@ namespace V3DLib {
     A_RSQRT,
     A_BARRIER,
 
-		// vc7
-		// A_FMOV intentionally not added to the list; it is useless, appears to always assign 0
-		A_MOV,
-		A_EXP,
-		A_RECIP,
+    // vc7
+    // A_FMOV intentionally not added to the list; it is useless, appears to always assign 0
+    A_MOV,
+    A_EXP,
+    A_RECIP,
 
-		A_LOG
+    A_LOG
   };
 
 class Op;

@@ -7,11 +7,11 @@ namespace V3DLib {
 class Expr;
 
 /**
- * Type for representing the values in a vector
+ * @brief Type for representing the values in a vector
  */
 union Word {
   int32_t intVal = 0;
-  float floatVal; 
+  float   floatVal; 
 };
 
 

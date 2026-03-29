@@ -15,41 +15,40 @@ namespace instr {
  * General purpose acc's not present on vc7; block usage in this case.
  */
 bool Location::check_acc_usage(Location const &loc) {
-	if (V3DLib::Platform::compiling_for_vc7()) return true;
+  if (V3DLib::Platform::compiling_for_vc7()) return true;
 
-	if (loc.is_rf()) return true;
+  if (loc.is_rf()) return true;
 
-	Log::debug << "Checking Location with mux '" << loc.to_mux() << "'";
+  //Log::debug << "Checking Location with mux '" << loc.to_mux() << "'";
+  auto mux = loc.to_mux();
 
-	auto mux = loc.to_mux();
-
-	if (
+  if (
    mux == V3D_QPU_MUX_R0 ||
    mux == V3D_QPU_MUX_R1 ||
    mux == V3D_QPU_MUX_R2 ||
    mux == V3D_QPU_MUX_R3 ||
    mux == V3D_QPU_MUX_R4
-	) {
-		return false;
-	}
+  ) {
+    return false;
+  }
 
-	return true;
-}	
+  return true;
+}  
 
 
 std::string Location::dump() const {
-	std::string ret;
+  std::string ret;
 
   if (is_rf()) {
-		ret << "rf";
-	} else if (is_acc()) {
-		ret << "r";
-	} else {
-		ret << "special ";
-	}
+    ret << "rf";
+  } else if (is_acc()) {
+    ret << "r";
+  } else {
+    ret << "special ";
+  }
 
   ret << to_waddr();
-	return ret;
+  return ret;
 }
 
 }  // instr

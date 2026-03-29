@@ -13,7 +13,7 @@ namespace vc4 {
 namespace {
 
 /**
- * Convert intermediate instruction into core instruction
+ * @brief Convert intermediate instruction into core instruction
  */
 void convertInstr(Target::Instr &instr) {
   switch (instr.tag) {

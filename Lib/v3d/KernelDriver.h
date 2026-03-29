@@ -10,7 +10,7 @@ namespace V3DLib {
 namespace v3d {
 
 /**
- * Buffer Object for v3d
+ * @brief Buffer Object for v3d
  *
  * The generated code is loaded into a separate BO.
  * This is to be able to load and run multiple kernels for v3d in the same context.

@@ -28,7 +28,6 @@ void KernelDriver::init_compile() {
 
   VarGen::reset();
   resetFreshLabelGen();
-  Pointer::reset_increment();
   compile_data.clear();
 
   // Initialize reserved general-purpose variables

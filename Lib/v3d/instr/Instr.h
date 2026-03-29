@@ -72,7 +72,7 @@ public:
 
   bool is_branch()  const;
   bool has_signal(bool all_signals = false) const;
-	bool has_magic_registers() const;
+  bool has_magic_registers() const;
 
   bool flag_push_set() const;
   bool flag_cond_set() const;
@@ -95,7 +95,7 @@ public:
   bool is_nop()     const { return add_nop() && mul_nop(); }  // This does not include signals having sig_addr set 
   bool add_nocond() const { return flags.ac == V3D_QPU_COND_NONE; }
   bool mul_nocond() const { return flags.mc == V3D_QPU_COND_NONE; }
-	bool has_flags()  const;
+  bool has_flags()  const;
 
   static bool compare_codes(uint64_t code1, uint64_t code2);
 
@@ -128,14 +128,14 @@ public:
 
   bool alu_set(Target::Instr src);
 
-	// BaseSource implementation
+  // BaseSource implementation
   bool alu_add_a(BaseSource const &src, bool overwrite = false);
   bool alu_add_b(BaseSource const &src, bool overwrite = false);
   void alu_mul_dst(Location const &dst);
   bool alu_mul_a(BaseSource const &src, bool overwrite = false);
   bool alu_mul_b(BaseSource const &src, bool overwrite = false);
 
-	BaseSource sig_dst() const;
+  BaseSource sig_dst() const;
   BaseSource alu_add_dst() const;
   BaseSource alu_add_a() const;
   BaseSource alu_add_b() const;
@@ -146,7 +146,7 @@ public:
   void alu_add_dst(Location const &dst);
 
 private:
-	bool alu_set_src(BaseSource const &src, v3d_qpu_input &input, CheckSrc check_src);
+  bool alu_set_src(BaseSource const &src, v3d_qpu_input &input, CheckSrc check_src);
 
 public:
   // TODO see if this can be cleaned up;  could be replaced by DestReg, but I prefer BaseSource
@@ -154,23 +154,23 @@ public:
   std::unique_ptr<Location> mul_alu_dst() const;
 
 
-	bool has_small_imm() const;
-	int small_imm_value() const;
+  bool has_small_imm() const;
+  int small_imm_value() const;
 
   bool mux_in_use(CheckSrc check_src, v3d_qpu_mux mux) const;
-	bool check_safe(BaseSource const &src, CheckSrc check_src) const;
+  bool check_safe(BaseSource const &src, CheckSrc check_src) const;
 
-	bool alu_add_a_set() const { assert(!m_external_init); return m_alu_add_a_set; }
-	bool alu_add_b_set() const { assert(!m_external_init); return m_alu_add_b_set; }
-	bool alu_mul_a_set() const { assert(!m_external_init); return m_alu_mul_a_set; }
-	bool alu_mul_b_set() const { assert(!m_external_init); return m_alu_mul_b_set; }
+  bool alu_add_a_set() const { assert(!m_external_init); return m_alu_add_a_set; }
+  bool alu_add_b_set() const { assert(!m_external_init); return m_alu_add_b_set; }
+  bool alu_mul_a_set() const { assert(!m_external_init); return m_alu_mul_a_set; }
+  bool alu_mul_b_set() const { assert(!m_external_init); return m_alu_mul_b_set; }
 
 private:
-	bool m_external_init = false;
-	bool m_alu_add_a_set = false;
-	bool m_alu_add_b_set = false;
-	bool m_alu_mul_a_set = false;
-	bool m_alu_mul_b_set = false;
+  bool m_external_init = false;
+  bool m_alu_add_a_set = false;
+  bool m_alu_add_b_set = false;
+  bool m_alu_mul_a_set = false;
+  bool m_alu_mul_b_set = false;
 
 protected:
   static uint64_t NOP();
@@ -189,7 +189,7 @@ private:
   bool raddr_a_is_safe(uint8_t raddr, CheckSrc check_src) const;
   bool raddr_b_is_safe(uint8_t raddr, CheckSrc check_src) const;
 
-	bool alu_set_src(Source const &src, v3d_qpu_input &input, CheckSrc check_src);
+  bool alu_set_src(Source const &src, v3d_qpu_input &input, CheckSrc check_src);
 };
 
 }  // instr
@@ -209,11 +209,11 @@ public:
   void set_cond_tag(AssignCond cond);
   bool check_consistent() const;
 
-	ByteCode bytecode() const;
-	std::string dump() const;
+  ByteCode bytecode() const;
+  std::string dump() const;
 
-private	:
-	bool uses_acc() const;
+private  :
+  bool uses_acc() const;
 };
 
 

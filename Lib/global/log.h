@@ -9,66 +9,65 @@ class Logger;
 enum LogFlag {
   none,
   hex,
-	thrw  // Can't use 'throw', reserved keyword
+  thrw  // Can't use 'throw', reserved keyword
 };
 
 class LogItem {
 private:
-	Logger &m_log;
+  Logger &m_log;
   bool    m_next_is_hex = false;
 
   // Can be used with any logging form;
   // logging is outputted before throw occurs
   bool    m_throw       = false;
 
-public:	
-	LogItem(Logger &log) : m_log(log) {}
-	~LogItem() noexcept(false);
+public:  
+  LogItem(Logger &log) : m_log(log) {}
+  ~LogItem() noexcept(false);
 
-	LogItem &operator<<(const std::string &str);
-	LogItem &operator<<(const char *str);
-	LogItem &operator<<(int n);
-	LogItem &operator<<(unsigned n);
-	LogItem &operator<<(unsigned long n);
-	LogItem &operator<<(float n);
-	LogItem &operator<<(double n);
-	LogItem &operator<<(LogFlag f);
+  LogItem &operator<<(const std::string &str);
+  LogItem &operator<<(const char *str);
+  LogItem &operator<<(int n);
+  LogItem &operator<<(unsigned n);
+  LogItem &operator<<(unsigned long n);
+  LogItem &operator<<(float n);
+  LogItem &operator<<(double n);
+  LogItem &operator<<(LogFlag f);
 };
 
 
 class Logger {
 public:
-	enum Level {
-		DDEBUG,  // prefix D to avoid conflict with define
-		INFO,
-		WARNING,
-		ERROR,
-		FATAL
-	};
+  enum Level {
+    DDEBUG,  // prefix D to avoid conflict with define
+    INFO,
+    WARNING,
+    ERROR,
+    FATAL
+  };
 
-	Logger(Level level = INFO) : m_level(level) {}
+  Logger(Level level = INFO) : m_level(level) {}
 
-	LogItem operator<<(const std::string &str) {
-		m_buf << str;
-		return LogItem(*this);
-	};
+  LogItem operator<<(const std::string &str) {
+    m_buf << str;
+    return LogItem(*this);
+  };
 
-	LogItem operator<<(int rhs) {
-		m_buf << rhs;
-		return LogItem(*this);
-	};
+  LogItem operator<<(int rhs) {
+    m_buf << rhs;
+    return LogItem(*this);
+  };
 
 
-	std::stringstream &buf() { return m_buf; }
-	void flush(bool do_throw);
+  std::stringstream &buf() { return m_buf; }
+  void flush(bool do_throw);
 
 private:
-	Level m_level;
-	std::stringstream m_buf;
+  Level m_level;
+  std::stringstream m_buf;
 
-	std::string msg();
+  std::string msg();
 };
-
 
 void set_log_dir(std::string const &path);
 void set_log_file(std::string const &file);
@@ -80,7 +79,7 @@ void assertq(bool condition, const std::string &msg);
 #undef assert
 
 inline void assert(bool condition, const std::string &msg) {
-	assertq(condition, msg);
+  assertq(condition, msg);
 }
 
 #pragma pop_macro("assert")

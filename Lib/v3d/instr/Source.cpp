@@ -14,8 +14,7 @@ Source::Source(V3DLib::RegOrImm const &rhs) :
   m_is_location(rhs.is_reg()),
   m_location(rhs.is_reg()?encodeSrcReg(rhs.reg()):nullptr),
   m_small_imm(rhs.is_reg()?Imm(0):rhs.imm())
-{
-}
+{}
 
 
 Source::Source(Register const &rhs)  : m_is_location(true), m_location(new Register(rhs)) {}
@@ -61,15 +60,15 @@ bool Source::operator==(Location const &rhs) const {
 
 
 std::string Source::dump() const {
-	std::string ret;
+  std::string ret;
 
-	if (is_small_imm()) {
-		ret << "imm " << small_imm().dump();
-	} else {
-		ret << "loc " << location().dump();
-	}
+  if (is_small_imm()) {
+    ret << "imm " << small_imm().dump();
+  } else {
+    ret << "loc " << location().dump();
+  }
 
-	return ret;
+  return ret;
 }
 
 }  // namespace instr

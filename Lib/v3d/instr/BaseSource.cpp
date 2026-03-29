@@ -17,15 +17,15 @@ const int V3D_QPU_MUX_R5 = 5;   // From qpu.instr.h. The mux values <= this one 
 
 
 BaseSource::BaseSource(Source const &rhs) {
-	// Not expecting dst register right now
+  // Not expecting dst register right now
 
-	if (rhs.is_small_imm()) {
-  	m_is_small_imm = true;
-		m_val = rhs.small_imm().val();
-	} else {
-		// It's a location
-		_init(rhs.location());
-	}
+  if (rhs.is_small_imm()) {
+    m_is_small_imm = true;
+    m_val = rhs.small_imm().val();
+  } else {
+    // It's a location
+    _init(rhs.location());
+  }
 
   m_is_set   = true;
   unpack(rhs.input_unpack());
@@ -33,76 +33,76 @@ BaseSource::BaseSource(Source const &rhs) {
 
 
 BaseSource::BaseSource(Location const &rhs) {
-	_init(rhs);
+  _init(rhs);
   m_is_set   = true;
 }
 
 
 void BaseSource::_init(Location const &rhs) {
-	assert (!Platform::compiling_for_vc7() || rhs.is_rf());
+  assert (!Platform::compiling_for_vc7() || rhs.is_rf());
 
-	m_val    = rhs.to_waddr();
- 	m_is_rf  = rhs.is_rf();
-	m_is_reg = rhs.is_reg();
+  m_val    = rhs.to_waddr();
+   m_is_rf  = rhs.is_rf();
+  m_is_reg = rhs.is_reg();
 
   unpack(rhs.input_unpack());
 }
 
 
 BaseSource::BaseSource(Instr const &instr, int check_src) {
-	assert(check_src <= CheckSrc::CHECK_MUL_B);
+  assert(check_src <= CheckSrc::CHECK_MUL_B);
 
-	v3d_qpu_input input;
-	bool small_imm = false;  // for vc7
+  v3d_qpu_input input;
+  bool small_imm = false;  // for vc7
 
-	// Ugly but necessary
-	switch (check_src) {
-		case CHECK_ADD_A:
-			if (instr.add_nop()) return;
-			if (!instr.alu_add_a_set()) return;
-			input = instr.alu.add.a;
-	  	small_imm = instr.sig.small_imm_a;
-		break;
+  // Ugly but necessary
+  switch (check_src) {
+    case CHECK_ADD_A:
+      if (instr.add_nop()) return;
+      if (!instr.alu_add_a_set()) return;
+      input = instr.alu.add.a;
+      small_imm = instr.sig.small_imm_a;
+    break;
 
-		case CHECK_ADD_B:
-			if (instr.add_nop()) return;
-			if (!instr.alu_add_b_set()) return;
-			input = instr.alu.add.b;
-	  	small_imm = instr.sig.small_imm_b;
-		break;
+    case CHECK_ADD_B:
+      if (instr.add_nop()) return;
+      if (!instr.alu_add_b_set()) return;
+      input = instr.alu.add.b;
+      small_imm = instr.sig.small_imm_b;
+    break;
 
-		case CHECK_MUL_A:
-			if (instr.mul_nop()) return;
-			if (!instr.alu_mul_a_set()) return;
-			input = instr.alu.mul.a;
-	  	small_imm = instr.sig.small_imm_c;
-		break;
+    case CHECK_MUL_A:
+      if (instr.mul_nop()) return;
+      if (!instr.alu_mul_a_set()) return;
+      input = instr.alu.mul.a;
+      small_imm = instr.sig.small_imm_c;
+    break;
 
-		case CHECK_MUL_B:
-			if (instr.mul_nop()) return;
-			if (!instr.alu_mul_b_set()) return;
-			input = instr.alu.mul.b;
-	  	small_imm = instr.sig.small_imm_d;
-		break;
+    case CHECK_MUL_B:
+      if (instr.mul_nop()) return;
+      if (!instr.alu_mul_b_set()) return;
+      input = instr.alu.mul.b;
+      small_imm = instr.sig.small_imm_d;
+    break;
 
-		default: assert(false);
-	}
+    default: assert(false);
+  }
 
-	if (Platform::compiling_for_vc7()) {
-		// vc7 - no acc's
-	  set_from_src(input.raddr, small_imm, false, true);
-	} else {
-		// 
-		if (input.mux == V3D_QPU_MUX_A) {
-	    set_from_src(instr.raddr_a, false, false, true );
-		} else if (input.mux == V3D_QPU_MUX_B) {
-	    set_from_src(instr.raddr_b, instr.sig.small_imm_b, false, true );
-		} else {
-	    set_from_src(input.mux, false, true, false);
-		}
-	}
+  if (Platform::compiling_for_vc7()) {
+    // vc7 - no acc's
+    set_from_src(input.raddr, small_imm, false, true);
+  } else {
+    // 
+    if (input.mux == V3D_QPU_MUX_A) {
+      set_from_src(instr.raddr_a, false, false, true );
+    } else if (input.mux == V3D_QPU_MUX_B) {
+      set_from_src(instr.raddr_b, instr.sig.small_imm_b, false, true );
+    } else {
+      set_from_src(input.mux, false, true, false);
+    }
+  }
 
-	unpack(input.unpack);
+  unpack(input.unpack);
 }
 
 
@@ -146,16 +146,16 @@ void BaseSource::set_from_src(uint8_t val, bool is_small_imm, bool is_reg, bool 
   m_is_reg       = is_reg;
 
   if (!is_small_imm) {
-	  m_is_rf        = is_rf;
-	} else {
-		assert(!m_is_rf);
-	}
+    m_is_rf        = is_rf;
+  } else {
+    assert(!m_is_rf);
+  }
 }
 
 
 void BaseSource::set_from_dst(uint8_t val, bool is_magic) {
   m_is_set   = true;
-	m_is_dst   = true;
+  m_is_dst   = true;
   m_is_magic = is_magic;
   m_val = val;
 
@@ -191,15 +191,15 @@ std::string BaseSource::dump() const {
 
     if (m_is_small_imm) {
       ret << "Small imm: ";
-		}	else if (m_is_reg) {
-     	ret << "r";
+    }  else if (m_is_reg) {
+       ret << "r";
     } else if (m_is_rf) {
       ret << "rf";
     } else {
-			ret << "unknown ";
-		}
+      ret << "unknown ";
+    }
 
-  	ret << m_val;
+    ret << m_val;
   }
 
   return ret;

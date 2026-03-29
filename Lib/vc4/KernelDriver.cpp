@@ -71,11 +71,10 @@ void compile_postprocess(Target::Instr::List &targetCode) {
   vc4_satisfy(targetCode);   // Satisfy target code constraints
 }
 
-
 }  // anon namespace
 
 
-KernelDriver::KernelDriver() : V3DLib::KernelDriver(Vc4Buffer) {
+KernelDriver::KernelDriver() {
   assert(Platform::compiling_for_vc4());
   Log::debug << "selecting vc4 as kernel type";
   m_type = vc4;
@@ -89,7 +88,7 @@ int KernelDriver::kernel_size() const {
 
 
 /**
- * Encode target instructions
+ * @brief Encode target instructions
  *
  * Assumption: code in a kernel, once allocated, does not change.
  */

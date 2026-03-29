@@ -165,9 +165,9 @@ static const char *dump_branch_dest(enum v3d_qpu_branch_dest val) {
 
 static const char *dump_mux(struct v3d_qpu_input input) {
   enum v3d_qpu_mux val = input.mux;
-	if (devinfo_ver() >= 71) {
-		return "<<No mux on vc7>>";
-	}
+  if (devinfo_ver() >= 71) {
+    return "<<No mux on vc7>>";
+  }
 
   char *ret = "<<UNKNOWN>>";
 
@@ -271,10 +271,10 @@ bool small_imm_pack(uint32_t value, uint32_t *packed_small_immediate) {
 
 
 const char *qpu_decode(struct v3d_qpu_instr const *instr) {
-	return v3d_qpu_decode(devinfo(), instr);
+  return v3d_qpu_decode(devinfo(), instr);
 }
 
 
 const char *qpu_disasm(uint64_t packed) {
-	return v3d_qpu_disasm(devinfo(), packed);
+  return v3d_qpu_disasm(devinfo(), packed);
 }

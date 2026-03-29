@@ -20,7 +20,6 @@ typedef uint64_t __u64;   // Conflict with system
 #define DRM_IOW(nr,type)    _IOW(DRM_IOCTL_BASE,nr,type)
 #define DRM_IOWR(nr,type)   _IOWR(DRM_IOCTL_BASE,nr,type)
 
-
 /////////////////////////////////////////////////////////
 // v3d_drm.h
 /////////////////////////////////////////////////////////
@@ -49,8 +48,8 @@ typedef struct {
 
 
 typedef struct {
-    uint32_t  handle;
-    uint32_t  pad;
+  uint32_t  handle;
+  uint32_t  pad;
 } drm_gem_close;
 
 
@@ -62,10 +61,10 @@ typedef struct {
 
 
 typedef struct {
-    uint32_t size   = 0;
-    uint32_t flags  = 0;
-    uint32_t handle = 0;
-    uint32_t offset = 0;
+  uint32_t size   = 0;
+  uint32_t flags  = 0;
+  uint32_t handle = 0;
+  uint32_t offset = 0;
 } drm_v3d_create_bo;
 
 
@@ -74,7 +73,6 @@ typedef struct {
     uint32_t flags  = 0;
     uint64_t offset = 0;
 } drm_v3d_mmap_bo;
-
 
 
 #define DRM_V3D_WAIT_BO    (DRM_COMMAND_BASE + 0x01)
@@ -87,11 +85,7 @@ typedef struct {
 #define DRM_IOCTL_V3D_CREATE_BO  _IOWR(DRM_IOCTL_BASE, DRM_V3D_CREATE_BO, drm_v3d_create_bo)
 #define DRM_IOCTL_V3D_MMAP_BO    _IOWR(DRM_IOCTL_BASE, DRM_V3D_MMAP_BO, drm_v3d_mmap_bo)
 #define DRM_IOCTL_V3D_SUBMIT_CSD _IOW(DRM_IOCTL_BASE, DRM_V3D_SUBMIT_CSD, drm_v3d_submit_csd)
-
-// Following is wrong; DRM_COMMAND_BASE added twice
-//#define DRM_IOCTL_V3D_GET_PARAM           DRM_IOWR(DRM_COMMAND_BASE + DRM_V3D_GET_PARAM, struct drm_v3d_get_param)
-//#define DRM_IOCTL_V3D_GET_PARAM           DRM_IOWR(DRM_V3D_GET_PARAM, struct drm_v3d_get_param)
-#define DRM_IOCTL_V3D_GET_PARAM           _IOWR(DRM_IOCTL_BASE, DRM_V3D_GET_PARAM, struct drm_v3d_get_param)
+#define DRM_IOCTL_V3D_GET_PARAM  _IOWR(DRM_IOCTL_BASE, DRM_V3D_GET_PARAM, struct drm_v3d_get_param)
 
 #define DRM_GEM_CLOSE    0x09
 
@@ -99,28 +93,28 @@ typedef struct {
 
 
 enum drm_v3d_param {
-	DRM_V3D_PARAM_V3D_UIFCFG,
-	DRM_V3D_PARAM_V3D_HUB_IDENT1,
-	DRM_V3D_PARAM_V3D_HUB_IDENT2,
-	DRM_V3D_PARAM_V3D_HUB_IDENT3,
-	DRM_V3D_PARAM_V3D_CORE0_IDENT0,
-	DRM_V3D_PARAM_V3D_CORE0_IDENT1,
-	DRM_V3D_PARAM_V3D_CORE0_IDENT2,
-	DRM_V3D_PARAM_SUPPORTS_TFU,
-	DRM_V3D_PARAM_SUPPORTS_CSD,
-	DRM_V3D_PARAM_SUPPORTS_CACHE_FLUSH,
-	DRM_V3D_PARAM_SUPPORTS_PERFMON,
-	DRM_V3D_PARAM_SUPPORTS_MULTISYNC_EXT,
-	DRM_V3D_PARAM_SUPPORTS_CPU_QUEUE,
-	DRM_V3D_PARAM_MAX_PERF_COUNTERS,
-	DRM_V3D_PARAM_SUPPORTS_SUPER_PAGES,
+  DRM_V3D_PARAM_V3D_UIFCFG,
+  DRM_V3D_PARAM_V3D_HUB_IDENT1,
+  DRM_V3D_PARAM_V3D_HUB_IDENT2,
+  DRM_V3D_PARAM_V3D_HUB_IDENT3,
+  DRM_V3D_PARAM_V3D_CORE0_IDENT0,
+  DRM_V3D_PARAM_V3D_CORE0_IDENT1,
+  DRM_V3D_PARAM_V3D_CORE0_IDENT2,
+  DRM_V3D_PARAM_SUPPORTS_TFU,
+  DRM_V3D_PARAM_SUPPORTS_CSD,
+  DRM_V3D_PARAM_SUPPORTS_CACHE_FLUSH,
+  DRM_V3D_PARAM_SUPPORTS_PERFMON,
+  DRM_V3D_PARAM_SUPPORTS_MULTISYNC_EXT,
+  DRM_V3D_PARAM_SUPPORTS_CPU_QUEUE,
+  DRM_V3D_PARAM_MAX_PERF_COUNTERS,
+  DRM_V3D_PARAM_SUPPORTS_SUPER_PAGES,
 };
 
 
 struct drm_v3d_get_param {
-	__u32 param;
-	__u32 pad;
-	local::__u64 value;
+  __u32 param;
+  __u32 pad;
+  local::__u64 value;
 };
 
 
@@ -166,20 +160,7 @@ struct drm_v3d_perfmon_get_counter {
 #define DRM_V3D_PERFMON_GET_COUNTER               0x0c
 
 #define DRM_IOCTL_V3D_PERFMON_GET_COUNTER DRM_IOWR(DRM_COMMAND_BASE + DRM_V3D_PERFMON_GET_COUNTER, \
-               struct drm_v3d_perfmon_get_counter)
+  struct drm_v3d_perfmon_get_counter)
 
-
-/*
-// Following not in v3d_drm.h - I don't think they are used
-const unsigned V3D_PARAM_V3D_UIFCFG = 0;
-const unsigned V3D_PARAM_V3D_HUB_IDENT1 = 1;
-const unsigned V3D_PARAM_V3D_HUB_IDENT2 = 2;
-const unsigned V3D_PARAM_V3D_HUB_IDENT3 = 3;
-const unsigned V3D_PARAM_V3D_CORE0_IDENT0 = 4;
-const unsigned V3D_PARAM_V3D_CORE0_IDENT1 = 5;
-const unsigned V3D_PARAM_V3D_CORE0_IDENT2 = 6;
-const unsigned V3D_PARAM_SUPPORTS_TFU = 7;
-const unsigned V3D_PARAM_SUPPORTS_CSD = 8;
-*/
 
 #endif // _V3DLIB_V3D_DRM_H

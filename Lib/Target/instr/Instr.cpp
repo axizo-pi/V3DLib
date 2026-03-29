@@ -441,16 +441,6 @@ bool Instr::is_always() const {
 }
 
 
-/**
- * Determine if this is the last instruction in a basic block
- *
- * TODO Unused, do we need this?
- */
-bool Instr::isLast() const {
-  return tag == InstrTag::BRL || tag == InstrTag::BR || tag == InstrTag::END;
-}
-
-
 SetCond Instr::set_cond() const {
   assert(tag == InstrTag::LI || InstrTag::ALU);
   return m_set_cond;
@@ -828,7 +818,9 @@ void check_instruction_tag_for_platform(InstrTag tag, bool for_vc4) {
 
   if (platform != nullptr) {
     std::string msg = "Instruction tag ";
-    msg << dump_instr_tag(tag) << "(" + std::to_string(tag) + ")" << " can not be used on " << platform;
+    msg << dump_instr_tag(tag) 
+        << "(" << std::to_string(tag) << ")"
+        << " can not be used on " << platform;
     fatal(msg);
   }
 }

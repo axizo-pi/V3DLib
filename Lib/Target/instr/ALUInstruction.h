@@ -13,7 +13,7 @@ struct ALUInstruction {
 
   ALUInstruction() = default;
 
-	int num_operands() const;
+  int num_operands() const;
 };
 
 }  // namespace V3DLib

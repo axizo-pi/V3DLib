@@ -171,11 +171,11 @@ PGM &PGM::plot(float const *arr, int size, int color) {
     //       top (y == 0) leaves 1 row open, bottom gets clipped
     int y =  m_height - (int) ((arr[x] - min)/(max - min)*((float) m_height));
 
-		if (y >= m_height) {
-			// clip if out of bounds
-			cdebug << "pgm y value " << y << " >= " << m_height << " out of bounds, clipped";
-			y = m_height -1;
-		}
+    if (y >= m_height) {
+      // clip if out of bounds
+      cdebug << "pgm y value " << y << " >= " << m_height << " out of bounds, clipped";
+      y = m_height -1;
+    }
 
     m_arr[x + y*m_width] = color;
   }

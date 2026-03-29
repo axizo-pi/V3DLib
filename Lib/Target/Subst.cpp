@@ -5,7 +5,7 @@ namespace V3DLib {
 using namespace Target;
 
 /**
- * Rename used registers in an instruction
+ * @brief Rename used registers in an instruction
  *
  * @return true if anything replaced, false otherwise
  */

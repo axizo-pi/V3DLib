@@ -13,8 +13,6 @@ namespace V3DLib {
 namespace {
 
 MAYBE_UNUSED bool check_align(BaseSharedArray const &arr, std::string const &name) {
-  //warn << "check_align called for '" << name << "'";
-
   if (arr.getAddress() % 16) {
     cerr << "SharedArray " << name << " not 16-bit aligned";
     return false;
@@ -25,8 +23,6 @@ MAYBE_UNUSED bool check_align(BaseSharedArray const &arr, std::string const &nam
 
 
 MAYBE_UNUSED bool check_align(uint32_t addr, std::string const &name) {
-  //warn << "check_align addr called for '" << name << "'";
-
   if (addr % 16) {
     cerr << "Address " << name << " not 16-bit aligned: " << hex << addr;
     return false;
@@ -37,7 +33,7 @@ MAYBE_UNUSED bool check_align(uint32_t addr, std::string const &name) {
 
 
 /**
- * Number of 32-bit words needed for the parameters (uniforms)
+ * @brief Number of 32-bit words needed for the parameters (uniforms)
  *
  * - First two values are always the QPU ID and num QPU's
  * - Next come the actual kernel parameters, as defined in the user code
@@ -50,7 +46,7 @@ int num_params(IntList const &params) {
 
 
 /**
- * Initialize uniforms to pass into running QPUs for vc4
+ * @brief Initialize uniforms to pass into running QPUs for vc4
  *
  * The number and types of parameters will not change for a given kernel.
  * The value of the parameters, however, can change, so this needs to be reset every time.
@@ -96,8 +92,7 @@ void load_uniforms(Data &uniforms, IntList const &params, int numQPUs) {
 void load_uniforms(int &offset, int index, int qpu_count,  Data &uniforms, ScheduledJob &job) {
   assert(uniforms.allocated());
 
-	job.params_offset = offset;
-	//warn << "load_uniforms jobs.params_offset: " << job.params_offset;
+  job.params_offset = offset;
 
   uniforms[offset++] = (uint32_t) index;            // Unique QPU ID
   uniforms[offset++] = (uint32_t) qpu_count;        // QPU count
@@ -112,25 +107,24 @@ void load_uniforms(int &offset, int index, int qpu_count,  Data &uniforms, Sched
 
 void alloc_launch_messages(Data &launch_messages) {
   if (!launch_messages.allocated()) {
-  	launch_messages.alloc(2*Platform::max_qpus());  // Go for the max size, irrespective of number of jobs
-	}
+    launch_messages.alloc(2*Platform::max_qpus());  // Go for the max size, irrespective of number of jobs
+  }
 }
 
 
 void add_launch_message(int index, Data &launch_messages, ScheduledJob const &job, Data const &uniforms) {
   assertq(!uniforms.empty(), "add_launch_messages(): expecting values for uniforms");
-	assert(job.params_offset != -1);
+  assert(job.params_offset != -1);
 
-	alloc_launch_messages(launch_messages);
-  //check_align(launch_messages, "launch_messages");
+  alloc_launch_messages(launch_messages);
 
-	launch_messages[2*index]     = uniforms.getAddress() + 4*job.params_offset;
-	launch_messages[2*index + 1] = job.code.getAddress();
+  launch_messages[2*index]     = uniforms.getAddress() + 4*job.params_offset;
+  launch_messages[2*index + 1] = job.code.getAddress();
 }
 
 
 /**
- * Initialize launch messages, if not already done so
+ * @brief Initialize launch messages, if not already done so
  */
 void init_launch_messages(
   int numQPUs,
@@ -141,22 +135,15 @@ void init_launch_messages(
 ) {
   assert(numQPUs > 0);
   assertq(!uniforms.empty(), "init_launch_messages(): expecting values for uniforms");
-  //warn << "init_launch_messages() called";
 
-	alloc_launch_messages(launch_messages);
+  alloc_launch_messages(launch_messages);
 
-  //bool check_ok = true;
-
-  //for (int i = 0; i < Platform::max_qpus(); i++) {
   for (int i = 0; i < numQPUs; i++) {
     //
     // Every launch message absolutely needs its own uniforms.
     // Otherwise, mbox_property() fails (verified)
     //
     uint32_t offset = uniforms.getAddress() + 4*i*num_params(params);  // 4* for uint32_t offset
-
-    // This is not the issue! Examples other than Mandelbrot work fine when this check fails
-    //check_ok = check_ok & check_align(offset, "launch param");        // single '&' intentional
 
     launch_messages[2*i]     = offset;
     launch_messages[2*i + 1] = code.getAddress();
@@ -167,31 +154,27 @@ void init_launch_messages(
     launch_messages[2*i]     = 0;
     launch_messages[2*i + 1] = 0; 
   }
-
-  //if (!check_ok) {
-  //  cerr << "init_launch_messages() align check failed."; //<< Can not invoke mailbox" << thrw;
-  //}
 }
 
 
 void check_platform() {
 #ifdef QPU_MODE
   if (!Platform::is_pi_platform()) {
-  	cerr << "check_platform(): will not run on this platform, only on Raspberry Pi's.";
-	  cerr << "Can not run kernel on QPUs." << thrw;
-	}
+    cerr << "check_platform(): will not run on this platform, only on Raspberry Pi's.";
+    cerr << "Can not run kernel on QPUs." << thrw;
+  }
 #else 
- 	cerr << "check_platform(): will not run, QPU mode not enabled.";
+  cerr << "check_platform(): will not run, QPU mode not enabled.";
   cerr << "Can not run kernel on QPUs." << thrw;
 #endif
 }
 
 
 /**
- * Run the kernel on vc4 hardware
+ * @brief Run the kernel on vc4 hardware
  */
 void invoke_jobs(int numQPUs, Data const &launch_messages) {
-	check_platform();
+  check_platform();
 
   enableQPUs();
 
@@ -212,7 +195,7 @@ void invoke_jobs(int numQPUs, Data const &launch_messages) {
 
 
 /**
- * Container for launch info per QPU to run
+ * @brief Container for launch info per QPU to run
  *
  * Array consecutively containing two values per QPU to run:
  *  - pointer to uniform parameters to pass per QPU
@@ -224,17 +207,13 @@ Data launch_messages;
 
 
 /**
- * Load and run a single kernel on multiple QPU's.
+ * @brief Load and run a single kernel on multiple QPU's.
  */
 void MailBoxInvoke::invoke(int numQPUs, Code const &code, IntList const &params) {
   assertq(!code.empty(), "MailBoxInvoke::invoke(): no code to invoke", true );
 
   Data uniforms;  // Memory region for QPU parameters
   load_uniforms(uniforms, params, numQPUs);
-
-  //check_align(uniforms, "uniforms");
-  //check_align(launch_messages, "launch_messages");
-  //check_align(code, "code");
 
   init_launch_messages(numQPUs, launch_messages, code, params, uniforms);
 
@@ -251,22 +230,20 @@ void run(ScheduledJobs &jobs) {
   Data uniforms;                          // Memory region for QPU parameters
   uniforms.alloc(jobs.num_params());
 
-  //check_align(uniforms, "uniforms");
+  int index = 0;
+  int offset = 0;
+  for (auto &job: jobs) {
+    load_uniforms(offset, index, (int) jobs.size(), uniforms, job);
+    index++;
+  }
 
-	int index = 0;
-	int offset = 0;
-	for (auto &job: jobs) {
-  	load_uniforms(offset, index, (int) jobs.size(), uniforms, job);
-		index++;
-	}
+  index = 0;
+  for (auto &job: jobs) {
+    add_launch_message(index, launch_messages, job, uniforms);
+    index++;
+  }
 
-	index = 0;
-	for (auto &job: jobs) {
-		add_launch_message(index, launch_messages, job, uniforms);
-		index++;
-	}
-
-	invoke_jobs((int) jobs.size(), launch_messages);
+  invoke_jobs((int) jobs.size(), launch_messages);
 }
 
 } // namespace vc4_invoke

@@ -6,7 +6,8 @@
 namespace V3DLib {
 
 /**
- * TODO name is a misnomer, change
+ * This is actually just a set of integers, so the name is strictly speaking wrong.
+ * But I will leave the name because it shows the intent.
  */
 class RegIdSet : public std::set<int> {
 public:

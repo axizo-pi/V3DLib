@@ -54,7 +54,6 @@ public:
   Pointer    &operator++ ();
   Pointer     operator++(int);
 
-  static void reset_increment();
   static bool passParam(IntList &uniforms, BaseSharedArray const *p);
   static uint32_t param_value(BaseSharedArray const *p);
   static Expr::Ptr getUniformPtr();

@@ -22,7 +22,6 @@ inline std::set<Reg> operator+(std::set<Reg> const &lhs, std::set<Reg> const &rh
 }
 
 
-
 // ============================================================================
 // Class BranchTarget
 // ============================================================================
@@ -162,7 +161,6 @@ struct Instr : public InstructionComment {
   bool isNop() const { return tag == NO_OP; }
   bool isRot() const;
   bool isZero() const;
-  bool isLast() const;
   bool has_registers() const { return tag == InstrTag::LI || tag == InstrTag::ALU || tag == InstrTag::RECV; }
 
   Reg dest() const;

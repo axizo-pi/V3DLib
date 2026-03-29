@@ -149,13 +149,8 @@ Instructions tmua_brainfart(Mnemonic &instr, bool prev_is_tmud) {
 
   bool changed = false;
 
-  // prev_is_tmud: Do for write only
-  //warn << "is tmua: " << (instr.add_dest() == tmua);
-
   if (Platform::compiling_for_vc7() && instr.add_dest() == tmua) {
     if (!prev_is_tmud) {
-      //warn << "Doing tmua brainfart";
-
       // Following thrsw and nop's absolutely required on vc7, verified
       instr.thrsw();
       ret << instr << nop() << nop();
@@ -227,12 +222,8 @@ bool translateOpcode(Target::Instr const &src, Instructions &ret) {
 
       if (Platform::compiling_for_vc7() && *dst_reg == tmua) {
         assert(!reg_a.is_imm());
-        //warn << "default src: " << src.dump();
-        //warn << "default tmp: " << tmp.dump();
 
         if (op == Enum::A_ADD && reg_b.is_imm()) {
-          //warn << "translateOpcode(): add(tmua, dst, imm) does not work for vc7, adjusting";
-
           // It is very probable that the PointExpr addition has been done beforehand,
           // but is not being used. Ignoring that for now. TODO: examine 
 
@@ -251,7 +242,6 @@ bool translateOpcode(Target::Instr const &src, Instructions &ret) {
 
           changed = true;
         } else {
-          //warn << "default brainfart";
           ret << tmua_brainfart(tmp, prev_is_tmud);
           changed = true;
         }
@@ -267,7 +257,6 @@ bool translateOpcode(Target::Instr const &src, Instructions &ret) {
 
   if (did_something) {
     prev_is_tmud = (*dst_reg == tmud);
-    //warn << "did_something: " << prev_is_tmud;
     return true;
   } else {
     warn << "NOT did_something";
@@ -329,13 +318,6 @@ void handle_condition_tags(V3DLib::Instr const &src_instr, Instructions &ret) {
   // Process final where condition
   // In this case, condition flag must be pushed for both add and mul alu.
   //
-
-/*    
-    warn << "handle_condition_tags(): detected final where condition: '"
-           << src_instr.dump() << "'\n"
-           << "v3d: " << ret.back().mnemonic() << "'\n";
-*/           
-
   ret.back().set_push_tag(setCond);
 
   Instr tmp_instr;
@@ -344,12 +326,6 @@ void handle_condition_tags(V3DLib::Instr const &src_instr, Instructions &ret) {
   tmp_instr = nop().sub(*reg, *reg, SmallImm(0)).pushz();
 
   ret << tmp_instr;
-
-/*
-  warn << "handle_condition_tags() "
-       << "v3d final: " << ret.back().mnemonic() << "'\n"
-       << "v3d tmp: " << tmp_instr.mnemonic() << "'\n";
-*/       
 }
 
 
@@ -444,9 +420,6 @@ Instructions encode_LI(V3DLib::Instr const full_instr) {
   auto &instr = full_instr.LI;
   auto dst = encodeDestReg(full_instr);
 
-  //warn << "encode_LI instr: " << full_instr.dump() << "\n"
-  //     << "   imm: " << full_instr.LI.imm.dump();
-
   Instructions ret;
 
   switch (instr.imm.tag()) {
@@ -521,7 +494,6 @@ v3d::instr::Instr encodeBranchLabel(V3DLib::Instr src_instr) {
  * **Pre:** All instructions not meant for v3d are detected beforehand and flagged as error.
  */
 Instructions encodeInstr(V3DLib::Instr instr) {
-  //Log::debug << "Called v3d encodeInstr()";
   Instructions ret;
 
   // Encode core instruction
@@ -656,7 +628,6 @@ bool checkUniformAtTop(V3DLib::Instr::List const &instrs) {
  * @param dst     output list of v3d instructions
  */
 void _encode(V3DLib::Instr::List const &instrs, Instructions &dst) {
-  //warn << "Called _encode()";
 #ifdef DEBUG  
   assertq(checkUniformAtTop(instrs), "_encode(): checkUniformAtTop() failed (v3d)", true);
 #endif
@@ -711,7 +682,7 @@ void load_uniforms(Data &unif, int numQPUs, Data const &devnull, Data const &don
 // Class KernelDriver
 ///////////////////////////////////////////////////////////////////////////////
 
-KernelDriver::KernelDriver() : V3DLib::KernelDriver(V3dBuffer) { //, m_code(code_bo)  { // Why is last item  here?
+KernelDriver::KernelDriver() {
   assert(!Platform::compiling_for_vc4());
 
   if(Platform::compiling_for_vc7()) {
@@ -725,8 +696,6 @@ KernelDriver::KernelDriver() : V3DLib::KernelDriver(V3dBuffer) { //, m_code(code
 
 
 void KernelDriver::encode() {
-  //warn << "Called KernelDriver::encode()";
-
   if (instructions.size() > 0) return;  // Don't bother if already encoded
   if (has_errors()) return;              // Don't do this if compile errors occured
   assert(!m_code.allocated());
@@ -781,7 +750,7 @@ void KernelDriver::encode() {
 
 
 /**
- * Generate the opcodes for the currrent v3d instruction sequence
+ * @brief Generate the opcodes for the currrent v3d instruction sequence
  *
  * The translation/removal of labels happens here somewhere 
  */
@@ -881,8 +850,6 @@ void KernelDriver::invoke(int numQPUs, IntList &params, bool wait_complete) {
 
   drv.add_bo(getBufferObject().getHandle());
   drv.execute(m_code, &uniforms, numQPUs, wait_complete);
-
-  //Log::warn << "KernelDriver::invoke() done: " << done.dump(); 
 #endif  // QPU_MODE
 }
 

@@ -22,38 +22,6 @@ void pre_write(Complex::Ptr &dst, Complex &src, bool add_result, Int const &j) {
   if (Platform::compiling_for_vc4()) {
     pre_write(dst.re(), src.re(), add_result, j);
     pre_write(dst.im(), src.im(), add_result, j);
-
-/*
-    Complex tmp = 0;
-
-    if (add_result) {
-      comment("vc4 complex pre_write with add");
-      int pre_label = prefetch_label();
-      Complex::Ptr dst_read = dst;
-      pre_read(tmp, dst_read, pre_label);
-
-      tmp += src;
-    } else {
-      comment("vc4 complex pre_write no add");
-      tmp = src;
-    }
-
-    vpmSetupWrite(HORIZ, 2*me());
-    vpmPut(tmp.re());
-
-    vpmSetupWrite(HORIZ, 2*me() + 1);  // Reset required!
-    vpmPut(tmp.im());
-
-    dmaSetWriteStride((16 - j)*4);
-    dmaSetupWrite(HORIZ, 1, 4*2*me(), j);
-    dmaStartWrite(dst.re());
-    dmaWaitWrite();   
-
-    dmaSetWriteStride((16 - j)*4);
-    dmaSetupWrite(HORIZ, 1, 4*(2*me() + 1), j);
-    dmaStartWrite(dst.im());
-    dmaWaitWrite();   
-*/
   } else {
     Complex::Ptr local_dst = dst;
 
@@ -98,15 +66,6 @@ void ComplexDotVector::load(Float::Ptr const &rhs) {
 
 
 void ComplexDotVector::dot_product(Complex::Ptr rhs, Complex &result) {
-/*
-  debug("complex dot_product");
-  {
-    std::string msg;
-    msg << "size: " << size();
-    debug(msg);
-  }
-*/
-
   int label = prefetch_label();
   Complex tmp(0, 0);               comment("ComplexDotVector::dot_product()");
   Complex tmp2(0, 0);

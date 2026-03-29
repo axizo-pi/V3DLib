@@ -58,31 +58,19 @@ PointerExpr Pointer::addself(IntExpr b)   { return (self() = self() + b); }
 PointerExpr Pointer::subself(IntExpr b)   { return (self() = self() - b); }
 
 
-
 Pointer &Pointer::self() {
   return *(const_cast<Pointer *>(this));
 }
 
 
-void Pointer::reset_increment() {
-  // Does nothing for now
-  // TODO cleanup
-  // increment.reset(nullptr);
-}
-
-
 void Pointer::inc() {
   if (Platform::compiling_for_vc4()) {
-    //std::unique_ptr<IntExpr> e;
     int const INC = 16*4;  // for getting next block for a sequential pointer
-    //e.reset(new IntExpr(INC));  comment("pointer increment");
-
-    self() = bare_addself(*this, IntExpr(INC));  // comment("increment pointer");
+    self() = bare_addself(*this, IntExpr(INC));
   } else {
     // Use global var with value 64 to increment ptr
     Expr::Ptr e = std::make_shared<Expr>(Var_64());
-
-    self() = bare_addself(*this, e);  // comment("increment pointer");
+    self() = bare_addself(*this, e);
   }
 }
 

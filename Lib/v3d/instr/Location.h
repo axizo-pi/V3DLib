@@ -13,23 +13,22 @@ public:
   v3d_qpu_input_unpack input_unpack() const { return m_input_unpack; }
   bool is_rf() const  { return m_is_rf; }
   bool is_reg() const { return !m_is_rf; }
-	bool is_special() const { return !is_acc(); }
+  bool is_special() const { return !is_acc(); }
 
   bool is_acc() const {
-		// This should work for waddr as well as mux, because the enum values are the same
-		// Note that R5 is QUAD on vc7 and may have special uses
-		return !m_is_rf && to_waddr() <= V3D_QPU_WADDR_R5;
-	}
-
+    // This should work for waddr as well as mux, because the enum values are the same
+    // Note that R5 is QUAD on vc7 and may have special uses
+    return !m_is_rf && to_waddr() <= V3D_QPU_WADDR_R5;
+  }
 
   virtual Location *clone() const = 0;
   virtual v3d_qpu_waddr to_waddr() const = 0;
   virtual v3d_qpu_mux to_mux() const = 0;
   virtual bool operator==(Location const &rhs) const = 0;
 
-	std::string dump() const;
+  std::string dump() const;
 
-	static bool check_acc_usage(Location const &loc);
+  static bool check_acc_usage(Location const &loc);
 
 protected:
   v3d_qpu_output_pack m_output_pack   = V3D_QPU_PACK_NONE;

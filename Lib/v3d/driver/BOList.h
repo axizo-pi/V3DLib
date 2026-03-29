@@ -6,14 +6,14 @@
 
 class BOList : public std::vector<struct v3d_bo *> {
 public:
-	~BOList();
+  ~BOList();
 
-	uint32_t       add_handle(uint32_t size, bool warn_on_error = false);
-	struct v3d_bo *by_handle(uint32_t handle) const;
-	bool           delete_by_handle(uint32_t handle);
+  uint32_t       add_handle(uint32_t size, bool warn_on_error = false);
+  struct v3d_bo *by_handle(uint32_t handle) const;
+  bool           delete_by_handle(uint32_t handle);
 
 private:
-	void unreference(struct v3d_bo *ptr);
+  void unreference(struct v3d_bo *ptr);
 };
 
 

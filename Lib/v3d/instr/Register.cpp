@@ -2,7 +2,6 @@
 #include "Support/basics.h"    // Exception
 #include "Support/Platform.h"  // Exception
 #include "RFAddress.h"
-//#include "Encode.h"            // encodeSrcReg();
 
 namespace V3DLib {
 namespace v3d {
@@ -10,31 +9,31 @@ namespace instr {
 
 bool DestReg::operator==(Register const &rhs) const {
   if (!m_used) return false;
-	if (is_magic() != rhs.is_special()) return false;
-			
-	return (m_waddr == rhs.to_waddr());
+  if (is_magic() != rhs.is_special()) return false;
+      
+  return (m_waddr == rhs.to_waddr());
 }
 
 std::string DestReg::dump() const {
-	std::string ret;
+  std::string ret;
 
-	if (m_used) {
- 		if (m_magic_write) {
+  if (m_used) {
+     if (m_magic_write) {
       if (m_waddr <= V3D_QPU_WADDR_R5) {
-				ret << "r";
-			} else {
-				ret << "magic ";
-			}
-		} else {
-			ret << "rf";
-		}
+        ret << "r";
+      } else {
+        ret << "magic ";
+      }
+    } else {
+      ret << "rf";
+    }
 
- 		ret << m_waddr;
-	} else {
-		ret << "Not used";
-	}
+     ret << m_waddr;
+  } else {
+    ret << "Not used";
+  }
 
-	return ret;
+  return ret;
 }
 
 
@@ -56,7 +55,7 @@ Register::Register(const char *name, v3d_qpu_waddr waddr_val, v3d_qpu_mux mux_va
 
 
 v3d_qpu_mux Register::to_mux() const {
-	assertq(!Platform::compiling_for_vc7(), "Don't use mux's on vc7");
+  assertq(!Platform::compiling_for_vc7(), "Don't use mux's on vc7");
 
   if (!m_mux_is_set) {
     // It is (most likely) a special register

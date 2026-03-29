@@ -12,7 +12,6 @@ namespace V3DLib {
 
 
 HeapManager::HeapManager() {
-	//Log::warn << "Called HeapManager ctor";
   m_free_ranges.reserve(INITIAL_FREE_RANGE_SIZE);
 }
 
@@ -58,7 +57,7 @@ bool HeapManager::check_available(uint32_t n) {
 
 
 void HeapManager::clear() {
-	//Log::warn << "Called HeapManager::clear()";
+  //Log::warn << "Called HeapManager::clear()";
   m_size = 0;
   m_offset = 0;
   m_free_ranges.clear();
@@ -81,8 +80,8 @@ bool HeapManager::is_cleared() const {
  * @return Start offset into heap if allocated, -1 if could not allocate.
  */
 int HeapManager::alloc_array(uint32_t size_in_bytes) {
-	//Log::warn << "Calling HeapManager::alloc_array(" << size_in_bytes << ")\n"
-	//          << dump_free_ranges();
+  //Log::warn << "Calling HeapManager::alloc_array(" << size_in_bytes << ")\n"
+  //          << dump_free_ranges();
 
   assert(m_size > 0);
   assert(size_in_bytes > 0);
@@ -92,10 +91,10 @@ int HeapManager::alloc_array(uint32_t size_in_bytes) {
   int found_index = -1;
   for (int i = 0; i < (int) m_free_ranges.size(); ++i) {
     auto &cur = m_free_ranges[i];
-		//Log::warn << "size_in_bytes: " << size_in_bytes << ", cur.size(): "  << cur.size();
+    //Log::warn << "size_in_bytes: " << size_in_bytes << ", cur.size(): "  << cur.size();
 
     if (size_in_bytes <= cur.size()) {
-			//Log::warn << "Found free range: " << cur.dump();
+      //Log::warn << "Found free range: " << cur.dump();
       found_index = i;
       break;
     }
@@ -108,7 +107,7 @@ int HeapManager::alloc_array(uint32_t size_in_bytes) {
       return -1;
     }
 
-		//Log::warn << "allocating new range at offset: " << m_offset << ", size: " << size_in_bytes;
+    //Log::warn << "allocating new range at offset: " << m_offset << ", size: " << size_in_bytes;
     uint32_t prev_offset = m_offset;
     m_offset += size_in_bytes;
     return (int) prev_offset;
@@ -168,8 +167,8 @@ void HeapManager::dealloc_array(FreeRange const in_range) {
     assertq(msg, true);
   }
 #endif
-	//Log::warn << "Called HeapManager::dealloc_array()\n"
-	//          << dump_free_ranges();
+  //Log::warn << "Called HeapManager::dealloc_array()\n"
+  //          << dump_free_ranges();
 
   // Find adjacent matches in current free range list
   int left_match_index  = -1;
@@ -180,13 +179,13 @@ void HeapManager::dealloc_array(FreeRange const in_range) {
 
     if (in_range.right + 1 == cur.left) {
       assert(right_match_index == -1);  // Expecting at most one match
-			//Log::warn << "dealloc_array found right match: " << i;
+      //Log::warn << "dealloc_array found right match: " << i;
       right_match_index = i;
     }
 
     if (in_range.left == cur.right + 1) {
       assert(left_match_index == -1); // At most one match
-			//Log::warn << "dealloc_array found left match: " << i;
+      //Log::warn << "dealloc_array found left match: " << i;
       left_match_index = i;
     }
   }
@@ -218,20 +217,20 @@ void HeapManager::dealloc_array(FreeRange const in_range) {
   } else {
     // No match, add given range to list
 
-		// Keep range sorted
-		int cur = -1;
-  	for (int i = 0; i < (int) m_free_ranges.size(); ++i) {
-			if (m_free_ranges[i] > in_range) {
-				cur = i;
-				break;
-			}
-		}
+    // Keep range sorted
+    int cur = -1;
+    for (int i = 0; i < (int) m_free_ranges.size(); ++i) {
+      if (m_free_ranges[i] > in_range) {
+        cur = i;
+        break;
+      }
+    }
 
-		if (cur == -1) {
-	    m_free_ranges.push_back(in_range);
-		} else {
-	    m_free_ranges.insert(m_free_ranges.begin() + cur, in_range);
-		}
+    if (cur == -1) {
+      m_free_ranges.push_back(in_range);
+    } else {
+      m_free_ranges.insert(m_free_ranges.begin() + cur, in_range);
+    }
 
     assert(m_free_ranges.size() < INITIAL_FREE_RANGE_SIZE);  // Warn me when this ever happens
                                                              // (possible, currently not likely)
@@ -247,7 +246,7 @@ void HeapManager::dealloc_array(FreeRange const in_range) {
   if (is_empty) {
     // We're done, reset the buffer
     assert(m_offset > 0);  // paranoia
-		//Log::warn << "Resetting m_offset because empty";
+    //Log::warn << "Resetting m_offset because empty";
     m_offset = 0;          // yes, it's that simple
     m_free_ranges.clear();
     //debug("BufferObject empty again!");
@@ -272,9 +271,9 @@ std::string HeapManager::dump() const {
       << "  Num free ranges: " << num_free_ranges()           << "\n";
 
   ret << "\n"
-			<< "Free Ranges\n"
+      << "Free Ranges\n"
       << "-----------------\n"
-			<< dump_free_ranges();
+      << dump_free_ranges();
 
   return ret;
 }
@@ -284,15 +283,15 @@ std::string HeapManager::dump_free_ranges() const {
   std::string ret;
 
   if (m_free_ranges.empty()) {
-		ret << "<free ranges empty>";
-		return ret;
-	}
+    ret << "<free ranges empty>";
+    return ret;
+  }
 
   for (int i = 0; i < (int) m_free_ranges.size(); i++) {
-		ret << "  " << m_free_ranges[i].dump() << "\n";
-	}
+    ret << "  " << m_free_ranges[i].dump() << "\n";
+  }
 
-	return ret;
+  return ret;
 }
 
 
@@ -314,7 +313,7 @@ bool HeapManager::FreeRange::overlaps(FreeRange const &rhs) const {
 
 
 bool HeapManager::FreeRange::operator>(FreeRange const &rhs) const {
-	return (rhs.right < left);
+  return (rhs.right < left);
 }
 
 
@@ -322,8 +321,8 @@ std::string HeapManager::FreeRange::dump() const {
   std::stringstream ret;
 
   ret << "[" << left << ", " << right << "], "
-			<< "hex: [" << std::hex << left << ", " << std::hex << right << "], "
-		  << std::dec << "size: " << size();
+      << "hex: [" << std::hex << left << ", " << std::hex << right << "], "
+      << std::dec << "size: " << size();
 
   return ret.str();
 }

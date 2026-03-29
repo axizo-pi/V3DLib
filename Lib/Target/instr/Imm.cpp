@@ -6,12 +6,9 @@
 
 namespace V3DLib {
 
-Imm::Imm(int i)      : m_tag(IMM_INT32),   m_intVal(i) {}
+Imm::Imm(int i)      : m_tag(IMM_INT32),   m_intVal(i)       {}
 Imm::Imm(unsigned i) : m_tag(IMM_INT32),   m_intVal((int) i) {}
-
-Imm::Imm(float f)    : m_tag(IMM_FLOAT32), m_floatVal(f) {
-	//Log::warn << "Imm ctor val: " << f;
-}
+Imm::Imm(float f)    : m_tag(IMM_FLOAT32), m_floatVal(f)     {}
 
 int   Imm::intVal()   const { assert(m_tag == IMM_INT32);   return m_intVal; }
 int   Imm::mask()     const { assert(m_tag == IMM_MASK);    return m_intVal; }
@@ -21,8 +18,8 @@ bool Imm::is_zero() const { return m_tag == IMM_INT32 && m_intVal == 0; }
 
 
 /**
- * Check if this is an immediate value which does not
- * need to be constructed inline.
+ * @brief Check if this is an immediate value which does not
+ *        need to be constructed inline.
  */
 bool Imm::is_small_imm() const {
   return (encode_imm() != -1);

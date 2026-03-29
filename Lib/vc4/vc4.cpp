@@ -16,7 +16,7 @@ int numQPUUsers = 0;
 
 
 /**
- * Get mailbox id, opening it if not already open.
+ * @brief Get mailbox id, opening it if not already open.
  */
 int getMailbox() {
   if (mailbox < 0) mailbox = mbox_open();
@@ -25,7 +25,7 @@ int getMailbox() {
 
 
 /**
- * Enable QPUs if not already enabled.
+ * @brief Enable QPUs if not already enabled.
  */
 void enableQPUs() {
   int mb = getMailbox();
@@ -41,7 +41,7 @@ void enableQPUs() {
 
 
 /**
- * Disable QPUs
+ * @brief Disable QPUs
  */
 void disableQPUs() {
   assert(numQPUUsers > 0);

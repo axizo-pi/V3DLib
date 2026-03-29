@@ -29,7 +29,7 @@ const char *dump_flag(Flag flag) {
     case ZC: return "ZC";
     case NS: return "NS";
     case NC: return "NC";
-  	default: assert(false); return "";
+    default: assert(false); return "";
   }
 }
 
@@ -47,9 +47,9 @@ BranchCond BranchCond::negate() const {
     case COND_ALWAYS: ret.tag  = COND_NEVER;  break;
     case COND_ANY:    ret.tag  = COND_ALL; ret.flag = negFlag(flag); break;
     case COND_ALL:    ret.tag  = COND_ANY; ret.flag = negFlag(flag); break;
-  	default:
-  		assert(false);
-  		break;
+    default:
+      assert(false);
+      break;
   }
 
   return ret;
@@ -122,13 +122,13 @@ SetCond::SetCond(CmpOp const &cmp_op) {
 
 const char *SetCond::to_string() const {
   switch (m_tag) {
-  	case NO_COND: return "None";
-  	case Z:       return "Z";
-  	case N:       return "N";
-  	case C:       return "C";
-  	default:
-  		assert(false);
-  		return "<UNKNOWN>";
+    case NO_COND: return "None";
+    case Z:       return "Z";
+    case N:       return "N";
+    case C:       return "C";
+    default:
+      assert(false);
+      return "<UNKNOWN>";
   }
 }
 
@@ -136,7 +136,7 @@ const char *SetCond::to_string() const {
 std::string SetCond::dump() const {
   std::string ret;
   if (flags_set()) {
-  	ret << "{sf-" << to_string() << "}";
+    ret << "{sf-" << to_string() << "}";
   }
   return ret;
 }
@@ -146,17 +146,17 @@ void SetCond::setFlag(Flag flag) {
   Tag set_tag = NO_COND;
 
   switch (flag) {
-  	case ZS: 
-  	case ZC: 
-  		set_tag = SetCond::Z;
-  		break;
-  	case NS: 
-  	case NC: 
-  		set_tag = SetCond::N;
-  		break;
-  	default:
-  		assert(false);  // Not expecting anything else right now
-  		break;
+    case ZS: 
+    case ZC: 
+      set_tag = SetCond::Z;
+      break;
+    case NS: 
+    case NC: 
+      set_tag = SetCond::N;
+      break;
+    default:
+      assert(false);  // Not expecting anything else right now
+      break;
   }
 
   tag(set_tag);
@@ -176,7 +176,7 @@ std::string dump(AssignCond cond) {
     case Tag::ALWAYS: return "always";
     case Tag::NEVER:  return "never";
     case Tag::FLAG:   return dump_flag(cond.flag);
-  	default: assert(false); return "";
+    default: assert(false); return "";
   }
 }
 
@@ -197,9 +197,9 @@ AssignCond AssignCond::negate() const {
     case NEVER:  ret.tag = ALWAYS; break;
     case ALWAYS: ret.tag = NEVER;  break;
     case FLAG:   ret.flag = negFlag(flag); break;
-  	default:
-  		assert(false);
-  		break;
+    default:
+      assert(false);
+      break;
   }
 
   return ret;
@@ -210,11 +210,11 @@ std::string AssignCond::to_string() const {
   auto ALWAYS = AssignCond::Tag::ALWAYS;
 
   if (tag == ALWAYS) {
-  	return "";
+    return "";
   } else {
-  	std::string ret;
-  	ret << "where " << dump(*this) << ": ";
-  	return ret;
+    std::string ret;
+    ret << "where " << dump(*this) << ": ";
+    return ret;
   }
 }
 

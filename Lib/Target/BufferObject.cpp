@@ -1,10 +1,10 @@
 #include "BufferObject.h"
+#include "Support/basics.h"
+#include "Support/debug.h"
+#include "LibSettings.h"
 #include <cassert>
 #include <memory>
 #include <cstdio>
-#include "../Support/basics.h"
-#include "../Support/debug.h"
-#include "LibSettings.h"
 
 namespace V3DLib {
 namespace emu {

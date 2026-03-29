@@ -37,7 +37,7 @@ public:
     }
   }
 
-	std::string dump() const;
+  std::string dump() const;
 
 private:
   bool m_is_location = false;

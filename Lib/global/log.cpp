@@ -135,9 +135,6 @@ protected:
 
     ofstream of;
     of.open(path.str(), ios::app);
-
-    // For multiple kernel calls, this is called for every call anyway.
-    // Can't see why. TODO examine and fix.
     assert(!of.fail(), "Can not open logfile for appending");
 
     of << msg;
@@ -202,6 +199,7 @@ LogItem &LogItem::operator<<(unsigned n) {
   return *this;
 }
 
+
 LogItem &LogItem::operator<<(unsigned long n) {
   if (m_next_is_hex) {
     char buf[64];
@@ -219,9 +217,7 @@ LogItem &LogItem::operator<<(unsigned long n) {
 
 
 LogItem &LogItem::operator<<(float n) {
-  // Following untested
   m_log.buf().setf(std::ios_base::scientific, std::ios_base::floatfield);
-
   m_log.buf()  << n;
   return *this;
 }
@@ -319,14 +315,12 @@ Logger fatal(Logger::FATAL);
 
 
 cout_timestamp::cout_timestamp(bool val) {
-  //warn << "cout_timestamp setting to value " << val;
   m_prev = s_cout_show_timestamp;
   s_cout_show_timestamp = val;
 }
 
 
 cout_timestamp::~cout_timestamp() {
-  //warn << "cout_timestamp restoring to previous value " << m_prev;
   s_cout_show_timestamp = m_prev;
 }
 } // namespace Log

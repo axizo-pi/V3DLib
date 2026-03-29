@@ -25,7 +25,7 @@ public:
 
   bool is_magic() const { return m_magic_write; }
 
-	std::string dump() const;
+  std::string dump() const;
 
 private:
   bool    m_used = false;
@@ -75,7 +75,7 @@ public:
   v3d_qpu_mux to_mux() const override;
 
   bool operator==(Location const &rhs) const override;
-	std::string const &name() const { return m_name; }
+  std::string const &name() const { return m_name; }
 
 private:
   std::string   m_name;

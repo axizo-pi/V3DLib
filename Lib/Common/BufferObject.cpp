@@ -2,7 +2,6 @@
 #include "Support/Platform.h"
 #include "Support/debug.h"
 #include "global/log.h"
-#include "BufferType.h"
 #include "Target/BufferObject.h"
 #include "vc4/BufferObject.h"
 #include "v3d/BufferObject.h"

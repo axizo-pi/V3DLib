@@ -80,7 +80,6 @@ void sleep(int sec) {
  */
 bool contains(std::string const &s1, std::string const &s2) {  
   if (s1.find(s2) != std::string::npos) {
-    //std::cout << "found!" << '\n';
     return true;
   }
 
@@ -92,11 +91,11 @@ bool contains(std::string const &s1, std::string const &s2) {
  * Source: https://stackoverflow.com/a/874160/1223531
  */
 bool hasEnding (std::string const &fullString, std::string const &ending) {
-    if (fullString.length() >= ending.length()) {
-        return (0 == fullString.compare (fullString.length() - ending.length(), ending.length(), ending));
-    } else {
-        return false;
-    }
+  if (fullString.length() >= ending.length()) {
+    return (0 == fullString.compare (fullString.length() - ending.length(), ending.length(), ending));
+  } else {
+    return false;
+  }
 }
 
 

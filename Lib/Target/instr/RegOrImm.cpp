@@ -29,16 +29,8 @@ uint8_t RegOrImm::encode() const {
   assert(Platform::compiling_for_vc4() || Platform::running_emulator());
   assert(is_imm());
 
-  //warn << "encode() imm: " << m_imm.dump();
-
   int ret = m_imm.encode_imm();
-  //warn << "encode() ret: " << hex << ret;
-
-  if (ret == -1) {
-    warn << "RegOrImm::encode() invalid encoding, imm: " << m_imm.dump();
-    breakpoint;
-    warn << "Aborting" << thrw;
-  }
+  assert(ret != -1);  // Not expecting this
 
   // input should be in the encode range for target platforms
   assert(v3d::instr::SmallImm::is_legal_encoded_value(ret));
@@ -48,19 +40,6 @@ uint8_t RegOrImm::encode() const {
 }
 
 
-/*
-void RegOrImm::set_imm(int rhs) {
-  // input should be in the encode range for target platforms
-  assert((Platform::compiling_for_vc4()  && 0 <= rhs && rhs <= 47)
-      || (!Platform::compiling_for_vc4() && v3d::instr::SmallImm::is_legal_encoded_value(rhs))
-  );
-
-  m_is_reg  = false;
-  m_smallImm.val = rhs;
-}
-*/
-
-
 void RegOrImm::set_reg(Reg const &rhs) {
   m_is_reg  = true;
   m_reg = rhs;
@@ -68,12 +47,7 @@ void RegOrImm::set_reg(Reg const &rhs) {
 }
 
 
-//RegOrImm &RegOrImm::operator=(int rhs)        { set_imm(rhs); return *this; }
-
-
 RegOrImm &RegOrImm::operator=(Imm const &rhs) {
-  //set_imm(rhs.encode_imm());
-
   m_imm = rhs;
   m_is_reg = false;
 
@@ -103,14 +77,12 @@ bool RegOrImm::operator==(Reg const &rhs) const {
 
 bool RegOrImm::operator==(Imm const &rhs) const {
   if (m_is_reg) return false;
-
   return m_imm == rhs;
 }
 
 
 bool RegOrImm::can_read(bool check) const {
   if (m_is_reg) return m_reg.can_read(check);
-
   return true;
 }
 
@@ -120,13 +92,6 @@ std::string RegOrImm::dump() const {
     return m_reg.dump();
   } else {
     return m_imm.dump();
-/*
-    if (Platform::compiling_for_vc4()) {
-      return printSmallLit(m_smallImm.val);
-    } else {
-      return v3d::instr::SmallImm::print_encoded_value(m_smallImm.val);
-    }
-*/
   }
 }
 

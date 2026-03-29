@@ -4,7 +4,6 @@
 // therefore a great place for global includes.
 #include <stdint.h>
 #include "defines.h"
-#include "Common/BufferType.h"
 #include "Support/HeapManager.h"
 
 

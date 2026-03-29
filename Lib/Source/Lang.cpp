@@ -114,27 +114,27 @@ void ForBody_() {
 //=============================================================================
 
 void header(char const *str) {
-	auto stmt = stmtStack().last_stmt(false);
+  auto stmt = stmtStack().last_stmt(false);
 
-	if (stmt == nullptr) {
-		cerr << "header() no statement to add to for string: '" << str << "'. stack:\n"
+  if (stmt == nullptr) {
+    cerr << "header() no statement to add to for string: '" << str << "'. stack:\n"
          << stmtStack().dump();
-	} else {
-		stmt->header(str);
-	}
+  } else {
+    stmt->header(str);
+  }
 }
 
 
 void comment(char const *str) {
-	auto stmt = stmtStack().last_stmt(false);
+  auto stmt = stmtStack().last_stmt(false);
 
-	if (stmt == nullptr) {
-		cerr << "comment() no statement to add to for string: '" << str << "'."
-		//     << " stack:\n" << stmtStack().dump()
+  if (stmt == nullptr) {
+    cerr << "comment() no statement to add to for string: '" << str << "'."
+    //     << " stack:\n" << stmtStack().dump()
     ;
-	} else {
-		stmt->comment(str);
-	}
+  } else {
+    stmt->comment(str);
+  }
 }
 
 }  // namespace V3DLib

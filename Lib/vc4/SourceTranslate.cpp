@@ -34,7 +34,7 @@ void SourceTranslate::regAlloc(Instr::List &instrs) {
 
 
 /**
- * Process statements which are specific for vc4.
+ * @brief Process statements which are specific for vc4.
  *
  * @return true if statement handled, false otherwise
  */
@@ -57,7 +57,7 @@ bool SourceTranslate::stmt(Instr::List &seq, Stmt::Ptr s) {
 
 
 /**
- * Add initialization code after uniform loads
+ * @brief Add initialization code after uniform loads
  */
 void add_init_block(Instr::List &code) {
   // Add uniform ptr index offsets

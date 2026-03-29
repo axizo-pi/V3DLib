@@ -49,13 +49,13 @@ private:
     uint32_t size() const;
     bool empty() const { return size() == 0; }
     bool overlaps(FreeRange const &rhs) const;
-		bool operator>(FreeRange const &rhs) const;
+    bool operator>(FreeRange const &rhs) const;
     std::string dump() const;
   };
 
   std::vector<FreeRange> m_free_ranges;
 
-	std::string dump_free_ranges() const;
+  std::string dump_free_ranges() const;
 
   bool check_available(uint32_t n);
   void dealloc_array(FreeRange const in_range);

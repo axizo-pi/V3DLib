@@ -68,7 +68,6 @@ void var_to_reg(Var var, Reg &r) {
   }
 }
 
-
 }  //  anon namespace
 
 

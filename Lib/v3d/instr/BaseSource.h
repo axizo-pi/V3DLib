@@ -25,7 +25,7 @@ public:
 
   BaseSource(Source const &rhs);
   BaseSource(Location const &rhs);
-	BaseSource(Instr const &instr, int check_src);
+  BaseSource(Instr const &instr, int check_src);
 
   bool operator==(const BaseSource &rhs) const;
   bool operator!=(const BaseSource &rhs) const {return !(*this == rhs); }
@@ -45,8 +45,8 @@ public:
 
   bool uses_global_raddr() const;
 
-	void unpack(v3d_qpu_input_unpack rhs) { m_unpack = rhs; }
-	v3d_qpu_input_unpack unpack() const { return m_unpack; }
+  void unpack(v3d_qpu_input_unpack rhs) { m_unpack = rhs; }
+  v3d_qpu_input_unpack unpack() const { return m_unpack; }
 
 private:
   bool    m_is_set       = false;
@@ -57,7 +57,7 @@ private:
   bool    m_is_dst       = false;
   bool    m_is_magic     = false;
 
-	v3d_qpu_input_unpack m_unpack;
+  v3d_qpu_input_unpack m_unpack;
 
   void _init(Location const &rhs);
 };

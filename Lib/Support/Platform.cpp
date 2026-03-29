@@ -138,13 +138,6 @@ bool get_chip_version(std::string &model, std::string &revision) {
   std::string field;
 
   while (getline(t, line)) {
- /* 
-    field = read_field(line, "Hardware");
-    if (!field.empty()) { 
-      model = field;
-      continue;
-    }
-*/
     field = read_field(line, "Revision");
     if (!field.empty()) {
       revision = field;
@@ -344,6 +337,7 @@ Tag tag() {
   return tag;
 }
 
+
 /**
  * Returns the number of available registers in a register file for the current
  * target platform
@@ -374,7 +368,6 @@ int max_qpus() {
 }
 
 
-
 int gather_limit() {
   {
     static bool showed = false;
@@ -400,7 +393,6 @@ std::string pi_version() {
   if (!get_platform_string(val)) {
     return ret;
   }
-	//warn << "pi_version val: " << val;
 
   std::string const prefix = "Raspberry Pi ";
 
@@ -434,14 +426,12 @@ bool running_emulator() { return instance().m_running_emulator; }
 
 
 main_mem::main_mem(bool val) {
-  //warn << "main_mem setting to value " << val;
   m_prev = use_main_memory();
   use_main_memory(val);
 }
 
 
 main_mem::~main_mem() {
-  //warn << "main_mem restoring to previous value " << m_prev;
   use_main_memory(m_prev);
 }
 

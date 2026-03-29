@@ -14,11 +14,11 @@ using namespace Log;
 namespace V3DLib {
 
 void BaseSettings::process(BaseKernel &k) {
-  // NOTE: For multiple calls here (entirely possible, HeatMap does this),
-  //       this will prevent dumping the v3d code (mnemonics, actually) on every call.
+  // For multiple calls here (entirely possible, HeatMap does this),
+  // this will prevent dumping the v3d code (mnemonics, actually) on every call.
   if (output_code) {
     if (output_count == 0) {
-			cdebug << "BaseSettings outputting code";
+      cdebug << "BaseSettings outputting code";
 
       assert(!name.empty());
       std::string code_filename = name + "_code.txt";
@@ -43,7 +43,7 @@ void BaseSettings::startPerfCounters() {
 
   using PC = V3DLib::vc4::PerformanceCounters;
  
-  printf("TODO Settings::startPerfCounters: add vc7\n");
+  // TODO add vc7\n
 
   if (Platform::run_vc4()) {
     PC::enable({

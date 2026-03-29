@@ -61,7 +61,7 @@ void check_reg(Reg reg) {
 
 
 void check_unhandled_registers(Reg reg, bool do_src_regs) {
-	if (reg.is_none()) return; // Don't bother checking
+  if (reg.is_none()) return; // Don't bother checking
 
   if (do_src_regs) {
     switch (reg.tag) {
@@ -78,7 +78,7 @@ void check_unhandled_registers(Reg reg, bool do_src_regs) {
         case SPECIAL_UNIFORM:
         case SPECIAL_ELEM_NUM:
         case SPECIAL_QPU_NUM:
-					// These can occur for vc7
+          // These can occur for vc7
           assertq(Platform::compiling_for_vc7(), "check_unhandled_registers(): Not expecting this SPECIAL regId, should be handled before call()", true);
         break;
 
@@ -109,6 +109,7 @@ void check_unhandled_registers(Reg reg, bool do_src_regs) {
 
 }  // anon namespace
 
+
 uint8_t to_waddr(Reg const &reg) {
   assertq(reg.tag != REG_B, "to_waddr(): Not expecting REG_B any more, examine");
   assert(reg.tag == REG_A);
@@ -133,17 +134,17 @@ std::unique_ptr<Location> encodeSrcReg(Reg reg) {
       ret = loc_acc(reg.regId, 4);  // r5 not allowed here (?)
       break;
     case NONE:
-			// NONE is perfectly legal for the b src in instructions with one
-			// parameter. eg. mov, exp.
-			//
-			// We substitute rf0 as a dummy.
-			//
-			// Curiously, I first encountered this on exp for vc7
+      // NONE is perfectly legal for the b src in instructions with one
+      // parameter. eg. mov, exp.
+      //
+      // We substitute rf0 as a dummy.
+      //
+      // Curiously, I first encountered this on exp for vc7
       ret.reset(new RFAddress(0));
       break;
 
     default:
-			breakpoint;
+      breakpoint;
       cerr << "encodeSrcReg(): unexpected register: " << reg.dump() << thrw;
   }
 
@@ -161,15 +162,15 @@ std::unique_ptr<Location> encodeDestReg(V3DLib::Instr const &src_instr) {
   Reg reg = src_instr.dest();
   check_unhandled_registers(reg, false);
 
-	//
-	// Don't want this to appear here any more.
-	// Original code:
-	//
+  //
+  // Don't want this to appear here any more.
+  // Original code:
+  //
   //      case SPECIAL_DMA_ST_ADDR  : ret = loc_ptr(tmua);  break; // Write TMU, to set memory address to write to
-	//
-	if (reg.tag == SPECIAL) {
-	  assertq(reg.regId != SPECIAL_DMA_ST_ADDR, "Get this tag out of my face");
-	}
+  //
+  if (reg.tag == SPECIAL) {
+    assertq(reg.regId != SPECIAL_DMA_ST_ADDR, "Get this tag out of my face");
+  }
 
   switch (reg.tag) {
     case REG_A:

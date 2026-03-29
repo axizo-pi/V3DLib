@@ -7,7 +7,7 @@
 namespace V3DLib {
 
 /**
- * Mixin class for Mailbox invocation
+ * @brief Mixin class for Mailbox invocation
  *
  * Prepares the data for the call and executes the call.
  */

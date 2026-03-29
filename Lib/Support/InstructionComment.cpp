@@ -7,12 +7,10 @@ namespace V3DLib {
 
 void InstructionComment::transfer_comments(InstructionComment &rhs) {
   if (!rhs.header().empty()) {
-    //Log::debug << "transfer_comments header: " << rhs.header();
     header(rhs.header());
   }
 
   if (!rhs.comment().empty()) {
-    //Log::debug << "transfer_comments comment: " << rhs.comment();
     comment(rhs.comment());
   }
 
@@ -21,7 +19,7 @@ void InstructionComment::transfer_comments(InstructionComment &rhs) {
 
 
 bool InstructionComment::transferred() const {
-  // Don't bother signalling if no comments present
+  // Don't bother if no comments present
   if (header().empty() && comment().empty()) return true;
 
   return m_transferred;
@@ -48,8 +46,8 @@ void InstructionComment::header(std::string const &msg) {
   if (msg.empty()) return;
 
   if (!m_header.empty()) {
-		// If input is same as current, ignore
-  	if (msg == m_header) return;
+    // If input is same as current, ignore
+    if (msg == m_header) return;
 
     warn << "header() Header comment already has a value when setting it\n"
          << "current: " << m_header << "\n"

@@ -15,7 +15,7 @@ namespace V3DLib {
 namespace {
 
 /**
- * Determine the mask and offset to use for given source register.
+ * @brief Determine the mask and offset to use for given source register.
  *
  * ----------------------------------------------------------------------------
  * Every source offset has four associated masks:
@@ -38,7 +38,7 @@ void get_mask_offset(int source_index, uint32_t &mask, uint32_t &offset) {
 
 
 /**
- * Set the bitfield for given source register with given counter
+ * @brief Set the bitfield for given source register with given counter
  */
 void set_source_field(int core_id, int source_index, int counter_index) {
   using RM = V3DLib::v3d::RegisterMapping;
@@ -59,19 +59,6 @@ void set_source_field(int core_id, int source_index, int counter_index) {
   uint32_t newval  = (val & ~mask) | (counter_index << offset);
 
   regmap.core_write(core_id, src_reg, newval);
-
-/* 
- * NOT WORKING. Gives error -1
- *
- * I'm pretty sure I followed the instructions in v3d_drm.h correctly.
- * /
-  // WRI DEBUG
-  struct drm_v3d_perfmon_get_counter tmp;
-  tmp.counter = counter_index;
-
-  int ret = ::v3d::ioctl(DRM_IOCTL_V3D_PERFMON_GET_COUNTER, &tmp);
-  //assert(ret != -1);
-*/
 }
 
 
@@ -185,7 +172,6 @@ const char *PerformanceCounters::Description[PerformanceCounters::NUM_PERF_COUNT
  */
 void PerformanceCounters::enter(std::vector<int> srcs) {
   auto &regmap = RegisterMapping::instance();
-  //assert(regmap.info().num_cores == 1);
   int core_id = 0;  // Assuming 1 core with id == 0 sufficient for now
 
   // assign counters to use to source registers
@@ -197,20 +183,6 @@ void PerformanceCounters::enter(std::vector<int> srcs) {
   regmap.core_write(core_id, RM::CORE_PCTR_0_CLR     , src_mask);  // Clear selected pctr registers
   regmap.core_write(core_id, RM::CORE_PCTR_0_OVERFLOW, src_mask);
   regmap.core_write(core_id, RM::CORE_PCTR_0_EN      , src_mask);
-
-	// WRI DEBUG - NOT WORKING vc7
-/*	
-	struct drm_v3d_get_param val;
-	val.param = DRM_V3D_PARAM_MAX_PERF_COUNTERS;
-	//val.param = DRM_V3D_PARAM_V3D_UIFCFG;
-	//val.param = DRM_V3D_PARAM_SUPPORTS_TFU;
-	//val.value = 0;
-
-  //warn << "ioctl using fd: " << ::v3d::get_fd();
-  int ret2 = ::v3d::ioctl(DRM_IOCTL_V3D_GET_PARAM, &val);
-  // int ret2 = ioctl(::v3d::get_fd(), DRM_IOCTL_V3D_GET_PARAM, &val);
-  assert(ret2 == 0);
-*/	
 }
 
 
@@ -224,7 +196,6 @@ void PerformanceCounters::exit() {
  */
 std::string PerformanceCounters::showEnabled() {
   auto &regmap = RegisterMapping::instance();
-  //assert(regmap.info().num_cores == 1);
   int core_id = 0;  // Assuming 1 core with id == 0 sufficient for now
 
   int const SLOT_COUNT = 32;
@@ -236,10 +207,8 @@ std::string PerformanceCounters::showEnabled() {
   for (int source_index = 0; source_index < SLOT_COUNT; ++source_index) {
     bool enabled = (0 != (bitMask & (1 << source_index)));
     if (!enabled) {
-      //os << "   Performance counter slot " << i << " not enabled\n";
       continue;
     }
-    //os << "   Performance counter slot " << i << " enabled\n";
 
     uint32_t counter_index = get_source_field(core_id, source_index);
     uint32_t val           = get_pctr_value(core_id, source_index);
@@ -247,8 +216,8 @@ std::string PerformanceCounters::showEnabled() {
     if (counter_index < 0 || counter_index >= NUM_PERF_COUNTERS) {
       os << "   WARNING: Performance counter 0x" << std::hex << counter_index << std::dec
          << "(" << counter_index << ") "
-         << " out of bounds for slot index " << source_index;
-      os << ". val: " << val << "\n";
+         << " out of bounds for slot index " << source_index
+         << ". val: " << val << "\n";
     } else {
       os << "  " <<  Description[counter_index] << ": " << val << "\n";
     }
@@ -256,7 +225,6 @@ std::string PerformanceCounters::showEnabled() {
 
   return os.str();
 }
-
 
 }  // namespace v3d
 }  // namespace V3DLib

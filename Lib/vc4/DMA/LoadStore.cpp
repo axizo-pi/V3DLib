@@ -13,7 +13,7 @@ using namespace Log;
 namespace {
 
 /**
- * Obtain a register for a fresh variable
+ * @brief Obtain a register for a fresh variable
  */
 Reg freshReg() {
   return Reg(REG_A, VarGen::fresh().id());
@@ -25,7 +25,6 @@ Reg freshReg() {
 // =============================================================================
 
 Instr::List genSetupVPMLoad(int addr, VPMLoadReq const &req) {
-  //warn << "Called addr genSetupVPMLoad()";
   assert(addr < 256);
 
   Instr::List ret;
@@ -37,7 +36,6 @@ Instr::List genSetupVPMLoad(int addr, VPMLoadReq const &req) {
 
 
 Instr::List genSetupVPMLoad(Reg addr, VPMLoadReq const &req) {
- // warn << "Called Reg genSetupVPMLoad()";
   Reg tmp = freshReg();
 
   Instr::List ret;
@@ -48,18 +46,17 @@ Instr::List genSetupVPMLoad(Reg addr, VPMLoadReq const &req) {
   return ret;
 }
 
+//
 // Generate instructions to setup VPM store.
+//
 
 Instr genSetupVPMStore(int addr, VPMStoreReq const &req) {
-  //warn << "Called genSetupVPMStore()";
   assert(addr < 256);
-
   return li(WR_SETUP, req.code() | (addr & 0xff)).comment(req.dump());
 }
 
 
 Instr::List genSetupVPMStore(Reg addr, VPMStoreReq const &req) {
-  //warn << "Called List genSetupVPMStore()";
   Reg tmp = freshReg();
 
   Instr::List ret;
@@ -142,13 +139,12 @@ Instr genStartDMALoad(Reg memAddr) {
 
 
 Instr genWaitDMALoad(bool might_be_end = false) {
-	Instr::List ret = mov(None, DMA_LD_WAIT);
+  Instr::List ret = mov(None, DMA_LD_WAIT);
 
-	// Not expecting more than one instr here
-	assert(ret.size() == 1);
+  assert(ret.size() == 1); // Not expecting more than one instr here
 
-	Instr &instr = ret.back();
-	instr.cond(never);
+  Instr &instr = ret.back();
+  instr.cond(never);
 
   if (might_be_end) {
     instr.comment("DMA load wait (likely start of program end)");
@@ -279,24 +275,6 @@ Instr::List genSetupDMAStore(int numRows, IntExpr rowLen, int hor, Expr::Ptr e) 
 
   return ret;
 }
-
-
-/*
-Instr::List genSetupDMAStore(int numRows, IntExpr rowLen, int hor, Reg vpmAddr) {
-  int setup = dmaSetupStoreCode(numRows, rowLen, hor);
-
-  Reg tmp0 = freshReg();
-  Reg tmp1 = freshReg();
-
-  Instr::List ret;
-
-  ret << li(tmp0, setup)
-      << shl(tmp1, vpmAddr, 3)
-      << bor(WR_SETUP, tmp0, tmp1);
-
-  return ret;
-}
-*/
 
 
 Instr genStartDMAStore(Reg memAddr) {

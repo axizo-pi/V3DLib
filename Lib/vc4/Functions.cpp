@@ -40,7 +40,7 @@ void hostIRQ() {
 
 
 /**
- * Wait for all QPU's to complete; `vc4`-specific.
+ * @brief Wait for all QPU's to complete; `vc4`-specific.
  *
  * This is the original QPU wait routine, used in the final part of a kernel.
  * It is inadequate for usage as `barrier()`, see discussion below.

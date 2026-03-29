@@ -3,7 +3,6 @@
 #include <vector>
 #include <string>
 #include <functional>
-#include "Common/BufferType.h"
 #include "Common/CompileData.h"
 #include "Source/StmtStack.h"
 #include "Invoke.h"
@@ -18,7 +17,7 @@ public:
     vc7
   };
 
-  KernelDriver(BufferType in_buffer_type) : buffer_type(in_buffer_type) {}
+  KernelDriver() = default;
   KernelDriver(KernelDriver &&k) = default;
   virtual ~KernelDriver();
 
@@ -57,9 +56,8 @@ protected:
   void obtain_ast();
 
 private:
-  BufferType const buffer_type;
-  StmtStack        m_stmtStack;
-  int              m_numVars = 0;           // The number of variables in the source code for vc4
+  StmtStack   m_stmtStack;
+  int         m_numVars = 0;           // The number of variables in the source code for vc4
   CompileData m_compile_data;
 
   virtual void compile_intern() = 0;

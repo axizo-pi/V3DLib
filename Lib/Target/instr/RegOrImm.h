@@ -27,7 +27,7 @@ struct RegOrImm {
 
   bool is_reg() const { return m_is_reg;  }
   bool is_imm() const { return !m_is_reg; }
-	bool is_none() const { return is_reg() && m_reg.is_none(); } 
+  bool is_none() const { return is_reg() && m_reg.is_none(); } 
   bool can_read(bool check = false) const;
   std::string dump() const;
 
@@ -37,23 +37,15 @@ struct RegOrImm {
   Imm imm() const;
   uint8_t encode() const;
 
-/*
-  EncodedSmallImm &imm();
-  EncodedSmallImm imm() const;
-*/
-
   bool is_transient() const;
   bool uses_src() const;
 
 private:
-  bool m_is_reg;        // if false, is an imm
+  bool m_is_reg;        // if false, it's an imm
 
   Reg m_reg;
   Imm m_imm;
 
-  //EncodedSmallImm m_smallImm;  // A small immediate
-
-  //void set_imm(int rhs);
   void set_reg(Reg const &rhs);
 };
 

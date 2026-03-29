@@ -64,14 +64,14 @@ struct WorkGroup {
 
 
 uint32_t roundup(uint32_t n, uint32_t d) {
-	return (n + d -1) /d ;
+  return (n + d -1) /d ;
 }
 
 }  // anon namespace
 
 
 /**
- * Execute a kernel on v3d hardware
+ * @brief Execute a kernel on v3d hardware
  *
  * Source: https://github.com/Idein/py-videocore7/blob/dc4f91d34c428f2d64b10de1738b189abfdf98d9/src/_videocore7/driver.py#L134
  *
@@ -86,61 +86,48 @@ uint32_t roundup(uint32_t n, uint32_t d) {
  * 1. It doesn't appear to be necessary to add the code BO to the bo handles list.
  *    All unit tests pass without doing this.
  *    This is something to keep in mind; it might go awkward later on.
- *
- * 2. Totally no clue what the workgroup if for and what it does.
+ * 2. Totally no clue what the workgroup is for and what it does.
  *    Can't find anything about it online, just what `py-videocore6` gives,
  *    which I plain took over.
  */
 bool Driver::execute(Code &code, Data *uniforms, uint32_t thread, bool wait_complete) {
   uint32_t code_phyaddr = code.getAddress();
 
-	// Check if there is space for the special flags
-	// Works for vc7, fails for vc6
-	bool do_special_flags = true;
+  // Check if there is space for the special flags
+  // Works for vc7, fails for vc6
+  bool do_special_flags = true;
 
-	if ((code_phyaddr & 0x7) != 0) {
-		if (Platform::compiling_for_vc7()) {  // Fails often on vc6, now also on vc7
-			cdebug << "Test on room for special flags fails. phyaddr: " << hex << code_phyaddr;
-		}
-		do_special_flags = false;
-	}
+  if ((code_phyaddr & 0x7) != 0) {
+    if (Platform::compiling_for_vc7()) {  // Fails often on vc6, now also on vc7
+      cdebug << "Test on room for special flags fails. phyaddr: " << hex << code_phyaddr;
+    }
+    do_special_flags = false;
+  }
 
   // Technically, you are not required to pass in uniforms.
   // If there are none, set the address to zero.
   uint32_t unif_phyaddr = (uniforms == nullptr)?0u:uniforms->getAddress();
   assertq(m_bo_handles.size() >= 1, "v3d execute: Expecting at least one buffer object on execution");  // See Note 1
 
-	uint32_t special_flags = 0;
+  uint32_t special_flags = 0;
 
-	if (do_special_flags) {
-		// Special flags
-	  bool propagate_nan = false;
-		bool single_seg    = false;
-		bool threading     = false;
+  if (do_special_flags) {
+    // Special flags
+    bool propagate_nan = false;
+    bool single_seg    = false;
+    bool threading     = false;
 
-		if (propagate_nan) special_flags += (1 << 2);
-		if (single_seg)    special_flags += (1 << 1);
-		if (threading)     special_flags += 1;
-	}
+    if (propagate_nan) special_flags += (1 << 2);
+    if (single_seg)    special_flags += (1 << 1);
+    if (threading)     special_flags += 1;
+  }
 
   WorkGroup workgroup;
   uint32_t wgs_per_sg = 16;
 
-	if (!Platform::compiling_for_vc7()) {
-		thread--;   // This is what vc6 expects
-	}
-
-/*
-	warn << "Driver::execute() code_phyaddr: "     << hex << code_phyaddr;
-	warn << "Driver::execute() uniforms address: " << hex << uniforms->getAddress();
-	warn << "Driver::execute() thread: "           << thread;
-
-	std::string tmp;
-  for (int i = 0; i < (int) m_bo_handles.size(); i++) {
-		tmp << m_bo_handles[i] << ", ";
+  if (!Platform::compiling_for_vc7()) {
+    thread--;   // This is what vc6 expects
   }
-	warn << "Driver::execute() bo_handles: " << tmp;
-*/
 
   drm_v3d_submit_csd st = {
     {
@@ -148,11 +135,11 @@ bool Driver::execute(Code &code, Data *uniforms, uint32_t thread, bool wait_comp
       workgroup.wg_y << 16,
       workgroup.wg_z << 16,
       (
-			 ((roundup(wgs_per_sg * workgroup.wg_size(), 16u) - 1) << 12) | (wgs_per_sg << 8) | (workgroup.wg_size() & 0xff)
+       ((roundup(wgs_per_sg * workgroup.wg_size(), 16u) - 1) << 12) | (wgs_per_sg << 8) | (workgroup.wg_size() & 0xff)
       ),
       thread,
 
-			// Shader address, pnan, singleseg, threading
+      // Shader address, pnan, singleseg, threading
       code_phyaddr | special_flags,
       unif_phyaddr
     },
@@ -162,9 +149,9 @@ bool Driver::execute(Code &code, Data *uniforms, uint32_t thread, bool wait_comp
     .bo_handle_count = (uint32_t) m_bo_handles.size(),
     .in_sync         = 0,
     .out_sync        = 0,
-		.perfmon_id      = 0,
-		.extensions      = 0,
-		.flags           = 0,
+    .perfmon_id      = 0,
+    .extensions      = 0,
+    .flags           = 0,
   };
 
 
@@ -184,20 +171,19 @@ bool Driver::execute(Code &code, Data *uniforms, uint32_t thread, bool wait_comp
 bool Driver::wait_bo() {
   assert(m_bo_handles.size() > 0);
 
-  //warn << "Timeout: " << LibSettings::qpu_timeout() << "s";
   uint64_t timeout_ns = 1000000000llu * LibSettings::qpu_timeout();
 
   int ret = true;
 
   for (auto handle : m_bo_handles) {
-		//warn << "wait_bo waiting for handle: " << handle;
+    //warn << "wait_bo waiting for handle: " << handle;
     if (!::v3d::wait_bo(handle, timeout_ns)) { 
-			cerr << "wait_bo fail";
+      cerr << "wait_bo fail";
       ret = false;
     }
   }
 
-	m_bo_handles.clear();
+  m_bo_handles.clear();
 
   return ret;
 }

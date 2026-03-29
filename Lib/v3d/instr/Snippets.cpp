@@ -110,11 +110,9 @@ Instructions sync_tmu() {
 
 
 Instructions barrier() {
-  const char *text = "Make QPU's wait for each other.";
-
   Instructions ret;
 
-  ret << barrierid(syncb).thrsw().comment(text)
+  ret << barrierid(syncb).thrsw().comment("Make QPU's wait for each other.")
       << nop()
       << nop();
 

@@ -10,53 +10,33 @@
 
 #include <cassert>
 
-/*
-class PGM {
-public:
-  PGM(int width, int height);
-  ~PGM();
-
-  PGM &plot(float const *arr, int size, int color = MAX_COLOR);
-  PGM &plot(V3DLib::Float::Array const &arr, int color = MAX_COLOR);
-  PGM &plot(std::vector<float> const arr, int color = MAX_COLOR) { return plot(arr.data(), (int) arr.size(), color); }
-  void save(char const *filename);
-
-private:
-  static int const MAX_COLOR = 127;
-
-  int m_width  = 0;
-  int m_height = 0;
-  int *m_arr   = nullptr;
-};
-*/
-
 class Image {
 public:
-	Image(int width, int height);
+  Image(int width, int height);
 
-	void set_conversion_factor(double val);
-	void plot(double in_x, double in_y);
-	void save(std::string const &filename) const;
+  void set_conversion_factor(double val);
+  void plot(double in_x, double in_y);
+  void save(std::string const &filename) const;
 
-private:	
-	int    m_width;
-	int    m_height;
-	double m_factor = 1.0;
+private:  
+  int    m_width;
+  int    m_height;
+  double m_factor = 1.0;
 
-	bitmap_image m_img;
+  bitmap_image m_img;
 };
 
 
 template<class Array>
 void output_bmp(
-	Array &arr,
-	int width,
-	int height,
-	int in_max_value,
-	const char *filename,
-	bool do_color
+  Array &arr,
+  int width,
+  int height,
+  int in_max_value,
+  const char *filename,
+  bool do_color
 ) {
-	const int PaletteSize  = 1000;
+  const int PaletteSize  = 1000;
   int const RGBLimit     = 255;        // largest allowed value in pgm file is 65536 (-1?)
   int const LINEAR_LIMIT = 128;        // Use log scale above this number of iterations
   bool do_log            = (in_max_value > LINEAR_LIMIT);
@@ -69,8 +49,8 @@ void output_bmp(
 
 
   auto scale = [do_log, in_max_value, max_value] (float value, int out_size) -> int {
-  	float factor           = 1.0f;
-  	factor = ((float) out_size)/max_value;
+    float factor           = 1.0f;
+    factor = ((float) out_size)/max_value;
 
     if (value  <= 0) return 0;
     if (value  >= (float) in_max_value) return 0;
@@ -87,34 +67,34 @@ void output_bmp(
   };
 
 
-	bitmap_image img(width, height);
+  bitmap_image img(width, height);
 
-	for (int y = 0; y < height; ++y) {
- 		for (int x = 0; x < width; ++x) {
+  for (int y = 0; y < height; ++y) {
+    for (int x = 0; x < width; ++x) {
 
-			// Following was in mandelbrot example of bitmap project
-			//const unsigned int index = static_cast<unsigned int>
+      // Following was in mandelbrot example of bitmap project
+      //const unsigned int index = static_cast<unsigned int>
       //            (1000.0 * log2(1.75 + i - log2(log2(z))) / log2(max_iterations));
 
-			float val   = (float) arr[x + width*y];
-			rgb_t color = {0, 0, 0};
+      float val   = (float) arr[x + width*y];
+      rgb_t color = {0, 0, 0};
 
-			unsigned index;
-			if (do_color) {
-				if (val != 0 && val != (float) in_max_value) {
-  				index = scale(val, PaletteSize);
-					color = jet_colormap[index];
-				}
-			} else {
-  			unsigned char rgb = (unsigned char) scale(val, RGBLimit);
-				color = {rgb, rgb, rgb};
-			}
+      unsigned index;
+      if (do_color) {
+        if (val != 0 && val != (float) in_max_value) {
+          index = scale(val, PaletteSize);
+          color = jet_colormap[index];
+        }
+      } else {
+        unsigned char rgb = (unsigned char) scale(val, RGBLimit);
+        color = {rgb, rgb, rgb};
+      }
 
-			img.set_pixel(x, y, color);
-		}
-	}
+      img.set_pixel(x, y, color);
+    }
+  }
 
-	img.save_image(filename);
+  img.save_image(filename);
 }
 
 #endif  // _EXAMPLE_SUPPORT_BMP_H

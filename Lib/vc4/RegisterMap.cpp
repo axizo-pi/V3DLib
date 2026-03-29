@@ -18,7 +18,7 @@ namespace {
 std::unique_ptr<RegisterMap> _instance;
 
 /**
- * Masks for bitfields of register V3D_L2CACTL
+ * @brief Masks for bitfields of register V3D_L2CACTL
  */
 enum V3D_L2CACTL_bits {
   L2CCLR = 0x4,  // L2 Cache Clear, Write ‘1’ to clear the L2 Cache     (write only)
@@ -35,7 +35,6 @@ RegisterMap::RegisterMap() {
 
   bcm_host_init();
   unsigned addr = bcm_host_get_peripheral_address();
-  //printf("Peripheral base: %08X\n", addr);
 
   m_size = bcm_host_get_peripheral_size();
 
@@ -44,16 +43,13 @@ RegisterMap::RegisterMap() {
   // Following succeeds if it returns.
   m_addr = (uint32_t *) mapmem(addr, m_size);
   assert(m_addr != nullptr);
-  //printf("init address: %08X, size: %u\n", m_addr, m_size);
 
   bcm_host_deinit();
 }
 
 
 RegisterMap::~RegisterMap() {
-  // printf("Closing down register map\n");
   unmapmem((void *) m_addr, m_size);
-//  bcm_host_deinit();
   disableQPUs();
 }
 
@@ -133,8 +129,6 @@ void RegisterMap::checkVersionString(uint32_t  reg) {
 
 int RegisterMap::numSlices() {
   uint32_t reg = readRegister(V3D_IDENT1);
-  // printf("reg V3D_IDENT1: %08X\n", reg);
-
   return (reg >> 4) & 0xf;
 }
 
@@ -259,7 +253,6 @@ void RegisterMap::SchedulerRegisters(SchedulerRegisterValues values) {
     int offset = 4*i;
 
     if (values.set_qpu[i]) {
-      //new_reg0 = (reg0 & ~(0x0f << offset)) | (values.qpu[i] << offset);
       new_reg0 = (0x0f & values.qpu[i]) << offset;
     }
   }
@@ -268,7 +261,6 @@ void RegisterMap::SchedulerRegisters(SchedulerRegisterValues values) {
     int offset = 4*i - MAX_AVAILABLE_QPUS/2;
 
     if (values.set_qpu[i]) {
-      //new_reg1 = (reg1 & ~(0x0f << offset)) | (values.qpu[i] << offset);
       new_reg1 = (0x0f & values.qpu[i]) << offset;
     }
   }

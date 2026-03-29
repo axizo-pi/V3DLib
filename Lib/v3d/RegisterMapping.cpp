@@ -211,20 +211,10 @@ RegisterMapping::~RegisterMapping() {
 
 
 unsigned RegisterMapping::num_cores() {
-	// DOES NOT WORK on vc7; returns 8 instead of expected 1
+  // DOES NOT WORK on vc7; returns 8 instead of expected 1
   unsigned const ret = HubField(m_addr[V3D_HUB_IDENT1], 11, 8);
 
-/*
-  NOT WORKING - expecting this to work on vc7
-
-	struct drm_v3d_get_param val;
-	val.param = DRM_V3D_PARAM_V3D_HUB_IDENT1;
-
-  int ret2 = ::v3d::ioctl(DRM_IOCTL_V3D_GET_PARAM, &val);
-  assert(ret2 != -1);
-*/	
-
-	warn << "Got here, ret: " << ret;
+  warn << "Got here, ret: " << ret;
 
   return ret;
 }
@@ -263,7 +253,6 @@ RegisterMapping::Info RegisterMapping::info() {
 
 RegisterMapping::Stats RegisterMapping::stats() {
   Stats ret;
-
 
   for (int i = 0; i < Stats::NUM_COUNTERS; ++i) {
     ret.counters[i] = m_addr[V3D_PCTR_0_PCTR0];
@@ -411,8 +400,7 @@ typedef uint64_t  ktime_t;
  *   cmp1 == cmp2: return 0
  *   cmp1  > cmp2: return >0
  */
-static inline int ktime_compare(const ktime_t cmp1, const ktime_t cmp2)
-{
+static inline int ktime_compare(const ktime_t cmp1, const ktime_t cmp2) {
   if (cmp1 < cmp2)
     return -1;
   if (cmp1 > cmp2)
@@ -428,8 +416,7 @@ static inline int ktime_compare(const ktime_t cmp1, const ktime_t cmp2)
  *
  * Return: true if cmp1 happened after cmp2.
  */
-static inline bool ktime_after(const ktime_t cmp1, const ktime_t cmp2)
-{
+static inline bool ktime_after(const ktime_t cmp1, const ktime_t cmp2) {
   return ktime_compare(cmp1, cmp2) > 0;
 }
 
@@ -462,6 +449,7 @@ uint64_t ktime_get_raw() {
 
 
 // Source: drivers/gpu/drm/v3d/v3d_drv.h
+
 /**
  * __wait_for - magic wait macro
  *
@@ -502,60 +490,16 @@ uint64_t ktime_get_raw() {
 
 
 void RegisterMapping::v3d_reset_v3d() {
-  // This confuses me; there is no 'bridge' reg under the device-tree for `v3dbus`
   //
-  // Perhaps I'm looking at the code of an unreleased kernel release here.
-  // Commenting it out and hoping for the best.
-
-/*
-  uint32_t version = v3d_bridge_read(V3D_TOP_GR_BRIDGE_REVISION);
-  uint32_t major   = HubField(version, 15, 8);
-
-   if (major == 2) {
-     v3d_bridge_write(V3D_TOP_GR_BRIDGE_SW_INIT_0, V3D_TOP_GR_BRIDGE_SW_INIT_0_V3D_CLK_108_SW_INIT);
-     v3d_bridge_write(V3D_TOP_GR_BRIDGE_SW_INIT_0, 0);
-
-     / * GFXH-1383: The SW_INIT may cause a stray write to address 0
-      * of the unit, so reset it to its power-on value here.
-      * /
-     v3d_write(V3D_HUB_AXICFG, v3d_mask(3, 0));
-   } else {
-     //WARN_ON_ONCE(V3D_GET_FIELD(version, V3D_TOP_GR_BRIDGE_MAJOR) != 7);
-     v3d_bridge_write(V3D_TOP_GR_BRIDGE_SW_INIT_1, V3D_TOP_GR_BRIDGE_SW_INIT_1_V3D_CLK_108_SW_INIT);
-     v3d_bridge_write(V3D_TOP_GR_BRIDGE_SW_INIT_1, 0);
-   }
-
-
-
-// NOTE: Following might still be of use (copied from if):
-     / * GFXH-1383: The SW_INIT may cause a stray write to address 0
-      * of the unit, so reset it to its power-on value here.
-      * /
-     v3d_write(V3D_HUB_AXICFG, v3d_mask(3, 0));
-*/
-
-  //
-   //v3d_init_hw_state(v3d); -> v3d_init_core(struct v3d_dev *v3d, int core)
+  //v3d_init_hw_state(v3d); -> v3d_init_core(struct v3d_dev *v3d, int core)
   //
   int core = 0;
 
-  // For ver < 4.0 only 
-#if 0
-  /* Set OVRTMUOUT, which means that the texture sampler uniform
-    * configuration's tmu output type field is used, instead of
-    * using the hardware default behavior based on the texture
-    * type.  If you want the default behavior, you can still put
-    * "2" in the indirect texture state's output_type field.
-    */
-   v3d_core_write(core, V3D_CTL_MISCCFG, V3D_MISCCFG_OVRTMUOUT);
-#endif
-
-
-   /* Whenever we flush the L2T cache, we always want to flush
-    * the whole thing.
-    */
-   v3d_core_write(core, V3D_CTL_L2TFLSTA, 0);
-   v3d_core_write(core, V3D_CTL_L2TFLEND, ~0);
+  /* Whenever we flush the L2T cache, we always want to flush
+   * the whole thing.
+   */
+  v3d_core_write(core, V3D_CTL_L2TFLSTA, 0);
+  v3d_core_write(core, V3D_CTL_L2TFLEND, ~0);
 }
 
 
@@ -619,12 +563,6 @@ void RegisterMapping::reset_v3d() {
             V3D_MMU_CTL_PT_INVALID_ABORT |
             V3D_MMU_CTL_WRITE_VIOLATION_ABORT |
             V3D_MMU_CTL_CAP_EXCEEDED_ABORT);
-
-  // `v3d->mmu_scratch_paddr` only used for DMA.
-  //
-  //  v3d_write(V3D_MMU_ILLEGAL_ADDR,
-  //            (v3d->mmu_scratch_paddr >> V3D_MMU_PAGE_SHIFT) |
-  //            V3D_MMU_ILLEGAL_ADDR_ENABLE);
 
   v3d_write(V3D_MMUC_CONTROL, V3D_MMUC_CONTROL_ENABLE);
 

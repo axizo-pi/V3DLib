@@ -13,7 +13,6 @@ public:
 
   uint32_t alloc_array(uint32_t size_in_bytes, uint8_t *&array_start_address);
 
-  const BufferType buftype = HeapBuffer;
   static BufferObject &getHeap();
 
 private:

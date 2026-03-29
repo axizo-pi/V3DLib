@@ -13,7 +13,7 @@ using ::operator<<;  // C++ weirdness
 namespace {
 
 /**
- * Return true if given instruction has two register operands.
+ * @return true if given instruction has two register operands.
  */
 bool getTwoUses(Instr instr, Reg* r1, Reg* r2) {
   if (instr.tag == ALU && instr.ALU.srcA.is_reg() && instr.ALU.srcB.is_reg()) {
@@ -27,7 +27,7 @@ bool getTwoUses(Instr instr, Reg* r1, Reg* r2) {
 
 
 /**
- * For each variable, determine a preference for register file A or B.
+ * @brief For each variable, determine a preference for register file A or B.
  */
 void regalloc_determine_regfileAB(Instr::List &instrs, int *prefA, int *prefB, int n) {
   for (int i = 0; i < n; i++) prefA[i] = prefB[i] = 0;
@@ -165,7 +165,6 @@ void regAlloc(Instr::List &instrs) {
   // Step 2 - For each variable, determine all variables ever live at same time
   LiveSets liveWith(numVars);
   liveWith.init(instrs, live);
-  //debug(liveWith.dump());
 
   // Step 3 - Allocate a register to each variable
   RegTag prevChosenRegFile = REG_B;
@@ -200,11 +199,9 @@ void regAlloc(Instr::List &instrs) {
   }
   
   compile_data.allocated_registers_dump = live.reg_usage().dump(true);
-  //std::cout << count_reg_types(instrs).dump() << std::endl;
 
   // Step 4 - Apply the allocation to the code
   allocate_registers(instrs, live.reg_usage());
-  //std::cout << instrs.check_acc_usage() << std::endl;
 
   // Free memory
   delete [] prefA;

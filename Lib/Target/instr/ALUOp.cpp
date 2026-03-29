@@ -34,14 +34,14 @@ std::vector<op_item> op_items = {
   { Enum::A_FSIN,   V3D_QPU_A_SIN    },                   // NOTE: Generation adds NOP's
   { Enum::A_TMUWT,  V3D_QPU_A_TMUWT  },                   // NOTE: Generation adds NOP's
 
-	// v3d
+  // v3d
   { Enum::A_RSQRT,  V3D_QPU_A_RSQRT  },
   { Enum::A_BARRIER, V3D_QPU_A_BARRIERID },               // NOTE: v3d-specific; Generation adds NOP's
 
-	// VC7
+  // VC7
   { Enum::A_MOV,    V3D_QPU_A_MOV    },
   { Enum::A_EXP,    V3D_QPU_A_EXP    },
-  {	Enum::A_RECIP,  V3D_QPU_A_RECIP  },
+  {  Enum::A_RECIP,  V3D_QPU_A_RECIP  },
 
   { Enum::A_LOG,    V3D_QPU_A_LOG    },
 };
@@ -134,7 +134,7 @@ std::string ALUOp::dump() const {
     case A_FSIN:    return "sin";
     case A_TMUWT:   return "tmuwt";
 
-		// vc7
+    // vc7
     case A_MOV:     return "mov";
     case A_EXP:     return "exp";
     case A_RECIP:   return "recip";
@@ -234,7 +234,7 @@ op_item::op_item(Enum in_op, v3d_qpu_add_op in_add_op, v3d_qpu_mul_op in_mul_op)
 
 
 op_item const *op_items_find_by_op(Enum op, bool strict) {
-	assert(!Platform::compiling_for_vc4());
+  assert(!Platform::compiling_for_vc4());
 
   op_items_check_sorted();
 
@@ -260,27 +260,27 @@ namespace Oper {
  */
 int num_operands(v3d_qpu_add_op op) {
   if (
-		op == V3D_QPU_A_TIDX      ||
-		op == V3D_QPU_A_EIDX      ||
-		op == V3D_QPU_A_TMUWT     ||
-		op == V3D_QPU_A_BARRIERID
-	) {
-		return 0;
-	}
+    op == V3D_QPU_A_TIDX      ||
+    op == V3D_QPU_A_EIDX      ||
+    op == V3D_QPU_A_TMUWT     ||
+    op == V3D_QPU_A_BARRIERID
+  ) {
+    return 0;
+  }
 
   if (                         // these should be the only operations with one operand
-	  op == V3D_QPU_A_SIN    ||
-		op == V3D_QPU_A_FFLOOR ||
+    op == V3D_QPU_A_SIN    ||
+    op == V3D_QPU_A_FFLOOR ||
 
-		// vc7 
-		op == V3D_QPU_A_MOV    ||
-		op == V3D_QPU_A_EXP    ||
-		op == V3D_QPU_A_RECIP
-	) {
-		return 1;
-	}
+    // vc7 
+    op == V3D_QPU_A_MOV    ||
+    op == V3D_QPU_A_EXP    ||
+    op == V3D_QPU_A_RECIP
+  ) {
+    return 1;
+  }
 
-	return 2;
+  return 2;
 }
 
 } // namespace Oper
