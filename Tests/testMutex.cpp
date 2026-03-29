@@ -127,14 +127,13 @@ void init_arrays(Int::Array &result, Int::Array &expected, int numQPUs) {
 
 
 /**
- * @brief Run mutexes on emulator
+ * @brief Unit tests for mutexes
  *
  * Emulator should work fine on v3d, no need to block.
  */
 TEST_CASE("Test mutexes emulator[mutex]") {
   int numQPUs = 1;
 
-/*
   SUBCASE("Test emulator") {
     Platform::use_main_memory(true);
     INFO("Unit test [mutex] using main memory");
@@ -168,9 +167,11 @@ TEST_CASE("Test mutexes emulator[mutex]") {
   SUBCASE("Test QPU") {
     if (!Platform::compiling_for_vc4()) {
       warn << "Doing mutexes only for vc4";
-    } if (true) {
+    } else if (true) {
       warn << "Skipping QPU mutex unit test for now";
     } else {
+			warn << "Here!";
+
       Int::Array result(16);
       Int::Array expected(16);
 
@@ -194,7 +195,6 @@ TEST_CASE("Test mutexes emulator[mutex]") {
   }
 
 #endif  // QPU_MODE
-*/
 }
 
 
@@ -229,7 +229,7 @@ TEST_CASE("Test barrier[mutex][barrier]") {
     REQUIRE(result == expected);
 
     INFO("Multiple QPU's");
-    numQPUs = 4;
+    numQPUs = 8;
     init_arrays(result, expected, numQPUs);
     k.load(&result);
     k.setNumQPUs(numQPUs);
@@ -256,17 +256,17 @@ TEST_CASE("Test barrier[mutex][barrier]") {
     k.setNumQPUs(numQPUs);
     k.run();
 
-    warn << "result:\n" << result.dump();
+    //warn << "result:\n" << result.dump();
     REQUIRE(result == expected);
 
     INFO("Multiple QPU's");
-    numQPUs = 4;
+    numQPUs = 8;
     init_arrays(result, expected, numQPUs);
     k.load(&result);
     k.setNumQPUs(numQPUs);
     k.run();
 
-    warn << "result:\n" << result.dump();
+    //warn << "result:\n" << result.dump();
     REQUIRE(result == expected);
   }
 }
