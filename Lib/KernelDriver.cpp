@@ -1,5 +1,4 @@
 #include "KernelDriver.h"
-#include <iostream>                 // cout
 #include "Support/basics.h"
 #include "Support/Platform.h"
 #include "Source/StmtStack.h"
@@ -12,6 +11,7 @@
 namespace V3DLib {
 
 using ::operator<<;  // C++ weirdness
+using namespace Log;
 
 /**
  * NOTE: Don't clean up `body` here, it's a pointer to the top of the AST.
@@ -46,8 +46,7 @@ void KernelDriver::obtain_ast() {
   clearStack();
 
   if (m_stmtStack.size() != 1) {
-    std::string buf = "Expected exactly one item on stmtstack; perhaps an 'End'-statement is missing.";
-    error(buf, true);
+    info << "Expected exactly one item on stmtstack; perhaps an 'End'-statement is missing." << thrw;
   }
 
   m_body = *m_stmtStack.pop();
@@ -101,18 +100,20 @@ void KernelDriver::compile(std::function<void()> create_ast) {
  * @return true if errors present, false otherwise
  */
 bool KernelDriver::handle_errors() {
-  using std::cout;
-  using std::endl;
-
   if (errors.empty()) return false;
+  Log::cout_timestamp ts(false);
 
-  cout << "\nErrors encountered during compilation and/or encoding:\n";
+  std::string buf;
+
+  buf << "Errors encountered during compilation and/or encoding:\n";
 
   for (auto const &err : errors) {
-    cout << "  * " << err << "\n";
+    buf << "  * " << err << "\n";
   }
 
-  cout << "\nNot running the kernel" << endl;
+  buf << "\nNot running the kernel\n";
+
+  cerr << buf;
 
   return true;      
 }

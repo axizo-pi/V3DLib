@@ -18,6 +18,18 @@ namespace {
 
 namespace fs = std::filesystem; // Alias for brevity
 
+bool s_cout_show_timestamp = true;
+bool s_log_to_cout = true;
+
+std::string timestamp() {
+  char time_buf[256];
+  auto now = time(NULL);
+  strftime(time_buf, 256, "[%F %T] ", gmtime(&now));  // Don't need return value
+
+  return time_buf;
+}
+
+
 /**
  * Source: https://www.tutorialpedia.org/blog/create-a-directory-if-it-doesn-t-exist/#google_vignette
  */
@@ -46,98 +58,95 @@ bool create_directory_if_missing(const fs::path& dir_path) {
   }
 }
 
-
-bool s_log_to_cout = true;
-
 /**
  * Internal Logger
  */
 class IntLogger {
 public:
-	IntLogger(Logger::Level level) : m_level(level) {}
+  IntLogger(Logger::Level level) : m_level(level) {}
 
-	virtual bool will_output(Logger::Level level) const {
-		return  (m_level <= level);
-	}
+  virtual bool will_output(Logger::Level level) const {
+    return  (m_level <= level);
+  }
 
-	void out(Logger::Level level, std::string const &msg) {
-		if (m_level > level) return; 
-		_out(level, msg);
-	}
+  void out(Logger::Level level, std::string const &msg) {
+    if (m_level > level) return; 
+    _out(level, msg);
+  }
 
 protected:
-	Logger::Level m_level = Logger::DDEBUG;
+  Logger::Level m_level = Logger::DDEBUG;
 
-	virtual void _out(Logger::Level level, std::string const &msg) = 0;
+  virtual void _out(Logger::Level level, std::string const &msg) = 0;
 };
 
 
 class CoutLogger: public IntLogger {
 public:
-	CoutLogger(Logger::Level level = Logger::Level::DDEBUG) : IntLogger(level) {}
+  CoutLogger(Logger::Level level = Logger::Level::DDEBUG) : IntLogger(level) {}
 
 protected:
 
-	void _out(Logger::Level level, std::string const &msg) override {
-		if (!s_log_to_cout) return;
+  void _out(Logger::Level level, std::string const &msg) override {
+    if (!s_log_to_cout) return;
 
-		if (level > Logger::ERROR) {
-			std::cerr << msg;
-		} else {
-			std::cout << msg;
-		}
+    if (level > Logger::ERROR) {
+      std::cerr << msg;
+    } else {
+      std::cout << msg;
+    }
 
-		if (level == Logger::FATAL) {
-			std::flush(std::cout);
-			std::flush(std::cerr);
-		}
-	}
+    if (level == Logger::FATAL) {
+      std::flush(std::cout);
+      std::flush(std::cerr);
+    }
+  }
 };
 
 
 class FileLogger: public IntLogger {
 public:
-	FileLogger(Logger::Level level = Logger::Level::DDEBUG) : IntLogger(level) {}
+  FileLogger(Logger::Level level = Logger::Level::DDEBUG) : IntLogger(level) {}
 
-	bool will_output(Logger::Level level) const override {
-		if (m_log_dir.empty()) return false;
-		if (m_file.empty())    return false;
+  bool will_output(Logger::Level level) const override {
+    if (m_log_dir.empty()) return false;
+    if (m_file.empty())    return false;
 
-		return  (m_level <= level);
-	}
+    return  (m_level <= level);
+  }
 
-	void log_file(std::string const &file) {
-		m_file = file;
-	}
+  void log_file(std::string const &file) {
+    m_file = file;
+  }
 
-	static void log_dir(std::string path) {
-		m_log_dir = path;
-	}
+  static void log_dir(std::string path) {
+    m_log_dir = path;
+  }
 
 protected:
-	void _out(Logger::Level level, std::string const &msg) override {
-		using namespace std;
+  void _out(Logger::Level level, std::string const &msg) override {
+    using namespace std;
 
-		if (m_log_dir.empty()) return;
-		if (m_file.empty())    return;
+    if (m_log_dir.empty()) return;
+    if (m_file.empty())    return;
 
-		stringstream path;
-		path << m_log_dir << "/" << m_file;
+    stringstream path;
+    path << m_log_dir << "/" << m_file;
 
-		ofstream of;
-		of.open(path.str(), ios::app);
+    ofstream of;
+    of.open(path.str(), ios::app);
 
-		// For multiple kernel calls, this is called for every call anyway.
-		// Can't see why. TODO examine and fix.
-		assert(!of.fail(), "Can not open logfile for appending");
+    // For multiple kernel calls, this is called for every call anyway.
+    // Can't see why. TODO examine and fix.
+    assert(!of.fail(), "Can not open logfile for appending");
 
     of << msg;
     of.close();
-	}
+  }
 
 private:
-	       std::string m_file;
-	static std::string m_log_dir;
+         std::string m_file;
+  static std::string m_log_dir;
 };
 
 std::string FileLogger::m_log_dir;
@@ -150,19 +159,19 @@ FileLogger file_logger;
 
 
 LogItem::~LogItem() noexcept(false) {
-	m_log.flush(m_throw);
+  m_log.flush(m_throw);
 }
 
 
 LogItem &LogItem::operator<<(const std::string &str) {
-	m_log.buf() << str;
-	return *this;
+  m_log.buf() << str;
+  return *this;
 }
 
 
 LogItem &LogItem::operator<<(const char *str) {
-	m_log.buf() << str;
-	return *this;
+  m_log.buf() << str;
+  return *this;
 }
 
 
@@ -174,9 +183,9 @@ LogItem &LogItem::operator<<(int n) {
 
     m_next_is_hex = false;
   } else { 
-	  m_log.buf() << n;
+    m_log.buf() << n;
   }
-	return *this;
+  return *this;
 }
 
 
@@ -188,9 +197,9 @@ LogItem &LogItem::operator<<(unsigned n) {
 
     m_next_is_hex = false;
   } else { 
-	  m_log.buf() << n;
+    m_log.buf() << n;
   }
-	return *this;
+  return *this;
 }
 
 LogItem &LogItem::operator<<(unsigned long n) {
@@ -210,81 +219,81 @@ LogItem &LogItem::operator<<(unsigned long n) {
 
 
 LogItem &LogItem::operator<<(float n) {
-	// Following untested
+  // Following untested
   m_log.buf().setf(std::ios_base::scientific, std::ios_base::floatfield);
 
-	m_log.buf()	<< n;
-	return *this;
+  m_log.buf()  << n;
+  return *this;
 }
 
 
 LogItem &LogItem::operator<<(double n) {
   m_log.buf() << n;
-	return *this;
+  return *this;
 }
 
 
 LogItem &LogItem::operator<<(LogFlag f) {
   if (f == hex)  m_next_is_hex = true;
   if (f == thrw) m_throw       = true;
-	return *this;
+  return *this;
 }
 
 
 std::string Logger::msg() {
-	char time_buf[256];
-	auto now = time(NULL);
-	strftime(time_buf, 256, "[%F %T] ", gmtime(&now));  // iDon't need return value
+  std::string prefix = "";
 
-	std::string prefix = "";
-
-	switch (m_level) {
-		case DDEBUG:  prefix = "DEBUG: ";   break;
-		case INFO:    prefix = "INFO: ";    break;
-		case WARNING: prefix = "WARNING: "; break;
-		case ERROR:   prefix = "ERROR: ";   break;
-		case FATAL:   prefix = "FATAL: ";   break;
-	}
+  switch (m_level) {
+    case DDEBUG:  prefix = "DEBUG: ";   break;
+    case INFO:    prefix = "INFO: ";    break;
+    case WARNING: prefix = "WARNING: "; break;
+    case ERROR:   prefix = "ERROR: ";   break;
+    case FATAL:   prefix = "FATAL: ";   break;
+  }
 
   assert(!m_buf.str().empty(), "m_buf is empty!");
-	std::stringstream msg;
-	msg << time_buf << prefix << m_buf.str() << "\n";
+  std::stringstream msg;
+  msg << prefix << m_buf.str() << "\n";
 
-	return msg.str();
+  return msg.str();
 }
 
 
 void Logger::flush(bool do_throw) {
-	if (m_level == FATAL) {
-		do_throw = true;
-	}
+  if (m_level == FATAL) {
+    do_throw = true;
+  }
 
-	if (cout_logger.will_output(m_level)) {
-		cout_logger.out(m_level, msg());
-	}
+  if (cout_logger.will_output(m_level)) {
+    std::string buf;
+    if (s_cout_show_timestamp) {
+      buf = timestamp();
+    }
+    cout_logger.out(m_level, buf + msg());
+  }
 
-	if (file_logger.will_output(m_level)) {
-		file_logger.out(m_level, msg());
-	}
-	
+  if (file_logger.will_output(m_level)) {
+    file_logger.out(m_level, timestamp() + msg());
+  }
+  
 
-	if (do_throw) {
+  if (do_throw) {
      // Throwing is better, since it allows to unroll the stack
      throw std::runtime_error(m_buf.str());
-	}
+  }
 
-	m_buf.str("");
+  m_buf.str("");
 }
 
 
 void set_log_dir(std::string const &path) {
-	create_directory_if_missing(path);
-	FileLogger::log_dir(path);
+  create_directory_if_missing(path);
+  FileLogger::log_dir(path);
 }
 
 
 void set_log_file(std::string const &file) {
-	file_logger.log_file(file);
+  file_logger.log_file(file);
 }
 
 
@@ -294,8 +303,8 @@ void log_to_cout(bool val) {
 
 
 void assertq(bool condition, const std::string &msg) {
-	if (condition) return;
-	fatal << msg << "\n";
+  if (condition) return;
+  fatal << msg << "\n";
 }
 
 
@@ -308,4 +317,16 @@ Logger cerr(Logger::ERROR);
 Logger error(Logger::ERROR);
 Logger fatal(Logger::FATAL);
 
+
+cout_timestamp::cout_timestamp(bool val) {
+  //warn << "cout_timestamp setting to value " << val;
+  m_prev = s_cout_show_timestamp;
+  s_cout_show_timestamp = val;
+}
+
+
+cout_timestamp::~cout_timestamp() {
+  //warn << "cout_timestamp restoring to previous value " << m_prev;
+  s_cout_show_timestamp = m_prev;
+}
 } // namespace Log

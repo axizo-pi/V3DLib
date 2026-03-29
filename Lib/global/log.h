@@ -96,6 +96,16 @@ extern Logger cerr;   // same as error
 extern Logger error;
 extern Logger fatal;
 
+
+class cout_timestamp {
+public:
+  cout_timestamp(bool val);
+  ~cout_timestamp();
+
+private:
+  bool m_prev;
+};
+
 } // namespace Log
 
 #endif // BASIC_LOG_H

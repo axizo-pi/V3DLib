@@ -132,7 +132,6 @@ Float &Float::operator-=(FloatExpr rhs) { *this = *this - rhs; return *this; }
 Float &Float::operator*=(FloatExpr rhs) { *this = *this * rhs; return *this; }
 
 
-
 // ============================================================================
 // Generic operations
 // ============================================================================

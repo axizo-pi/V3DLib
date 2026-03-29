@@ -596,14 +596,7 @@ void vc4_barrier(Int::Ptr signal) {
     For (Int i = 0, i < numQPUs(), i++)
       Int tmp = *ptr;
 
-      // TODO operator*= for Int's
-      all_signals_set = all_signals_set * tmp;
-/*
-      // TODO: implement operator&& for Int's
-      If (tmp == 0) 
-        all_signals_set = 0;  comment("clear all_signals_set");
-      End
-*/
+      all_signals_set *= tmp;
       ptr.inc();
     End
   };

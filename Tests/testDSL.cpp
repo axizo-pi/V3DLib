@@ -407,7 +407,6 @@ TEST_CASE("Test correct working DSL [dsl][instr]") {
     }
 
     check_vector(result, 0, expected, precision);
-
   }
 }
 
@@ -864,7 +863,6 @@ float calc_max_diff(T1 &arr1, T2 &arr2, int size) {
  * No clue why; adjusted Makefile to run this test
  * separately
  */
-//TEST_CASE("Test functions [dsl][func][pass2]") {
 TEST_CASE("Test functions [dsl][func]") {
 	REQUIRE(::v3d::open());
 
