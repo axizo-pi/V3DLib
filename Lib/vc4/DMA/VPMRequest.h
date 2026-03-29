@@ -43,5 +43,4 @@ struct VPMStoreReq {
 
 }  // namespace V3DLib
 
-
 #endif  // _V3DLIB_VC4_DMA_VPMREQUEST_H_

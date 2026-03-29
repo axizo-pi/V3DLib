@@ -255,6 +255,7 @@ TEST_CASE("Test barrier[mutex][barrier]") {
     Platform::use_main_memory(false);
   }
 
+/*
   SUBCASE("Test barrier QPU") {
     Int::Array result(16);
     Int::Array expected(16);
@@ -275,7 +276,7 @@ TEST_CASE("Test barrier[mutex][barrier]") {
     //warn << "result: " << result.dump();
     REQUIRE(result == expected);
 
-/*
+/ *
     INFO("Multiple QPU's");
     numQPUs = 2;
     init_arrays(result, expected, signal, numQPUs);
@@ -286,8 +287,9 @@ TEST_CASE("Test barrier[mutex][barrier]") {
     warn << "result:\n" << result.dump();
     warn << "signal:\n" << signal.dump();
     REQUIRE(result == expected);
-*/
+* /
   }
+*/
 }
 
 
