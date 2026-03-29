@@ -54,6 +54,7 @@ struct Int : public BaseExpr {
   Int &operator-=(IntExpr rhs);
   Int &operator|=(IntExpr rhs);
   Int &operator/=(IntExpr rhs);
+  Int &operator*=(IntExpr rhs);
 };
 
 

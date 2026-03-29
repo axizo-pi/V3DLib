@@ -208,7 +208,7 @@ TEST_CASE("Test mutexes emulator[mutex]") {
 
 
 /**
- * @brief Run barrier on emulator
+ * @brief Unit test for  barrier
  *
  * This is specifically meant for the `vc4` implementation of `barrier`,
  * but should work on `v3d` as well.

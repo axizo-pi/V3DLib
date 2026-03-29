@@ -120,15 +120,13 @@ string showExpected(const std::vector<T> &expected) {
 
 
 /**
- * Compare 16-value block in `result` starting at `index` with expected value.
+ * Compare `result` starting at `index` with expected value.
  */
 template<typename T>
 void check_vector(SharedArray<T> &result, int index, std::vector<T> const &expected, float precision = 0.0f) {
-  REQUIRE(expected.size() == 16);
-
   bool passed = true;
   int j = 0;
-  for (; j < 16; ++j) {
+  for (; j < (int) expected.size(); ++j) {
     if (abs((float)result[16*index + j] - (float) expected[j]) > precision) {
       passed = false;
       break;
@@ -222,6 +220,10 @@ void kernel_specific_instructions(Int::Ptr result) {
   Int a = index();
   Int b = a ^ 1;
   out(b, result);
+
+  b = a  + 1;
+  b *= 3;
+  out(b, result);
 }
 
 
@@ -229,6 +231,10 @@ void kernel_specific_float_instructions(Float::Ptr result) {
   Float a = toFloat(index() + 1);
   //Float b = a / b; - seq fault! TODO detect
   Float b = 1 / a;
+  out(b, result);
+
+  b = a;
+  b *= 3.1f;
   out(b, result);
 }
 
@@ -356,12 +362,15 @@ void complex_kernel(Complex::Ptr input, Complex::Ptr result) {
 // Unit tests
 //=============================================================================
 
-TEST_CASE("Test correct working DSL [dsl]") {
+TEST_CASE("Test correct working DSL [dsl][instr]") {
 	REQUIRE(::v3d::open());
 
   SUBCASE("Test specific int instructions") {
-    int const NUM = 1;
-    vector<int> expected = {1,0,3,2,5,4,7,6,9,8,11,10,13,12,15,14};
+    int const NUM = 2;
+    vector<int> expected = {
+      1, 0, 3,  2,  5,  4,  7,  6,  9,  8, 11, 10, 13, 12, 15, 14,
+      3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45, 48
+    };
 
     Int::Array result(16*NUM);
     result.fill(-2);  // Initialize to unexpected value
@@ -373,18 +382,24 @@ TEST_CASE("Test correct working DSL [dsl]") {
 
 
   SUBCASE("Test specific float instructions") {
+    const int NUM = 2;
+
     vector<float> expected;
-   	expected.resize(16); 
+   	expected.resize(16*NUM); 
 
     for (int i = 0; i < 16; ++i) {
       expected[i] = 1.0f/(1.0f + ((float) i));
     }
+    for (int i = 16; i < 32; ++i) {
+      expected[i] = ((float) (i - 16) + 1) * 3.1f;
+    }
 
-    Float::Array result(16);
+    Float::Array result(16*NUM);
     result.fill(-2);  // Initialize to unexpected value
 
     auto k = compile(kernel_specific_float_instructions);
     k.load(&result).run();
+    //Log::warn << "result: " << result.dump();
 
     float precision = 0;
     if (Platform::run_vc4()) {

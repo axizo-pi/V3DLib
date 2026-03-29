@@ -4,10 +4,6 @@
 namespace V3DLib {
 namespace vc4 {
 
-void mutex_acquire();
-void mutex_release();
-
-
 void kernelFinish();
 
 }  // namespace vc4
