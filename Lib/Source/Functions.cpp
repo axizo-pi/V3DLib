@@ -15,6 +15,7 @@
 #include "LibSettings.h"
 #include "vc4/Functions.h"
 #include "vc4/RegisterMap.h"
+#include "vc4/DMA/VPMArray.h"
 
 namespace V3DLib {
 namespace functions {
@@ -555,9 +556,8 @@ namespace {
 /**
  * @brief barrier implementation for `vc4`
  *
+ * This uses VPM as shared memory
  * You can't assume that `QPU 0` enters this routine first.
- *
- * **Pre**: signal vectors in main memory are set to zero.
  *
  * ---------------------------------------------
  *
@@ -566,203 +566,47 @@ namespace {
  *
  * - This code is for `vc4`. `v3d` has a `barrier` operation, which
  *   is much more convenient.
- *
- * - This code requires that:
- *   * _either_ the L2 cache is disabled
- *   * _or_ DMA reads are used
  */
-void vc4_barrier(Int::Ptr signal) {
-  Log::warn << "barrier vc4";
+void barrier_vc4() {
+  //Log::warn << "barrier vc4";
   assert(Platform::compiling_for_vc4());
-/*
-  Log::warn << "vc4 assertq tmu_load: " << LibSettings::use_tmu_for_load();
-  Log::warn << "vc4 assertq L2 cache: " << RegisterMap::L2CacheEnabled();
-  Log::warn << "vc4 assertq main mem: " << Platform::use_main_memory();
-*/
 
-  Log::assertq(
-    !LibSettings::use_tmu_for_load() || !RegisterMap::L2CacheEnabled() || Platform::use_main_memory(),
-    "vc4_barrier(): For this call to work, do one of following:\n"
-    "  - use DMA for read\n"
-    "  - disable the L2 cache\n"
-    "  - Use main memory for compilation (will only run on emulator)"
-  );
-
-  auto check_signals = [&signal] (Int &all_signals_set) {
-    nop(1);   comment("Check all signals");
-    all_signals_set = 1;
-
-    Int::Ptr ptr = signal;
-
-    For (Int i = 0, i < numQPUs(), i++)
-      Int tmp = *ptr;
-
-      all_signals_set *= tmp;
-      ptr.inc();
-    End
-  };
-
-
-  // 'I' refers to the QPU currently within this code
-  // 'We' refers to all QPU's participating
+  //
+  // 'I' refers to the QPU that grabbed the mutex
+  // 'We' refers to all other QPU's participating
+  //
 
   nop(1);   header("vc4 barrier");
 
   If (numQPUs() != 1)                     // Don't bother if only one QPU
-    //
-    // Grab the mutex, setting the signals beforehand
-    //
-    *(signal + 16*me()) = 1;              // Signal that I am here
-    
-    Int::Ptr leader_ptr = (signal + 16*(numQPUs() + 1));
+    Int mask = (1 << numQPUs()) - 1;
 
-    // Strong assumption: only one QPU can grab the mutex at any time
-    mutex_acquire();       comment("mutex_acquire");
-    Log::warn << "mutex_acquire: " << stmtStack().last_stmt()->dump();
-    Int leader_signal = *leader_ptr;
+    vpm.set(0, 0);
+    mutex_acquire();   comment("mutex_acquire");
 
-    If (leader_signal == 0)
-      // I am the barrier leader
-      *leader_ptr = 1;      comment("I am the barrier leader");
+    Int tmp = vpm.get(0);
+    While (tmp != mask)
+      vpm.set(0, tmp | (1<< me()));
 
-      // Wait for all signals to be set
-      Int all_signals_set;  comment("Wait for all signals to be set");
-      check_signals(all_signals_set);
-      While ((all_signals_set == 0))
-      //If (all_signals_set == 0)
-        check_signals(all_signals_set);
-      End
+      mutex_release();
+      mutex_acquire();
 
-      // We're all here, release the mutex
-      mutex_release();      comment("mutex_release");
-      nop(1);               comment("Release all signals in loop");
-
-      //
-      // Reset all signals in main memory for next round
-      //
-      // There _may_ be a race condition here, since other QPU's
-      // are released before the leader signal is reset.
-      // 
-/*
-      For (Int i = 0, i < (numQPUs() + 1), i++) 
-        *signal = 0;
-        signal.inc();
-      End
-*/
-      *leader_ptr = 0;
-    Else
-      // I am not the barrier leader.
-      // Wait till the mutex is acquired and release for the rest.
-      mutex_release();  comment("mutex_release");
+      tmp = vpm.get(0);
     End
+
+    mutex_release();
+
+    //
+    // There is a nonzero possibility  here in that the first released QPU's
+    // overwrite vpm(0) with DMA transfers.
+    //
+    // Not apparent yet if I have to deal with that.
+    // For the time being, assume that the loop is fast enough before any
+    // DMA transfers happen.  
+    // Also, DMA transfers use vertical layout, perhaps this is enough
+    // to prevent any overwrites.
+    //
   End
-}
-
-
-void vc4_barrier_2(Int::Ptr signal) {
-  Log::warn << "barrier vc4 2";
-  assert(Platform::compiling_for_vc4());
-/*
-  Log::warn << "vc4 assertq tmu_load: " << LibSettings::use_tmu_for_load();
-  Log::warn << "vc4 assertq L2 cache: " << RegisterMap::L2CacheEnabled();
-  Log::warn << "vc4 assertq main mem: " << Platform::use_main_memory();
-*/
-
-  Log::assertq(
-    !LibSettings::use_tmu_for_load() || !RegisterMap::L2CacheEnabled() || Platform::use_main_memory(),
-    "vc4_barrier(): For this call to work, do one of following:\n"
-    "  - use DMA for read\n"
-    "  - disable the L2 cache\n"
-    "  - Use main memory for compilation (will only run on emulator)"
-  );
-
-  auto check_signals = [&signal] (Int &all_signals_set) {
-    nop(1);   comment("Check all signals");
-    all_signals_set = 1;
-
-    Int::Ptr ptr = signal;
-
-    For (Int i = 0, i < numQPUs(), i++)
-      Int tmp = *ptr;
-
-      all_signals_set *= tmp;
-      ptr.inc();
-    End
-  };
-
-
-  // 'I' refers to the QPU currently within this code
-  // 'We' refers to all QPU's participating
-
-  nop(1);   header("vc4 barrier");
-
-  If (numQPUs() != 1)                     // Don't bother if only one QPU
-    //
-    // Grab the mutex, setting the signals beforehand
-    //
-    *(signal + 16*me()) = 1;              // Signal that I am here
-    
-    Int::Ptr leader_ptr = (signal + 16*(numQPUs() + 1));
-
-    // Strong assumption: only one QPU can grab the mutex at any time
-    mutex_acquire();       comment("mutex_acquire");
-    Log::warn << "mutex_acquire: " << stmtStack().last_stmt()->dump();
-    Int leader_signal = *leader_ptr;
-
-    If (leader_signal == 0)
-      // I am the barrier leader
-      *leader_ptr = 1;      comment("I am the barrier leader");
-
-      // Wait for all signals to be set
-      Int all_signals_set;  comment("Wait for all signals to be set");
-      check_signals(all_signals_set);
-      While ((all_signals_set == 0))
-      //If (all_signals_set == 0)
-        check_signals(all_signals_set);
-      End
-
-      // We're all here, release the mutex
-      mutex_release();      comment("mutex_release");
-      nop(1);               comment("Release all signals in loop");
-
-      //
-      // Reset all signals in main memory for next round
-      //
-      // There _may_ be a race condition here, since other QPU's
-      // are released before the leader signal is reset.
-      // 
-/*
-      For (Int i = 0, i < (numQPUs() + 1), i++) 
-        *signal = 0;
-        signal.inc();
-      End
-*/
-      *leader_ptr = 0;
-    Else
-      // I am not the barrier leader.
-      // Wait till the mutex is acquired and release for the rest.
-      mutex_release();  comment("mutex_release");
-    End
-  End
-}
-
-} // anon namespace
-
-
-/**
- * @brief Generic version of `barrier()`
- *
- * **Still in development.**
- */
-void barrier(Int::Ptr &signal) {
-  if (Platform::compiling_for_vc4()) {
-    // vc4 - Stmt::BARRIER is not passed on
-    //vc4_barrier(signal);
-    vc4_barrier_2(signal);
-  } else {
-    // v3d
-    stmtStack().push(Stmt::create(Stmt::BARRIER));
-  }
 }
 
 
@@ -774,9 +618,24 @@ void barrier(Int::Ptr &signal) {
  * `barrier` is v3d-specific. vc4 will need a different implementation,
  * most likely with semaphores.
  */
-void barrier() {
+void barrier_v3d() {
   assertq(!Platform::compiling_for_vc4(), "This version of barrier runs only on v3d");
   stmtStack().push(Stmt::create(Stmt::BARRIER));
+}
+
+} // anon namespace
+
+
+/**
+ * @brief Generic version of `barrier()`
+ */
+void barrier() {
+  if (Platform::compiling_for_vc4()) {
+    // vc4 - Stmt::BARRIER is not passed on
+    barrier_vc4();
+  } else {
+    barrier_v3d();
+  }
 }
 
 

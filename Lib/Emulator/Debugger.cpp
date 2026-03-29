@@ -20,7 +20,8 @@ std::string Debugger::show_help() const {
       << "  n     - (or blank) run next instruction\n"
       << "  v     - show VPM\n"
       << "  V     - hide VPM\n"
-      << "  q     - run till end, ignoring breakpoints\n";
+      << "  r     - run till end, ignoring breakpoints\n"
+      << "  q     - Quit right away\n";
 
   return ret;
 }
@@ -228,7 +229,7 @@ void Debugger::step(int qpu_num) {
         do_loop = false;
       break;
 
-      case 'q':
+      case 'r':
         m_breakpoint.clear();
         do_step = false;
         do_loop = false;
@@ -243,6 +244,9 @@ void Debugger::step(int qpu_num) {
       case 'V':
         std::cout << "Disp VPM disabled\n"; 
         disp_vpm = false;
+        break;
+      case 'q':
+        info << "Quitting program" << thrw;  // Throw in the hope of cleanup
         break;
       case '?': 
         std::cout << show_help();

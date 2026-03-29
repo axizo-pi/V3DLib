@@ -20,11 +20,11 @@ void mutex_kernel(Int::Ptr ret) {
 }
 
 
-void barrier_kernel(Int::Ptr ret, Int::Ptr signal) {
+void barrier_kernel(Int::Ptr ret) {
   Int val      = me();
   Int::Ptr dst = ret + (me()*16);
 
-  barrier(signal);      comment("barrier");
+  barrier();      comment("barrier");
   *dst = val;
 }
 
@@ -123,15 +123,6 @@ void init_arrays(Int::Array &result, Int::Array &expected, int numQPUs) {
   init_vector(expected);
 }
 
-
-void init_arrays(Int::Array &result, Int::Array &expected, Int::Array &signal, int numQPUs) {
-  init_arrays(result, expected, numQPUs);
-
-  // Last vector signals that a barrier leader is present
-  signal.alloc(16*(numQPUs + 1));
-  signal.fill(0);
-}
-
 } // anon namespace
 
 
@@ -224,17 +215,13 @@ TEST_CASE("Test barrier[mutex][barrier]") {
     Int::Array result(16);
     Int::Array expected(16);
 
-    // Last vector signals that a barrier leader is present
-    Int::Array signal(16*(numQPUs + 1));
-    signal.fill(0);
-
     auto k = compile(barrier_kernel);
-    to_file("barrier_kernel.txt", k.dump());
+    //to_file("barrier_kernel.txt", k.dump());
 
     INFO("Single QPU");
     numQPUs = 1;
-    init_arrays(result, expected, signal, numQPUs);
-    k.load(&result, &signal);
+    init_arrays(result, expected, numQPUs);
+    k.load(&result);
     k.setNumQPUs(numQPUs);
     k.run();
 
@@ -242,54 +229,46 @@ TEST_CASE("Test barrier[mutex][barrier]") {
     REQUIRE(result == expected);
 
     INFO("Multiple QPU's");
-    numQPUs = 8;
-    init_arrays(result, expected, signal, numQPUs);
-    k.load(&result, &signal);
+    numQPUs = 4;
+    init_arrays(result, expected, numQPUs);
+    k.load(&result);
     k.setNumQPUs(numQPUs);
+    //k.emu(true);
     k.run();
 
     //warn << "result:\n" << result.dump();
-    //warn << "signal:\n" << signal.dump();
     REQUIRE(result == expected);
 
     Platform::use_main_memory(false);
   }
 
-/*
   SUBCASE("Test barrier QPU") {
     Int::Array result(16);
     Int::Array expected(16);
 
-    // Last vector signals that a barrier leader is present
-    Int::Array signal(16*(numQPUs + 1));
-    signal.fill(0);
-
     auto k = compile(barrier_kernel);
+    //to_file("barrier_kernel_qpu.txt", k.dump());
 
     INFO("Single QPU");
     numQPUs = 1;
-    init_arrays(result, expected, signal, numQPUs);
-    k.load(&result, &signal);
-    k.setNumQPUs(numQPUs);
-    k.run();
-
-    //warn << "result: " << result.dump();
-    REQUIRE(result == expected);
-
-/ *
-    INFO("Multiple QPU's");
-    numQPUs = 2;
-    init_arrays(result, expected, signal, numQPUs);
-    k.load(&result, &signal);
+    init_arrays(result, expected, numQPUs);
+    k.load(&result);
     k.setNumQPUs(numQPUs);
     k.run();
 
     warn << "result:\n" << result.dump();
-    warn << "signal:\n" << signal.dump();
     REQUIRE(result == expected);
-* /
+
+    INFO("Multiple QPU's");
+    numQPUs = 4;
+    init_arrays(result, expected, numQPUs);
+    k.load(&result);
+    k.setNumQPUs(numQPUs);
+    k.run();
+
+    warn << "result:\n" << result.dump();
+    REQUIRE(result == expected);
   }
-*/
 }
 
 
