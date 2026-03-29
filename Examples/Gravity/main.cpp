@@ -51,10 +51,6 @@ int main(int argc, const char *argv[]) {
     m.init();
     m.plot();
 
-    // Last vector signals that a barrier leader is present
-    Int::Array signal(16*(settings.num_qpus + 1));
-    signal.fill(0);
-
     auto k = compile(kernel_gravity, settings);
     k.setNumQPUs(settings.num_qpus);
 
@@ -63,8 +59,7 @@ int main(int argc, const char *argv[]) {
       &m.v_x, &m.v_y, &m.v_z,
       &m.acc_x, &m.acc_y, &m.acc_z,
       &m.mass,
-      NUM,
-      &signal
+      NUM
     );
 
     {
