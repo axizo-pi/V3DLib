@@ -522,9 +522,6 @@ void set_at(Float &dst, Int n, Float const &src) {
 }
 
 
-/**
- * **TODO*: not implemented in emulator, consider.
- */
 void mutex_acquire() {
   assert(Platform::compiling_for_vc4());
 
@@ -537,8 +534,6 @@ void mutex_acquire() {
 
 
 /**
- * **TODO*: not implemented in emulator, consider.
- *
  * Can't use DUMMY as src var. Fails on Target translation.
  */
 void mutex_release() {
@@ -572,8 +567,8 @@ void barrier_vc4() {
   assert(Platform::compiling_for_vc4());
 
   //
-  // 'I' refers to the QPU that grabbed the mutex
-  // 'We' refers to all other QPU's participating
+  // 'I' refers to the QPU that grabbed the mutex.
+  // 'We' refers to all other QPU's participating.
   //
 
   nop(1);   header("vc4 barrier");
