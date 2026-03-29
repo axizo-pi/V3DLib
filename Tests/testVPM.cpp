@@ -10,6 +10,7 @@ using namespace V3DLib;
 
 namespace {
 
+
 /**
  * ==================================================
  * Examination
@@ -50,7 +51,7 @@ namespace {
  */
 void add_nop() {
   if (Platform::use_main_memory()) {
-    // Must be compiling for emulator, don't bother
+    // Compiling for emulator, don't bother
     return;
   }
 
@@ -70,6 +71,65 @@ void add_nop() {
   }
 
   nop(count);  // Best value for #QPU=4
+}
+
+/**
+ * @brief Interface to use VPM as shared memory
+ *
+ * VPM read/write is slower than you would expect, because it is 
+ * not a direct memory access.  
+ * VPM reads/writes are both put in a request queue and are handled
+ * sequentially.  
+ * The perfomance is honestly disappointing, but is offset by the utility
+ * of having shared memory over the QPU's.
+ */
+class VPMArray {
+public:
+  void set(IntExpr const &addr, IntExpr const &val);
+  IntExpr get(IntExpr const &addr);
+
+private:
+  bool m_wait = false;
+};
+
+VPMArray vpm;
+
+void VPMArray::set(IntExpr const &addr, IntExpr const &val) {
+  vpmSetupWrite(HORIZ, addr);
+  vpmPut(val);
+
+  m_wait = true;
+}
+
+
+IntExpr VPMArray::get(IntExpr const &addr) {
+  if (m_wait) {
+    //
+    // The implementation implies that the current QPU is waiting for its own
+    // write to complete.
+    //
+    // This is NOT the case; in actual case the QPU is waiting for any OTHER
+    // QPU to complete their write.
+    //
+    // The assumption here is that all QPU's do the same write, so that the execution
+    // is comparable.
+    //
+    add_nop();
+    m_wait = false;
+  }
+
+  vpmSetupRead(HORIZ, 1, addr);
+  return vpmGetInt();
+}
+
+
+IntExpr next_addres() {
+  Int tmp2 = (me() + 1);  comment("Read value from next QPU");
+  Where (tmp2 == numQPUs())
+    tmp2 = 0;
+  End
+
+  return tmp2;
 }
 
 
@@ -93,18 +153,35 @@ void vpm_kernel(Int::Ptr ret) {
   add_nop();  // TODO: Check if calling this just before vpmGetInt() makes a difference
 
   // Read other value from VPM
-  Int tmp2 = (me() + 1);  comment("Read value from other QPU");
-  Where (tmp2 == numQPUs())
-    tmp2 = 0;
-  End
+  Int tmp2 = next_addres();
 
-  vpmSetupRead(HORIZ, 1, tmp2);   
+  vpmSetupRead(HORIZ, 1, tmp2);
   Int tmp3 = vpmGetInt();
 
   *(ret + 16*me()) = tmp3;
 }
 
+
+void vpm_array_kernel(Int::Ptr ret) {
+  Int val = 10*(me() + 1);
+
+  vpm.set(me(), val);                 // Write own value to VPM
+  Int tmp3 = vpm.get(next_addres());  // Read other value from VPM
+
+  *(ret + 16*me()) = tmp3;            // Store to main mem
 }
+
+
+void init_expected(Int::Array &expected, int numQPUs) {
+  for (int i = 0; i < numQPUs; ++i) {
+    for (int j = 0; j < 16; ++j) {
+      expected[16*((i + (numQPUs - 1)) % numQPUs) + j] = 10*(i + 1);
+    }
+  }
+}
+
+}
+
 
 /**
  * Test using VPM as shared memory for the QPU's.
@@ -116,13 +193,6 @@ TEST_CASE("Test VPM memory [vpm]") {
   LibSettings::tmu_load tmu(false);
   int numQPUs = 4;
 
-  auto init_expected = [numQPUs] (Int::Array &expected) {
-    for (int i = 0; i < numQPUs; ++i) {
-      for (int j = 0; j < 16; ++j) {
-        expected[16*((i + (numQPUs - 1)) % numQPUs) + j] = 10*(i + 1);
-      }
-    }
-  };
 
   SUBCASE("In emulator") {
     // This works on v3d
@@ -131,14 +201,14 @@ TEST_CASE("Test VPM memory [vpm]") {
     Int::Array result(numQPUs*16);
 
     Int::Array expected(numQPUs*16);
-    init_expected(expected);
+    init_expected(expected, numQPUs);
 
     auto k = compile(vpm_kernel);
     k.setNumQPUs(numQPUs);
     k.load(&result);
     k.emu();
 
-    std::cout << result.dump() << "\n";
+    //std::cout << result.dump() << "\n";
     //std::cout << expected.dump() << "\n";
     REQUIRE(result == expected);
   }
@@ -153,15 +223,66 @@ TEST_CASE("Test VPM memory [vpm]") {
     Int::Array result(numQPUs*16);
 
     Int::Array expected(numQPUs*16);
-    init_expected(expected);
+    init_expected(expected, numQPUs);
 
     auto k = compile(vpm_kernel);
-    to_file("vpm_kernel.txt", k.dump());
+    //to_file("vpm_kernel.txt", k.dump());
     k.setNumQPUs(numQPUs);
     k.load(&result);
     k.run();
 
-    std::cout << result.dump() << "\n";
+    //std::cout << result.dump() << "\n";
+    //std::cout << expected.dump() << "\n";
+    REQUIRE(result == expected);
+  }
+}
+
+
+/**
+ * Same test as previous using VPM array interface
+ */
+TEST_CASE("Test VPM array [vpm][arr]") {
+  LibSettings::tmu_load tmu(false);
+  int numQPUs = 4;
+
+  SUBCASE("In emulator") {
+    // This works on v3d
+    Platform::main_mem mem(true);
+
+    Int::Array result(numQPUs*16);
+
+    Int::Array expected(numQPUs*16);
+    init_expected(expected, numQPUs);
+
+    auto k = compile(vpm_array_kernel);
+    k.setNumQPUs(numQPUs);
+    k.load(&result);
+    k.emu();
+
+    //std::cout << result.dump() << "\n";
+    //std::cout << expected.dump() << "\n";
+    REQUIRE(result == expected);
+  }
+
+
+  SUBCASE("on QPUs") {
+    if (!Platform::compiling_for_vc4()) {
+      warn << "Not running VPM mem on QPU's for v3d";
+      return;
+    }
+
+    Int::Array result(numQPUs*16);
+
+    Int::Array expected(numQPUs*16);
+    init_expected(expected, numQPUs);
+
+    auto k = compile(vpm_array_kernel);
+    //to_file("vpm_array_kernel.txt", k.dump());
+    k.setNumQPUs(numQPUs);
+    k.load(&result);
+    k.run();
+
+    //std::cout << result.dump() << "\n";
     //std::cout << expected.dump() << "\n";
     REQUIRE(result == expected);
   }
