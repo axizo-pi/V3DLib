@@ -311,8 +311,8 @@ TEST_CASE("Test While-loop emulator[mutex][while]") {
     k.setNumQPUs(numQPUs);
     k.load(&result);
     k.run();
-    //k.interpret();
-    warn << "result While: " << result.dump();
+
+    //warn << "result While: " << result.dump();
     REQUIRE(result == expected);
 
     Platform::use_main_memory(false);
@@ -334,7 +334,7 @@ TEST_CASE("Test While-loop emulator[mutex][while]") {
     k.load(&result);
     k.run();
 
-    warn << "result While2: " << result.dump();
+    //warn << "result While2: " << result.dump();
     REQUIRE(result == expected);
   }
 }
@@ -351,8 +351,6 @@ TEST_CASE("Test While-loop emulator[mutex][while]") {
  * for QPU and is off-by-1 one for emulator.
  */
 TEST_CASE("Test For-loop[mutex][for]") {
-  //bool prev = LibSettings::dump_line_numbers();
-  //LibSettings::dump_line_numbers(false);
   LibSettings::tmu_load tmu(false);
 
   SUBCASE("Emulator with DMA load") {
@@ -370,9 +368,8 @@ TEST_CASE("Test For-loop[mutex][for]") {
     k.load(&result);
     k.setNumQPUs(numQPUs);
     k.emu();
-    //k.interpret();
 
-    warn << "result For: " << result.dump();
+    //warn << "result For: " << result.dump();
     REQUIRE(result == expected);
   }
 
@@ -390,9 +387,7 @@ TEST_CASE("Test For-loop[mutex][for]") {
     k.load(&result);
     k.run();
 
-    warn << "result For2: " << result.dump();
+    //warn << "result For2: " << result.dump();
     REQUIRE(result == expected);
   }
-
-  //LibSettings::dump_line_numbers(prev);
 }
