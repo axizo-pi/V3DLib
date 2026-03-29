@@ -214,15 +214,14 @@ bool add_register_conflict(Instr const &top, Instr const &bottom, bool check_sur
 }
 
 
-
 /**
- * Convert add op to mul op if possible.
+ * @brief Convert add op to mul op if possible.
  *
- * @param mul_op output param; mul op if conversion succesfull.
- * @param add_op input param; add op to convert
+ * @param mul_op    output param; mul op if conversion succesfull.
+ * @param add_instr input param; instruction with add op to convert
  *
  * @return true if conversion possible, false otherwise
- *         If possible, output param dst is set.
+ *         If possible, output param mul_op is set.
  *
  * --------------------------------------------------
  * 
@@ -234,47 +233,7 @@ bool add_register_conflict(Instr const &top, Instr const &bottom, bool check_sur
  *     V3D_QPU_A_MOV  <-> V3D_QPU_M_MOV,   // vc7 rhs only
  *     V3D_QPU_A_NOP  <-> V3D_QPU_M_NOP,
  */
-bool add_op_to_mul_op(v3d_qpu_mul_op &mul_op, v3d_qpu_add_op add_op) {
-	switch(add_op) {
-		case V3D_QPU_A_ADD:  mul_op = V3D_QPU_M_ADD;  return true;
-		case V3D_QPU_A_SUB:  mul_op = V3D_QPU_M_SUB;  return true;
-		case V3D_QPU_A_FMOV: mul_op = V3D_QPU_M_FMOV; return true;
-		case V3D_QPU_A_MOV:  mul_op = V3D_QPU_M_MOV;  return true;
-		case V3D_QPU_A_NOP:  mul_op = V3D_QPU_M_NOP;  return true; // Included for completeness
-
-		default: return false;
-	}
-}
-
-
-/**
- * Check if an add operation can be a mul-operation.
- *
- * This does not check if the current instruction has
- * an empty mul-op. The move could be to any instruction,
- * including self.
- *
- * @return true if add op in `instr` could be mul. False otherwise.
- */
-bool alu_add_could_be_mul(Instr const &instr) {
-	v3d_qpu_mul_op mul_op;
-
-	if (!add_op_to_mul_op(mul_op, instr.alu.add.op)) return false;
-	// post: previous call succeeded
-
-	if (mul_op == V3D_QPU_M_NOP) return false;   // Testing this doesn't make sense
-	return true;
-}
-
-
-/**
- * Find corresponding mul op for a given add op
- *
- * **TODO**: merge with `add_op_to_mul_op()`.
- *
- * @return true if found, false otherwise
- */
-bool convert_alu_op_to_mul_op(v3d_qpu_mul_op &mul_op, v3d::instr::Instr const &add_instr) {
+bool add_op_to_mul_op(v3d_qpu_mul_op &mul_op, v3d::instr::Instr const &add_instr) {
 	// Op's are commong common to both vc6 and vc7 unless otherwise specified
   switch (add_instr.alu.add.op) {
     case V3D_QPU_A_OR: {
@@ -301,11 +260,26 @@ bool convert_alu_op_to_mul_op(v3d_qpu_mul_op &mul_op, v3d::instr::Instr const &a
 }
 
 
+/**
+ * Check if an add operation can be a mul-operation.
+ *
+ * This does not check if the current instruction has
+ * an empty mul-op. The move could be to any instruction,
+ * including self.
+ *
+ * @return true if add op in `instr` could be mul. False otherwise.
+ */
+bool alu_add_could_be_mul(Instr const &instr) {
+	v3d_qpu_mul_op mul_op;
+	return add_op_to_mul_op(mul_op, instr);
+}
+
+
 MAYBE_UNUSED bool can_equal(Instr const &top, Instr const &bottom) {
   if (add_register_conflict(top, bottom, false)) return false;
 
   v3d_qpu_mul_op tmp;
-  if (!convert_alu_op_to_mul_op(tmp, bottom)) return false ;
+  if (!add_op_to_mul_op(tmp, bottom)) return false ;
 
   return top.mul_nop();
 }
@@ -365,7 +339,7 @@ bool alu_to_mul_alu(Instr const &src, Instr &dst) {
 
   if (src.mul_nop()) {  // Take the values from alu add
     v3d_qpu_mul_op mul_op;
-    if (!convert_alu_op_to_mul_op(mul_op, src)) return false;  // False if no applicable translation add -> mul
+    if (!add_op_to_mul_op(mul_op, src)) return false;
 
   	ret.alu.mul.op = mul_op;
 		auto dst_loc = src.add_alu_dst();
@@ -1203,7 +1177,7 @@ bool bottom_add_to_top_mul(Instr &ret, Instr const &bottom, Instr const &top) {
 	ret.flags.muf =  bottom.flags.auf;
 
   v3d_qpu_mul_op mul_op;
-	if (!add_op_to_mul_op(mul_op, bottom.alu.add.op)) return false;
+	if (!add_op_to_mul_op(mul_op, bottom)) return false;
 
 	ret.alu.mul.op          = mul_op;
 	ret.alu.mul.a           = bottom.alu.add.a;

@@ -368,8 +368,7 @@ void kernel_gravity(
   Float::Ptr in_v_x, Float::Ptr in_v_y, Float::Ptr in_v_z,
   Float::Ptr in_acc_x, Float::Ptr in_acc_y, Float::Ptr in_acc_z,
   Float::Ptr in_mass,
-  Int in_num_entities,
-  Int::Ptr signal
+  Int in_num_entities
 ) {
 	Context c(in_num_entities);
   comment("Start Count loop");
@@ -382,7 +381,7 @@ void kernel_gravity(
 			c
     );
 
-    barrier(signal);
+    barrier();
 
     // kernel_step() adjusts pointers, reset to start before calling  
     Float::Ptr x = in_x;
@@ -402,6 +401,6 @@ void kernel_gravity(
       c
     );
 
-    barrier(signal);
+    barrier();
   End
 }

@@ -25,7 +25,7 @@ Reg freshReg() {
 // =============================================================================
 
 Instr::List genSetupVPMLoad(int addr, VPMLoadReq const &req) {
-  warn << "Called addr genSetupVPMLoad()";
+  //warn << "Called addr genSetupVPMLoad()";
   assert(addr < 256);
 
   Instr::List ret;

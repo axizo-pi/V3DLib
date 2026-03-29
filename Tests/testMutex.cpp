@@ -78,22 +78,26 @@ void while_kernel(Int::Ptr ret) {
 /**
  * @brief Test consecutive store/load under various circumstances.
  *
- * This kernel does *NOT* work for `vc4` with TMU load enabled.
- * Unclear why, I gave up examining.
- * The hypothesis is that the TMU load does not get the most recent value.
+ * =====================================================================
+ *
+ * Notes
+ * -----
+ *
+ * 1. This kernel does *NOT* work for `vc4` with TMU load enabled.
+ *    Unclear why, I gave up examining.
+ *    The hypothesis is that the TMU load does not get the most recent value.
+ *
+ * 2. The issue here is that the store and load follow very closely.
+ *    It is possible (and actually happens here) that the store is not done
+ *    when the load is executed. Call to `add_nop()` works but is a stopgap measure.
  */
 void for_kernel(Int::Ptr ret) {
   Int count = 0;
   Int condition = 0;
 
   For (count = 0, (count < 10 && condition == 0), count++)
-    // The issue here is that the store and load follow very closely.
-    // It is possible (and actually happens here) that the store is not done
-    // when the load is executed.
-    *ret = count;
-
+    *ret = count;  // See Note2
     add_nop();
-
     Int tmp = *ret;
 
     If (tmp == 4)
@@ -127,16 +131,16 @@ void init_arrays(Int::Array &result, Int::Array &expected, int numQPUs) {
 
 
 /**
- * @brief Run mutexes on emulator
+ * @brief Unit tests for mutexes
  *
  * Emulator should work fine on v3d, no need to block.
  */
 TEST_CASE("Test mutexes emulator[mutex]") {
   int numQPUs = 1;
 
-/*
   SUBCASE("Test emulator") {
-    Platform::use_main_memory(true);
+    Platform::main_mem mem(true);
+
     INFO("Unit test [mutex] using main memory");
     Int::Array result(16);          // Needs to be here because main memory used
     Int::Array expected(16);        // idem
@@ -159,8 +163,6 @@ TEST_CASE("Test mutexes emulator[mutex]") {
     k.setNumQPUs(numQPUs);
     k.run();
     REQUIRE(result == expected);
-
-    Platform::use_main_memory(false);
   }
 
 #ifdef QPU_MODE
@@ -168,33 +170,31 @@ TEST_CASE("Test mutexes emulator[mutex]") {
   SUBCASE("Test QPU") {
     if (!Platform::compiling_for_vc4()) {
       warn << "Doing mutexes only for vc4";
-    } if (true) {
-      warn << "Skipping QPU mutex unit test for now";
-    } else {
-      Int::Array result(16);
-      Int::Array expected(16);
-
-      auto k = compile(mutex_kernel);
-
-      INFO("Single QPU");
-      init_arrays(result, expected, numQPUs);
-      k.load(&result);
-      k.setNumQPUs(numQPUs);
-      k.run();
-      REQUIRE(result == expected);
-
-      INFO("Multiple QPU's");
-      numQPUs = 8;
-      init_arrays(result, expected, numQPUs);
-      k.load(&result);
-      k.setNumQPUs(numQPUs);
-      k.run();
-      REQUIRE(result == expected);
+      return;
     }
+
+    Int::Array result(16);
+    Int::Array expected(16);
+
+    auto k = compile(mutex_kernel);
+
+    INFO("Single QPU");
+    init_arrays(result, expected, numQPUs);
+    k.load(&result);
+    k.setNumQPUs(numQPUs);
+    k.run();
+    REQUIRE(result == expected);
+
+    INFO("Multiple QPU's");
+    numQPUs = 8;
+    init_arrays(result, expected, numQPUs);
+    k.load(&result);
+    k.setNumQPUs(numQPUs);
+    k.run();
+    REQUIRE(result == expected);
   }
 
 #endif  // QPU_MODE
-*/
 }
 
 
@@ -229,7 +229,7 @@ TEST_CASE("Test barrier[mutex][barrier]") {
     REQUIRE(result == expected);
 
     INFO("Multiple QPU's");
-    numQPUs = 4;
+    numQPUs = 8;
     init_arrays(result, expected, numQPUs);
     k.load(&result);
     k.setNumQPUs(numQPUs);
@@ -256,17 +256,17 @@ TEST_CASE("Test barrier[mutex][barrier]") {
     k.setNumQPUs(numQPUs);
     k.run();
 
-    warn << "result:\n" << result.dump();
+    //warn << "result:\n" << result.dump();
     REQUIRE(result == expected);
 
     INFO("Multiple QPU's");
-    numQPUs = 4;
+    numQPUs = 8;
     init_arrays(result, expected, numQPUs);
     k.load(&result);
     k.setNumQPUs(numQPUs);
     k.run();
 
-    warn << "result:\n" << result.dump();
+    //warn << "result:\n" << result.dump();
     REQUIRE(result == expected);
   }
 }
