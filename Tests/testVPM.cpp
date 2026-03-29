@@ -50,27 +50,19 @@ namespace {
  *     - 70 #2 not filled, rest filled
  */
 void add_nop() {
-  if (Platform::use_main_memory()) {
-    // Compiling for emulator, don't bother
-    return;
-  }
+  if (Platform::use_main_memory()) return; // Compiling for emulator, don't bother
 
   int count = 80;
 
+  // These are best value for #QPU=4. Other #QPU may need different values
   switch (Platform::tag()) {
     case Platform::pi1:     count = 100; break;
     case Platform::pi2:     count = 100; break;
     case Platform::pi_zero: count =  90; break;
-    default:
-      // Default
-      break;
+    default: /* Use default */           break;
   }
 
-  if (Platform::tag() == Platform::pi_zero) {
-    count = 90;
-  }
-
-  nop(count);  // Best value for #QPU=4
+  nop(count);
 }
 
 /**

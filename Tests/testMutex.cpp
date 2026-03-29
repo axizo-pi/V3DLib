@@ -32,19 +32,17 @@ void barrier_kernel(Int::Ptr ret, Int::Ptr signal) {
 /**
  * @brief add waiting NOP sequences if necessary.
  *
- * Revelation: DMA on Zero takes longer than on Pi3.
- * Following adjusts particularly for Zero.
+ * Revelation: DMA on Zero takes longer than on Pi3. Same applies to Pi1.
+ * Following adjusts wait time for these cases.
  */
 void add_nop() {
-  // Can probably skip the nop's for emulator.
+  if (Platform::use_main_memory()) return; // Compiling for emulator, don't bother
 
   switch (Platform::tag()) {
     case Platform::pi1:     nop(10); break;
-    case Platform::pi2:     break;
+    case Platform::pi2:              break;
     case Platform::pi_zero: nop(20); break;
-    default:
-      // Don't bother
-      break;
+    default: /* Don't bother */      break;
   }
 }
 
@@ -231,6 +229,7 @@ TEST_CASE("Test barrier[mutex][barrier]") {
     signal.fill(0);
 
     auto k = compile(barrier_kernel);
+    to_file("barrier_kernel.txt", k.dump());
 
     INFO("Single QPU");
     numQPUs = 1;
@@ -265,7 +264,6 @@ TEST_CASE("Test barrier[mutex][barrier]") {
     signal.fill(0);
 
     auto k = compile(barrier_kernel);
-    to_file("barrier_kernel.txt", k.dump());
 
     INFO("Single QPU");
     numQPUs = 1;

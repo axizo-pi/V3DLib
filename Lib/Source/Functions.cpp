@@ -114,7 +114,7 @@ IntExpr two_complement(IntExpr a) {
 IntExpr _INF() {
   return create_function_snippet([] {
 
-    Int tmp = 4;   comment("Load INF");  // Important that comment is AFTER first statement
+    Int tmp = 4;      comment("Load INF");  // Important that comment is AFTER first statement
     tmp = tmp << 15;
     tmp = tmp << 14;
     tmp = (tmp ^ -1);  // -1 = 0xffffffff
@@ -208,8 +208,7 @@ void integer_division(Int &Q, Int &R, IntExpr in_a, IntExpr in_b) {
     Q = two_complement(Q);
   End
  
-  comment("End long integer division");  // For some reason, phantom instances of this comment can pop up elsewhere
-                                         // in code dumps. Not bothering with correcting this.
+  comment("End long integer division");
 }
 
 
@@ -240,7 +239,6 @@ IntExpr integer_division_f(IntExpr in_a, IntExpr in_b) {
 
     comment("End integer division by float");
 
-    //return res;
     return Return(res);
   });
 }
@@ -547,7 +545,7 @@ void mutex_release() {
 
   Expr::Ptr mutex = mkVar(Var(MUTEX_RELEASE));  // Write A/B
 
-  Stmt::Ptr ptr = Stmt::create_assign(mutex, IntExpr(0).expr() /*dummy*/);
+  Stmt::Ptr ptr = Stmt::create_assign(mutex, IntExpr(0).expr());
   stmtStack().push(ptr);
 }
 
@@ -590,16 +588,15 @@ void vc4_barrier(Int::Ptr signal) {
   );
 
   auto check_signals = [&signal] (Int &all_signals_set) {
-    Int dummy = 1;   comment("Check all signals");  // TODO replace with Source NOP
+    nop(1);   comment("Check all signals");
     all_signals_set = 1;
 
     Int::Ptr ptr = signal;
 
     For (Int i = 0, i < numQPUs(), i++)
-//      Int tmp = *(signal + 16*i);
       Int tmp = *ptr;
 
-      // TODO operator* for Int's
+      // TODO operator*= for Int's
       all_signals_set = all_signals_set * tmp;
 /*
       // TODO: implement operator&& for Int's
@@ -615,10 +612,7 @@ void vc4_barrier(Int::Ptr signal) {
   // 'I' refers to the QPU currently within this code
   // 'We' refers to all QPU's participating
 
-  // Following is a placeholder for setting the header.
-  // Better would be to add NOP at the source level.
-  // TODO: implement Source NOP. Alternatively, add NOP for header() if no stmt present.
-  Int dummy = 1;   header("vc4 barrier");
+  nop(1);   header("vc4 barrier");
 
   If (numQPUs() != 1)                     // Don't bother if only one QPU
     //
@@ -629,7 +623,7 @@ void vc4_barrier(Int::Ptr signal) {
     Int::Ptr leader_ptr = (signal + 16*(numQPUs() + 1));
 
     // Strong assumption: only one QPU can grab the mutex at any time
-    mutex_acquire();  comment("mutex_acquire");
+    mutex_acquire();       comment("mutex_acquire");
     Log::warn << "mutex_acquire: " << stmtStack().last_stmt()->dump();
     Int leader_signal = *leader_ptr;
 
@@ -647,7 +641,7 @@ void vc4_barrier(Int::Ptr signal) {
 
       // We're all here, release the mutex
       mutex_release();      comment("mutex_release");
-      Int dummy  = 0;       comment("Release all signals in loop");
+      nop(1);               comment("Release all signals in loop");
 
       //
       // Reset all signals in main memory for next round
