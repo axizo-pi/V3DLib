@@ -73,9 +73,8 @@ int main(int argc, const char *argv[]) {
         t += BATCH_STEPS*dt;
       }
 
-      warn << "L2CacheEnabled(): " << RegisterMap::L2CacheEnabled();
-      warn << m.dump_acc();
-      warn << m.dump_pos();
+      //warn << m.dump_acc();
+      //warn << m.dump_pos();
 
       // The plot image is always filled in, output is optional.
       if (settings.output_orbits) {

@@ -7,10 +7,12 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <bcm_host.h>
-#include "Support/basics.h"  // fatal()
-#include "Mailbox.h"         // for mapmem()
+#include "Support/basics.h"   // fatal()
+#include "Support/Platform.h"
+#include "Mailbox.h"          // mapmem()
 #include "vc4.h"
 
+using namespace Log;
 
 namespace V3DLib {
 namespace {
@@ -288,6 +290,10 @@ void RegisterMap::resetAllSchedulerRegisters() {
 
 
 RegisterMap &RegisterMap::instance() {
+	if (!Platform::run_vc4()) {
+		cerr << "RegisterMap can only be accessed on a platform having VideoCore4" << thrw;
+	}
+
   if (_instance.get() == nullptr) {
     _instance.reset(new RegisterMap);
   }

@@ -160,7 +160,7 @@ void kernel_calc_acc(
   Float::Ptr &in_mass,
 	Context &c
 ) {
-  header("Start loop kernel_calc_acc");
+  nop(1); header("Start loop kernel_calc_acc");
 
   For (Int cur_index = me(), cur_index < c.num_entities, cur_index += numQPUs())
     Int ptr_offset = cur_index - index();

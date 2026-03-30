@@ -284,6 +284,7 @@ unsigned qpu_enable(int file_desc, unsigned enable)
 
    int ret = mbox_property(file_desc, p);
    if (ret < 0) {
+		 breakpoint;
 		 cerr << "qpu_enable(): mbox_property call failed" << thrw;
    }
 
