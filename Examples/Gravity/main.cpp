@@ -41,6 +41,13 @@ void init_platform() {
  * I remember that adding barrier made a massive difference; now it doesn't do anything
  * for _any_ pi.
  *
+ * Runs below done with BATCH_STEPS = 1; this **might make a big difference** for `vc`.
+ * 
+ * Examination with `vc7` show that using `barrier` with `BATCH_STEPS = 400` makes a
+ * significant difference in the output. Conclusion is that `barrier` is required in this case.
+ *
+ * **TODO** examine this for `vc6`, `vc4`.
+ *
  * ## Pi2, vc4
  *
  * | barrier | QPU's | TMU | L2 Cache | Output OK | time | mbox error | Comment |
