@@ -62,7 +62,19 @@ void init_platform() {
  * - DMA load does _not_ give good results
  * - Disabling L2 cache with TMU load actually _increases_ performance
  * - barrier has no effect; it can only decrease performance
-
+ *
+ * ## Pi4, vc6
+ * | barrier | QPU's | TMU | L2 Cache | Ouput OK | time | mbox error | Comment |
+ * | ------- | ----- | --- | -------- | -------- | ---- | ---------- | ------- |
+ * | yes     |  1    | -   | -        | yes      | 20s  | no,  3     |         |
+ * | yes     | 16    | -   | -        | yes      | 13s  | no,  3     |         |
+ * | no      |  1    | -   | -        | yes      | 20s  | no,  3     |         |
+ * | no      |  8    | -   | -        | yes      | 13s  | no,  3     |         |
+ *
+ * ### Conclusions
+ *
+ * - `barrier` has no effect
+ *
  * ## Pi5, vc7
  *
  * | barrier | QPU's | TMU | L2 Cache | Ouput OK | time | mbox error | Comment |

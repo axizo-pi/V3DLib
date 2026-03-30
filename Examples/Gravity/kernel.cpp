@@ -381,7 +381,7 @@ void kernel_gravity(
 			c
     );
 
-    //barrier();
+    barrier();
 
     // kernel_step() adjusts pointers, reset to start before calling  
     Float::Ptr x = in_x;
@@ -401,6 +401,6 @@ void kernel_gravity(
       c
     );
 
-    //barrier();
+    barrier();
   End
 }
