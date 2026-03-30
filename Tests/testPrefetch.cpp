@@ -94,7 +94,7 @@ TEST_CASE("Test prefetch on stmt stack [prefetch]") {
     result.fill(-1);
 
     auto k = compile(prefetch_kernel<Int, Int::Ptr>);
-		to_file("prefetch_kernel<Int>.txt", k.dump());
+		//to_file("prefetch_kernel<Int>.txt", k.dump());
     k.load(&result, &src).run();
   
     for (int i = 0; i < (int) result.size(); ++i) {

@@ -34,9 +34,12 @@ void dummy_calculation(Float *dummy) {
 
 
 /**
- * **Current Hypothesis:**  
- * None. Help.
- * 
+ * @brief Examine loop issues
+ *
+ * This appears to be fixed, issues with DMA/TMU read write
+ *
+ * See unit tests in testMutex for while and for.
+ *
  * ---------------------------------------------------------------
  *
  * **Hypothesis:**  
@@ -130,7 +133,7 @@ TEST_CASE("Test loop counter [loop]") {
     result.fill(-1);
 
     auto k = compile(loop_kernel);
-		to_file("loop_kernel.txt", k.dump());
+		//to_file("loop_kernel.txt", k.dump());
     k.load(&result, &dummy).run();
 
     for (int i = 0; i < (int) result.size(); ++i) {

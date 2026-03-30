@@ -286,7 +286,7 @@ TEST_CASE("Test While-loop emulator[mutex][while]") {
     expected.fill(4);
 
     auto k = compile(while_kernel);
-    to_file("while_kernel.txt", k.dump());
+    //to_file("while_kernel.txt", k.dump());
     k.setNumQPUs(numQPUs);
     k.load(&result);
     k.run();
@@ -309,11 +309,9 @@ TEST_CASE("Test While-loop emulator[mutex][while]") {
 
     auto k = compile(while_kernel);
     k.setNumQPUs(numQPUs);
-    to_file("while_kernel_2.txt", k.dump());
     k.load(&result);
     k.run();
 
-    //warn << "result While2: " << result.dump();
     REQUIRE(result == expected);
   }
 }
@@ -343,7 +341,7 @@ TEST_CASE("Test For-loop[mutex][for]") {
     expected.fill(4);
 
     auto k = compile(for_kernel);
-    to_file("for_kernel.txt", k.dump());
+    //to_file("for_kernel.txt", k.dump());
     k.load(&result);
     k.setNumQPUs(numQPUs);
     k.emu();
@@ -362,11 +360,9 @@ TEST_CASE("Test For-loop[mutex][for]") {
 
     auto k = compile(for_kernel);
     k.setNumQPUs(numQPUs);
-    //to_file("for_kernel_2.txt", k.dump());
     k.load(&result);
     k.run();
 
-    //warn << "result For2: " << result.dump();
     REQUIRE(result == expected);
   }
 }
