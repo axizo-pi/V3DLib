@@ -11,15 +11,15 @@ using namespace Log;
 
 
 void init_platform() {
-  // Disable the cache
+  // Disable the cache - vc4 only
   if (Platform::compiling_for_vc4()) {
     // Disable L2 cache: this ensure that DMA and TMU can work together
     RegisterMap::L2Cache_enable(false);
     warn << "L2CacheEnabled(): " << RegisterMap::L2CacheEnabled();
   }
 
-  // Disable TMU load
-  //LibSettings::tmu_load tmu(false);  // vc4 mbox error
+  // Disable TMU load - does nothing for vc7
+  //LibSettings::tmu_load tmu(false);
 }
 
 
@@ -37,9 +37,6 @@ void init_platform() {
  * Done on 20260330.
  * Clearly something is different now since last check (too long ago).
  * Perhaps memory access, which I tinkered on.
- *
- * `barrier()` works but it kills the performance, for both
- * `v3d` and `vc4`.
  *
  * ## Pi3, vc4
  *
@@ -65,6 +62,19 @@ void init_platform() {
  * - DMA load does _not_ give good results
  * - Disabling L2 cache with TMU load actually _increases_ performance
  * - barrier has no effect; it can only decrease performance
+
+ * ## Pi5, vc7
+ *
+ * | barrier | QPU's | TMU | L2 Cache | Ouput OK | time | mbox error | Comment |
+ * | ------- | ----- | --- | -------- | -------- | ---- | ---------- | ------- |
+ * | yes     |  1    | -   | -        | yes      | 9s   | no,  3     |         |
+ * | yes     | 16    | -   | -        | yes      | 4s   | no,  5     |         |
+ * | no      |  1    | -   | -        | yes      | 9s   | no,  5     |         |
+ * | no      | 16    | -   | -        | yes      | 4s   | no,  5     |         |
+ *
+ * ### Conclusions
+ *
+ * - `barrier` has no effect (WTF)
  * 
  */
 int main(int argc, const char *argv[]) {
