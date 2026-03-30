@@ -17,22 +17,43 @@ using namespace Log;
 namespace V3DLib {
 namespace {
 
-std::unique_ptr<RegisterMap> _instance;
-
 /**
- * @brief Masks for bitfields of register V3D_L2CACTL
+ * @brief Masks for scheduler registers
+ *
+ * **UNUSED**
  */
-enum V3D_L2CACTL_bits {
-  L2CCLR = 0x4,  // L2 Cache Clear, Write ‘1’ to clear the L2 Cache     (write only)
-  L2CDIS = 0x2,  // L2 Cache Disable, Write ‘1’ to disable the L2 Cache (write only)
-  L2CENA = 0x1,  // L2 Cache Enable, Reads state of cache enable bit.   (read/write)
-                 // Write ‘1’ to enable the L2 Cache (write of ‘0’ has no effect)
+enum SchedulerMasks : int {
+  DO_NOT_USE_FOR_USER_PROGRAMS = 1,
+  DO_NOT_USE_FOR_FRAGMENT_SHADERS = 2,
+  DO_NOT_USE_FOR_VERTEX_SHADERS = 4,
+  DO_NOT_USE_FOR_COORDINATE = 8
 };
 
-}  // anon namespace
+
+/**
+ *
+ * Implemented as singleton with lazy load, so that it's 
+ * not initialized when it's not used.
+ */
+class RegisterMapClass {
+public:	
+  RegisterMapClass(RegisterMapClass const &) = delete;
+  void operator=(RegisterMapClass const &) = delete;
+
+  RegisterMapClass();
+  ~RegisterMapClass();
+
+  uint32_t read(int offset) const;
+  void write(int offset, uint32_t value);
+
+  volatile uint32_t *m_addr{nullptr};
+  unsigned m_size{0};
+
+  static void check_page_align(unsigned addr);
+};
 
 
-RegisterMap::RegisterMap() {
+RegisterMapClass::RegisterMapClass() {
   enableQPUs();
 
   bcm_host_init();
@@ -50,7 +71,7 @@ RegisterMap::RegisterMap() {
 }
 
 
-RegisterMap::~RegisterMap() {
+RegisterMapClass::~RegisterMapClass() {
   unmapmem((void *) m_addr, m_size);
   disableQPUs();
 }
@@ -59,7 +80,7 @@ RegisterMap::~RegisterMap() {
 /**
  * @brief Get the 32-bit value of the register at the given offset in the map
  */
-uint32_t RegisterMap::read(int offset) const {
+uint32_t RegisterMapClass::read(int offset) const {
   return m_addr[V3D_BASE + offset];
 }
 
@@ -67,52 +88,53 @@ uint32_t RegisterMap::read(int offset) const {
 /**
  * @brief Set the 32-bit value of the register at the given offset in the map
  */
-void RegisterMap::write(int offset, uint32_t value) {
+void RegisterMapClass::write(int offset, uint32_t value) {
   m_addr[V3D_BASE + offset] = value;
 }
 
 
+void RegisterMapClass::check_page_align(unsigned addr) {
+  long pagesize = sysconf(_SC_PAGESIZE);
+
+  if (pagesize <= 0) {
+    char buf[64];
+    sprintf(buf, "error: sysconf: %s", strerror(errno));
+    fatal(buf);
+  }
+
+  if (addr & (((unsigned) pagesize) - 1)) {
+    fatal("error: peripheral address is not aligned to page size");
+  }
+}
+
+
+std::unique_ptr<RegisterMapClass> _instance;
+
 /**
- * @brief Convenience function for getting a register value.
- *
- * This avoids having to use `instance()->` for every read access.
+ * @brief Masks for bitfields of register V3D_L2CACTL
  */
-uint32_t RegisterMap::readRegister(int offset) {
-  return instance().read(offset);
+enum V3D_L2CACTL_bits {
+  L2CCLR = 0x4,  // L2 Cache Clear, Write ‘1’ to clear the L2 Cache     (write only)
+  L2CDIS = 0x2,  // L2 Cache Disable, Write ‘1’ to disable the L2 Cache (write only)
+  L2CENA = 0x1,  // L2 Cache Enable, Reads state of cache enable bit.   (read/write)
+                 // Write ‘1’ to enable the L2 Cache (write of ‘0’ has no effect)
+};
+
+
+RegisterMapClass &instance() {
+	if (!Platform::run_vc4()) {
+		cerr << "RegisterMap can only be accessed on a platform having VideoCore4" << thrw;
+	}
+
+  if (_instance.get() == nullptr) {
+    _instance.reset(new RegisterMapClass);
+  }
+
+  return *_instance.get();
 }
 
 
-/**
- * @brief Convenience function for setting a register value.
- *
- * This avoids having to use `instance()->` for every write access.
- */
-void RegisterMap::writeRegister(int offset, uint32_t value) {
-  return instance().write(offset, value);
-}
-
-
-uint32_t *RegisterMap::adress() {
-  return (uint32_t *) instance().m_addr;
-}
-
-
-unsigned RegisterMap::size() {
-  return instance().m_size;
-}
-
-
-int RegisterMap::TechnologyVersion() {
-  uint32_t reg = readRegister(V3D_IDENT0);
-
-  checkVersionString(reg);
-
-  int ret = (reg >> 24) & 0xf;
-  return ret;
-}
-
-
-void RegisterMap::checkVersionString(uint32_t  reg) {
+void checkVersionString(uint32_t  reg) {
   const char *ident = "V3D";
   char buf[4];
 
@@ -128,19 +150,23 @@ void RegisterMap::checkVersionString(uint32_t  reg) {
   }
 }
 
+}  // anon namespace
 
-int RegisterMap::numSlices() {
+
+namespace RegisterMap {
+
+int numSlices() {
   uint32_t reg = readRegister(V3D_IDENT1);
   return (reg >> 4) & 0xf;
 }
 
 
-int RegisterMap::numQPUPerSlice() {
+int numQPUPerSlice() {
   return (readRegister(V3D_IDENT1) >> 8) & 0xf;
 }
 
 
-int RegisterMap::numTMUPerSlice() {
+int numTMUPerSlice() {
   return (readRegister(V3D_IDENT1) >> 12) & 0xf;
 }
 
@@ -150,7 +176,7 @@ int RegisterMap::numTMUPerSlice() {
  *
  * @return Size of VPM in KB
  */
-int RegisterMap::VPMMemorySize() {
+int VPMMemorySize() {
   uint32_t reg = readRegister(V3D_IDENT1);
   int value = (reg >> 28) & 0xf;
 
@@ -159,7 +185,7 @@ int RegisterMap::VPMMemorySize() {
 }
 
 
-int RegisterMap::L2CacheEnabled() {
+int L2CacheEnabled() {
   return (readRegister(V3D_L2CACTL) & L2CENA);
 }
 
@@ -190,7 +216,7 @@ int RegisterMap::L2CacheEnabled() {
  * - Also thankfully, the L2 cache is enabled automatically between runs
  *   of programs calling kernels.
  */
-void RegisterMap::L2Cache_enable(bool enable) {
+void L2Cache_enable(bool enable) {
   if (enable) {
     writeRegister(V3D_L2CACTL, L2CENA);
   } else {
@@ -208,7 +234,7 @@ void RegisterMap::L2Cache_enable(bool enable) {
  *
  * @return struct with 'do not use' values for all possible values
  */
-SchedulerRegisterValues RegisterMap::SchedulerRegisters() {
+SchedulerRegisterValues SchedulerRegisters() {
   SchedulerRegisterValues ret;
 
   uint32_t reg0 = readRegister(V3D_SQRSV0);
@@ -245,7 +271,7 @@ SchedulerRegisterValues RegisterMap::SchedulerRegisters() {
  *
  * **TODO:** Not tested yet!
  */
-void RegisterMap::SchedulerRegisters(SchedulerRegisterValues values) {
+void SchedulerRegisters(SchedulerRegisterValues values) {
   uint32_t reg0 = readRegister(V3D_SQRSV0);
   uint32_t reg1 = readRegister(V3D_SQRSV1);
   uint32_t new_reg0 = reg0;
@@ -277,7 +303,7 @@ void RegisterMap::SchedulerRegisters(SchedulerRegisterValues values) {
 }
 
 
-void RegisterMap::resetAllSchedulerRegisters() {
+void resetAllSchedulerRegisters() {
   SchedulerRegisterValues values;
 
   for (int i = 0; i < MAX_AVAILABLE_QPUS; ++i) {
@@ -289,38 +315,45 @@ void RegisterMap::resetAllSchedulerRegisters() {
 }
 
 
-RegisterMap &RegisterMap::instance() {
-	if (!Platform::run_vc4()) {
-		cerr << "RegisterMap can only be accessed on a platform having VideoCore4" << thrw;
-	}
-
-  if (_instance.get() == nullptr) {
-    _instance.reset(new RegisterMap);
-  }
-
-  return *_instance.get();
-}
-
-
-void RegisterMap::check_page_align(unsigned addr) {
-  long pagesize = sysconf(_SC_PAGESIZE);
-
-  if (pagesize <= 0) {
-    char buf[64];
-    sprintf(buf, "error: sysconf: %s", strerror(errno));
-    fatal(buf);
-  }
-
-  if (addr & (((unsigned) pagesize) - 1)) {
-    fatal("error: peripheral address is not aligned to page size");
-  }
+/**
+ * @brief Convenience function for getting a register value.
+ *
+ * This avoids having to use `instance()->` for every read access.
+ */
+uint32_t readRegister(int offset) {
+  return instance().read(offset);
 }
 
 
 /**
+ * @brief Convenience function for setting a register value.
+ *
+ * This avoids having to use `instance()->` for every write access.
+ */
+void writeRegister(int offset, uint32_t value) {
+  return instance().write(offset, value);
+}
+
+
+/**
+ * **UNUSED**
+ */
+int TechnologyVersion() {
+  uint32_t reg = readRegister(V3D_IDENT0);
+
+  checkVersionString(reg);
+
+  int ret = (reg >> 24) & 0xf;
+  return ret;
+}
+
+
+/**
+ * **UNUSED**
+ *
  * @return true if errors present, false otherwise
  */
-bool RegisterMap::checkThreadErrors() {
+bool checkThreadErrors() {
   uint32_t ERROR_BITMASK = 0x08;  // If set, control thread error
 
   uint32_t reg0 = readRegister(V3D_CT0CS);
@@ -341,7 +374,7 @@ bool RegisterMap::checkThreadErrors() {
   return ret;
 }
 
-
+} // RegisterMap
 }  // namespace V3DLib
 
 #endif  // QPU_MODE

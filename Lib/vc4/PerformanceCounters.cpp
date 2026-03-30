@@ -6,11 +6,8 @@
 namespace V3DLib {
 namespace vc4 {
 
-using RM = RegisterMap;
-
-
 /**
- * Short versions of performance counter descriptions.
+ * @brief Short versions of performance counter descriptions.
  *
  * These are intended as labels on display.
  * The counter id is the index into the array.
@@ -74,7 +71,7 @@ const char *PerformanceCounters::Description[PerformanceCounters::NUM_PERF_COUNT
 void PerformanceCounters::clear(uint32_t bitMask) {
   //printf("Called PerformanceCounters::clear() with mask %x\n", bitMask);
   bitMask = bitMask & ALL_COUNTERS;   // Top 16 bits should be zero by specification
-  RM::writeRegister(RM::V3D_PCTRC, bitMask);
+  RegisterMap::writeRegister(V3D_PCTRC, bitMask);
 }
 
 
@@ -84,7 +81,7 @@ void PerformanceCounters::clear(uint32_t bitMask) {
  * @return bitmask; if bit 0 is '1', the performance counter 0 is enabled, etc.
  */
 uint32_t PerformanceCounters::enabled() {
-  return RM::readRegister(RM::V3D_PCTRE);
+  return RegisterMap::readRegister(V3D_PCTRE);
 }
 
 
@@ -128,12 +125,12 @@ void PerformanceCounters::enable(Init list[]) {
   // Top bit of mask must be set for timers to be enabled.
   bitMask = bitMask | (1 << 31);
 
-  RM::writeRegister(RM::V3D_PCTRE, bitMask);
+  RegisterMap::writeRegister(V3D_PCTRE, bitMask);
 
   // Set the passed registers
   for (int i = 0; !list[i].isEnd(); ++i) {
-    RM::Index targetIndex = (RM::Index) (RM::V3D_PCTRS0 + 2*list[i].slotIndex);
-    RM::writeRegister(targetIndex, list[i].counterIndex);
+    Index targetIndex = (Index) (V3D_PCTRS0 + 2*list[i].slotIndex);
+    RegisterMap::writeRegister(targetIndex, list[i].counterIndex);
   }
 
   clear(enabled());  // reset the counters
@@ -155,12 +152,12 @@ void PerformanceCounters::enable(std::vector<Index> const &srcs) {
   // Top bit of mask must be set for timers to be enabled.
   bitMask = bitMask | (1 << 31);
 
-  RM::writeRegister(RM::V3D_PCTRE, bitMask);
+  RegisterMap::writeRegister(V3D_PCTRE, bitMask);
 
   // Set the passed registers
   for (int i = 0; i < (int) srcs.size(); ++i) {
-    RM::Index targetIndex = (RM::Index) (RM::V3D_PCTRS0 + 2*i);
-    RM::writeRegister(targetIndex, srcs[i]);
+    Index targetIndex = (Index) (V3D_PCTRS0 + 2*i);
+    RegisterMap::writeRegister(targetIndex, srcs[i]);
   }
 
   clear(enabled());  // reset the counters
@@ -190,7 +187,7 @@ void PerformanceCounters::disable(uint32_t bitMask) {
     bitMask = bitMask | (1 << 31);
   }
 
-  RM::writeRegister(RM::V3D_PCTRE, bitMask);
+  RegisterMap::writeRegister(V3D_PCTRE, bitMask);
 }
 
 
@@ -211,8 +208,8 @@ std::string PerformanceCounters::showEnabled() {
       continue;
     }
 
-    RM::Index sourceIndex = (RM::Index) (RM::V3D_PCTR0 + 2*i);
-    Index counterIndex = (Index) RM::readRegister(sourceIndex + 1);
+    Index sourceIndex = (Index) (V3D_PCTR0 + 2*i);
+    Index counterIndex = (Index) RegisterMap::readRegister(sourceIndex + 1);
     //printf("counterIndex: %d\n", counterIndex);
     //fflush(stdout);
 
@@ -220,7 +217,7 @@ std::string PerformanceCounters::showEnabled() {
       os << "   WARNING: Performance counter index 0x" << std::hex << counterIndex << std::dec
          << " out of bounds for slot index " << i << "\n";
     } else {
-      os << "  " <<  Description[counterIndex] << ": " << RM::readRegister(sourceIndex) << "\n";
+      os << "  " <<  Description[counterIndex] << ": " << RegisterMap::readRegister(sourceIndex) << "\n";
     }
   }
 

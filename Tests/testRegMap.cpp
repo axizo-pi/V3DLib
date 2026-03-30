@@ -8,6 +8,9 @@
 #include "../Lib/v3d/RegisterMapping.h"
 
 using namespace V3DLib;
+namespace V3DLib {
+	using namespace RegisterMap;
+}
 
 TEST_CASE("Test correct working of RegisterMap [regmap]") {
 
@@ -15,12 +18,11 @@ TEST_CASE("Test correct working of RegisterMap [regmap]") {
     if (!Platform::run_vc4()) return;
     const int MAX_QPUS = 12;
 
-    using RegMap = V3DLib::RegisterMap;
     V3DLib::enableQPUs();  // Required for accessing the registers
  
-    REQUIRE(4 == RegMap::numQPUPerSlice());
-    REQUIRE(3 == RegMap::numSlices());
-    REQUIRE(MAX_QPUS == RegMap::numSlices()*RegMap::numQPUPerSlice());
+    REQUIRE(4 == numQPUPerSlice());
+    REQUIRE(3 == numSlices());
+    REQUIRE(MAX_QPUS == numSlices()*numQPUPerSlice());
 
     V3DLib::disableQPUs();
   }
