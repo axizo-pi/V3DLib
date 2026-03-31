@@ -15,10 +15,11 @@ void hello(Int::Ptr p) {                          // The kernel definition
 
 
 int main(int argc, const char *argv[]) {
+/*	
   warn << RegisterMap::ProgramRequestStatus();
   warn << "PerformanceCounters::enabled(): " << vc4::PerformanceCounters::enabled();
   warn << "TechnologyVersion(): " << RegisterMap::TechnologyVersion();
-
+*/
   settings.init(argc, argv);
 
   auto k = compile(hello, settings);              // Construct the kernel
