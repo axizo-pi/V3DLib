@@ -217,7 +217,7 @@ void MailBoxInvoke::invoke(int numQPUs, Code const &code, IntList const &params)
   Data uniforms;  // Memory region for QPU parameters
   load_uniforms(uniforms, params, numQPUs);
 
-  if (false) {
+  if (true) {
     init_launch_messages(numQPUs, launch_messages, code, params, uniforms);
     invoke_jobs(numQPUs, launch_messages);
   } else {
