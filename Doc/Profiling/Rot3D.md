@@ -208,7 +208,7 @@ See kernel 1a.
 - Note that the performance does not increase much when using multiple kernels for
   kernel versions > 1. This is totally an indication that the calculation is _IO-bound_.
 - The best all-round kernel is **1a**, which will be used further. Of special interest,
-  this kernel does _not_ use `gather-recieve`, but performs well anyway. 
+  this kernel does _not_ use `gather-receive`, but performs well anyway. 
 	By the time you read this, all other kernels mentioned will be removed.
 - Of special note, on `pi5` the scalar kernel of `Rot3D`,  which is plain naive,
 _absolutely kills the QPU kernels_.  
