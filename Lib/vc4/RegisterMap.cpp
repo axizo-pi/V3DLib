@@ -335,9 +335,6 @@ void writeRegister(int offset, uint32_t value) {
 }
 
 
-/**
- * **UNUSED**
- */
 int TechnologyVersion() {
   uint32_t reg = readRegister(V3D_IDENT0);
 
@@ -370,6 +367,22 @@ bool checkThreadErrors() {
     printf("Control thread error for thread 1\n");
     ret = true;
   }
+
+  return ret;
+}
+
+
+std::string ProgramRequestStatus() {
+  std::string ret;
+
+  uint32_t reg = readRegister(V3D_SRQCS);
+
+  ret << "\n"
+    << "  Reg: " << reg << "\n"  // icheck: Is it really zero?
+    << "  # Programs Completed: " << ((reg >> 16) & 0b11111111) << "\n"
+    << "  # Program Requests  : " << ((reg >>  8) & 0b11111111) << "\n"
+    << "  Queue Error         : " << ((reg >>  7) & 0b1)        << "\n"
+    << "  Queue Length        : " << (reg & 0b111111);
 
   return ret;
 }

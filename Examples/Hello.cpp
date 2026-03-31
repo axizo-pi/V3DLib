@@ -1,7 +1,10 @@
 #include "V3DLib.h"
 #include "Support/Settings.h"
+#include "vc4/RegisterMap.h"
+#include "vc4/PerformanceCounters.h"
 
 using namespace V3DLib;
+using namespace Log;
 
 V3DLib::Settings settings;
 
@@ -12,6 +15,10 @@ void hello(Int::Ptr p) {                          // The kernel definition
 
 
 int main(int argc, const char *argv[]) {
+  warn << RegisterMap::ProgramRequestStatus();
+  warn << "PerformanceCounters::enabled(): " << vc4::PerformanceCounters::enabled();
+  warn << "TechnologyVersion(): " << RegisterMap::TechnologyVersion();
+
   settings.init(argc, argv);
 
   auto k = compile(hello, settings);              // Construct the kernel

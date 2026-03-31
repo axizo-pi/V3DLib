@@ -3,6 +3,7 @@
 #ifndef _V3DLIB_VC4_REGISTERMAP_H
 #define _V3DLIB_VC4_REGISTERMAP_H
 #include <stdint.h>
+#include <string>
 
 namespace V3DLib {
 
@@ -10,8 +11,8 @@ namespace V3DLib {
  * Needs to be public, used in PerformanceCounters.
  */
 enum Index {
-  V3D_BASE = (0xc00000 >> 2),
-  V3D_IDENT0 = 0,
+  V3D_BASE    = (0xc00000 >> 2),
+  V3D_IDENT0  = 0,
   V3D_IDENT1,
   V3D_IDENT2,
   V3D_L2CACTL = (0x00020 >> 2),
@@ -20,6 +21,14 @@ enum Index {
 
   V3D_CT0CS   = (0x00100 >> 2),  // Control List Executor Thread 0 Control and Status.
   V3D_CT1CS,                     // Control List Executor Thread 0 Control and Status.
+
+  V3D_SQCNTL  = (0x00418 >> 2),  // QPU Scheduler Control
+
+  // Program Request registers
+  V3D_SRQPC   = (0x00430 >> 2),   // QPU User Program Request Program Address
+  V3D_SRQUA,                      // QPU User Program Request Uniforms Address
+  V3D_SRQUL,                      // QPU User Program Request Uniforms Length
+  V3D_SRQCS,                      // QPU User Program Request Control and Status
 
   //
   // Performance counter register slots.
@@ -116,6 +125,8 @@ void resetAllSchedulerRegisters();
 
 int TechnologyVersion();
 bool checkThreadErrors();
+
+std::string ProgramRequestStatus();
 
 } // RegisterMap
 
