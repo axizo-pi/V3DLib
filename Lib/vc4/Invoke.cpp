@@ -5,6 +5,8 @@
 #include "defines.h"
 #include "LibSettings.h"
 #include "Support/Platform.h"
+#include "Support/Helpers.h"  // sleep()
+#include "RegisterMap.h"      // ProgramRequest()
 
 using namespace Log;
 
@@ -215,9 +217,25 @@ void MailBoxInvoke::invoke(int numQPUs, Code const &code, IntList const &params)
   Data uniforms;  // Memory region for QPU parameters
   load_uniforms(uniforms, params, numQPUs);
 
-  init_launch_messages(numQPUs, launch_messages, code, params, uniforms);
+  if (false) {
+    init_launch_messages(numQPUs, launch_messages, code, params, uniforms);
+    invoke_jobs(numQPUs, launch_messages);
+  } else {
+    uint32_t unif_size = num_params(params);
 
-  invoke_jobs(numQPUs, launch_messages);
+    //
+    // Worked in 1 go for 1 QPU :-)
+    // I don't see a way however to start multiple QPU's per request.
+    // Following loop starts processes sequentially
+    //
+    warn << "ProgramRequestStatus Pre: " << RegisterMap::ProgramRequestStatus();
+    for (int i = 0; i < numQPUs; ++i) {
+      RegisterMap::ProgramRequest(code.getAddress(), uniforms.getAddress() + i*unif_size, unif_size);
+    }
+    sleep(1);
+    warn << "ProgramRequestStatus Post: " << RegisterMap::ProgramRequestStatus();
+  }
+
 }
 
 
