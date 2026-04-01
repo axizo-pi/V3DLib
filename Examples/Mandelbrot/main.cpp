@@ -45,8 +45,17 @@ void run_qpu_kernel(KernelType &kernel) {
 	auto const &s = settings();
 
   assertq(0 == s.numStepsWidth % 16, "Width dimension must be a multiple of 16");
-  assertq(!Platform::compiling_for_vc4() || (4 <= s.num_qpus),
-    "num QPU's must be at least 4 for vc4"
+
+	//
+	// Allowed to run if:
+	// - v3d QPU
+	// - vc4 interpreter or emulator
+	// - vc4 QPU with #QPU's >= 0
+	//
+	// TODO recheck following condition
+	//
+  assertq(!Platform::compiling_for_vc4() || (settings().run_type != 0) || (4 <= s.num_qpus),
+    "Num QPU's must be at least 4 for vc4"
   );
 
   Timer timer("Kernel compile");
