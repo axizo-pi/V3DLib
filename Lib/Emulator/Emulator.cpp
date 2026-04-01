@@ -474,9 +474,8 @@ void run_instruction(QPUState &s, State &state, Instr const &instr) {
     break;
 
     case BRL:                                // Branch to label
+      fatal("V3DLib: emulator does not support Branch to label");
     case LAB:                                // Label
-      fatal("V3DLib: emulator does not support labels");
-      // Fall-thru
     case NO_OP:
     case IRQ:
     case INIT_BEGIN:

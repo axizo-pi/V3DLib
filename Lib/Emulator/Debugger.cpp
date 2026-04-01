@@ -18,6 +18,8 @@ std::string Debugger::show_help() const {
       << "  h <a> - add heap view at address <a>\n"
       << "  H <a> - Remove heap view at address <a>\n"
       << "  n     - (or blank) run next instruction\n"
+      << "  s     - show semaphores\n"
+      << "  S     - hide semaphores\n"
       << "  v     - show VPM\n"
       << "  V     - hide VPM\n"
       << "  r     - run till end, ignoring breakpoints\n"
@@ -171,9 +173,9 @@ void Debugger::step(int qpu_num) {
               << show_heapviews();
   }
 
-  if (disp_vpm) {
-    std::cout << m_state.dump_vpm();
-  }
+  if (disp_sema) std::cout << m_state.dump_sema();
+  if (disp_vpm)  std::cout << m_state.dump_vpm();
+
   std::cout << "=============================================\n";
 
   bool do_loop = true;
@@ -236,6 +238,14 @@ void Debugger::step(int qpu_num) {
         break;
       case 'n':
         do_loop = false;
+        break;
+      case 's':
+        disp_sema = true;
+        std::cout << "Disp semaphores enabled\n"; 
+        break;
+      case 'S':
+        std::cout << "Disp semaphores disabled\n"; 
+        disp_sema = false;
         break;
       case 'v':
         disp_vpm = true;

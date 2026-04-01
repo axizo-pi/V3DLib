@@ -26,8 +26,8 @@ namespace {
 std::string stem(const char *input) {
   std::string filename(input);
 
-  // Remove directory if present.
-  // Do this before extension removal incase directory has a period character.
+  // Remove directory from the filename if present.
+  // Do this before extension removal in case directory has a period character.
   const size_t last_slash_idx = filename.find_last_of("\\/");
   if (std::string::npos != last_slash_idx) {
     filename.erase(0, last_slash_idx + 1);
@@ -72,8 +72,9 @@ CmdParameters base_params = {
   }, {
     "Select run type",
     "-r=",
-    {"QPU", "emulator", "interpreter"},
-    "Run the kernel on the QPU, emulator or on the interpreter"
+    {"QPU", "interpreter", "emulator", "debugger"},
+    "Run the kernel on the QPU, interpreter or the emulator.\n"
+		"Value 'debugger' starts the emulator in debugging mode"
   }, {
     "Disable logging",
     {"-s", "-silent"},

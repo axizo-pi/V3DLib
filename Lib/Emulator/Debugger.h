@@ -18,8 +18,9 @@ private:
   State &m_state;
   Target::Instr::List const &m_instrs;
 
-  bool do_step  = false;
-  bool disp_vpm = false;
+  bool do_step   = false;
+  bool disp_sema = false;
+  bool disp_vpm  = false;
 
   std::vector<int> m_breakpoint;
   bool breakpoint_present(int line) const;

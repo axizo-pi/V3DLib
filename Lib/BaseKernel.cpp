@@ -53,7 +53,7 @@ void BaseKernel::compile_init() {
   if (!m_settings.compile_only) {
     if (Platform::use_main_memory() && m_settings.run_type == 0) {
       Log::info << "Main memory selected in QPU mode, running on emulator instead of QPU.";
-      m_settings.run_type = 1;
+      m_settings.run_type = 2;
       select_kernel = vc4;
     }
   }
@@ -101,17 +101,17 @@ void BaseKernel::run(bool wait_complete) {
         fatal("Main memory selected in QPU mode and not compiled for vc4, can not run.");
       }
     } else {
-       if (!m_settings.compile_only) {
-        cdebug << "Main memory selected in QPU mode, running on emulator instead of QPU.";
+       if (!m_settings.compile_only && (m_settings.run_type == 0)) {
+        warn << "Main memory selected in QPU mode, running on emulator instead of QPU.";
+      	m_settings.run_type = 2;
       }
-      m_settings.run_type = 1;
     }
   }
 #else
   if (m_settings.run_type == 0) {
     assert(!m_driver->is_v3d());
-    debug("Not compiled for QPU, running on emulator instead of QPU.");
-    m_settings.run_type = 1;
+    cdebug << "Not compiled for QPU, running on emulator instead of QPU.";
+    m_settings.run_type = 2;
   }
 #endif
 
@@ -126,11 +126,11 @@ void BaseKernel::run(bool wait_complete) {
       showed_msg = true;
     }
   } else {
-
     switch (m_settings.run_type) {
       case 0: qpu(wait_complete); break;
-      case 1: emu(); break;
-      case 2: interpret(); break;
+      case 1: interpret();        break;
+      case 2: emu();              break;
+      case 3: emu(true);          break;
     }
   }
 
@@ -146,7 +146,7 @@ void BaseKernel::run(bool wait_complete) {
  * The emulator runs vc4 code.
  */
 void BaseKernel::emu(bool do_debug) {
-  assert(!m_settings.compile_only);    // Paranoia
+  if (m_settings.compile_only) return;
 
   if (driver().has_errors()) {
     warning("Not running on emulator, there were errors during compile.");

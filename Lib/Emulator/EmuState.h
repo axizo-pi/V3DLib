@@ -15,16 +15,12 @@ public:
   bool sema_dec(int sema_id);
 
   std::string dump_vpm() const;
+  std::string dump_sema() const;
 
   static Vec const index_vec;
 
 private:
-  IntList uniforms;        // Kernel parameters
-  int sema[16];            // Semaphores
-
-  // Protection against locks due to semaphore waiting
-  int const MAX_SEMAPHORE_WAIT = 1024;
-  int semaphore_wait_count = 0;
+  IntList uniforms;               // Kernel parameters
 };
 
 } // namespace V3DLib

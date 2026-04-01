@@ -320,6 +320,10 @@ bool Vec::apply(ALUOp const &op, Vec a, Vec b) {
     }
     break;
 
+    case Enum::A_MOV:
+			*this = a;
+		break;
+
     default:
       handled = false;
     break;

@@ -13,7 +13,8 @@ std::vector<const char *> const _kernels = { "multi", "cpu" };  // Order importa
 CmdParameters params = {
   "Mandelbrot Generator\n"
   "\n"
-  "Calculates Mandelbrot for a given region and outputs the result as a PGM bitmap file.\n"
+  "Calculates Mandelbrot for a given region and outputs an image of the result.\n"
+  "\n"
   "The kernel is compute-bound, the calculation time dominates over the data transfer during execution.\n"
   "It is therefore an indicator of compute speed, "
   "and is used for performance comparisons of platforms and configurations.\n"
