@@ -25,10 +25,10 @@ enum Index {
   V3D_SQCNTL  = (0x00418 >> 2),  // QPU Scheduler Control
 
   // Program Request registers
-  V3D_SRQPC   = (0x00430 >> 2),   // QPU User Program Request Program Address
-  V3D_SRQUA,                      // QPU User Program Request Uniforms Address
-  V3D_SRQUL,                      // QPU User Program Request Uniforms Length
-  V3D_SRQCS,                      // QPU User Program Request Control and Status
+  V3D_SRQPC   = (0x00430 >> 2),  // QPU User Program Request Program Address
+  V3D_SRQUA,                     // QPU User Program Request Uniforms Address
+  V3D_SRQUL,                     // QPU User Program Request Uniforms Length
+  V3D_SRQCS,                     // QPU User Program Request Control and Status
 
   //
   // Performance counter register slots.
@@ -126,6 +126,7 @@ void resetAllSchedulerRegisters();
 int TechnologyVersion();
 bool checkThreadErrors();
 
+void ProgramRequest(uint32_t address, uint32_t uniforms, uint32_t uniforms_length);
 std::string ProgramRequestStatus();
 
 } // RegisterMap

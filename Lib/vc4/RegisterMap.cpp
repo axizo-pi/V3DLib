@@ -372,13 +372,27 @@ bool checkThreadErrors() {
 }
 
 
+/**
+ * @param uniforms_length  number of passed uniforms.
+ *        0 disables the uniforms stream.
+ *        > 1023 implies an unlimited uniforms stream.
+ */
+void ProgramRequest(uint32_t address, uint32_t uniforms, uint32_t uniforms_length) {
+  assert(uniforms_length >0 && uniforms_length < 1024);
+
+  writeRegister(V3D_SRQUA, uniforms);
+  writeRegister(V3D_SRQUL, uniforms_length);
+  writeRegister(V3D_SRQPC, address);  // Assuming that this triggers the request and needs to be at end
+}
+
+
 std::string ProgramRequestStatus() {
   std::string ret;
 
   uint32_t reg = readRegister(V3D_SRQCS);
 
   ret << "\n"
-    << "  Reg: " << reg << "\n"  // icheck: Is it really zero?
+    << "  Reg: " << reg << "\n"  // DEBUG: Is it really zero?
     << "  # Programs Completed: " << ((reg >> 16) & 0b11111111) << "\n"
     << "  # Program Requests  : " << ((reg >>  8) & 0b11111111) << "\n"
     << "  Queue Error         : " << ((reg >>  7) & 0b1)        << "\n"
