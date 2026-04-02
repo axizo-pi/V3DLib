@@ -51,6 +51,8 @@ Vec EmuState::get_uniform(int id, int &next_uniform) {
 
 /**
  * @brief Increment semaphore
+ *
+ * @return true if QPU stalls on semaphore, false if can continue
  */
 bool EmuState::sema_inc(int sema_id) {
   assert(sema_id >= 0 && sema_id < 16);
@@ -78,6 +80,8 @@ bool EmuState::sema_inc(int sema_id) {
 
 /**
  * @brief Decrement semaphore
+ *
+ * @return true if QPU stalls on semaphore, false if can continue
  */
 bool EmuState::sema_dec(int sema_id) {
   assert(sema_id >= 0 && sema_id < 16);

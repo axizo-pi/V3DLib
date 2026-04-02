@@ -466,8 +466,8 @@ void run_instruction(QPUState &s, State &state, Instr const &instr) {
     }
     break;
 
-    case SINC: if (state.sema_inc(instr.semaId)) s.pc--; break;
-    case SDEC: if (state.sema_dec(instr.semaId)) s.pc--; break;
+    case SINC: if (state.sema_inc(instr.semaId)) s.waiting = true; break;
+    case SDEC: if (state.sema_dec(instr.semaId)) s.waiting = true; break;
 
     case END:                                // End program (halt)
       s.running = false;
@@ -545,7 +545,7 @@ void emulate(
         Instr const instr = instrs.get(s.pc);
         run_instruction(s, state, instr);
 
-        debugger.step(i);
+        debugger.step(i, numQPUs);
 
         if (!s.waiting) {
           s.pc++;

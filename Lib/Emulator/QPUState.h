@@ -74,6 +74,7 @@ struct QPUState {
   void init(int maxReg);
   void upkeep(State &state);
   std::string dump(int index = -1) const;
+  std::string dump_runstate() const;
 };
 
 } // namespace V3DLib

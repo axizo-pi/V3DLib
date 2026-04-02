@@ -18,6 +18,7 @@ std::string Debugger::show_help() const {
       << "  h <a> - add heap view at address <a>\n"
       << "  H <a> - Remove heap view at address <a>\n"
       << "  n     - (or blank) run next instruction\n"
+      << "  o     - show overview of QPU states\n"
       << "  s     - show semaphores\n"
       << "  S     - hide semaphores\n"
       << "  v     - show VPM\n"
@@ -144,7 +145,7 @@ std::string Debugger::show_breakpoints() const {
 }
 
 
-void Debugger::step(int qpu_num) {
+void Debugger::step(int qpu_num, int numQPUs) {
   QPUState *s = &m_state.qpu[qpu_num];
 
   int cur_pc = s->pc;
@@ -231,12 +232,28 @@ void Debugger::step(int qpu_num) {
         do_loop = false;
       break;
 
+      case 'n':
+        do_loop = false;
+      break;
+
+      case 'o': {
+				std::cout << "QPU overview:\n";
+
+				for (int i = 0; i < numQPUs; ++i) {
+					auto const &qpu = m_state.qpu[i];
+
+					std::cout << "  QPU " << i << ": " 
+						        << "PC : "     << qpu.pc << ", "
+						        << "running: " << qpu.dump_runstate()
+										<< "\n";
+				}
+
+			}
+      break;
+
       case 'r':
         m_breakpoint.clear();
         do_step = false;
-        do_loop = false;
-        break;
-      case 'n':
         do_loop = false;
         break;
       case 's':

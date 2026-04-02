@@ -96,6 +96,8 @@ void QPUState::upkeep(State &state) {
 /**
  * @brief Dump state of QPU with given index.
  *
+ * @param index index of QPU that is dumped; -1 if not passed.
+ *
  * This is not intended to be complete; will fill it in as I go.
  */
 MAYBE_UNUSED std::string QPUState::dump(int index) const {
@@ -118,7 +120,7 @@ MAYBE_UNUSED std::string QPUState::dump(int index) const {
   ret << "\n"
       << "--------------------\n"
       << "PC: " << pc << "\n"
-      << "running: " << (running?(waiting?"waiting":"active"):"halted")
+      << "running: " << dump_runstate() << "\n"
       << "\n";
 
   if (dmaLoad.active())  ret << "dmaLoad: " << dmaLoad.dump() << "\n";
@@ -154,6 +156,11 @@ MAYBE_UNUSED std::string QPUState::dump(int index) const {
   }
 
   return ret;
+}
+
+
+std::string QPUState::dump_runstate() const {
+	return (running?(waiting?"waiting/stalled":"active"):"halted");
 }
 
 } // namespace V3DLib

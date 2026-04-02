@@ -11,7 +11,7 @@ class Debugger {
 public:
   Debugger(State &state, Target::Instr::List const &instrs) : m_state(state), m_instrs(instrs) {}
 
-  void step(int qpu_num);
+  void step(int qpu_num, int numQPUs);
   void add_breakpoint(int line);
 
 private:

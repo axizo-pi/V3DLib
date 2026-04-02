@@ -54,12 +54,17 @@ void hostIRQ() {
  * ----------------------
  *
  * This is not a clean implementation of `barrier()`.
- * Consider QPU 1 comes before QPU 0: it zooms straight through.
+ *
+ * Consider when QPU 1 comes before QPU 0: it zooms straight through.
+ * Then, QPU 0 gets stuck forever on `SDEC 15`.
  *
  * If `QPU 0` comes first anyway, what can happen is that the next QPU increments
- * the semaphore while `QPU 0` is in the For-loop and passes. 
- *
+ * the semaphore while `QPU 0` is in the For-loop and passes.  
  * The best you can say is that `QPU 0` waits for all other QPU's to pass.
+ *
+ * 20260402: This is _exactly_ what happens for `vc4 Mandelbrot` with `1 < numQPUs < 4`.
+ *           QPU 0 completes after one of the other QPU's.
+ *
  *
  * Notes
  * -----
