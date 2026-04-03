@@ -89,6 +89,17 @@ void QPUState::upkeep(State &state) {
     dmaStore.active(false);
   }
 
+	if (m_take_jump) {
+		m_jump_count++;
+
+		if (m_jump_count >= MAX_JUMP_COUNT) {  // >= paranoia
+			m_take_jump = false;
+			pc += m_jump_offset;
+			m_jump_count  = 0;
+			m_jump_offset = 0;
+		}
+	}
+
   waiting = false;
 }
 
@@ -120,8 +131,13 @@ MAYBE_UNUSED std::string QPUState::dump(int index) const {
   ret << "\n"
       << "--------------------\n"
       << "PC: " << pc << "\n"
-      << "running: " << dump_runstate() << "\n"
-      << "\n";
+      << "running: " << dump_runstate() << "\n";
+
+	if (m_take_jump) {
+  	ret << "jump count: " << m_jump_count << ", offset: " << m_jump_offset  << "\n";
+	}
+
+  ret << "\n";
 
   if (dmaLoad.active())  ret << "dmaLoad: " << dmaLoad.dump() << "\n";
   if (dmaStore.active()) ret << "dmaStore: " << dmaStore.dump() << "\n";

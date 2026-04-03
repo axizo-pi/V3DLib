@@ -215,8 +215,10 @@ inline bool checkBranchCond(QPUState* s, BranchCond cond) {
     case BranchCond::COND_ANY:
       set_bools(s, cond);
 
-      for (int i = 0; i < NUM_LANES; i++)
+      for (int i = 0; i < NUM_LANES; i++) {
         if (bools[i]) return true;
+			}
+
       return false;
     default:
       assertq(false, "checkBranchCond(): unexpected value");
@@ -449,7 +451,12 @@ void run_instruction(QPUState &s, State &state, Instr const &instr) {
         BranchTarget t = instr.branch_target();
 
         if (t.relative && !t.useRegOffset) {
-          s.pc += 3 + t.immOffset;
+          //s.pc += 3 + t.immOffset;
+
+					//warn << "setting branch jump at " << s.pc;
+					s.m_take_jump   = true;
+					s.m_jump_count  = 0;
+					s.m_jump_offset = t.immOffset;
         } else {
           fatal("V3DLib: found unsupported form of branch target");
         }
@@ -473,9 +480,10 @@ void run_instruction(QPUState &s, State &state, Instr const &instr) {
       s.running = false;
     break;
 
-    case BRL:                                // Branch to label
+    case BRL:                                // Branch to label; v3d
       fatal("V3DLib: emulator does not support Branch to label");
-    case LAB:                                // Label
+    case LAB:                                // Label; v3d
+
     case NO_OP:
     case IRQ:
     case INIT_BEGIN:

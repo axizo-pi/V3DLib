@@ -75,6 +75,12 @@ struct QPUState {
   void upkeep(State &state);
   std::string dump(int index = -1) const;
   std::string dump_runstate() const;
+
+	// Delayed branch support
+	const int MAX_JUMP_COUNT = 4;
+	bool      m_take_jump    = false;
+	int       m_jump_count   = 0;
+	int       m_jump_offset  = 0;
 };
 
 } // namespace V3DLib

@@ -320,7 +320,7 @@ bool Vec::apply(ALUOp const &op, Vec a, Vec b) {
     }
     break;
 
-    case Enum::A_MOV:
+    case Enum::A_MOV:  // v3d
 			*this = a;
 		break;
 
