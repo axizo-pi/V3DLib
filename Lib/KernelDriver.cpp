@@ -68,8 +68,9 @@ void KernelDriver::compile(std::function<void()> create_ast) {
     // TODO: Choose between this exception type and runtime_error
     //       Looks like this one is not used.
     std::string e_msg = e.what();
-    Log::warn << "Exception caught: " << e_msg;
-    std::string msg   = "Exception occurred during compilation: ";
+    Log::warn << "V3DLib::Exception caught: " << e_msg;
+
+    std::string msg = "Exception occurred during compilation: ";
     msg << e_msg;
 
     clearStack();

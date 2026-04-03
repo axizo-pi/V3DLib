@@ -302,12 +302,17 @@ unsigned qpu_enable(int file_desc, unsigned enable)
  *
  * - if a mailbox error occurs here, the entire system blocks,
  *   even for consequent calls to other kernels.
- *   You need to restart the Pi to continue.
- *   **TODO**: Find a way to reset a Pi after this or similar errors.
  *
- * - Confirmed reasons to getting a mailbox error here:  
+ *   I wish there was a way to reset the QPU hardware after a mailbox error.
+ *   I haven't found it yet.
+     I restart the Pi by removing the power to continue.  
+ *   **TODO**: Find a way to hardware reset the VideoCore4.
+ *
+ * - Confirmed reasons for getting a mailbox error here:  
  *   * Accessing a buffer object outside of its assigned range.
  *     This happened with a misaligned DMA write.
+ *   * When all QPU's are halted (completed running) or stalled (SEMA).
+ *     Not sure if waiting (DMA) should be in list.
  *   * On a consecutive DMA store and TMU load on the same main mem address.
  */
 unsigned execute_qpu(int fd, unsigned num_qpus, unsigned control, unsigned noflush, unsigned timeout) {

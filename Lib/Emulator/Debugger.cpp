@@ -258,7 +258,7 @@ void Debugger::step(int qpu_num, int numQPUs) {
         break;
       case 's':
         disp_sema = true;
-        std::cout << "Disp semaphores enabled\n"; 
+        std::cout << "Semaphores display enabled\n"; 
         break;
       case 'S':
         std::cout << "Disp semaphores disabled\n"; 

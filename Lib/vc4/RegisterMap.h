@@ -78,7 +78,9 @@ enum Index {
   V3D_PCTR14,
   V3D_PCTRS14,
   V3D_PCTR15,
-  V3D_PCTRS15
+  V3D_PCTRS15,
+
+  V3D_ERRSTAT   = (0x00f20 >> 2)  // Miscellaneous Error Signals
 };
 
 
@@ -128,6 +130,7 @@ bool checkThreadErrors();
 
 void ProgramRequest(uint32_t address, uint32_t uniforms, uint32_t uniforms_length);
 std::string ProgramRequestStatus();
+std::string ErrorStatus();
 
 } // RegisterMap
 

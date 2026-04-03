@@ -7,6 +7,7 @@
 #include "vc4.h"
 #include "Target/instr/Mnemonics.h"
 #include "SourceTranslate.h"  // add_uniform_pointer_offset()
+#include "RegisterMap.h"      // ErrorStatus()()
 #include "Target/Satisfy.h"
 #include "RegAlloc.h"
 #include "global/log.h"
@@ -205,7 +206,14 @@ void KernelDriver::invoke(int numQPUs, IntList &params, bool wait_complete) {
     warn << "run(): disabling wait completion only works for v3d. Ignoring for vc4.";
   }
 
-  MailBoxInvoke::invoke(numQPUs, m_code, params);
+  try {
+  	MailBoxInvoke::invoke(numQPUs, m_code, params);
+  } catch (std::runtime_error const &e) {
+		Log::cerr << "KernelDriver::invoke exception caught: " << e.what() << "\n"
+			        << "Error registers:\n"
+				      << RegisterMap::ErrorStatus();
+		throw;
+	}
 }
 
 }  // namespace vc4

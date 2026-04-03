@@ -30,6 +30,51 @@ enum SchedulerMasks : int {
 };
 
 
+enum ErrStatFields {
+	VPAEABB = 0,
+	VPAERGS,
+	VPAEBRGL,
+	VPAERRGL,
+	VPMEWR,
+	VPMERR,
+	VPMERNA,
+	VPMEWNA,
+	VPMEFNA,
+	VPMEAS,
+	VDWE,
+	VCDE,
+	VCDI, 
+	VCMRE,
+	VCMBE,
+	L2CARE, // 15
+
+	MAX = L2CARE
+};
+
+
+std::string errStatLabel(ErrStatFields val) {
+	switch (val) {
+		case VPAEABB:  return "VPM Allocator error - allocating base while busy";
+		case VPAERGS:  return "VPM Allocator error - request too big";
+		case VPAEBRGL: return "VPM Allocator error - binner request greater than limit";
+		case VPAERRGL: return "VPM Allocator error - renderer request greater than limit";
+		case VPMEWR:   return "VPM error - write range";
+		case VPMERR:   return "VPM error - read range";
+		case VPMERNA:  return "VPM error - read non-allocated";
+		case VPMEWNA:  return "VPM error - write non-allocated";
+		case VPMEFNA:  return "VPM error - free non-allocated";
+		case VPMEAS:   return "VPM error - allocated size error";
+		case VDWE:     return "VDW error - address overflows";
+		case VCDE:     return "VCD error - FIFO pointers out of sync";
+		case VCDI:     return "VCD Idle";
+		case VCMRE:    return "VCM error (renderer)";
+		case VCMBE:    return "VCM error (binner)";
+		case L2CARE:   return "L2C AXI Receive Fifo Overrun error";
+		default: assert(false);
+	}
+}
+
+
 /**
  *
  * Implemented as singleton with lazy load, so that it's 
@@ -397,6 +442,19 @@ std::string ProgramRequestStatus() {
     << "  # Program Requests  : " << ((reg >>  8) & 0b11111111) << "\n"
     << "  Queue Error         : " << ((reg >>  7) & 0b1)        << "\n"
     << "  Queue Length        : " << (reg & 0b111111);
+
+  return ret;
+}
+
+
+std::string ErrorStatus() {
+  std::string ret;
+
+	for (int i = 0; i < ErrStatFields::MAX; ++i) {
+		ErrStatFields val = (ErrStatFields) i;
+
+		ret << "  " << errStatLabel(val) << ": " << ((readRegister(V3D_ERRSTAT) >> val) & 1) << "\n";
+	}
 
   return ret;
 }
