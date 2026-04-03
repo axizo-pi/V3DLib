@@ -9,6 +9,7 @@
 #include <bcm_host.h>
 #include "Support/basics.h"   // fatal()
 #include "Support/Platform.h"
+#include "Support/Helpers.h"  // indentBy()
 #include "Mailbox.h"          // mapmem()
 #include "vc4.h"
 
@@ -52,6 +53,18 @@ enum ErrStatFields {
 };
 
 
+/**
+ * @brief Get labels for error status registers
+ *
+ * ========================================
+ *
+ * Notes
+ * -----
+ * - TMU - Texture and Memory Lookup Unit
+ * - VPM - Vertex Pipe Memory
+ * - VCM - Vertex Cache Manager, 'General DMA Read Data'.
+ *         So, the 'read from main mem' option of the VPM.
+ */
 std::string errStatLabel(ErrStatFields val) {
 	switch (val) {
 		case VPAEABB:  return "VPM Allocator error - allocating base while busy";
@@ -447,13 +460,27 @@ std::string ProgramRequestStatus() {
 }
 
 
+/**
+ * @brief Dump values of error status registers
+ */
 std::string ErrorStatus() {
+  // Prescan for max length labels
+  int max_length = 0;
+	for (int i = 0; i < ErrStatFields::MAX; ++i) {
+		ErrStatFields val = (ErrStatFields) i;
+
+		int length = errStatLabel(val).length();
+    if (length > max_length) max_length = length;
+	}
+
   std::string ret;
 
 	for (int i = 0; i < ErrStatFields::MAX; ++i) {
 		ErrStatFields val = (ErrStatFields) i;
+		auto label = errStatLabel(val);
+    auto tabs = indentBy(max_length - label.length());
 
-		ret << "  " << errStatLabel(val) << ": " << ((readRegister(V3D_ERRSTAT) >> val) & 1) << "\n";
+		ret << "  " << label << tabs << ": " << ((readRegister(V3D_ERRSTAT) >> val) & 1) << "\n";
 	}
 
   return ret;
