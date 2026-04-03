@@ -13,15 +13,16 @@ using namespace Log;
 
 namespace V3DLib {
 
-void BaseSettings::process(BaseKernel &k) {
+void BaseSettings::dump_code(BaseKernel &k) {
   // For multiple calls here (entirely possible, HeatMap does this),
   // this will prevent dumping the v3d code (mnemonics, actually) on every call.
   if (output_code) {
     if (output_count == 0) {
-      cdebug << "BaseSettings outputting code";
+      cdebug << "BaseSettings::process() outputting code";
 
       assert(!name.empty());
       std::string code_filename = name + "_code.txt";
+      //warn << "BaseSettings::process() code_filename: " << code_filename;
 
       to_file(code_filename.c_str(), k.dump());
     } else if (output_count == 1) {

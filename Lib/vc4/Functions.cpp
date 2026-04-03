@@ -100,7 +100,7 @@ void kernelFinish() {
   dmaWaitRead();                header("Kernel termination");
                                 comment("Ensure outstanding DMAs have completed");
   dmaWaitWrite();
-  //wait_qpu();
+  wait_qpu();
 }
 
 

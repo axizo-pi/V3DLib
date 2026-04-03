@@ -214,9 +214,9 @@ void Settings::check_params(CmdParameters &params, int argc, char const *argv[])
   int ret = CmdParameters::EXIT_ERROR;
 
   //
-  // This mask the call to handle_help() in handle_commandline()
+  // This masks the call to handle_help() in handle_commandline()
   //
-  // This skips the init() and reset() calls in handle_commandline();
+  // The init() and reset() calls in handle_commandline() are skipped.
   // TODO check if this is OK
   //
   if (params.has_help(args)) {
@@ -233,7 +233,6 @@ void Settings::check_params(CmdParameters &params, int argc, char const *argv[])
       }
     }
   }
-
 
   if (ret != CmdParameters::ALL_IS_WELL) exit(ret);
 }

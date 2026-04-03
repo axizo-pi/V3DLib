@@ -94,6 +94,8 @@ std::string BaseKernel::dump() {
 void BaseKernel::run(bool wait_complete) {
   assert(m_driver.get() != nullptr);
 
+  m_settings.dump_code(*this);
+
 #ifdef QPU_MODE
   if (Platform::use_main_memory()) {
     if (m_driver->is_v3d()) {
@@ -135,8 +137,6 @@ void BaseKernel::run(bool wait_complete) {
   }
 
   m_settings.stopPerfCounters();
-
-  m_settings.process(*this);
 }
 
 

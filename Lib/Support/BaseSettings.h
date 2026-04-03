@@ -19,7 +19,7 @@ struct BaseSettings {
 
   void startPerfCounters();
   void stopPerfCounters();
-  void process(BaseKernel &k);
+  void dump_code(BaseKernel &k);
 
 private:
   int output_count = 0;
