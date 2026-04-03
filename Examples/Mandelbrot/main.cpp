@@ -53,12 +53,13 @@ void run_qpu_kernel(KernelType &kernel) {
 	// - vc4 QPU with #QPU's >= 0
 	//
 	// TODO recheck following condition
+  //
+  // - Verified: nothing to do with semaphores and wait_qpu()
+  // - Runs fine in emulator
 	//
-/*
   assertq(!Platform::compiling_for_vc4() || (settings().run_type != 0) || (4 <= s.num_qpus),
     "Num QPU's must be at least 4 for vc4"
   );
-*/
 
   Timer timer("Kernel compile");
   auto k = compile(kernel, s);

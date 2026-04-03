@@ -52,9 +52,10 @@ void hostIRQ() {
  * Notes
  * -----
  *
- * Note that most semaphore stuff is under DMA.
- * Strictly speaking, this is not necessary, because semaphore are not explicitly linked to DMA.
- * But I see no reason to make semaphores more explicit.
+ * - If this is left out, mbox errors pop up.
+ * - Note that most semaphore stuff is under DMA.
+ *   Strictly speaking, this is not necessary, because semaphore are not explicitly linked to DMA.
+ *   But I see no reason to make semaphores more explicit.
  */
 void wait_qpu() {
    // The issue here is that QPU 0 may not be the first QPU to reach this code.
