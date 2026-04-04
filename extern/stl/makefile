@@ -13,9 +13,7 @@ INCLUDES = \
 
 -include ../../script/mak/extern.mak
 
-CFLAGS += \
--Wno-sign-compare \
-$(INCLUDES)
+CPPFLAGS += -Wno-sign-compare $(INCLUDES)
 
 
 ################################################################################
@@ -42,7 +40,7 @@ $(STL_LIB): $(OBJFILES)
 $(MAINDIR)/%.o: main/%.cpp
 	@echo Compiling $<
 	@mkdir -p $(@D)
-	@g++ $(CFLAGS) -c $< -o $@
+	@g++ $(CPPFLAGS) -c $< -o $@
 
 
 #
