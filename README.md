@@ -6,16 +6,16 @@
 
 **Version 0.8.0**
 
-`V3DLib` is a C++ library for creating programs to run on the VideoCore GPU's of all versions of the [Raspberry Pi](https://www.raspberrypi.org/){:target="_blank"}.
+`V3DLib` is a C++ library for creating programs to run on the VideoCore GPU's of all versions of the [Raspberry Pi](https://www.raspberrypi.org/).
 
 The Raspberry Pi's have a pretty nifty *general-purpose* GPU, the `VideoCore`.
 It bothered me to no end that this GPU largely unused; the only thing really using it is `OpenGL`.
 
-The Pi5 has a new version of the GPU. I resolved to update the project when I got the Pi5 to pass all unit tests[^1];
+The Pi5 has a new version of the GPU. I resolved to update the project when I got the Pi5 to pass all unit tests;
 I have reached this point.
 
 I lost my previous account due to 'enhancements' in the GitHub authentication.
-The current account replaces [my previous account](https://github.com/wimrijnders){:target="_blank"}.
+The current account replaces [my previous account](https://github.com/wimrijnders).
 
 ## Supported Pi's
 
@@ -59,5 +59,3 @@ Plenty of his original code is still present in this project.
   * Please look at the [Known Issues](Doc/BuildInstructions.md#known-issues), so you have an idea what to expect.
 
 --------------------------
-
-[^1]: **TODO** Fill this in. I lost the previous text.

@@ -41,7 +41,7 @@ I believe that there is no performance gain to be found here, quite the contrary
   a format that is runnable on a QPU. This uses *global* heaps internally for e.g. generating
   the AST and for storing the resulting statements. Because the heaps are global, running
  `compile()` parallel on different threads will lead to problems.
-- The user-level language is an [Embedded Domain Specific Language](https://wiki.c2.com/?EmbeddedDomainSpecificLanguage){:target="_blank"}.
+- The user-level language is an [Embedded Domain Specific Language](https://wiki.c2.com/?EmbeddedDomainSpecificLanguage).
   There are no pre-processors being used other than the standard C pre-processor.
   The output is standard C++ code.
 - Kernel programs are compiled dynamically, so that a given program can run unchanged on any version
