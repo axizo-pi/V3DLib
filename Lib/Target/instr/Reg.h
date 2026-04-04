@@ -1,0 +1,97 @@
+#ifndef _V3DLIB_TARGET_INSTR_REG_H_
+#define _V3DLIB_TARGET_INSTR_REG_H_
+#include "Source/Var.h"
+
+namespace V3DLib {
+
+// ============================================================================
+// Registers
+// ============================================================================
+
+typedef int RegId;
+
+// Different kinds of registers
+enum RegTag {
+    REG_A           // In register file A (0..31)
+  , REG_B           // In register file B (0..31)
+  , ACC             // Accumulator register
+  , SPECIAL         // Special register
+  , NONE            // No read/write
+  , TMP_A           // Used in intermediate code
+  , TMP_B           // Used in intermediate code
+};
+
+
+// Special registers
+enum Special {
+  // Read-only
+  SPECIAL_UNIFORM,
+  SPECIAL_ELEM_NUM,
+  SPECIAL_QPU_NUM,
+
+  // DMA Read-only
+  SPECIAL_VPM_READ,
+  SPECIAL_DMA_ST_WAIT,
+  SPECIAL_DMA_LD_WAIT,
+
+  // DMA Write-only
+  SPECIAL_RD_SETUP,
+  SPECIAL_WR_SETUP,
+  SPECIAL_HOST_INT,
+  SPECIAL_DMA_LD_ADDR,
+
+  // DMA registers reused for v3d TMU
+  // Write-only
+  SPECIAL_DMA_ST_ADDR,
+  SPECIAL_VPM_WRITE,
+  SPECIAL_TMUA,
+
+  // SFU registers
+  SPECIAL_SFU_RECIP,
+  SPECIAL_SFU_RECIPSQRT,
+  SPECIAL_SFU_EXP,
+  SPECIAL_SFU_LOG,
+
+  // vc7 tmu read
+  SPECIAL_TMUAU,
+  SPECIAL_TMUC,
+  SPECIAL_TMUL,
+
+  // vc4 mutex
+  SPECIAL_MUTEX_ACQUIRE,
+  SPECIAL_MUTEX_RELEASE
+};
+
+
+struct Reg {
+  RegTag tag;   // What kind of register is it?
+  RegId regId;  // Register identifier
+
+  bool isUniformPtr = false;
+
+  Reg() = default;
+  Reg(Reg const &rhs) : tag(rhs.tag), regId(rhs.regId), isUniformPtr(rhs.isUniformPtr) {}
+  Reg(RegTag in_tag, RegId in_regId) : tag(in_tag), regId(in_regId) {}
+  Reg(Var var);
+
+  bool operator==(Reg const &rhs) const;
+  bool operator!=(Reg const &rhs) const { return !(*this == rhs); }
+  bool operator<(Reg const &rhs) const;
+
+  bool is_none() const;
+  bool can_read(bool check = false) const;
+  bool can_write(bool check = false) const;
+  bool is_rf_reg() const { return tag == REG_A || tag == REG_B; }
+  bool is_special() const { return tag == SPECIAL; }
+  RegTag regfile() const; 
+
+  std::string dump() const;
+};
+
+
+bool is_dma_only_register(Reg const &reg);
+
+}  // namespace V3DLib
+
+
+#endif  // _V3DLIB_TARGET_INSTR_REG_H_

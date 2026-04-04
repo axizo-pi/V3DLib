@@ -1,0 +1,132 @@
+#include "VPMRequest.h"
+
+namespace V3DLib {
+
+VPMLoadReq::VPMLoadReq(int setup) {
+  assert((setup & 0xc0000000) == 0);
+
+  numVecs = (setup >> 20) & 0xf;
+  if (numVecs == 0) numVecs = 16;
+
+  hor    = (setup >> 11) & 1;
+  addr   = setup & 0xff;
+  stride = (setup >> 12) & 0x3f;
+  if (stride == 0) stride = 64;
+}
+
+
+VPMLoadReq::VPMLoadReq(int in_numVecs, int in_hor, int in_stride) :
+  numVecs(in_numVecs), hor(in_hor), stride(in_stride)
+{}
+
+
+void VPMLoadReq::set(int in_numVecs, int in_hor, int in_stride) { 
+  numVecs = in_numVecs;
+  hor     = in_hor;
+  stride  = in_stride;
+}
+
+
+int VPMLoadReq::code() const {
+  assert(numVecs >= 1 && numVecs <= 16); // A max of 16 vectors can be read
+  assert(stride >= 1 && stride <= 64); // Valid stride
+  assert(hor == 0 || hor == 1); // Horizontal or vertical
+
+  // Max values encoded as 0
+  int tmp_numVecs = numVecs;
+  int tmp_stride  = stride;
+  if (tmp_numVecs == 16) tmp_numVecs = 0;
+  if (tmp_stride == 64)  tmp_stride = 0;
+
+  // Setup code
+  int ret = tmp_numVecs << 20;
+  ret |= tmp_stride << 12;
+  ret |= hor << 11;
+  ret |= 2 << 8;
+
+  if (addr != -1) {
+    ret |= (addr & 0xff);
+  }
+
+  return ret;
+}
+
+std::string VPMLoadReq::dump() const {
+  std::string ret;
+
+  ret << "VPMLoadReq: (" 
+      << (hor?"hor":"vert")     << ", "
+      << "numVecs: " << numVecs << ", ";
+
+  if (addr != -1 ) {
+    ret << "addr: "    << addr    << ", ";
+  }
+
+  ret << "stride: "  << stride
+      << ")"; 
+
+  return ret;
+}
+
+
+VPMStoreReq::VPMStoreReq(int in_addr, bool in_hor, int in_stride) :
+  addr(in_addr), hor(in_hor), stride(in_stride)
+{}
+
+
+VPMStoreReq::VPMStoreReq(int setup) {
+  assert((setup & 0xc0000000) == 0);
+
+  hor    = (setup >> 11) & 1;
+  addr   = setup & 0xff;
+  stride = (setup >> 12) & 0x3f;
+  if (stride == 0) stride = 64;
+}
+
+
+void VPMStoreReq::set(int in_hor, int in_stride) { 
+  hor     = in_hor;
+  stride  = in_stride;
+}
+
+
+int VPMStoreReq::code() const {
+  assert(addr < 256);
+  assert(stride >= 1 && stride <= 64); // Valid stride
+  assert(hor == 0 || hor == 1); // Horizontal or vertical
+
+  // Max values encoded as 0
+  int tmp_stride = stride;
+  if (tmp_stride == 64) tmp_stride = 0;
+  
+  // Setup code
+  int ret = tmp_stride << 12;
+  ret |= hor << 11;
+  ret |= 2 << 8;
+
+  if (addr != -1) {
+    ret |= (addr & 0xff);
+  }
+  
+  return ret;
+}
+
+
+std::string VPMStoreReq::dump() const {
+  std::string ret;
+
+  ret << "VPMStoreReq: (" 
+      << (hor?"hor":"vert")    << ", ";
+
+  if (addr != -1 ) {
+    ret << "addr: "    << addr    << ", ";
+  }
+
+  ret << "stride: "  << stride
+      << ")"; 
+
+  return ret;
+}
+
+
+}  // namespace V3DLib

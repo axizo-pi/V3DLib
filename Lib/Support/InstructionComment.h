@@ -1,0 +1,36 @@
+#ifndef _LIB_COMMON_INSTRUCTIONCOMMENT_H
+#define _LIB_COMMON_INSTRUCTIONCOMMENT_H
+#include <string>
+
+namespace V3DLib {
+
+/**
+ * Mixin for instruction comments
+ */
+class InstructionComment {
+public:
+  InstructionComment() : m_header(""), m_comment("") {}
+
+  void transfer_comments(InstructionComment &rhs);
+  void clear_comments();
+  bool has_comments() const;
+  std::string const &header() const { return m_header; }
+  std::string const &comment() const { return m_comment; }
+
+  std::string emit_header() const;
+  std::string emit_comment(int instr_size, int max_size = -1) const;
+  bool transferred() const;
+
+protected:
+  void header(std::string const &msg);
+  void comment(std::string msg);
+
+private:
+  std::string m_header;
+  std::string m_comment;
+  bool m_transferred = false;
+};
+
+}  // namespace V3DLib
+
+#endif  // _LIB_COMMON_INSTRUCTIONCOMMENT_H
