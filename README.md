@@ -48,11 +48,11 @@ Plenty of his original code is still present in this project.
 ## Getting Started
 
 - For a global view of this project and the `VideoCore`, see the [Overview Page](Doc/Overview.md).
-- If you are interested in performance, view the [Mandelbrot Profiling Page](Profiling/mandelbrot.md).  
+- If you are interested in performance, view the [Mandelbrot Profiling Page](Doc/Profiling/mandelbrot.md).  
   _Purchasing tip: Go straight to `Pi5`, don't bother with the rest._
 - Scan the example programs to get an idea of the high-level programming language.
   Start with program `Examples/Hello`, perhaps the simplest possible program.
-- To get a grip of what VideoCore programming looks like, view the [Basics Page](Basics.md).
+- To get a grip of what VideoCore programming looks like, view the [Basics Page](Doc/Basics.md).
 - To install a PI with `V3DLib`, see the [Install Instructions](Doc/install.md).
 - If you want to help in development, you are more than welcome. I warn you that it will be an uphill battle
   * Scan the coding conventions at the top of the [Architecture and Design Page](Doc/ArchitectureAndDesign.md). Read the rest at your own leisure.

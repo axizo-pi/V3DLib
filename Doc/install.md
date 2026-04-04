@@ -135,6 +135,9 @@ On `pi`:
 	mkdir ~/projects
 	mkdir ~/tmp
 
+  # Following before cloning
+  git config --global init.defaultBranch main
+
 **TODO:** Adjust following URL's for `GitHub`
 
 	cd projects
