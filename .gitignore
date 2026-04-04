@@ -11,6 +11,7 @@ obj*
 .~lock.*
 *_code.txt
 /*.txt
+github
 generated
 # Definitions for userland
 CMakeCache.txt
