@@ -71,7 +71,7 @@ The notable omissions in this list:
 - **Raspberry PI Compute Module 5**: As far as I can tell, this is a Pi5 in a sexy casing.
 	I will buy it eventually, but currently I don't see the point.
 
-# Conventions
+# <a name="conventions">Conventions</a>
 
 The following naming is used within the project:
 

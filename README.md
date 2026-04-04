@@ -6,6 +6,8 @@
 
 **Version 0.8.0**
 
+**20260404 - I just got this project on GitHub. Lots of things broken, busy fixing it**
+
 `V3DLib` is a C++ library for creating programs to run on the VideoCore GPU's of all versions of the [Raspberry Pi](https://www.raspberrypi.org/).
 
 The Raspberry Pi's have a pretty nifty *general-purpose* GPU, the `VideoCore`.
@@ -55,7 +57,7 @@ Plenty of his original code is still present in this project.
 - To get a grip of what VideoCore programming looks like, view the [Basics Page](Doc/Basics.md).
 - To install a PI with `V3DLib`, see the [Install Instructions](Doc/install.md).
 - If you want to help in development, you are more than welcome. I warn you that it will be an uphill battle
-  * Scan the coding conventions at the top of the [Architecture and Design Page](Doc/ArchitectureAndDesign.md). Read the rest at your own leisure.
+  * Scan the [coding conventions](Doc/Overview.md#coding_conventions).
   * Please look at the [Known Issues](Doc/BuildInstructions.md#known-issues), so you have an idea what to expect.
 
 --------------------------
