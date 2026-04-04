@@ -96,36 +96,6 @@ struct Settings {
 
 
 #ifdef QPU_MODE
-void showSchedulerRegisters() {
-  int numQPUs = RegisterMap::numSlices() * RegisterMap::numQPUPerSlice();
-  SchedulerRegisterValues values = RegisterMap::SchedulerRegisters();
-
-  printf("Scheduler registers, do not use:");
-
-  for (int i = 0; i < numQPUs; ++i ) {
-    printf("\n  QPU %02d: ", i);
-
-    int val = values.qpu[i];
-
-    if (val & DO_NOT_USE_FOR_USER_PROGRAMS) {
-      printf("user programs, ");
-    }
-
-    if (val & DO_NOT_USE_FOR_FRAGMENT_SHADERS) {
-      printf("fragment shaders, ");
-    }
-
-    if (val & DO_NOT_USE_FOR_VERTEX_SHADERS) {
-      printf("vertex shaders, ");
-    }
-
-    if (val & DO_NOT_USE_FOR_COORDINATE) {
-      printf("coordinate");
-    }
-  }
-
-  printf("\n");
-}
 
 
 /**
@@ -262,7 +232,7 @@ void detect_vc4() {
   printf("VPM memory size (KB)     : %d\n", RegisterMap::VPMMemorySize());
   printf("L2 Cache enabled         : %s\n", (RegisterMap::L2CacheEnabled())? "yes": "no");
 
-  showSchedulerRegisters();
+	std::cout << RegisterMap::showSchedulerRegisters();
 
 /*
   // DEBUG: read first three registers
