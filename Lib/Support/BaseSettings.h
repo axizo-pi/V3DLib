@@ -6,15 +6,22 @@ namespace V3DLib {
 
 class BaseKernel;
 
+enum RunType {
+	QPU,
+	Interpreter,
+	Emulator,
+	Debugger
+};
+
 struct BaseSettings {
   std::string name;
 
-  bool compile_only = false;
-  int  run_type     = 0;
-  int  num_qpus     = 1;
-  bool output_code  = false;
+  bool    compile_only = false;
+  RunType run_type     = QPU;
+  int     num_qpus     = 1;
+  bool    output_code  = false;
 #ifdef QPU_MODE
-  bool   show_perf_counters = false;
+  bool    show_perf_counters = false;
 #endif  // QPU_MODE
 
   void startPerfCounters();

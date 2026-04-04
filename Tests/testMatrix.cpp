@@ -513,7 +513,7 @@ void test_complex_matrix_multiplication(
   INFO("Doing Decorator");
 	BaseSettings settings;
 	if (do_emulate) {
-    settings.run_type = 1;
+    settings.run_type = Emulator;
   }
 
   auto k = compile(kernels::matrix_mult_decorator(a, b, result), settings);

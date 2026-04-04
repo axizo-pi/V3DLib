@@ -420,13 +420,13 @@ TEST_CASE("Test Where blocks [where][cond]") {
   //        Need to fix compile-time kernel compile before enabling this
 	//warning("[where][cond] test emulator and interpreter");
   reset(result);
-	settings.run_type = 1;
+	settings.run_type = Emulator;
   auto k2 = compile(where_kernel, settings);
   k2.load(&result).run();
   check_where_result(result);
 
   reset(result);
-	settings.run_type = 2;
+	settings.run_type = Interpreter;
   auto k3 = compile(where_kernel, settings);
   k3.load(&result).run();
   check_where_result(result);

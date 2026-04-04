@@ -373,6 +373,42 @@ void resetAllSchedulerRegisters() {
 }
 
 
+std::string showSchedulerRegisters() {
+	std::string ret;
+
+  int numQPUs = numSlices() * numQPUPerSlice();
+  SchedulerRegisterValues values = SchedulerRegisters();
+
+  ret << "Scheduler registers, do not use:";
+
+  for (int i = 0; i < numQPUs; ++i ) {
+    ret << "\n  QPU " << i <<  ": ";
+
+    int val = values.qpu[i];
+
+    if (val & DO_NOT_USE_FOR_USER_PROGRAMS) {
+      ret << "user programs, ";
+    }
+
+    if (val & DO_NOT_USE_FOR_FRAGMENT_SHADERS) {
+      ret << "fragment shaders, ";
+    }
+
+    if (val & DO_NOT_USE_FOR_VERTEX_SHADERS) {
+      ret << "vertex shaders, ";
+    }
+
+    if (val & DO_NOT_USE_FOR_COORDINATE) {
+      ret << "coordinate";
+    }
+  }
+
+  ret << "\n";
+
+	return ret;
+}
+
+
 /**
  * @brief Convenience function for getting a register value.
  *
@@ -469,7 +505,7 @@ std::string ErrorStatus() {
 	for (int i = 0; i < ErrStatFields::MAX; ++i) {
 		ErrStatFields val = (ErrStatFields) i;
 
-		int length = errStatLabel(val).length();
+		int length = (int) errStatLabel(val).length();
     if (length > max_length) max_length = length;
 	}
 
@@ -478,7 +514,7 @@ std::string ErrorStatus() {
 	for (int i = 0; i < ErrStatFields::MAX; ++i) {
 		ErrStatFields val = (ErrStatFields) i;
 		auto label = errStatLabel(val);
-    auto tabs = indentBy(max_length - label.length());
+    auto tabs = indentBy(max_length - (int) label.length());
 
 		ret << "  " << label << tabs << ": " << ((readRegister(V3D_ERRSTAT) >> val) & 1) << "\n";
 	}

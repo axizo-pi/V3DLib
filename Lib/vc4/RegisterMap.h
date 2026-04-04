@@ -124,6 +124,7 @@ void L2Cache_enable(bool enable);
 SchedulerRegisterValues SchedulerRegisters();
 void SchedulerRegisters(SchedulerRegisterValues values);
 void resetAllSchedulerRegisters();
+std::string showSchedulerRegisters();
 
 int TechnologyVersion();
 bool checkThreadErrors();

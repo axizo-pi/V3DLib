@@ -41,25 +41,25 @@ void BaseKernel::compile_init() {
 
   SelectKernel select_kernel = None;
 
-   //cdebug << "m_settings.run_type: " << m_settings.run_type;
-   //cdebug << "Platform::compiling_for_vc4(): " << Platform::compiling_for_vc4(); 
+  //cdebug << "m_settings.run_type: " << m_settings.run_type;
+  //cdebug << "Platform::compiling_for_vc4(): " << Platform::compiling_for_vc4(); 
   //cdebug << "m_settings.compile_only: " << m_settings.compile_only;
 
-   if (m_settings.run_type != 0) {
+   if (m_settings.run_type != QPU) {
     select_kernel = vc4;
   }
 
 #ifdef QPU_MODE
   if (!m_settings.compile_only) {
-    if (Platform::use_main_memory() && m_settings.run_type == 0) {
+    if (Platform::use_main_memory() && m_settings.run_type == QPU) {
       Log::info << "Main memory selected in QPU mode, running on emulator instead of QPU.";
-      m_settings.run_type = 2;
+      m_settings.run_type = Emulator;
       select_kernel = vc4;
     }
   }
 #endif
 
-  if (m_settings.run_type != 0 || Platform::run_vc4()) {   // Compile vc4
+  if (m_settings.run_type != QPU || Platform::run_vc4()) {   // Compile vc4
     //Log::warn << "compile_init for vc4";
     select_kernel = vc4;
   } else {                                                 // Compile v3d
@@ -101,17 +101,17 @@ void BaseKernel::run(bool wait_complete) {
         fatal("Main memory selected in QPU mode and not compiled for vc4, can not run.");
       }
     } else {
-       if (!m_settings.compile_only && (m_settings.run_type == 0)) {
+       if (!m_settings.compile_only && (m_settings.run_type == QPU)) {
         warn << "Main memory selected in QPU mode, running on emulator instead of QPU.";
-      	m_settings.run_type = 2;
+      	m_settings.run_type = Emulator;
       }
     }
   }
 #else
-  if (m_settings.run_type == 0) {
+  if (m_settings.run_type == QPU) {
     assert(!m_driver->is_v3d());
     cdebug << "Not compiled for QPU, running on emulator instead of QPU.";
-    m_settings.run_type = 2;
+    m_settings.run_type = Emulator;
   }
 #endif
 

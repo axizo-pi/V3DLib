@@ -244,7 +244,11 @@ bool Settings::process() {
   output_code  = p["Output Generated Code"]->get_bool_value();
   compile_only = p["Compile Only"]->get_bool_value();
   silent       = p["Disable logging"]->get_bool_value();
-  run_type     = p["Select run type"]->get_int_value();
+
+  int tmp     = (RunType) p["Select run type"]->get_int_value();
+	assert(QPU <= tmp && tmp <= Debugger);
+  run_type     = (RunType) tmp;
+
 #ifdef QPU_MODE
   show_perf_counters = p["Performance Counters"]->get_bool_value();
 #endif  // QPU_MODE
