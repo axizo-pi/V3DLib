@@ -10,16 +10,11 @@
 
 `V3DLib` is a C++ library for creating programs to run on the VideoCore GPU's of all versions of the [Raspberry Pi](https://www.raspberrypi.org/).
 
-The Raspberry Pi's have a pretty nifty *general-purpose* GPU, the `VideoCore`.
-It bothered me to no end that this GPU largely unused; the only thing really using it is `OpenGL`.
-
-The Pi5 has a new version of the GPU. I resolved to update the project when I got the Pi5 to pass all unit tests;
-I have reached this point.
-
-I lost my previous account due to 'enhancements' in the GitHub authentication.
-The current account replaces [my previous account](https://github.com/wimrijnders).
 
 ## Supported Pi's
+
+The QPU on the Pi's is called the **VideoCore**.
+There are three different version of the VideoCore over all Pi versions.
 
 The Following Pi's are supported:
 
@@ -32,12 +27,16 @@ The Following Pi's are supported:
 | Pi2  | IV                |
 | Pi1  | IV                |
 
-The notable omissions in this list:
+## Motivation
 
-- **Raspberry PI Pico**: This is a microcontroller. Can't run Debian, has no VideoCore. 
-- **Raspberry PI Compute Module 5**: As far as I can tell, this is a Pi5 in a sexy casing.
-	I will buy it eventually, but currently I don't see the point.
+The Raspberry Pi's have a pretty nifty *general-purpose* GPU, the `VideoCore`.
+It bothered me to no end that this GPU largely unused; the only thing really using it is `OpenGL`.
 
+The Pi5 has a new version of the GPU. I resolved to update the project when I got the Pi5 to pass all unit tests;
+I have reached this point.
+
+I lost my previous account due to 'enhancements' in the GitHub authentication.
+The current account replaces [my previous account](https://github.com/wimrijnders).
 
 ## Credit where Credit is Due
 
@@ -58,6 +57,6 @@ Plenty of his original code is still present in this project.
 - To install a PI with `V3DLib`, see the [Install Instructions](Doc/install.md).
 - If you want to help in development, you are more than welcome. I warn you that it will be an uphill battle
   * Scan the [conventions](Doc/Overview.md#conventions). Read the rest of the page at your own leisure.
-  * Please look at the [Known Issues](Doc/BuildInstructions.md#known-issues), so you have an idea what to expect.
+  * Please look at the [Known Issues](Doc/Issues.md), so you have an idea what to expect.
 
 --------------------------
