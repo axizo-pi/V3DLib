@@ -73,8 +73,12 @@ void BaseKernel::compile_init() {
     Platform::compiling_for_vc4(true);
     m_driver.reset(new vc4::KernelDriver);
   } else {
+#ifdef QPU_MODE
     Platform::compiling_for_vc4(false);
     m_driver.reset(new v3d::KernelDriver);
+#else
+    assertq(false, "Can only run vc4 kernel in non-QPU mode");
+#endif
   }
 
   driver().init_compile();

@@ -53,8 +53,9 @@ CFLAGS += \
 -D HAVE_FUNC_ATTRIBUTE_PACKED \
 -D USE_V3D_SIMULATOR=0 \
 -D MESA_DEBUG=0 \
--D HAVE_SECURE_GETENV \
 $(INCLUDES)
+
+#-D HAVE_SECURE_GETENV \
 
 
 ################################################################################

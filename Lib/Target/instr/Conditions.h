@@ -1,6 +1,7 @@
 #ifndef _V3DLIB_TARGET_SYNTAX_INSTR_CONDITIONS_H_
 #define _V3DLIB_TARGET_SYNTAX_INSTR_CONDITIONS_H_
 #include <string>
+#include <cstdint>
 
 namespace V3DLib {
 

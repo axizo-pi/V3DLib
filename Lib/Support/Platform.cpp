@@ -53,7 +53,7 @@ bool get_platform_string(std::string &content) {
 
   bool success = loadFileInString(filename, content);
   if (!success) {
-    content == "";
+    content = "";
   }
 
   return success;

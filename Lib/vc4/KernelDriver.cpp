@@ -209,9 +209,11 @@ void KernelDriver::invoke(int numQPUs, IntList &params, bool wait_complete) {
   try {
   	MailBoxInvoke::invoke(numQPUs, m_code, params);
   } catch (std::runtime_error const &e) {
+#ifdef QPU_MODE
 		Log::cerr << "KernelDriver::invoke exception caught: " << e.what() << "\n"
 			        << "Error registers:\n"
 				      << RegisterMap::ErrorStatus();
+#endif              
 		throw;
 	}
 }

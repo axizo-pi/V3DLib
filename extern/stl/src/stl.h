@@ -480,7 +480,7 @@ namespace openstl
         auto minmax = std::max_element(&std::begin(faces)->at(0), &std::begin(faces)->at(0)+faces.size()*3);
 
         // Check if the minimum and maximum indices are within the bounds of the vector
-        if (*minmax >= static_cast<int>(vertices.size())) {
+        if ((int) *minmax >= static_cast<int>(vertices.size())) {
             throw std::out_of_range("Face index out of range");
         }
 

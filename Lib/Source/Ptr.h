@@ -163,17 +163,17 @@ class Ptr : public Pointer {
 public:
   Ptr() = default;
 
-  Ptr<T>(Ptr<T> &&rhs) = default;
+  Ptr(Ptr &&rhs) = default;
 
   /**
    * Gets rid of ctor acting as reference
    */
-  Ptr<T>(Ptr<T> const &rhs) : Ptr<T>() {
+  Ptr(Ptr const &rhs) : Ptr() {
     assign(expr(), rhs.expr());
   }
 
-  Ptr<T>(PtrExpr<T> rhs) : Pointer(rhs) {}
-  Ptr<T>(PointerExpr rhs) : Pointer(rhs) {}
+  Ptr(PtrExpr<T> rhs) : Pointer(rhs) {}
+  Ptr(PointerExpr rhs) : Pointer(rhs) {}
 
   static Ptr<T> mkArg();
 

@@ -117,7 +117,7 @@ LIBS += -L $(OBJDIR) -lv3dlib $(LIB_EXTERN)
 # Otherwise, deletion happens for targets of the form '%.o'
 .PRECIOUS: $(OBJDIR)/%.o
 
-# Rule for creating object files
+# Rule for creating c++ object files
 $(OBJDIR)/%.o: %.cpp | init
 	@echo Compiling $<
 	@mkdir -p $(@D)

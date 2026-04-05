@@ -86,21 +86,25 @@ void dump_line_numbers(bool val) { _dump_line_numbers = val; }
  * Added here because this is a logical place for a library setting;
  * I kept on looking here for it.
  *
- * This is only meant for `vc4`.
+ * This is only meant for `vc4 QPU`.
  */
 void L2Cache_enable(bool enable) {
+#ifdef QPU_MODE
   if (Platform::running_emulator()) {
     warn << "L2Cache_enable() running emulator, no need to adjust L2 cache.";
     return;
   }
 
   if (!Platform::run_vc4()) {
-    warn << "L2Cache_enable() for vc4 only, ignoringi call.";
+    warn << "L2Cache_enable() for vc4 only, ignoring call.";
     return;
   }
 
   warn << "Called L2Cache_enable(" << enable << ").";
   RegisterMap::L2Cache_enable(enable);
+#else
+  warn << "L2Cache_enable() does nothing in non-QPU mode.";
+#endif
 }
 
 

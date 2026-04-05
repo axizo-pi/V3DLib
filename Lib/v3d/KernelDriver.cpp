@@ -1,3 +1,4 @@
+#ifdef QPU_MODE
 #include "KernelDriver.h"
 #include <iostream>
 #include <memory>
@@ -895,3 +896,5 @@ void KernelDriver::wait_complete() {
 
 }  // namespace v3d
 }  // namespace V3DLib
+
+#endif  // QPU_MODE

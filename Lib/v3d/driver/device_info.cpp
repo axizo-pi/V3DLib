@@ -80,12 +80,6 @@ uint8_t devinfo_ver() {
 }
 #else
 
-/**
- * @brief Empty call to satisfy linking in non-QPU mode.
- * 
- * v3d should never be used anyway in that case.
- */
-static struct v3d_device_info const *devinfo() { return NULL; }
 
 /**
  * @brief Empty call to satisfy linking in non-QPU mode.
@@ -94,10 +88,12 @@ uint8_t devinfo_ver() { return 0; }
 
 #endif // QPU_MODE
 
-
+#ifdef __cplusplus
 // Used in v3d/instr/v3d_api.c, hence the 'extern' brackets
 extern "C" {
+#endif
 
+#ifdef QPU_MODE
 struct v3d_device_info const *devinfo() {
   if(!_v3d_device_info()) {
     cerr << "devinfo: Call to _v3d_device_info() failed";
@@ -106,8 +102,20 @@ struct v3d_device_info const *devinfo() {
 
   return &s_devinfo;
 }
+#else
 
+/**
+ * @brief Empty call to satisfy linking in non-QPU mode.
+ * 
+ * v3d should never be used anyway in that case.
+ */
+struct v3d_device_info const *devinfo() { return NULL; }
+
+#endif
+
+#ifdef __cplusplus
 }
+#endif
 
 
 std::string v3d_device_info() {

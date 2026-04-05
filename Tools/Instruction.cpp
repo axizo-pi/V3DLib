@@ -129,6 +129,7 @@ string instr_format(string h2, string desc, uint64_t val, bool show_desc = false
 } // anon namespace
 
 
+
 std::string b(bool val) {
 	return val?"true":"false";
 }
@@ -345,7 +346,7 @@ std::string instr_format_branch_4x(uint64_t val) {
 
 
 int main(int argc, const char *argv[]) {
-
+#ifdef QPU_MODE
 	MAYBE_UNUSED struct v3d_qpu_instr instr_alu = {
 		.type = V3D_QPU_INSTR_TYPE_ALU,
 		.sig  = {
@@ -418,7 +419,6 @@ int main(int argc, const char *argv[]) {
 		}
 	};
 
-
 	cout << "Doing ALU instruction\n"
 		   << "========================\n";
 	auto &instr = instr_alu;
@@ -428,9 +428,11 @@ int main(int argc, const char *argv[]) {
 	auto &instr = instr_branch;
 */	
 
-	//display_instr(instr);
+  //display_instr(instr);
 
-	uint64_t packed =  instr_pack(&instr);
+	uint64_t packed =  0;
+	// THISuint64_t packed =  instr_pack(&instr);
+
 
 	cout << "\n";
 	cout << "Packed: " << hex << packed << "\n";
@@ -463,4 +465,9 @@ int main(int argc, const char *argv[]) {
 	cout << diff_bits(prev, packed);
 */
   return 0;
+#else
+  cerr << "Can't use Instruction in non-QPU mode. "
+       << "There are too many dependencies with `vc4` and v3d`.\n";
+  return 1;
+#endif  // QPU_MODE
 }

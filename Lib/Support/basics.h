@@ -2,6 +2,7 @@
 #define _V3DLIB_SUPPORT_BASICS_H
 #include <vector>
 #include <string>
+#include <cstdint>
 #include "Exception.h"
 #include "debug.h"
 #include "global/log.h"
