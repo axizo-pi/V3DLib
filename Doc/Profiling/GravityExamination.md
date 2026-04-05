@@ -1,20 +1,12 @@
 <head>
 	<link rel="stylesheet" type="text/css" href="../css/docs.css">
-
-<style>
-
-img {
-  width: 30%;
-}
-
-</style>
 </head>
 
 # Gravity Examination
 
 Done on **20260330** and later.
 
-This is an examination of the working of the [barrier command](https://en.wikipedia.org/wiki/Memory_barrier){:target="_blank"}.
+This is an examination of the working of the [barrier command](https://en.wikipedia.org/wiki/Memory_barrier).
 
 `barrier` is a hardware operation on `v3d`.  
 For `vc4`, there is an implementation using `mutex` and VPM as shared memory over all QPU's.
@@ -30,7 +22,7 @@ The default output of `Gravity` is as follows.
 - Calculation step is **1 day**
 - Simulation runs for **250 years**
 
-![Gravity Reference](../images/gravity_reference.bmp)
+![Gravity Reference](../../images/gravity_reference.bmp)
 
 
 Runs below done with BATCH\_STEPS = 1; this **might make a big difference** for `vc`.

@@ -29,7 +29,8 @@ echo "Updating library CmdParameters..."
 cd ..
 
 if [ ! -d "CmdParameter" ]; then
-	git clone ssh://backup/home/git_masters/CmdParameter
+  git clone git@github.com:axizo-pi/CmdParameter.git
+	#git clone ssh://backup/home/git_masters/CmdParameter
 fi
 
 cd CmdParameter

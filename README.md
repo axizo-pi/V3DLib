@@ -57,7 +57,7 @@ Plenty of his original code is still present in this project.
 - To get a grip of what VideoCore programming looks like, view the [Basics Page](Doc/Basics.md).
 - To install a PI with `V3DLib`, see the [Install Instructions](Doc/install.md).
 - If you want to help in development, you are more than welcome. I warn you that it will be an uphill battle
-  * Scan the [coding conventions](Doc/Overview.md#coding_conventions).
+  * Scan the [conventions](Doc/Overview.md#conventions). Read the rest of the page at your own leisure.
   * Please look at the [Known Issues](Doc/BuildInstructions.md#known-issues), so you have an idea what to expect.
 
 --------------------------
