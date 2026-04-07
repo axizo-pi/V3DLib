@@ -103,7 +103,7 @@ int main(int argc, const char *argv[]) {
         k.run();
         m.plot();
   
-        t += BATCH_STEPS*dt;
+        t += batch_steps()*dt;
       }
 
       //warn << m.dump_acc();

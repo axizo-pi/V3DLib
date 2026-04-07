@@ -18,7 +18,7 @@ struct Context {
   	ACC_CONSTANT  = ((float) BIG_G) * DIST_FACTOR / MASS_FACTOR * DIST_FACTOR;
 		comment("Init ACC_CONSTANT");
 
-  	Count        = BATCH_STEPS;
+  	Count        = batch_steps();
 		num_entities = in_num_entities; // Must be multiple of 16
   	delta_t      = (float) dt;      comment("init delta_t");
 	}
@@ -381,7 +381,11 @@ void kernel_gravity(
 			c
     );
 
-    barrier();
+    if (!Platform::compiling_for_vc4()) {
+      barrier();
+    //} else {
+    //  Log::warn << "Gravity kernel: not adding barrier for vc4";
+    }
 
     // kernel_step() adjusts pointers, reset to start before calling  
     Float::Ptr x = in_x;
@@ -401,6 +405,8 @@ void kernel_gravity(
       c
     );
 
-    barrier();
+    if (!Platform::compiling_for_vc4()) {
+      barrier();
+    }
   End
 }

@@ -207,7 +207,7 @@ void scalar_run(Image &img) {
 	double t = 0;
 
 	while (t < t_end) {
-		for (int i = 0; i < BATCH_STEPS; ++i) {
+		for (int i = 0; i < BATCH_STEPS; ++i) {  // Uses BATCH_STEPS directly, intentional
 			scalar_step();
 		}
 		plot_orbital_entities(img);
