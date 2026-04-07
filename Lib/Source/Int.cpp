@@ -12,17 +12,26 @@ using ::operator<<;  // C++ weirdness
 // Class Int
 // ============================================================================
 
-Int::Int()              { assign_intern(); }
+Int::Int() { assign_intern(); }
 
-Int::Int(int x)         {
+Int::Int(int x) {
   //Log::warn << "Int ctor val: " << x;
   assign_intern(mkIntLit(x));
 }
 
-Int::Int(Deref<Int> d)  { assign_intern(d.expr()); }
-Int::Int(IntExpr e)     { assign_intern(e.expr()); }
-Int::Int(Int const &x)  { assign_intern(x.expr());
+Int::Int(Deref<Int> d) {
+  //Log::warn << "Int ctor deref: " << d.expr()->dump();
+  assign_intern(d.expr());
+}
 
+Int::Int(IntExpr e) {
+  //Log::warn << "Int ctor intexpr";
+  assign_intern(e.expr());
+}
+
+Int::Int(Int const &x) {
+  Log::warn << "Int ctor int const";
+  assign_intern(x.expr());
 }
 
 

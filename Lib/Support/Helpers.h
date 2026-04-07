@@ -5,6 +5,9 @@
 
 namespace V3DLib {
 
+//
+// Basic functions
+//
 float random_float();
 void to_file(std::string const &filename, std::string const &content);
 void sleep(int sec);
@@ -17,6 +20,11 @@ bool contains(std::string const &s1, std::string const &s2);
 bool hasEnding (std::string const &fullString, std::string const &ending);
 std::vector<std::string> split(std::string s, std::string const &delimiter);
 int num_newlines(std::string const &s);
+
+//
+// Other functions
+//
+bool uniforms_reversed();
 
 }  // namespace V3DLib
 

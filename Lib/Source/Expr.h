@@ -42,7 +42,6 @@ struct Expr {
   Op const &apply_op() const;
 
   Var var() const;
-
   std::string dump() const;
 
   union {

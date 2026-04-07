@@ -12,6 +12,7 @@
 
 using namespace std::this_thread; // sleep_for, sleep_until
 using namespace std::chrono;      // nanoseconds, system_clock, seconds
+using namespace Log;
 
 namespace V3DLib {
 
@@ -132,6 +133,37 @@ int num_newlines(std::string const &s) {
 }
 
 
- 
+/**
+ * @brief Check if the parameters (i.e. uniforms) are reversed on current platform.
+ *
+ * This checks the compiler version.
+ *
+ * On Debian Trixie, gnu c++ v14.2.0, the initialization order of kernel parameters
+ * is **reversed**. Thus, the last parameter in the kernel function call is initialized first.
+ *
+ * This screws up initialization of the uniforms in the kernel.
+ *
+ * @return true if uniforms reversed, false otherwise
+ */
+bool uniforms_reversed() {
+  static bool showed_msg = false;
+
+  if (!showed_msg) {
+    warn << "Gnu C++ version: " 
+         << __GNUC__       << "."
+         << __GNUC_MINOR__ << "."
+         << __GNUC_PATCHLEVEL__;
+
+    showed_msg = true;
+  }
+
+  // Only the major version is tested. It's simple enough to extend this
+  if (__GNUC__ < 14) {
+    warn << "No need to reverse the parameter indexes";
+    return false;
+  }
+
+  return true;
+}
 
 }  // namespace V3DLib

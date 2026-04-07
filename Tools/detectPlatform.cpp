@@ -255,13 +255,13 @@ void detect_vc4() {
  * @returns 0 if this is so, 1 if it's a different platform.
  */
 int main(int argc, char const *argv[]) {
+
+#ifdef QPU_MODE
   int ret = settings.init(argc, argv);
   if (ret != CmdParameters::ALL_IS_WELL) return ret;
 
   printf(Platform::platform_info().c_str());
 
-
-#ifdef QPU_MODE
   if (!Platform::run_vc4()) {
     printf("\n");
     std::string ret =  v3d_device_info();
@@ -277,6 +277,8 @@ int main(int argc, char const *argv[]) {
       detect_v3d();
     }
   }
+#else
+  printf("This application is compiled in non-QPU mode; can not detect Pi or VideoCore\n");
 #endif  // QPU_MODE
 
   return 0;

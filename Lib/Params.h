@@ -1,8 +1,8 @@
 #ifndef _V3D_KERNEL_PARAMS_H_
 #define _V3D_KERNEL_PARAMS_H_
-
 #include "Source/Complex.h"
 #include "Source/Float.h"
+#include "Support/Helpers.h"        // uniforms_reversed()
 
 namespace V3DLib {
 
@@ -65,10 +65,17 @@ template <typename T> bool append(
 	T val
 ) {
 	bool ret = true;
-	//Log::debug << "Here t2 " << index << ": " << (unsigned) var_type(val) << "\n";
+	Log::warn << "Here t2 " << index << ": " << (unsigned) var_type(val);
 
-	if (var_type(val) != typelist[index]) {
-		Log::cerr << "ERROR incorrect type for param at index " << index << "\n";
+  int type_index = index;
+  if (uniforms_reversed()) {
+    type_index = (int) (typelist.size() - 1) - index;
+  }
+
+	Log::warn << "Here type " << type_index << ": " << (unsigned) typelist[type_index];
+
+	if (var_type(val) != typelist[type_index]) {
+		Log::cerr << "ERROR incorrect type for param at index " << index;
 		ret = false;
 	} else {
 		//Log::debug << "Param " << index << ": checks out.";

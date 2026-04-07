@@ -106,7 +106,9 @@ struct Stmt : public InstructionComment {
   void where_cond(BExpr::Ptr cond);
 
   Expr::Ptr lhs() const;
+  void lhs(Expr::Ptr val);
   Expr::Ptr rhs() const;
+  void rhs(Expr::Ptr val);
   Expr::Ptr assign_lhs() const;
   Expr::Ptr assign_rhs() const;
   Expr::Ptr address();
