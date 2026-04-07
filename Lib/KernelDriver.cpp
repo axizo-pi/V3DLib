@@ -3,15 +3,87 @@
 #include "Support/Platform.h"
 #include "Source/StmtStack.h"
 #include "Source/Translate.h"
-#include "Source/Lang.h"            // initStmt
+#include "Source/Lang.h"            // initStmt()
 #include "Support/Timer.h"
 #include "Target/instr/Mnemonics.h"
-#include "Support/Helpers.h"        // to_file
+#include "Support/Helpers.h"        // to_file(), uniforms_reversed()
 
 namespace V3DLib {
 
 using ::operator<<;  // C++ weirdness
 using namespace Log;
+
+namespace {
+
+/**
+ * @brief Reverse the kernel parameter indexes if necessary.
+ *
+ * On Debian Trixie, gnu c++ v14.2.0, the initialization order of kernel parameters
+ * is **reversed**. Thus, the last parameter in the kernel function call is initialized first.
+ *
+ * This screws up initialization of the uniforms in the kernel.
+ * The goal of this function is to reverse the parameter indexes, so that the kernel functions
+ * again as expected.
+ */
+void reverse_uniforms(StmtStack &stack) {
+  if (!uniforms_reversed()) return;
+  warn << "Doing reverse_uniforms()";
+
+  Stmts uniforms;
+
+  //
+  // Retrieve the uniforms loading.
+  //
+  // Also checks that uniforms are be only in the start of the kernel code.
+  //
+  stack.each([&uniforms] (Stmts const &items) {
+    bool check_start_uniforms = true;
+
+    for (int i = 0; i < (int) items.size(); i++) {
+      auto &item = *items[i];
+      std::string tmp = item.dump();
+
+      if (check_start_uniforms) {
+        if (contains(tmp, "Uniform")) {
+          //warn << "uniform! lhs: " << id;
+          uniforms.push_back(items[i]);
+        } else {
+          check_start_uniforms = false;
+        }
+      } else {
+        // Check the rest of the code for uniforms, not expecting any
+        assert(!contains(tmp, "Uniform"));
+      }
+    }
+  });
+
+  warn << "uniforms:\n" << uniforms.dump();
+
+  // Check first two parameters
+  assert(contains(uniforms[0]->dump(true) , "QPU id"));
+  assert(contains(uniforms[1]->dump(true) , "Num QPUs"));
+
+  // Reverse the rest of the uniforms, which are the kernel parameters
+  for (int i = 2; i < (int) uniforms.size(); ++i) {
+    int j = (int) (uniforms.size() - 1) - (i - 2);
+    if (j <= i) break;
+    warn << "i,j: " << i << ", " << j;
+
+    // Switch the values of the i and j items
+    auto tmp_lhs = uniforms[i]->lhs();
+    auto tmp_rhs = uniforms[i]->rhs();
+
+    uniforms[i]->lhs(uniforms[j]->lhs());
+    uniforms[i]->rhs(uniforms[j]->rhs());
+
+    uniforms[j]->lhs(tmp_lhs);
+    uniforms[j]->rhs(tmp_rhs);
+  }
+
+  warn << "uniforms post:\n" << uniforms.dump();
+}
+
+} // anon namespace
 
 /**
  * NOTE: Don't clean up `body` here, it's a pointer to the top of the AST.
@@ -38,6 +110,8 @@ void KernelDriver::init_compile() {
   if (!Platform::compiling_for_vc4()) {
     Int devnull = getUniformInt();  comment("devnull");
   }
+
+  //Log::warn << "init_compile stack:\n" << m_stmtStack.dump();
 }
 
 
@@ -47,6 +121,8 @@ void KernelDriver::obtain_ast() {
   if (m_stmtStack.size() != 1) {
     info << "Expected exactly one item on stmtstack; perhaps an 'End'-statement is missing." << thrw;
   }
+
+  //Log::warn << "obtain_ast stack:\n" << m_stmtStack.dump();
 
   m_body = *m_stmtStack.pop();
 }
@@ -60,7 +136,7 @@ void KernelDriver::obtain_ast() {
 void KernelDriver::compile(std::function<void()> create_ast) {
   try {
     create_ast();
-    //to_file("stack.txt", stmtStack().dump());
+    reverse_uniforms(m_stmtStack);
 
     compile_intern();
     m_numVars = VarGen::count();

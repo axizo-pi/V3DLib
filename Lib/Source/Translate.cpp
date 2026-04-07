@@ -769,6 +769,7 @@ Instr::List varAssign(AssignCond cond, Var v, Expr::Ptr expr) {
 
 
 Instr::List varAssign(Var v, Expr::Ptr expr) {
+  //warn << "varAssign var: " << v.dump() << ", expr: " << expr->dump();
   return varAssign(always, v, expr);  // TODO: For some reason, `always` *must* be passed in.
                                       //       Overloaded call generates segfault
 }
@@ -802,21 +803,25 @@ Expr::Ptr putInVar(Instr::List *seq, Expr::Ptr e) {
 void encode_target(Instr::List &target, Stmt::Array const &source) {
   assert(!source.empty());
 
+  //std::string buf;
+  //buf  << "encode_target() translated:\n";
+
   for (int i = 0; i < (int) source.size(); i++) {
     auto ret = encode(source[i]);
     target << ret;
 /*
     auto src_tmp = source[i]->dump();
     auto ret_tmp = ret.dump();
-    warn << "encode_target() translated source op:\n"
-         << "  Source:"
+    buf  << "  Source:"
          << ((num_newlines(src_tmp) <= 1)?" ":"\n")
          << src_tmp << "\n"
          << "  Target:"
          << ((num_newlines(ret_tmp) <= 1)?" ":"\n")
          << ret_tmp;
-*/
+*/         
   }
+
+//  Log::warn << buf;
 }
 
 }  // namespace V3DLib

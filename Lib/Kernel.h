@@ -139,6 +139,8 @@ public:
    * Construct kernel out of C++ function
    */
   Kernel(KernelFunction f, BaseSettings const &settings) : BaseKernel(settings) {
+    Log::warn << "Called kernel ctor";
+
 		bool prev = Platform::compiling_for_vc4();
 		compile_init();
 
@@ -146,7 +148,7 @@ public:
       f(mkArg<ts>(m_typelist)...);  // Construct the AST
     });
 
-/*		
+/*	
 		// DEBUG: show the detected types for the param's (uniforms)
 		std::string buf;
 		buf << "Types: ";
@@ -154,8 +156,7 @@ public:
 			buf << m_typelist[i] << ", ";
 		}
 		Log::warn << buf;
-*/		
-
+*/
 		Platform::compiling_for_vc4(prev);
   }
 

@@ -42,7 +42,7 @@
 QPU=1
 DEBUG=1
 
-RET := $(shell ${BASE}/Tools/detectPlatform.sh 1>/dev/null && echo "yes" || echo "no")
+RET := $(shell ./Tools/detectPlatform.sh 1>/dev/null && echo "yes" || echo "no")
 ifeq ($(RET), no)
 $(info Building on a non-Pi platform; using QPU=0)
 QPU := 0

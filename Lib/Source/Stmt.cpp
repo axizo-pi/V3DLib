@@ -91,7 +91,9 @@ void Stmt::where_cond(BExpr::Ptr cond) {
 
 
 Expr::Ptr Stmt::lhs() const { return m_exp_a; }
+void Stmt::lhs(Expr::Ptr val) { m_exp_a = val; }
 Expr::Ptr Stmt::rhs() const { return m_exp_b; }
+void Stmt::rhs(Expr::Ptr val) { m_exp_b = val; }
 
 
 Expr::Ptr Stmt::assign_lhs() const {

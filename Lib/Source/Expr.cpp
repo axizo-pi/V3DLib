@@ -85,6 +85,11 @@ Expr::Ptr Expr::deref_ptr() const {
 }
 
 
+/**
+ * @brief Override the lhs part of the expression.
+ *
+ * **Use with care**. Required in `reverse_uniforms()`.
+ */
 void Expr::lhs(Ptr p) {
   assert(m_tag == APPLY);
   m_exp_a = p;
@@ -140,6 +145,7 @@ BaseExpr::BaseExpr() {}
 
 
 BaseExpr::BaseExpr(char const *label) : m_label(label) {
+  //Log::warn << "BaseExpr ctor label";
   assert(label != nullptr);
   assign_intern();
 }
@@ -153,11 +159,13 @@ BaseExpr::BaseExpr(Expr::Ptr e, char const *label) : m_label(label) {
 
 void BaseExpr::assign_intern() {
   Var v  = VarGen::fresh();
+  //Log::warn << "BaseExpr assign_intern v: " << v.dump();
   m_expr = mkVar(v);
 }
 
 
 void BaseExpr::assign_intern(Expr::Ptr expr) {
+  //Log::warn << "BaseExpr::assign_intern expr: " << expr->dump();
   assign_intern();
   assign(m_expr, expr);
 }

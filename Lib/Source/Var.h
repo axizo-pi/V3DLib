@@ -38,7 +38,9 @@ struct Var {
   Var(VarTag tag, VarId id) : m_tag(tag), m_id(id) {}
 
   VarTag tag() const { return m_tag; }
-  VarId id() const { return m_id; }
+  VarId id() const   { return m_id; }
+
+  void id(VarId val) { m_id = val; }
   bool is_uniform_ptr () const;
 
   std::string dump() const;

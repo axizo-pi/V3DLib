@@ -62,7 +62,6 @@ public:
     assert(m_size == 0);
   }
 
-protected:
   using Callback = std::function<void(T const &)>;
 
   void each(Callback f) const {
@@ -74,6 +73,7 @@ protected:
     }
   }
 
+protected:
 
   StackItem *top_item() const {
     assert(m_size > 0);
