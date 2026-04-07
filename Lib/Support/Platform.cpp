@@ -422,6 +422,19 @@ std::string pi_version() {
 
 
 void running_emulator(bool val) { instance().m_running_emulator = val; }
+
+
+/**
+ * @brief Check if emulator is running
+ *
+ * This is only set if the emulator is actually running;
+ * as such it is not useful for detecting if emulator is selected.
+ * Thus, it has limited use.
+ *
+ * **TODO**: determine if useful, remove otherwise.
+ *
+ * @return true if emulator running, false otherwise.
+ */
 bool running_emulator() { return instance().m_running_emulator; }
 
 

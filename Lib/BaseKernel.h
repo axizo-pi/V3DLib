@@ -90,8 +90,7 @@ public:
    */
   template <typename... us>
   BaseKernel &load(us... args) {
-		Log::warn << "Called BaseKernel::load()";
-
+		//Log::warn << "Called BaseKernel::load()";
     uniforms.clear();
 
     if (!ppassParam(uniforms, m_typelist, 0,  args...)) {
@@ -104,9 +103,7 @@ public:
 			tmp << uniforms[i] << ", ";
 	  }
 
-		Log::warn << "Uniforms: " << tmp;
-		
-
+		//Log::warn << "Uniforms: " << tmp;
     return *this;
   }
 

@@ -65,14 +65,14 @@ template <typename T> bool append(
 	T val
 ) {
 	bool ret = true;
-	Log::warn << "Here t2 " << index << ": " << (unsigned) var_type(val);
+	//Log::warn << "Here t2 " << index << ": " << (unsigned) var_type(val);
 
   int type_index = index;
   if (uniforms_reversed()) {
     type_index = (int) (typelist.size() - 1) - index;
   }
 
-	Log::warn << "Here type " << type_index << ": " << (unsigned) typelist[type_index];
+	//Log::warn << "Here type " << type_index << ": " << (unsigned) typelist[type_index];
 
 	if (var_type(val) != typelist[type_index]) {
 		Log::cerr << "ERROR incorrect type for param at index " << index;

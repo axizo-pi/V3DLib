@@ -139,7 +139,7 @@ public:
    * Construct kernel out of C++ function
    */
   Kernel(KernelFunction f, BaseSettings const &settings) : BaseKernel(settings) {
-    Log::warn << "Called kernel ctor";
+    //Log::warn << "Called kernel ctor";
 
 		bool prev = Platform::compiling_for_vc4();
 		compile_init();

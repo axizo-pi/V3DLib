@@ -376,7 +376,7 @@ void writeReg(QPUState* s, State* g, bool setFlags, AssignCond cond, Reg dest, V
       return;
 
     case SPECIAL:
-      warn << "writeReg SPECIAL v: " << v.dump();
+      //warn << "writeReg SPECIAL v: " << v.dump();
       write_special_register(s, g, setFlags, cond, dest, v);
       return;
 

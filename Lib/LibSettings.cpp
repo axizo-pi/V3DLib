@@ -79,6 +79,7 @@ void use_high_precision_sincos(bool val) { _use_high_precision_sincos = val; }
 bool dump_line_numbers() { return _dump_line_numbers; }
 void dump_line_numbers(bool val) { _dump_line_numbers = val; }
 
+
 /**
  * @brief Enable or disable L2 Cache
  *
@@ -90,13 +91,8 @@ void dump_line_numbers(bool val) { _dump_line_numbers = val; }
  */
 void L2Cache_enable(bool enable) {
 #ifdef QPU_MODE
-  if (Platform::running_emulator()) {
-    warn << "L2Cache_enable() running emulator, no need to adjust L2 cache.";
-    return;
-  }
-
   if (!Platform::run_vc4()) {
-    warn << "L2Cache_enable() for vc4 only, ignoring call.";
+    warn << "L2Cache_enable() for vc4 QPU mode only, ignoring call.";
     return;
   }
 

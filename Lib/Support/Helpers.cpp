@@ -154,16 +154,15 @@ bool uniforms_reversed() {
          << __GNUC_MINOR__ << "."
          << __GNUC_PATCHLEVEL__;
 
+  	if (__GNUC__ < 14) {
+    	warn << "No need to reverse the parameter indexes";
+		}
+
     showed_msg = true;
   }
 
   // Only the major version is tested. It's simple enough to extend this
-  if (__GNUC__ < 14) {
-    warn << "No need to reverse the parameter indexes";
-    return false;
-  }
-
-  return true;
+  return  (__GNUC__ >= 14);
 }
 
 }  // namespace V3DLib

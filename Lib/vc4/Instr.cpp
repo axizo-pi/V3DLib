@@ -713,7 +713,7 @@ std::vector<std::string> opcodes(uint64_t const *data, int size) {
 
   fclose(f);
 
-  // Load redirected file int ret
+  // Load redirected file into ret
   std::ifstream file(filename);
   assert(file.is_open());
 
