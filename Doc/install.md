@@ -122,7 +122,11 @@ On `pi`:
 
 	sudo apt-get update
 	sudo apt-get -y upgrade
-	sudo apt-get install -y git libraspberrypi-dev raspberrypi-kernel-headers expat libexpat1-dev libz-dev ruby mc vim cmake libdrm-dev raspi-config
+
+	sudo apt-get install -y git expat libexpat1-dev libz-dev ruby mc vim cmake libdrm-dev raspi-config gdb
+
+  # Following on pi only
+	sudo apt-get install -y git libraspberrypi-dev raspberrypi-kernel-headers
 
 	# Do following separately, if it fails in previous due to unmet dependencies in previous step
 	sudo apt-get install -y git libraspberrypi-dev
