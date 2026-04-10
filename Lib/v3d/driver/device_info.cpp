@@ -15,10 +15,6 @@ using namespace Log;
 
 namespace {
 
-bool did_devinfo = false;
-struct v3d_device_info s_devinfo = { .ver = 0 /* 0 signals no v3d */ };
-
-
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wunused-function"
 
@@ -39,6 +35,11 @@ int drmIoctl(int fd, unsigned long request, void *arg) {
 
 #pragma GCC diagnostic pop
 
+
+#ifdef QPU_MODE
+
+bool did_devinfo = false;
+struct v3d_device_info s_devinfo = { .ver = 0 /* 0 signals no v3d */ };
 
 /**
  * Retrieve the device info for the current v3d device.
@@ -70,6 +71,8 @@ bool _v3d_device_info() {
 
   return ret;
 }
+
+#endif // QPU_MODE
 
 }  // anon namespace
 
@@ -119,6 +122,7 @@ struct v3d_device_info const *devinfo() { return NULL; }
 
 
 std::string v3d_device_info() {
+#ifdef QPU_MODE
   std::stringstream buf;
 
   if(!_v3d_device_info()) {
@@ -160,4 +164,7 @@ std::string v3d_device_info() {
   ;
 
   return buf.str();
+#else
+  return "v3d_device_info() compiled in non-QPU mode; v3d device info not available.";
+#endif // QPU_MODE
 }
