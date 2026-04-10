@@ -1,5 +1,6 @@
 #include "Instr.h"
-#include "Support/basics.h"  // fatal()
+#include "Support/basics.h"   // fatal()
+#include "Support/Helpers.h"  // load_file_vec()
 #include "global/log.h"
 #include "dump_instr.h"
 #include <fstream>
@@ -714,16 +715,7 @@ std::vector<std::string> opcodes(uint64_t const *data, int size) {
   fclose(f);
 
   // Load redirected file into ret
-  std::ifstream file(filename);
-  assert(file.is_open());
-
-  // Read the file line by line into a string
-  string line;
-  while (getline(file, line)) {
-    ret << line;
-  }
-
-  file.close();
+	ret = load_file_vec(filename);
   return ret;
 }
 

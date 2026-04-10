@@ -940,7 +940,6 @@ TEST_CASE("Test functions [dsl][func]") {
 
     PGM pgm(size, 400);
     pgm.plot(lib_cos, 64)
-     //.plot(scalar_cos, size)
        .plot(qpu_cos.ptr(), size, 32)
        .plot(qpu_sin.ptr(), size, 32)
        .save("obj/test/cos_plot.pgm");
@@ -1254,13 +1253,14 @@ TEST_CASE("Test sin/cos instructions [dsl][sincos]") {
   auto lib_neg_sin = lib_neg_sin_values(N);
 
   auto k = compile(sincos_kernel);
+	to_file("sincos_kernel.txt", k.dump());
   k.load(&result, N).run();
 
   float const hi_precision = 1.2e-3f;
   float const lo_precision = 5.7e-2f;
 
-	// vc4 will uses lo-res sin function,
-	// v3d the hardware, which is really precise
+	// vc4 will use the lo-res sin function,
+	// v3d the will use hardware, which is precise
   float const qpu_precision = (Platform::run_vc4())?lo_precision:1.0e-6f;
 
   {

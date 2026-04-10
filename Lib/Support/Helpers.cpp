@@ -2,6 +2,7 @@
 #include "Support/basics.h"
 #include <chrono>
 #include <thread>
+#include <fstream>
 
 /** \file 
  * Helper Functions
@@ -57,6 +58,34 @@ void to_file(std::string const &filename, std::string const &content) {
    assert (f != nullptr);
   fprintf(f, content.c_str());
   fclose(f);
+}
+
+
+std::vector<std::string> load_file_vec(std::string const &filename) {
+	std::vector<std::string> ret;
+
+  std::ifstream file(filename);
+  assert(file.is_open());
+
+  // Read the file line by line into a string
+	std::string line;
+  while (getline(file, line)) {
+    ret << line;
+  }
+
+  file.close();
+	return ret;
+}
+
+
+std::string load_file(std::string const &filename) {
+	std::string ret;
+
+	for (auto const &line : load_file_vec(filename)) {
+    ret << line << "\n";
+	}
+
+	return ret;
 }
 
 

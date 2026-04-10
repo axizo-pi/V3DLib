@@ -10,6 +10,8 @@ namespace V3DLib {
 //
 float random_float();
 void to_file(std::string const &filename, std::string const &content);
+std::vector<std::string> load_file_vec(std::string const &filename);
+std::string load_file(std::string const &filename);
 void sleep(int sec);
 
 //

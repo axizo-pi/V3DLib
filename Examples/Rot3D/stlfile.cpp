@@ -85,9 +85,13 @@ void StlData::disp_arrays(int size) const {
  * @param show_number Max number of items to show.
  *                    If default is set, show all items.
  */
-void StlData::disp(int show_number) const {
+void StlData::disp(std::string const &label, int show_number) const {
 	assert(show_number <= m_size, "disp() trying to show more items than present");
 	if (show_number == -1) show_number = m_size;
+
+	if (!label.empty()) {
+		std::cout << label << ":\n";
+	}
 
  	disp_arrays(show_number);
 }
