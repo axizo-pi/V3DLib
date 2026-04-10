@@ -13,7 +13,7 @@
 
 ## Supported Pi's
 
-The QPU on the Pi's is called the **VideoCore**.
+The GPU on the Pi's is called the **VideoCore**.
 There are three different version of the VideoCore over all Pi versions.
 
 The Following Pi's are supported:
@@ -36,7 +36,7 @@ The Pi5 has a new version of the GPU. I resolved to update the project when I go
 I have reached this point.
 
 I lost my previous account due to 'enhancements' in the GitHub authentication.
-The current account replaces [my previous account](https://github.com/wimrijnders).
+This account replaces [my previous account](https://github.com/wimrijnders).
 
 ## Credit where Credit is Due
 
