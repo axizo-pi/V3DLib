@@ -1,6 +1,10 @@
 /**
  * Adjusted from: https://gist.github.com/notogawa/36d0cc9168ae3236902729f26064281d
  */
+#include "global/log.h"
+
+using namespace Log;
+
 #ifdef QPU_MODE
 
 #define USE_MESA_BUFMGR 1
@@ -9,7 +13,6 @@
 #include "v3d.h"
 #include <sys/ioctl.h>
 #include <stdio.h>
-#include "global/log.h"
 #include <fcntl.h>
 #include <cstring>    // errno, strerror()
 #include <sys/mman.h>
@@ -18,7 +21,6 @@
 #include "Support/Platform.h"
 
 using namespace V3DLib;
-using namespace Log;
 
 namespace {
 
@@ -136,8 +138,6 @@ bool alloc_intern(
 
 
 namespace v3d {
-
-
 
 
 bool alloc(uint32_t size, uint32_t &handle, uint32_t &phyaddr, void **usraddr) {
@@ -381,43 +381,6 @@ int submit_csd(drm_v3d_submit_csd &st) {
 
 
 /**
- * Apparently, you don't need to close afterwards.
- * If you try, then you get the perror:
- *
- *    Inappropriate ioctl for device
- *
- * @return true if opening succeeded, false otherwise
- */
-bool open() {
-  if (Platform::compiling_for_vc4()) {
-    cerr << "Running on vc4, not opening the v3d card.";
-    return true;
-  }
-
-  if (fd_is_open()) return true;  // Already open, all is well
-
-  // It appears to be a random crap shoot which device card0 and card1 address
-  // So we try both, test them and pick the one that works (if any)
-  int fd0 = open_card("/dev/dri/card0");
-  int fd1 = open_card("/dev/dri/card1");
-
-  if (fd0 <= 0 && fd1 <= 0) {
-    std::string msg = "Could not open v3d device, did you forget 'sudo'?";
-    Log::assertq(false, msg);
-    return false;
-  }
-
-  int fd = (fd1 <= 0)? fd0: fd1;
-  cdebug << "Got fd: " << fd;
-  assert(fd > 0);
-
-  set_fd(fd);
-  return true;
-}
-
-
-
-/**
  * Not called anywhere
  * TODO: Check if this is OK
  *
@@ -449,8 +412,54 @@ int ioctl(unsigned cmd, void *param) {
   return ret;
 }
 
-
-
 } // namespace v3d
 
 #endif  // QPU_MODE
+
+
+namespace v3d {
+
+/**
+ * Apparently, you don't need to close afterwards.
+ * If you try, then you get the perror:
+ *
+ *    Inappropriate ioctl for device
+ *
+ * @return true if opening succeeded, false otherwise
+ */
+bool open() {
+#ifdef QPU_MODE
+
+  if (Platform::compiling_for_vc4()) {
+    cerr << "Running on vc4, not opening the v3d card.";
+    return true;
+  }
+
+  if (fd_is_open()) return true;  // Already open, all is well
+
+  // It appears to be a random crap shoot which device card0 and card1 address
+  // So we try both, test them and pick the one that works (if any)
+  int fd0 = open_card("/dev/dri/card0");
+  int fd1 = open_card("/dev/dri/card1");
+
+  if (fd0 <= 0 && fd1 <= 0) {
+    std::string msg = "Could not open v3d device, did you forget 'sudo'?";
+    Log::assertq(false, msg);
+    return false;
+  }
+
+  int fd = (fd1 <= 0)? fd0: fd1;
+  cdebug << "Got fd: " << fd;
+  assert(fd > 0);
+
+  set_fd(fd);
+
+#else  
+
+  warn << "Running in non-QPU mode, not opening the v3d card.";
+
+#endif  // QPU_MODE
+  return true;
+}
+
+} // namespace v3d

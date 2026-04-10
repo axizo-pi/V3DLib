@@ -100,8 +100,7 @@ INCLUDE= \
  -I ${BASE}/Lib \
  $(INCLUDE_EXTERN)
 
-
-# NOTE: Spaces betwee line and comment is taken into the generation!
+# NOTE: Spaces between line and comment is taken into the generation!
 # Order important! drm MUST be after mesa, because mesa has dependencies on drm
 LIB_EXTERN+= \
  -L $(BASE)/obj/mesa/bin -lmesa \
