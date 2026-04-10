@@ -9,7 +9,6 @@ using namespace Log;
 
 #define USE_MESA_BUFMGR 1
 
-#include "Support/basics.h"  // Order important
 #include "v3d.h"
 #include <sys/ioctl.h>
 #include <stdio.h>
@@ -26,7 +25,7 @@ namespace {
 
 void fd_close(int fd) {
   if (fd > 0 ) {
-    assert(close(fd) >= 0);
+    assert(close(fd) >= 0, "fd_close() failed");
     close(fd);
   }
 }
