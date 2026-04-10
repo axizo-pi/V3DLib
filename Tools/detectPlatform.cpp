@@ -277,9 +277,11 @@ int main(int argc, char const *argv[]) {
       detect_v3d();
     }
   }
-#else
-  printf("This application is compiled in non-QPU mode; can not detect Pi or VideoCore\n");
-#endif  // QPU_MODE
 
   return 0;
+#else
+  printf("This application is compiled in non-QPU mode; can not detect Pi or VideoCore\n");
+  return 1;
+#endif  // QPU_MODE
+
 }

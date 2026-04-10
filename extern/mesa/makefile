@@ -40,8 +40,14 @@ INCLUDES = \
 -I ./include/drm-uapi \
 -I ./src/gallium/drivers/vc4 \
 
-
+#
+# -fPIC here and below to suppress warning on compilation on i7
+#
+# -D WRI_DISABLE=0 to disable specific x86 compilation; see half_float.h
+#
 CFLAGS += \
+-fPIC \
+-D WRI_DISABLE=0 \
 -D V3D_VERSION=71 \
 -D HAVE_ENDIAN_H \
 -D HAVE_PTHREAD \
@@ -89,4 +95,4 @@ $(MAINDIR)/%.o: main/%.c
 
 $(BINDIR)/%: $(MAINDIR)/%.o $(MESA_LIB)
 	@echo Linking $@...
-	$(LINK) -L $(BINDIR) $^ -o $@
+	$(LINK) -fPIC -L $(BINDIR) $^ -o $@

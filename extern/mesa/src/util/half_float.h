@@ -59,7 +59,7 @@ uint16_t _mesa_float_to_float16_rtz_slow(float val);
 static inline uint16_t
 _mesa_float_to_half(float val)
 {
-#if DETECT_ARCH_X86_64 && DETECT_CC_GCC
+#if DETECT_ARCH_X86_64 && DETECT_CC_GCC && WRI_DISABLE
    if (util_get_cpu_caps()->has_f16c) {
       __m128 in = {val};
       __m128i out;
@@ -75,7 +75,7 @@ _mesa_float_to_half(float val)
 static inline float
 _mesa_half_to_float(uint16_t val)
 {
-#if DETECT_ARCH_X86_64 && DETECT_CC_GCC
+#if DETECT_ARCH_X86_64 && DETECT_CC_GCC && WRI_DISABLE
    if (util_get_cpu_caps()->has_f16c) {
       __m128i in = {val};
       __m128 out;
@@ -83,7 +83,7 @@ _mesa_half_to_float(uint16_t val)
       __asm volatile("vcvtph2ps %1, %0" : "=v"(out) : "v"(in));
       return out[0];
    }
-#elif DETECT_ARCH_AARCH64 && DETECT_CC_GCC
+#elif DETECT_ARCH_AARCH64 && DETECT_CC_GCC && WRI_DISABLE
    float result;
    uint16_t in = val;
 
@@ -100,7 +100,7 @@ _mesa_half_to_float(uint16_t val)
 static inline uint16_t
 _mesa_float_to_float16_rtz(float val)
 {
-#if DETECT_ARCH_X86_64 && DETECT_CC_GCC
+#if DETECT_ARCH_X86_64 && DETECT_CC_GCC && WRI_DISABLE
    if (util_get_cpu_caps()->has_f16c) {
       __m128 in = {val};
       __m128i out;
