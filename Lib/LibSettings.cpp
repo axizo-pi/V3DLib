@@ -73,8 +73,14 @@ void use_tmu_for_load(bool val) { _use_tmu_for_load = val; }
 bool use_tmu_for_load()         { return _use_tmu_for_load; }
 
 
-bool use_high_precision_sincos()         { return _use_high_precision_sincos; }
+/**
+ * @brief enable high precision for QPU cos function.
+ *
+ * This is only for `cos_1()`, which is not in use right now.
+ * The current `cos()` is based on a Taylor approximation.
+ */
 void use_high_precision_sincos(bool val) { _use_high_precision_sincos = val; }
+bool use_high_precision_sincos()         { return _use_high_precision_sincos; }
 
 bool dump_line_numbers() { return _dump_line_numbers; }
 void dump_line_numbers(bool val) { _dump_line_numbers = val; }

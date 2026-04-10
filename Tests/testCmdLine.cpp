@@ -1,7 +1,10 @@
 #include <unistd.h>           // for geteuid()
 #include <sys/types.h>        // idem
 #include "Support/Platform.h"
+#include "Support/Helpers.h"  // load_file()
 #include "support/support.h"  // running_on_v3d()
+#include "LibSettings.h"
+#include <iostream>
 
 
 //
@@ -63,7 +66,12 @@ bool gcd_msg() {
 */
 
 
-void check_output_run(std::string const &program, RunType run_type, std::string const &extra_params) {
+void check_output_run(
+	std::string const &program,
+	RunType run_type,
+	std::string const &extra_params,
+	bool show_output = false
+) {
   std::string params = "";
   std::string output_filename = "obj/test/";
   std::string expected_filename = "Tests/data/";
@@ -98,6 +106,10 @@ void check_output_run(std::string const &program, RunType run_type, std::string 
   cmdline += program + " -silent " + params + " > " + output_filename;
   INFO("Cmdline: " << cmdline);
   REQUIRE(!system(cmdline.c_str()));
+
+	if (show_output) {
+		std::cout << "\n" << V3DLib::load_file(output_filename);
+	}
 
   std::string diff_cmd = "diff " + output_filename + " " + expected_filename;
   INFO("diff command: " << diff_cmd);
@@ -147,18 +159,21 @@ TEST_CASE("Check correct output example programs for all three run options [cmdl
 
   SUBCASE("Check output Tri")     { check_output_example("Tri"); }
   SUBCASE("Check output OET")     { check_output_example("OET"); }
+}
 
-  // Rot3D, the expected output is taken from the scalar kernel
-  // For v3d, the match should be exact in all cases.
-  //
-  // For vc4, there is difference in output due to rounding.
-  // In addition, at time of writing the multi-QPU version of kernel 2 is not working
 
-  if (running_on_v3d()) {
-    SUBCASE("Check output Rot3D")   { check_output_example("Rot3D", "-d"); }
-  } else {
-    // These should be no problem
-    check_output_run("Rot3D", INTERPRETER, "-d");
-    check_output_run("Rot3D", EMULATOR,    "-d");
-  }
+/**
+ * @brief Unit tests `for Rot3D`.
+ *
+ * The expected output is taken from the `Rot3D` scalar kernel.
+ */
+TEST_CASE("Check correct output Rot3D [cmdline][rot3d]") {
+  init_msg();
+  make_test_dir();
+
+	std::string params = "-d -v=16 -rx=0.25";
+
+	check_output_run("Rot3D", QPU        , params);
+  check_output_run("Rot3D", INTERPRETER, params);
+  check_output_run("Rot3D", EMULATOR   , params);
 }

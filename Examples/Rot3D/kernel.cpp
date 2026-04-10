@@ -44,7 +44,7 @@ void run_qpu_kernel(KernelType &kernel) {
 
   KernelData data(settings.num_vertices);
   data.init();
-  data.disp();
+	data.disp("Data pre");
 
   Timer timer;
   k.load(
@@ -54,7 +54,7 @@ void run_qpu_kernel(KernelType &kernel) {
   ).run();
   timer.end(!settings.silent);
 
-  data.disp();
+	data.disp("Data post");
 
   if (settings.save_stl) {
     stl_save_data(data, true);
