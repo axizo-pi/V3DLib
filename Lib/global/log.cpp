@@ -12,11 +12,15 @@
 #include <sstream>            // std::stringstream
 #include <fstream>
 #include <filesystem>
+#include "Support/Helpers.h"
+
+using namespace V3DLib;
 
 namespace Log {
-namespace {
 
 namespace fs = std::filesystem; // Alias for brevity
+
+namespace {
 
 bool s_cout_show_timestamp = true;
 bool s_log_to_cout = true;
@@ -31,6 +35,8 @@ std::string timestamp() {
 
 
 /**
+ * TODO: consolidate with `ensure_path_exists()` in Helpers
+ *
  * Source: https://www.tutorialpedia.org/blog/create-a-directory-if-it-doesn-t-exist/#google_vignette
  */
 bool create_directory_if_missing(const fs::path& dir_path) {
@@ -130,11 +136,14 @@ protected:
     if (m_log_dir.empty()) return;
     if (m_file.empty())    return;
 
-    stringstream path;
-    path << m_log_dir << "/" << m_file;
+    stringstream outfile;
+    outfile << m_log_dir << "/" << m_file;
+
+    ensure_path_exists(m_log_dir);
+    ensure_file_exists(outfile.str());
 
     ofstream of;
-    of.open(path.str(), ios::app);
+    of.open(outfile.str(), ios::app);
     assert(!of.fail(), "Can not open logfile for appending");
 
     of << msg;

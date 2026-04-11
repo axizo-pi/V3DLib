@@ -1,10 +1,12 @@
 #include <unistd.h>           // for geteuid()
 #include <sys/types.h>        // idem
 #include "Support/Platform.h"
-#include "Support/Helpers.h"  // load_file()
+#include "Support/Helpers.h"  // load_file(), sudo()
 #include "support/support.h"  // running_on_v3d()
 #include "LibSettings.h"
 #include <iostream>
+
+using namespace V3DLib;
 
 namespace {
 
@@ -82,7 +84,7 @@ void check_output_run(
 
   output_filename << "_output.txt";
 
-  std::string cmdline = SUDO;
+  std::string cmdline = sudo();
   cmdline << bin_path() << "/"
           << program << " -silent " << params << " > " << output_filename;
 

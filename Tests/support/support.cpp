@@ -4,8 +4,10 @@
 #include <algorithm>
 #include <iterator>
 #include <filesystem>  // exists()
+#include "Support/Helpers.h"
 
 namespace fs = std::filesystem;
+using namespace V3DLib;
 
 
 //
@@ -28,7 +30,7 @@ namespace fs = std::filesystem;
 #define TEST_PATH "obj/" POSTFIX_QPU POSTFIX_DEBUG "/test"
 
 
-std::string bin_path()  { return BIN_PATH; }
+std::string bin_path()  { return BIN_PATH;  }
 std::string test_path() { return TEST_PATH; }
 
 
@@ -105,27 +107,12 @@ bool running_on_v3d() {
 }
 
 
-#ifdef QPU_MODE
-const char *SUDO = (V3DLib::Platform::run_vc4())? "sudo " : "";  // sudo needed for vc4
-#else
-const char *SUDO = "";
-#endif
-
-
 /**
  * TODO: rename to make_test_path()
  */
 void make_test_dir() {
-	if (fs::exists(test_path())) return;
-
-  std::string cmd = SUDO;
-  cmd += "mkdir -p " + test_path();
-
-  REQUIRE(!system(cmd.c_str()));
-
-  cmd  = SUDO;
-  cmd += "chmod ugo+rw " + test_path();
-  REQUIRE(!system(cmd.c_str()));
+  bool ret = ensure_path_exists(test_path());
+  REQUIRE(ret);
 }
 
 
