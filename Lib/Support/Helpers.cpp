@@ -55,7 +55,7 @@ void to_file(std::string const &filename, std::string const &content) {
   assert(!content.empty());
 
   FILE *f = fopen(filename.c_str(), "w");
-   assert (f != nullptr);
+	Log::assertq(f != nullptr, "to_file() could not open file " + filename);
   fprintf(f, content.c_str());
   fclose(f);
 }

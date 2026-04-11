@@ -942,7 +942,7 @@ TEST_CASE("Test functions [dsl][func]") {
     pgm.plot(lib_cos, 64)
        .plot(qpu_cos.ptr(), size, 32)
        .plot(qpu_sin.ptr(), size, 32)
-       .save("obj/test/cos_plot.pgm");
+       .save((test_path() + "/cos_plot.pgm").c_str());
   }
 
 
@@ -1253,7 +1253,7 @@ TEST_CASE("Test sin/cos instructions [dsl][sincos]") {
   auto lib_neg_sin = lib_neg_sin_values(N);
 
   auto k = compile(sincos_kernel);
-	to_file("sincos_kernel.txt", k.dump());
+	//to_file("sincos_kernel.txt", k.dump());
   k.load(&result, N).run();
 
   float const hi_precision = 1.2e-3f;

@@ -3,7 +3,33 @@
 #include <sstream>
 #include <algorithm>
 #include <iterator>
+#include <filesystem>  // exists()
 
+namespace fs = std::filesystem;
+
+
+//
+// get the base directory right for calling compiled apps.
+//
+#ifdef DEBUG
+  #define POSTFIX_DEBUG "-debug"
+#else
+  #define POSTFIX_DEBUG ""
+#endif
+
+#ifdef QPU_MODE
+//  #pragma message "QPU mode enabled"
+#define POSTFIX_QPU "qpu"
+#else
+#define POSTFIX_QPU "emu"
+#endif
+
+#define BIN_PATH  "obj/" POSTFIX_QPU POSTFIX_DEBUG "/bin"
+#define TEST_PATH "obj/" POSTFIX_QPU POSTFIX_DEBUG "/test"
+
+
+std::string bin_path()  { return BIN_PATH; }
+std::string test_path() { return TEST_PATH; }
 
 
 double get_time() {
@@ -86,14 +112,19 @@ const char *SUDO = "";
 #endif
 
 
+/**
+ * TODO: rename to make_test_path()
+ */
 void make_test_dir() {
+	if (fs::exists(test_path())) return;
+
   std::string cmd = SUDO;
-  cmd += "mkdir -p obj/test";
+  cmd += "mkdir -p " + test_path();
 
   REQUIRE(!system(cmd.c_str()));
 
   cmd  = SUDO;
-  cmd += "chmod ugo+rw obj/test";
+  cmd += "chmod ugo+rw " + test_path();
   REQUIRE(!system(cmd.c_str()));
 }
 

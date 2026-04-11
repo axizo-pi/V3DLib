@@ -79,7 +79,7 @@ void output_ppm_file(
 
   FILE *fd = fopen(filename, "w") ;
   if (fd == nullptr) {
-    printf("can't open file for graphics output\n");
+    printf("can't open file '%s' for graphics output\n", filename);
     return;
   }
 
