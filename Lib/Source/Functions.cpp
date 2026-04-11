@@ -322,34 +322,43 @@ FloatExpr cos_prev(FloatExpr x_in, bool extra_precision) {
 /**
  * @brief cosine for QPU using Taylor approximation.
  *
- * This is _much_ more precise than the previous functions `cos_prev()` (see above).
+ * This is _much_ more precise than the previous functions `cos_prev()` (see above).  
+ * `vc4` has no cosine, hence an explicit implementation is needed.
+ *
+ * @param x_in angle in units of 2*M_PI. Hence `x_in = 0.5f` stands for 1M_PI`. 
  *
  * Source: https://www.numberanalytics.com/blog/ultimate-taylor-trigonometry-guide#series-for-sine-and-cosine
  */
-FloatExpr cos(FloatExpr x_in, bool extra_precision) {
+FloatExpr cos(FloatExpr x_in) {
 	//Log::warn << "called cos() Taylor";
 
+	// Empirically determined interval for zero
 	Float ZERO_MIN = -1.26078e-06f; 
 	Float ZERO_MAX =  4.24525e-08f;
 
   Float x = x_in;
+
+	// Normalize x to a value in the range [-0.5, 0.5]
+	Float tmp = x + 0.5f;
+	x = tmp - functions::ffloor(tmp) - 0.5f;
+
 	x = x * (float) (2.0f * M_PI);  comment("Start Taylor");
 
 	Float x_sqr      = x*x;
 	Float divisor    = 1;
-	int   iterations = 8;           // Smallest value that passes iall unit tests
+	int   iterations = 8;           // Smallest value that passes all unit tests
 
 	Float ret         = 1.0f;
 	Float coefficient = 1.0f;       comment("Start Loop");
 
 	for (int i = 0; i < iterations; ++i) {
-		divisor     *= (float) ((2*i + 1)*(2*i + 2));
+		divisor     *= 1.0f/((float) ((2*i + 1)*(2*i + 2)));
 		coefficient *= x_sqr;
 		 
 		if (i % 2 == 0) {
-			ret	-= coefficient/divisor;
+			ret	-= coefficient*divisor;
 		} else {
-			ret	+= coefficient/divisor;
+			ret	+= coefficient*divisor;
 		}
 	}
 
@@ -362,8 +371,8 @@ FloatExpr cos(FloatExpr x_in, bool extra_precision) {
 }
 
 
-FloatExpr sin(FloatExpr x_in, bool extra_precision) {
-  return cos(0.25f - x_in, extra_precision);
+FloatExpr sin(FloatExpr x_in) {
+  return functions::cos(0.25f - x_in);
 }
 
 

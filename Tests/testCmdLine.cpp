@@ -1,29 +1,12 @@
 #include <unistd.h>           // for geteuid()
 #include <sys/types.h>        // idem
 #include "Support/Platform.h"
-#include "Support/Helpers.h"  // load_file()
+#include "Support/Helpers.h"  // load_file(), sudo()
 #include "support/support.h"  // running_on_v3d()
 #include "LibSettings.h"
 #include <iostream>
 
-
-//
-// get the base directory right for calling compiled apps.
-//
-#ifdef DEBUG
-  #define POSTFIX_DEBUG "-debug"
-#else
-  #define POSTFIX_DEBUG ""
-#endif
-
-#ifdef QPU_MODE
-//  #pragma message "QPU mode enabled"
-#define POSTFIX_QPU "qpu"
-#else
-#define POSTFIX_QPU "emu"
-#endif
-
-#define BIN_PATH "obj/" POSTFIX_QPU POSTFIX_DEBUG "/bin"
+using namespace V3DLib;
 
 namespace {
 
@@ -73,7 +56,7 @@ void check_output_run(
 	bool show_output = false
 ) {
   std::string params = "";
-  std::string output_filename = "obj/test/";
+  std::string output_filename = test_path() + "/";
   std::string expected_filename = "Tests/data/";
 
   output_filename   += program + "_";
@@ -99,11 +82,12 @@ void check_output_run(
     params += " ";
   }
 
-  output_filename   += "_output.txt";
+  output_filename << "_output.txt";
 
-  std::string cmdline = SUDO;
-  cmdline += BIN_PATH "/";
-  cmdline += program + " -silent " + params + " > " + output_filename;
+  std::string cmdline = sudo();
+  cmdline << bin_path() << "/"
+          << program << " -silent " << params << " > " << output_filename;
+
   INFO("Cmdline: " << cmdline);
   REQUIRE(!system(cmdline.c_str()));
 
@@ -133,9 +117,20 @@ void check_output_example(std::string const &program, std::string const &extra_p
 // Better would be to check if the first line is the same
 //
 TEST_CASE("Detect platform scripts should both return the same thing [cmdline]") {
+	// It is possible to compile QPU=0 on a Pi.
+	// In that case, the return values will be logically different; skip that case.
+#ifdef QPU_MODE
+	const int cpp_expected = 0;
+#else
+	const int cpp_expected = 256;
+#endif
+
   init_msg();
-  int ret1 = system(BIN_PATH "/detectPlatform > /dev/null");
-  bool success1 = (ret1 == 0);
+	std::string cmd;
+  cmd << bin_path() << "/detectPlatform > /dev/null";
+
+  int ret1 = system(cmd.c_str());
+  bool success1 = (ret1 == cpp_expected);
 
   int ret2 = system("Tools/detectPlatform.sh > /dev/null");
   bool success2 = (ret2 == 0);

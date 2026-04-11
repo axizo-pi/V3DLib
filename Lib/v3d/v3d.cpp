@@ -454,11 +454,10 @@ bool open() {
   set_fd(fd);
 
 #else  
-
-  warn << "Running in non-QPU mode, not opening the v3d card.";
-
+  info << "Running in non-QPU mode, not opening the v3d card.";
 #endif  // QPU_MODE
   return true;
+
 }
 
 } // namespace v3d

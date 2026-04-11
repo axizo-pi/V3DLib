@@ -4,9 +4,11 @@
 #include "global/log.h"
 #include "dump_instr.h"
 #include <fstream>
+#include <filesystem>
 
 using namespace Log;
 using namespace std;
+namespace fs = std::filesystem; // Alias for brevity
 
 namespace V3DLib {
 namespace vc4 {
@@ -702,7 +704,9 @@ std::vector<std::string> opcodes(uint64_t const *data, int size) {
     return ret;
   }
 
-  std::string filename = "vc4_code_tmp.txt";
+  std::string filename;
+  filename << fs::temp_directory_path() << "/vc4_code_tmp.txt";
+  //warn << "opcodes() filename: " << filename;
 
   //
   // dump_instr() is redirected to a file, make it first
@@ -716,6 +720,8 @@ std::vector<std::string> opcodes(uint64_t const *data, int size) {
 
   // Load redirected file into ret
 	ret = load_file_vec(filename);
+
+  std::remove(filename.c_str());
   return ret;
 }
 

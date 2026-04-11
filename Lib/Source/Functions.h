@@ -22,8 +22,8 @@ IntExpr integer_division_f(IntExpr in_a, IntExpr in_b);
 
 inline IntExpr operator-(IntExpr a) { return two_complement(a); }
 
-FloatExpr cos(FloatExpr x_in, bool extra_precision = false);
-FloatExpr sin(FloatExpr x_in, bool extra_precision = false);
+FloatExpr cos(FloatExpr x_in);
+FloatExpr sin(FloatExpr x_in);
 FloatExpr sin_v3d(FloatExpr x_in);
 
 FloatExpr ffloor(FloatExpr x);

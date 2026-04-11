@@ -502,8 +502,8 @@ TEST_CASE("Test multiple and/or [andor][cond]") {
   int const height = 32;
 
   auto check_output = [width, height] (Float::Array &result, char const *label) {
-    std::string filename;
-    filename <<  "obj/test/andor_" << label << "_output.pgm";
+    std::string filename = test_path();
+    filename <<  "/andor_" << label << "_output.pgm";
     output_pgm_file(result, width, height, 255, filename.c_str());
     check_pgm(filename.c_str());
   };

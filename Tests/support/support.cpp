@@ -3,7 +3,35 @@
 #include <sstream>
 #include <algorithm>
 #include <iterator>
+#include <filesystem>  // exists()
+#include "Support/Helpers.h"
 
+namespace fs = std::filesystem;
+using namespace V3DLib;
+
+
+//
+// get the base directory right for calling compiled apps.
+//
+#ifdef DEBUG
+  #define POSTFIX_DEBUG "-debug"
+#else
+  #define POSTFIX_DEBUG ""
+#endif
+
+#ifdef QPU_MODE
+//  #pragma message "QPU mode enabled"
+#define POSTFIX_QPU "qpu"
+#else
+#define POSTFIX_QPU "emu"
+#endif
+
+#define BIN_PATH  "obj/" POSTFIX_QPU POSTFIX_DEBUG "/bin"
+#define TEST_PATH "obj/" POSTFIX_QPU POSTFIX_DEBUG "/test"
+
+
+std::string bin_path()  { return BIN_PATH;  }
+std::string test_path() { return TEST_PATH; }
 
 
 double get_time() {
@@ -79,22 +107,12 @@ bool running_on_v3d() {
 }
 
 
-#ifdef QPU_MODE
-const char *SUDO = (V3DLib::Platform::run_vc4())? "sudo " : "";  // sudo needed for vc4
-#else
-const char *SUDO = "";
-#endif
-
-
+/**
+ * TODO: rename to make_test_path()
+ */
 void make_test_dir() {
-  std::string cmd = SUDO;
-  cmd += "mkdir -p obj/test";
-
-  REQUIRE(!system(cmd.c_str()));
-
-  cmd  = SUDO;
-  cmd += "chmod ugo+rw obj/test";
-  REQUIRE(!system(cmd.c_str()));
+  bool ret = ensure_path_exists(test_path());
+  REQUIRE(ret);
 }
 
 
