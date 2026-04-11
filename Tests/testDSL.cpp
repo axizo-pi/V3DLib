@@ -1210,14 +1210,14 @@ void sincos_kernel(Float::Ptr result, Int size) {
   For (Int n = 0, n < count, n++)
     Float param = toFloat((n << 4) + index())/toFloat(size);
 
-    Float val  = functions::sin(param, true);
+    Float val  = functions::sin(param);
     *result = val;  result.inc();
   End
 
   For (Int n = 0, n < count, n++)
     Float param = toFloat((n << 4) + index())/toFloat(size);
 
-    Float val  = functions::sin(param, false);
+    Float val  = functions::sin(param);
     *result = val;  result.inc();
   End
 
