@@ -1,16 +1,12 @@
-#include <unistd.h>  // geteuid()
-#include <string>
-#include <fstream>
-#include <streambuf>
-#include <CmdParameters.h>
-#include "V3DLib.h"
-#include "Support/Platform.h"
 #include "vc4/vc4.h"
-#include "vc4/Mailbox.h"
+#include "Support/Platform.h"
 #include "vc4/RegisterMap.h"
-#include "v3d/RegisterMapping.h"
-#include "v3d/v3d.h"
+#include "vc4/Mailbox.h"
 #include "v3d/driver/device_info.h"
+#include "v3d/RegisterMapping.h"
+#include <CmdParameters.h>
+#include <iostream>
+#include <unistd.h>  // geteuid()
 
 
 using namespace V3DLib;
@@ -232,16 +228,7 @@ void detect_vc4() {
   printf("VPM memory size (KB)     : %d\n", RegisterMap::VPMMemorySize());
   printf("L2 Cache enabled         : %s\n", (RegisterMap::L2CacheEnabled())? "yes": "no");
 
-	std::cout << RegisterMap::showSchedulerRegisters();
-
-/*
-  // DEBUG: read first three registers
-  printf("Reg 0: %X\n", RegisterMap::readRegister(0));
-  printf("Reg 1: %X\n", RegisterMap::readRegister(1));
-  printf("Reg 2: %X\n", RegisterMap::readRegister(2));
-*/
-
-  printf("\n");
+  std::cout << RegisterMap::showSchedulerRegisters() << "\n";
 
   disableQPUs();
 }

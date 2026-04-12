@@ -5,14 +5,10 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 #include "Settings.h"
-#include <cassert>
-#include <memory>
-#include <iostream>
-#include "Platform.h"
 #include "LibSettings.h"
+#include "Platform.h"
 #include "Support/basics.h"
-#include "global/log.h"
-
+#include <iostream>
 
 namespace {
 
@@ -74,7 +70,7 @@ CmdParameters base_params = {
     "-r=",
     {"QPU", "interpreter", "emulator", "debugger"},
     "Run the kernel on the QPU, interpreter or the emulator.\n"
-		"Value 'debugger' starts the emulator in debugging mode"
+    "Value 'debugger' starts the emulator in debugging mode"
   }, {
     "Disable logging",
     {"-s", "-silent"},
@@ -246,7 +242,7 @@ bool Settings::process() {
   silent       = p["Disable logging"]->get_bool_value();
 
   int tmp     = (RunType) p["Select run type"]->get_int_value();
-	assert(QPU <= tmp && tmp <= Debugger);
+  assert(QPU <= tmp && tmp <= Debugger);
   run_type     = (RunType) tmp;
 
 #ifdef QPU_MODE

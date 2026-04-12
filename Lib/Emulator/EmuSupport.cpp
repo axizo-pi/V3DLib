@@ -1,10 +1,6 @@
 #include "EmuSupport.h"
-#include <cmath>
-#include <cstdio>
-#include <cstring>    // strlen()
-#include "Support/basics.h"
-#include "Target/instr/ALUOp.h"
 #include "Source/Op.h"
+#include <cmath>
 
 /** \file 
  * EmuSupport 
@@ -321,8 +317,8 @@ bool Vec::apply(ALUOp const &op, Vec a, Vec b) {
     break;
 
     case Enum::A_MOV:  // v3d
-			*this = a;
-		break;
+      *this = a;
+    break;
 
     default:
       handled = false;

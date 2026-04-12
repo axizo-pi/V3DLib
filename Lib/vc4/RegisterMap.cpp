@@ -1,17 +1,14 @@
 #ifdef QPU_MODE
 
 #include "RegisterMap.h"
-#include <memory>
-#include <cassert>
-#include <cstring>
-#include <stdio.h>
-#include <unistd.h>
-#include <bcm_host.h>
-#include "Support/basics.h"   // fatal()
 #include "Support/Platform.h"
+#include "Support/basics.h"   // fatal()
 #include "Support/Helpers.h"  // indentBy()
 #include "Mailbox.h"          // mapmem()
 #include "vc4.h"
+#include <bcm_host.h>
+#include <cstring>
+#include <memory>
 
 using namespace Log;
 
@@ -32,24 +29,24 @@ enum SchedulerMasks : int {
 
 
 enum ErrStatFields {
-	VPAEABB = 0,
-	VPAERGS,
-	VPAEBRGL,
-	VPAERRGL,
-	VPMEWR,
-	VPMERR,
-	VPMERNA,
-	VPMEWNA,
-	VPMEFNA,
-	VPMEAS,
-	VDWE,
-	VCDE,
-	VCDI, 
-	VCMRE,
-	VCMBE,
-	L2CARE, // 15
+  VPAEABB = 0,
+  VPAERGS,
+  VPAEBRGL,
+  VPAERRGL,
+  VPMEWR,
+  VPMERR,
+  VPMERNA,
+  VPMEWNA,
+  VPMEFNA,
+  VPMEAS,
+  VDWE,
+  VCDE,
+  VCDI, 
+  VCMRE,
+  VCMBE,
+  L2CARE, // 15
 
-	MAX = L2CARE
+  MAX = L2CARE
 };
 
 
@@ -66,25 +63,25 @@ enum ErrStatFields {
  *         So, the 'read from main mem' option of the VPM.
  */
 std::string errStatLabel(ErrStatFields val) {
-	switch (val) {
-		case VPAEABB:  return "VPM Allocator error - allocating base while busy";
-		case VPAERGS:  return "VPM Allocator error - request too big";
-		case VPAEBRGL: return "VPM Allocator error - binner request greater than limit";
-		case VPAERRGL: return "VPM Allocator error - renderer request greater than limit";
-		case VPMEWR:   return "VPM error - write range";
-		case VPMERR:   return "VPM error - read range";
-		case VPMERNA:  return "VPM error - read non-allocated";
-		case VPMEWNA:  return "VPM error - write non-allocated";
-		case VPMEFNA:  return "VPM error - free non-allocated";
-		case VPMEAS:   return "VPM error - allocated size error";
-		case VDWE:     return "VDW error - address overflows";
-		case VCDE:     return "VCD error - FIFO pointers out of sync";
-		case VCDI:     return "VCD Idle";
-		case VCMRE:    return "VCM error (renderer)";
-		case VCMBE:    return "VCM error (binner)";
-		case L2CARE:   return "L2C AXI Receive Fifo Overrun error";
-		default: assert(false);
-	}
+  switch (val) {
+    case VPAEABB:  return "VPM Allocator error - allocating base while busy";
+    case VPAERGS:  return "VPM Allocator error - request too big";
+    case VPAEBRGL: return "VPM Allocator error - binner request greater than limit";
+    case VPAERRGL: return "VPM Allocator error - renderer request greater than limit";
+    case VPMEWR:   return "VPM error - write range";
+    case VPMERR:   return "VPM error - read range";
+    case VPMERNA:  return "VPM error - read non-allocated";
+    case VPMEWNA:  return "VPM error - write non-allocated";
+    case VPMEFNA:  return "VPM error - free non-allocated";
+    case VPMEAS:   return "VPM error - allocated size error";
+    case VDWE:     return "VDW error - address overflows";
+    case VCDE:     return "VCD error - FIFO pointers out of sync";
+    case VCDI:     return "VCD Idle";
+    case VCMRE:    return "VCM error (renderer)";
+    case VCMBE:    return "VCM error (binner)";
+    case L2CARE:   return "L2C AXI Receive Fifo Overrun error";
+    default: assert(false);
+  }
 }
 
 
@@ -94,7 +91,7 @@ std::string errStatLabel(ErrStatFields val) {
  * not initialized when it's not used.
  */
 class RegisterMapClass {
-public:	
+public:  
   RegisterMapClass(RegisterMapClass const &) = delete;
   void operator=(RegisterMapClass const &) = delete;
 
@@ -180,9 +177,9 @@ enum V3D_L2CACTL_bits {
 
 
 RegisterMapClass &instance() {
-	if (!Platform::run_vc4()) {
-		cerr << "RegisterMap can only be accessed on a platform having VideoCore4" << thrw;
-	}
+  if (!Platform::run_vc4()) {
+    cerr << "RegisterMap can only be accessed on a platform having VideoCore4" << thrw;
+  }
 
   if (_instance.get() == nullptr) {
     _instance.reset(new RegisterMapClass);
@@ -374,7 +371,7 @@ void resetAllSchedulerRegisters() {
 
 
 std::string showSchedulerRegisters() {
-	std::string ret;
+  std::string ret;
 
   int numQPUs = numSlices() * numQPUPerSlice();
   SchedulerRegisterValues values = SchedulerRegisters();
@@ -405,7 +402,7 @@ std::string showSchedulerRegisters() {
 
   ret << "\n";
 
-	return ret;
+  return ret;
 }
 
 
@@ -502,22 +499,22 @@ std::string ProgramRequestStatus() {
 std::string ErrorStatus() {
   // Prescan for max length labels
   int max_length = 0;
-	for (int i = 0; i < ErrStatFields::MAX; ++i) {
-		ErrStatFields val = (ErrStatFields) i;
+  for (int i = 0; i < ErrStatFields::MAX; ++i) {
+    ErrStatFields val = (ErrStatFields) i;
 
-		int length = (int) errStatLabel(val).length();
+    int length = (int) errStatLabel(val).length();
     if (length > max_length) max_length = length;
-	}
+  }
 
   std::string ret;
 
-	for (int i = 0; i < ErrStatFields::MAX; ++i) {
-		ErrStatFields val = (ErrStatFields) i;
-		auto label = errStatLabel(val);
+  for (int i = 0; i < ErrStatFields::MAX; ++i) {
+    ErrStatFields val = (ErrStatFields) i;
+    auto label = errStatLabel(val);
     auto tabs = indentBy(max_length - (int) label.length());
 
-		ret << "  " << label << tabs << ": " << ((readRegister(V3D_ERRSTAT) >> val) & 1) << "\n";
-	}
+    ret << "  " << label << tabs << ": " << ((readRegister(V3D_ERRSTAT) >> val) & 1) << "\n";
+  }
 
   return ret;
 }

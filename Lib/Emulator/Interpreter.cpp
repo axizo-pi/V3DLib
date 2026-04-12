@@ -1,10 +1,10 @@
 #include "Interpreter.h"
-#include <algorithm>            // reverse()
 #include "Common/SharedArray.h"
 #include "Source/Stmt.h"
 #include "Common/BufferObject.h"
 #include "EmuState.h"
 #include "Support/basics.h"
+#include <algorithm>            // reverse()
 
 namespace V3DLib {
 
