@@ -44,51 +44,17 @@ bool ensure_path_exists(std::string const &path) {
   std::string cmd;
 
 	if (!fs::exists(path)) {
-    cmd = sudo();
-    cmd << "mkdir -p " << path;
-
-    if (!system(cmd.c_str())) {
-      cerr << "ensure_exists() creation of path '" << path << "' failed.";
-      cerr << "cmd: " << cmd;
+		if (!fs::create_directories(path)) {
+      cerr << "ensure_path_exists() creation of path '" << path << "' failed.";
       return false;
     }
 
-    // Ensure read/write access is OK
-    cmd  = sudo();
-    cmd << "chmod ugo+rw " << path;
-
-    if (!system(cmd.c_str())) {
-      cerr << "ensure_exists() chmod of path '" << path << "' failed.";
-      return false;
-    }
-  }
-
-  return true;
-}
-
-
-bool ensure_file_exists(std::string const &path) {
-  assert(!path.empty());
-
-  std::string cmd;
-
-	if (!fs::exists(path)) {
-    cmd = sudo();
-    cmd << "touch " << path;
-
-    if (!system(cmd.c_str())) {
-      cerr << "ensure_exists() creation of path '" << path << "' failed.";
-      return false;
-    }
-
-    // Ensure read/write access is OK
-    cmd  = sudo();
-    cmd << "chmod ugo+rw " << path;
-
-    if (!system(cmd.c_str())) {
-      cerr << "ensure_exists() chmod of path '" << path << "' failed.";
-      return false;
-    }
+		// Change the file permissions to read/write
+		fs::permissions(
+			 path,
+       fs::perms::owner_all | fs::perms::group_all | fs::perms::others_all,
+       fs::perm_options::replace
+   	);
   }
 
   return true;

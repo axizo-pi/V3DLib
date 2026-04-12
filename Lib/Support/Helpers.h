@@ -14,7 +14,6 @@ std::string load_file(std::string const &filename);
 
 std::string sudo();
 bool ensure_path_exists(std::string const &path);
-bool ensure_file_exists(std::string const &path);
 float random_float();
 void sleep(int sec);
 
