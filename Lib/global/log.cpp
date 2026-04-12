@@ -1,19 +1,16 @@
 /******************************************************************
+ * Version: 7 - Added rollover, improved file permissions
  * Version: 6 - restored log_to_cout()
  * Version: 5 - Added logging to file
  * Version: 4 - Added thrw flag, option to suppres console output
  * Version: 3 - Added hex flag
  ******************************************************************/
 #include "log.h"
-#include <stdexcept>
-#include <iostream>
-#include <cstdlib>            // abort()
-#include <time.h>             // strftime()
-//#include <sstream>            // std::stringstream
-#include <fstream>
-#include <filesystem>
 #include "Support/Helpers.h"
 #include "Support/basics.h"
+#include <iostream>
+#include <filesystem>
+#include <fstream>
 
 using namespace V3DLib;
 

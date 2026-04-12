@@ -1,10 +1,8 @@
 #include "support.h"
-#include <sys/time.h>
-#include <sstream>
-#include <algorithm>
-#include <iterator>
-#include <filesystem>  // exists()
 #include "Support/Helpers.h"
+#include <algorithm>
+#include <filesystem>
+#include <iterator>
 
 namespace fs = std::filesystem;
 using namespace V3DLib;
@@ -68,19 +66,19 @@ void match_kernel_outputs(
 
       INFO("Comparing assembly index: " << n << ", code length: " << received.size() <<
         "\nExpected: 0x" << std::hex << expected[n] 
-												 << " " << std::dec << Instr(expected[n]).dump() <<
+                         << " " << std::dec << Instr(expected[n]).dump() <<
         "\nReceived: 0x" << std::hex << received[n]
-												 << " " << std::dec << Instr(received[n]).dump()
+                         << " " << std::dec << Instr(received[n]).dump()
       );
 
       if(!Instr::compare_codes(expected[n], received[n])) {
-				// There are different binary representationsi possible of a given instructions.
-				// Double-check with string representation.
-				Instr exp(expected[n]);
-				Instr rec(received[n]);
-				bool equal = (exp.dump() == rec.dump());
-				REQUIRE(equal);
-			}
+        // There are different binary representationsi possible of a given instructions.
+        // Double-check with string representation.
+        Instr exp(expected[n]);
+        Instr rec(received[n]);
+        bool equal = (exp.dump() == rec.dump());
+        REQUIRE(equal);
+      }
     }
 }
 

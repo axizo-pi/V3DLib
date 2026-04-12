@@ -1,9 +1,6 @@
 #include "Instr.h"
-#include "Support/basics.h"   // fatal()
 #include "Support/Helpers.h"  // load_file_vec()
-#include "global/log.h"
 #include "dump_instr.h"
-#include <fstream>
 #include <filesystem>
 
 using namespace Log;
@@ -719,7 +716,7 @@ std::vector<std::string> opcodes(uint64_t const *data, int size) {
   fclose(f);
 
   // Load redirected file into ret
-	ret = load_file_vec(filename);
+  ret = load_file_vec(filename);
 
   std::remove(filename.c_str());
   return ret;

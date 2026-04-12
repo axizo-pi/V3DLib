@@ -1,8 +1,8 @@
 #include "ALUOp.h"
-#include <stdint.h>
-#include "Support/basics.h"
-#include "Support/Platform.h"
 #include "Source/Op.h"
+#include "global/log.h"
+#include "Support/Platform.h"
+#include <vector>
 
 using namespace Log;
 
@@ -141,7 +141,7 @@ std::string ALUOp::dump() const {
     case A_RSQRT:   return "rsqrt";
 
     default:
-      assertq(false, "ALUOp::dump(): Unknown ALU opcode", true);
+      assertq(false, "ALUOp::dump(): Unknown ALU opcode");
       return "";
   }
 }
@@ -179,7 +179,7 @@ uint8_t ALUOp::vc4_encodeAddOp() const {
     case A_V8ADDS:  return 30;
 
     default:
-      assertq("V3DLib: unknown add op", true);
+      assertq(false, "V3DLib: unknown add op");
       return 0;
   }
 }
@@ -202,7 +202,7 @@ uint8_t ALUOp::vc4_encodeMulOp() const {
     case M_V8SUBS: return 7;
 
     default:
-      fatal("V3DLib: unknown mul op");
+      assertq(false, "V3DLib: unknown mul op");
       return 0;
   }
 }

@@ -1,7 +1,6 @@
 #include "Helpers.h"
 #include "Support/basics.h"
 #include "Support/Platform.h"
-#include <chrono>
 #include <thread>
 #include <fstream>
 #include <filesystem>

@@ -13,9 +13,9 @@ int COUNT      = 48;
 int DummyCount = 20;
 
 struct Context {
-	Context() {
-  	Count = COUNT;
-	}
+  Context() {
+    Count = COUNT;
+  }
 
   Int Count;
 };
@@ -133,7 +133,7 @@ TEST_CASE("Test loop counter [loop]") {
     result.fill(-1);
 
     auto k = compile(loop_kernel);
-		//to_file("loop_kernel.txt", k.dump());
+    //to_file("loop_kernel.txt", k.dump());
     k.load(&result, &dummy).run();
 
     for (int i = 0; i < (int) result.size(); ++i) {

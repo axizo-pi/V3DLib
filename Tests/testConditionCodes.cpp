@@ -1,5 +1,5 @@
 //
-// Example(s) here adaptted from: https://github.com/Idein/py-videocore6/blob/master/tests/test_condition_codes.py
+// Example(s) here adapted from: https://github.com/Idein/py-videocore6/blob/master/tests/test_condition_codes.py
 //
 // TODO perhaps translate rest of tests
 //
@@ -29,12 +29,8 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 #ifdef QPU_MODE
-#include <iostream>
-#include <unistd.h>  // sleep()
 #include "support/support.h"
 #include "Support/pgm.h"
-#include "Support/Platform.h"
-#include "Support/Helpers.h"
 
 namespace {
 
@@ -69,14 +65,14 @@ Instructions qpu_cond_push_a() {
   };
 
   // r2 = ptr + index*4 
-	// This block up till for works
+  // This block up till for works
   ret << eidx(r0).ldunifrf(r5)
       << mov(r2, r5)
       << shl(r0, r0, 2)
       << add(r2, r2, r0)
       << mov(r1, 4)              // r1 = 64 (offset; mov(r1, 4, 4) won't work with vc7)
       << shl(r1, r1, 4)
-	;
+  ;
 
   for (int index = 0; index < 3; ++ index) {
     ret << eidx(r0);
@@ -85,7 +81,7 @@ Instructions qpu_cond_push_a() {
     set_cond_push(instr, index);
 
     ret << instr
-			  << mov(r0, 0);
+        << mov(r0, 0);
 
     instr = mov(r0, SmallImm(1));
     set_cond_if(instr, index);
@@ -104,7 +100,7 @@ Instructions qpu_cond_push_a() {
         << mov(tmua, r2)
         << tmuwt().add(r2, r2, r1);
   }
-	
+  
 
   ret << nop().thrsw()
       << nop().thrsw()
@@ -408,7 +404,7 @@ void check_pgm(std::string const &filename) {
 TEST_CASE("Test Where blocks [where][cond]") {
   int const NUM_TESTS = 7;
 
-	BaseSettings settings;
+  BaseSettings settings;
 
   Int::Array result(NUM_TESTS*VEC_SIZE);
 
@@ -416,17 +412,17 @@ TEST_CASE("Test Where blocks [where][cond]") {
   k1.load(&result).run();
   check_where_result(result);
 
-	// TODO:  compiling for vc4 on other platforms is messed up
+  // TODO:  compiling for vc4 on other platforms is messed up
   //        Need to fix compile-time kernel compile before enabling this
-	//warning("[where][cond] test emulator and interpreter");
+  //warning("[where][cond] test emulator and interpreter");
   reset(result);
-	settings.run_type = Emulator;
+  settings.run_type = Emulator;
   auto k2 = compile(where_kernel, settings);
   k2.load(&result).run();
   check_where_result(result);
 
   reset(result);
-	settings.run_type = Interpreter;
+  settings.run_type = Interpreter;
   auto k3 = compile(where_kernel, settings);
   k3.load(&result).run();
   check_where_result(result);

@@ -1,11 +1,8 @@
 #include "Satisfy.h"
-#include <assert.h>
-#include <stdio.h>
-#include "Support/Platform.h"
 #include "Target/instr/Mnemonics.h"
-#include "Liveness/UseDef.h"
-#include "Support/basics.h"
 #include "v3d/instr/SmallImm.h"  // float_to_opcode_value()
+#include "Support/Platform.h"
+#include "Support/basics.h"
 
 using namespace Log;
 using namespace V3DLib::Target::instr;

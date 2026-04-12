@@ -4,16 +4,14 @@
 ///////////////////////////////////////////////////////////////////////////////
 #ifndef _TEST_SUPPORT_SUPPORT_H
 #define _TEST_SUPPORT_SUPPORT_H
-#include <cstdio>
-#include <vector>
-#include <stdint.h>
 #include "../doctest.h"
-#include "Support/basics.h"
-#include "Source/Int.h"
 #include "Source/Float.h"
+#include "Support/basics.h"
+#include "v3d/BufferObject.h"
 #include "v3d/Driver.h"
 #include "v3d/instr/Mnemonics.h"
-#include "v3d/BufferObject.h"
+#include <string>
+#include <vector>
 
 
 void make_test_dir();

@@ -1,10 +1,8 @@
 #include "Platform.h"
-#include <sstream>
+#include "basics.h"
+#include <string.h>  // strstr()
 #include <fstream>
 #include <memory>
-#include <string.h>  // strstr()
-#include "defines.h"
-#include "basics.h"
 
 namespace V3DLib {
 
@@ -329,6 +327,7 @@ Tag tag() {
   else if (tmp == "piZ")    { tag = pi_zero; }
   else if (tmp == "pi4-64") { tag = pi4;     }
   else if (tmp == "pi5-64") { tag = pi5;     }
+  else if (tmp == "pi5")    { tag = pi5;     }
   else {
     warn << "Unknown pi_version: '" << tmp << "'" << thrw;
   }

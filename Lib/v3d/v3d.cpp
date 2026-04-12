@@ -9,15 +9,15 @@ using namespace Log;
 
 #define USE_MESA_BUFMGR 1
 
-#include "v3d.h"
-#include <sys/ioctl.h>
-#include <stdio.h>
-#include <fcntl.h>
-#include <cstring>    // errno, strerror()
+#if USE_MESA_BUFMGR == 0
 #include <sys/mman.h>
-#include <unistd.h>   // close(), sysconf()
-#include "string.h"  // strerror
+#endif
+
+#include "v3d.h"
 #include "Support/Platform.h"
+#include <sys/ioctl.h>
+#include <fcntl.h>
+#include <unistd.h>   // close(), sysconf()
 
 using namespace V3DLib;
 

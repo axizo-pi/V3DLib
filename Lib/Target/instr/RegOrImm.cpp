@@ -1,20 +1,12 @@
 #include "RegOrImm.h"
+#include "v3d/instr/SmallImm.h"
 #include "Support/basics.h"
 #include "Support/Platform.h"
-#include "Target/SmallLiteral.h"
-#include "Imm.h"
-#include "v3d/instr/SmallImm.h"
-
-using namespace Log;
 
 namespace V3DLib {
 
-RegOrImm::RegOrImm(Imm const &rhs) : m_is_reg(false), m_imm(rhs){
-  //   set_imm(rhs.encode_imm());
-}
-
-RegOrImm::RegOrImm(int rhs) : m_is_reg(false), m_imm(rhs){
-}
+RegOrImm::RegOrImm(Imm const &rhs) : m_is_reg(false), m_imm(rhs) {}
+RegOrImm::RegOrImm(int rhs) : m_is_reg(false), m_imm(rhs) {}
 
 RegOrImm::RegOrImm(Var const &rhs) { set_reg(rhs); }
 RegOrImm::RegOrImm(Reg const &rhs) { set_reg(rhs); }

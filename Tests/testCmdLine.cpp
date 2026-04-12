@@ -1,10 +1,8 @@
-#include <unistd.h>           // for geteuid()
-#include <sys/types.h>        // idem
-#include "Support/Platform.h"
-#include "Support/Helpers.h"  // load_file(), sudo()
 #include "support/support.h"  // running_on_v3d()
+#include "Support/Helpers.h"  // load_file(), sudo()
 #include "LibSettings.h"
 #include <iostream>
+#include <sys/types.h> 
 
 using namespace V3DLib;
 
@@ -32,28 +30,11 @@ void init_msg() {
 }
 
 
-/**
- * @return true if can run
- * /
-bool gcd_msg() {
-  if (!V3DLib::Platform::run_vc7()) return true;
-
-  static bool showed_msg = false;
-  if (!showed_msg) {
-    printf("NOTE: Skipping GCD in tests on vc7; Need to fix GCD first.\n");
-    showed_msg = true;
-  }
-
-  return false;
-}
-*/
-
-
 void check_output_run(
-	std::string const &program,
-	RunType run_type,
-	std::string const &extra_params,
-	bool show_output = false
+  std::string const &program,
+  RunType run_type,
+  std::string const &extra_params,
+  bool show_output = false
 ) {
   std::string params = "";
   std::string output_filename = test_path() + "/";
@@ -91,9 +72,9 @@ void check_output_run(
   INFO("Cmdline: " << cmdline);
   REQUIRE(!system(cmdline.c_str()));
 
-	if (show_output) {
-		std::cout << "\n" << V3DLib::load_file(output_filename);
-	}
+  if (show_output) {
+    std::cout << "\n" << V3DLib::load_file(output_filename);
+  }
 
   std::string diff_cmd = "diff " + output_filename + " " + expected_filename;
   INFO("diff command: " << diff_cmd);
@@ -117,16 +98,16 @@ void check_output_example(std::string const &program, std::string const &extra_p
 // Better would be to check if the first line is the same
 //
 TEST_CASE("Detect platform scripts should both return the same thing [cmdline]") {
-	// It is possible to compile QPU=0 on a Pi.
-	// In that case, the return values will be logically different; skip that case.
+  // It is possible to compile QPU=0 on a Pi.
+  // In that case, the return values will be logically different; skip that case.
 #ifdef QPU_MODE
-	const int cpp_expected = 0;
+  const int cpp_expected = 0;
 #else
-	const int cpp_expected = 256;
+  const int cpp_expected = 256;
 #endif
 
   init_msg();
-	std::string cmd;
+  std::string cmd;
   cmd << bin_path() << "/detectPlatform > /dev/null";
 
   int ret1 = system(cmd.c_str());
@@ -147,11 +128,7 @@ TEST_CASE("Check correct output example programs for all three run options [cmdl
   SUBCASE("Check output ReqRecv") { check_output_example("ReqRecv"); }
   SUBCASE("Check output ID")      { check_output_example("ID"); }
   SUBCASE("Check output Hello")   { check_output_example("Hello"); }
-
-  //if (gcd_msg()) {
-    SUBCASE("Check output GCD")     { check_output_example("GCD"); }
-  //}
-
+  SUBCASE("Check output GCD")     { check_output_example("GCD"); }
   SUBCASE("Check output Tri")     { check_output_example("Tri"); }
   SUBCASE("Check output OET")     { check_output_example("OET"); }
 }
@@ -166,9 +143,9 @@ TEST_CASE("Check correct output Rot3D [cmdline][rot3d]") {
   init_msg();
   make_test_dir();
 
-	std::string params = "-d -v=16 -rx=0.25";
+  std::string params = "-d -v=16 -rx=0.25";
 
-	check_output_run("Rot3D", QPU        , params);
+  check_output_run("Rot3D", QPU        , params);
   check_output_run("Rot3D", INTERPRETER, params);
   check_output_run("Rot3D", EMULATOR   , params);
 }
