@@ -37,7 +37,7 @@ int main(int argc, const char *argv[]) {
   V3DLib::LibSettings::use_high_precision_sincos(true);
 
   load_stl(settings.stl_file);
-   run_kernel(settings.kernel);
+  run_kernel(settings.kernel);
 
   return 0;
 }

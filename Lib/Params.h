@@ -7,121 +7,121 @@
 namespace V3DLib {
 
 inline std::size_t var_type(Float::Array2D const *p) {
-	return typeid(Float::Ptr).hash_code();
+  return typeid(Float::Ptr).hash_code();
 }
 
 inline uint32_t param_value(Float::Array2D const *p) {
-	return p->getAddress();
+  return p->getAddress();
 }
 
 inline std::size_t var_type(Float::Array const *p) {
-	return typeid(Float::Ptr).hash_code();
+  return typeid(Float::Ptr).hash_code();
 }
 
 inline uint32_t param_value(Float::Array const *p) {
-	return p->getAddress();
+  return p->getAddress();
 }
 
 inline std::size_t var_type(Int::Array const *p) {
-	return typeid(Int::Ptr).hash_code();
+  return typeid(Int::Ptr).hash_code();
 }
 
 inline uint32_t param_value(Int::Array const *p) {
-	return p->getAddress();
+  return p->getAddress();
 }
 
 inline std::size_t var_type(int p) {
-	return typeid(Int::Ptr).hash_code();
+  return typeid(Int::Ptr).hash_code();
 }
 
 inline uint32_t param_value(int p) {
-	return (uint32_t) p;
+  return (uint32_t) p;
 }
 
 inline uint32_t param_value(float p) {
   int32_t* bits = (int32_t*) &p;
-	return *bits;
+  return *bits;
 }
 
 inline std::size_t var_type(float p) {
-	return typeid(Float::Ptr).hash_code();
+  return typeid(Float::Ptr).hash_code();
 }
 
 inline bool ppassParam(IntList &uniforms, std::vector<std::size_t> &typelist, int index) {
-	if (index != (int) typelist.size()) {
-		Log::cerr << "Kernel load(): incorrect number of parameters. "
-						  << "expected: " << (int) typelist.size() << ", got: " << index;
-		return false;
-	}
+  if (index != (int) typelist.size()) {
+    Log::cerr << "Kernel load(): incorrect number of parameters. "
+              << "expected: " << (int) typelist.size() << ", got: " << index;
+    return false;
+  }
 
-	return true;
+  return true;
 }
 
 
 template <typename T> bool append(
-	IntList &uniforms,
-	std::vector<std::size_t> &typelist,
-	int &index,
-	T val
+  IntList &uniforms,
+  std::vector<std::size_t> &typelist,
+  int &index,
+  T val
 ) {
-	bool ret = true;
-	//Log::warn << "Here t2 " << index << ": " << (unsigned) var_type(val);
+  bool ret = true;
+  //Log::warn << "Here t2 " << index << ": " << (unsigned) var_type(val);
 
   int type_index = index;
   if (uniforms_reversed()) {
     type_index = (int) (typelist.size() - 1) - index;
   }
 
-	//Log::warn << "Here type " << type_index << ": " << (unsigned) typelist[type_index];
+  //Log::warn << "Here type " << type_index << ": " << (unsigned) typelist[type_index];
 
-	if (var_type(val) != typelist[type_index]) {
-		Log::cerr << "ERROR incorrect type for param at index " << index;
-		ret = false;
-	} else {
-		//Log::debug << "Param " << index << ": checks out.";
-	}
+  if (var_type(val) != typelist[type_index]) {
+    Log::cerr << "ERROR incorrect type for param at index " << index;
+    ret = false;
+  } else {
+    //Log::debug << "Param " << index << ": checks out.";
+  }
 
   uniforms.append(param_value(val));
-	++index;
-	return ret;
+  ++index;
+  return ret;
 }
 
 
 template <typename T, typename ...t> bool ppassParam(
-	IntList &uniforms,
-	std::vector<std::size_t> &typelist,
-	int index,
-	T val, t... x
+  IntList &uniforms,
+  std::vector<std::size_t> &typelist,
+  int index,
+  T val, t... x
 ) {
-	bool ret = append(uniforms, typelist, index, val);
+  bool ret = append(uniforms, typelist, index, val);
 
-	return ret & ppassParam(uniforms, typelist, index, x...);
+  return ret & ppassParam(uniforms, typelist, index, x...);
 }
 
 
 template <typename ...t> bool ppassParam(
-	IntList &uniforms,
-	std::vector<std::size_t> &typelist,
-	int index,
-	Complex::Array *val, t... x
+  IntList &uniforms,
+  std::vector<std::size_t> &typelist,
+  int index,
+  Complex::Array *val, t... x
 ) {
-	bool ret  = append(uniforms, typelist, index, &val->re());
-	     ret &= append(uniforms, typelist, index, &val->im());
+  bool ret  = append(uniforms, typelist, index, &val->re());
+       ret &= append(uniforms, typelist, index, &val->im());
 
-	return ret & ppassParam(uniforms, typelist, index, x...);
+  return ret & ppassParam(uniforms, typelist, index, x...);
 }
 
 
 template <typename ...t> bool ppassParam(
-	IntList &uniforms,
-	std::vector<std::size_t> &typelist,
-	int index,
-	Complex::Array2D *val, t... x
+  IntList &uniforms,
+  std::vector<std::size_t> &typelist,
+  int index,
+  Complex::Array2D *val, t... x
 ) {
-	bool ret  = append(uniforms, typelist, index, &val->re());
-	     ret &= append(uniforms, typelist, index, &val->im());
+  bool ret  = append(uniforms, typelist, index, &val->re());
+       ret &= append(uniforms, typelist, index, &val->im());
 
-	return ret & ppassParam(uniforms, typelist, index, x...);
+  return ret & ppassParam(uniforms, typelist, index, x...);
 }
 
 }  // namespace V3DLib

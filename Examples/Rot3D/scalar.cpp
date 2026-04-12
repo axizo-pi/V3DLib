@@ -1,9 +1,8 @@
 #include "scalar.h"
 #include "settings.h"
+#include "stlfile.h"
 #include "Support/Timer.h"
 #include "Kernels/Rot3D.h"
-#include <iostream>
-#include "stlfile.h"
 
 using namespace std;
 using namespace V3DLib;
@@ -30,6 +29,7 @@ struct ScalarData : public StlData {
   void yc(int index, float rhs) override { y[index] = rhs; }
   void zc(int index, float rhs) override { z[index] = rhs; }
 };
+
 
 ScalarData::ScalarData(int in_size) : StlData(in_size) {
   // size will change if an stl file is loaded

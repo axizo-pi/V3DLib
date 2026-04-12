@@ -1,9 +1,5 @@
 #ifndef _V3DLIB_KERNELS_MATRIX_H_
 #define _V3DLIB_KERNELS_MATRIX_H_
-#include <type_traits>
-#include "V3DLib.h"
-#include "Support/basics.h"
-#include "Support/Helpers.h"
 #include "ComplexDotVector.h"
 
 ////////////////////////////////////////////////////////////////////////////////

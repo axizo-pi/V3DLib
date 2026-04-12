@@ -26,7 +26,7 @@ CmdParameters params = {
     "Kernel",
     "-k=",
     kernel_id,
-    "Select the kernel to use"
+    "Select the kernel to use. If cpu selected, the -r option is ignored."
   }, {
     "Display Results",
     "-d",
@@ -43,28 +43,28 @@ CmdParameters params = {
     {"info"},
     ParamType::NONE,
     "Show extended information for this application, in particular the calculation used.\n"
-		"The actual computation will not run"
+    "The actual computation will not run"
   }, {
     "Rotate X",
     {"-rotate_x=", "-rx="},
     ParamType::FLOAT,
     "Rotate around the x-axis by the given angle.\n"
-		"The input value is a multiple of PI",
-		0.0f
+    "The input value is a multiple of PI",
+    0.0f
   }, {
     "Rotate Y",
     {"-rotate_y=", "-ry="},
     ParamType::FLOAT,
     "Rotate around the y-axis by the given angle.\n"
-		"The input value is a multiple of PI",
-		0.0f
+    "The input value is a multiple of PI",
+    0.0f
   }, {
     "Rotate Z",
     {"-rotate_z=", "-rz="},
     ParamType::FLOAT,
     "Rotate around the z-axis by the given angle.\n"
-		"The input value is a multiple of PI",
-		0.0f
+    "The input value is a multiple of PI",
+    0.0f
   }, {
     "Load STL File",
     "-load_stl=",
@@ -81,9 +81,9 @@ CmdParameters params = {
 
 
 void info() {
-	// Source: https://en.wikipedia.org/wiki/Rotation_matrix 
+  // Source: https://en.wikipedia.org/wiki/Rotation_matrix 
 
-	std::string msg = "\n"
+  std::string msg = "\n"
 "Additional Info\n"
 "===============\n"
 "\n"
@@ -103,21 +103,21 @@ void info() {
 "           |   1       0       0     |\n"
 "   Rx(θ) = |   0      cos(θ) -sin(θ) |\n"
 "           |   0      sin(θ)  cos(θ) |\n"
-"\n"	
+"\n"  
 "           |  cos(θ)   0      sin(θ) |\n"
 "   Ry(θ) = |   0       1       0     |\n"
 "           | -sin(θ)   0      cos(θ) |\n"
-"\n"	
+"\n"  
 "           |  cos(θ) -sin(θ)   0     |\n"
 "   Rz(θ) = |  sin(θ)  cos(θ)   0     |\n"
 "           |   0       0       1     |\n"
-"\n"	
+"\n"  
 "All three rotations can be specified simultaneously on the command line. "
-"The rotations are performed in the order of axes x, y, z.\n"	
-"\n"	
-	;
+"The rotations are performed in the order of axes x, y, z.\n"  
+"\n"  
+  ;
 
-	cout << msg;
+  cout << msg;
 }
 
 } // anon namespace
@@ -145,7 +145,7 @@ bool Rot3DSettings::init_params() {
     return false;
   }
 
-	if (show_info) info(); 
+  if (show_info) info(); 
 
   return true;
 }

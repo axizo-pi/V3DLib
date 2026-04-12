@@ -1,6 +1,6 @@
 #include "stlfile.h"
-#include "stl_int.h"
 #include "settings.h"
+#include "stl_int.h"
 #include "global/log.h"
 #include <vector>
 
