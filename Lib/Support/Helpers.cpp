@@ -1,9 +1,10 @@
 #include "Helpers.h"
 #include "Support/basics.h"
+#include "Support/Helpers.h"
 #include "Support/Platform.h"
+#include <filesystem>
 #include <thread>
 #include <fstream>
-#include <filesystem>
 
 namespace fs = std::filesystem; // Alias for brevity
 
@@ -42,18 +43,18 @@ bool ensure_path_exists(std::string const &path) {
 
   std::string cmd;
 
-	if (!fs::exists(path)) {
-		if (!fs::create_directories(path)) {
+  if (!fs::exists(path)) {
+    if (!fs::create_directories(path)) {
       cerr << "ensure_path_exists() creation of path '" << path << "' failed.";
       return false;
     }
 
-		// Change the file permissions to read/write
-		fs::permissions(
-			 path,
+    // Change the file permissions to read/write
+    fs::permissions(
+       path,
        fs::perms::owner_all | fs::perms::group_all | fs::perms::others_all,
        fs::perm_options::replace
-   	);
+     );
   }
 
   return true;
@@ -101,7 +102,7 @@ void to_file(std::string const &filename, std::string const &content) {
   //Log::warn << "content size: " << content.length();
 
   FILE *f = fopen(filename.c_str(), "w");
-	Log::assertq(f != nullptr, "to_file() could not open file " + filename);
+  Log::assertq(f != nullptr, "to_file() could not open file " + filename);
   fprintf(f, content.c_str());
   fclose(f);
 
@@ -109,30 +110,30 @@ void to_file(std::string const &filename, std::string const &content) {
 
 
 std::vector<std::string> load_file_vec(std::string const &filename) {
-	std::vector<std::string> ret;
+  std::vector<std::string> ret;
 
   std::ifstream file(filename);
   assert(file.is_open());
 
   // Read the file line by line into a string
-	std::string line;
+  std::string line;
   while (getline(file, line)) {
     ret << line;
   }
 
   file.close();
-	return ret;
+  return ret;
 }
 
 
 std::string load_file(std::string const &filename) {
-	std::string ret;
+  std::string ret;
 
-	for (auto const &line : load_file_vec(filename)) {
+  for (auto const &line : load_file_vec(filename)) {
     ret << line << "\n";
-	}
+  }
 
-	return ret;
+  return ret;
 }
 
 
@@ -230,9 +231,9 @@ bool uniforms_reversed() {
          << __GNUC_MINOR__ << "."
          << __GNUC_PATCHLEVEL__;
 
-  	if (__GNUC__ < 14) {
-    	warn << "No need to reverse the parameter indexes";
-		}
+    if (__GNUC__ < 14) {
+      warn << "No need to reverse the parameter indexes";
+    }
 
     showed_msg = true;
   }

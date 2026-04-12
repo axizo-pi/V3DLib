@@ -32,13 +32,6 @@ std::string bin_path()  { return BIN_PATH;  }
 std::string test_path() { return TEST_PATH; }
 
 
-double get_time() {
-  struct timeval t;
-  gettimeofday(&t, NULL);
-  return (double) t.tv_sec + ((double) t.tv_usec) * 1e-6;
-}
-
-
 /**
  * @param skip_nops  If true, don't compare nops in received output.
  *                   This indicates instructions which can't be generated to bytecode (yet)

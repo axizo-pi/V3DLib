@@ -1,8 +1,7 @@
 #include "support/support.h"  // running_on_v3d()
 #include "Support/Helpers.h"  // load_file(), sudo()
-#include "LibSettings.h"
+#include <unistd.h>          // geteuid(); include required for g++ 8.3.0 , not required for 12.2.0
 #include <iostream>
-#include <sys/types.h> 
 
 using namespace V3DLib;
 

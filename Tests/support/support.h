@@ -18,7 +18,6 @@ void make_test_dir();
 std::string bin_path();
 std::string test_path();
 
-double get_time();
 bool running_on_v3d();
 
 void match_kernel_outputs(

@@ -1,15 +1,8 @@
 #include "RegAlloc.h"
-#include <stdio.h>
-#include <iostream>
 #include "Support/basics.h"
-#include "Support/Timer.h"
-#include "Target/Subst.h"
 #include "Common/CompileData.h"
 
 namespace V3DLib {
-
-using ::operator<<;  // C++ weirdness
-
 namespace {
 
 /**
