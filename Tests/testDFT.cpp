@@ -494,6 +494,7 @@ TEST_CASE("Discrete Fourier Transform tmp [dft][dft2]") {
 
     //Timer timer1("DFT compile time");
     auto k = compile(kernels::dft_decorator(input, result));
+    to_file("dft_decorator_code.txt", k.dump());
     //timer1.end();
 
     k.load(&result, &input);

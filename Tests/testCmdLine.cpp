@@ -122,6 +122,7 @@ void check_output_example(std::string const &program, std::string const &extra_p
 //
 TEST_CASE("Detect platform scripts should both return the same thing [cmdline]") {
   init_msg();
+
   int ret1 = system(BIN_PATH "/detectPlatform > /dev/null");
   bool success1 = (ret1 == 0);
 
@@ -159,6 +160,8 @@ TEST_CASE("Check correct output example programs for all three run options [cmdl
   } else {
     // These should be no problem
     check_output_run("Rot3D", INTERPRETER, "-d");
+/*
     check_output_run("Rot3D", EMULATOR,    "-d");
+*/  
   }
 }

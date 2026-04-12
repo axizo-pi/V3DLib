@@ -26,7 +26,7 @@ CmdParameters params = {
     "Kernel",
     "-k=",
     kernel_id,
-    "Select the kernel to use"
+    "Select the kernel to use. If cpu selected, the -r option is ignored."
   }, {
     "Display Results",
     "-d",

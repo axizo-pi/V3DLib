@@ -56,7 +56,7 @@ void run_scalar_kernel() {
   int size = settings.num_vertices;
 	ScalarData data(size);
 	data.init();
-	data.disp(20);
+	data.disp(); //20);
 
   if (!settings.compile_only) {
     Timer timer;  // Time the run only
@@ -64,7 +64,7 @@ void run_scalar_kernel() {
     timer.end(!settings.silent);
   }
 
-	data.disp(20);
+	data.disp(); //20);
 
   if (settings.save_stl) {
 		stl_save_data(data, true);
