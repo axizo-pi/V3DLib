@@ -266,10 +266,11 @@ namespace scalar {
  * Source: https://stackoverflow.com/questions/18662261/fastest-implementation-of-sine-cosine-and-square-root-in-c-doesnt-need-to-b/28050328#28050328
  */
 float cos(float x_in, bool extra_precision) noexcept {
+  double x = x_in;
+	
   // setting to true in param overrides lib setting
   extra_precision |= LibSettings::use_high_precision_sincos();
 
-  double x = x_in;
 
   x -= .25 + std::floor(x + .25);
   x *= 16. * (std::abs(x) - .5);
@@ -299,16 +300,16 @@ float sin(float x_in, bool extra_precision) noexcept {
  * This circumvents the SFU cos() function.
  *
  * See header comment of scalar cos().
+ *
+ * Possible alternative: https://www.johndcook.com/blog/2021/03/21/simple-trig-approx/
  */
-FloatExpr cos(FloatExpr x_in, bool extra_precision) {
-  // setting to true in param overrides lib setting
-  extra_precision |= LibSettings::use_high_precision_sincos();
-
+FloatExpr cos_prev(FloatExpr x_in, bool extra_precision) {
   Float x = x_in;
 
   x -= 0.25f + functions::ffloor(x + 0.25f);  comment("Start cosine");
   x *= 16.0f * (fabs(x) - 0.5f);
 
+  extra_precision |= LibSettings::use_high_precision_sincos();
   if (extra_precision) {
     //Log::warn << "doing extra precision";
     x += 0.225f * x * (fabs(x) - 1.0f);
@@ -318,13 +319,65 @@ FloatExpr cos(FloatExpr x_in, bool extra_precision) {
 }
 
 
-FloatExpr sin(FloatExpr x_in, bool extra_precision) {
-  return cos(0.25f - x_in, extra_precision);
+/**
+ * @brief cosine for QPU using Taylor approximation.
+ *
+ * This is _much_ more precise than the previous functions `cos_prev()` (see above).  
+ * `vc4` has no cosine, hence an explicit implementation is needed.
+ *
+ * @param x_in angle in units of 2*M_PI. Hence `x_in = 0.5f` stands for 1M_PI`. 
+ *
+ * Source: https://www.numberanalytics.com/blog/ultimate-taylor-trigonometry-guide#series-for-sine-and-cosine
+ */
+FloatExpr cos(FloatExpr x_in) {
+	//Log::warn << "called cos() Taylor";
+
+	// Empirically determined interval for zero
+	Float ZERO_MIN = -1.26078e-06f; 
+	Float ZERO_MAX =  4.24525e-08f;
+
+  Float x = x_in;
+
+	// Normalize x to a value in the range [-0.5, 0.5]
+	Float tmp = x + 0.5f;
+	x = tmp - functions::ffloor(tmp) - 0.5f;
+
+	x = x * (float) (2.0f * M_PI);  comment("Start Taylor");
+
+	Float x_sqr      = x*x;
+	Float divisor    = 1;
+	int   iterations = 8;           // Smallest value that passes all unit tests
+
+	Float ret         = 1.0f;
+	Float coefficient = 1.0f;       comment("Start Loop");
+
+	for (int i = 0; i < iterations; ++i) {
+		divisor     *= 1.0f/((float) ((2*i + 1)*(2*i + 2)));
+		coefficient *= x_sqr;
+		 
+		if (i % 2 == 0) {
+			ret	-= coefficient*divisor;
+		} else {
+			ret	+= coefficient*divisor;
+		}
+	}
+
+	// Adjust very small values to zero
+	Where (ZERO_MIN < ret && ret < ZERO_MAX)
+		ret = 0.0f;
+	End
+
+  return ret;
+}
+
+
+FloatExpr sin(FloatExpr x_in) {
+  return functions::cos(0.25f - x_in);
 }
 
 
 /**
- * Calculate sine for v3d using  hardware
+ * Calculate sine for v3d using hardware
  * 
  * Use this for v3d only.
  *

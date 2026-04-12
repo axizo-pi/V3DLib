@@ -87,8 +87,8 @@ void output_dft(Complex::Array2D &input, Complex::Array2D &result, char const *f
       real_input[c] = input[0][c].re();
     }
 
-    std::string filename = "obj/test/";
-    filename << file_prefix << "_input.pgm";
+    std::string filename = test_path();
+    filename << "/" << file_prefix << "_input.pgm";
 
     PGM pgm(Dim, 100);
     pgm.plot(real_input, Dim)
@@ -101,8 +101,8 @@ void output_dft(Complex::Array2D &input, Complex::Array2D &result, char const *f
       real_result[c] = result[0][c].magnitude();
     }
 
-    std::string filename = "obj/test/";
-    filename << file_prefix << "_result.pgm";
+    std::string filename = test_path();
+    filename << "/" << file_prefix << "_result.pgm";
 
     PGM pgm(Dim, 100);
     pgm.plot(real_result, Dim)
@@ -371,6 +371,7 @@ bool compare_dfts(int Dim, bool do_profiling) {
 
 
 TEST_CASE("Discrete Fourier Transform [dft]") {
+	make_test_dir();
 
   /**
    * Check out how DFT with a matrix looks like
@@ -382,7 +383,6 @@ TEST_CASE("Discrete Fourier Transform [dft]") {
 
     Complex::Array2D dft_matrix(Dim);
     create_dft_matrix(dft_matrix, true);  // Setting high_precision = false fails the test miserably
-    //std::cout << dft_matrix.dump();
 
     // Tranpose should be equal to self
     for (int r = 0; r < Dim; ++r) {
@@ -409,7 +409,6 @@ TEST_CASE("Discrete Fourier Transform [dft]") {
     k.load(&result, &dft_conjugate, &dft_matrix).run();
 
     float const precision2 = 2e-2f;
-
 
     for (int r = 0; r < Dim; ++r) {
       for (int c = 0; c < Dim; ++c) {
@@ -445,9 +444,11 @@ TEST_CASE("Discrete Fourier Transform [dft]") {
     {
       Complex::Array2D result_tmp;  // Will be Dimx16, columns padded to 16 and only 1st relevant
       auto k = compile(kernels::matrix_mult_decorator(dft_matrix, input, result_tmp));
-      to_file("obj/test/matrix_mul_decorator.txt", k.dump());
 
-      //std::cout << "result dimensions: (" << result_tmp.rows() << ", " << result_tmp.columns() << ")" << std::endl;
+      std::string filename;
+      filename << test_path() << "/matrix_mul_decorator.txt";
+      //Log::warn << "filename: " << filename;
+      to_file(filename, k.dump());
 
       k.setNumQPUs(8);  // Running with multi-QPU gives very limited performance improvement
       result.fill({-1, -1});
@@ -466,7 +467,7 @@ TEST_CASE("Discrete Fourier Transform [dft]") {
 
     {
       auto k = compile(kernels::matrix_mult_decorator(input, dft_matrix, result_switched));
-      to_file("obj/test/matrix_mul_decorator_switched.txt", k.dump());
+      to_file(test_path() + "/matrix_mul_decorator_switched.txt", k.dump());
 
       k.setNumQPUs(8);  // Running with multi-QPU gives very limited performance improvement
       k.load(&result_switched, &input, &dft_matrix).run();

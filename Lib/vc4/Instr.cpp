@@ -1,11 +1,14 @@
 #include "Instr.h"
-#include "Support/basics.h"  // fatal()
+#include "Support/basics.h"   // fatal()
+#include "Support/Helpers.h"  // load_file_vec()
 #include "global/log.h"
 #include "dump_instr.h"
 #include <fstream>
+#include <filesystem>
 
 using namespace Log;
 using namespace std;
+namespace fs = std::filesystem; // Alias for brevity
 
 namespace V3DLib {
 namespace vc4 {
@@ -701,7 +704,9 @@ std::vector<std::string> opcodes(uint64_t const *data, int size) {
     return ret;
   }
 
-  std::string filename = "vc4_code_tmp.txt";
+  std::string filename;
+  filename << fs::temp_directory_path() << "/vc4_code_tmp.txt";
+  //warn << "opcodes() filename: " << filename;
 
   //
   // dump_instr() is redirected to a file, make it first
@@ -714,16 +719,9 @@ std::vector<std::string> opcodes(uint64_t const *data, int size) {
   fclose(f);
 
   // Load redirected file into ret
-  std::ifstream file(filename);
-  assert(file.is_open());
+	ret = load_file_vec(filename);
 
-  // Read the file line by line into a string
-  string line;
-  while (getline(file, line)) {
-    ret << line;
-  }
-
-  file.close();
+  std::remove(filename.c_str());
   return ret;
 }
 

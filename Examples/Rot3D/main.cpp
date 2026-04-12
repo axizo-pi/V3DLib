@@ -2,6 +2,7 @@
 #include "scalar.h"
 #include "kernel.h"
 #include "stlfile.h"
+#include "LibSettings.h"
 
 using namespace std;
 using namespace kernels;
@@ -33,6 +34,7 @@ void run_kernel(int kernel_index) {
 int main(int argc, const char *argv[]) {
   settings.init(argc, argv);
 	if (settings.show_info) return 0;
+	V3DLib::LibSettings::use_high_precision_sincos(true);
 
 	load_stl(settings.stl_file);
  	run_kernel(settings.kernel);

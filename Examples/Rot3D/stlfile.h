@@ -15,7 +15,7 @@ struct StlData {
 
 	int size() const { return m_size; }
 	void init();
-	void disp(int show_number = -1) const;
+	void disp(std::string const &label = "", int show_number = -1) const;
 	void init_v(int index, float in_x, float in_y, float in_z);
 
 private:	

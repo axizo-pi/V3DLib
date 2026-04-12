@@ -15,6 +15,11 @@
 #include "v3d/instr/Mnemonics.h"
 #include "v3d/BufferObject.h"
 
+
+void make_test_dir();
+std::string bin_path();
+std::string test_path();
+
 double get_time();
 bool running_on_v3d();
 
@@ -99,8 +104,6 @@ void dump_array(V3DLib::Int::Array const &a, int linesize = -1);
 
 
 extern const char *SUDO;
-
-void make_test_dir();
 
 std::string condense_whitespace(std::string str);
 

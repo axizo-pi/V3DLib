@@ -271,7 +271,7 @@ void use_main_memory(bool val) {
   assertq(instance().m_use_main_memory, "Should only use main memory for emulator and interpreter", true);
 
   if (!val) {
-    warning("use_main_memory(): ignoring passed value 'false', because QPU mode is disabled");
+    cdebug << "use_main_memory(): ignoring passed value 'false', because QPU mode is disabled";
   }
 #endif
 }

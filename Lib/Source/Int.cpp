@@ -30,7 +30,7 @@ Int::Int(IntExpr e) {
 }
 
 Int::Int(Int const &x) {
-  Log::warn << "Int ctor int const";
+  //Log::warn << "Int ctor int const";
   assign_intern(x.expr());
 }
 
