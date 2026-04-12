@@ -326,6 +326,7 @@ Tag tag() {
   else if (tmp == "pi3")    { tag = pi3;     }
   else if (tmp == "piZ")    { tag = pi_zero; }
   else if (tmp == "pi4-64") { tag = pi4;     }
+  else if (tmp == "pi4")    { tag = pi4;     }
   else if (tmp == "pi5-64") { tag = pi5;     }
   else if (tmp == "pi5")    { tag = pi5;     }
   else {
