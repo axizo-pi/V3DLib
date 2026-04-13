@@ -55,14 +55,14 @@ I have about 14 Pi's foraging around here, which I intend to cluster.
 
 Unit tests are run regularly on the following Pi versions:
 
-| Pi   | Version         | 32/64bits | Debian distro | GPU | Model Number | Revision |
-| ---- | --------------- | --------- | ------------- | --- | ------------ | -------- |
-| Pi5  | Model B Rev 1.0 | 64        | 12 (bookworm) | vc7 | BCM2835      | c04170   |
-| Pi4  | Model B Rev 1.1 | 64        | 12 (bookworm) | vc6 | BCM2711      | b03111   |
-| Zero | W Rev 1.1       | 32        | 12 (bookworm) | vc4 | BCM2835      | 9000c1   |
-| Pi3  | Model B Rev 1.2 | 32        | 10 (buster)   | vc4 | BCM2837      | a02082   |
-| Pi2  | Model B Rev 1.1 | 32        | 12 (bookworm) | vc4 | BCM2836      | a01041   |
-| Pi1  | Model B Rev 2   | 32        | 12 (bookworm) | vc4 | BCM2835      | 000e     |
+| Pi   | Version         | 32/64bits | Debian distro | Memory | GPU | Model Number | Revision |
+| ---- | --------------- | --------- | ------------- | ------ | --- | ------------ | -------- |
+| Pi5  | Model B Rev 1.0 | 64        | 12 (bookworm) | 4GB    | vc7 | BCM2835      | c04170   |
+| Pi4  | Model B Rev 1.1 | 64        | 12 (bookworm) | 2GB    | vc6 | BCM2711      | b03111   |
+| Zero | W Rev 1.1       | 32        | 12 (bookworm) | 0.5GB  | vc4 | BCM2835      | 9000c1   |
+| Pi3  | Model B Rev 1.2 | 32        | 10 (buster)   | 1GB    | vc4 | BCM2837      | a02082   |
+| Pi2  | Model B Rev 1.1 | 32        | 12 (bookworm) | 1GB    | vc4 | BCM2836      | a01041   |
+| Pi1  | Model B Rev 2   | 32        | 12 (bookworm) | 0.5GB  | vc4 | BCM2835      | 000e     |
 
 
 The notable omissions in this list:
