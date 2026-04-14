@@ -2,9 +2,9 @@
 #define _V3DLIB_COMMON_BUFFEROBJECT_H_
 // This is the very first include file of the library to be compiled,
 // therefore a great place for global includes.
-#include <stdint.h>
 #include "defines.h"
 #include "Support/HeapManager.h"
+#include <stdint.h>
 
 
 namespace V3DLib {

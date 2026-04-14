@@ -20,8 +20,8 @@
 
 
 int main(int argc, char** argv) {
-	Log::set_log_dir("log");
-	Log::set_log_file("unit_tests.log");
+  Log::set_log_dir("log");
+  Log::set_log_file("unit_tests.log");
 
   doctest::Context context;
   context.applyCommandLine(argc, argv);
