@@ -17,7 +17,6 @@ namespace fs = std::filesystem; // Alias for brevity
 
 using namespace std::this_thread; // sleep_for, sleep_until
 using namespace std::chrono;      // nanoseconds, system_clock, seconds
-using namespace Log;
 
 namespace V3DLib {
 

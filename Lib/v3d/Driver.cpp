@@ -39,10 +39,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 #include "Driver.h"
 #include "v3d.h"
-#include <algorithm>  // find()
 #include "LibSettings.h"
-
-using namespace Log;
+#include <algorithm>  // find()
 
 namespace V3DLib {
 namespace v3d {

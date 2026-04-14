@@ -5,10 +5,12 @@
 #include "Exception.h"
 #include <vector>
 
+using namespace Log;
+
 namespace V3DLib {
 
 /**
- * Terminate the application ASAP
+ * @brief Terminate the application
  *
  * This happens by throwing an exception, rather than abruptly closing with `exit()` or `abort()`.
  * This allows the stack to unwind and all objects clean up behind them, also the global objects.

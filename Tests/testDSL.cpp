@@ -1077,7 +1077,8 @@ TEST_CASE("Test issues [dsl][issues]") {
    * Anything more elaborate, forget it. I've racked my brain on this, there is no salvation.
    */
   SUBCASE("Check init self issue") {
-    log_to_cout(false);
+    ::log_to_cout(false);
+    Log::log_to_cout(false);
 
     {
       auto k = compile(init_self_1_kernel);
@@ -1094,7 +1095,8 @@ TEST_CASE("Test issues [dsl][issues]") {
       REQUIRE(k.has_errors());
     }
 
-    log_to_cout(true);
+    ::log_to_cout(true);
+    Log::log_to_cout(true);
   }
 
   Platform::use_main_memory(false);
@@ -1158,7 +1160,8 @@ TEST_CASE("Test issues [dsl][block]") {
   int const N = 1;
 
   Platform::use_main_memory(true);
-  log_to_cout(false);
+  ::log_to_cout(false);
+  Log::log_to_cout(false);
 
   Int::Array result(16*N);
   result.fill(-1);
@@ -1187,7 +1190,8 @@ TEST_CASE("Test issues [dsl][block]") {
     REQUIRE(k.has_errors());
   }
 
-  log_to_cout(true);
+  ::log_to_cout(true);
+  Log::log_to_cout(true);
   Platform::use_main_memory(false);
 }
 

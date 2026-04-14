@@ -3,12 +3,12 @@
 #include <memory>
 #include <functional>
 #include <utility>
-#include "Support/debug.h"
+#include "global/log.h"
 
 namespace V3DLib {
 
 /**
- * TODO: Perhaps replace this with `Seq` as underlying base class
+ * @brief Local stack implementation
  */
 template <typename T> class Stack {
 protected:

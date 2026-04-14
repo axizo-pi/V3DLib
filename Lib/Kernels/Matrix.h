@@ -484,10 +484,8 @@ public:
       // First call doesn't need to get the result values for addition; they are zero anyway
       load(m_k_first, 0);
       k_first_call();
-      //debug(m_result.dump());
 
       if (num_blocks() == 2) {
-        //debug("Calling second block");
         auto &settings = kernels::get_matrix_settings();
         int offset = settings.width();
         load(m_k, offset);
@@ -564,10 +562,9 @@ protected:
       // Kernel already compiled. Don't recompile if nothing changed
       if (settings.num_blocks() == num_blocks()
        && settings.use_multi_kernel_calls == use_multi_kernel_calls(call_type)) {
-        //debug("Unchanged block");
         return;
       }
-      debug("Recompiling block");
+      cdebug << "Recompiling block";
     }
 
     settings.num_blocks(num_blocks());

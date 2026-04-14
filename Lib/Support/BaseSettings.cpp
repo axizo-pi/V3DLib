@@ -1,6 +1,5 @@
 #include "BaseSettings.h"
 #include "Kernel.h"
-#include "debug.h"
 #include "Helpers.h"
 
 #ifdef QPU_MODE
@@ -8,8 +7,6 @@
 #include "vc4/PerformanceCounters.h"
 #include "v3d/PerformanceCounters.h"
 #endif  // QPU_MODE
-
-using namespace Log;
 
 namespace V3DLib {
 

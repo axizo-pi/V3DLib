@@ -10,8 +10,6 @@
 #include <cstring>
 #include <memory>
 
-using namespace Log;
-
 namespace V3DLib {
 namespace {
 

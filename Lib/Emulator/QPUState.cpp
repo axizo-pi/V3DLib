@@ -3,8 +3,6 @@
 
 namespace V3DLib {
 
-using namespace Log;
-
 /**
  * @return true if input handled, false otherwise
  */
@@ -23,7 +21,7 @@ bool SFU::writeReg(Reg dest, Vec v) {
   }
 
   if (handled) {
-    assertq(timer == -1, "SFU is running on SFU function call", true);
+    assertq(timer == -1, "SFU is running on SFU function call");
     timer = 3;
   }
 

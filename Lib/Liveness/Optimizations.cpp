@@ -5,10 +5,7 @@
 #include "Target/Subst.h"
 #include "Support/Timer.h"
 #include "Support/basics.h"
-#include "global/log.h"
 #include "Support/Helpers.h"  // contains()
-
-using namespace Log;
 
 namespace V3DLib {
 

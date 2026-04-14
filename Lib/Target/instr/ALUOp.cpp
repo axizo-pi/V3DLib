@@ -1,10 +1,8 @@
 #include "ALUOp.h"
 #include "Source/Op.h"
-#include "global/log.h"
 #include "Support/Platform.h"
+#include "Support/basics.h"
 #include <vector>
-
-using namespace Log;
 
 namespace V3DLib {
 namespace {

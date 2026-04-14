@@ -1,11 +1,8 @@
 #include "VPMArray.h"
 #include "Operations.h"
 #include "Source/Functions.h"  // nop(int)
-#include "global/log.h"
 
 namespace V3DLib {
-
-using namespace Log;
 
 /**
  * ==================================================

@@ -50,7 +50,7 @@ Expr::Expr(Ptr in_lhs, Op const &op, Ptr in_rhs) {
 
 
 Var Expr::var() const {
-  assertq(m_tag == VAR, "Expr is not a VAR, shouldn't access var member.", true);
+  assertq(m_tag == VAR, "Expr is not a VAR, shouldn't access var member.");
   return m_var;
 }
 
@@ -120,7 +120,7 @@ std::string Expr::dump() const {
     case APPLY:     ret << "Apply: " << disp_apply();        break;
     case DEREF:     ret << "Deref: " << deref_ptr()->dump(); break;
     default:
-      assertq(false, "Invalid tag for Expr", true);
+      assertq("Invalid tag for Expr");
     break;
   }
 

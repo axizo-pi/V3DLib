@@ -3,9 +3,6 @@
 #include "Mnemonics.h"
 #include "Support/Platform.h"
 #include "Support/basics.h"
-#include "global/log.h"
-
-using namespace Log;
 
 namespace V3DLib {
 
@@ -79,7 +76,7 @@ void check_unhandled_registers(Reg reg, bool do_src_regs) {
         case SPECIAL_ELEM_NUM:
         case SPECIAL_QPU_NUM:
           // These can occur for vc7
-          assertq(Platform::compiling_for_vc7(), "check_unhandled_registers(): Not expecting this SPECIAL regId, should be handled before call()", true);
+          assertq(Platform::compiling_for_vc7(), "check_unhandled_registers(): Not expecting this SPECIAL regId, should be handled before call()");
         break;
 
         default: break;
@@ -200,7 +197,7 @@ std::unique_ptr<Location> encodeDestReg(V3DLib::Instr const &src_instr) {
         case SPECIAL_SFU_LOG      : ret = loc_ptr(log);   break;
 
         default:
-          assertq(false, "encodeDestReg(): not expecting reg tag", true);
+          assertq("encodeDestReg(): not expecting reg tag");
           break;
       }
       break;
@@ -233,7 +230,7 @@ std::unique_ptr<Location> encodeDestReg(V3DLib::Instr const &src_instr) {
     break;
 
     default:
-      assertq(false, "V3DLib: unexpected reg tag in encodeDestReg()");
+      assertq("V3DLib: unexpected reg tag in encodeDestReg()");
   }
 
   if (ret.get() == nullptr && !is_none) {

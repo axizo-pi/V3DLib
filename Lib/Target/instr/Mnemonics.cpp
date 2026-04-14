@@ -1,7 +1,6 @@
 #include "Mnemonics.h"
 #include "Support/basics.h"
 #include "Support/Platform.h"
-#include "global/log.h"
 #include <memory>
 
 /** \file 
@@ -15,8 +14,6 @@
  * - Raise the level of abstraction on the Target-level
  * - Create program snippets on the Target-level
  */
-
-using namespace Log;
 
 namespace V3DLib {
 

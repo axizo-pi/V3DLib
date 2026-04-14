@@ -55,7 +55,7 @@ void allocate_registers(Instr &instr, RegUsage const &alloc) {
         << "Registers: " << out.dump() << ", "
         << "Reg id : " << r << ", alloc value: " << replace_with.dump();
 
-    error(msg, true);  // true: throw if there is an error
+    cerr << msg << thrw;
 
     return false;
   };

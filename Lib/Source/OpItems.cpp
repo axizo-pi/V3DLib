@@ -148,9 +148,9 @@ Enum opcode(Op const &op) {
 
   if (item == nullptr) {
     if (op.type == BaseType::FLOAT) {
-      assertq(false, "opcode(): Unhandled op for float", true);
+      assertq(false, "opcode(): Unhandled op for float");
     } else {
-      assertq(false, "opcode(): Unhandled op for int", true);
+      assertq(false, "opcode(): Unhandled op for int");
     }
     return Enum::NOP;
   }
@@ -159,7 +159,7 @@ Enum opcode(Op const &op) {
     if (Platform::compiling_for_vc4()) {
       std::string msg;
       msg << "opcode(): " << item->dump() << " is only for v3d";
-      assertq(false, msg, true);
+      assertq(msg);
     }
   }
 

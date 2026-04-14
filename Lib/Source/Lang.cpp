@@ -1,10 +1,7 @@
 #include "Lang.h"
-#include <stdio.h>
 #include "Source/Int.h"
 #include "StmtStack.h"
-#include "global/log.h"
-
-using namespace Log;
+#include <stdio.h>
 
 namespace V3DLib {
 namespace {

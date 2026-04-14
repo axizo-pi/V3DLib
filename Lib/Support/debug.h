@@ -48,6 +48,7 @@ inline void error(std::string const &msg, bool do_throw = false) { ::error(msg.c
 
 void set_loglevel(LogLevel level);
 void log_to_cout(bool val);
+/*
 void assertq(bool cond, const char *msg, bool do_break = false);
 
 inline void assertq(bool cond, std::string const &msg, bool do_break = false) {
@@ -55,5 +56,6 @@ inline void assertq(bool cond, std::string const &msg, bool do_break = false) {
 }
 
 inline void assertq(std::string const &msg, bool do_break = false) { assertq(false, msg, do_break); }
+*/
 
 #endif  // _V3DLIB_SUPPORT_DEBUG_H

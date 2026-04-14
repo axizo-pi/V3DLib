@@ -9,8 +9,6 @@
  * Helper functions for running the emulator.
  */
 
-using namespace Log;
-
 namespace V3DLib {
 namespace {
 

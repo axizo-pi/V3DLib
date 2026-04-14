@@ -1,9 +1,6 @@
 #include "bmp.h"
 #include <cassert>
 #include <cstdio>
-#include "global/log.h"
-
-using namespace Log;
 
 Image::Image(int width, int height) : m_width(width), m_height(height), m_img(width, height) {
   assert(width > 0);

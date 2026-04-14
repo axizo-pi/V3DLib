@@ -25,6 +25,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include "Mailbox.h"
+#include "Support/basics.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -34,12 +35,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdint.h>
 #include <sys/mman.h>
 #include <sys/ioctl.h>
-#include "Support/basics.h"  // fatal()
 #include <cstring>           // strerror()
 
 #define PAGE_SIZE (4*1024)
-
-using namespace Log;
 
 namespace V3DLib {
 

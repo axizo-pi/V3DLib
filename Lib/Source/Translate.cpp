@@ -6,8 +6,6 @@
 #include "Target/instr/Mnemonics.h"
 #include "Support/basics.h"
 
-using namespace Log;
-
 namespace V3DLib {
 
 using ::operator<<;  // C++ weirdness
@@ -471,7 +469,7 @@ Instr::List whereStmt(Stmt::Ptr s, Var condVar, AssignCond cond, bool saveRestor
     return ret;
   }
 
-  assertq(false, "V3DLib: only assignments and nested 'where' statements can occur in a 'where' statement", true);
+  assertq("V3DLib: only assignments and nested 'where' statements can occur in a 'where' statement");
   return ret;
 }
 
@@ -760,7 +758,7 @@ Instr::List varAssign(AssignCond cond, Var v, Expr::Ptr expr) {
       ret << getSourceTranslate().load_var(v, e);
       break;
     default:
-      assertq(false, "This case should not be reachable");
+      assertq("This case should not be reachable");
       break;
   }
 

@@ -1,14 +1,11 @@
 #ifdef QPU_MODE
 
 #include "BufferObject.h"
-#include <memory>
 #include "Support/basics.h"
 #include "Support/Platform.h"  // has_vc4() 
 #include "v3d.h"
 #include "LibSettings.h"
-#include "global/log.h"
-
-using namespace Log;
+#include <memory>
 
 namespace V3DLib {
 namespace v3d {
@@ -25,7 +22,7 @@ void BufferObject::alloc_mem(uint32_t size_in_bytes) {
   uint32_t phy_addr = 0;
 
   if (!::v3d::alloc(size_in_bytes, handle, phy_addr, &tmp_addr)) {
-    assertq(false, "Failed to allocate v3d shared memory");
+    assertq("Failed to allocate v3d shared memory");
   }
   arm_base = (uint8_t *) tmp_addr;
 
@@ -128,7 +125,7 @@ BufferObject &BufferObject::getHeap() {
 uint32_t &BufferObject::operator[] (int i) {
   assert(i >= 0);
   assert(size() > 0);
-  assertq(sizeof(uint32_t) * i < size(), "Index out of range", true);
+  assertq(sizeof(uint32_t) * i < size(), "Index out of range");
 
   uint32_t *base = (uint32_t *) arm_base;
   return (uint32_t&) base[i];

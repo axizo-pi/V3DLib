@@ -57,7 +57,7 @@ int matrix_settings::cols_result() const { return adjust_dimension(columns, 16);
 
 
 int matrix_settings::num_blocks() const {
-  assertq(m_num_blocks == 1 || m_num_blocks == 2, "Num blocks can only be 1 or 2", true);
+  assertq(m_num_blocks == 1 || m_num_blocks == 2, "Num blocks can only be 1 or 2");
   return m_num_blocks;
 }
 

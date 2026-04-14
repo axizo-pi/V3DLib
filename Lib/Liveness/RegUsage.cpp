@@ -94,7 +94,7 @@ std::string RegUsageItem::dump() const {
 
 
 void RegUsageItem::add_dst(int n, bool is_cond_assign) {
-  assertq(use_dst.empty() || use_dst.back() < n, "RegUsageItem::add_dst() failed", true);
+  assertq(use_dst.empty() || use_dst.back() < n, "RegUsageItem::add_dst() failed");
 /*
   // See disabled code where this is used
 
@@ -155,7 +155,7 @@ int RegUsageItem::use_range() const {
   //
 
   // determine first write before src usage (there might be a dummy write before
-  assertq(src_range.first() != -1, "oops", true);
+  assertq(src_range.first() != -1, "oops");
   int first_write = -1;
   for (auto dst : use_dst) {
     if (dst >= src_range.first()) break;  // >= because instr can have reg as src as well as dst (eg. add src, src, 1)
@@ -376,7 +376,7 @@ void RegUsage::check() const {
     }
     prefix << ":\n";
 
-    error(prefix + ret, true);
+    cerr << (prefix + ret) << thrw;
   } 
 }
 
@@ -459,7 +459,7 @@ void RegUsage::check_overlap_usage(Reg acc, RegUsageItem const &item) const {
     auto const &cur = (*this)[i];
     if (cur.reg != acc) continue;
 
-    assertq(!cur.use_overlaps(item), "Detected conflicting usage of replacement acc", true);
+    assertq(!cur.use_overlaps(item), "Detected conflicting usage of replacement acc");
   }
 }
 

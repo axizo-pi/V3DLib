@@ -9,9 +9,6 @@
 #include "RegAlloc.h"
 #include "Instr.h"
 #include "LibSettings.h"
-#include "global/log.h"
-
-using namespace Log;
 
 namespace V3DLib {
 

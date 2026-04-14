@@ -5,8 +5,6 @@
 #include "Emulator/Interpreter.h"  // interpreter()
 #include "Emulator/Emulator.h"     // emulate()
 
-using namespace Log;
-
 namespace V3DLib {
 
 using ::operator<<;  // C++ weirdness
@@ -107,7 +105,7 @@ void BaseKernel::run(bool wait_complete) {
     } else {
        if (!m_settings.compile_only && (m_settings.run_type == QPU)) {
         warn << "Main memory selected in QPU mode, running on emulator instead of QPU.";
-      	m_settings.run_type = Emulator;
+        m_settings.run_type = Emulator;
       }
     }
   }

@@ -3,7 +3,6 @@
 #include "dump_instr.h"
 #include <filesystem>
 
-using namespace Log;
 using namespace std;
 namespace fs = std::filesystem; // Alias for brevity
 
@@ -53,7 +52,7 @@ void encode_operands(vc4::Instr &instr, RegOrImm const &srcA, RegOrImm const &sr
   } else if (srcA.is_imm() || srcB.is_imm()) {
     if (srcA.is_imm() && srcB.is_imm()) {
       assertq(srcA.imm() == srcB.imm(),
-        "srcA and srcB can not both be immediates with different values", true);
+        "srcA and srcB can not both be immediates with different values");
 
       raddr_b = srcA.encode();  // srcB is the same
       muxa   = vc4::Instr::MUX_B;

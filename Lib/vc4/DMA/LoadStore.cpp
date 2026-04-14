@@ -1,5 +1,4 @@
 #include "LoadStore.h"
-#include "Support/debug.h" 
 #include "Source/Translate.h"
 #include "Target/instr/Mnemonics.h"
 #include "Helpers.h"
@@ -8,7 +7,6 @@ namespace V3DLib {
 namespace DMA {
 
 using namespace V3DLib::Target::instr;
-using namespace Log;
 
 namespace {
 

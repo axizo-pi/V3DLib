@@ -256,7 +256,7 @@ bool Settings::process() {
   V3DLib::LibSettings::heap_size(heap_mem << 20);
 
   if (silent) {
-    log_to_cout(false);      // Needs to be before debug that follows
+    ::log_to_cout(false);      // Needs to be before debug that follows
     Log::log_to_cout(false);
   }
 

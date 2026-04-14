@@ -102,7 +102,7 @@ void LiveSets::dump_possible(std::vector<bool> &possible, int index) {
   for (int j = 0; j < (int) possible.size(); j++) {
     buf << (possible[j]?"1":"0");
   }
-  debug(buf.c_str());
+  cdebug << buf;
 }
 
 
@@ -117,7 +117,7 @@ RegId LiveSets::choose_register(std::vector<bool> &possible, bool check_limit) {
     if (possible[j]) { chosenA = j; break; }
 
   if (check_limit && chosenA < 0) {
-    error("LiveSets::choose_register(): register allocation failed, insufficient capacity", true);
+    cerr << "LiveSets::choose_register(): register allocation failed, insufficient capacity" << thrw;
   }
 
   return chosenA;

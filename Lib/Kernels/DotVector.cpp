@@ -5,7 +5,7 @@
 namespace kernels {
 
 DotVector::DotVector(int size) {
-  assertq(size >= 1, "There must be at least one element for DotVector", true);
+  assertq(size >= 1, "There must be at least one element for DotVector");
   elements.resize(size);  
 }
 

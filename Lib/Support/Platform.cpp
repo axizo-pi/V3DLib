@@ -5,9 +5,6 @@
 #include <memory>
 
 namespace V3DLib {
-
-using namespace Log;
-
 namespace Platform {
 namespace {
 

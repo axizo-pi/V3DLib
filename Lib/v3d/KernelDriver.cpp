@@ -1,7 +1,5 @@
 #ifdef QPU_MODE
 #include "KernelDriver.h"
-#include <iostream>
-#include <memory>
 #include "Source/Translate.h"
 #include "Target/instr/Mnemonics.h"
 #include "Target/SmallLiteral.h"  // decodeSmallLit()
@@ -19,13 +17,14 @@
 #include "Target/Satisfy.h"
 #include "Combine.h"
 #include "LibSettings.h"
+#include <iostream>
+#include <memory>
 
 namespace V3DLib {
 namespace v3d {
 
 using namespace V3DLib::v3d::instr;
 using Instructions = V3DLib::v3d::Instructions;
-using namespace Log;
 
 namespace {
 
@@ -278,8 +277,8 @@ void handle_condition_tags(V3DLib::Instr const &src_instr, Instructions &ret) {
   auto cond = src_instr.assign_cond();
 
   // src_instr.ALU.cond.tag has 3 possible values: NEVER, ALWAYS, FLAG
-  assertq(cond.tag != AssignCond::Tag::NEVER, "NEVER encountered in ALU.cond.tag", true);          // Not expecting it
-  assertq(cond.tag == AssignCond::Tag::FLAG || cond.is_always(), "Really expecting FLAG here", true); // Pedantry
+  assertq(cond.tag != AssignCond::Tag::NEVER, "NEVER encountered in ALU.cond.tag");             // Not expecting it
+  assertq(cond.tag == AssignCond::Tag::FLAG || cond.is_always(), "Really expecting FLAG here"); // Pedantry
 
   auto setCond = src_instr.set_cond();
 
@@ -305,7 +304,7 @@ void handle_condition_tags(V3DLib::Instr const &src_instr, Instructions &ret) {
   // The condition is only set for the last in the list.
   // Any preceding instructions are assumed to be for calculating the condition
   //
-  assertq(cond.is_always(), "Currently expecting only ALWAYS here", true);
+  assertq(cond.is_always(), "Currently expecting only ALWAYS here");
 
   auto str = src_instr.comment();
   bool is_final_where_cond = contains(str, "where condition final");
@@ -387,7 +386,7 @@ bool translateRotate(V3DLib::Instr const &instr, Instructions &ret) {
 
   } else {
     // dest is location where r1 (result of rotate) must be stored 
-    assertq(dst_reg->to_mux() != V3D_QPU_MUX_R1, "Rotate can not have destination register r1", true);
+    assertq(dst_reg->to_mux() != V3D_QPU_MUX_R1, "Rotate can not have destination register r1");
 
     if (src_a->to_mux() != V3D_QPU_MUX_R0) {
       ret << mov(r0, *src_a).comment("moving param 2 of rotate to r0. WARNING: r0 might already be in use, check!");
@@ -465,7 +464,7 @@ Instructions encodeALUOp(V3DLib::Instr instr) {
   } else if (translateOpcode(instr, ret)) {
     handle_condition_tags(instr, ret);
   } else {
-    assertq(false, "Missing translate operation for ALU instruction", true);  // Something missing, check
+    assertq("Missing translate operation for ALU instruction");  // Something missing, check
   }
 
   assert(!ret.empty());
@@ -503,13 +502,13 @@ Instructions encodeInstr(V3DLib::Instr instr) {
     // Unhandled tags - ignored or should have been handled beforehand
     //
     case BR:
-      assertq(false, "Not expecting BR any more, branch creation now goes with BRL", true);
+      assertq("Not expecting BR any more, branch creation now goes with BRL");
     break;
 
     case INIT_BEGIN:
     case INIT_END:
     case END:         // vc4 end program marker
-      assertq(false, "Not expecting INIT or END tag here", true);
+      assertq("Not expecting INIT or END tag here");
     break;
 
     //
@@ -630,13 +629,13 @@ bool checkUniformAtTop(V3DLib::Instr::List const &instrs) {
  */
 void _encode(V3DLib::Instr::List const &instrs, Instructions &dst) {
 #ifdef DEBUG  
-  assertq(checkUniformAtTop(instrs), "_encode(): checkUniformAtTop() failed (v3d)", true);
+  assertq(checkUniformAtTop(instrs), "_encode(): checkUniformAtTop() failed (v3d)");
 #endif
 
   // Main loop
   for (int i = 0; i < instrs.size(); i++) {
     V3DLib::Instr instr = instrs[i];
-    assertq(!instr.isZero(), "Zero instruction encountered", true);
+    assertq(!instr.isZero(), "Zero instruction encountered");
     check_instruction_tag_for_platform(instr.tag, false);
 
     if (instr.tag == INIT_BEGIN) {
@@ -810,7 +809,7 @@ void KernelDriver::allocate() {
  */
 void KernelDriver::invoke(int numQPUs, IntList &params, bool wait_complete) {
 #ifndef QPU_MODE
-  assertq(false, "Cannot run v3d invoke(), QPU_MODE not enabled");
+  assertq("Cannot run v3d invoke(), QPU_MODE not enabled");
 #else
   assert(params.size() != 0);
 
