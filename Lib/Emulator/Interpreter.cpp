@@ -107,7 +107,7 @@ Vec CoreState::load_from_heap(Vec const &index) {
       msg << "\n(this message not shown for further occurences)";
     }
     if (load_show_count < show_count) {
-      warning(msg);
+      warn << msg;
     }
     load_show_count ++;
     // The human has been warned, assume that she knows what she's doing

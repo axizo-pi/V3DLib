@@ -36,7 +36,7 @@ void replace_acc(Instr::List &instrs, RegUsageItem &item, int var_id, int acc_id
  */
 int peephole_0(int range_size, Instr::List &instrs, RegUsage &allocated_vars) {
   if (range_size == 0) {
-    warning("peephole_0(): range_size == 0 passed in. This does nothing, not bothering");
+    warn << "peephole_0(): range_size == 0 passed in. This does nothing, not bothering";
     return 0;
   }
 

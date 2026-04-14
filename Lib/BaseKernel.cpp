@@ -28,7 +28,6 @@ V3DLib::KernelDriver const &BaseKernel::driver() const {
 
 
 void BaseKernel::compile_init() {
-  //Log::info << "Called compile_init()";
   assert(m_driver.get() == nullptr);
 
   enum SelectKernel {
@@ -39,11 +38,7 @@ void BaseKernel::compile_init() {
 
   SelectKernel select_kernel = None;
 
-  //cdebug << "m_settings.run_type: " << m_settings.run_type;
-  //cdebug << "Platform::compiling_for_vc4(): " << Platform::compiling_for_vc4(); 
-  //cdebug << "m_settings.compile_only: " << m_settings.compile_only;
-
-   if (m_settings.run_type != QPU) {
+  if (m_settings.run_type != QPU) {
     select_kernel = vc4;
   }
 
@@ -58,10 +53,8 @@ void BaseKernel::compile_init() {
 #endif
 
   if (m_settings.run_type != QPU || Platform::run_vc4()) {   // Compile vc4
-    //Log::warn << "compile_init for vc4";
     select_kernel = vc4;
   } else {                                                 // Compile v3d
-    //Log::warn << "compile_init for v3d";
     select_kernel = v3d;
   }
 
@@ -124,7 +117,7 @@ void BaseKernel::run(bool wait_complete) {
     static bool showed_msg = false;
 
     if (!showed_msg) {
-      Log::warn << "BaseKernel::run(): Compile-only selected, not running.";
+      warn << "BaseKernel::run(): Compile-only selected, not running.";
       showed_msg = true;
     }
   } else {
@@ -150,7 +143,7 @@ void BaseKernel::emu(bool do_debug) {
   if (m_settings.compile_only) return;
 
   if (driver().has_errors()) {
-    warning("Not running on emulator, there were errors during compile.");
+    warn << "Not running on emulator, there were errors during compile.";
     return;
   }
 
@@ -175,7 +168,7 @@ void BaseKernel::interpret() {
   assertq(!driver().is_v3d(), "Can not run interpreter on v3d");
 
   if (driver().has_errors()) {
-    warning("Not running interpreter, there were errors during compile.");
+    warn << "Not running interpreter, there were errors during compile.";
     return;
   }
 

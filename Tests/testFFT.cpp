@@ -84,7 +84,7 @@ bool verify_step(std::vector<int> const &src, int step, int width) {
   }
 
   if (!verified) {
-    ::debug("verify_step() fail");
+    cdebug << "verify_step() fail";
   }
 
   return verified;

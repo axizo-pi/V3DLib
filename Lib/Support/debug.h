@@ -9,53 +9,20 @@
 #include <assert.h>
 #endif
 
-
-enum LogLevel {
-  ALL,
-  LEVEL_DEBUG,  // prefix because DEBUG is a #define
-  WARNING,
-  ERROR,
-  NO_OUTPUT
-};
-
-
 #ifdef DEBUG
 
 #define breakpoint raise(SIGTRAP);
 
-void debug(const char *str);
-void warning(const char *str);
 void debug_break(const char *str);
 
 #else
 
 #define breakpoint
 
-inline void debug(const char *str) {}
-inline void warning(const char *str) {}
 inline void debug_break(const char *str) {}
 
 #endif  // DEBUG
 
 #define MAYBE_UNUSED __attribute__((unused))
-
-
-inline void debug(std::string const &str)   { return ::debug(str.c_str()); }
-inline void warning(std::string const &str) { return warning(str.c_str()); }
-
-void error(const char *str, bool do_throw = false);
-inline void error(std::string const &msg, bool do_throw = false) { ::error(msg.c_str(), do_throw); }
-
-void set_loglevel(LogLevel level);
-void log_to_cout(bool val);
-/*
-void assertq(bool cond, const char *msg, bool do_break = false);
-
-inline void assertq(bool cond, std::string const &msg, bool do_break = false) {
-  assertq(cond, msg.c_str(), do_break);
-}
-
-inline void assertq(std::string const &msg, bool do_break = false) { assertq(false, msg, do_break); }
-*/
 
 #endif  // _V3DLIB_SUPPORT_DEBUG_H

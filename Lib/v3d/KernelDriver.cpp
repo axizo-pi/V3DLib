@@ -609,7 +609,7 @@ bool checkUniformAtTop(V3DLib::Instr::List const &instrs) {
       {
         std::string msg;
         msg << "checkUniformAtTop() failed at position " << i;
-        warning(msg);
+        warn << msg;
       }
       return false;  // Encountered uniform NOT at the top of the instruction list
     }

@@ -48,7 +48,7 @@ bool RFAddress::operator==(Location const &rhs) const {
   assert(m_is_rf == rhs_rf->m_is_rf);
 
   if (m_output_pack != rhs_rf->m_output_pack || m_input_unpack != rhs_rf->m_input_unpack) {
-    warning("RFAddress::==(): packing differs");
+    warn << "RFAddress::==(): packing differs";
   }
 
   return m_val == rhs_rf->m_val;

@@ -15,9 +15,9 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 #include "Timer.h"
+#include "Support/basics.h"
 #include <cstddef>  // NULL
 #include <cstdio>   // printf
-#include "Support/debug.h"
 
 
 namespace V3DLib {
@@ -72,8 +72,7 @@ std::string Timer::end(bool show_output) {
     if (count == 0) {
       char buf[128]; 
       sprintf(buf, "%s: %ld.%06lds\n", m_label.c_str(), tvDiff.tv_sec, tvDiff.tv_usec);
-
-      warning(buf);
+      warn << buf;
     } else {
       if (started) {
         stop();
@@ -91,7 +90,7 @@ std::string Timer::end(bool show_output) {
         avg_sec, avg_usec
       );
 
-      warning(buf);
+      warn << buf;
     }
   }
 

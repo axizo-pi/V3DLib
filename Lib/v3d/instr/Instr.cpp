@@ -828,7 +828,7 @@ bool Instr::alu_set_src(Source const &src, v3d_qpu_input &input, CheckSrc check_
       raddr_b = loc.to_waddr(); 
       mux = V3D_QPU_MUX_B;
     } else {
-      warning("alu_set_src: raddr_a and raddr_b both in use");
+      warn << "alu_set_src: raddr_a and raddr_b both in use";
       return false;
     }
 
@@ -1002,7 +1002,7 @@ bool Instr::check_safe(BaseSource const &src, CheckSrc check_src) const {
     }
   } else if (src.is_reg()) {
     if (Platform::compiling_for_vc7()) {
-      warning("check_safe: can not use registers on vc7");
+      warn << "check_safe: can not use registers on vc7";
       return false;
     }
   } else {
@@ -1184,7 +1184,7 @@ bool Instr::alu_mul_set(Target::Instr const &src_instr) {
   }
 
   if (!V3DLib::v3d::instr::OpItems::get_mul_op(alu, mul_op)) {
-    warning("alu_mul_set(): Can't convert mul op");
+    warn << "alu_mul_set(): Can't convert mul op";
     return false;  // Can't convert
   }
 

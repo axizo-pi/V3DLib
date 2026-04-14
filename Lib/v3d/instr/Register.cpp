@@ -146,7 +146,7 @@ bool Register::operator==(Location const &rhs) const {
   assert(m_is_rf == rhs_reg->m_is_rf);
 
   if (m_output_pack != rhs_reg->m_output_pack || m_input_unpack != rhs_reg->m_input_unpack) {
-    warning("Register::==(): packing differs");
+    warn << "Register::==(): packing differs";
   }
 
   if (m_mux_is_set != rhs_reg->m_mux_is_set) return false;

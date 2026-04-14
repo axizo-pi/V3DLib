@@ -47,12 +47,12 @@ std::unique_ptr<Location> loc_acc(RegId regId, int max_id) {
 
 void check_reg(Reg reg) {
   if (reg.regId < 0) {
-    ::error("Unassigned regId value", true);
+    cerr << "Unassigned regId value" << thrw;
   }
 
   if (reg.regId >= NUM_REGS_RF) {
     breakpoint
-    ::error("regId value out of range", true);
+    cerr << "regId value out of range";
   }
 }
 

@@ -118,11 +118,9 @@ void blockmatrix_loop(
   Int b_count = settings.columns;
 
   if (settings.rows >= settings.columns) {
-    //warning("blockmatrix_loop iterating over rows");
     a_init = me();
     a_inc  = numQPUs();
   } else {
-    //warning("blockmatrix_loop iterating over columns");
     using functions::integer_division;
 
     Int cols_div;
@@ -477,7 +475,6 @@ public:
     if (m_k.get()       != nullptr) m_k->setNumQPUs(m_num_qpus);
 
     if (use_multi_kernel_calls(call_type)) {
-      //warning("multi kernel calls");
       // This part required for vc4 hardware; see header of kernel matrix_mult_block().
       assert(m_k_first.get() != nullptr);
 
@@ -492,7 +489,6 @@ public:
         k_call();
       }
     } else {
-      //warning("single block");
       load(m_k, 0);
       k_call();
       //Log::warn << "k_call() m_result: " << m_result.dump();
@@ -575,7 +571,7 @@ protected:
     m_k_first.reset(new BlockKernelType(V3DLib::compile(kernel)));
 
     if (m_k_first->has_errors()) {
-      warning("compile failed of first kernel");
+      warn << "compile failed of first kernel";
       m_k.reset(nullptr);
       return;
     }
@@ -584,7 +580,7 @@ protected:
     m_k.reset(new BlockKernelType(V3DLib::compile(kernel)));
 
     if (m_k->has_errors()) {
-      Log::cerr << "Compile failed of block kernel";
+      cerr << "Compile failed of block kernel";
       m_k.reset(nullptr);
     } else {
       //Log::warn << "Compile succeeded of block kernel";
