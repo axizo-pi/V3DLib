@@ -104,7 +104,7 @@ uint32_t Pointer::param_value(BaseSharedArray const *p) {
 
 
 PointerExpr devnull() {
-  assertq(!Platform::compiling_for_vc4(), "devnull() is for v3d only", true);
+  assertq(!Platform::compiling_for_vc4(), "devnull() is for v3d only");
   Expr::Ptr e = std::make_shared<Expr>(Var(STANDARD, RSV_DEVNULL));
   return PointerExpr(e);
 }

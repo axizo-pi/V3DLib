@@ -13,7 +13,7 @@ using ::operator<<;  // C++ weirdness
 ///////////////////////////////////////////////////////////////////////////////
 
 ComplexExpr::ComplexExpr(Complex const &rhs) {
-  assertq("Not implemented yet", true);  // TODO
+  assertq("Not implemented yet");  // TODO
 }
 
 
@@ -61,7 +61,7 @@ Complex::Complex(FloatExpr const &e_re, Float const &e_im) : m_re(e_re), m_im(e_
 Complex::Complex(Complex const &rhs) : m_re(rhs.m_re), m_im(rhs.m_im) {}
 
 Complex::Complex(ComplexExpr input) {
-  assertq("Not implemented yet", true);  // TODO
+  assertq("Not implemented yet");  // TODO
 }
 
 

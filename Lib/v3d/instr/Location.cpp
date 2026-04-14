@@ -1,15 +1,10 @@
 #include "Location.h"
-//#include "global/log.h"
 #include "Support/Platform.h"
 #include "Support/basics.h"
-
-using namespace Log;
-//using ::operator<<; // C++ weirdness
 
 namespace V3DLib {
 namespace v3d {
 namespace instr {
-
 
 /**
  * General purpose acc's not present on vc7; block usage in this case.

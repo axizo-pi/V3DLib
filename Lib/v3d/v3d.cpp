@@ -1,9 +1,7 @@
 /**
  * Adjusted from: https://gist.github.com/notogawa/36d0cc9168ae3236902729f26064281d
  */
-#include "global/log.h"
-
-using namespace Log;
+#include "Support/basics.h"
 
 #ifdef QPU_MODE
 
@@ -25,7 +23,7 @@ namespace {
 
 void fd_close(int fd) {
   if (fd > 0 ) {
-    assert(close(fd) >= 0, "fd_close() failed");
+    assertq(close(fd) >= 0, "fd_close() failed");
     close(fd);
   }
 }
@@ -36,7 +34,6 @@ void fd_close(int fd) {
 
 #include "instr/v3d_api.h"
 #include <cstddef>    // NULL
-#include <cassert>
 
 namespace {
 

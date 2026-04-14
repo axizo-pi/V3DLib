@@ -39,7 +39,7 @@ namespace Invoke {
 
 //void schedule(Code const &code, IntList const &params);
 void schedule(BaseKernel const &kernel) {
-  assertq(!kernel.code().empty(), "schedule(): no code passed", true );
+  assertq(!kernel.code().empty(), "schedule(): no code passed");
 	auto item = ScheduledJob(kernel.code(), kernel.params());
 	s_jobs.push_back(item);
 }

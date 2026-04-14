@@ -1,7 +1,7 @@
 #include "device_info.h"
 #include "broadcom/common/v3d_device_info.h"
+#include "Support/basics.h"
 #include <sstream>
-#include "global/log.h"
 #include <sys/ioctl.h>
 
 // imports from v3d.cpp
@@ -10,8 +10,6 @@ namespace v3d {
   extern bool open();
 }
 
-
-using namespace Log;
 
 namespace {
 

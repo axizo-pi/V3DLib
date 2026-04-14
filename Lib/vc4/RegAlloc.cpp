@@ -176,7 +176,7 @@ void regAlloc(Instr::List &instrs) {
     // Choose a register file
     RegTag chosenRegFile;
     if (chosenA < 0 && chosenB < 0) {
-      error("regAlloc(): register allocation failed, insufficient capacity", true);
+      cerr << "regAlloc(): register allocation failed, insufficient capacity" << thrw;
     }
     else if (chosenA < 0) chosenRegFile = REG_B;
     else if (chosenB < 0) chosenRegFile = REG_A;

@@ -1,14 +1,10 @@
 #include "Mnemonics.h"
 #include "Support/basics.h"
 #include "Support/Platform.h"
-#include "global/log.h"
-
-using namespace Log;
 
 namespace V3DLib {
 namespace v3d {
 namespace instr {
-
 namespace {
 
 void set_muxes_add(v3d_qpu_alu_instr &alu, v3d_qpu_mux mux_a, v3d_qpu_mux mux_b) {
@@ -244,7 +240,7 @@ Mnemonic &Mnemonic::rotate(Location const &dst, Location const &a, SmallImm cons
   assertq(!Platform::compiling_for_vc7(), "rotate on mul is for vc6 only");
 
   assertq(dst.to_mux()  == V3D_QPU_MUX_R1, "rotate dest can only be r1");
-  assertq(a.to_mux() == V3D_QPU_MUX_R0,    "rotate src a can only be r0", true);
+  assertq(a.to_mux() == V3D_QPU_MUX_R0,    "rotate src a can only be r0");
 
   m_doing_add = false;
   if (!alu_mul_set(r1, r0, b)) assert(false);

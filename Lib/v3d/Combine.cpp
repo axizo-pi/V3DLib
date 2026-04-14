@@ -18,8 +18,6 @@
  * to keep the library stable.
  */
 
-using namespace Log;
-
 namespace V3DLib {
 namespace v3d {
 
@@ -46,7 +44,7 @@ bool check_small_imm_usage(Instr const &top, Instr const &bottom) {
 
     // If I enable this, combine() catches the exception
     //  and the kernel actually runs on vc7
-    //assertq(false, "nope");
+    //assertq("nope");
 
     // Hypothesis: only 1 src field can be small imm.
     // This comes from the way the sig fields are set, which are not disjunct.
@@ -1164,7 +1162,7 @@ bool bottom_add_to_top_mul(Instr &ret, Instr const &bottom, Instr const &top) {
  *    
  */
 MAYBE_UNUSED void combine_read_write(Instructions &instr) {
-  assertq(false, "Don't call combine_read_write() for now, too many issues");
+  assertq("Don't call combine_read_write() for now, too many issues");
 
   warn << "\n----------------------------\n"
        <<   "Entered combine_read_write()\n"
@@ -1442,7 +1440,7 @@ bool can_be_mul_alu(AddAlu const &add_alu) {
     // Block write to special registers for now
     // Actually, this should be possible (on vc7 at least), as long as the special registers aren't the same
     // on add and mul.
-		// TODO examine
+    // TODO examine
     if (add_alu.magic_write) return false;
 
     // ORs with 1 source can be translated to mul alu MOV
@@ -1585,8 +1583,8 @@ void combine_old(Instructions &instructions) {
     auto &instr1 = instructions[i - 1];
     auto &instr2 = instructions[i];
 
-    assertq(!instr1.mnemonic(false).empty(), "WTF 1", true);  // Paranoia
-    assertq(!instr2.mnemonic(false).empty(), "WTF 2", true);
+    assertq(!instr1.mnemonic(false).empty(), "WTF 1");  // Paranoia
+    assertq(!instr2.mnemonic(false).empty(), "WTF 2");
 
     assertq(!(instr1.skip() && instr2.skip()), "Deal with skips when they happen");
     if (instr1.skip()) continue;

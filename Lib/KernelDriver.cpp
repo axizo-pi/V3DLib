@@ -11,7 +11,6 @@
 namespace V3DLib {
 
 using ::operator<<;  // C++ weirdness
-using namespace Log;
 
 namespace {
 

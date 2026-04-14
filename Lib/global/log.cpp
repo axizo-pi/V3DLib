@@ -196,7 +196,7 @@ protected:
 
     ensure_path_exists(m_log_dir);
 
-		bool new_file = !fs::exists(outfile);
+    bool new_file = !fs::exists(outfile);
     ofstream of;
     of.open(outfile, ios::app);
     assertq(!of.fail(), "Can not open logfile for appending");
@@ -204,14 +204,14 @@ protected:
     of << msg;
     of.close();
 
-		if (new_file) {
-			// Change the file permissions to read/write
-			fs::permissions(
-				outfile,
+    if (new_file) {
+      // Change the file permissions to read/write
+      fs::permissions(
+        outfile,
         fs::perms::owner_all | fs::perms::group_all | fs::perms::others_all,
         fs::perm_options::replace
-    	);
-		}
+      );
+    }
   }
 
 private:
@@ -373,7 +373,12 @@ void log_to_cout(bool val) {
 
 void assertq(bool condition, const std::string &msg) {
   if (condition) return;
-  fatal << msg << "\n";
+
+  if (msg.empty()) {
+    fatal << "assertq failed.\n";
+  } else {
+    fatal << msg << "\n";
+  }
 }
 
 

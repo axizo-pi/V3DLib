@@ -3,15 +3,13 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 #include "Instr.h"
-#include <cstdio>
-#include <cstdlib>        // abs()
-#include <bits/stdc++.h>  // swap()
 #include "Support/basics.h"
 #include "Mnemonics.h"
 #include "OpItems.h"
 #include "Support/Platform.h"
-
-using namespace Log;
+#include <cstdio>
+#include <cstdlib>        // abs()
+#include <bits/stdc++.h>  // swap()
 
 namespace V3DLib {
 namespace v3d {
@@ -41,7 +39,7 @@ std::string binaryValue(uint64_t num) {
 
 
 v3d_qpu_cond translate_assign_cond(AssignCond cond) {
-  assertq(cond.tag != AssignCond::Tag::NEVER, "Not expecting NEVER (yet)", true);
+  assertq(cond.tag != AssignCond::Tag::NEVER, "Not expecting NEVER (yet)");
 
   v3d_qpu_cond tag_value = V3D_QPU_COND_NONE;
 
@@ -286,19 +284,19 @@ void Instr::set_cond_tag(AssignCond cond) {
   if (cond.is_always()) return;
   if (add_nop() && mul_nop()) return;  // Don't bother with a full nop instruction
 
-  assertq(cond.tag != AssignCond::Tag::NEVER, "Not expecting NEVER (yet)", true);
+  assertq(cond.tag != AssignCond::Tag::NEVER, "Not expecting NEVER (yet)");
   assertq(cond.tag == AssignCond::Tag::FLAG,  "const.tag can only be FLAG here");  // The only remaining option
 
   v3d_qpu_cond tag_value = translate_assign_cond(cond);
   assert(tag_value != V3D_QPU_COND_NONE);
 
-  assertq(add_nop() || mul_nop(), "Not expecting both add and mul alu to be used", true); 
+  assertq(add_nop() || mul_nop(), "Not expecting both add and mul alu to be used"); 
 
   if (alu.add.op != V3D_QPU_A_NOP) {
     if (flags.ac == V3D_QPU_COND_NONE) {
       flags.ac = tag_value;
     } else {
-      assertq(flags.ac == tag_value, "add alu assign tag already set to different value", true);
+      assertq(flags.ac == tag_value, "add alu assign tag already set to different value");
     }
   }
 
@@ -306,7 +304,7 @@ void Instr::set_cond_tag(AssignCond cond) {
     if (flags.mc == V3D_QPU_COND_NONE) {
       flags.mc = tag_value;
     } else {
-      assertq(flags.mc == tag_value, "mul alu assign tag already set to different value", true);
+      assertq(flags.mc == tag_value, "mul alu assign tag already set to different value");
     }
   }
 }
@@ -316,7 +314,7 @@ void Instr::set_push_tag(SetCond set_cond) {
   if (set_cond.tag() == SetCond::NO_COND) return;
   assertq(flags.apf == V3D_QPU_PF_NONE, "Not expecting add alu push tag to be set");
   assertq(flags.mpf == V3D_QPU_PF_NONE, "Not expecting mul alu push tag to be set");
-  assertq(set_cond.tag() == SetCond::Z || set_cond.tag() == SetCond::N, "Unhandled SetCond flag", true);
+  assertq(set_cond.tag() == SetCond::Z || set_cond.tag() == SetCond::N, "Unhandled SetCond flag");
 
   v3d_qpu_pf tag_value;
 
@@ -409,7 +407,7 @@ std::string Instr::dump_internal() const {
         } else if (alu.mul.b.mux == V3D_QPU_MUX_B) {
           ret << ", " << raddr_b;
         } else {
-          assertq(false, "dump_internal(): unexpected mux value for mul b for rotate", true);
+          assertq("dump_internal(): unexpected mux value for mul b for rotate");
         }
       }
 
@@ -544,7 +542,7 @@ void Instr::set_branch_condition(V3DLib::BranchCond src_cond) {
         set_branch_condition(V3D_QPU_BRANCH_COND_ALLA);
         break;
       default:
-        assertq(false, "Unknown branch condition under COND_ALL");
+        assertq("Unknown branch condition under COND_ALL");
     }
   } else if (src_cond.tag == BranchCond::COND_ANY) {
     switch (src_cond.flag) {
@@ -830,7 +828,7 @@ bool Instr::alu_set_src(Source const &src, v3d_qpu_input &input, CheckSrc check_
       raddr_b = loc.to_waddr(); 
       mux = V3D_QPU_MUX_B;
     } else {
-      warning("alu_set_src: raddr_a and raddr_b both in use");
+      warn << "alu_set_src: raddr_a and raddr_b both in use";
       return false;
     }
 
@@ -1004,7 +1002,7 @@ bool Instr::check_safe(BaseSource const &src, CheckSrc check_src) const {
     }
   } else if (src.is_reg()) {
     if (Platform::compiling_for_vc7()) {
-      warning("check_safe: can not use registers on vc7");
+      warn << "check_safe: can not use registers on vc7";
       return false;
     }
   } else {
@@ -1186,7 +1184,7 @@ bool Instr::alu_mul_set(Target::Instr const &src_instr) {
   }
 
   if (!V3DLib::v3d::instr::OpItems::get_mul_op(alu, mul_op)) {
-    warning("alu_mul_set(): Can't convert mul op");
+    warn << "alu_mul_set(): Can't convert mul op";
     return false;  // Can't convert
   }
 

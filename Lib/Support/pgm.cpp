@@ -1,7 +1,6 @@
 #include "pgm.h"
+#include "Support/basics.h"
 #include <cstdio>
-
-using namespace Log;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Class Color

@@ -4,7 +4,6 @@
 #include "Support/Platform.h"
 #include "Support/basics.h"
 
-using namespace Log;
 using namespace V3DLib::Target::instr;
 using V3DLib::v3d::instr::SmallImm;
 

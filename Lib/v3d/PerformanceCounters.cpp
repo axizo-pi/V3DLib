@@ -1,15 +1,12 @@
 #ifdef QPU_MODE
 
 #include "PerformanceCounters.h"
+#include "RegisterMapping.h"
+#include "Support/basics.h"
+#include "v3d.h"
 #include <iostream>
 #include <sstream>
 #include <sys/ioctl.h>
-#include "RegisterMapping.h"
-#include "../Support/debug.h"
-#include "v3d.h"
-#include "global/log.h"
-
-using namespace Log;
 
 namespace V3DLib {
 namespace {

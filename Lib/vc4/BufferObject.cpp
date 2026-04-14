@@ -1,19 +1,15 @@
 #ifdef QPU_MODE
 
 #include "BufferObject.h"
-#include <cassert>
-#include <stdio.h>
 #include "Mailbox.h"
 #include "vc4.h"
-#include "../Support/Platform.h"  // has_vc4() 
-#include "../Support/basics.h"
-#include "../Support/debug.h"
+#include "Support/Platform.h"  // has_vc4() 
+#include "Support/basics.h"
 #include "LibSettings.h"
+#include <stdio.h>
 
 #define GPU_MEM_FLG 0xC // cached=0xC; direct=0x4
 #define GPU_MEM_MAP 0x0 // cached=0x0; direct=0x20000000
-
-using namespace Log;
 
 namespace V3DLib {
 namespace vc4 {

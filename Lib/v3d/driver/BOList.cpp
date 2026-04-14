@@ -5,8 +5,6 @@
 #include "Support/basics.h"  // Order important, must be before screen.h; otherwise compile issues on debug_break()
 #include "screen.h"
 
-using namespace Log;
-
 
 void BOList::unreference(struct v3d_bo *ptr) {
   v3d_bo_unreference(&ptr);

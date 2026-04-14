@@ -1,10 +1,7 @@
 #include "StmtStack.h"
-#include <iostream>          // std::cout
 #include "Support/basics.h"
 #include "Source/gather.h"
-#include "global/log.h"
-
-using namespace Log;
+#include <iostream>          // std::cout
 
 namespace V3DLib {
 namespace {
@@ -171,22 +168,22 @@ void StmtStack::push(Stmt::Ptr s) {
  *                   `nullptr` if not present and assertions not enabled.
  */
 Stmt::Ptr StmtStack::last_stmt(bool do_assert) {
-	if (empty()) {
-		assertq(!do_assert, "last_stmt() stack is empty");
-		return nullptr;
-	}
+  if (empty()) {
+    assertq(!do_assert, "last_stmt() stack is empty");
+    return nullptr;
+  }
 
   auto level = Parent::top();  // Should be non-null due to check empty(); we check anyway
   if (level == nullptr || level->empty()) {
-		assertq(!do_assert, "last_stmt() top statement is empty");
-		return nullptr;
-	}
+    assertq(!do_assert, "last_stmt() top statement is empty");
+    return nullptr;
+  }
 
   auto ptr = level->back();    // Should be non-null due to previous test; we check anyway
   if (ptr.get() == nullptr) {
-		assertq(!do_assert, "last_stmt() first back statement is empty");
-		return nullptr;
-	}
+    assertq(!do_assert, "last_stmt() first back statement is empty");
+    return nullptr;
+  }
 
   return ptr;
 }

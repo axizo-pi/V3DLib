@@ -163,10 +163,8 @@ void Settings::init(int argc, const char *argv[]) {
 
   check_params(m_all_params, argc, argv);
 
-  set_loglevel(WARNING);
-  // No need to set log level for Log
-  Log::set_log_dir("/home/wim/projects/V3DLib/log");
-  Log::set_log_file("V3DLib.log");
+  set_log_dir("/home/wim/projects/V3DLib/log");
+  set_log_file("V3DLib.log");
 }
 
 
@@ -256,7 +254,6 @@ bool Settings::process() {
   V3DLib::LibSettings::heap_size(heap_mem << 20);
 
   if (silent) {
-    log_to_cout(false);      // Needs to be before debug that follows
     Log::log_to_cout(false);
   }
 

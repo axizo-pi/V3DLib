@@ -8,7 +8,6 @@
 namespace V3DLib {
 
 using namespace Target;
-using namespace Log;
 
 namespace {
 
@@ -331,7 +330,7 @@ void write_special_register(QPUState* s, State* g, bool setFlags, AssignCond con
       break;
   }
 
-  assertq(false, "emulator: can not write to special register", true);
+  assertq("emulator: can not write to special register");
 }
 
 

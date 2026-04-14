@@ -107,7 +107,7 @@ Vec CoreState::load_from_heap(Vec const &index) {
       msg << "\n(this message not shown for further occurences)";
     }
     if (load_show_count < show_count) {
-      warning(msg);
+      warn << msg;
     }
     load_show_count ++;
     // The human has been warned, assume that she knows what she's doing
@@ -154,14 +154,14 @@ Vec eval(InterpreterState &is, CoreState* s, Expr::Ptr e) {
         case ELEM_NUM: v = EmuState::index_vec; break;
 
         default:
-          assertq(false, "eval(): unhandled var tag");
+          assertq("eval(): unhandled var tag");
           break;
       }
     }
     break;
 
     default:
-      assertq(false, "eval(): unhandled Expr tag");
+      assertq("eval(): unhandled Expr tag");
       break;
   }
 
@@ -309,7 +309,7 @@ void assignToVar(CoreState* s, Vec cond, Var v, Vec x) {
     }
 
     default:
-      assertq(false, "assignToVar(): unhandled var-tag", true);
+      assertq("assignToVar(): unhandled var-tag");
       break;
   }
 }
@@ -399,7 +399,7 @@ void execWhere(InterpreterState &is, CoreState *s, Vec cond, Stmt::Ptr stmt) {
     }
 
     default:
-      assertq(false, "V3DLib: only assignments and nested 'where' statements can occur in a 'where' statement");
+      assertq("V3DLib: only assignments and nested 'where' statements can occur in a 'where' statement");
       return;
   }
 }
@@ -478,7 +478,7 @@ void exec(InterpreterState &is, int core_index) {
   s->stack.pop_back();
 
   if (stmt == nullptr) { // Apparently this happened
-    assertq(false, " Interpreter: not expecting nullptr for stmt", true);
+    assertq(" Interpreter: not expecting nullptr for stmt");
     return;
   }
 
@@ -526,7 +526,7 @@ void exec(InterpreterState &is, int core_index) {
 
     default:
       if (!dma_exec(is, s, stmt)) {
-        assertq(false, "interpreter: unexpected stmt-tag in exec()");
+        assertq("interpreter: unexpected stmt-tag in exec()");
       }
       break;
   }

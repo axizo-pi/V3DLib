@@ -1,7 +1,5 @@
 #include "SharedArray.h"
 
-using namespace Log;
-
 namespace V3DLib {
 
 //////////////////////////////////////////////////
