@@ -1,7 +1,7 @@
 # linux apps
 
 # WRI
-#add_subdirectory(libs/bcm_host)
+add_subdirectory(libs/bcm_host)
 #add_subdirectory(apps/gencmd)
 #add_subdirectory(apps/tvservice)
 #add_subdirectory(apps/vcmailbox)
