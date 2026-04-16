@@ -14,7 +14,7 @@ namespace V3DLib {
  * - This is terminated by a dummy uniform value, see Note 1.
  */
 int ScheduledJob::num_params() const {
-	return (2 + params.size() + 1);
+  return (2 + params.size() + 1);
 }
 
 namespace {
@@ -24,14 +24,14 @@ ScheduledJobs s_jobs;
 }  // anon namespace
 
 int ScheduledJobs::num_params() const {
-	int ret = 0;
+  int ret = 0;
 
-	for (auto const &job: *this) {
-  	ret += job.num_params();
-	}
+  for (auto const &job: *this) {
+    ret += job.num_params();
+  }
 
-	assert(ret > 0);
-	return ret;
+  assert(ret > 0);
+  return ret;
 }
 
 
@@ -40,14 +40,14 @@ namespace Invoke {
 //void schedule(Code const &code, IntList const &params);
 void schedule(BaseKernel const &kernel) {
   assertq(!kernel.code().empty(), "schedule(): no code passed");
-	auto item = ScheduledJob(kernel.code(), kernel.params());
-	s_jobs.push_back(item);
+  auto item = ScheduledJob(kernel.code(), kernel.params());
+  s_jobs.push_back(item);
 }
 
 
 void run() {
-	assertq(!s_jobs.empty(), "No scheduled jobs to run");
-	assertq(Platform::max_qpus() >= (int) s_jobs.size(), "More scheduled jobs than QPU's present");
+  assertq(!s_jobs.empty(), "No scheduled jobs to run");
+  assertq(Platform::max_qpus() >= (int) s_jobs.size(), "More scheduled jobs than QPU's present");
 
   if (Platform::compiling_for_vc4()) {
     vc4_invoke::run(s_jobs);
@@ -55,7 +55,7 @@ void run() {
     assertq(false, "Still need to implement scheduling for v3d");
   }
 
-	s_jobs.clear();
+  s_jobs.clear();
 }
 
 }  // namespace Invoke

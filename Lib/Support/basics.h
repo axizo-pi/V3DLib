@@ -4,6 +4,7 @@
 #include "global/log.h"
 #include "Exception.h"
 #include <vector>
+#include <stdint.h>
 
 using namespace Log;
 
