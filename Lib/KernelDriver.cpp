@@ -135,7 +135,7 @@ void KernelDriver::obtain_ast() {
 void KernelDriver::compile(std::function<void()> create_ast) {
   try {
     create_ast();
-    //reverse_uniforms(m_stmtStack);
+    reverse_uniforms(m_stmtStack);
 
     compile_intern();
     m_numVars = VarGen::count();
