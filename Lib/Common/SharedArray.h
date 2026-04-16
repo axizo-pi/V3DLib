@@ -2,8 +2,8 @@
 #define _V3DLIB_COMMON_SHAREDARRAY_H_
 #include <vector>
 #include "BufferObject.h"
-#include "../Support/basics.h"
-#include "../Support/Platform.h"  // has_vc4
+#include "Support/basics.h"
+#include "Support/Platform.h"  // has_vc4
 
 namespace V3DLib {
 
@@ -87,7 +87,7 @@ public:
   T *ptr() { return (T *) usraddr(); }
 
   void fill(T val) {
-    assertq(allocated(), "Can not fill unallocated array", true);
+    assertq(allocated(), "Can not fill unallocated array");
     for (int i = 0; i < (int) size(); i++)
       (*this)[i] = val;
   }
@@ -206,7 +206,7 @@ protected:
 
   T &access(int i) { 
     assert(allocated());
-    assertq(i >= 0 && i < (int) size(), "SharedArray::[]: index outside of possible range", true);
+    assertq(i >= 0 && i < (int) size(), "SharedArray::[]: index outside of possible range");
 
     T *base = (T *) ptr();
     return (T&) base[i];
@@ -215,7 +215,7 @@ protected:
   // grumbl
   T access(int i) const { 
     assert(allocated());
-    assertq(i >= 0 && i < (int) size(), "SharedArray::[]: index outside of possible range", true);
+    assertq(i >= 0 && i < (int) size(), "SharedArray::[]: index outside of possible range");
 
     T *base = (T *) ptr();
     return base[i];

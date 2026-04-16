@@ -17,9 +17,13 @@ The `Mandelbrot` app is a pretty good indicator of performance, because it is **
 
 ![Mandelbrot GPU performance](../images/mandelbrot_gpu.png)
 
-| P1       | Zero     | P2       | P3       | P4       | P5       |
-|----------|----------|----------|----------|----------|----------|
-| 1.523748 | 1.300062 | 1.090135 | 0.849228 | 0.699729 | 0.146146 |
+| P1       | Zero     | P2       | P3       | P3B+     | P4       | P5       |
+|----------|----------|----------|----------| -------- | ---------|----------|
+| 1.523748 | 1.300062 | 1.090135 | 0.849228 | 0.962436 | 0.699729 | 0.146146 |
+
+The time for `Pi3B+` is disappointing;
+this is the first application compiled on `Debian 13 (trixie)`; 
+perhaps there is a connection.
 
 -----
 

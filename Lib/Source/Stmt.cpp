@@ -4,8 +4,6 @@
 #include "vc4/DMA/DMA.h"
 #include "LibSettings.h"
 
-using namespace Log;
-
 namespace V3DLib {
 
 using ::operator<<;  // C++ weirdness
@@ -146,7 +144,7 @@ bool Stmt::check_blocks() const {
  */
 Stmt::Array const &Stmt::then_block() const {
   // Following is bullshit. then_block can also appear for WHILE
-  //assertq(tag == IF || tag == WHERE, "Then-statement only valid for IF, and WHERE", true);
+  //assertq(tag == IF || tag == WHERE, "Then-statement only valid for IF, and WHERE");
   assert(check_blocks());
 
   return m_stmts_a;
@@ -165,7 +163,7 @@ bool Stmt::else_block_empty() const {
 
 Stmt::Array const &Stmt::body() const {
   assertq(tag == SEQ || tag == WHILE || tag == FOR,
-    "Body-statement only valid for SEQ, WHILE and FOR", true);
+    "Body-statement only valid for SEQ, WHILE and FOR");
 
   if (m_stmts_a.empty() || !m_stmts_b.empty()) {
     warn << "body for tag " << dump_stmt_tag(tag) << " must have then-block and no else-block"
@@ -179,7 +177,7 @@ Stmt::Array const &Stmt::body() const {
 
 
 Stmt::Array const &Stmt::else_block() const {
-  assertq(tag == IF || tag == WHERE, "Else-statement only valid for IF and WHERE", true);
+  assertq(tag == IF || tag == WHERE, "Else-statement only valid for IF and WHERE");
   // where and else stmt may not both be empty
   assert(!m_stmts_a.empty() || !m_stmts_b.empty());
   return m_stmts_b;
@@ -250,7 +248,7 @@ bool Stmt::add_block(Array const &block) {
 
 
 void Stmt::inc(Array const &arr) {
-  assertq(tag == FOR, "Inc-statement only valid for FOR", true);
+  assertq(tag == FOR, "Inc-statement only valid for FOR");
   assert(m_stmts_b.empty());  // Only assign once
   m_stmts_b = arr;
 }
@@ -375,7 +373,7 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_com
             msg << "; tag out of range";
           }
 
-          assertq(false, msg, true);
+          assertq(msg);
         }
       }
       break;

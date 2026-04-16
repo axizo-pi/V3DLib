@@ -1,12 +1,8 @@
 #include "Instr.h"
-#include "Support/basics.h"   // fatal()
 #include "Support/Helpers.h"  // load_file_vec()
-#include "global/log.h"
 #include "dump_instr.h"
-#include <fstream>
 #include <filesystem>
 
-using namespace Log;
 using namespace std;
 namespace fs = std::filesystem; // Alias for brevity
 
@@ -56,7 +52,7 @@ void encode_operands(vc4::Instr &instr, RegOrImm const &srcA, RegOrImm const &sr
   } else if (srcA.is_imm() || srcB.is_imm()) {
     if (srcA.is_imm() && srcB.is_imm()) {
       assertq(srcA.imm() == srcB.imm(),
-        "srcA and srcB can not both be immediates with different values", true);
+        "srcA and srcB can not both be immediates with different values");
 
       raddr_b = srcA.encode();  // srcB is the same
       muxa   = vc4::Instr::MUX_B;
@@ -704,14 +700,14 @@ std::vector<std::string> opcodes(uint64_t const *data, int size) {
     return ret;
   }
 
-  std::string filename;
-  filename << fs::temp_directory_path() << "/vc4_code_tmp.txt";
+  std::string tmp_file;
+  tmp_file << fs::temp_directory_path() << "/vc4_code_tmp.txt";
   //warn << "opcodes() filename: " << filename;
 
   //
   // dump_instr() is redirected to a file, make it first
   //
-  FILE *f = fopen(filename.c_str(), "w");
+  FILE *f = fopen(tmp_file.c_str(), "w");
   assert(f != nullptr);
 
   dump_instr(f, data, size);
@@ -719,9 +715,9 @@ std::vector<std::string> opcodes(uint64_t const *data, int size) {
   fclose(f);
 
   // Load redirected file into ret
-	ret = load_file_vec(filename);
+  ret = load_file_vec(tmp_file);
 
-  std::remove(filename.c_str());
+  std::remove(tmp_file.c_str());
   return ret;
 }
 

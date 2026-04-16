@@ -3,64 +3,14 @@
 #include "Exception.h"
 #include "global/log.h"
 
-namespace {
-
-LogLevel log_level = ALL;
-bool     param_log_to_cout = true;
-
-}  // anon namespace
-
 #ifdef DEBUG
 
-void debug(const char *str) {
-  if (param_log_to_cout && log_level <= LEVEL_DEBUG) {
-    printf("DEBUG: %s\n", str);
-  }
-}
-
-
-void warning(const char *str) {
-  if (param_log_to_cout && log_level <= WARNING) {
-    printf("WARNING: %s\n", str);
-  }
-}
-
-
 void debug_break(const char *str) {
-  if (log_level <= LEVEL_DEBUG) {
-    printf("DEBUG: %s\n", str);
-    breakpoint
-  }
+  printf("DEBUG BREAK: %s\n", str);
+  breakpoint;
 }
 
 #endif  // DEBUG
-
-
-void error(const char *str, bool do_throw) {
-  if (param_log_to_cout && log_level <= ERROR) {
-    printf("ERROR: %s\n", str);
-  }
-
-  if (do_throw) {
-    std::string buf = "ERROR: ";
-    buf += str;
-    throw V3DLib::Exception(buf);
-  }
-}
-
-
-void set_loglevel(LogLevel level) {
-  log_level = level;
-}
-
-
-void log_to_cout(bool val) {
-  param_log_to_cout = val;
-
-  // Also set logging stuff in global/log.h
-  Log::log_to_cout(val);
-}
-
 
 /**
  * Alternative for `assert` that throws passed string.
@@ -85,4 +35,3 @@ void assertq(bool cond, const char *msg, bool do_break) {
 
   throw V3DLib::Exception(str);
 }
-

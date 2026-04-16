@@ -1,12 +1,9 @@
 #include "BufferObject.h"
 #include "Support/Platform.h"
-#include "Support/debug.h"
-#include "global/log.h"
+#include "Support/basics.h"
 #include "Target/BufferObject.h"
 #include "vc4/BufferObject.h"
 #include "v3d/BufferObject.h"
-
-using namespace Log;
 
 namespace V3DLib {
 
@@ -41,8 +38,10 @@ void BufferObject::dealloc_array(uint32_t in_phyaddr, uint32_t in_size) {
 
 
 uint32_t BufferObject::getHandle() const {
-  assertq(false, "getHandle(): the base version of this method should never be called, only the v3d override.\n"
-                 "Perhaps you are using main memory for the buffer object?", true);
+  assertq(
+    "getHandle(): the base version of this method should never be called, only the v3d override.\n"
+    "Perhaps you are using main memory for the buffer object?");
+
   return 0;
 }
 

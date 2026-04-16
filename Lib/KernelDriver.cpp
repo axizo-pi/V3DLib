@@ -11,7 +11,6 @@
 namespace V3DLib {
 
 using ::operator<<;  // C++ weirdness
-using namespace Log;
 
 namespace {
 
@@ -25,7 +24,7 @@ namespace {
  * The goal of this function is to reverse the parameter indexes, so that the kernel functions
  * again as expected.
  */
-void reverse_uniforms(StmtStack &stack) {
+MAYBE_UNUSED void reverse_uniforms(StmtStack &stack) {
   if (!uniforms_reversed()) return;
   warn << "Doing reverse_uniforms()";
 

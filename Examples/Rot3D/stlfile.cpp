@@ -15,7 +15,7 @@ vector<openstl::Triangle> triangles;
 
 
 StlData::StlData(int size) : m_size(size) {
-  assert(size > 0, "size must be positive");
+  assertq(size > 0, "size must be positive");
 
   bool have_stl = (stl_num_coords() > 0);
 
@@ -41,8 +41,8 @@ void StlData::init() {
     return;
   }
 
-  assert(m_size % 16 == 0, "size must be multiple of 16");
-  assert(m_size >= 16, "size must be at least 16");
+  assertq(m_size % 16 == 0, "size must be multiple of 16");
+  assertq(m_size >= 16, "size must be at least 16");
 
   // First, initialize basic vectors
   init_v(0,  1,  0,  0);
@@ -86,7 +86,7 @@ void StlData::disp_arrays(int size) const {
 void StlData::disp(std::string const &label, int show_number) const {
   if (!settings.show_results) return;
 
-  assert(show_number <= m_size, "disp() trying to show more items than present");
+  assertq(show_number <= m_size, "disp() trying to show more items than present");
   if (show_number == -1) show_number = m_size;
 
   if (!label.empty()) {
@@ -101,7 +101,7 @@ void load_stl(std::string const &filename) {
   if (filename.empty()) return;
   warn << "Have STl file";
 
-  assert(triangles.empty(), "STL triangles already filled");
+  assertq(triangles.empty(), "STL triangles already filled");
   if (!stl::read(filename, triangles)) {
     error << "Error: Unable to open file '" << filename << "'";
   }
@@ -123,8 +123,8 @@ int stl_num_coords() {
 void stl_load_data(StlData &data) {
   warn << "stl_load_data called";
 
-  assert(!triangles.empty(), "No STL triangles");
-  assert(((long unsigned) data.size()) == (triangles.size()*3), "Size must match");
+  assertq(!triangles.empty(), "No STL triangles");
+  assertq(((long unsigned) data.size()) == (triangles.size()*3), "Size must match");
 
   // Data in 'data' will be overwritten
   for (int i = 0; i < (int) triangles.size(); ++i) {
@@ -140,8 +140,8 @@ void stl_load_data(StlData &data) {
 void stl_save_data(StlData &data, bool save_file) {
   warn << "stl_save_data called";
 
-  assert(!triangles.empty(), "No STL triangles");
-  assert(((long unsigned) data.size()) == (triangles.size()*3), "Size must match");
+  assertq(!triangles.empty(), "No STL triangles");
+  assertq(((long unsigned) data.size()) == (triangles.size()*3), "Size must match");
 
   // Data in triangles list will be overwritten
   for (int i = 0; i < (int) triangles.size(); ++i) {

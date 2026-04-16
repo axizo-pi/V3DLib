@@ -8,8 +8,6 @@
 #include "Support/Helpers.h"  // sleep()
 #include "RegisterMap.h"      // ProgramRequest()
 
-using namespace Log;
-
 namespace V3DLib {
 
 namespace {
@@ -212,7 +210,7 @@ Data launch_messages;
  * @brief Load and run a single kernel on multiple QPU's.
  */
 void MailBoxInvoke::invoke(int numQPUs, Code const &code, IntList const &params) {
-  assertq(!code.empty(), "MailBoxInvoke::invoke(): no code to invoke", true );
+  assertq(!code.empty(), "MailBoxInvoke::invoke(): no code to invoke");
 
   Data uniforms;  // Memory region for QPU parameters
   load_uniforms(uniforms, params, numQPUs);

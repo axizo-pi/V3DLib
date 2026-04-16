@@ -1,21 +1,14 @@
 #include "KernelDriver.h"
-#include <iostream>
-#include <sstream>
-#include "Source/Lang.h"
-#include "Source/Translate.h"
-#include "Target/RemoveLabels.h"
-#include "vc4.h"
 #include "Target/instr/Mnemonics.h"
-#include "SourceTranslate.h"  // add_uniform_pointer_offset()
-#include "RegisterMap.h"      // ErrorStatus()()
+#include "Target/RemoveLabels.h"
 #include "Target/Satisfy.h"
+#include "Source/Translate.h"
+#include "RegisterMap.h"      // ErrorStatus()()
+#include "Functions.h"
+#include "SourceTranslate.h"  // add_uniform_pointer_offset()
 #include "RegAlloc.h"
-#include "global/log.h"
 #include "Instr.h"
 #include "LibSettings.h"
-#include "Functions.h"
-
-using namespace Log;
 
 namespace V3DLib {
 
@@ -23,9 +16,7 @@ using ::operator<<;  // C++ weirdness
 using namespace std;
 
 namespace vc4 {
-
 namespace {
-
 
 /**
  * vc4 LDTMU implicitly writes to ACC4, take this into account
@@ -207,15 +198,15 @@ void KernelDriver::invoke(int numQPUs, IntList &params, bool wait_complete) {
   }
 
   try {
-  	MailBoxInvoke::invoke(numQPUs, m_code, params);
+    MailBoxInvoke::invoke(numQPUs, m_code, params);
   } catch (std::runtime_error const &e) {
 #ifdef QPU_MODE
-		Log::cerr << "KernelDriver::invoke exception caught: " << e.what() << "\n"
-			        << "Error registers:\n"
-				      << RegisterMap::ErrorStatus();
+    Log::cerr << "KernelDriver::invoke exception caught: " << e.what() << "\n"
+              << "Error registers:\n"
+              << RegisterMap::ErrorStatus();
 #endif              
-		throw;
-	}
+    throw;
+  }
 }
 
 }  // namespace vc4

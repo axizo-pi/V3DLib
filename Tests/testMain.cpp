@@ -20,7 +20,6 @@
 
 
 int main(int argc, char** argv) {
-  set_loglevel(LogLevel::WARNING);
   Log::set_log_dir("log");
   Log::set_log_file("unit_tests.log");
 

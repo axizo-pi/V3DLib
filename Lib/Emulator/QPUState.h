@@ -1,8 +1,8 @@
 #ifndef _V3DLIB_EMULATOR_QPUSTATE_H_
 #define _V3DLIB_EMULATOR_QPUSTATE_H_
 #include "EmuSupport.h"
-#include "Target/instr/Instr.h"
 #include "DMAAddr.h"
+#include "Target/instr/Instr.h"
 
 namespace V3DLib {
 
@@ -12,7 +12,7 @@ class State;
  * @brief Very simple queue containing N elements of type T
  */
 template <int N, typename T> struct Queue {
-	const int size = N;
+  const int size = N;
 
   T elems[N+1];
   int front;
@@ -76,11 +76,11 @@ struct QPUState {
   std::string dump(int index = -1) const;
   std::string dump_runstate() const;
 
-	// Delayed branch support
-	const int MAX_JUMP_COUNT = 4;
-	bool      m_take_jump    = false;
-	int       m_jump_count   = 0;
-	int       m_jump_offset  = 0;
+  // Delayed branch support
+  const int MAX_JUMP_COUNT = 4;
+  bool      m_take_jump    = false;
+  int       m_jump_count   = 0;
+  int       m_jump_offset  = 0;
 };
 
 } // namespace V3DLib

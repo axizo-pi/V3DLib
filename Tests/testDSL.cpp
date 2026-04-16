@@ -1,15 +1,8 @@
-#include <iostream>
-#include <string>
-#include <sstream>
-#include <fstream>
 #include <V3DLib.h>
-#include "LibSettings.h"
-#include "Support/pgm.h"
 #include "support/support.h"
-#include "Support/Helpers.h"
-#include "Source/Complex.h"
-#include "Source/Functions.h"
+#include "Support/pgm.h"
 #include "v3d/v3d.h"
+#include "LibSettings.h"
 
 using namespace V3DLib;
 using namespace std;
@@ -157,9 +150,9 @@ void check_vector(SharedArray<T> &result, int index, int expected, float precisi
 
 template<typename T>
 void check_vectors(
-	SharedArray<T> &result,
-	std::vector<std::vector<T>> const &expected,
-	float precision = 0.0f
+  SharedArray<T> &result,
+  std::vector<std::vector<T>> const &expected,
+  float precision = 0.0f
 ) {
   for (int index = 0; index < (int) expected.size(); ++index) {
     check_vector(result, index, expected[index], precision);
@@ -363,7 +356,7 @@ void complex_kernel(Complex::Ptr input, Complex::Ptr result) {
 //=============================================================================
 
 TEST_CASE("Test correct working DSL [dsl][instr]") {
-	REQUIRE(::v3d::open());
+  REQUIRE(::v3d::open());
 
   SUBCASE("Test specific int instructions") {
     int const NUM = 2;
@@ -385,7 +378,7 @@ TEST_CASE("Test correct working DSL [dsl][instr]") {
     const int NUM = 2;
 
     vector<float> expected;
-   	expected.resize(16*NUM); 
+     expected.resize(16*NUM); 
 
     for (int i = 0; i < 16; ++i) {
       expected[i] = 1.0f/(1.0f + ((float) i));
@@ -485,12 +478,12 @@ void int_ops_kernel(Int::Ptr result) {
     result.inc();
   };
 
-	comment("add 3");
+  comment("add 3");
   Int a = index();
   a += 3;
   store(a);
 
-	comment("sub 11");
+  comment("sub 11");
   a -= 11;
   store(a);
 
@@ -507,7 +500,7 @@ void int_ops_kernel(Int::Ptr result) {
   store(16*16/index());
 
   comment("Integer division by float");
-	store(integer_division_f(16*16, index()));
+  store(integer_division_f(16*16, index()));
 
   comment("First usage -index() starts next");
   store((-16*16)/(-index()));
@@ -528,26 +521,26 @@ void float_ops_kernel(Float::Ptr result) {
   };
 
   Float ndx = toFloat(index());
-	Float a;
+  Float a;
   a = ndx + 3.0f;
   a += 0.25f;
-	store(a);
+  store(a);
 
-	a = ndx*47.0f;
-	store(a);
+  a = ndx*47.0f;
+  store(a);
 
-	a = ndx + (-0.25f);
-	store(a);
+  a = ndx + (-0.25f);
+  store(a);
 
-	//
-	// NOTE; slight differences in results between scalar and QPU
-	//
+  //
+  // NOTE; slight differences in results between scalar and QPU
+  //
 
-	a = ndx*1.1215f;
-	store(a);
+  a = ndx*1.1215f;
+  store(a);
 
-	a = -3.27f*ndx + 1.0f;  // without add, actually literally returns '-0'
-	store(a);
+  a = -3.27f*ndx + 1.0f;  // without add, actually literally returns '-0'
+  store(a);
 }
 
 
@@ -556,7 +549,7 @@ TEST_CASE("Test specific operations in DSL [dsl][ops]") {
     int const N = 12;  // Number of expected results
 
     auto k = compile(int_ops_kernel);
-		//to_file("int_ops_kernel.txt", k.dump());
+    //to_file("int_ops_kernel.txt", k.dump());
 
     Int::Array result(16*N);
     result.fill(-1);
@@ -572,14 +565,14 @@ TEST_CASE("Test specific operations in DSL [dsl][ops]") {
       {3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18},                    // topmost_bit
       {-256, -256, -256, -256, -256, -256, -256, -256, -256, -256, -256, -256, -256, -256, -256, -256}, // b = -256 
 
-			//
+      //
       // integer division
-			//
+      //
 
-			// First value is 'infinity'
+      // First value is 'infinity'
       {2147483647, 256, 128, 85, 64, 51, 42, 36, 32, 28, 25, 23, 21, 19, 18, 17},
 
-			// integer division by float
+      // integer division by float
       {2147483647, 256, 128, 85, 64, 51, 42, 36, 32, 28, 25, 23, 21, 19, 18, 17},
 
       {-2147483647, 256, 128, 85, 64, 51, 42, 36, 32, 28, 25, 23, 21, 19, 18, 17},  // NB -0 == 0
@@ -596,19 +589,19 @@ TEST_CASE("Test specific operations in DSL [dsl][ops]") {
     int const N = 5;  // Number of expected results
 
     auto k = compile(float_ops_kernel);
-		//to_file("float_ops_kernel.txt", k.dump());
+    //to_file("float_ops_kernel.txt", k.dump());
 
     Float::Array results(16*N);
 
     k.load(&results).run();
 
     vector<vector<float>> expected = {
-			{ 3.25,  4.25,  5.25,  6.25,  7.25,  8.25,  9.25, 10.25, 11.25, 12.25, 13.25, 14.25, 15.25, 16.25, 17.25, 18.25},
-			{ 0, 47, 94, 141, 188, 235, 282, 329, 376, 423, 470, 517, 564, 611, 658, 705},
-			{ -0.25, 0.75, 1.75, 2.75, 3.75, 4.75, 5.75, 6.75, 7.75, 8.75, 9.75, 10.75, 11.75, 12.75, 13.75, 14.75},
-			{ 0, 1.1215, 2.243, 3.3645, 4.486, 5.6075, 6.729, 7.8505, 8.972, 10.0935, 11.215, 12.3365, 13.458, 14.5795, 15.701, 16.8225},
-			{ 1, -2.27, -5.54, -8.81, -12.08, -15.35, -18.62, -21.89, -25.16, -28.43, -31.7, -34.97, -38.24, -41.51, -44.78, -48.05},
-		};
+      { 3.25,  4.25,  5.25,  6.25,  7.25,  8.25,  9.25, 10.25, 11.25, 12.25, 13.25, 14.25, 15.25, 16.25, 17.25, 18.25},
+      { 0, 47, 94, 141, 188, 235, 282, 329, 376, 423, 470, 517, 564, 611, 658, 705},
+      { -0.25, 0.75, 1.75, 2.75, 3.75, 4.75, 5.75, 6.75, 7.75, 8.75, 9.75, 10.75, 11.75, 12.75, 13.75, 14.75},
+      { 0, 1.1215, 2.243, 3.3645, 4.486, 5.6075, 6.729, 7.8505, 8.972, 10.0935, 11.215, 12.3365, 13.458, 14.5795, 15.701, 16.8225},
+      { 1, -2.27, -5.54, -8.81, -12.08, -15.35, -18.62, -21.89, -25.16, -28.43, -31.7, -34.97, -38.24, -41.51, -44.78, -48.05},
+    };
 
     check_vectors(results, expected, 1e-4f);
   }
@@ -790,7 +783,7 @@ TEST_CASE("Initialization with index() on uniform pointers should work as expect
   SUBCASE("Test with TMU") {
     auto k = compile(offsets_kernel<Int, Int::Ptr>);
     //to_file("offsets_kernel.txt", k.dump());
-		//k.dump_compile_data(false, "offsets_kernel_compile_data.txt");
+    //k.dump_compile_data(false, "offsets_kernel_compile_data.txt");
     reset();
     k.load(&result, &a).run();
     check("tmu qpu");
@@ -864,7 +857,7 @@ float calc_max_diff(T1 &arr1, T2 &arr2, int size) {
  * separately
  */
 TEST_CASE("Test functions [dsl][func]") {
-	REQUIRE(::v3d::open());
+  REQUIRE(::v3d::open());
 
   int const NumValues       = 15;
   int const SharedArraySize = (NumValues/16 +1)*16;
@@ -1084,7 +1077,8 @@ TEST_CASE("Test issues [dsl][issues]") {
    * Anything more elaborate, forget it. I've racked my brain on this, there is no salvation.
    */
   SUBCASE("Check init self issue") {
-		log_to_cout(false);
+    ::log_to_cout(false);
+    Log::log_to_cout(false);
 
     {
       auto k = compile(init_self_1_kernel);
@@ -1101,7 +1095,8 @@ TEST_CASE("Test issues [dsl][issues]") {
       REQUIRE(k.has_errors());
     }
 
-    log_to_cout(true);
+    ::log_to_cout(true);
+    Log::log_to_cout(true);
   }
 
   Platform::use_main_memory(false);
@@ -1165,7 +1160,8 @@ TEST_CASE("Test issues [dsl][block]") {
   int const N = 1;
 
   Platform::use_main_memory(true);
-  log_to_cout(false);
+  ::log_to_cout(false);
+  Log::log_to_cout(false);
 
   Int::Array result(16*N);
   result.fill(-1);
@@ -1194,7 +1190,8 @@ TEST_CASE("Test issues [dsl][block]") {
     REQUIRE(k.has_errors());
   }
 
-  log_to_cout(true);
+  ::log_to_cout(true);
+  Log::log_to_cout(true);
   Platform::use_main_memory(false);
 }
 
@@ -1253,14 +1250,14 @@ TEST_CASE("Test sin/cos instructions [dsl][sincos]") {
   auto lib_neg_sin = lib_neg_sin_values(N);
 
   auto k = compile(sincos_kernel);
-	//to_file("sincos_kernel.txt", k.dump());
+  //to_file("sincos_kernel.txt", k.dump());
   k.load(&result, N).run();
 
   float const hi_precision = 1.2e-3f;
   float const lo_precision = 5.7e-2f;
 
-	// vc4 will use the lo-res sin function,
-	// v3d the will use hardware, which is precise
+  // vc4 will use the lo-res sin function,
+  // v3d the will use hardware, which is precise
   float const qpu_precision = (Platform::run_vc4())?lo_precision:1.0e-6f;
 
   {
@@ -1293,14 +1290,14 @@ TEST_CASE("Test sin/cos instructions [dsl][sincos]") {
     float diff = max_abs_value(lib_neg_sin, result.ptr() + 3*N);
     INFO("max abs diff v3d sin: " << diff);
     REQUIRE(diff <= qpu_precision);
-	}
+  }
 */
 
   {
     float diff = max_abs_value(lib_cos, result.ptr() + 4*N);
     INFO("max abs diff v3d sin: " << diff);
     REQUIRE(diff <= qpu_precision);
-	}
+  }
 }
 
 

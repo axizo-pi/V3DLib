@@ -84,7 +84,7 @@ bool verify_step(std::vector<int> const &src, int step, int width) {
   }
 
   if (!verified) {
-    ::debug("verify_step() fail");
+    cdebug << "verify_step() fail";
   }
 
   return verified;
@@ -568,8 +568,8 @@ std::vector<Indexes16> indexes_to_16vectors(std::vector<Offsets> const &fft_inde
   if (!(valid_count == 0 || valid_count == (int) ret.size())) {
     cerr << "Valid count failed: "
          << valid_count << " out of " << ret.size() << " valid"
-				 << thrw
-		;
+         << thrw
+    ;
   }
   
 
@@ -1025,7 +1025,7 @@ void fft_kernel(Complex::Ptr b, Complex::Ptr devnull) {
       w_phase += wm_phase*toFloat(j_offset);
     });
 
-		// TODO: Is barrier needed here? Appears to work fine without it
+    // TODO: Is barrier needed here? Appears to work fine without it
 
     i += same_count_skipjs - 1;
   }

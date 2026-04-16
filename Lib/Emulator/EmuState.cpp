@@ -1,11 +1,10 @@
 #include "EmuState.h"
-#include "Support/basics.h"
 
 namespace V3DLib {
 namespace {
-	//
-	// Semaphores are shared over the QPU's
-	//
+  //
+  // Semaphores are shared over the QPU's
+  //
   int const NUM_SEMAPHORES = 16;
   int sema[NUM_SEMAPHORES];       // Semaphores
 
@@ -59,15 +58,15 @@ bool EmuState::sema_inc(int sema_id) {
   if (sema[sema_id] == 15) {
     semaphore_wait_count++;
 
-		//
-		// Following fails with high wait count values, for e.g.:
-		//
-		//     sudo ./obj/qpu-debug/bin/Mandelbrot -n=4 -grey -r=debugger -dim=128
-		//
-		// - max wait count 31323
-		//
-		// QPU run works perfectly fine; this is probably a wrong assumption.
-		//
+    //
+    // Following fails with high wait count values, for e.g.:
+    //
+    //     sudo ./obj/qpu-debug/bin/Mandelbrot -n=4 -grey -r=debugger -dim=128
+    //
+    // - max wait count 31323
+    //
+    // QPU run works perfectly fine; this is probably a wrong assumption.
+    //
     assertq(semaphore_wait_count < MAX_SEMAPHORE_WAIT, "Semaphore wait for SINC appears to be stuck");
     return true;
   } else {
@@ -88,7 +87,7 @@ bool EmuState::sema_dec(int sema_id) {
   if (sema[sema_id] == 0) {
     semaphore_wait_count++;
 
-		// See comment in sema_inc()
+    // See comment in sema_inc()
     assertq(semaphore_wait_count < MAX_SEMAPHORE_WAIT, "Semaphore wait for SINC appears to be stuck");
     return true;
   } else {
@@ -153,13 +152,13 @@ std::string EmuState::dump_vpm() const {
 std::string EmuState::dump_sema() const {
   std::string ret;
 
-	ret << "semaphores: ";
+  ret << "semaphores: ";
 
-	for (int i = 0; i < NUM_SEMAPHORES; ++i) {
-		ret << sema[i] << " ";
-	}
+  for (int i = 0; i < NUM_SEMAPHORES; ++i) {
+    ret << sema[i] << " ";
+  }
 
-	ret << "; wait: " << semaphore_wait_count << "\n";
+  ret << "; wait: " << semaphore_wait_count << "\n";
 
   return ret;
 }

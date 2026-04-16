@@ -84,10 +84,10 @@ Following works on `Pi2`, should be OK on other Pi's:
 
 Remember: vc6 has one regfile, not a and b
 
-| raddr\_a | read address from regfile a |
-| raddr\_b | read address from regfile b |
-| waddr\_a | write address to regfile a |
-| waddr\_b | write address to regfile b |
+| raddr_a | read address from regfile a |
+| raddr_b | read address from regfile b |
+| waddr_a | write address to regfile a |
+| waddr_b | write address to regfile b |
 
 - vc4: a/b's really read/write to regfile a/b
 - vc6: all read/writes to the central regfile
@@ -182,12 +182,11 @@ Unfortunately, this solution will not work for access to `/dev/mem`. You will st
 ## Issues with Installation
 
 
-### Debian 13 Trixie doesn't start up!
+### Debian 13 Trixie has no `bcm_host`
 
-Not sure what is happening. All I know is:
-
-* The active led flickers continuously
-* I can **NOT** ssh into the installed Pi.
+This library is required for running `vc4` applications.  
+The workaround is to build and install it yourself. The steps are incorporated
+in the [Install Intructions](Install.md)
 
 ### 32-bits Debian 12 Bookworm:
 
@@ -245,3 +244,17 @@ Following prototypes are missing in in `/opt/vc/include/bcm_host.h`:
   - `bcm_host_get_peripheral_address()`
   - `bcm_host_get_peripheral_size()`
 
+-------------------
+
+## Other Notes 
+
+### Usage of a local dynamic library on execution:
+
+Used when testing `libbcm_host.so`.
+
+    > export LD_LIBRARY_PATH=~/projects/V3DLib/extern/userland/build/lib/
+    > ls $LD_LIBRARY_PATH   # Just checking
+    > alias sudo='sudo PATH="$PATH" HOME="$HOME" LD_LIBRARY_PATH="$LD_LIBRARY_PATH"'
+
+This fails when running `make test` in two ways.
+My solution is to just install the library in the system library directory.

@@ -1,18 +1,13 @@
 #include "Emulator.h"
+#include "Support/Platform.h"
+#include "QPUState.h"
 #include "Debugger.h"
-#include <cmath>
-#include "global/log.h"
-#include "EmuSupport.h"
-#include "Mutex.h"
 #include "State.h"
-#include "DMA.h"
-#include "Target/SmallLiteral.h"
-#include "Target/BufferObject.h"
+#include "Mutex.h"
 
 namespace V3DLib {
 
 using namespace Target;
-using namespace Log;
 
 namespace {
 
@@ -44,7 +39,7 @@ Vec DMA_readReg(QPUState* s, State* g, Reg reg, bool &handled) {
       VPMLoadReq* req = s->vpmLoadQueue.first();
       vpm_read(*req, g->vpm, v);
       if (req->numVecs == 0) s->vpmLoadQueue.deq(); 
-			//TODO check if needed: s->loadBuffer.push(v);
+      //TODO check if needed: s->loadBuffer.push(v);
     }
     return v;
 
@@ -217,7 +212,7 @@ inline bool checkBranchCond(QPUState* s, BranchCond cond) {
 
       for (int i = 0; i < NUM_LANES; i++) {
         if (bools[i]) return true;
-			}
+      }
 
       return false;
     default:
@@ -335,7 +330,7 @@ void write_special_register(QPUState* s, State* g, bool setFlags, AssignCond con
       break;
   }
 
-  assertq(false, "emulator: can not write to special register", true);
+  assertq("emulator: can not write to special register");
 }
 
 
@@ -453,10 +448,10 @@ void run_instruction(QPUState &s, State &state, Instr const &instr) {
         if (t.relative && !t.useRegOffset) {
           //s.pc += 3 + t.immOffset;
 
-					//warn << "setting branch jump at " << s.pc;
-					s.m_take_jump   = true;
-					s.m_jump_count  = 0;
-					s.m_jump_offset = t.immOffset;
+          //warn << "setting branch jump at " << s.pc;
+          s.m_take_jump   = true;
+          s.m_jump_count  = 0;
+          s.m_jump_offset = t.immOffset;
         } else {
           fatal("V3DLib: found unsupported form of branch target");
         }

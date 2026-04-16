@@ -1,12 +1,8 @@
 #include "Instr.h"         // Location of definition struct Instr
-#include "Support/debug.h"
-#include "global/log.h"
 #include "Support/basics.h"
 #include "Support/Platform.h"
 #include "Source/BExpr.h"   // class CmpOp
 #include "LibSettings.h"
-
-using namespace Log;
 
 namespace V3DLib {
 namespace Target {
@@ -171,13 +167,13 @@ Instr::Instr(InstrTag in_tag) {
 
 
 Reg Instr::dest() const {
-  assertq(has_dest(), "oops", true);
+  assertq(has_dest(), "oops");
   return m_dest;
 }
 
 
 void Instr::dest(Reg const &rhs) {
-  assertq(has_dest(), "oops", true);
+  assertq(has_dest(), "oops");
   m_dest = rhs;
 }
 
@@ -366,8 +362,6 @@ bool Instr::skip() const {
  */
 void Instr::set_skip() {
   assertq(tag != InstrTag::SKIP, "set_skip(): statement already set to SKIP");
-  //Log::debug << "Instr::set_skip() called on: " << mnemonic(false);
-
   tag = InstrTag::SKIP;
 }
 
@@ -684,7 +678,7 @@ int Instr::List::lastUniformOffset() {
     if (!(*this)[index].isUniformLoad()) break; 
   }
 
-  assertq(index >= 2, "Expecting at least two uniform loads.", true);
+  assertq(index >= 2, "Expecting at least two uniform loads.");
   return index - 1;
 }
 

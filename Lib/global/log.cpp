@@ -1,18 +1,16 @@
 /******************************************************************
+ * Version: 7 - Added rollover, improved file permissions
  * Version: 6 - restored log_to_cout()
  * Version: 5 - Added logging to file
  * Version: 4 - Added thrw flag, option to suppres console output
  * Version: 3 - Added hex flag
  ******************************************************************/
 #include "log.h"
-#include <stdexcept>
-#include <iostream>
-#include <cstdlib>            // abort()
-#include <time.h>             // strftime()
-#include <sstream>            // std::stringstream
-#include <fstream>
-#include <filesystem>
 #include "Support/Helpers.h"
+#include "Support/basics.h"
+#include <iostream>
+#include <filesystem>
+#include <fstream>
 
 using namespace V3DLib;
 
@@ -21,6 +19,8 @@ namespace Log {
 namespace fs = std::filesystem; // Alias for brevity
 
 namespace {
+
+const unsigned long ROLLOVER = 10*1024*1024;
 
 bool s_cout_show_timestamp = true;
 bool s_log_to_cout = true;
@@ -63,6 +63,59 @@ bool create_directory_if_missing(const fs::path& dir_path) {
     return false;
   }
 }
+
+
+/**
+ * @brief Tryout for rollover
+ */
+void rollover(std::string const &dir, std::string const &file) {
+  std::string outfile;
+  outfile << dir << "/" << file;
+  if (!fs::exists(outfile)) return;
+
+  fs::path p{outfile};
+  auto size = fs::file_size(p);
+
+  std::string base = split(file, ".")[0];
+  //std::cout << "File base: " << base << "\n";
+  //std::cout << "size log '" << outfile << ": " << size << "\n";
+
+  if (size <= ROLLOVER) return;
+
+  std::cout << "Performing rollover.\n";
+
+  int index = -1;
+  for (const auto & entry : fs::directory_iterator(dir)) {
+    std::string file = split(entry.path(), "/").back();
+
+    if (contains(file, base)) {
+      //std::cout << "  " << entry.path() << std::endl;
+
+      // Isolate the index
+      auto tmp = split(file, ".");
+      assert(tmp.size() == 2);
+      tmp = split(tmp[0], "-");
+      if (tmp.size() > 1) {
+        int tmp_index = atoi(tmp[1].c_str());
+        if (tmp_index > index) {
+          index = tmp_index;
+          //std::cout << "New highest index: " << index << "\n";
+        }
+      }
+    }
+  }
+
+  index++;
+  //std::cout << "Next index: " << index << "\n";
+
+  // Create new filename
+  auto path = split(outfile, ".");
+  std::string new_filename;
+  new_filename << path[0] << "-" << index << ".log";
+  std::cout << "New filename: " << new_filename << "\n";
+  fs::rename(outfile, new_filename);
+}
+
 
 /**
  * Internal Logger
@@ -136,18 +189,29 @@ protected:
     if (m_log_dir.empty()) return;
     if (m_file.empty())    return;
 
-    stringstream outfile;
+    std::string outfile;
     outfile << m_log_dir << "/" << m_file;
 
-    ensure_path_exists(m_log_dir);
-    ensure_file_exists(outfile.str());
+    rollover(m_log_dir, m_file);
 
+    ensure_path_exists(m_log_dir);
+
+    bool new_file = !fs::exists(outfile);
     ofstream of;
-    of.open(outfile.str(), ios::app);
-    assert(!of.fail(), "Can not open logfile for appending");
+    of.open(outfile, ios::app);
+    assertq(!of.fail(), "Can not open logfile for appending");
 
     of << msg;
     of.close();
+
+    if (new_file) {
+      // Change the file permissions to read/write
+      fs::permissions(
+        outfile,
+        fs::perms::owner_all | fs::perms::group_all | fs::perms::others_all,
+        fs::perm_options::replace
+      );
+    }
   }
 
 private:
@@ -256,11 +320,11 @@ std::string Logger::msg() {
     case FATAL:   prefix = "FATAL: ";   break;
   }
 
-  assert(!m_buf.str().empty(), "m_buf is empty!");
-  std::stringstream msg;
+  assertq(!m_buf.str().empty(), "m_buf is empty!");
+  std::string msg;
   msg << prefix << m_buf.str() << "\n";
 
-  return msg.str();
+  return msg;
 }
 
 
@@ -309,7 +373,12 @@ void log_to_cout(bool val) {
 
 void assertq(bool condition, const std::string &msg) {
   if (condition) return;
-  fatal << msg << "\n";
+
+  if (msg.empty()) {
+    fatal << "assertq failed.\n";
+  } else {
+    fatal << msg << "\n";
+  }
 }
 
 

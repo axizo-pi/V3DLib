@@ -21,8 +21,8 @@ void run_kernel(int kernel_index) {
   auto name = kernel_id[kernel_index];
 
   if (!settings.silent) {
-    cout << "Ran kernel '" << name << "' "
-         << "with " << settings.num_qpus << " QPU's.\n";
+    std::cout << "Ran kernel '" << name << "' "
+              << "with " << settings.num_qpus << " QPU's.\n";
   }
 }
 

@@ -1,5 +1,4 @@
 #include "SourceTranslate.h"
-#include <iostream>
 #include "Support/basics.h"
 #include "Support/Timer.h"
 #include "Source/Translate.h"
@@ -9,6 +8,7 @@
 #include "vc4/DMA/DMA.h"
 #include "Target/instr/Mnemonics.h"
 #include "Common/CompileData.h"
+#include <iostream>
 
 namespace V3DLib {
 
@@ -59,7 +59,7 @@ void SourceTranslate::regAlloc(Instr::List &instrs) {
     if (regId < 0) {
       std::string buf = "v3d regAlloc(): register allocation failed for target instruction ";
       buf << i << ": " << instrs[i].mnemonic();
-      error(buf, true);
+      cerr << buf << thrw;
     } else {
       live.reg_usage()[i].reg.regId = regId;
     }

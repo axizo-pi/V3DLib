@@ -2,10 +2,7 @@
  * The screen struct is only used to interface with the bugmgr in the mesa library.
  */
 #include "screen.h"
-#include "global/log.h"
 #include "util/ralloc.h"
-
-using namespace Log;
 
 namespace {
 

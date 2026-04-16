@@ -1,10 +1,10 @@
 #ifndef _V3DLIB_VC4_INSTR_H_
 #define _V3DLIB_VC4_INSTR_H_
-#include <stdint.h>
 #include "Target/instr/Instr.h"
 #include "Common/SharedArray.h"  // Code
-#include <vector>
 #include "Support/InstructionComment.h"
+#include <vector>
+#include <stdint.h>
 
 namespace V3DLib {
 namespace vc4 {

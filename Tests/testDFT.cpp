@@ -4,19 +4,14 @@
 // This test takes a LONG time on pi3 (vc4).
 //
 ///////////////////////////////////////////////////////////////////////////////
-#include <iostream>
-#include "Support/Timer.h"
-#include "Source/Complex.h"
-#include "Support/Helpers.h"
-#include "support/support.h"
-#include "support/matrix_support.h"
-#include "support/dft_support.h"
 #include "Kernel.h"
 #include "Kernels/Matrix.h"
+#include "support/matrix_support.h"
+#include "support/support.h"
+#include "support/dft_support.h"
 #include "LibSettings.h"
+#include "Support/Timer.h"
 #include "support/ProfileOutput.h"
-#include "Support/Helpers.h"  // to_file()
-
 
 using namespace V3DLib;
 

@@ -4,9 +4,6 @@
 #include "vc4/RegisterMap.h"
 
 namespace V3DLib {
-
-using namespace Log;
-
 namespace {
 
 int const DEFAULT_HEAP_SIZE = 8*1024*1024;

@@ -1,7 +1,7 @@
 #include "Conditions.h"
 #include "Support/basics.h"
-#include "Source/BExpr.h"
 #include "Support/Platform.h"
+#include "Source/BExpr.h"
 
 namespace V3DLib {
 namespace {

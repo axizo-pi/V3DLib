@@ -7,10 +7,10 @@ namespace V3DLib {
 class BaseKernel;
 
 enum RunType {
-	QPU,
-	Interpreter,
-	Emulator,
-	Debugger
+  QPU,
+  Interpreter,
+  Emulator,
+  Debugger
 };
 
 struct BaseSettings {

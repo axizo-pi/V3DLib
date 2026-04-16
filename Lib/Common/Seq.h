@@ -4,9 +4,9 @@
 ///////////////////////////////////////////////////////////////////////////////
 #ifndef _V3DLIB_COMMON_SEQ_H_
 #define _V3DLIB_COMMON_SEQ_H_
+#include "Support/basics.h"
 #include <stdlib.h>
 #include <string>
-#include "Support/debug.h"
 
 namespace V3DLib {
 
@@ -35,10 +35,7 @@ public:
     
 
   ~Seq() {
-    if (elems == nullptr) {  // WRI debug
-      breakpoint
-    }
-
+    assertq(elems != nullptr);
     delete [] elems;
     elems = nullptr;
   }
@@ -63,15 +60,15 @@ public:
   }
 
   T &get(int index) {
-    assertq(!empty(), "seq[]: can not access elements, sequence is empty", true);
-    assertq(0 <= index && index < numElems, "Seq[]: index out of range", true);
+    assertq(!empty(), "seq[]: can not access elements, sequence is empty");
+    assertq(0 <= index && index < numElems, "Seq[]: index out of range");
     return elems[index];
   }
 
 
   T operator[](int index) const {
-    assertq(!empty(), "seq[]: can not access elements, sequence is empty", true);
-    assertq(0 <= index && index < numElems, "Seq[]: index out of range", true);
+    assertq(!empty(), "seq[]: can not access elements, sequence is empty");
+    assertq(0 <= index && index < numElems, "Seq[]: index out of range");
     return elems[index];
   }
 
@@ -93,7 +90,7 @@ public:
    * @param n  requested size of sequence
    */
   void setCapacity(int n) {
-    assertq(n > 0, "Seq::setCapacity(): can not set sequence capacity to zero", true);
+    assertq(n > 0, "Seq::setCapacity(): can not set sequence capacity to zero");
     if (n <= maxElems) {
       assertq(elems != nullptr, "Seq::setCapacity(): internal storage not initialized");
       return;  // Don't bother resizing if already big enough

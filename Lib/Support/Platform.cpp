@@ -1,15 +1,10 @@
 #include "Platform.h"
-#include <sstream>
+#include "basics.h"
+#include <string.h>  // strstr()
 #include <fstream>
 #include <memory>
-#include <string.h>  // strstr()
-#include "defines.h"
-#include "basics.h"
 
 namespace V3DLib {
-
-using namespace Log;
-
 namespace Platform {
 namespace {
 
@@ -268,7 +263,7 @@ void use_main_memory(bool val) {
 #ifdef QPU_MODE
   instance().m_use_main_memory = val;
 #else
-  assertq(instance().m_use_main_memory, "Should only use main memory for emulator and interpreter", true);
+  assertq(instance().m_use_main_memory, "Should only use main memory for emulator and interpreter");
 
   if (!val) {
     cdebug << "use_main_memory(): ignoring passed value 'false', because QPU mode is disabled";
@@ -328,7 +323,9 @@ Tag tag() {
   else if (tmp == "pi3")    { tag = pi3;     }
   else if (tmp == "piZ")    { tag = pi_zero; }
   else if (tmp == "pi4-64") { tag = pi4;     }
+  else if (tmp == "pi4")    { tag = pi4;     }
   else if (tmp == "pi5-64") { tag = pi5;     }
+  else if (tmp == "pi5")    { tag = pi5;     }
   else {
     warn << "Unknown pi_version: '" << tmp << "'" << thrw;
   }

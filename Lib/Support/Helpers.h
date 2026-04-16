@@ -12,9 +12,8 @@ void to_file(std::string const &filename, std::string const &content);
 std::vector<std::string> load_file_vec(std::string const &filename);
 std::string load_file(std::string const &filename);
 
-std::string sudo();
+std::string sudo_prefix();
 bool ensure_path_exists(std::string const &path);
-bool ensure_file_exists(std::string const &path);
 float random_float();
 void sleep(int sec);
 

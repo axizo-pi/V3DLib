@@ -1,11 +1,9 @@
 #include "SmallImm.h"
-#include <stdio.h>
-#include <vector>
 #include "Support/basics.h"
 #include "Support/Platform.h"
 #include "Target/instr/Imm.h"
-
-using namespace Log;
+#include <stdio.h>
+#include <vector>
 
 namespace V3DLib {
 namespace v3d {
@@ -293,14 +291,14 @@ std::string SmallImm::print_encoded_value(int value) {
 
 
 uint8_t SmallImm::val() const {
-  assertq(m_val != 0xff, "Value not set", true);
+  assertq(m_val != 0xff, "Value not set");
   return m_val;
 }
 
 
 bool SmallImm::operator==(SmallImm const &rhs) const {
-  assertq(m_val != 0xff, "Incorrect index value", true);
-  assertq(rhs.m_val != 0xff, "Incorrect index value rhs", true);
+  assertq(m_val != 0xff, "Incorrect index value");
+  assertq(rhs.m_val != 0xff, "Incorrect index value rhs");
   return m_val == rhs.m_val;
 }
 

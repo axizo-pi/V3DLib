@@ -1,8 +1,6 @@
 #include "InstructionComment.h"
 #include "Support/basics.h"
 
-using namespace Log;
-
 namespace V3DLib {
 
 void InstructionComment::transfer_comments(InstructionComment &rhs) {

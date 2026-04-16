@@ -46,7 +46,7 @@ bool SourceTranslate::stmt(Instr::List &seq, Stmt::Ptr s) {
 
     default:
       if (!DMA::translate_stmt(seq, s->tag, s->dma)) {
-        assertq(false, "translate_stmt(): unexpected stmt tag", true);
+        assertq("translate_stmt(): unexpected stmt tag");
         ret = false;
       }
       break;

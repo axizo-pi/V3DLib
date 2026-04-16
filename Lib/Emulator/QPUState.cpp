@@ -1,10 +1,7 @@
 #include "QPUState.h"
-#include "Support/basics.h"
 #include "DMA.h"
 
 namespace V3DLib {
-
-using namespace Log;
 
 /**
  * @return true if input handled, false otherwise
@@ -24,7 +21,7 @@ bool SFU::writeReg(Reg dest, Vec v) {
   }
 
   if (handled) {
-    assertq(timer == -1, "SFU is running on SFU function call", true);
+    assertq(timer == -1, "SFU is running on SFU function call");
     timer = 3;
   }
 
@@ -89,16 +86,16 @@ void QPUState::upkeep(State &state) {
     dmaStore.active(false);
   }
 
-	if (m_take_jump) {
-		m_jump_count++;
+  if (m_take_jump) {
+    m_jump_count++;
 
-		if (m_jump_count >= MAX_JUMP_COUNT) {  // >= paranoia
-			m_take_jump = false;
-			pc += m_jump_offset;
-			m_jump_count  = 0;
-			m_jump_offset = 0;
-		}
-	}
+    if (m_jump_count >= MAX_JUMP_COUNT) {  // >= paranoia
+      m_take_jump = false;
+      pc += m_jump_offset;
+      m_jump_count  = 0;
+      m_jump_offset = 0;
+    }
+  }
 
   waiting = false;
 }
@@ -133,23 +130,23 @@ MAYBE_UNUSED std::string QPUState::dump(int index) const {
       << "PC: " << pc << "\n"
       << "running: " << dump_runstate() << "\n";
 
-	if (m_take_jump) {
-  	ret << "jump count: " << m_jump_count << ", offset: " << m_jump_offset  << "\n";
-	}
+  if (m_take_jump) {
+    ret << "jump count: " << m_jump_count << ", offset: " << m_jump_offset  << "\n";
+  }
 
   ret << "\n";
 
   if (dmaLoad.active())  ret << "dmaLoad: " << dmaLoad.dump() << "\n";
   if (dmaStore.active()) ret << "dmaStore: " << dmaStore.dump() << "\n";
 
-	auto const &v = vpmLoadQueue;
-	if (!v.isEmpty()) {
-		ret << "vpmLoadQueue: ";
-		for (int cur = v.front; cur != v.back; cur = (cur + 1)% v.size) {
-	 		ret<< v.elems[cur].dump() << ", ";
-		}
-		ret << "\n";
-	}
+  auto const &v = vpmLoadQueue;
+  if (!v.isEmpty()) {
+    ret << "vpmLoadQueue: ";
+    for (int cur = v.front; cur != v.back; cur = (cur + 1)% v.size) {
+       ret<< v.elems[cur].dump() << ", ";
+    }
+    ret << "\n";
+  }
 
   ret << "negFlags : " << disp_bool_array(negFlags)  << "\n"
       << "zeroFlags: " << disp_bool_array(zeroFlags) << "\n";
@@ -176,7 +173,7 @@ MAYBE_UNUSED std::string QPUState::dump(int index) const {
 
 
 std::string QPUState::dump_runstate() const {
-	return (running?(waiting?"waiting/stalled":"active"):"halted");
+  return (running?(waiting?"waiting/stalled":"active"):"halted");
 }
 
 } // namespace V3DLib

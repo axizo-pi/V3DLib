@@ -2,8 +2,6 @@
 #include "Support/basics.h"
 #include "Support/Platform.h"
 
-using namespace Log;
-
 namespace V3DLib {
 namespace {
 

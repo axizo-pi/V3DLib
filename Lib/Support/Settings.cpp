@@ -5,14 +5,10 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 #include "Settings.h"
-#include <cassert>
-#include <memory>
-#include <iostream>
-#include "Platform.h"
 #include "LibSettings.h"
+#include "Platform.h"
 #include "Support/basics.h"
-#include "global/log.h"
-
+#include <iostream>
 
 namespace {
 
@@ -74,7 +70,7 @@ CmdParameters base_params = {
     "-r=",
     {"QPU", "interpreter", "emulator", "debugger"},
     "Run the kernel on the QPU, interpreter or the emulator.\n"
-		"Value 'debugger' starts the emulator in debugging mode"
+    "Value 'debugger' starts the emulator in debugging mode"
   }, {
     "Disable logging",
     {"-s", "-silent"},
@@ -167,10 +163,8 @@ void Settings::init(int argc, const char *argv[]) {
 
   check_params(m_all_params, argc, argv);
 
-  set_loglevel(WARNING);
-  // No need to set log level for Log
-  Log::set_log_dir("/home/wim/projects/V3DLib/log");
-  Log::set_log_file("V3DLib.log");
+  set_log_dir("/home/wim/projects/V3DLib/log");
+  set_log_file("V3DLib.log");
 }
 
 
@@ -246,7 +240,7 @@ bool Settings::process() {
   silent       = p["Disable logging"]->get_bool_value();
 
   int tmp     = (RunType) p["Select run type"]->get_int_value();
-	assert(QPU <= tmp && tmp <= Debugger);
+  assert(QPU <= tmp && tmp <= Debugger);
   run_type     = (RunType) tmp;
 
 #ifdef QPU_MODE
@@ -260,7 +254,6 @@ bool Settings::process() {
   V3DLib::LibSettings::heap_size(heap_mem << 20);
 
   if (silent) {
-    log_to_cout(false);      // Needs to be before debug that follows
     Log::log_to_cout(false);
   }
 

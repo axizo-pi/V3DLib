@@ -1,16 +1,17 @@
 #ifndef _V3DLIB_SUPPORT_BASICS_H
 #define _V3DLIB_SUPPORT_BASICS_H
-#include <vector>
-#include <string>
-#include <cstdint>
-#include "Exception.h"
 #include "debug.h"
 #include "global/log.h"
+#include "Exception.h"
+#include <vector>
+#include <stdint.h>
+
+using namespace Log;
 
 namespace V3DLib {
 
 /**
- * Terminate the application ASAP
+ * @brief Terminate the application
  *
  * This happens by throwing an exception, rather than abruptly closing with `exit()` or `abort()`.
  * This allows the stack to unwind and all objects clean up behind them, also the global objects.

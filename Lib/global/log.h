@@ -73,16 +73,12 @@ void set_log_dir(std::string const &path);
 void set_log_file(std::string const &file);
 void log_to_cout(bool val);
 
-void assertq(bool condition, const std::string &msg);
+void assertq(bool condition, const std::string &msg = "");
 
-#pragma push_macro("assert")
-#undef assert
-
-inline void assert(bool condition, const std::string &msg) {
-  assertq(condition, msg);
+inline void assertq(const std::string &msg) {
+  assertq(false, msg);
 }
 
-#pragma pop_macro("assert")
 
 // Duplicates of several instances to avoid error "reference to ‘error’ is ambiguous"
 // Eventually, these should be leading, but then we'll have to get rid of debug.h
@@ -106,5 +102,9 @@ private:
 };
 
 } // namespace Log
+
+#ifndef assert
+#define assert(cond) Log::assertq(cond)
+#endif // assert
 
 #endif // BASIC_LOG_H

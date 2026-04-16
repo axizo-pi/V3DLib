@@ -25,6 +25,7 @@ ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 #include "Mailbox.h"
+#include "Support/basics.h"
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -34,12 +35,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdint.h>
 #include <sys/mman.h>
 #include <sys/ioctl.h>
-#include "Support/basics.h"  // fatal()
 #include <cstring>           // strerror()
 
 #define PAGE_SIZE (4*1024)
-
-using namespace Log;
 
 namespace V3DLib {
 
@@ -90,7 +88,7 @@ static int mbox_property(int file_desc, void *buf)
 {
    int ret = ioctl(file_desc, IOCTL_MBOX_PROPERTY, buf);
    if (ret < 0) {
-		 cerr << "mbox_property() ioctl failed, ret: " << ret << ", error: " << strerror(ret);
+     cerr << "mbox_property() ioctl failed, ret: " << ret << ", error: " << strerror(ret);
    }
 
    return ret;
@@ -118,7 +116,7 @@ unsigned get_version(int file_desc)
 
    int ret = mbox_property(file_desc, p);
    if (ret < 0) {
-		 cerr << "get_version(): mbox_property call failed" << thrw;
+     cerr << "get_version(): mbox_property call failed" << thrw;
    }
    //printf("get_version returns %d\n", p[5]);
    return p[5];
@@ -143,7 +141,7 @@ unsigned mem_alloc(int file_desc, unsigned size, unsigned align, unsigned flags)
 
    int ret = mbox_property(file_desc, p);
    if (ret < 0) {
-		 cerr << "mem_alloc(): mbox_property call failed" << thrw;
+     cerr << "mem_alloc(): mbox_property call failed" << thrw;
    }
 
    return p[5];
@@ -166,7 +164,7 @@ unsigned mem_free(int file_desc, unsigned handle)
 
    int ret = mbox_property(file_desc, p);
    if (ret < 0) {
-		 cerr << "mem_free(): mbox_property call failed" << thrw;
+     cerr << "mem_free(): mbox_property call failed" << thrw;
      return (uint32_t) -1;  // Failure
    } else {
      // printf("mem_free returns %d\n", p[5]);
@@ -191,7 +189,7 @@ unsigned mem_lock(int file_desc, unsigned handle)
 
    int ret = mbox_property(file_desc, p);
    if (ret < 0) {
-		 cerr << "mem_lock(): mbox_property call failed" << thrw;
+     cerr << "mem_lock(): mbox_property call failed" << thrw;
    }
    //printf("mem_lock returns %d\n", p[5]);
    return p[5];
@@ -218,7 +216,7 @@ unsigned mem_unlock(int file_desc, unsigned handle)
 
    int ret = mbox_property(file_desc, p);
    if (ret < 0) {
-		 cerr << "mem_unlock(): mbox_property call failed" << thrw;
+     cerr << "mem_unlock(): mbox_property call failed" << thrw;
      return (uint32_t) -1;  // Failure
    } else {
      //printf("mem_unlock returns %d\n", p[5]);
@@ -257,7 +255,7 @@ unsigned execute_code(int file_desc, unsigned code, unsigned r0, unsigned r1, un
 
    int ret = mbox_property(file_desc, p);
    if (ret < 0) {
-		 cerr << "execute_code(): mbox_property call failed" << thrw;
+     cerr << "execute_code(): mbox_property call failed" << thrw;
    }
    //printf("execute_code returns %d\n", p[5]);
    return p[5];
@@ -266,7 +264,7 @@ unsigned execute_code(int file_desc, unsigned code, unsigned r0, unsigned r1, un
 
 unsigned qpu_enable(int file_desc, unsigned enable)
 {
-	 //warn << "Called qpu_enable(" << enable << ")";
+   //warn << "Called qpu_enable(" << enable << ")";
 
    unsigned i=0;
    unsigned p[32];
@@ -284,8 +282,8 @@ unsigned qpu_enable(int file_desc, unsigned enable)
 
    int ret = mbox_property(file_desc, p);
    if (ret < 0) {
-		 breakpoint;
-		 cerr << "qpu_enable(): mbox_property call failed" << thrw;
+     breakpoint;
+     cerr << "qpu_enable(): mbox_property call failed" << thrw;
    }
 
    return p[5];
@@ -319,7 +317,7 @@ unsigned qpu_enable(int file_desc, unsigned enable)
  */
 unsigned execute_qpu(int fd, unsigned num_qpus, unsigned control, unsigned noflush, unsigned timeout) {
 /*
-	 warn << "execute_qpu() params:\n"
+   warn << "execute_qpu() params:\n"
         << "  fd      : "   << fd             << "\n"
         << "  num_qpus: "   << num_qpus       << "\n"
         << "  control : 0x" << hex << control << "\n"
@@ -346,7 +344,7 @@ unsigned execute_qpu(int fd, unsigned num_qpus, unsigned control, unsigned noflu
 
    int ret = mbox_property(fd, p);
    if (ret < 0) {
-		 cerr << "execute_qpu(): mbox_property call failed" << thrw;
+     cerr << "execute_qpu(): mbox_property call failed" << thrw;
    }
 
    return p[5];

@@ -1,10 +1,8 @@
 #include "support.h"
-#include <sys/time.h>
-#include <sstream>
-#include <algorithm>
-#include <iterator>
-#include <filesystem>  // exists()
 #include "Support/Helpers.h"
+#include <algorithm>
+#include <filesystem>
+#include <iterator>
 
 namespace fs = std::filesystem;
 using namespace V3DLib;
@@ -34,13 +32,6 @@ std::string bin_path()  { return BIN_PATH;  }
 std::string test_path() { return TEST_PATH; }
 
 
-double get_time() {
-  struct timeval t;
-  gettimeofday(&t, NULL);
-  return (double) t.tv_sec + ((double) t.tv_usec) * 1e-6;
-}
-
-
 /**
  * @param skip_nops  If true, don't compare nops in received output.
  *                   This indicates instructions which can't be generated to bytecode (yet)
@@ -68,19 +59,19 @@ void match_kernel_outputs(
 
       INFO("Comparing assembly index: " << n << ", code length: " << received.size() <<
         "\nExpected: 0x" << std::hex << expected[n] 
-												 << " " << std::dec << Instr(expected[n]).dump() <<
+                         << " " << std::dec << Instr(expected[n]).dump() <<
         "\nReceived: 0x" << std::hex << received[n]
-												 << " " << std::dec << Instr(received[n]).dump()
+                         << " " << std::dec << Instr(received[n]).dump()
       );
 
       if(!Instr::compare_codes(expected[n], received[n])) {
-				// There are different binary representationsi possible of a given instructions.
-				// Double-check with string representation.
-				Instr exp(expected[n]);
-				Instr rec(received[n]);
-				bool equal = (exp.dump() == rec.dump());
-				REQUIRE(equal);
-			}
+        // There are different binary representationsi possible of a given instructions.
+        // Double-check with string representation.
+        Instr exp(expected[n]);
+        Instr rec(received[n]);
+        bool equal = (exp.dump() == rec.dump());
+        REQUIRE(equal);
+      }
     }
 }
 

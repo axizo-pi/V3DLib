@@ -5,8 +5,6 @@
 
 namespace V3DLib {
 
-using namespace Log;
-
 std::string Debugger::show_help() const {
   std::string ret;
 
@@ -237,18 +235,18 @@ void Debugger::step(int qpu_num, int numQPUs) {
       break;
 
       case 'o': {
-				std::cout << "QPU overview:\n";
+        std::cout << "QPU overview:\n";
 
-				for (int i = 0; i < numQPUs; ++i) {
-					auto const &qpu = m_state.qpu[i];
+        for (int i = 0; i < numQPUs; ++i) {
+          auto const &qpu = m_state.qpu[i];
 
-					std::cout << "  QPU " << i << ": " 
-						        << "PC : "     << qpu.pc << ", "
-						        << "running: " << qpu.dump_runstate()
-										<< "\n";
-				}
+          std::cout << "  QPU " << i << ": " 
+                    << "PC : "     << qpu.pc << ", "
+                    << "running: " << qpu.dump_runstate()
+                    << "\n";
+        }
 
-			}
+      }
       break;
 
       case 'r':

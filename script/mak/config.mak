@@ -5,17 +5,30 @@ ROOT=$(BASE)/Lib
 # Object directory
 OBJDIR := ${BASE}/obj
 
-VCSM_DIR=$(BASE)/extern/userland/build/lib
+USERLAND_DIR=$(BASE)/extern/userland/build/lib
 MESA_LIB=$(BASE)/obj/mesa/bin/libmesa.a
-VCSM_LIB=$(VCSM_DIR)/libvcsm.a
+VCSM_LIB=$(USERLAND_DIR)/libvcsm.a
 
 INCLUDE_EXTERN+= \
  -I $(BASE)/../CmdParameter/Lib \
  -I $(BASE)/extern/bitmap
 
 LIB_EXTERN+= \
- -L $(VCSM_DIR) -lvcsm \
+ -L $(USERLAND_DIR) -lvcsm \
  -l pthread
+
+# For bcm_host shared lib; actually vc4 only
+ifeq ($(QPU), 1)
+
+INCLUDE_EXTERN+= \
+ -I $(BASE)/extern/userland/host_applications/linux/libs/bcm_host/include \
+ -I $(BASE)/extern/userland/
+
+LIB_EXTERN+= \
+ -l bcm_host
+
+endif
+
 
 
 # NOTE: Last items after single \ required in mesa lib include files
