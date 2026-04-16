@@ -14,19 +14,19 @@ file=/sys/firmware/devicetree/base/model
 #
 if [ -f $file ]
 then
-	model=$(tr -d '\0' < $file)  # as `cat`, but avoid warning 'ignored null byte in input'
-	ret=$?
+  model=$(tr -d '\0' < $file)  # as `cat`, but avoid warning 'ignored null byte in input'
+  ret=$?
 
-	if [ $ret -eq 0 ] 
-	then
-		platform=$(echo $model | grep -q "^Raspberry Pi")
-		ret=$?
-		if [ $ret -eq 0 ] 
-		then
-			echo Platform: $model
-			exit 0
-		fi
-	fi
+  if [ $ret -eq 0 ] 
+  then
+    platform=$(echo $model | grep -q "^Raspberry Pi")
+    ret=$?
+    if [ $ret -eq 0 ] 
+    then
+      echo Platform: $model
+      exit 0
+    fi
+  fi
 fi
 
 
@@ -46,8 +46,8 @@ model=$(cat /proc/cpuinfo | grep Hardware | grep $modelPrefix)
 ret=$?
 if [ $ret -eq 0 ]
 then
-	echo This is a Pi platform
-	exit 0
+  echo This is a Pi platform
+  exit 0
 fi
 
 
