@@ -1,14 +1,10 @@
 #ifdef QPU_MODE
 #include "vc4/vc4.h"
-#include "vc4/RegisterMap.h"
-#include "V3DLib.h"
 #include "vc4/Mailbox.h"
+#include "vc4/RegisterMap.h"
 #include "v3d/driver/device_info.h"
 #include "v3d/RegisterMapping.h"
 #include <unistd.h>  // geteuid()
-#include <string>
-#include <fstream>
-#include <streambuf>
 #include <iostream>
 #endif
 #include <CmdParameters.h>
