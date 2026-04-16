@@ -78,7 +78,8 @@ platform_info  get_platform_info() {
     if (contains(s, "Operating System:")) {
       // e.g. 'Operating System: Debian GNU/Linux 13 (trixie)'
 
-      p_i.is_debian = contains(s, "Debian");
+      // Raspbian counts as debian
+      p_i.is_debian = contains(s, "Debian") || contains(s, "Raspbian");
       auto tmp = split(s, " ");
 
       // Get next-to last item, which is the version number
