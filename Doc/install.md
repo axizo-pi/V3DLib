@@ -85,52 +85,52 @@ Add Line:
 
 Login to `pi` and do following:
 
-	ssh-keygen
+    ssh-keygen
+    
+    sudo apt-get update
+    sudo apt-get -y upgrade
+    
+    sudo apt-get install -y git expat libexpat1-dev libz-dev ruby mc vim cmake libdrm-dev raspi-config gdb
 
-	sudo apt-get update
-	sudo apt-get -y upgrade
+    #
+    # apt install - On pi only
+    #
+    # For Debian 13 (Trixie):
+    sudo apt-get install -y git libdtovl0:armhf libdtovl0
+    
+    # For all other versions:
+    sudo apt-get install -y git libraspberrypi-dev raspberrypi-kernel-headers
+    # If previous fails due to unmet dependencies, do following separate steps: 
+    sudo apt-get install -y git libraspberrypi-dev
+    sudo apt-get install -y git raspberrypi-kernel-headers
+    
+    # Had to do following explicitly on zero
+    sudo apt-get install -y libdrm-dev
+    sudo apt-get install -y ruby
 
-	sudo apt-get install -y git expat libexpat1-dev libz-dev ruby mc vim cmake libdrm-dev raspi-config gdb
+    mkdir ~/projects
+    mkdir ~/tmp
 
-  #
-  # apt install - On pi only
-  #
-  # For Debian 13 (Trixie):
-  sudo apt-get install -y git libdtovl0:armhf libdtovl0
+    # Following before cloning
+    git config --global init.defaultBranch main
 
-  # For all other versions:
-	sudo apt-get install -y git libraspberrypi-dev raspberrypi-kernel-headers
-	# If previous fails due to unmet dependencies, do following separate steps: 
-	sudo apt-get install -y git libraspberrypi-dev
-	sudo apt-get install -y git raspberrypi-kernel-headers
+    cd projects
+    git clone https://github.com/axizo-pi/V3DLib.git
+    git clone https://github.com/axizo-pi/CmdParameter.git
 
-	# Had to do following explicitly on zero
-	sudo apt-get install -y libdrm-dev
-	sudo apt-get install -y ruby
+    # For al own git repo's (previous steps)
+    cd V3DLib
+    git config --global user.email wrijnders@gmail.com
+    git config --global user.name  "Wim Rijnders"
+    git config pull.rebase false
+    git config --global core.editor "vim"
+    #git push --set-upstream origin main  # Only if you have a github account
 
-	mkdir ~/projects
-	mkdir ~/tmp
-
-  # Following before cloning
-  git config --global init.defaultBranch main
-
-	cd projects
-	git clone https://github.com/axizo-pi/V3DLib.git
-	git clone https://github.com/axizo-pi/CmdParameter.git
-
-	# For al own git repo's (previous steps)
-	cd V3DLib
-	git config --global user.email wrijnders@gmail.com
-	git config --global user.name  "Wim Rijnders"
-	git config pull.rebase false
-	git config --global core.editor "vim"
-	#git push --set-upstream origin main  # Only if you have a github account
-
-  # Create makefile for external project (not automated yet)
-	cd extern/userland
-	cmake .
-	make
-	cd ../../
+    # Create makefile for external project (not automated yet)
+    cd extern/userland
+    cmake .
+    make
+    cd ../../
 
 Finally, you can build the library.
 
@@ -161,7 +161,7 @@ To install, from the `V3DLib` base directory:
 
 `rpi-imager v2.0.6`: Writing to _some_ sd-cards results in the following continuous error:
 
-    [FileOps] io\_uring short write: expected 0, got 4194304
+    [FileOps] io_uring short write: expected 0, got 4194304
 
 This is a [https://forums.raspberrypi.com/viewtopic.php?t=397059](known error) and is fixed in `v2.0.7`.
 I am anxiously waiting for the upgrade (supplied `AppImage` didn't work for me.
@@ -195,7 +195,7 @@ Run the first option:
 
      > sudo dpkg-reconfigure locales
 
-And in the list select option `en\_US.UTF-8 UTF-8`. And again.
+And in the list select option `en_US.UTF-8 UTF-8`. And again.
 
 
 ## 3.  VC4: Set memory split and remove dtoverlay[^3]
@@ -209,7 +209,7 @@ This is for `Pi1`, `Pi2`, `Pi3` and `Zero`.
 `dtoverlay` should *not* be specified for Pi1.
 In addition, this sets the memory split with `gpu_mem`.
 
-	sudo vi  /boot/firmware/config.txt
+	sudo vi /boot/firmware/config.txt
 
 Find the following lines:
 
