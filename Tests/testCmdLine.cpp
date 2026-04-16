@@ -137,6 +137,9 @@ TEST_CASE("Check correct output example programs for all three run options [cmdl
  * @brief Unit tests `for Rot3D`.
  *
  * The expected output is taken from the `Rot3D` scalar kernel.
+ *
+ * **NOTE: scalar output on i7 is different from Pi!
+ *         Difference on order of 10e-6
  */
 TEST_CASE("Check correct output Rot3D [cmdline][rot3d]") {
   init_msg();
@@ -144,7 +147,9 @@ TEST_CASE("Check correct output Rot3D [cmdline][rot3d]") {
 
   std::string params = "-d -v=16 -rx=0.25";
 
+#ifdef QPU_MODE
   check_output_run("Rot3D", QPU        , params);
+#endif  
   check_output_run("Rot3D", INTERPRETER, params);
   check_output_run("Rot3D", EMULATOR   , params);
 }
