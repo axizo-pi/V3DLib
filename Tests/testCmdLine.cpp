@@ -1,5 +1,5 @@
 #include "support/support.h"  // running_on_v3d()
-#include "Support/Helpers.h"  // load_file(), sudo()
+#include "Support/Helpers.h"  // load_file(), sudo_prefix()
 #include <unistd.h>          // geteuid(); include required for g++ 8.3.0 , not required for 12.2.0
 #include <iostream>
 
@@ -64,7 +64,7 @@ void check_output_run(
 
   output_filename << "_output.txt";
 
-  std::string cmdline = sudo();
+  std::string cmdline = sudo_prefix();
   cmdline << bin_path() << "/"
           << program << " -silent " << params << " > " << output_filename;
 

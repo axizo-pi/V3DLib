@@ -114,14 +114,26 @@ MAYBE_UNUSED int gnu_version(bool show = true) {
 
 } // anon namespace
 
-std::string sudo() {
+
+/**
+ * @brief Determine if sudo is required
+ *
+ * @return `sudo` if required, empty string otherwise
+ *
+ */
+std::string sudo_prefix() {
+  std::string ret;
+
 #ifdef QPU_MODE
 const char *SUDO = (V3DLib::Platform::run_vc4())? "sudo " : "";  // sudo needed for vc4
 #else
 const char *SUDO = "";
 #endif
 
-  return SUDO;
+  ret << SUDO;
+
+  //warn << "sudo_prefix() ret:\n" << ret;
+  return ret;
 }
 
 
