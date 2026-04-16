@@ -29,12 +29,27 @@ void init_msg() {
 }
 
 
+/**
+ * @param cmd           output variable for the full command created
+ * @param cmd_filename  if specified, gets the filename to which the output is stored
+ */
+void create_output_cmd(
+  std::string const &program,
+  RunType run_type,
+  std::string const &extra_params,
+  std::string &cmd, std::string *cmd_filename = nullptr
+) {
+}
+
+
 void check_output_run(
   std::string const &program,
   RunType run_type,
   std::string const &extra_params,
   bool show_output = false
 ) {
+  create_output_cmd( program, run_type, extra_params, cmd, &output_filename);
+
   std::string params = "";
   std::string output_filename = test_path() + "/";
   std::string expected_filename = "Tests/data/";
@@ -137,6 +152,9 @@ TEST_CASE("Check correct output example programs for all three run options [cmdl
  * @brief Unit tests `for Rot3D`.
  *
  * The expected output is taken from the `Rot3D` scalar kernel.
+ *
+ * TODO: scalar output on i7 is different from Pi!
+ *       Difference on order of 10e-6
  */
 TEST_CASE("Check correct output Rot3D [cmdline][rot3d]") {
   init_msg();
@@ -144,7 +162,9 @@ TEST_CASE("Check correct output Rot3D [cmdline][rot3d]") {
 
   std::string params = "-d -v=16 -rx=0.25";
 
+#ifdef QPU_MODE
   check_output_run("Rot3D", QPU        , params);
+#endif  
   check_output_run("Rot3D", INTERPRETER, params);
   check_output_run("Rot3D", EMULATOR   , params);
 }

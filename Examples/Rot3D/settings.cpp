@@ -129,6 +129,17 @@ bool Rot3DSettings::init_params() {
   auto const &p = parameters();
 
   kernel       = p["Kernel"]->get_int_value();
+
+// Prob not necessary, I believe handled downstream. TODO: check
+#ifndef QPU_MODE
+  if (kernel == 0) {
+    if (!silent) {
+      cout << "WARNING: Compiled in non-QPU mode, forcing kernel type `cpu`\n";
+    }
+    kernel = 1;
+  }
+#endif
+
   show_results = p["Display Results"]->get_bool_value();
   num_vertices = p["Number of vertices"]->get_int_value();
 
