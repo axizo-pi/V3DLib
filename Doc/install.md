@@ -13,6 +13,15 @@ It is not possible to run the library on Pi's which have graphical output[^1]. T
 
 [^2]: This is a *Dutchism*. It represents my sentiments perfectly.
 
+To recap, because they are referenced in this page:
+
+| GPU           | Short | On Pi               |
+| ------------- | ----- | ------------------- |
+| VideoCore IV  | `vc4` | Pi1, Pi2, Pi3, Zero |
+| VideoCore VI  | `vc6` | Pi4                 |
+| VideoCore VII | `vc7` | Pi5                 |
+
+
 ----
 
 ## Create a bootable SD-card
@@ -22,7 +31,7 @@ It is not possible to run the library on Pi's which have graphical output[^1]. T
     > sudo rpi-imager
 
 - Select your Pi
-- Under _Raspberry PI OS (other)_ select **Raspbian Pi OS Lite (64/32-bit**.
+- Under _Raspberry PI OS (other)_ select **Raspbian Pi OS Lite (64 _or_ 32-bit)**.
   If 64-bit is available, select that.
 - Select the SD-card you want to install on.
 - _Choose hostname_: Your choice; I prefer using easily memorable names.
@@ -58,8 +67,8 @@ From `main`:
 
 ### Set memory split for `VideoCore IV`
 
-Are you installing a `Pi1`, `Pi2` or `Pi Zero`?
-You need to set the memory split; see **Note 3**.
+Are you installing for `vc4`?
+You need to disable the `dtoverlay` and set the memory split; see **Note 3**.
 
 ## Optional: run `sudo` without password
 
@@ -76,7 +85,6 @@ Add Line:
 
 Login to `pi` and do following:
 
-
 	ssh-keygen
 
 	sudo apt-get update
@@ -85,7 +93,7 @@ Login to `pi` and do following:
 	sudo apt-get install -y git expat libexpat1-dev libz-dev ruby mc vim cmake libdrm-dev raspi-config gdb
 
   #
-  # Following on pi only
+  # apt install - On pi only
   #
   # For Debian 13 (Trixie):
   sudo apt-get install -y git libdtovl0:armhf libdtovl0
@@ -110,7 +118,7 @@ Login to `pi` and do following:
 	git clone https://github.com/axizo-pi/V3DLib.git
 	git clone https://github.com/axizo-pi/CmdParameter.git
 
-	# For al git own repo's (previous steps)
+	# For al own git repo's (previous steps)
 	cd V3DLib
 	git config --global user.email wrijnders@gmail.com
 	git config --global user.name  "Wim Rijnders"
@@ -128,10 +136,24 @@ Finally, you can build the library.
 
 **Fair Warning:** The first build can take a *long* time, especially on older Pi's.
 
-	make all runTests
 
-	# To run the unit tests:
-	make test
+## Debian 13 (Trixie), `vc4` - install `bcm_host`
+
+`bcm_host` is not available on `Debian 13 (Trixie)` and required for running on `vc4`.
+
+Thankfully, it is part of the `userland` repository, and it has been incorporated into
+the local `userland` instance. It gets built when compiling `userland`.
+
+It still needs to be installed manually (`make install` doesn't work, the target directories are wrong).
+To install, from the `V3DLib` base directory:
+
+    > cd cd extern/userland/build/lib/
+    > sudo cp libbcm_host.so /usr/lib/aarch64-linux-gnu/
+
+## Run the unit tests
+
+    > make all runTests
+    > make test
 
 ## Notes
 
@@ -149,7 +171,6 @@ In the meantime, the best advice I can give you is: try another SD-card.
 ### 2. Local messages on startup
 
 On at least Debian 13 (Trixie), you get the following message on initial login:
-
 
     bash: warning: setlocale: LC_ALL: cannot change locale (en_US.UTF-8): No such file or directory
     _____________________________________________________________________
@@ -183,10 +204,10 @@ And in the list select option `en\_US.UTF-8 UTF-8`. And again.
       This option has been removed in more recent `Raspbian` versions.
 
 
-This is for `Pi1`, `Pi2`, `Zero`, and probably also `Pi3`.
+This is for `Pi1`, `Pi2`, `Pi3` and `Zero`.
 
 `dtoverlay` should *not* be specified for Pi1.
-In addition, this sets the memory split with `gpu_mem` for `vc4
+In addition, this sets the memory split with `gpu_mem`.
 
 	sudo vi  /boot/firmware/config.txt
 
@@ -209,11 +230,11 @@ Replace with:
 	gpu_mem=128
 
 
+Reboot after the edit.
+
 To check the memory split:
 
 	vcgencmd get_mem gpu
-
-Reboot after the edit.
 
 
 ### 4. Set localization on `pi`
@@ -234,8 +255,6 @@ On `pi`:
 - Again select `en_US.UTF-8`
 - \<Ok\>
 - \<Finish\>
-
-
 
 ----
 

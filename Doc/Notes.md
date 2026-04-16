@@ -182,12 +182,11 @@ Unfortunately, this solution will not work for access to `/dev/mem`. You will st
 ## Issues with Installation
 
 
-### Debian 13 Trixie doesn't start up!
+### Debian 13 Trixie has no `bcm\_host`
 
-Not sure what is happening. All I know is:
-
-* The active led flickers continuously
-* I can **NOT** ssh into the installed Pi.
+This library is required for running `vc4` applications.  
+The workaround is to build and install it yourself. The steps are incorporated
+in the [Install Intructions](Install.md)
 
 ### 32-bits Debian 12 Bookworm:
 
@@ -240,8 +239,22 @@ Following is known to occur with `Raspbian wheezy`.
 
 * Certain expected functions are not defined
 
-Following prototypes are missing in in `/opt/vc/include/bcm_host.h`:
+Following prototypes are missing in in `/opt/vc/include/bcm\_host.h`:
 
-  - `bcm_host_get_peripheral_address()`
-  - `bcm_host_get_peripheral_size()`
+  - `bcm\_host\_get\_peripheral\_address()`
+  - `bcm\_host\_get\_peripheral\_size()`
 
+-------------------
+
+## Issues with Installation
+
+### Usage of a local dynamic library on execution:
+
+Used when testing `libbcm\_host.so`.
+
+    > export LD_LIBRARY_PATH=~/projects/V3DLib/extern/userland/build/lib/
+    > ls $LD_LIBRARY_PATH   # Just checking
+    > alias sudo='sudo PATH="$PATH" HOME="$HOME" LD_LIBRARY_PATH="$LD_LIBRARY_PATH"'
+
+This fails when running `make test` in two ways.
+My solution is to just install the library in the system library directory.
