@@ -19,6 +19,100 @@ using namespace std::this_thread; // sleep_for, sleep_until
 using namespace std::chrono;      // nanoseconds, system_clock, seconds
 
 namespace V3DLib {
+namespace {
+
+/**
+ * Adjusted from opcodes() in vc4/Instr.cpp
+ */
+std::vector<std::string> exec(std::string const &command) {
+  std::vector<std::string> ret;
+
+  std::string tmp_file;
+  tmp_file << fs::temp_directory_path() << "/system_tmp.txt";
+
+  std::string cmd = command + " > " + tmp_file;
+  int result = std::system(cmd.c_str());
+  assert(result == 0);
+
+  ret = load_file_vec(tmp_file);
+
+/*
+  std::string buf;
+  for (auto const &s: ret) {
+    buf << s << "\n";
+  }
+  warn << "system() returns:\n" << buf;
+*/  
+
+  std::remove(tmp_file.c_str());
+  return ret;
+}
+
+
+struct platform_info {
+  bool is_debian = false;
+  int  version   = -1;
+  bool is_arm    = false;
+
+  std::string dump() const {
+    std::string ret = "\n";
+
+    ret << "  is_debian: " << is_debian << "\n"
+        << "  version  : " << version << "\n"
+        << "  is_arm   : " << is_arm;
+
+    return ret;
+  }
+};
+
+
+/**
+ * @brief retrieve essential platform info
+ */
+platform_info  get_platform_info() {
+  platform_info p_i;
+
+  auto ret = exec("hostnamectl");
+
+  for (auto const &s: ret) {
+    if (contains(s, "Operating System:")) {
+      // e.g. 'Operating System: Debian GNU/Linux 13 (trixie)'
+
+      p_i.is_debian = contains(s, "Debian");
+      auto tmp = split(s, " ");
+
+      // Get next-to last item, which is the version number
+      int index = (int) tmp.size() - 2;
+      p_i.version = atoi(tmp[index].c_str());
+    }
+
+    if (contains(s, "Architecture:")) {
+      p_i.is_arm = contains(s, "arm");
+    }
+  }
+
+  //warn << "platform_info:" << p_i.dump();
+  return p_i;
+}
+
+
+/**
+ * @brief display gnu c++ version.
+ *
+ * @return main version number
+ */
+MAYBE_UNUSED int gnu_version(bool show = true) {
+  if (show) {
+    warn << "Gnu C++ version: " 
+         << __GNUC__       << "."
+         << __GNUC_MINOR__ << "."
+         << __GNUC_PATCHLEVEL__;
+  }
+
+  return __GNUC__;
+}
+
+} // anon namespace
 
 std::string sudo() {
 #ifdef QPU_MODE
@@ -210,35 +304,40 @@ int num_newlines(std::string const &s) {
 
 
 /**
- * @brief Check if the parameters (i.e. uniforms) are reversed on current platform.
+ * @brief Detect if the parameters (i.e. uniforms) are reversed on current platform.
  *
- * This checks the compiler version.
- *
- * On Debian Trixie, gnu c++ v14.2.0, the initialization order of kernel parameters
- * is **reversed**. Thus, the last parameter in the kernel function call is initialized first.
- *
+ * On `x86`, the kernel parameters are reversed.
+ * Thus, last parameter in the kernel function call is initialized first.
  * This screws up initialization of the uniforms in the kernel.
  *
  * @return true if uniforms reversed, false otherwise
+ *
+ * =========================================
+ *
+ * Notes
+ * -----
+ *
+ * The original hypothesis was  that the parameter reversal occured with gnu c++ v14.2.0.
+ * This is not true; given compiler running on `Pi3B+` with `Debian 13 (Trixie) arm64` does not 
+ * reverse.
+ *
+ * So, it must be the hardware platform, i.e. `x86`. This is the current hypothesis.
  */
 bool uniforms_reversed() {
   static bool showed_msg = false;
+  auto ret = get_platform_info();
 
   if (!showed_msg) {
-    warn << "Gnu C++ version: " 
-         << __GNUC__       << "."
-         << __GNUC_MINOR__ << "."
-         << __GNUC_PATCHLEVEL__;
+    warn << "platform_info: " << ret.dump();
 
-    if (__GNUC__ < 14) {
+    if (ret.is_arm) {  // Actually, reversal appears to happen explicitly on x64
       warn << "No need to reverse the parameter indexes";
     }
 
     showed_msg = true;
   }
 
-  // Only the major version is tested. It's simple enough to extend this
-  return  (__GNUC__ >= 14);
+  return !ret.is_arm;
 }
 
 }  // namespace V3DLib
