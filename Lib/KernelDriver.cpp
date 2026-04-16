@@ -24,7 +24,7 @@ namespace {
  * The goal of this function is to reverse the parameter indexes, so that the kernel functions
  * again as expected.
  */
-void reverse_uniforms(StmtStack &stack) {
+MAYBE_UNUSED void reverse_uniforms(StmtStack &stack) {
   if (!uniforms_reversed()) return;
   warn << "Doing reverse_uniforms()";
 
@@ -135,7 +135,7 @@ void KernelDriver::obtain_ast() {
 void KernelDriver::compile(std::function<void()> create_ast) {
   try {
     create_ast();
-    reverse_uniforms(m_stmtStack);
+    //reverse_uniforms(m_stmtStack);
 
     compile_intern();
     m_numVars = VarGen::count();

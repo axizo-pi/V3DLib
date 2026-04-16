@@ -5,16 +5,21 @@ ROOT=$(BASE)/Lib
 # Object directory
 OBJDIR := ${BASE}/obj
 
-VCSM_DIR=$(BASE)/extern/userland/build/lib
+USERLAND_DIR=$(BASE)/extern/userland/build/lib
 MESA_LIB=$(BASE)/obj/mesa/bin/libmesa.a
-VCSM_LIB=$(VCSM_DIR)/libvcsm.a
+VCSM_LIB=$(USERLAND_DIR)/libvcsm.a
 
+# Last block after single '\' for bcm_host.h
 INCLUDE_EXTERN+= \
  -I $(BASE)/../CmdParameter/Lib \
- -I $(BASE)/extern/bitmap
+ -I $(BASE)/extern/bitmap \
+\
+ -I $(BASE)/extern/userland/host_applications/linux/libs/bcm_host/include \
+ -I $(BASE)/extern/userland/
 
 LIB_EXTERN+= \
- -L $(VCSM_DIR) -lvcsm \
+ -L $(USERLAND_DIR) -lvcsm \
+ -l bcm_host \
  -l pthread
 
 
