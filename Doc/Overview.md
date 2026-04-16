@@ -55,14 +55,15 @@ I have about 14 Pi's foraging around here, which I intend to cluster.
 
 Unit tests are run regularly on the following Pi versions:
 
-| Pi   | Version         | 32/64bits | Debian distro | Memory | GPU | Model Number | Revision |
-| ---- | --------------- | --------- | ------------- | ------ | --- | ------------ | -------- |
-| Pi5  | Model B Rev 1.0 | 64        | 12 (bookworm) | 4GB    | vc7 | BCM2835      | c04170   |
-| Pi4  | Model B Rev 1.1 | 64        | 12 (bookworm) | 2GB    | vc6 | BCM2711      | b03111   |
-| Zero | W Rev 1.1       | 32        | 12 (bookworm) | 0.5GB  | vc4 | BCM2835      | 9000c1   |
-| Pi3  | Model B Rev 1.2 | 32        | 10 (buster)   | 1GB    | vc4 | BCM2837      | a02082   |
-| Pi2  | Model B Rev 1.1 | 32        | 12 (bookworm) | 1GB    | vc4 | BCM2836      | a01041   |
-| Pi1  | Model B Rev 2   | 32        | 12 (bookworm) | 0.5GB  | vc4 | BCM2835      | 000e     |
+| Pi    | Version              | 32/64bits | Debian distro | Memory | GPU | Model Number | Revision |
+| ----- | -------------------- | --------- | ------------- | ------ | --- | ------------ | -------- |
+| Pi5   | Model B Rev 1.0      | 64        | 12 (bookworm) | 4GB    | vc7 | BCM2835      | c04170   |
+| Pi4   | Model B Rev 1.1      | 64        | 12 (bookworm) | 2GB    | vc6 | BCM2711      | b03111   |
+| Pi3   | Model B Plus Rev 1.3 | 64        | 13 (trixie)   | 1GB    | vc4 | BCM2837      | a020d3   |
+| Pi3   | Model B Rev 1.2      | 32        | 10 (buster)   | 1GB    | vc4 | BCM2837      | a02082   |
+| Zero  | W Rev 1.1            | 32        | 12 (bookworm) | 0.5GB  | vc4 | BCM2835      | 9000c1   |
+| Pi2   | Model B Rev 1.1      | 32        | 12 (bookworm) | 1GB    | vc4 | BCM2836      | a01041   |
+| Pi1   | Model B Rev 2        | 32        | 12 (bookworm) | 0.5GB  | vc4 | BCM2835      | 000e     |
 
 
 The notable omissions in this list:
@@ -110,8 +111,9 @@ Here is an overview for the easily comparable stuff:
 |------------|-------------|----------------|-----------------|-------------------|------|----------|
 | **Pi1**    | 1           |  700           | 250             | vc4               | no   | yes      |
 | **Pi2**    | 4           |  900           | 250             | vc4               | no   | yes      |
-| **Pi3**    | 4           | 1200           | 300             | vc4               | yes  | yes      |
 | **Zero**   | 1           | 1000           | 300             | vc4               | yes  | **no**   |
+| **Pi3**    | 4           | 1200           | 300             | vc4               | yes  | yes      |
+| **Pi3B+**  | 4           | 1400           | 300             | vc4               | yes  | yes      |
 | **Pi4**    | 4           | 1500           | 500             | vc6               | yes  | yes      |
 | **Pi5**    | 4           | 2400           | 960             | vc7               | yes  | yes      |
 
@@ -308,9 +310,11 @@ Results per platform, time in seconds
 | Zero     | 4288     | 4099     |
 | Pi-2     | 1914     | 1798     |
 | Pi-3     | 1011     |  886     |
+| Pi-3B+   |  879     |  806     |
 | Pi-4     |  795     |  640     |
 | Pi-5     |  130     |  119     |
 
+I should update for all platforms periodically, code is changing continuously.
 
 -----
 
@@ -339,7 +343,7 @@ So, calculation:
     Pi2  : 250x12x8 =  24.0 GFLOPs
     Pi3  : 300x12x8 =  28.8 GFLOPs
     Zero : 300x12x8 =  28.8 GFLOPs
-    Pi3+ : 400x12x8 =  38.4 GFLOPs  # Do I have one to verify?
+    Pi3+ : 400x12x8 =  38.4 GFLOPs  # Could be 300; IRL it performs worse than Pi3
     Pi4  : 500x 8x8 =  32.0 GFLOPs  # Less! The improved hardware in `v3d` compensates.
     Pi5  : 960x16x8 = 122.9 GFLOPS
 

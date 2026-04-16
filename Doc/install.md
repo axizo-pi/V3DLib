@@ -147,7 +147,7 @@ the local `userland` instance. It gets built when compiling `userland`.
 It still needs to be installed manually (`make install` doesn't work, the target directories are wrong).
 To install, from the `V3DLib` base directory:
 
-    > cd cd extern/userland/build/lib/
+    > cd extern/userland/build/lib/
     > sudo cp libbcm_host.so /usr/lib/aarch64-linux-gnu/
 
 ## Run the unit tests
