@@ -97,6 +97,62 @@ void run_output_cmd(
   }
 }
 
+/**
+ * @brief Extract the float values from the passed file
+ *
+ * This is currently specific for the Rot3D output.
+ * Note that return value contains doubles.
+ */
+std::vector<double> float_values(std::string const &filename) {
+	std::vector<double> ret;
+  auto buf = load_file_vec(filename);
+
+	for(std::string line : buf) {
+		if (contains(line, "Data")) continue;
+		for (auto val : split(line, ",")) {
+			ret.push_back(atof(val.c_str()));
+		}
+  }
+
+/*
+	std::cout << "! ";
+	for(auto val : ret) {
+		std::cout << val << " ";
+	}
+	std::cout << "\n";
+*/
+	return ret;
+}
+
+/**
+ * Values are read in from the calculated and expected output files,
+ * and tested against each other with a given precision.
+ */
+void check_rot3d_run(
+  std::string const &program,
+  RunType run_type,
+  std::string const &extra_params,
+  std::string expected_filename,
+  bool show_output = false
+) {
+  std::string output_filename = create_output_filename(program, run_type);
+
+  run_output_cmd(program, run_type, extra_params, show_output);
+
+	// Test each float separately
+	auto output   = float_values(output_filename);
+	auto expected = float_values(expected_filename);
+	REQUIRE(output.size() == expected.size());
+
+	const double PRECISION = 3e-5;
+	for (int i = 0; i < (int) output.size(); ++i) {
+	 	double diff = abs(output[i] - expected[i]);
+
+		INFO("Diff index: " << i << " different!");
+	 	REQUIRE(diff <= PRECISION);
+	}
+}
+
 
 void check_output_run(
   std::string const &program,
@@ -194,7 +250,7 @@ TEST_CASE("Check correct output Rot3D [cmdline][rot3d]") {
   run_output_cmd("Rot3D", CPU, params);
   std::string expected_filename = create_output_filename("Rot3D", CPU);
 
-  check_output_run("Rot3D", QPU        , params, expected_filename);
-  check_output_run("Rot3D", INTERPRETER, params, expected_filename);
-  check_output_run("Rot3D", EMULATOR   , params, expected_filename);
+  check_rot3d_run("Rot3D", QPU        , params, expected_filename);
+  check_rot3d_run("Rot3D", INTERPRETER, params, expected_filename);
+  check_rot3d_run("Rot3D", EMULATOR   , params, expected_filename);
 }
