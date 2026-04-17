@@ -52,14 +52,19 @@ std::vector<std::string> exec(std::string const &command) {
 struct platform_info {
   bool is_debian = false;
   int  version   = -1;
-  bool is_arm    = false;
+  std::string architecture;
+
+  bool is_arm() const { return contains(architecture, "arm"); }
+  bool is_x86() const { return contains(architecture, "x86"); }
 
   std::string dump() const {
     std::string ret = "\n";
 
-    ret << "  is_debian: " << is_debian << "\n"
-        << "  version  : " << version << "\n"
-        << "  is_arm   : " << is_arm;
+    ret << "  is_debian   : " << is_debian    << "\n"
+        << "  version     : " << version      << "\n"
+        << "  architecture: " << architecture << "\n"
+        << "  is_arm()    : " << is_arm()   << "\n"
+        << "  is_x86()    : " << is_x86();
 
     return ret;
   }
@@ -69,7 +74,7 @@ struct platform_info {
 /**
  * @brief retrieve essential platform info
  */
-platform_info  get_platform_info() {
+platform_info get_platform_info() {
   platform_info p_i;
 
   auto ret = exec("hostnamectl");
@@ -88,11 +93,17 @@ platform_info  get_platform_info() {
     }
 
     if (contains(s, "Architecture:")) {
-      p_i.is_arm = contains(s, "arm");
+      auto tmp = split(s, ": ");
+      p_i.architecture = tmp[1];
     }
   }
 
-  //warn << "platform_info:" << p_i.dump();
+  static bool showed_msg = false;
+  if (!showed_msg) {
+    warn << "platform_info:" << p_i.dump();
+    showed_msg = true;
+  }
+
   return p_i;
 }
 
@@ -341,16 +352,14 @@ bool uniforms_reversed() {
   auto ret = get_platform_info();
 
   if (!showed_msg) {
-    warn << "platform_info: " << ret.dump();
-
-    if (ret.is_arm) {  // Actually, reversal appears to happen explicitly on x64
+    if (!ret.is_x86()) {  // Actually, reversal appears to happen explicitly on x64
       warn << "No need to reverse the parameter indexes";
     }
 
     showed_msg = true;
   }
 
-  return !ret.is_arm;
+  return ret.is_x86();
 }
 
 }  // namespace V3DLib

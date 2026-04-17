@@ -289,7 +289,6 @@ bool Settings::process() {
   }
 
   if (run_type != 0) {
-    //printf("Settings: using main memory.\n");
     Platform::use_main_memory(true);
     Platform::compiling_for_vc4(true);
   }

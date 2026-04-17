@@ -8,6 +8,7 @@ using namespace V3DLib;
 namespace {
 
 enum RunType {
+  CPU,
   QPU,
   EMULATOR,
   INTERPRETER
@@ -29,51 +30,88 @@ void init_msg() {
 }
 
 
-void check_output_run(
+std::string create_output_filename( std::string const &program, RunType run_type) {
+  std::string output_filename = test_path() + "/";
+  output_filename += program + "_";
+
+  switch (run_type) {
+    case CPU:         output_filename += "cpu"; break;
+    case QPU:         output_filename += "qpu"; break;
+    case EMULATOR:    output_filename += "emu"; break;
+    case INTERPRETER: output_filename += "int"; break;
+    default: assert(false);
+  }
+
+  output_filename << "_output.txt";
+
+  return output_filename;
+}
+
+
+/**
+ *
+ */
+std::string create_output_cmd(
+  std::string const &program,
+  RunType run_type,
+  std::string const &extra_params
+) {
+  std::string cmd;
+  std::string params = "";
+
+  switch (run_type) {
+    case CPU:         params += "-k=cpu";         break;
+    case QPU:         /* as is */                 break;
+    case EMULATOR:    params += "-r=emulator";    break;
+    case INTERPRETER: params += "-r=interpreter"; break;
+    default: assert(false);
+  }
+
+  if (!extra_params.empty()) {
+    params << " " << extra_params << " ";
+  }
+
+  cmd << sudo_prefix()
+      << bin_path() << "/"
+      << program << " -silent " << params;
+
+  return cmd;
+}
+
+
+void run_output_cmd(
   std::string const &program,
   RunType run_type,
   std::string const &extra_params,
   bool show_output = false
 ) {
-  std::string params = "";
-  std::string output_filename = test_path() + "/";
-  std::string expected_filename = "Tests/data/";
+  std::string output_filename = create_output_filename(program, run_type);
+  std::string cmdline = create_output_cmd(program, run_type, extra_params);
 
-  output_filename   += program + "_";
-  expected_filename += program + "_expected_output.txt";
-
-  switch (run_type) {
-    case QPU:
-      output_filename += "qpu";
-    break;
-    case EMULATOR:
-      params += "-r=emulator",
-      output_filename += "emu";
-    break;
-    case INTERPRETER:
-      params += "-r=interpreter",
-      output_filename += "int";
-    break;
-  }
-
-  if (!extra_params.empty()) {
-    params += " ";
-    params += extra_params;
-    params += " ";
-  }
-
-  output_filename << "_output.txt";
-
-  std::string cmdline = sudo_prefix();
-  cmdline << bin_path() << "/"
-          << program << " -silent " << params << " > " << output_filename;
-
+  cmdline << " > " << output_filename;
   INFO("Cmdline: " << cmdline);
   REQUIRE(!system(cmdline.c_str()));
 
   if (show_output) {
     std::cout << "\n" << V3DLib::load_file(output_filename);
   }
+}
+
+
+void check_output_run(
+  std::string const &program,
+  RunType run_type,
+  std::string const &extra_params,
+  std::string expected_filename = "",
+  bool show_output = false
+) {
+  std::string output_filename = create_output_filename(program, run_type);
+
+  if (expected_filename.empty()) {
+    expected_filename << "Tests/data/" << program << "_expected_output.txt";
+  }
+
+  run_output_cmd(program, run_type, extra_params, show_output);
 
   std::string diff_cmd = "diff " + output_filename + " " + expected_filename;
   INFO("diff command: " << diff_cmd);
@@ -102,7 +140,7 @@ TEST_CASE("Detect platform scripts should both return the same thing [cmdline]")
 #ifdef QPU_MODE
   const int cpp_expected = 0;
 #else
-  const int cpp_expected = 256;
+  const int cpp_expected = 1;
 #endif
 
   init_msg();
@@ -137,6 +175,14 @@ TEST_CASE("Check correct output example programs for all three run options [cmdl
  * @brief Unit tests `for Rot3D`.
  *
  * The expected output is taken from the `Rot3D` scalar kernel.
+ *
+ * ======================================
+ *
+ * Note
+ * ----
+ *
+ * - Scalar output on i7 is different from Pi!
+ *   Difference on order of 10e-6.
  */
 TEST_CASE("Check correct output Rot3D [cmdline][rot3d]") {
   init_msg();
@@ -144,7 +190,11 @@ TEST_CASE("Check correct output Rot3D [cmdline][rot3d]") {
 
   std::string params = "-d -v=16 -rx=0.25";
 
-  check_output_run("Rot3D", QPU        , params);
-  check_output_run("Rot3D", INTERPRETER, params);
-  check_output_run("Rot3D", EMULATOR   , params);
+  // Use CPU output as reference
+  run_output_cmd("Rot3D", CPU, params);
+  std::string expected_filename = create_output_filename("Rot3D", CPU);
+
+  check_output_run("Rot3D", QPU        , params, expected_filename);
+  check_output_run("Rot3D", INTERPRETER, params, expected_filename);
+  check_output_run("Rot3D", EMULATOR   , params, expected_filename);
 }
