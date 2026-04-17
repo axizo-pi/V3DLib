@@ -26,7 +26,7 @@ namespace {
  */
 MAYBE_UNUSED void reverse_uniforms(StmtStack &stack) {
   if (!uniforms_reversed()) return;
-  warn << "Doing reverse_uniforms()";
+  //warn << "Doing reverse_uniforms()";
 
   Stmts uniforms;
 
@@ -140,8 +140,7 @@ void KernelDriver::compile(std::function<void()> create_ast) {
     compile_intern();
     m_numVars = VarGen::count();
   } catch (V3DLib::Exception const &e) {
-    // TODO: Choose between this exception type and runtime_error
-    //       Looks like this one is not used.
+    // TODO: Looks like this one is not used, cleanup?
     std::string e_msg = e.what();
     Log::warn << "V3DLib::Exception caught: " << e_msg;
 

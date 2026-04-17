@@ -5,7 +5,7 @@
 struct Rot3DSettings : public V3DLib::Settings {
   const float THETA = (float) 3.14159;  // Rotation angle in radians
 
-  int   kernel;
+  int   kernel;       // 0:gpu, 1:cpu
   bool  show_results;
   int   num_vertices;
 
@@ -20,9 +20,9 @@ struct Rot3DSettings : public V3DLib::Settings {
   Rot3DSettings();
 
   bool init_params() override;
+  void show_run_info() const;
 };
 
-extern std::vector<const char *> const kernel_id;
 extern struct Rot3DSettings settings;
 
 #endif //  V3DLIB_ROT3D_SETTINGS_H

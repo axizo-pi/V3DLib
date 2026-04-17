@@ -1,17 +1,18 @@
 #include "settings.h"
+#include "Support/basics.h"
 #include <vector>
 #include <iostream>
 
-using namespace std;
+using namespace V3DLib;
 
 
 // ============================================================================
 // Command line handling
 // ============================================================================
 
-std::vector<const char *> const kernel_id = { "gpu", "cpu" };  // First is default
-
 namespace {
+
+std::vector<const char *> const kernel_id = { "gpu", "cpu" };  // First is default
 
 CmdParameters params = {
   "Rot3D\n"
@@ -80,7 +81,7 @@ CmdParameters params = {
 };
 
 
-void info() {
+void disp_info() {
   // Source: https://en.wikipedia.org/wiki/Rotation_matrix 
 
   std::string msg = "\n"
@@ -117,7 +118,7 @@ void info() {
 "\n"  
   ;
 
-  cout << msg;
+  std::cout << msg;
 }
 
 } // anon namespace
@@ -130,11 +131,10 @@ bool Rot3DSettings::init_params() {
 
   kernel       = p["Kernel"]->get_int_value();
 
-// Prob not necessary, I believe handled downstream. TODO: check
 #ifndef QPU_MODE
-  if (kernel == 0) {
+  if (kernel == 0 && run_type == V3DLib::QPU) {
     if (!silent) {
-      cout << "WARNING: Compiled in non-QPU mode, forcing kernel type `cpu`\n";
+      std::cout << "WARNING: Compiled in non-QPU mode, forcing kernel type `cpu`\n";
     }
     kernel = 1;
   }
@@ -152,13 +152,38 @@ bool Rot3DSettings::init_params() {
   save_stl     = p["Save STL File"]->get_bool_value();
 
   if (num_vertices % 16 != 0) {
-    cout << "ERROR: Number of vertices must be a multiple of 16.\n";
+    std::cout << "ERROR: Number of vertices must be a multiple of 16.\n";
     return false;
   }
 
-  if (show_info) info(); 
+  if (show_info) disp_info(); 
 
   return true;
+}
+
+void Rot3DSettings::show_run_info() const {
+  if (silent) return;
+
+  std::string msg = "Ran ";
+
+  if (kernel == 1) {
+    msg << "kernel 'cpu' ";
+  } else {
+    switch (run_type) {
+      case QPU:
+        msg << "kernel 'gpu' ";
+        break;
+      case Interpreter:
+        msg << "interpreter ";
+        break;
+      case Emulator:
+      case Debugger:
+        msg << "emulator ";
+        break;
+    }
+  }
+
+  std::cout << msg << "with " << num_qpus << " QPU's.\n";
 }
 
 
