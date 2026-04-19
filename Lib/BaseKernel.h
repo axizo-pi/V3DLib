@@ -63,7 +63,7 @@ public:
   V3DLib::KernelDriver const &driver() const;
 
   void compile_init();
-	std::string dump();
+  std::string dump();
 
   BaseKernel &setNumQPUs(int n) { m_settings.num_qpus = n; return *this; }
   int numQPUs() const { return m_settings.num_qpus; }
@@ -73,44 +73,44 @@ public:
   void emu(bool do_debug = false);
   void interpret();
   void qpu(bool wait_complete = true);
-	void wait_complete() { driver().wait_complete(); }
+  void wait_complete() { driver().wait_complete(); }
 
   Code const &code() const { return m_driver->code(); }
   IntList const &params() const { return uniforms; }  // Can't name it uniforms because the data member is called that
 
   std::string compile_info() const;
-	std::string dump_compile_data();
+  std::string dump_compile_data();
   bool has_errors() const;
   std::string info() const;
 
   /**
    * Load uniform values.
-	 *
-	 * This version checks the args types at run time.
+   *
+   * This version checks the args types at run time.
    */
   template <typename... us>
   BaseKernel &load(us... args) {
-		//Log::warn << "Called BaseKernel::load()";
+    //Log::warn << "Called BaseKernel::load()";
     uniforms.clear();
 
     if (!ppassParam(uniforms, m_typelist, 0,  args...)) {
-			Log::cerr << "Errors in params of load()\n" << Log::thrw;
-		}
-		
-		using ::operator<<;  // C++ weirdness
-		std::string tmp;
-	  for (int i = 0; i < (int) uniforms.size(); i++) {
-			tmp << uniforms[i] << ", ";
-	  }
+      Log::cerr << "Errors in params of load()\n" << Log::thrw;
+    }
+    
+    using ::operator<<;  // C++ weirdness
+    std::string tmp;
+    for (int i = 0; i < (int) uniforms.size(); i++) {
+      tmp << uniforms[i] << ", ";
+    }
 
-		//Log::warn << "Uniforms: " << tmp;
+    //Log::warn << "Uniforms: " << tmp;
     return *this;
   }
 
 
 protected:
   BaseSettings m_settings;
-	std::vector<std::size_t> m_typelist;
+  std::vector<std::size_t> m_typelist;
   IntList uniforms;                // Parameters to be passed to kernel
 
   // Defined as unique pointer so that it easily survives std::move

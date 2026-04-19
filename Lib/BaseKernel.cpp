@@ -54,7 +54,7 @@ void BaseKernel::compile_init() {
 
   if (m_settings.run_type != QPU || Platform::run_vc4()) {   // Compile vc4
     select_kernel = vc4;
-  } else {                                                 // Compile v3d
+  } else {                                                   // Compile v3d
     select_kernel = v3d;
   }
 
@@ -170,6 +170,16 @@ void BaseKernel::interpret() {
   if (driver().has_errors()) {
     warn << "Not running interpreter, there were errors during compile.";
     return;
+  }
+
+  {
+    std::string buf;
+    buf << "interpreter uniforms: ";
+    for (int i = 0; i < uniforms.size(); ++i) {
+      buf << uniforms.get(i) << ", ";
+    }
+    buf << "\n";
+    warn << buf;
   }
 
   assert(uniforms.size() != 0);

@@ -8,31 +8,32 @@ class Logger;
 
 enum LogFlag {
   none,
-  hex,
-  thrw  // Can't use 'throw', reserved keyword
+	dec,        ///< Default; Show integers in decimal notation
+  hex,        ///< Show integers as hexadecimal values
+  thrw,       ///< Throw exception after next log output. Can't use 'throw', reserved keyword
+  fixed,      ///< Next float value is displayed in fixed format
+  scientific, ///< Next float value is displayed in scientific format
+	global      ///< Next LogFlag modifier is remembered for all subsequent log calls 
 };
 
+
 class LogItem {
-private:
-  Logger &m_log;
-  bool    m_next_is_hex = false;
-
-  // Can be used with any logging form;
-  // logging is outputted before throw occurs
-  bool    m_throw       = false;
-
 public:  
   LogItem(Logger &log) : m_log(log) {}
+  LogItem(LogItem const &item) = default;
   ~LogItem() noexcept(false);
 
+  LogItem &operator<<(LogFlag f);
+  LogItem &operator<<(double n);
+  LogItem &operator<<(float n);
   LogItem &operator<<(const std::string &str);
   LogItem &operator<<(const char *str);
   LogItem &operator<<(int n);
   LogItem &operator<<(unsigned n);
   LogItem &operator<<(unsigned long n);
-  LogItem &operator<<(float n);
-  LogItem &operator<<(double n);
-  LogItem &operator<<(LogFlag f);
+
+private:
+  Logger &m_log;
 };
 
 
@@ -48,16 +49,9 @@ public:
 
   Logger(Level level = INFO) : m_level(level) {}
 
-  LogItem operator<<(const std::string &str) {
-    m_buf << str;
-    return LogItem(*this);
-  };
 
-  LogItem operator<<(int rhs) {
-    m_buf << rhs;
-    return LogItem(*this);
-  };
-
+	template <typename T>
+	inline LogItem operator<<(T rhs) { auto ret = LogItem(*this); ret << rhs; return ret; };
 
   std::stringstream &buf() { return m_buf; }
   void flush(bool do_throw);
@@ -69,8 +63,11 @@ private:
   std::string msg();
 };
 
+
 void set_log_dir(std::string const &path);
+std::string log_dir();
 void set_log_file(std::string const &file);
+std::string log_file();
 void log_to_cout(bool val);
 
 void assertq(bool condition, const std::string &msg = "");
