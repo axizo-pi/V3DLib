@@ -2,16 +2,28 @@
 #define BASIC_LOG_H
 #include <sstream>
 
+/**
+ * @namespace Log
+ *
+ * This is global functionality, which could be used over many projects.
+ */
 namespace Log {
 
 class Logger;
 
+/**
+ * @brief Modifiers for input values
+ */
 enum LogFlag {
   none,
-  hex,
-  thrw  // Can't use 'throw', reserved keyword
+  hex,  ///< Display next integer value in hexadecimal format
+  thrw  ///< Can't use 'throw', reserved keyword
 };
 
+
+/**
+ * @brief Class LogItem
+ */
 class LogItem {
 private:
   Logger &m_log;
@@ -36,6 +48,9 @@ public:
 };
 
 
+/**
+ * @brief Class Logger
+ */
 class Logger {
 public:
   enum Level {
