@@ -506,6 +506,7 @@ void run_instruction(QPUState &s, State &state, Instr const &instr) {
  * @param maxReg    Max reg id used
  * @param uniforms  Kernel parameters
  * @param heap
+ * @param do_debug  If true, start in debugger
  */
 void emulate(
   int numQPUs,
@@ -515,6 +516,16 @@ void emulate(
   BufferObject &heap,
   bool do_debug
 ) {
+	{
+		std::string buf;
+		buf << "emulator uniforms: ";
+		for (int i = 0; i < uniforms.size(); ++i) {
+			buf << uniforms.get(i) << ", ";
+		}
+		buf << "\n";
+		warn << buf;
+	}
+
   Platform::running_emulator(true);
   State state(numQPUs, uniforms);
   state.emuHeap.heap_view(heap);

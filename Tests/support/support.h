@@ -10,6 +10,7 @@
 #include "v3d/BufferObject.h"
 #include "v3d/Driver.h"
 #include "v3d/instr/Mnemonics.h"
+#include "global/log.h"
 #include <string>
 #include <vector>
 
