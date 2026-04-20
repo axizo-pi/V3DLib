@@ -16,7 +16,7 @@
 #include "Support/Timer.h"
 
 const int NumInputs = 3;
-const int NumEpochs = 1000;
+const int NumEpochs = 10; //1000;
 
 /**
  * 3 inputs: Letters A, B and C (if you squint)
@@ -66,12 +66,18 @@ void train(vector const *inputs, vector const *desired, model &k_model) {
 		epoch_step = 10;
 	}
 
+	V3DLib::timers.start("train while-loop");
 	while (epoch < NumEpochs) {
 		for (int i = 0; i < NumInputs; ++i) {
+			V3DLib::timers.start("train forward");
 			auto result = k_model.forward(inputs[i]);
+			V3DLib::timers.stop("train forward");
 
 			loss[i] = scalar::loss(result.arr(), desired[i].arr());
+
+			V3DLib::timers.start("train back_prop");
 			k_model.back_prop(inputs[i], desired[i]);
+			V3DLib::timers.stop("train back_prop");
 		}
 
 		float sum = 0;
@@ -82,10 +88,11 @@ void train(vector const *inputs, vector const *desired, model &k_model) {
 		sum /= ((float) NumInputs);  // Take average
 
 		if (epoch % epoch_step == 0) {
-			warn << "epoch: " << epoch << " ======== acc: " << (1 - sum)*100;
+			warn << "epoch: " << epoch << " ======== acc: " << fixed << (1 - sum)*100;
 		}
 		epoch++;
 	}
+	V3DLib::timers.stop("train while-loop");
 }
 
 
@@ -162,5 +169,6 @@ int main(int argc, const char *argv[]) {
 	predict(inputs[1], k_model);
 	predict(inputs[0], k_model);
 
+	timers.end();
   return 0;
 }

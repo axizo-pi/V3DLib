@@ -1,9 +1,10 @@
 #ifndef _V3DLIB_BASEKERNEL_H_
 #define _V3DLIB_BASEKERNEL_H_
 #include "Params.h"
-#include <memory>
 #include "KernelDriver.h"
 #include "Support/BaseSettings.h"
+#include "Support/Timer.h"
+#include <memory>
 
 namespace V3DLib {
 
@@ -90,6 +91,7 @@ public:
    */
   template <typename... us>
   BaseKernel &load(us... args) {
+		timers.start("BaseKernel load");
     //Log::warn << "Called BaseKernel::load()";
     uniforms.clear();
 
@@ -104,6 +106,7 @@ public:
     }
 
     //Log::warn << "Uniforms: " << tmp;
+		timers.stop("BaseKernel load");
     return *this;
   }
 

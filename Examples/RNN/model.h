@@ -2,6 +2,7 @@
 #define _INCLUDE_RNN_MODEL
 #include "matrix.h"
 #include "scalar.h"
+#include "Support/Timer.h"
 
 using namespace V3DLib;
 

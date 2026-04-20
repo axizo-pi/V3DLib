@@ -134,7 +134,14 @@ matrix matrix::operator*(matrix const &rhs) const {
 
 	matrix ret(m_rows, 1);
 
- 	m_mult_vec->load(&rhs.arr(), &arr(), &ret.arr(), m_columns/16, m_rows).run();
+	V3DLib::timers.start("mult load");
+ 	m_mult_vec->load(&rhs.arr(), &arr(), &ret.arr(), m_columns/16, m_rows);
+	V3DLib::timers.stop("mult load");
+
+	V3DLib::timers.start("mult run");
+ 	m_mult_vec->run();
+	V3DLib::timers.stop("mult run");
+
 	return ret;
 }
 
@@ -164,6 +171,7 @@ matrix matrix::sigmoid_derivative(matrix const &rhs) {
 
 
 matrix matrix::transpose() const {
+	auto &t_3 = V3DLib::timers.start("matrix transpose");
 	matrix ret(m_columns, m_rows);
 
 	for (int h = 0; h < m_rows; ++h) {
@@ -172,6 +180,7 @@ matrix matrix::transpose() const {
 		}
 	}
 
+	t_3.stop();
 	return ret;
 }
 
