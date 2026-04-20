@@ -80,7 +80,11 @@ public:
   IntList const &params() const { return uniforms; }  // Can't name it uniforms because the data member is called that
 
   std::string compile_info() const;
+
+#ifdef OUTPUT_COMPILEDATA
   std::string dump_compile_data();
+#endif // OUTPUT_COMPILEDATA
+
   bool has_errors() const;
   std::string info() const;
 
@@ -91,22 +95,12 @@ public:
    */
   template <typename... us>
   BaseKernel &load(us... args) {
-		timers.start("BaseKernel load");
-    //Log::warn << "Called BaseKernel::load()";
     uniforms.clear();
 
     if (!ppassParam(uniforms, m_typelist, 0,  args...)) {
       Log::cerr << "Errors in params of load()\n" << Log::thrw;
     }
-    
-    using ::operator<<;  // C++ weirdness
-    std::string tmp;
-    for (int i = 0; i < (int) uniforms.size(); i++) {
-      tmp << uniforms[i] << ", ";
-    }
-
-    //Log::warn << "Uniforms: " << tmp;
-		timers.stop("BaseKernel load");
+   
     return *this;
   }
 

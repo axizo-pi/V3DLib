@@ -13,29 +13,28 @@
 #include "test.h"
 #include "Support/basics.h"
 #include "Source/Functions.h"  // rotate
-#include "Support/Timer.h"
 
 const int NumInputs = 3;
-const int NumEpochs = 10; //1000;
+const int NumEpochs = 1000;
 
 /**
  * 3 inputs: Letters A, B and C (if you squint)
  */
 float a[NumInputs][30] = {
-{	
-	0, 0, 1, 1, 0, 0,
- 	0, 1, 0, 0, 1, 0,
- 	1, 1, 1, 1, 1, 1,
- 	1, 0, 0, 0, 0, 1,
- 	1, 0, 0, 0, 0, 1,
+{  
+  0, 0, 1, 1, 0, 0,
+   0, 1, 0, 0, 1, 0,
+   1, 1, 1, 1, 1, 1,
+   1, 0, 0, 0, 0, 1,
+   1, 0, 0, 0, 0, 1,
 }, {
-	0, 1, 1, 1, 1, 0,
+  0, 1, 1, 1, 1, 0,
   0, 1, 0, 0, 1, 0,
   0, 1, 1, 1, 1, 0,
   0, 1, 0, 0, 1, 0,
   0, 1, 1, 1, 1, 0
-}, {				
-	0, 1, 1, 1, 1, 0,
+}, {        
+  0, 1, 1, 1, 1, 0,
   0, 1, 0, 0, 0, 0,
   0, 1, 0, 0, 0, 0,
   0, 1, 0, 0, 0, 0,
@@ -48,7 +47,7 @@ float a[NumInputs][30] = {
  */
 const int label_size = 3;
 float labels[NumInputs][label_size] = {
-	{1, 0, 0},
+  {1, 0, 0},
   {0, 1, 0},
   {0, 0, 1}
 };
@@ -56,119 +55,112 @@ float labels[NumInputs][label_size] = {
 
 
 void train(vector const *inputs, vector const *desired, model &k_model) {
-	int   epoch = 0;
-	float loss[NumInputs];
+  int   epoch = 0;
+  float loss[NumInputs];
 
-	int epoch_step = 1;
-	if (NumEpochs >= 1000) {
-		epoch_step = 50;
-	} else if (NumEpochs >= 400) {
-		epoch_step = 10;
-	}
+  int epoch_step = 1;
+  if (NumEpochs >= 1000) {
+    epoch_step = 50;
+  } else if (NumEpochs >= 400) {
+    epoch_step = 10;
+  }
 
-	V3DLib::timers.start("train while-loop");
-	while (epoch < NumEpochs) {
-		for (int i = 0; i < NumInputs; ++i) {
-			V3DLib::timers.start("train forward");
-			auto result = k_model.forward(inputs[i]);
-			V3DLib::timers.stop("train forward");
+  while (epoch < NumEpochs) {
+    for (int i = 0; i < NumInputs; ++i) {
+      auto result = k_model.forward(inputs[i]);
 
-			loss[i] = scalar::loss(result.arr(), desired[i].arr());
+      loss[i] = scalar::loss(result.arr(), desired[i].arr());
 
-			V3DLib::timers.start("train back_prop");
-			k_model.back_prop(inputs[i], desired[i]);
-			V3DLib::timers.stop("train back_prop");
-		}
+      k_model.back_prop(inputs[i], desired[i]);
+    }
 
-		float sum = 0;
-		for (int i = 0; i < NumInputs; ++i) {
-			sum += loss[i];
-		}
+    float sum = 0;
+    for (int i = 0; i < NumInputs; ++i) {
+      sum += loss[i];
+    }
 
-		sum /= ((float) NumInputs);  // Take average
+    sum /= ((float) NumInputs);  // Take average
 
-		if (epoch % epoch_step == 0) {
-			warn << "epoch: " << epoch << " ======== acc: " << fixed << (1 - sum)*100;
-		}
-		epoch++;
-	}
-	V3DLib::timers.stop("train while-loop");
+    if (epoch % epoch_step == 0) {
+      warn << "epoch: " << epoch << " ======== acc: " << fixed << (1 - sum)*100;
+    }
+    epoch++;
+  }
 }
 
 
 void predict(vector const &input, model &k_model) {
-	auto result = k_model.forward(input);
-	//warn << "predict result: " << result.dump();
-	//warn << "Till Here" << thrw;
+  auto result = k_model.forward(input);
+  //warn << "predict result: " << result.dump();
+  //warn << "Till Here" << thrw;
 
-	float maxm = 0;
-	int k = 0;
+  float maxm = 0;
+  int k = 0;
 
-	for (int i = 0; i < NumInputs; ++i) {
-		float n = result[i];
+  for (int i = 0; i < NumInputs; ++i) {
+    float n = result[i];
 
-		if (maxm < n) {
-			maxm = n;
-			k = i;
-		}
-	}
+    if (maxm < n) {
+      maxm = n;
+      k = i;
+    }
+  }
 
-	switch (k) {
-		case 0: warn << "Image is of letter A."; break;
-		case 1: warn << "Image is of letter B."; break;
-		case 2: warn << "Image is of letter C."; break;
+  switch (k) {
+    case 0: warn << "Image is of letter A."; break;
+    case 1: warn << "Image is of letter B."; break;
+    case 2: warn << "Image is of letter C."; break;
 
-		default: assert(false); break;
-	}
+    default: assert(false); break;
+  }
 }
 
 
 int main(int argc, const char *argv[]) {
   settings().init(argc, argv);
 
- 	// To compare pseudo-random values with ruby	 
-	if (false) {
-		std::cout.precision(6);
+   // To compare pseudo-random values with ruby   
+  if (false) {
+    std::cout.precision(6);
 
-		std::string buf;
-		for (int x = 0; x < 1000; ++x) {
-			buf << frrand() << ", ";
+    std::string buf;
+    for (int x = 0; x < 1000; ++x) {
+      buf << frrand() << ", ";
 
-			if (x % 32 == 0) {
-				buf << "\n";
-			}
-		}
+      if (x % 32 == 0) {
+        buf << "\n";
+      }
+    }
 
-		std::cout << buf << "\n";
-		return 0;
-	}
+    std::cout << buf << "\n";
+    return 0;
+  }
 
-	if (false) {
-		test_back_propagation(vector::op_kernel());
-		//test_outer_product(vector::op_kernel(), true);
-		//test_vector();
-		return 0;
-	}
+  if (false) {
+    test_back_propagation(vector::op_kernel());
+    //test_outer_product(vector::op_kernel(), true);
+    //test_vector();
+    return 0;
+  }
 
-	vector inputs[NumInputs] = {32, 32, 32};
-	for (int i = 0; i < NumInputs; ++i) {
-		inputs[i].set(a[i], 30);
-	}
+  vector inputs[NumInputs] = {32, 32, 32};
+  for (int i = 0; i < NumInputs; ++i) {
+    inputs[i].set(a[i], 30);
+  }
 
-	vector desired[NumInputs] = {16, 16, 16};
-	for (int i = 0; i < NumInputs; ++i) {
-		desired[i].set(labels[i], label_size);
-	}
+  vector desired[NumInputs] = {16, 16, 16};
+  for (int i = 0; i < NumInputs; ++i) {
+    desired[i].set(labels[i], label_size);
+  }
 
-	// Using this as a global var leads to segmentation fault
-	model k_model(N*16, M);
+  // Using this as a global var leads to segmentation fault
+  model k_model(N*16, M);
 
-	train(inputs, desired, k_model);
+  train(inputs, desired, k_model);
 
-	predict(inputs[2], k_model);
-	predict(inputs[1], k_model);
-	predict(inputs[0], k_model);
+  predict(inputs[2], k_model);
+  predict(inputs[1], k_model);
+  predict(inputs[0], k_model);
 
-	timers.end();
   return 0;
 }

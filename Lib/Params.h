@@ -3,6 +3,7 @@
 #include "Source/Complex.h"
 #include "Source/Float.h"
 #include "Support/Helpers.h"        // uniforms_reversed()
+#include "Support/Timer.h"
 
 namespace V3DLib {
 
@@ -83,6 +84,7 @@ template <typename T> bool append(
 
   uniforms.append(param_value(val));
   ++index;
+
   return ret;
 }
 
@@ -94,8 +96,9 @@ template <typename T, typename ...t> bool ppassParam(
   T val, t... x
 ) {
   bool ret = append(uniforms, typelist, index, val);
+  ret = ret & ppassParam(uniforms, typelist, index, x...);
 
-  return ret & ppassParam(uniforms, typelist, index, x...);
+  return ret;
 }
 
 

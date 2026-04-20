@@ -7,7 +7,6 @@
 #include "instr/Snippets.h"
 #include "Support/basics.h"
 #include "Support/Helpers.h"      // contains()
-#include "Support/Timer.h"
 #include "SourceTranslate.h"
 #include "instr/Encode.h"
 #include "instr/Mnemonics.h"
@@ -730,7 +729,11 @@ void KernelDriver::encode() {
   }
 #endif // DEBUG
 
+#ifdef OUTPUT_COMPILEDATA
   compile_data.num_instructions_combined += Combine::optimize(instructions);
+#else  
+  Combine::optimize(instructions);
+#endif // OUTPUT_COMPILEDATA
 
   removeLabels(instructions);
 

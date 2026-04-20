@@ -4,7 +4,6 @@
 #include "Source/StmtStack.h"
 #include "Source/Translate.h"
 #include "Source/Lang.h"            // initStmt()
-#include "Support/Timer.h"
 #include "Target/instr/Mnemonics.h"
 #include "Support/Helpers.h"        // to_file(), uniforms_reversed()
 
@@ -99,7 +98,10 @@ void KernelDriver::init_compile() {
 
   VarGen::reset();
   resetFreshLabelGen();
+
+#ifdef OUTPUT_COMPILEDATA
   compile_data.clear();
+#endif // OUTPUT_COMPILEDATA
 
   // Initialize reserved general-purpose variables
   Int qpuId, qpuCount;
@@ -152,7 +154,9 @@ void KernelDriver::compile(std::function<void()> create_ast) {
     if (e_msg.compare(0, 5, "ERROR") == 0) {
       errors << msg;
     } else {
+#ifdef OUTPUT_COMPILEDATA
       m_compile_data = compile_data;
+#endif // OUTPUT_COMPILEDATA
       throw;  // Must be a fatal()
     }
   } catch (std::runtime_error const &e) {
@@ -166,7 +170,9 @@ void KernelDriver::compile(std::function<void()> create_ast) {
 
   handle_errors();
 
+#ifdef OUTPUT_COMPILEDATA
   m_compile_data = compile_data;
+#endif // OUTPUT_COMPILEDATA
 }
 
 
@@ -235,18 +241,24 @@ std::string KernelDriver::dump() {
 }
 
 
+#ifdef OUTPUT_COMPILEDATA
+
 std::string KernelDriver::dump_compile_data() const {
   return m_compile_data.dump()
     + ::title("ACC usage")
     + m_targetCode.check_acc_usage();
 }
 
+#endif // OUTPUT_COMPILEDATA
+
 
 std::string KernelDriver::compile_info() const {
   std::string ret;
 
   ret << "  compile num generated variables: " << numVars() << "\n"
+#ifdef OUTPUT_COMPILEDATA
       << "  num accs introduced            : " << numAccs() << "\n"
+#endif // OUTPUT_COMPILEDATA
       << "  num compile errors             : " << errors.size();
 
   return ret;

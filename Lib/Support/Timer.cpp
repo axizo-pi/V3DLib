@@ -84,7 +84,7 @@ std::string Timer::dump(int width) {
   char buf[128]; 
 
   if (count == 0) {
-		timeval time = diff_time();
+    timeval time = diff_time();
     sprintf(buf, format, time.tv_sec, time.tv_usec);
   } else {
     if (started) {
@@ -95,34 +95,34 @@ std::string Timer::dump(int width) {
     auto avg_sec = tmp/1000000l;
     auto avg_usec = tmp % 1000000l;
 
-    sprintf(buf, format " in %3d steps, average: %2ld.%06lds",
+    sprintf(buf, format " in %4d steps, average: %2ld.%06lds",
       tvTotal.tv_sec, tvTotal.tv_usec,
       count,
       avg_sec, avg_usec
     );
   }
 
-	std::string ret = m_label;
+  std::string ret = m_label;
 
-	if (width != -1) {
-		ret << indentBy(width - (int) m_label.size());
-	}
+  if (width != -1) {
+    ret << indentBy(width - (int) m_label.size());
+  }
 
-	ret << ": " << buf;
+  ret << ": " << buf;
 
-	return ret;
+  return ret;
 
-#undef format	
+#undef format  
 }
 
 
 std::string Timer::end(bool show_output) {
-	if (show_output) {
-		warn << dump();
-	}
+  if (show_output) {
+    warn << dump();
+  }
 
   char buf[128]; 
-	timeval time = diff_time();
+  timeval time = diff_time();
   sprintf(buf, "%ld.%06ld", time.tv_sec, time.tv_usec);
   return std::string(buf); 
 }
@@ -134,47 +134,59 @@ std::string Timer::end(bool show_output) {
 
 Timers timers;
 
+
+/**
+ * @brief Start a global timer
+ *
+ * Labels are unique over timers.
+ * If the timer does not exist, it is created.
+ *
+ * **NOTE:** Returned timer does not always work (ie. stop())
+ *           as expected. It is safer to use `Timers::stop()`.
+ * 
+ * @return The started timer
+ */
 Timer &Timers::start(std::string const &label) {
-	int index = find(label);
+  int index = find(label);
 
-	if (index == -1) {
-		//warn << "Adding timer '" << label << "'";
-		m_list << Timer(label);
-		index = (int) m_list.size() - 1;
-	}
+  if (index == -1) {
+    //warn << "Adding timer '" << label << "'";
+    m_list << Timer(label);
+    index = (int) m_list.size() - 1;
+  }
 
-	m_list[index].start();
+  m_list[index].start();
 
-	return m_list[index];
+  return m_list[index];
 }
 
 
 void Timers::stop(std::string const &label) {
-	int index = find(label);
-	assert(index != -1);
-	m_list[index].stop();
+  int index = find(label);
+  assert(index != -1);
+  m_list[index].stop();
 }
 
 
 void Timers::end() {
-	assert(!m_list.empty());
+  assert(!m_list.empty());
 
-	// Determine label width
-	int width = -1;
-	for (int i = 0; i < (int) m_list.size(); ++i) {
-		int tmp = (int) m_list[i].label().length();
-		if (width < tmp) {
-			width = tmp;
-		}
-	}
+  // Determine label width
+  int width = -1;
+  for (int i = 0; i < (int) m_list.size(); ++i) {
+    int tmp = (int) m_list[i].label().length();
+    if (width < tmp) {
+      width = tmp;
+    }
+  }
 
-	std::string buf;
-	for (int i = 0; i < (int) m_list.size(); ++i) {
-		buf << "  " << m_list[i].dump(width) << "\n";
-	}
+  std::string buf;
+  for (int i = 0; i < (int) m_list.size(); ++i) {
+    buf << "  " << m_list[i].dump(width) << "\n";
+  }
 
-	warn << "Timers end:\n"
-		   << buf;
+  warn << "Timers end:\n"
+       << buf;
 }
 
 
@@ -184,17 +196,17 @@ void Timers::end() {
  * @return index of found timer, -1 if not found
  */
 int Timers::find(std::string const &label) {
-	int index = -1;
+  int index = -1;
 
-	for (int i = 0; i < (int) m_list.size(); ++i) {
-		if (label == m_list[i].label()) {
-			//warn << "Found timer";
-			index = i;
-			break;
-		}
-	}
+  for (int i = 0; i < (int) m_list.size(); ++i) {
+    if (label == m_list[i].label()) {
+      //warn << "Found timer";
+      index = i;
+      break;
+    }
+  }
 
-	return index;
+  return index;
 }
 
 }  // namespace
