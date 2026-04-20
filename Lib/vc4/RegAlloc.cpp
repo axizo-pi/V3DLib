@@ -191,7 +191,9 @@ void regAlloc(Instr::List &instrs) {
     live.reg_usage()[i].reg = Reg(chosenRegFile, (chosenRegFile == REG_A)? chosenA : chosenB);
   }
   
+#ifdef OUTPUT_COMPILEDATA
   compile_data.allocated_registers_dump = live.reg_usage().dump(true);
+#endif // OUTPUT_COMPILEDATA
 
   // Step 4 - Apply the allocation to the code
   allocate_registers(instrs, live.reg_usage());

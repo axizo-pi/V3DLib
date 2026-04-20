@@ -2,7 +2,6 @@
 #define _INCLUDE_RNN_MODEL
 #include "matrix.h"
 #include "scalar.h"
-#include "Support/Timer.h"
 
 using namespace V3DLib;
 
@@ -21,24 +20,24 @@ const int NumOutputNodes = 3;
  * encompass the original size.
  */
 struct model {
-	model(int n_size, int m_size);
+  model(int n_size, int m_size);
 
-	float alpha = 1.0f;  // ruby version works fine with value 1
+  float alpha = 1.0f;  // ruby version works fine with value 1
 
-	matrix w1{16*N, M};
-	vector z1{16};
+  matrix w1{16*N, M};
+  vector z1{16};
   vector bias1{16};
   vector a1{16};
 
-	matrix w2{16, 16};
+  matrix w2{16, 16};
   vector bias2{16};
   vector z2{16};
   vector a2{16};
 
-	Float::Array s_tmp{16}; // For scalar output
+  Float::Array s_tmp{16}; // For scalar output
 
-	vector forward(vector const &input);
-	void back_prop(vector const &input, vector const &desired);
+  vector forward(vector const &input);
+  void back_prop(vector const &input, vector const &desired);
 };
 
 #endif // _INCLUDE_RNN_MODEL

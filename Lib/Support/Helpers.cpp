@@ -348,15 +348,16 @@ int num_newlines(std::string const &s) {
  * So, it must be the hardware platform, i.e. `x86`. This is the current hypothesis.
  */
 bool uniforms_reversed() {
-  static bool showed_msg = false;
-  auto ret = get_platform_info();
+  static bool did_first = false;
+  static platform_info ret;
 
-  if (!showed_msg) {
+  if (!did_first) {
+    ret = get_platform_info();
     if (!ret.is_x86()) {  // Actually, reversal appears to happen explicitly on x64
       warn << "No need to reverse the parameter indexes";
     }
 
-    showed_msg = true;
+    did_first = true;
   }
 
   return ret.is_x86();

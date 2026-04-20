@@ -34,7 +34,6 @@ public:
 
   std::string dump();
   std::string compile_info() const;
-  std::string dump_compile_data() const;
 
   bool        is_v3d()      const { return m_type == vc6 || m_type == vc7; }
   KernelType  kernel_type() const { return m_type; }
@@ -58,12 +57,20 @@ protected:
 private:
   StmtStack   m_stmtStack;
   int         m_numVars = 0;           // The number of variables in the source code for vc4
-  CompileData m_compile_data;
 
   virtual void compile_intern() = 0;
 
   bool handle_errors();
+
+#ifdef OUTPUT_COMPILEDATA
+public:  
+  std::string dump_compile_data() const;
+
+private  
+  CompileData m_compile_data;
+
   int numAccs() const { return m_compile_data.num_accs_introduced; }
+#endif // OUTPUT_COMPILEDATA
 };
 
 

@@ -220,9 +220,11 @@ std::string BaseKernel::compile_info() const {
 }
 
 
+#ifdef OUTPUT_COMPILEDATA
 std::string BaseKernel::dump_compile_data() {
   return driver().dump_compile_data();
 }
+#endif // OUTPUT_COMPILEDATA
 
 
 std::string BaseKernel::info() const {
