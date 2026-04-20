@@ -1,4 +1,7 @@
 #include "CompileData.h"
+
+#ifdef OUTPUT_COMPILEDATA
+
 #include "Support/basics.h"
 
 namespace V3DLib {
@@ -47,3 +50,5 @@ void CompileData::clear() {
 }
 
 }  // namespace V3DLib
+
+#endif // OUTPUT_COMPILEDATA

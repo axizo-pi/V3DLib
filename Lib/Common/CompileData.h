@@ -1,5 +1,8 @@
 #ifndef _V3DLIB_COMMON_COMPILEDATA_H_
 #define _V3DLIB_COMMON_COMPILEDATA_H_
+
+#ifdef OUTPUT_COMPILEDATA
+
 #include <string>
 #include <vector>
 #include "Target/instr/Reg.h"
@@ -23,5 +26,7 @@ struct CompileData {
 extern CompileData compile_data;
 
 }  // namespace V3DLib
+
+#endif // OUTPUT_COMPILEDATA
 
 #endif  // _V3DLIB_COMMON_COMPILEDATA_H_

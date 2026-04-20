@@ -9,7 +9,6 @@
 #include "Target/Subst.h"
 #include "Common/CompileData.h"
 #include "Optimizations.h"
-#include "Support/Timer.h"
 #include "UseDef.h"
 #include "Support/Helpers.h"  // contains()
 
@@ -224,8 +223,10 @@ void Liveness::compute(Instr::List &instrs) {
 
   m_reg_usage.set_live(*this);
 
+#ifdef OUTPUT_COMPILEDATA
   compile_data.reg_usage_dump = m_reg_usage.dump(true);
   compile_data.liveness_dump = dump();
+#endif // OUTPUT_COMPILEDATA
 
   m_reg_usage.check();
 }
@@ -303,7 +304,10 @@ std::string Liveness::dump() {
  */
 void Liveness::optimize(Instr::List &instrs, int numVars) {
   assertq(count_skips(instrs) == 0, "optimize(): SKIPs detected in instruction list");
+
+#ifdef OUTPUT_COMPILEDATA
   compile_data.target_code_before_optimization = instrs.dump();
+#endif // OUTPUT_COMPILEDATA
 
   Liveness live(numVars);
   live.compute(instrs);
@@ -311,22 +315,20 @@ void Liveness::optimize(Instr::List &instrs, int numVars) {
   if (combineImmediates(live, instrs)) {
     live.compute(instrs);  // instructions have changed, redo liveness
   }
-/*
-  // WRI DEBUG - Where does MUTEX_RELEASE go?
-  for (int i = 0; i < (int) instrs.size(); i++) {
-    auto buf = instrs[i].dump();
-    if (contains(buf, "MUTEX_")) {
-      Log::warn << "Mutex op: " << buf;
-    }
-  }
-*/
+
   //
   // vc7 has no general purpose accumulators,
   // So we won't bother replacing variables with them
   //
   if (!Platform::compiling_for_vc7()) {
     int prev_count_skips = count_skips(instrs);
+
+#ifdef OUTPUT_COMPILEDATA
     compile_data.num_accs_introduced = introduceAccum(live, instrs);
+#else  
+    introduceAccum(live, instrs);
+#endif // OUTPUT_COMPILEDATA
+
     assertq(prev_count_skips == count_skips(instrs), "SKIP count changed after introduceAccum()");
   }
 
@@ -335,7 +337,9 @@ void Liveness::optimize(Instr::List &instrs, int numVars) {
   instrs = remove_skips(instrs);
   assertq(count_skips(instrs) == 0, "optimize(): SKIPs detected in instruction list after cleanup");
 
+#ifdef OUTPUT_COMPILEDATA
   compile_data.target_code_before_liveness = instrs.dump();
+#endif // OUTPUT_COMPILEDATA
 }
 
 

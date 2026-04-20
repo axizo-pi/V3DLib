@@ -54,7 +54,7 @@ void BaseKernel::compile_init() {
 
   if (m_settings.run_type != QPU || Platform::run_vc4()) {   // Compile vc4
     select_kernel = vc4;
-  } else {                                                 // Compile v3d
+  } else {                                                   // Compile v3d
     select_kernel = v3d;
   }
 
@@ -172,6 +172,16 @@ void BaseKernel::interpret() {
     return;
   }
 
+  {
+    std::string buf;
+    buf << "interpreter uniforms: ";
+    for (int i = 0; i < uniforms.size(); ++i) {
+      buf << uniforms.get(i) << ", ";
+    }
+    buf << "\n";
+    warn << buf;
+  }
+
   assert(uniforms.size() != 0);
   interpreter(numQPUs(), driver().sourceCode(), driver().numVars(), uniforms, getBufferObject());
 }
@@ -210,9 +220,11 @@ std::string BaseKernel::compile_info() const {
 }
 
 
+#ifdef OUTPUT_COMPILEDATA
 std::string BaseKernel::dump_compile_data() {
   return driver().dump_compile_data();
 }
+#endif // OUTPUT_COMPILEDATA
 
 
 std::string BaseKernel::info() const {

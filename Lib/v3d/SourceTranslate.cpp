@@ -1,6 +1,5 @@
 #include "SourceTranslate.h"
 #include "Support/basics.h"
-#include "Support/Timer.h"
 #include "Source/Translate.h"
 #include "Source/Stmt.h"
 #include "Liveness/Liveness.h"
@@ -65,7 +64,9 @@ void SourceTranslate::regAlloc(Instr::List &instrs) {
     }
   }
 
+#ifdef OUTPUT_COMPILEDATA
   compile_data.allocated_registers_dump = live.reg_usage().dump(true);
+#endif // OUTPUT_COMPILEDATA
 
   // Step 4 - Apply the allocation to the code
   allocate_registers(instrs, live.reg_usage());

@@ -1,9 +1,15 @@
 /******************************************************************
- * Version: 7 - Added rollover, improved file permissions
- * Version: 6 - restored log_to_cout()
- * Version: 5 - Added logging to file
- * Version: 4 - Added thrw flag, option to suppres console output
- * Version: 3 - Added hex flag
+ * Versions
+ * ========
+ * 8 - Added globals 'global', 'fixed' and associated
+ *   - Modifier flags moved to anon namespace; they are now global over all log calls
+ *   - Pretty extensive refactoring to make this work
+ *   - Added unit tests for logging, especially for new modifiers
+ * 7 - Added rollover, improved file permissions
+ * 6 - restored log_to_cout()
+ * 5 - Added logging to file
+ * 4 - Added thrw flag, option to suppres console output
+ * 3 - Added hex flag
  ******************************************************************/
 #include "log.h"
 #include "Support/Helpers.h"
@@ -19,6 +25,92 @@ namespace Log {
 namespace fs = std::filesystem; // Alias for brevity
 
 namespace {
+
+class Modifiers {
+public:
+  // Can be used with any logging form;
+  // logging is outputted before throw occurs
+  bool    m_throw       = false;
+
+  bool    m_next_is_global = false;
+  bool    m_next_is_hex    = false;  // If false, next int is dec
+  bool    m_next_is_fixed  = false;  // If false, next float is scientific
+
+	bool s_hex   = false;
+	bool s_fixed = false;
+
+	bool do_throw() { bool ret = m_throw; m_throw = false; return ret; }
+	void handle(LogFlag f);
+	bool do_hex();
+	bool do_fixed();
+};
+
+void Modifiers::handle(LogFlag f) {
+	if (m_next_is_global) {
+		//std::cout << "Handling global: " << f << "\n";
+
+		switch (f) {
+			case none:       assert(false);    break; // Not expecting 'none' as input
+			case dec:        s_hex         = false;
+			                 m_next_is_hex = false;
+			break;
+			case hex:        s_hex         = true;
+			                 m_next_is_hex = true;
+			break;
+			case fixed:      s_fixed         = true;
+			                 m_next_is_fixed = true;
+			break;
+			case scientific: s_fixed         = false;
+			                 m_next_is_fixed = false;
+			break;
+			case global:     assert(false);    break; // Disallow multiple globals in a row
+			default: break; // Rest ignored 
+		}
+
+		m_next_is_global = false;
+	} else {
+		//std::cout << "Handling next\n";
+
+		switch (f) {
+			case none:       assert(false);            break; // Not expecting 'none' as input
+			case dec:        m_next_is_hex    = false; break;
+			case hex:        m_next_is_hex    = true;  break;
+	  	case thrw:       m_throw          = true;  break;
+			case fixed:      m_next_is_fixed  = true;  break;
+			case scientific: m_next_is_fixed  = false; break;
+			case global:     m_next_is_global = true;  break;
+			default: assert(false); break;
+		}
+	}
+}
+
+
+bool Modifiers::do_hex() {
+	bool ret = s_hex;
+
+  if (m_next_is_hex != s_hex) {
+		//std::cout << "do_hex() global != next\n";
+		ret = m_next_is_hex;
+  	m_next_is_hex = !m_next_is_hex;
+	}
+
+	return ret;
+}
+
+
+bool Modifiers::do_fixed() {
+	bool ret = s_fixed;
+
+  if (m_next_is_fixed != s_fixed) {
+		//std::cout << "do_fixed() global != next\n";
+		ret = m_next_is_fixed;
+  	m_next_is_fixed = !m_next_is_fixed;
+	}
+
+	return ret;
+}
+
+Modifiers s_modifiers;
 
 const unsigned long ROLLOVER = 10*1024*1024;
 
@@ -174,13 +266,11 @@ public:
     return  (m_level <= level);
   }
 
-  void log_file(std::string const &file) {
-    m_file = file;
-  }
+  void log_file(std::string const &file) { m_file = file;    }
+  std::string log_file()                 { return m_file;    }
 
-  static void log_dir(std::string path) {
-    m_log_dir = path;
-  }
+  static void log_dir(std::string path)  { m_log_dir = path; }
+  static std::string log_dir()           { return m_log_dir; }
 
 protected:
   void _out(Logger::Level level, std::string const &msg) override {
@@ -229,7 +319,7 @@ FileLogger file_logger;
 
 
 LogItem::~LogItem() noexcept(false) {
-  m_log.flush(m_throw);
+  m_log.flush(s_modifiers.do_throw());
 }
 
 
@@ -246,12 +336,10 @@ LogItem &LogItem::operator<<(const char *str) {
 
 
 LogItem &LogItem::operator<<(int n) {
-  if (m_next_is_hex) {
+  if (s_modifiers.do_hex()) {
     char buf[32];
     sprintf(buf, "0x%x", n);
     m_log.buf() << buf;
-
-    m_next_is_hex = false;
   } else { 
     m_log.buf() << n;
   }
@@ -260,12 +348,10 @@ LogItem &LogItem::operator<<(int n) {
 
 
 LogItem &LogItem::operator<<(unsigned n) {
-  if (m_next_is_hex) {
+  if (s_modifiers.do_hex()) {
     char buf[32];
     sprintf(buf, "0x%x", n);
     m_log.buf() << buf;
-
-    m_next_is_hex = false;
   } else { 
     m_log.buf() << n;
   }
@@ -274,12 +360,10 @@ LogItem &LogItem::operator<<(unsigned n) {
 
 
 LogItem &LogItem::operator<<(unsigned long n) {
-  if (m_next_is_hex) {
+  if (s_modifiers.do_hex()) {
     char buf[64];
     sprintf(buf, "0x%lx", n);
     m_log.buf() << buf;
-
-    m_next_is_hex = false;
   } else {
     m_log.buf() << n;
   }
@@ -290,21 +374,25 @@ LogItem &LogItem::operator<<(unsigned long n) {
 
 
 LogItem &LogItem::operator<<(float n) {
-  m_log.buf().setf(std::ios_base::scientific, std::ios_base::floatfield);
+  if (s_modifiers.do_fixed()) {
+  	m_log.buf().setf(std::ios_base::fixed, std::ios_base::floatfield);
+	} else {
+  	m_log.buf().setf(std::ios_base::scientific, std::ios_base::floatfield);
+	}
   m_log.buf()  << n;
   return *this;
 }
 
 
 LogItem &LogItem::operator<<(double n) {
+	// NOTE: No modifiers handled here
   m_log.buf() << n;
   return *this;
 }
 
 
 LogItem &LogItem::operator<<(LogFlag f) {
-  if (f == hex)  m_next_is_hex = true;
-  if (f == thrw) m_throw       = true;
+	s_modifiers.handle(f);
   return *this;
 }
 
@@ -360,9 +448,17 @@ void set_log_dir(std::string const &path) {
   FileLogger::log_dir(path);
 }
 
+std::string log_dir() {
+  return FileLogger::log_dir();
+}
+
 
 void set_log_file(std::string const &file) {
   file_logger.log_file(file);
+}
+
+std::string log_file() {
+  return file_logger.log_file();
 }
 
 
