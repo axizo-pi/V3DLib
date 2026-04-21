@@ -64,6 +64,23 @@ std::vector<float> lib_neg_sin_values(int size, float freq = -1.0f, float offset
 }
 
 
+std::vector<float> lib_tanh_values(int size, float min_x = -2.0f, float max_x = 2.0f) {
+  assert(max_x > min_x);
+
+  std::vector<float> ret;
+  ret.resize(size);
+
+  float step = (max_x - min_x)/((float) size);
+
+  for (int n = 0; n < size; ++n) {
+    float x = min_x + ((float) n)*step; //((float) (freq*(((float) n) - offset)));
+    ret[n] = tanh(x);
+  }
+
+  return ret;
+}
+
+
 /**
  * Calculate max abs difference for arrays
  */
@@ -92,7 +109,6 @@ string showResult(Array &result, int index, int size = 16) {
   for (int j = 0; j < size; j++) {
     buf << result[size*index + j] << ", ";
   }
-  buf << "\n";
 
   return buf.str();
 }
@@ -102,11 +118,10 @@ template<typename T>
 string showExpected(const std::vector<T> &expected) {
   ostringstream buf;
 
-  buf << "          expected: ";
-  for (int j = 0; j < 16; j++) {
+  buf << "expected: ";
+  for (int j = 0; j < (int) expected.size(); j++) {
     buf << expected[j] << ", ";
   }
-  buf << "\n";
 
   return buf.str();
 }
@@ -1278,26 +1293,59 @@ TEST_CASE("Test sin/cos instructions [dsl][sincos]") {
     REQUIRE(diff <= qpu_precision);
   }
 
-/*
-  NOT WORKING. TODO: fix
-
-  //Log::warn << showResult(lib_sin, 0, N);
-  //Log::warn << showResult(result, 2, N);
-  Log::warn << showResult(lib_neg_sin, 0, N);
-  Log::warn << showResult(result, 3, N);
-
+  // There were issues here, check all vc's: working pi5
+  //
+  //Log::warn << showResult(lib_neg_sin, 0, N);
+  //Log::warn << showResult(result, 3, N);
   {
     float diff = max_abs_value(lib_neg_sin, result.ptr() + 3*N);
     INFO("max abs diff v3d sin: " << diff);
     REQUIRE(diff <= qpu_precision);
   }
-*/
 
   {
     float diff = max_abs_value(lib_cos, result.ptr() + 4*N);
     INFO("max abs diff v3d sin: " << diff);
     REQUIRE(diff <= qpu_precision);
   }
+}
+
+
+void tanh_kernel(Float::Ptr result, Int size, Float min_x, Float max_x) {
+  Int count = size >> 4;
+  Float step = (max_x - min_x)/toFloat(size);
+
+  For (Int n = 0, n < count, n++)
+    Float param = min_x + toFloat((n << 4) + index())*step;
+
+    Float val  = tanh(param);
+    *result = val;  result.inc();
+  End
+}
+
+
+TEST_CASE("Test tanh [dsl][tanh]") {
+  int const N = 48;          // 128;
+  float const min_x = -2.0f; //-6.0f;
+  float const max_x =  2.0f; // 6.0f;
+
+  Float::Array result(N);
+  result.fill(2.0f);
+  auto lib_tanh = lib_tanh_values(N, min_x, max_x);
+
+  auto k = compile(tanh_kernel);
+  //to_file("tanh_kernel.txt", k.dump());
+  k.load(&result, N, min_x, max_x).run();
+
+/*  
+  Log::warn << "\n  " << showExpected(lib_tanh)
+            << "\n  " << showResult(result, 0, N);
+  Log::warn << "Max diff: " << calc_max_diff(lib_tanh, result, N);
+*/
+  const float PRECISION = 5.0e-7f;
+
+  float max_diff = calc_max_diff(lib_tanh, result, N);
+  REQUIRE(max_diff < PRECISION);
 }
 
 
