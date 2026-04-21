@@ -275,6 +275,11 @@ Instr add(Reg dst, Reg srcA, Reg srcB) {
 }
 
 
+Instr fadd(Reg dst, Reg srcA, Reg srcB) {
+  return genInstr(Enum::A_FADD, dst, srcA, srcB);
+}
+
+
 Instr add(Reg dst, Reg srcA, int n) {
   assert(n >= 0 && n <= 15);
   return genInstr(Enum::A_ADD, dst, srcA, n);
@@ -389,6 +394,17 @@ Instr::List recip(Reg dst, RegOrImm const &srcA) {
 }
 
 
+Instr::List fdiv(Var dst, RegOrImm const &srcA ,RegOrImm const &srcB) {
+  Reg tmp(V3DLib::VarGen::fresh());
+
+  Instr::List ret;
+  ret << recip(tmp, srcB)
+      << fmul(dst, srcA, tmp);
+
+  return ret;
+}
+
+
 /**
  * @brief Return 2 to the power of srcA.
  */
@@ -403,6 +419,9 @@ Instr::List bexp(Var dst, RegOrImm const &srcA) {
 }
 
 
+/**
+ * @brief Return 2 to the power of e.
+ */
 Instr::List bexp_e(Var dst, RegOrImm const &srcA) {
   const float e_const = 2.71828f;
 
@@ -413,6 +432,39 @@ Instr::List bexp_e(Var dst, RegOrImm const &srcA) {
   ret << blog(tmp, e);
   ret << fmul(tmp, srcA, tmp)
       << bexp(dst, tmp);
+
+  return ret;
+}
+
+
+/**
+ * @brief Calculate tanh
+ *
+ *               e^x - e^-x
+ *     tanh(x) = ----------
+ *               e^x * e^-x
+ *
+ * The convergence of the Taylor series is hopeless. In addition, the expansion
+ * is limited to -PI/2...PI/2. Instead, I made this precise calculation.
+ *
+ */
+Instr::List tanh(Var dst, RegOrImm const &srcA) {
+  Reg nom(V3DLib::VarGen::fresh());
+  Reg div(V3DLib::VarGen::fresh());
+  Reg tmp(V3DLib::VarGen::fresh());
+  Var a = V3DLib::VarGen::fresh();
+  Var b = V3DLib::VarGen::fresh();
+
+  Instr::List ret;
+  ret << bexp_e(a, srcA)
+      << fsub(tmp, 0.0f, srcA)
+      << bexp_e(b, tmp)
+      << fsub(nom, a, b)
+      << fadd(div, a, b)
+      << fdiv(dst, nom, div);
+
+	ret.front().comment("Start tanh");
+	ret.back().comment("End tanh");
 
   return ret;
 }

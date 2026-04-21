@@ -34,6 +34,7 @@ enum OpId {
 
   // Other combined operators
   SIN,
+  TANH,
 
   // v3d only
   TIDX,

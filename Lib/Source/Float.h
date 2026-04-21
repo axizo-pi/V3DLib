@@ -92,6 +92,7 @@ FloatExpr recip(FloatExpr x);
 FloatExpr recipsqrt(FloatExpr x);
 FloatExpr exp(FloatExpr x);
 FloatExpr exp_e(FloatExpr x);
+FloatExpr tanh(FloatExpr x);
 FloatExpr log(FloatExpr x);  
 
 FloatExpr sin_op(FloatExpr x);

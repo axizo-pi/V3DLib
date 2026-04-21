@@ -39,6 +39,7 @@ std::vector<OpItem> m_list = {
 
   // Derived instructions
   {EXP_E,     "exp_e",     true, Enum::OP_UNDEFINED,    Enum::OP_UNDEFINED, false, 1},
+  {TANH,      "tanh",      true, Enum::OP_UNDEFINED,    Enum::OP_UNDEFINED, false, 1},
 
   //
   // Following are not direct instructions in the source language
