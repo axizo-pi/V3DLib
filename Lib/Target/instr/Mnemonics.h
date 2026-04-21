@@ -70,6 +70,7 @@ Instr::List recipsqrt(Var dst, Var srcA);
 Instr::List bexp(Var dst, RegOrImm const &srcA);
 Instr::List bexp_e(Var dst, RegOrImm const &srcA);
 Instr::List blog(Reg dst, RegOrImm const &srcA);
+Instr::List tanh(Var dst, RegOrImm const &srcA);
 
 Instr recv(Reg dst);
 

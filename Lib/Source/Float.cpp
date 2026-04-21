@@ -217,11 +217,12 @@ FloatExpr min(FloatExpr a, FloatExpr b)       { return mkFloatApply(a, Op(MIN, F
 FloatExpr max(FloatExpr a, FloatExpr b)       { return mkFloatApply(a, Op(MAX, FLOAT), b); }
 
 // SFU functions
-FloatExpr recip(FloatExpr x)     { return mkFloatApply(x, Op(RECIP, FLOAT)); }
+FloatExpr recip(FloatExpr x)     { return mkFloatApply(x, Op(RECIP    , FLOAT)); }
 FloatExpr recipsqrt(FloatExpr x) { return mkFloatApply(x, Op(RECIPSQRT, FLOAT)); }
-FloatExpr exp(FloatExpr x)       { return mkFloatApply(x, Op(EXP, FLOAT)); }
-FloatExpr exp_e(FloatExpr x)     { return mkFloatApply(x, Op(EXP_E, FLOAT)); }
-FloatExpr log(FloatExpr x)       { return mkFloatApply(x, Op(LOG, FLOAT)); }
+FloatExpr exp(FloatExpr x)       { return mkFloatApply(x, Op(EXP      , FLOAT)); }
+FloatExpr exp_e(FloatExpr x)     { return mkFloatApply(x, Op(EXP_E    , FLOAT)); }
+FloatExpr tanh(FloatExpr x)      { return mkFloatApply(x, Op(TANH     , FLOAT)); }
+FloatExpr log(FloatExpr x)       { return mkFloatApply(x, Op(LOG      , FLOAT)); }
 
 
 /**

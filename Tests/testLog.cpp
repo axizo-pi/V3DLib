@@ -32,8 +32,6 @@ std::vector<std::string> last_log_lines(std::string const &path, int num_lines) 
 
 
 TEST_CASE("Test Logging [log]") {
-	std::cout << "Hello testing logging.\n";
-
 	std::string prev_logdir  = Log::log_dir();
 	std::string prev_logfile = Log::log_file();
 	Log::set_log_dir(test_path());

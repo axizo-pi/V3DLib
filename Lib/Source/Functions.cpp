@@ -324,8 +324,6 @@ FloatExpr cos_prev(FloatExpr x_in, bool extra_precision) {
  * Source: https://www.numberanalytics.com/blog/ultimate-taylor-trigonometry-guide#series-for-sine-and-cosine
  */
 FloatExpr cos(FloatExpr x_in) {
-  //Log::warn << "called cos() Taylor";
-
   // Empirically determined interval for zero
   Float ZERO_MIN = -1.26078e-06f; 
   Float ZERO_MAX =  4.24525e-08f;
