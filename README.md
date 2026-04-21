@@ -28,18 +28,19 @@
 ## Supported Pi's
 
 The GPU on the Pi's is called the **VideoCore**.
-There are three different version of the VideoCore over all Pi versions.
+There are three different versions of the VideoCore over all Pi versions.
 
 The Following Pi's are supported:
 
-| Pi   | VideoCore Version | 
-| ---- | ----------------- |
-| Pi5  | VII               |
-| Pi4  | VI                |
-| Zero | IV                |
-| Pi3  | IV                |
-| Pi2  | IV                |
-| Pi1  | IV                |
+| Pi    | VideoCore Version | 
+| ----- | ----------------- |
+| Pi5   | VII               |
+| Pi4   | VI                |
+| Zero  | IV                |
+| Pi3   | IV                |
+| Pi3B+ | IV                |
+| Pi2   | IV                |
+| Pi1   | IV                |
 
 ## Motivation
 

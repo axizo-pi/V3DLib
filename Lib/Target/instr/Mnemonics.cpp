@@ -440,12 +440,14 @@ Instr::List bexp_e(Var dst, RegOrImm const &srcA) {
 /**
  * @brief Calculate tanh
  *
+ * This is required for `LSTM`.
+ *
  *               e^x - e^-x
  *     tanh(x) = ----------
- *               e^x * e^-x
+ *               e^x + e^-x
  *
  * The convergence of the Taylor series is hopeless. In addition, the expansion
- * is limited to -PI/2...PI/2. Instead, I made this precise calculation.
+ * is limited to `[-PI/2...PI/2]`. Instead, I made this precise calculation.
  *
  */
 Instr::List tanh(Var dst, RegOrImm const &srcA) {

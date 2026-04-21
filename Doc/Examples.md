@@ -170,12 +170,12 @@ Running this program produces the output:
 
 ### Vector version 2: loop unrolling
 
-[Loop unrolling](https://en.wikipedia.org/wiki/Loop_unrolling){:target="_blank"} is a
+[Loop unrolling](https://en.wikipedia.org/wiki/Loop_unrolling) is a
 technique for improving performance by reducing the number of costly
 branch instructions executed.
 
 The QPU's branch instruction is costly: it requires three
-[delay slots](https://en.wikipedia.org/wiki/Delay_slot){:target="_blank"} (that's 12 clock cycles),
+[delay slots](https://en.wikipedia.org/wiki/Delay_slot) (that's 12 clock cycles),
 and this project currently makes no attempt to fill these slots with useful work.
 Although loop unrolling is not done automaticlly,
 it is straightforward use a C++ loop to generate multiple QPU statements.
@@ -202,14 +202,14 @@ it is straightforward use a C++ loop to generate multiple QPU statements.
 
 This example illustrates a routine to rotate 3D objects.
 
-([OpenGL ES](https://www.raspberrypi.org/documentation/usage/demos/hello-teapot.md){:target="_blank"}
+([OpenGL ES](https://www.raspberrypi.org/documentation/usage/demos/hello-teapot.md)
 is probably a better idea for this if you need to rotate a lot.
 This example is just for illustration purposes)
 
 If this is applied to the vertices of
-[Newell's teapot](https://github.com/rm-hull/newell-teapot/blob/master/teapot){:target="_blank"}[^1];
+[Newell's teapot](https://github.com/rm-hull/newell-teapot/blob/master/teapot)[^1];
 
-[^1]: rendered using [Richard Hull's wireframes](https://github.com/rm-hull/wireframes){:target="_blank"} tool
+[^1]: rendered using [Richard Hull's wireframes](https://github.com/rm-hull/wireframes) tool
 
 | ![Newell's teapot](./images/teapot.png) | ![Newell's teapot rotated](./images/teapot180.png) |
 |:---:|:---:|
