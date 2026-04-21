@@ -19,11 +19,7 @@ The `Mandelbrot` app is a pretty good indicator of performance, because it is **
 
 | P1       | Zero     | P2       | P3       | P3B+     | P4       | P5       |
 |----------|----------|----------|----------| -------- | ---------|----------|
-| 1.523748 | 1.300062 | 1.090135 | 0.849228 | 0.962436 | 0.699729 | 0.146146 |
-
-The time for `Pi3B+` is disappointing;
-this is the first application compiled on `Debian 13 (trixie)`; 
-perhaps there is a connection.
+| 1.523748 | 1.300062 | 1.090135 | 0.849228 | 0.657713 | 0.699729 | 0.146146 |
 
 -----
 
@@ -36,14 +32,18 @@ perhaps there is a connection.
 
 ![CPU Performance](../images/mandelbrot_cpu.png)
 
-| P1       | Zero      | P2       | P3       | P4       | P5       |
-|----------|-----------|----------|----------|----------|----------|
-| 25.08893 | 18.669549 | 8.127472 | 7.133643 | 4.546643 | 1.000233 |
+| P1       | Zero      | P2       | P3       | P3B+     |P4       | P5       |
+|----------|-----------|----------|----------| ----     |----------|----------|
+| 25.08893 | 18.669549 | 8.127472 | 7.133643 | 5.323419 |4.546643 | 1.000233 |
 
 
 -------------------------------
 
 ## Discussion
+
+`Pi3B+` competes quite nicely with `Pi4`.  
+Admittedly, some code enhancement was required for this.
+
 
 `Pi5` is killing the other Pi's. It is faster for both GPU and CPU by at least a factor
 of four.  
