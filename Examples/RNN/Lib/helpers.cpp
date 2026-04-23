@@ -1,12 +1,29 @@
-#include "tools.h"
-#include <ctime>
-#include <cmath>
+#include "helpers.h"
 
 using namespace V3DLib;
 
 namespace {
 
-Settings _settings;
+V3DLib::Settings _settings;
+
+unsigned       s_seed         = 0;
+unsigned const s_m            = 6012119;
+unsigned       s_frrand_count = 0;
+
+/**
+ * Sample random numbers using a linear congruential generator.
+ *
+ * The goal is have exactly the same random number generator on ruby and C++.
+ * Checked for the first million values.
+ *
+ * Source: https://predictivesciencelab.github.io/data-analytics-se/lecture07/hands-on-07.1.html
+ */
+unsigned lcg(unsigned x) {
+  unsigned const a = 123456;
+  unsigned const b = 978564;
+
+  return (a * x + b) % s_m;
+}
 
 } // anon namespace
 
@@ -37,48 +54,6 @@ float frand() {
 }
 
 
-std::string vector_dump(Float::Array const &src, int size, int start_index, bool output_int) {
-	assert(size <= (int) src.size());
-	std::string buf;
-
-  for (int h = 0; h < size; ++h) {
-		if (output_int) {
-    	buf << (int) src[start_index + h] << ", ";
-		} else {
-    	buf << src[start_index + h] << ", ";
-		}
-  }
-
-	return buf;
-}
-
-Settings &settings() { return _settings; }
-
-
-namespace {
-
-unsigned       s_seed         = 0;
-unsigned const s_m            = 6012119;
-unsigned       s_frrand_count = 0;
-
-/**
- * Sample random numbers using a linear congruential generator.
- *
- * The goal is have exactly the same random number generator on ruby and C++.
- * Checked for the first million values.
- *
- * Source: https://predictivesciencelab.github.io/data-analytics-se/lecture07/hands-on-07.1.html
- */
-unsigned lcg(unsigned x) {
-  unsigned const a = 123456;
-  unsigned const b = 978564;
-
-  return (a * x + b) % s_m;
-}
-
-} // anon namespace
-
-
 unsigned rrand() {
 	s_seed = lcg(s_seed);
 	return s_seed;
@@ -96,3 +71,21 @@ unsigned frrand_count() {
 	return s_frrand_count;
 }
 
+
+std::string vector_dump(Float::Array const &src, int size, int start_index, bool output_int) {
+	assert(size <= (int) src.size());
+	std::string buf;
+
+  for (int h = 0; h < size; ++h) {
+		if (output_int) {
+    	buf << (int) src[start_index + h] << ", ";
+		} else {
+    	buf << src[start_index + h] << ", ";
+		}
+  }
+
+	return buf;
+}
+
+
+Settings &settings() { return _settings; }

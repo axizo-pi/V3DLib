@@ -27,6 +27,6 @@ if false; test_back_prop; return; end
 acc, losss = train($inputs, $desireds, nn, NumEpochs)
 
 # Example: Predicting for letter 'B'
-predict($inputs[2], nn)
-predict($inputs[1], nn)
 predict($inputs[0], nn)
+predict($inputs[1], nn)
+predict($inputs[2], nn)

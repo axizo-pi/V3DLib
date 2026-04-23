@@ -1,6 +1,17 @@
 #include "matrix.h"
 #include "scalar.h"
-#include "tools.h"  // frrand()
+#include "helpers.h"  // frrand()
+
+namespace qpu {
+namespace {
+	
+void frand_array(Float::Array &rhs) {
+  for (int i = 0; i < (int) rhs.size(); ++i) {
+    rhs[i] = frand();
+  }
+}
+
+} // anon namespace
 
 
 ////////////////////////////////////////////////
@@ -8,7 +19,6 @@
 ////////////////////////////////////////////////
 
 BaseKernel *matrix::m_mult_vec = nullptr;
-
 
 matrix::matrix(int rows, int columns) : m_rows(rows), m_columns(columns) {
 	if (m_rows <= 0)     { cerr << "vector ctor: rows must be positive"    << thrw; }
@@ -45,7 +55,7 @@ Float::Array const &matrix::arr() const {
 
 
 void matrix::rand() {
-	scalar::frand_array(arr());
+	frand_array(arr());
 }
 
 
@@ -364,3 +374,6 @@ void vector::init_static() {
 	if (m_op      == nullptr) { m_op      = new BaseKernel(compile(outer_product,  settings())); }
 	if (m_sigmoid == nullptr) { m_sigmoid = new BaseKernel(compile(kernel_sigmoid, settings())); }
 }
+
+} // namespace qpu
+

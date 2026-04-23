@@ -1,9 +1,10 @@
-#ifndef _INCLUDE_RNN_MATRIX
-#define _INCLUDE_RNN_MATRIX
+#ifndef _INCLUDE_RNNSUPPORT_MATRIX_H
+#define _INCLUDE_RNNSUPPORT_MATRIX_H
 #include "kernels.h"
 #include "Support/basics.h"
 #include "Support/Settings.h"
-#include "tools.h"
+
+namespace qpu {
 
 using namespace Log;
 using namespace V3DLib;
@@ -104,6 +105,6 @@ private:
 	static void init_static();
 };
 
+} // namespace qpu
 
-
-#endif // _INCLUDE_RNN_MATRIX
+#endif // _INCLUDE_RNNSUPPORT_MATRIX_H

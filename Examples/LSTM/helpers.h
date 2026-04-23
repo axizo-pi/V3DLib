@@ -14,5 +14,4 @@ private:
   std::normal_distribution<float> dist;
 };
 
-
 #endif // _LSTM_HELPERS_H

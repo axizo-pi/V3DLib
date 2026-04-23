@@ -1,6 +1,7 @@
 #include "test.h"
 #include "model.h"
 #include "Source/Functions.h"  // rotate_sum
+#include "helpers.h"
 
 using namespace V3DLib;
 

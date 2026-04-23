@@ -13,6 +13,7 @@
 #include "test.h"
 #include "Support/basics.h"
 #include "Source/Functions.h"  // rotate
+#include "helpers.h"
 
 const int NumInputs = 3;
 const int NumEpochs = 1000;
@@ -158,9 +159,9 @@ int main(int argc, const char *argv[]) {
 
   train(inputs, desired, k_model);
 
-  predict(inputs[2], k_model);
-  predict(inputs[1], k_model);
   predict(inputs[0], k_model);
+  predict(inputs[1], k_model);
+  predict(inputs[2], k_model);
 
   return 0;
 }

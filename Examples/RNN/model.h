@@ -4,6 +4,7 @@
 #include "scalar.h"
 
 using namespace V3DLib;
+using namespace qpu;
 
 const int N = 2;  // Columns of matrix and length of vector, in blocks of 16
 const int M = 16; // Num of columns in matrix

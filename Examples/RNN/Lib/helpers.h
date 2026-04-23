@@ -1,8 +1,8 @@
-#ifndef _INCLUDE_RNN_TOOLS
-#define _INCLUDE_RNN_TOOLS
-#include <string>
+#ifndef _INCLUDE_RNNSUPPORT_HELPERS_H
+#define _INCLUDE_RNNSUPPORT_HELPERS_H
 #include "Source/Float.h"
 #include "Support/Settings.h"
+#include <string>
 
 float frand();
 unsigned rrand();
@@ -16,6 +16,7 @@ std::string vector_dump(
 	bool output_int = false
 );
 
+
 V3DLib::Settings &settings();
 
-#endif // _INCLUDE_RNN_TOOLS
+#endif // _INCLUDE_RNNSUPPORT_HELPERS_H

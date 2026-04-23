@@ -1,16 +1,8 @@
 #include "scalar.h"
 #include "Lib/scalar.h"
-#include "tools.h"
 
 namespace scalar {
 	
-void frand_array(Float::Array &rhs) {
-  for (int i = 0; i < (int) rhs.size(); ++i) {
-    rhs[i] = frand();
-  }
-}
-
-
 void sigmoid(Float::Array &vec, Float::Array const &bias, Float::Array &output) {
   for (int h = 0; h < (int) vec.size(); ++h) {
 		output[h] = scalar::sigmoid(vec[h] + bias[h]); 
