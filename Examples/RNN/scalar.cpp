@@ -1,20 +1,9 @@
 #include "scalar.h"
-#include <cmath>  // exp()
+#include "Lib/scalar.h"
 #include "tools.h"
 
 namespace scalar {
-
-namespace {
 	
-/**
- * activation function
- */
-float sigmoid_int(float x) {
-	return (float) (1.0/(1.0 + std::exp(-x)));
-}
-
-} // anon namespace
-
 void frand_array(Float::Array &rhs) {
   for (int i = 0; i < (int) rhs.size(); ++i) {
     rhs[i] = frand();
@@ -24,7 +13,7 @@ void frand_array(Float::Array &rhs) {
 
 void sigmoid(Float::Array &vec, Float::Array const &bias, Float::Array &output) {
   for (int h = 0; h < (int) vec.size(); ++h) {
-		output[h] = sigmoid_int(vec[h] + bias[h]); 
+		output[h] = scalar::sigmoid(vec[h] + bias[h]); 
   }
 }
 

@@ -3,81 +3,14 @@
  *
  * Source: https://github.com/anudeepadi/lstmcpp
  */
-#include <vector>
+#include "scalar.h"
+#include "lstm_matrix.h"
 #include <cmath>
 #include <random>
 #include <iostream>
 #include <algorithm>
 #include <tuple>
-#include "hello.h"
 
-namespace lstm {
-
-class vector : public std::vector<float> {
-  using Parent = std::vector<float>;
-
-public:
-  vector() = default;
-  vector(vector const &val) = default;
-  vector(size_t size) : Parent(size) {}
-  vector(size_t size, float val) : Parent(size, val) {}
-
-
-  vector operator+(const vector & b) const {
-    const vector & a= *this;
-
-    vector result(a.size());
-    for (size_t i = 0; i < a.size(); i++) {
-      result[i] = a[i] + b[i];
-    }
-    return result;
-  }
-
-
-  vector operator*(const vector & b) const {
-    const vector & a= *this;
-
-    vector result(a.size());
-    for (size_t i = 0; i < a.size(); i++) {
-      result[i] = a[i] * b[i];
-    }
-    return result;
-  }
-
-};
-
-
-vector operator*(float scalar, const vector & v) {
-    vector result(v.size());
-    for (size_t i = 0; i < v.size(); i++) {
-        result[i] = scalar * v[i];
-    }
-    return result;
-}
-
-
-class matrix: public std::vector<lstm::vector> {
-  using Parent = std::vector<lstm::vector>;
-    
-public:    
-  matrix() = default;
-  matrix(size_t height, size_t width) : Parent(height, lstm::vector(width)) {}
-
-  lstm::vector operator*(const lstm::vector &v) {
-    const matrix &m = *this;
-
-    lstm::vector result(m.size(), 0.0);
-    for (size_t i = 0; i < m.size(); i++) {
-      for (size_t j = 0; j < v.size(); j++) {
-        result[i] += m[i][j] * v[j];
-      }
-    }
-    return result;
-  }
-
-};
-
-} // namespace lstm
 
 using namespace lstm;
 
@@ -94,31 +27,27 @@ private:
   std::normal_distribution<float> dist;
 };
 
+
 // Structure for data samples as mentioned in the blog
 struct DataSample {
   vector features;
   float target;
 };
 
-class DataSamples : public std::vector<DataSample> {
-};
+
+class DataSamples : public std::vector<DataSample> {};
+
 
 // Helper functions
-float sigmoid(float x) {
-    return 1.0f / (1.0f + (float) exp(-x));
-}
 
 vector sigmoid(const vector & v) {
-    vector result(v.size());
-    for (size_t i = 0; i < v.size(); i++) {
-        result[i] = sigmoid(v[i]);
-    }
-    return result;
+  vector result(v.size());
+  for (size_t i = 0; i < v.size(); i++) {
+    result[i] = scalar::sigmoid(v[i]);
+  }
+  return result;
 }
 
-float tanh_custom(float x) {
-    return (float) tanh(x);
-}
 
 vector tanh_custom(const vector & v) {
     vector result(v.size());
@@ -128,9 +57,6 @@ vector tanh_custom(const vector & v) {
     return result;
 }
 
-float dsigmoid(float y) {
-    return y * (1.0f - y);
-}
 
 vector dsigmoid(const vector & v) {
     vector result(v.size());
@@ -141,7 +67,7 @@ vector dsigmoid(const vector & v) {
 }
 
 float dtanh(float y) {
-    return 1.0f - y * y;
+  return 1.0f - y * y;
 }
 
 vector dtanh(const vector & v) {
@@ -166,6 +92,7 @@ float clip(float value, float min_value, float max_value) {
     return std::max(min_value, std::min(value, max_value));
 }
 
+
 vector clip(const vector & v, float min_value, float max_value) {
     vector result(v.size());
     for (size_t i = 0; i < v.size(); i++) {
@@ -173,6 +100,7 @@ vector clip(const vector & v, float min_value, float max_value) {
     }
     return result;
 }
+
 
 // LSTM Cell implementation as described in the blog
 class LSTMCell {
@@ -185,6 +113,7 @@ private:
     vector bf;         // Forget gate bias
     matrix Wi;         // Input gate weights
     vector bi;         // Input gate bias
+
     matrix Wc;         // Cell state candidate weights
     vector bc;         // Cell state candidate bias
     matrix Wo;         // Output gate weights
@@ -480,9 +409,6 @@ public:
 
 // Main function to demonstrate the LSTM network
 int main() {
-  std::cout << hello() << "\n";
-
-
     // Example parameters based on the blog post
     int input_size      = 1;
     int hidden_size     = 32;    // As mentioned in the blog
