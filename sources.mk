@@ -1,7 +1,7 @@
 #
 # This file is generated!  Editing it directly is a bad idea.
 #
-# Generated on: Tue Apr 21 03:53:56 PM CEST 2026
+# Generated on: Thu Apr 23 05:21:08 AM CEST 2026
 #
 ###############################################################################
 
@@ -175,6 +175,7 @@ TESTS_FILES := \
 #
 SUB_PROJECTS := \
   Mandelbrot \
+  LSTM \
   RNN \
   HeatMap \
   Gravity \
@@ -183,6 +184,9 @@ SUB_PROJECTS := \
 
 Mandelbrot: $(V3DLIB)
 	@cd Examples/Mandelbrot && make DEBUG=${DEBUG} QPU=${QPU} 
+	
+LSTM: $(V3DLIB)
+	@cd Examples/LSTM && make DEBUG=${DEBUG} QPU=${QPU} 
 	
 RNN: $(V3DLIB)
 	@cd Examples/RNN && make DEBUG=${DEBUG} QPU=${QPU} 
