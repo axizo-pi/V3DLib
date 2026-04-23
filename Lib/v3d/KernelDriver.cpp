@@ -2,11 +2,11 @@
 #include "KernelDriver.h"
 #include "Source/Translate.h"
 #include "Target/instr/Mnemonics.h"
-#include "Target/SmallLiteral.h"  // decodeSmallLit()
+#include "Target/SmallLiteral.h"    // decodeSmallLit()
 #include "Target/RemoveLabels.h"
 #include "instr/Snippets.h"
 #include "Support/basics.h"
-#include "Support/Helpers.h"      // contains()
+#include "Support/Helpers.h"        // contains()
 #include "SourceTranslate.h"
 #include "instr/Encode.h"
 #include "instr/Mnemonics.h"
@@ -16,6 +16,8 @@
 #include "Target/Satisfy.h"
 #include "Combine.h"
 #include "LibSettings.h"
+#include "Source/Lang.h"            // comment()
+#include "UniformConstants.h"
 #include <iostream>
 #include <memory>
 
@@ -654,6 +656,8 @@ void _encode(V3DLib::Instr::List const &instrs, Instructions &dst) {
 #ifdef QPU_MODE
 
 void load_uniforms(Data &unif, int numQPUs, Data const &devnull, Data const &done, IntList const &params) {
+  unif.alloc(params.size() + 4 + uniform_constants.size());
+
   int offset = 0;
 
   // Add the common uniforms
@@ -666,15 +670,31 @@ void load_uniforms(Data &unif, int numQPUs, Data const &devnull, Data const &don
     unif[offset++] = params[j];
   }
 
+	uniform_constants.load(unif, offset);
+
+
   // The last item is for the 'done' location;
   unif[offset] = (uint32_t) done.getAddress();
+
+/*
+	std::string buf = "load_uniforms:";
+  for (int j = 0; j <= offset; j++) {
+    buf << "\n  " << j << ": " << unif[j]
+			  << " (" << *((float *) &unif[j]) << ")" ;
+  }
+	warn << buf;
+*/
 }
 
 #endif  // QPU_MODE
 
-
-
 }  // anon namespace
+
+
+void KernelDriver::init_uniforms()  {
+	//warn << "Called v3d::KernelDriver::init_uniforms()";
+  Int devnull = getUniformInt();  comment("devnull");
+}
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -766,13 +786,27 @@ ByteCode KernelDriver::to_opcodes() {
 void KernelDriver::compile_intern() {
   obtain_ast();
 
-  assert(m_targetCode.empty());
-  encode_target(m_targetCode, m_body);
-  assert(!m_targetCode.empty());
+	uniform_constants.reset();
+	int pre = uniform_constants.size();
+	uniform_constants.last_uniform(m_body);
+  encode_source(m_targetCode, m_body);
 
-  insertInitBlock(m_targetCode);
-  add_init_block(m_targetCode);
+	if (pre != uniform_constants.size()) {
+		warn << "=== Uniform constants changed! Redoing encode ===";
 
+		// Add the uniform constants and redo the encoding
+		uniform_constants.add_uniforms(m_body);
+
+		// Was fully expecting for following to be necessary; alas
+		//VarGen::reset();
+		m_targetCode.clear();
+  	encode_source(m_targetCode, m_body);
+	}
+
+
+	//uniform_constants.add(m_targetCode);
+
+	add_init_block(m_targetCode);
   adjust_immediates(m_targetCode);
 
   // Perform register allocation
@@ -820,7 +854,6 @@ void KernelDriver::invoke(int numQPUs, IntList &params, bool wait_complete) {
     fatal("Errors during kernel compilation/encoding, can't continue.");
   }
 
-
   if (numQPUs <= 0) {
       cerr << "Zero or negative QPU's selected" << thrw;
   }
@@ -845,7 +878,6 @@ void KernelDriver::invoke(int numQPUs, IntList &params, bool wait_complete) {
     devnull.alloc(16);
   }
 
-  uniforms.alloc(params.size() + 4);
   done.alloc(1);
   done[0] = 0;
 

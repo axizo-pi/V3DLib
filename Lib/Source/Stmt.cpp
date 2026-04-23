@@ -535,4 +535,37 @@ std::string Stmts::dump() const {
   return ret;
 }
 
+
+/**
+ * @return index of last uniform in initial uniforms list
+ *
+ * This is specific for the Source statements list.
+ *
+ * Returns -1 in the extremely unlikely event of no uniforms present.
+ */
+int Stmts::lastUniform(bool do_dump) {
+	std::string buf;
+
+	int i = 0;
+	for (; i < (int) size(); ++i) {
+		auto &item = *at(i);
+
+		if (item.tag != Stmt::ASSIGN) break;
+
+		auto rhs = item.rhs();
+		if (rhs == nullptr) break;
+		if (rhs->tag() != Expr::VAR) break; 
+
+		Var var = rhs->var();
+		if (var.tag() != UNIFORM) break; 
+
+		buf << item.dump(true) << "\n";
+	}
+
+	if (do_dump) {
+		warn << "lastUniform: \n" << buf;
+	}
+	return (i - 1);
+}
+
 }  // namespace V3DLib

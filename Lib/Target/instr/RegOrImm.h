@@ -10,7 +10,8 @@ class Imm;
 struct RegOrImm {
   RegOrImm() = default;
   RegOrImm(RegOrImm const &rhs) = default;
-  RegOrImm(int rhs); // { set_imm(rhs); }
+  RegOrImm(int rhs);
+  RegOrImm(float rhs);
   RegOrImm(Imm const &rhs);
   RegOrImm(Reg const &rhs);
   RegOrImm(Var const &rhs);

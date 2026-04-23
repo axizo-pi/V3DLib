@@ -1,5 +1,6 @@
 #include "RegOrImm.h"
 #include "v3d/instr/SmallImm.h"
+#include "v3d/UniformConstants.h"
 #include "Support/basics.h"
 #include "Support/Platform.h"
 
@@ -7,9 +8,24 @@ namespace V3DLib {
 
 RegOrImm::RegOrImm(Imm const &rhs) : m_is_reg(false), m_imm(rhs) {}
 RegOrImm::RegOrImm(int rhs) : m_is_reg(false), m_imm(rhs) {}
-
 RegOrImm::RegOrImm(Var const &rhs) { set_reg(rhs); }
 RegOrImm::RegOrImm(Reg const &rhs) { set_reg(rhs); }
+
+RegOrImm::RegOrImm(float rhs) : m_is_reg(false), m_imm(rhs) {
+	if (Platform::compiling_for_vc4()) return; 
+
+	Imm dummy(rhs);
+	if (dummy.encode_imm() != -1) {
+		//warn << "Value " << rhs << " can be encoded as small Imm";
+		return;
+	}
+
+
+	int index = v3d::uniform_constants.get(rhs);
+	//warn << "get: " << index;
+	set_reg(Var(STANDARD, index));
+	warn << "Called RegOrImm(float): " << rhs << " -> " << dump();
+}
 
 Reg &RegOrImm::reg()                  { assert(is_reg()); return m_reg; }
 Reg RegOrImm::reg() const             { assert(is_reg()); return m_reg; }

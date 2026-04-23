@@ -1337,11 +1337,10 @@ TEST_CASE("Test tanh [dsl][tanh]") {
   //to_file("tanh_kernel.txt", k.dump());
   k.load(&result, N, min_x, max_x).run();
 
-/*  
-  Log::warn << "\n  " << showExpected(lib_tanh)
-            << "\n  " << showResult(result, 0, N);
-  Log::warn << "Max diff: " << calc_max_diff(lib_tanh, result, N);
-*/
+  //Log::warn << "\n  " << showExpected(lib_tanh)
+  //          << "\n  " << showResult(result, 0, N);
+  //Log::warn << "Max diff: " << calc_max_diff(lib_tanh, result, N);
+
   const float PRECISION = Platform::compiling_for_vc4()?1.0e-4f:5.0e-7f;
 
   float max_diff = calc_max_diff(lib_tanh, result, N);

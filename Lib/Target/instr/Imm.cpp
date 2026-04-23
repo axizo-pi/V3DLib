@@ -27,7 +27,7 @@ bool Imm::is_small_imm() const {
 
 
 /**
- * Return encoded small value for immediate, if possible
+ * @brief Return encoded small value for immediate, if possible
  *
  * @return Encoded value if encoding possible, -1 otherwise
  */
@@ -49,6 +49,7 @@ int Imm::encode_imm() const {
     } else if (is_float()) {
       // Return value will be -1 if fails
       v3d::instr::SmallImm::float_to_opcode_value(m_floatVal, ret);
+			//uniform_constants.size();
     }
   }
 

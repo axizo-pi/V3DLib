@@ -425,12 +425,12 @@ Instr::List bexp(Var dst, RegOrImm const &srcA) {
 Instr::List bexp_e(Var dst, RegOrImm const &srcA) {
   const float e_const = 2.71828f;
 
-  Imm e(e_const);
+  RegOrImm e(e_const);
   Reg tmp(V3DLib::VarGen::fresh());
 
   Instr::List ret;
-  ret << blog(tmp, e);
-  ret << fmul(tmp, srcA, tmp)
+  ret << blog(tmp, e)
+      << fmul(tmp, srcA, tmp)
       << bexp(dst, tmp);
 
   return ret;

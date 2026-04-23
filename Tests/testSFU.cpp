@@ -9,7 +9,7 @@ namespace {
 
 float PI = 3.14159f;
 
-void sfu(Float x, Float::Ptr r) {
+void sfu_kernel(Float x, Float::Ptr r) {
   *r = 0.0f;                 r.inc();
   *r = 2.0f*x;               r.inc();  // Float mult
   *r = 2*x;                  r.inc();  // Int mult
@@ -64,8 +64,8 @@ TEST_CASE("Test SFU functions [sfu]") {
 
   Float::Array results(16*N);
 
-  auto k = compile(sfu);
-  //k.dump("SFU.txt");
+  auto k = compile(sfu_kernel);
+  //to_file("sfu_kernel.txt", k.dump());
 
   INFO("Running qpu");
   //

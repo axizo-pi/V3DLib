@@ -5,16 +5,13 @@
 
 namespace V3DLib {
 
-void encode_target(Instr::List &target, Stmt::Array const &source);
-void insertInitBlock(Instr::List &code);
+void encode_source(Instr::List &target, Stmt::Array const &source);
 void insert_init_block(Instr::List &code, Instr::List &init);
 
 //
-// Following exposed for source translates.
+// Following exposed for DMA.
 //
-Instr::List varAssign(AssignCond cond, Var v, Expr::Ptr expr);
 Instr::List varAssign(Var v, Expr::Ptr expr);
-Expr::Ptr putInVar(Instr::List *seq, Expr::Ptr e);
 
 }  // namespace V3DLib
 

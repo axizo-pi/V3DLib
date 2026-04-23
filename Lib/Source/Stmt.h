@@ -157,6 +157,7 @@ private:
 class Stmts : public Stmt::Array {
 public:
   std::string dump() const;
+	int lastUniform(bool do_dump = true);
 };
 
 }  // namespace V3DLib

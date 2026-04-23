@@ -12,6 +12,11 @@ using ::operator<<;  // C++ weirdness
 
 namespace {
 
+// Forward declarations
+void encode_target(Instr::List &target, Stmt::Array const &source);
+Expr::Ptr simplify(Instr::List *seq, Expr::Ptr e);
+
+
 // ============================================================================
 // Operands
 // ============================================================================
@@ -33,6 +38,95 @@ RegOrImm operand(Expr::Ptr e) {
   }
 
   return x;
+}
+
+
+/**
+ * @brief Encode variable assignments to Target code
+ *
+ * Translates the (conditional) assignment of a variable to an expression.
+ *
+ * @param cond  Condition on assignment
+ * @param v     Variable on lhs
+ * @param expr  Expression on rhs
+ *
+ * @return  A sequence of instructions
+ */
+Instr::List varAssign(AssignCond cond, Var v, Expr::Ptr expr) {
+  using namespace V3DLib::Target::instr;
+  Instr::List ret;
+  Expr e = *expr;
+
+  switch (e.tag()) {
+    case Expr::VAR: {                                                // 'v := w', v and w variables
+        auto tmp = mov(v, e.var());
+        assert(tmp.size() ==1);
+        tmp.back().cond(cond);
+
+        ret << tmp; 
+      }
+      break;
+    case Expr::INT_LIT:                                              // 'v := i', i is an integer literal
+      //Log::warn << "varAssign() c,expr: " << v.dump() << ", " << expr->dump();
+      ret << li(v, e.intLit).cond(cond);
+      break;
+    case Expr::FLOAT_LIT:                                            // 'v := f', f is a float literal
+      ret << li(v, e.floatLit).cond(cond);
+      break;
+    case Expr::APPLY: {                                              // 'v := x op y'
+      if (!e.lhs()->isSimple() || !e.rhs()->isSimple()) {            // x or y are not simple
+        e.lhs(simplify(&ret, e.lhs()));
+        e.rhs(simplify(&ret, e.rhs()));
+      }
+
+      if (e.lhs()->isLit() && e.rhs()->isLit()) {                    // x and y are both literals
+        Var tmpVar = VarGen::fresh();
+        ret << varAssign(cond, tmpVar, e.lhs());
+        e.lhs(mkVar(tmpVar));
+      }
+
+      switch (e.apply_op().op) {                                     // x and y are simple
+        case RECIP:     ret << recip(v, e.lhs()->var());     break;
+        case RECIPSQRT: ret << recipsqrt(v, e.lhs()->var()); break;
+        case EXP:       ret << bexp(v, e.lhs()->var());      break;
+        case EXP_E:     ret << bexp_e(v, e.lhs()->var());    break;
+        case LOG:       ret << blog(v, e.lhs()->var());      break;
+        case TANH:      ret << tanh(v, e.lhs()->var());      break;
+
+        default:
+          // Everything else is considered to be a single binary operation
+          Instr instr(ALU);
+          instr.ALU.op    = ALUOp(e.apply_op());
+          instr.ALU.srcA  = operand(e.lhs());
+          instr.ALU.srcB  = operand(e.rhs());
+          instr.assign_cond(cond);
+          instr.dest(v);
+
+          ret << instr;
+        break;
+      }
+    }
+    break;
+    case Expr::DEREF:                                                // 'v := *w'
+      if (e.deref_ptr()->tag() != Expr::VAR) {                       // w is not a variable
+        assert(!e.deref_ptr()->isLit());
+        e.deref_ptr(simplify(&ret, e.deref_ptr()));
+      }
+                                                                     // w is a variable
+      //
+      // Restriction:
+      // dereferencing is disallowed in conditional ('where') assignments for simplicity.
+      // In most (all?) cases it should be trivial to lift these outside the 'where'.
+      //
+      assertq(cond.is_always(), "V3DLib: dereferencing not yet supported inside 'where'");
+      ret << getSourceTranslate().load_var(v, e);
+      break;
+    default:
+      assertq("This case should not be reachable");
+      break;
+  }
+
+  return ret;
 }
 
 
@@ -63,6 +157,23 @@ Expr::Ptr simplify(Instr::List *seq, Expr::Ptr e) {
 // ============================================================================
 // Assignment statements
 // ============================================================================
+
+
+/**
+ * Similar to 'simplify' but ensure that the result is a variable.
+ */
+Expr::Ptr putInVar(Instr::List *seq, Expr::Ptr e) {
+  Log::cdebug << "Called PutInVar()";
+
+  if (e->tag() == Expr::VAR) {
+    return e;
+  }
+
+  Var tmp = VarGen::fresh();
+  *seq << varAssign(tmp, e);
+  return mkVar(tmp);
+}
+
 
 /**
  * @brief Encode assign statements to Target code
@@ -634,8 +745,6 @@ Instr::List encode(Stmt::Ptr s) {
   return ret;
 }
 
-}  // anon namespace
-
 
 /**
  * @brief Insert markers for initialization code
@@ -649,6 +758,31 @@ void insertInitBlock(Instr::List &code) {
 
   code.insert(index + 1, ret);
 }
+
+
+/**
+ * @brief Translate a list of Source statements to Target code
+ *
+ * Called recursively internally.
+ *
+ * @param target write-parameter; list of converted Target statements
+ * @param source read-parameter; list of Source statements to convert 
+ */
+void encode_target(Instr::List &target, Stmt::Array const &source) {
+  assert(!source.empty());
+
+  for (int i = 0; i < (int) source.size(); i++) {
+    auto ret = encode(source[i]);
+    target << ret;
+  }
+}
+
+}  // anon namespace
+
+
+// ============================================================================
+// Interface
+// ============================================================================
 
 
 /**
@@ -673,100 +807,6 @@ void insert_init_block(Instr::List &code, Instr::List &init) {
 }
 
 
-// ============================================================================
-// Interface
-// ============================================================================
-
-
-/**
- * @brief Encode variable assignments to Target code
- *
- * Translates the (conditional) assignment of a variable to an expression.
- *
- * @param cond  Condition on assignment
- * @param v     Variable on lhs
- * @param expr  Expression on rhs
- *
- * @return  A sequence of instructions
- */
-Instr::List varAssign(AssignCond cond, Var v, Expr::Ptr expr) {
-  using namespace V3DLib::Target::instr;
-  Instr::List ret;
-  Expr e = *expr;
-
-  switch (e.tag()) {
-    case Expr::VAR: {                                                // 'v := w', v and w variables
-        auto tmp = mov(v, e.var());
-        assert(tmp.size() ==1);
-        tmp.back().cond(cond);
-
-        ret << tmp; 
-      }
-      break;
-    case Expr::INT_LIT:                                              // 'v := i', i is an integer literal
-      //Log::warn << "varAssign() c,expr: " << v.dump() << ", " << expr->dump();
-      ret << li(v, e.intLit).cond(cond);
-      break;
-    case Expr::FLOAT_LIT:                                            // 'v := f', f is a float literal
-      ret << li(v, e.floatLit).cond(cond);
-      break;
-    case Expr::APPLY: {                                              // 'v := x op y'
-      if (!e.lhs()->isSimple() || !e.rhs()->isSimple()) {            // x or y are not simple
-        e.lhs(simplify(&ret, e.lhs()));
-        e.rhs(simplify(&ret, e.rhs()));
-      }
-
-      if (e.lhs()->isLit() && e.rhs()->isLit()) {                    // x and y are both literals
-        Var tmpVar = VarGen::fresh();
-        ret << varAssign(cond, tmpVar, e.lhs());
-        e.lhs(mkVar(tmpVar));
-      }
-
-      switch (e.apply_op().op) {                                     // x and y are simple
-        case RECIP:     ret << recip(v, e.lhs()->var());     break;
-        case RECIPSQRT: ret << recipsqrt(v, e.lhs()->var()); break;
-        case EXP:       ret << bexp(v, e.lhs()->var());      break;
-        case EXP_E:     ret << bexp_e(v, e.lhs()->var());    break;
-        case LOG:       ret << blog(v, e.lhs()->var());      break;
-        case TANH:      ret << tanh(v, e.lhs()->var());      break;
-
-        default:
-          // Everything else is considered to be a single binary operation
-          Instr instr(ALU);
-          instr.ALU.op    = ALUOp(e.apply_op());
-          instr.ALU.srcA  = operand(e.lhs());
-          instr.ALU.srcB  = operand(e.rhs());
-          instr.assign_cond(cond);
-          instr.dest(v);
-
-          ret << instr;
-        break;
-      }
-    }
-    break;
-    case Expr::DEREF:                                                // 'v := *w'
-      if (e.deref_ptr()->tag() != Expr::VAR) {                       // w is not a variable
-        assert(!e.deref_ptr()->isLit());
-        e.deref_ptr(simplify(&ret, e.deref_ptr()));
-      }
-                                                                     // w is a variable
-      //
-      // Restriction:
-      // dereferencing is disallowed in conditional ('where') assignments for simplicity.
-      // In most (all?) cases it should be trivial to lift these outside the 'where'.
-      //
-      assertq(cond.is_always(), "V3DLib: dereferencing not yet supported inside 'where'");
-      ret << getSourceTranslate().load_var(v, e);
-      break;
-    default:
-      assertq("This case should not be reachable");
-      break;
-  }
-
-  return ret;
-}
-
-
 Instr::List varAssign(Var v, Expr::Ptr expr) {
   //warn << "varAssign var: " << v.dump() << ", expr: " << expr->dump();
   return varAssign(always, v, expr);  // TODO: For some reason, `always` *must* be passed in.
@@ -775,52 +815,16 @@ Instr::List varAssign(Var v, Expr::Ptr expr) {
 
 
 /**
- * Similar to 'simplify' but ensure that the result is a variable.
- */
-Expr::Ptr putInVar(Instr::List *seq, Expr::Ptr e) {
-  Log::cdebug << "Called PutInVar()";
-
-  if (e->tag() == Expr::VAR) {
-    return e;
-  }
-
-  Var tmp = VarGen::fresh();
-  *seq << varAssign(tmp, e);
-  return mkVar(tmp);
-}
-
-
-/**
- * @brief Translate a list of Source statements to Target code
+ * @brief Encode the Source program `source` to target statements in `target`.
  *
- * Entry point for translation of statements.
- * Is also called recursively internally.
- *
- * @param target write-parameter; list of converted Target statements
- * @param source read-parameter; list of Source statements to convert 
+ * This is the entry point for source -> target translation.
  */
-void encode_target(Instr::List &target, Stmt::Array const &source) {
-  assert(!source.empty());
+void encode_source(Instr::List &target, Stmt::Array const &source) {
+  assert(target.empty());
+	encode_target(target, source);
+  assert(!target.empty());
 
-  //std::string buf;
-  //buf  << "encode_target() translated:\n";
-
-  for (int i = 0; i < (int) source.size(); i++) {
-    auto ret = encode(source[i]);
-    target << ret;
-/*
-    auto src_tmp = source[i]->dump();
-    auto ret_tmp = ret.dump();
-    buf  << "  Source:"
-         << ((num_newlines(src_tmp) <= 1)?" ":"\n")
-         << src_tmp << "\n"
-         << "  Target:"
-         << ((num_newlines(ret_tmp) <= 1)?" ":"\n")
-         << ret_tmp;
-*/         
-  }
-
-//  Log::warn << buf;
+  insertInitBlock(target);
 }
 
 }  // namespace V3DLib
