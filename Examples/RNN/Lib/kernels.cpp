@@ -3,7 +3,9 @@
 
 using namespace V3DLib;
 
-
+/**
+ * @brief calculate `sigmoid(in + bias)`.
+ */
 void kernel_sigmoid(Float::Ptr in, Float::Ptr bias, Float::Ptr out, Int N) {
   Int h;
   For (h = 0, h < N, h++)
