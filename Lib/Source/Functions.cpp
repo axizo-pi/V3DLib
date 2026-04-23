@@ -551,7 +551,9 @@ void rotate_sum(Float &input, Float &result) {
  *
  * All other values in dst are untouched.
  *
- * @param n  index of vector element to set. Must be in range 0..15 inclusive
+ * @param dst integer vector to read an element from
+ * @param n   index of vector element to set. Must be in range 0..15 inclusive
+ * @param src integer vector to store element in
  */
 void set_at(Int &dst, Int n, Int const &src) {
   Where(index() == n)

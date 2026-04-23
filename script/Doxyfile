@@ -952,6 +952,9 @@ INPUT                  =            \
   ../Lib/Source/                    \
   ../Lib/Kernel.h                   \
   ../Lib/Support/Helpers.cpp        \
+  ../Lib/Source/Stmt.h              \
+  ../Lib/Source/Stmt.cpp            \
+  ../Lib/Source/Var.cpp             \
   ../Lib/v3d/Combine.cpp            \
   ../Lib/vc4/Functions.cpp          \
   ../Lib/vc4/RegisterMap.cpp        \

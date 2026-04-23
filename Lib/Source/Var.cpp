@@ -2,6 +2,11 @@
 #include "Support/basics.h"
 #include "Support/Platform.h"
 
+/**
+ * /file
+ * Class Var
+ */
+
 namespace V3DLib {
 namespace {
 
@@ -10,7 +15,7 @@ int globalVarId = 0;  // Used for fresh variable generation
 }  // anon namespace
 
 
-Var::Var(VarTag tag, bool is_uniform_ptr) : m_tag(tag), m_is_uniform_ptr(is_uniform_ptr)  {
+Var::Var(VarTag tag, bool is_uniform_ptr) : m_tag(tag), m_is_uniform_ptr(is_uniform_ptr) {
   assert(!is_uniform_ptr || tag == UNIFORM);
 }
 
