@@ -9,25 +9,98 @@
 #include <iostream>
 #include <algorithm>
 #include <tuple>
+#include "hello.h"
 
-//using namespace std;
+namespace lstm {
 
 class vector : public std::vector<float> {
-	using Parent = std::vector<float>;
+  using Parent = std::vector<float>;
 
 public:
   vector() = default;
   vector(vector const &val) = default;
-  vector(long unsigned size) : Parent(size) {}
-  vector(long unsigned size, float val) : Parent(size, val) {}
+  vector(size_t size) : Parent(size) {}
+  vector(size_t size, float val) : Parent(size, val) {}
+
+
+  vector operator+(const vector & b) const {
+    const vector & a= *this;
+
+    vector result(a.size());
+    for (size_t i = 0; i < a.size(); i++) {
+      result[i] = a[i] + b[i];
+    }
+    return result;
+  }
+
+
+  vector operator*(const vector & b) const {
+    const vector & a= *this;
+
+    vector result(a.size());
+    for (size_t i = 0; i < a.size(); i++) {
+      result[i] = a[i] * b[i];
+    }
+    return result;
+  }
+
+};
+
+
+vector operator*(float scalar, const vector & v) {
+    vector result(v.size());
+    for (size_t i = 0; i < v.size(); i++) {
+        result[i] = scalar * v[i];
+    }
+    return result;
+}
+
+
+class matrix: public std::vector<lstm::vector> {
+  using Parent = std::vector<lstm::vector>;
+    
+public:    
+  matrix() = default;
+  matrix(size_t height, size_t width) : Parent(height, lstm::vector(width)) {}
+
+  lstm::vector operator*(const lstm::vector &v) {
+    const matrix &m = *this;
+
+    lstm::vector result(m.size(), 0.0);
+    for (size_t i = 0; i < m.size(); i++) {
+      for (size_t j = 0; j < v.size(); j++) {
+        result[i] += m[i][j] * v[j];
+      }
+    }
+    return result;
+  }
+
+};
+
+} // namespace lstm
+
+using namespace lstm;
+
+class normal_rand {
+public:
+	normal_rand() : gen(123 /*rd()*/), dist(0.0f, 0.1f) {
+	}
+
+	float rand() { return dist(gen); }
+
+private:	
+  std::random_device rd;
+  std::mt19937 gen;
+  std::normal_distribution<float> dist;
 };
 
 // Structure for data samples as mentioned in the blog
 struct DataSample {
-  //DataSample() = default;
-
   vector features;
   float target;
+};
+
+class DataSamples : public std::vector<DataSample> {
 };
 
 // Helper functions
@@ -80,40 +153,6 @@ vector dtanh(const vector & v) {
 }
 
 // Vector operations
-vector operator+(const vector & a, const vector & b) {
-    vector result(a.size());
-    for (size_t i = 0; i < a.size(); i++) {
-        result[i] = a[i] + b[i];
-    }
-    return result;
-}
-
-vector operator*(const vector & a, const vector & b) {
-    vector result(a.size());
-    for (size_t i = 0; i < a.size(); i++) {
-        result[i] = a[i] * b[i];
-    }
-    return result;
-}
-
-vector operator*(float scalar, const vector & v) {
-    vector result(v.size());
-    for (size_t i = 0; i < v.size(); i++) {
-        result[i] = scalar * v[i];
-    }
-    return result;
-}
-
-// Matrix-vector multiplication
-vector matmul(const std::vector<vector>& m, const vector & v) {
-    vector result(m.size(), 0.0);
-    for (size_t i = 0; i < m.size(); i++) {
-        for (size_t j = 0; j < v.size(); j++) {
-            result[i] += m[i][j] * v[j];
-        }
-    }
-    return result;
-}
 
 // Vector concatenation
 vector concat(const vector & a, const vector & b) {
@@ -142,13 +181,13 @@ private:
     int hidden_size;
     
     // Weights and biases
-    std::vector<vector> Wf; // Forget gate weights
+    matrix Wf;         // Forget gate weights
     vector bf;         // Forget gate bias
-    std::vector<vector> Wi; // Input gate weights
+    matrix Wi;         // Input gate weights
     vector bi;         // Input gate bias
-    std::vector<vector> Wc; // Cell state candidate weights
+    matrix Wc;         // Cell state candidate weights
     vector bc;         // Cell state candidate bias
-    std::vector<vector> Wo; // Output gate weights
+    matrix Wo;         // Output gate weights
     vector bo;         // Output gate bias
     
     // For backpropagation
@@ -162,50 +201,38 @@ private:
     vector o_t;        // Output gate activation
     vector h_t;        // Current hidden state
     
-    // Random number generator for weight initialization
-		std::random_device rd;
-		std::mt19937 gen;
-		std::normal_distribution<float> dist;
+  // Random number generator for weight initialization
+	normal_rand gen;
 
 public:
-    LSTMCell(int input_size, int hidden_size) : 
-        input_size(input_size), 
-        hidden_size(hidden_size),
-        gen(rd()),
-        dist(0.0f, 0.1f) {
+  LSTMCell(int input_size, int hidden_size) : input_size(input_size), hidden_size(hidden_size) {
+    Wf = matrix(hidden_size, (input_size + hidden_size));
+    bf = vector(hidden_size, 0.0f);
         
-        // Initialize weights with small random values as mentioned in the blog
-        //float scale = 0.1;
+    Wi = matrix(hidden_size, (input_size + hidden_size));
+    bi = vector(hidden_size, 0.0f);
         
-        Wf = std::vector<vector>(hidden_size, vector(input_size + hidden_size));
-        bf = vector(hidden_size, 0.0f);
+    Wc = matrix(hidden_size, (input_size + hidden_size));
+    bc = vector(hidden_size, 0.0f);
         
-        Wi = std::vector<vector>(hidden_size, vector(input_size + hidden_size));
-        bi = vector(hidden_size, 0.0f);
+    Wo = matrix(hidden_size, (input_size + hidden_size));
+    bo = vector(hidden_size, 0.0f);
         
-        Wc = std::vector<vector>(hidden_size, vector(input_size + hidden_size));
-        bc = vector(hidden_size, 0.0f);
-        
-        Wo = std::vector<vector>(hidden_size, vector(input_size + hidden_size));
-        bo = vector(hidden_size, 0.0f);
-        
-        // Initialize with random values
-        for (int i = 0; i < hidden_size; i++) {
-            for (int j = 0; j < input_size + hidden_size; j++) {
-                Wf[i][j] = dist(gen);
-                Wi[i][j] = dist(gen);
-                Wc[i][j] = dist(gen);
-                Wo[i][j] = dist(gen);
-            }
-            // Initialize biases for the forget gate to 1.0 (common practice)
-            bf[i] = 1.0;
-        }
+    // Initialize with random values
+    for (int i = 0; i < hidden_size; i++) {
+      for (int j = 0; j < input_size + hidden_size; j++) {
+        Wf[i][j] = gen.rand();
+        Wi[i][j] = gen.rand();
+        Wc[i][j] = gen.rand();
+        Wo[i][j] = gen.rand();
+      }
+      // Initialize biases for the forget gate to 1.0 (common practice)
+      bf[i] = 1.0;
     }
+  }
     
     // Forward pass implementation as described in the blog
-		std::pair<vector, vector> forward(const vector & x, 
-                                 const vector & h_prev, 
-                                 const vector & c_prev) {
+    std::pair<vector, vector> forward(const vector &x, const vector &h_prev, const vector &c_prev) {
         // Store for backpropagation
         this->x_t = x;
         this->h_prev = h_prev;
@@ -215,19 +242,19 @@ public:
         vector x_h = concat(x, h_prev);
         
         // Forget gate
-        f_t = sigmoid(matmul(Wf, x_h) + bf);
+        f_t = sigmoid(Wf*x_h + bf);
         
         // Input gate
-        i_t = sigmoid(matmul(Wi, x_h) + bi);
+        i_t = sigmoid(Wi*x_h + bi);
         
         // Cell state candidate
-        c_tilde = tanh_custom(matmul(Wc, x_h) + bc);
+        c_tilde = tanh_custom(Wc*x_h + bc);
         
         // Cell state update
         c_t = f_t * c_prev + i_t * c_tilde;
         
         // Output gate
-        o_t = sigmoid(matmul(Wo, x_h) + bo);
+        o_t = sigmoid(Wo*x_h + bo);
         
         // Hidden state
         h_t = o_t * tanh_custom(c_t);
@@ -236,7 +263,7 @@ public:
     }
     
     // Backward pass implementation based on the blog description
-		std::tuple<vector, vector, vector> backward(
+    std::tuple<vector, vector, vector> backward(
         const vector & dh_next, 
         const vector & dc_next, 
         float learning_rate, 
@@ -263,44 +290,44 @@ public:
         vector x_h = concat(x_t, h_prev);
         
         // Gradient clipping to prevent exploding gradients
-        do_t = clip(do_t, -clip_value, clip_value);
-        di_t = clip(di_t, -clip_value, clip_value);
+        do_t     = clip(do_t, -clip_value, clip_value);
+        di_t     = clip(di_t, -clip_value, clip_value);
         dc_tilde = clip(dc_tilde, -clip_value, clip_value);
-        df_t = clip(df_t, -clip_value, clip_value);
+        df_t     = clip(df_t, -clip_value, clip_value);
         
         // Update weights using gradients
         // This is a simple implementation of gradient descent
         
         // Update forget gate weights and biases
         for (int i = 0; i < hidden_size; i++) {
-            for (int j = 0; j < input_size + hidden_size; j++) {
-                Wf[i][j] -= learning_rate * df_t[i] * x_h[j];
-            }
-            bf[i] -= learning_rate * df_t[i];
+          for (int j = 0; j < input_size + hidden_size; j++) {
+            Wf[i][j] -= learning_rate * df_t[i] * x_h[j];
+          }
+          bf[i] -= learning_rate * df_t[i];
         }
         
         // Update input gate weights and biases
         for (int i = 0; i < hidden_size; i++) {
-            for (int j = 0; j < input_size + hidden_size; j++) {
-                Wi[i][j] -= learning_rate * di_t[i] * x_h[j];
-            }
-            bi[i] -= learning_rate * di_t[i];
+          for (int j = 0; j < input_size + hidden_size; j++) {
+            Wi[i][j] -= learning_rate * di_t[i] * x_h[j];
+          }
+          bi[i] -= learning_rate * di_t[i];
         }
         
         // Update cell state candidate weights and biases
         for (int i = 0; i < hidden_size; i++) {
-            for (int j = 0; j < input_size + hidden_size; j++) {
-                Wc[i][j] -= learning_rate * dc_tilde[i] * x_h[j];
-            }
-            bc[i] -= learning_rate * dc_tilde[i];
+          for (int j = 0; j < input_size + hidden_size; j++) {
+            Wc[i][j] -= learning_rate * dc_tilde[i] * x_h[j];
+          }
+          bc[i] -= learning_rate * dc_tilde[i];
         }
         
         // Update output gate weights and biases
         for (int i = 0; i < hidden_size; i++) {
-            for (int j = 0; j < input_size + hidden_size; j++) {
-                Wo[i][j] -= learning_rate * do_t[i] * x_h[j];
-            }
-            bo[i] -= learning_rate * do_t[i];
+          for (int j = 0; j < input_size + hidden_size; j++) {
+            Wo[i][j] -= learning_rate * do_t[i] * x_h[j];
+          }
+          bo[i] -= learning_rate * do_t[i];
         }
         
         // Compute gradients with respect to inputs for backpropagation to earlier layers
@@ -326,24 +353,27 @@ public:
     }
 };
 
-// The LSTM Network class
+
+/**
+ * @brief The LSTM Network class
+ */
 class LSTMNetwork {
 private:
-    int input_size;
-    int hidden_size;
-    int output_size;
-    LSTMCell lstm_cell;
+  int input_size;
+  int hidden_size;
+  int output_size;
+  LSTMCell lstm_cell;
     
-    // Output layer weights and biases
-    std::vector<vector> Wy;
-    vector by;
+  // Output layer weights and biases
+  matrix Wy;
+  vector by;
     
-    // Learning parameters
-    float learning_rate;
-    int epochs;
+  // Learning parameters
+  float learning_rate;
+  int epochs;
     
-    // For backpropagation
-    vector y_pred;
+  // For backpropagation
+  vector y_pred;
 
 public:
     LSTMNetwork(int input_size, int hidden_size, int output_size, 
@@ -356,21 +386,19 @@ public:
         epochs(epochs) {
         
         // Initialize output layer
-        std::random_device rd;
-				std::mt19937 gen(rd());
-				std::normal_distribution<float> dist(0.0, 0.1f);
+				normal_rand gen;
         
-        Wy = std::vector<vector>(output_size, vector(hidden_size));
+        Wy = matrix(output_size, hidden_size);
         by = vector(output_size, 0.0);
         
         for (int i = 0; i < output_size; i++) {
             for (int j = 0; j < hidden_size; j++) {
-                Wy[i][j] = dist(gen);
+                Wy[i][j] = gen.rand();
             }
         }
     }
     
-    float train(const std::vector<DataSample>& training_data) {
+    float train(DataSamples &training_data) {
         float total_loss = 0.0;
         
         for (int epoch = 0; epoch < epochs; epoch++) {
@@ -385,7 +413,7 @@ public:
                 tie(h, c) = lstm_cell.forward(sample.features, h, c);
                 
                 // Output layer
-                y_pred = matmul(Wy, h);
+                y_pred = Wy*h;
                 for (int i = 0; i < output_size; i++) {
                     y_pred[i] += by[i];
                 }
@@ -440,7 +468,7 @@ public:
         tie(h, c) = lstm_cell.forward(features, h, c);
         
         // Output layer
-        vector output = matmul(Wy, h);
+        vector output = Wy*h;
         for (int i = 0; i < output_size; i++) {
             output[i] += by[i];
         }
@@ -452,6 +480,9 @@ public:
 
 // Main function to demonstrate the LSTM network
 int main() {
+  std::cout << hello() << "\n";
+
+
     // Example parameters based on the blog post
     int input_size      = 1;
     int hidden_size     = 32;    // As mentioned in the blog
@@ -460,12 +491,12 @@ int main() {
     int epochs          = 50;    // As mentioned in the blog
     
     // Create a simple sine wave dataset for demonstration
-    std::vector<DataSample> training_data;
+    DataSamples training_data;
     for (int i = 0; i < 100; i++) {
         float x = (float) i * 0.1f;
         DataSample sample;
-				vector vec;
-				vec.push_back(x);
+        vector vec;
+        vec.push_back(x);
         sample.features = vec;
         sample.target = (float) sin(x);
         training_data.push_back(sample);
@@ -481,10 +512,11 @@ int main() {
     std::cout << "Testing predictions:" << std::endl;
     for (int i = 0; i < 10; i++) {
         float x = (float) i * 0.1f;
-				vector vec;
-				vec.push_back(x);
+        vector vec;
+        vec.push_back(x);
         float actual = (float) sin(x);
         float predicted = lstm.predict(vec);
+
         std::cout << "Input: " << x << ", Actual: " << actual
                   << ", Predicted: " << predicted << std::endl;
     }

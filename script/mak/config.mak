@@ -15,7 +15,8 @@ INCLUDE_EXTERN+= \
 
 LIB_EXTERN+= \
  -L $(USERLAND_DIR) -lvcsm \
- -l pthread
+ -l pthread \
+ -L $(OBJDIR)
 
 # For bcm_host shared lib; actually vc4 only
 ifeq ($(QPU), 1)

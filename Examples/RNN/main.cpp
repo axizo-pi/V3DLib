@@ -13,6 +13,7 @@
 #include "test.h"
 #include "Support/basics.h"
 #include "Source/Functions.h"  // rotate
+#include "hello.h"
 
 const int NumInputs = 3;
 const int NumEpochs = 1000;
@@ -117,6 +118,8 @@ void predict(vector const &input, model &k_model) {
 
 
 int main(int argc, const char *argv[]) {
+	std::cout << hello() << "\n";
+
   settings().init(argc, argv);
 
    // To compare pseudo-random values with ruby   

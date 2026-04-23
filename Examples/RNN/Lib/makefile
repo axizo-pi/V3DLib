@@ -1,8 +1,7 @@
-NAME=LSTM
-
+NAME=RNNSupport
+IS_LIB=1
 
 SRCDIR=./
 
 -include /home/wim/projects/V3DLib/script/mak/config.mak
--include ../RNN/Lib/use_lib.mak
 -include /home/wim/projects/V3DLib/script/mak/subproject.mak

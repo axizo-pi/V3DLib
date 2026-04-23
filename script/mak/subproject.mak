@@ -1,6 +1,17 @@
 
 COMPILE := $(CXX) -std=c++17 -c $(CXX_FLAGS) $(INCLUDE)
+
+ifeq ($(IS_LIB), 1)
+
+$(info Doing Lib make1 )
+
+LIB_FULL=$(OBJDIR)/lib$(NAME).a
+TARGET=$(LIB_FULL)
+
+else
+
 TARGET=${OBJDIR}/bin/${NAME}
+endif
 
 OBJ_LOCAL=${OBJDIR}/${NAME}
 #$(info OBJ_LOCAL: $(OBJ_LOCAL))
@@ -8,7 +19,7 @@ OBJ_LOCAL=${OBJDIR}/${NAME}
 STRUCTURE := $(shell ls -r)     
 #$(info structure: $(STRUCTURE))
 SRCFILES := $(filter %.c %.cpp,$(STRUCTURE))
-#$(info  src: $(SRCFILES))
+$(info  src: $(SRCFILES))
 OBJFILES := $(subst .cpp,.o,$(SRCFILES))
 OBJFILES := $(subst .c,.o,$(OBJFILES))
 #$(info  obj: $(OBJFILES))
@@ -28,7 +39,7 @@ all: init ${TARGET}
 
 #	echo "Here ${DEBUG} ${QPU}"
 
-$(TARGET) : $(OBJFILES)
+#$(TARGET) : $(OBJFILES)
 
 init:
 	@mkdir -p $(OBJDIR)/bin 
@@ -43,7 +54,19 @@ $(OBJ_LOCAL)/%.o: %.cpp $(HEADERFILES)
 	@echo Compiling $<
 	@$(COMPILE) -o $@ $< -MMD -MP -MF"$(@:%.o=%.d)" $(INCLUDE) 
 
+ifeq ($(IS_LIB), 1)
 
-$(OBJDIR)/bin/$(NAME): $(OBJFILES) $(V3DLIB) $(LIB_DEPEND)
+$(info Doing Lib make )
+
+$(TARGET): $(OBJFILES) # $(LIB) $(MESA_LIB) $(VCSM_LIB)
+	@echo Creating $@
+	@ar rcs $@ $^
+
+else
+
+$(TARGET): $(OBJFILES) $(V3DLIB) $(LIB_DEPEND)
 	@echo Linking $@...
 	@$(LINK) $^ $(CXX_FLAGS) $(LIBS) -o $@
+
+endif
+
