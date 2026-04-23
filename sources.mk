@@ -1,7 +1,7 @@
 #
 # This file is generated!  Editing it directly is a bad idea.
 #
-# Generated on: Sun Apr 19 09:00:33 AM CEST 2026
+# Generated on: Tue Apr 21 03:53:56 PM CEST 2026
 #
 ###############################################################################
 
@@ -99,6 +99,7 @@ OBJ := \
   v3d/instr/Mnemonics.o  \
   v3d/Driver.o  \
   v3d/KernelDriver.o  \
+  v3d/UniformConstants.o  \
   v3d/BufferObject.o  \
   v3d/SourceTranslate.o  \
   v3d/Combine.o  \

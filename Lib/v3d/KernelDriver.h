@@ -47,6 +47,7 @@ private:
   void allocate();
   ByteCode to_opcodes();
   std::string emit_opcodes() override;
+	void init_uniforms() override;
 };
 
 }  // namespace v3d

@@ -63,10 +63,12 @@ std::string Var::dump() const {
  * @return a new standard variable
  */
 Var VarGen::fresh(VarTag tag) {
+	//warn << "VarGen::fresh(tag) globalVarId: " << globalVarId;
   return Var(tag, globalVarId++);
 }
 
 int VarGen::fresh_tag() {
+	//warn << "VarGen::fresh_tag() globalVarId: " << globalVarId;
   return globalVarId++;
 }
 
@@ -91,6 +93,7 @@ int tag_64 = -1;
  */
 void VarGen::reset(int val) {
   assert(val >= 0);
+	//warn << "VarGen::reset() val: " << val;
   globalVarId = val;
   tag_64 = -1;  // Needs to be reset before each new kernel compile!
 }

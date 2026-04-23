@@ -103,14 +103,12 @@ void KernelDriver::init_compile() {
   compile_data.clear();
 #endif // OUTPUT_COMPILEDATA
 
-  // Initialize reserved general-purpose variables
-  Int qpuId, qpuCount;
-  qpuId    = getUniformInt();  comment("QPU id");
-  qpuCount = getUniformInt();  comment("Num QPUs");
-
-  if (!Platform::compiling_for_vc4()) {
-    Int devnull = getUniformInt();  comment("devnull");
-  }
+  // Initialize reserved general-purpose variables.
+	// Assignment to Int are required; unit tests fail otherwise.
+  Int qpuId    = getUniformInt();  comment("QPU id");
+  Int qpuCount = getUniformInt();  comment("Num QPUs");
+  
+	init_uniforms();  // v3d only
 
   //Log::warn << "init_compile stack:\n" << m_stmtStack.dump();
 }
@@ -140,6 +138,7 @@ void KernelDriver::compile(std::function<void()> create_ast) {
     reverse_uniforms(m_stmtStack);
 
     compile_intern();
+
     m_numVars = VarGen::count();
   } catch (V3DLib::Exception const &e) {
     // TODO: Looks like this one is not used, cleanup?

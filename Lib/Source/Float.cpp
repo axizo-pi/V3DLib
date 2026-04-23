@@ -149,7 +149,7 @@ inline FloatExpr mkFloatApply(FloatExpr rhs, Op const &op) {
 
 
 /**
- * Read an Float from the UNIFORM FIFO.
+ * @brief Read a Float from the UNIFORM FIFO.
  */
 Float Float::mkArg() {
   Expr::Ptr e = mkVar(UNIFORM);

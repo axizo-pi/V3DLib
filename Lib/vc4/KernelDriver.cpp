@@ -153,12 +153,7 @@ void KernelDriver::compile_intern() {
   vc4::kernelFinish();
 
   obtain_ast();
-
-  assert(m_targetCode.empty());
-  V3DLib::encode_target(m_targetCode, m_body);
-  assert(!m_targetCode.empty());
-
-  insertInitBlock(m_targetCode);
+  encode_source(m_targetCode, m_body);
 
   // Add final dummy uniform handling - See Note 1, function `invoke()` in `vc4/Invoke.cpp`,
   {

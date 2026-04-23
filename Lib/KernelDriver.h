@@ -61,6 +61,7 @@ private:
   virtual void compile_intern() = 0;
 
   bool handle_errors();
+	virtual void init_uniforms() {}
 
 #ifdef OUTPUT_COMPILEDATA
 public:  

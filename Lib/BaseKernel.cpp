@@ -178,7 +178,6 @@ void BaseKernel::interpret() {
     for (int i = 0; i < uniforms.size(); ++i) {
       buf << uniforms.get(i) << ", ";
     }
-    buf << "\n";
     warn << buf;
   }
 
