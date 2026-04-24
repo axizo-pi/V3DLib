@@ -35,6 +35,11 @@ vector vector::operator+(vector const &b) const {
 }
 
 
+/**
+ * @brief By-element product of the two vectors.
+ *
+ * Note that this is _not_ a dot product (as I expected)
+ */
 vector vector::operator*(vector const &b) const {
   vector const &a= *this;
 
@@ -75,7 +80,7 @@ void vector::clip(float extreme) {
 std::string vector::dump() const {
 	std::string ret;
 
-	ret << "(" << size() << ")[";
+	ret << "vec(" << size() << ")[";
 
 	for (int i = 0; i < (int) size(); ++i) {
 		ret << at(i) << ", ";

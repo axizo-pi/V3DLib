@@ -51,6 +51,18 @@ std::pair<vector, vector> LSTMCell::forward(vector const &x, vector const &h_pre
   // Input gate
   i_t = (Wi*x_h).sigmoid(bi);
 
+  // Cell state candidate
+  c_tilde = tanh(Wc*x_h + bc);
+
+  // Cell state update
+  c_t = f_t * c_prev + i_t * c_tilde;
+
+  // Output gate
+  o_t = (Wo*x_h).sigmoid(bo);
+
+  // Hidden state
+  h_t = o_t * tanh(c_t);
+
 	//
 	// QPU
 	//
@@ -64,6 +76,14 @@ std::pair<vector, vector> LSTMCell::forward(vector const &x, vector const &h_pre
 	auto q_Wi = copy(Wi);               assert(same(q_Wi, Wi));
 	auto q_bi = copy(bi);               assert(same(q_bi, bi));
 
+	auto q_Wc = copy(Wc);               assert(same(q_Wc, Wc));
+	auto q_bc = copy(bc);               assert(same(q_bc, bc));
+
+	auto q_c_prev = copy(c_prev);       assert(same(q_c_prev, c_prev));
+
+	auto q_Wo = copy(Wo);               assert(same(q_Wo, Wo));
+	auto q_bo = copy(bo);               assert(same(q_bo, bo));
+
   // Forget gate
   auto q_f_t = qpu::vector(q_Wf*q_x_h).sigmoid(q_bf);
 	assert(same(q_f_t, f_t, 5.0e-7f));  // Precision for vc7
@@ -71,29 +91,31 @@ std::pair<vector, vector> LSTMCell::forward(vector const &x, vector const &h_pre
   // Input gate
   auto q_i_t = qpu::vector(q_Wi*q_x_h).sigmoid(q_bi);
 	assert(same(q_i_t, i_t, 5.0e-7f));  // Precision for vc7
+        
+  // Cell state candidate
+  auto q_c_tilde = (qpu::vector(q_Wc*q_x_h) + q_bc).tanh();
+	assert(same(q_c_tilde, c_tilde, 5.0e-7f));  // Precision for vc7
+        
+  // Cell state update
+  auto q_c_t = q_f_t.mul(q_c_prev) + q_i_t.mul(q_c_tilde);
+	assert(same(q_c_t, c_t, 1.0e-6f));  // Precision for vc7
+        
+  // Output gate
+  auto q_o_t = qpu::vector(q_Wo*q_x_h).sigmoid(q_bo);
+	assert(same(q_o_t, o_t, 5.0e-7f));  // Precision for vc7
+        
+  // Hidden state
+  auto q_h_t = q_o_t.mul(q_c_t.tanh());
+	assert(same(q_h_t, h_t, 1.0e-6f));  // Precision for vc7
 
 /*
 	warn << "Wf   : " << Wf.dump_dim();
-	warn << "x_h  : " << x_h.dump();
 	warn << "q_x_h: " << q_x_h.dump();
 */	
 
 	//
 	// End QPU
 	//
-        
-        
-  // Cell state candidate
-  c_tilde = tanh(Wc*x_h + bc);
-        
-  // Cell state update
-  c_t = f_t * c_prev + i_t * c_tilde;
-        
-  // Output gate
-  o_t = (Wo*x_h).sigmoid(bo);
-        
-  // Hidden state
-  h_t = o_t * tanh(c_t);
         
   return {h_t, c_t};
 }

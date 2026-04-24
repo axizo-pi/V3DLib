@@ -7,8 +7,7 @@ using namespace V3DLib;
  * @brief calculate `sigmoid(in + bias)`.
  */
 void kernel_sigmoid(Float::Ptr in, Float::Ptr bias, Float::Ptr out, Int N) {
-  Int h;
-  For (h = 0, h < N, h++)
+  For (Int h = 0, h < N, h++)
     Float x = *in;
 
     x += *bias;
@@ -18,6 +17,20 @@ void kernel_sigmoid(Float::Ptr in, Float::Ptr bias, Float::Ptr out, Int N) {
 
     in.inc();
     bias.inc();
+    out.inc();
+  End
+}
+
+
+void kernel_tanh(Float::Ptr in, Float::Ptr out, Int N) {
+  For (Int h = 0, h < N, h++)
+    Float x = *in;
+
+    x = tanh(x);
+
+    *out = x;
+
+    in.inc();
     out.inc();
   End
 }
@@ -90,6 +103,20 @@ void vector_sub(Float::Ptr left, Float::Ptr right, Float::Ptr out, Int N) {
 
   For (Int i = 0, i < N, i++)
     tmp = *left - *right; 
+    *out = tmp;
+
+    left.inc();
+    right.inc();
+    out.inc();
+  End
+}
+
+
+void vector_add(Float::Ptr left, Float::Ptr right, Float::Ptr out, Int N) {
+  Float tmp;
+
+  For (Int i = 0, i < N, i++)
+    tmp = *left + *right; 
     *out = tmp;
 
     left.inc();

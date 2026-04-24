@@ -276,8 +276,10 @@ matrix operator*(float scalar, matrix /* const */ &mat) {
 ////////////////////////////////////////////////
 
 BaseKernel *vector::m_sub     = nullptr;
+BaseKernel *vector::m_add     = nullptr;
 BaseKernel *vector::m_op      = nullptr;
 BaseKernel *vector::m_sigmoid = nullptr;
+BaseKernel *vector::m_tanh = nullptr;
 
 
 vector::vector(vector &rhs) : matrix(rhs) {
@@ -373,6 +375,38 @@ vector vector::operator-(vector const &rhs) {
 }
 
 
+vector vector::operator+(vector const &rhs) {
+	assert(columns() == 1);
+	assert(columns() == rhs.columns());
+	assert(rows() == rhs.rows());
+	if ((rows() & 0xf) != 0) { cerr << "vector sub: rows must be a multiple of 16" << thrw; }
+
+	vector ret(rows());
+
+	m_add->load(&arr(), &rhs.arr(), &ret.arr(), rows()/16).run();
+	return ret;
+}
+
+
+/**
+ * @brief By-element product of the two vectors.
+ */
+vector vector::mul(vector const &rhs) {
+	assert(columns() == 1);
+	assert(columns() == rhs.columns());
+	assert(rows() == rhs.rows());
+	if ((rows() & 0xf) != 0) { cerr << "vector sub: rows must be a multiple of 16" << thrw; }
+
+	vector ret(rows());
+
+  for (int i = 0; i < rows(); i++) {
+		ret[i] = (*this)[i]*rhs[i];
+	}
+
+	return ret;
+}
+
+
 vector &vector::operator=(matrix const &rhs) {
 	assert(rhs.columns() == 1);
 	transfer(rhs);
@@ -400,6 +434,14 @@ vector vector::sigmoid(vector const &bias) {
 }
 
 
+vector vector::tanh() {
+	vector ret(rows());
+
+	m_tanh->load(&arr(), &ret.arr(), rows()/16).run();
+	return ret;	
+}
+
+
 std::string vector::dump(bool output_int) const {
 	std::string ret;
 	ret << dump_dim()
@@ -417,8 +459,10 @@ BaseKernel &vector::op_kernel() {
 
 void vector::init_static() {
 	if (m_sub     == nullptr) { m_sub     = new BaseKernel(compile_b(vector_sub,   settings())); }
+	if (m_add     == nullptr) { m_add     = new BaseKernel(compile_b(vector_add,   settings())); }
 	if (m_op      == nullptr) { m_op      = new BaseKernel(compile(outer_product,  settings())); }
 	if (m_sigmoid == nullptr) { m_sigmoid = new BaseKernel(compile(kernel_sigmoid, settings())); }
+	if (m_tanh    == nullptr) { m_tanh    = new BaseKernel(compile(kernel_tanh,    settings())); }
 }
 
 } // namespace qpu

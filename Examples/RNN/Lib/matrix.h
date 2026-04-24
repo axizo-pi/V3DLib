@@ -90,9 +90,12 @@ struct vector : public matrix {
 	int size() const;
 
 	vector operator-(vector const &rhs);
+	vector operator+(vector const &rhs);
+	vector mul(vector const &rhs);
 	vector &operator=(matrix const &rhs);
 	matrix outer(matrix const &rhs) const;
 	vector sigmoid(vector const &bias);
+	vector tanh();
 	static BaseKernel &op_kernel();
 
 	std::string dump(bool output_int = false) const;
@@ -103,8 +106,10 @@ private:
 	//       ptr's not cleaned up on exit, better would be shared or unique ptr.
 	// For now, it works
 	static BaseKernel *m_sub;
+	static BaseKernel *m_add;
 	static BaseKernel *m_op;
 	static BaseKernel *m_sigmoid;
+	static BaseKernel *m_tanh;
 
 	static void init_static();
 };
