@@ -11,7 +11,11 @@ struct DataSample {
   float target;
 };
 
-class DataSamples : public std::vector<DataSample> {};
+
+class DataSamples : public std::vector<DataSample> {
+public:	
+	void init();
+};
 
 
 /**

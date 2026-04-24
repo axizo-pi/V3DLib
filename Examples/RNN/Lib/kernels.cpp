@@ -34,6 +34,12 @@ void kernel_mult_vec(Float::Ptr input, Float::Ptr mat, Float::Ptr result, Int M,
   Int mat_offset = 4*16*M;
 
    For (Int n = 0, n < N, n++)
+    If (n > 0 && (n % 16 == 0))
+      *result = res;
+      result.inc();
+      res = 0;
+    End
+
     Float tmp = 0.0f;
 
     Float::Ptr tmp_mat = mat.offset(n*mat_offset);
@@ -51,11 +57,6 @@ void kernel_mult_vec(Float::Ptr input, Float::Ptr mat, Float::Ptr result, Int M,
       res = tmp;
     End
 
-    If (n > 0 && n % 16 == 0)
-      *result = res;
-      result.inc();
-      res = 0;
-    End
   End
 
   *result = res;

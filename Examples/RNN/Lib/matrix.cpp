@@ -127,8 +127,15 @@ matrix matrix::operator*(float rhs) {
 }
 
 
+/**
+ * @brief Perform multiplication between a matrix and a vector
+ *
+ * Currently rhs must absolutely be a vector.
+ * I fully realize the parameter is confusing.
+ */
 matrix matrix::operator*(matrix const &rhs) const {
 	//warn << "Called matrix matrix::operator*()";
+	//warn << "matrix: " << dump_dim() << "rhs: " << rhs.dump_dim();
 	assert(m_columns > 0);
 	assert(m_rows > 0);
 
@@ -195,7 +202,7 @@ matrix matrix::transpose() const {
 }
 
 
-std::string matrix::dump_dimensions() const {
+std::string matrix::dump_dim() const {
 	std::string ret;
 	ret << "(" << m_rows << ", " << m_columns << ") ";
 	return ret;
@@ -206,10 +213,10 @@ std::string matrix::dump(bool output_int) const {
 	assert(m_arr != nullptr);
 	std::string ret;
 
-	ret << "Here " << dump_dimensions();
+	ret << "Here " << dump_dim();
 
 	if (m_columns == 1) {
-		ret << "(tr) ";
+		ret << "(tr) ";  // Signal transposed
 		ret << "[" << vector_dump(*m_arr, m_rows, 0, output_int) << "]";
 	} else {
 		ret << "\n";
@@ -220,6 +227,22 @@ std::string matrix::dump(bool output_int) const {
 	}
 
 	return ret;
+}
+
+
+float &matrix::at(int i, int j) {
+	assert(m_arr != nullptr);
+	auto width = columns();
+
+	return (*m_arr)[i*width + j];
+}
+
+
+float matrix::at(int i, int j) const {
+	assert(m_arr != nullptr);
+	auto width = columns();
+
+	return (*m_arr)[i*width + j];
 }
 
 
@@ -256,14 +279,37 @@ BaseKernel *vector::m_sub     = nullptr;
 BaseKernel *vector::m_op      = nullptr;
 BaseKernel *vector::m_sigmoid = nullptr;
 
+
 vector::vector(vector &rhs) : matrix(rhs) {
 	*this = rhs;
 	init_static();
 }
 
 
+vector::vector(matrix rhs) : matrix(rhs) {
+	assert(
+		(rhs.rows() > 1  && rhs.columns() == 1) ||
+		(rhs.rows() == 1 && rhs.columns() > 1)
+	);
+
+	*this = rhs;
+
+	if (rhs.rows() == 1) {
+		warn << "vector(matrix) ctor: flipping rows and columns";
+		int tmp = rows();
+		rows(columns());
+		columns(tmp);
+	}
+
+	init_static();
+}
+
+
 vector::vector(int rows) : matrix(rows, 1) {
-	if ((rows & 0xf) != 0) { cerr << "vector ctor: rows must be a multiple of 16" << thrw; }
+	if ((rows & 0xf) != 0) {
+		cerr << "vector ctor: " << rows << " rows passed in,  must be a multiple of 16" << thrw;
+	}
+
 	init_static();
 }
 
@@ -356,7 +402,7 @@ vector vector::sigmoid(vector const &bias) {
 
 std::string vector::dump(bool output_int) const {
 	std::string ret;
-	ret << dump_dimensions()
+	ret << dump_dim()
  	    << vector_dump(arr(), rows(), 0, output_int);
 
 	return ret;

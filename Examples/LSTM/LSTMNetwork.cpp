@@ -1,6 +1,23 @@
 #include "LSTMNetwork.h"
 #include <iostream>
 
+/**
+ * @brief Create a simple sine wave dataset for demonstration
+ */
+void DataSamples::init() {
+  for (int i = 0; i < 100; i++) {
+    float x = (float) i * 0.1f;
+		lstm::vector vec;
+    vec.push_back(x);
+
+    DataSample sample;
+    sample.features = vec;
+    sample.target = (float) sin(x);
+
+		push_back(sample);
+  }
+}
+
 
 LSTMNetwork::LSTMNetwork(int input_size, int hidden_size, int output_size, 
                          float learning_rate, int epochs) :

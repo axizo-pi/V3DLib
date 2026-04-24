@@ -17,7 +17,7 @@ using namespace V3DLib;
 /**
  * Width must be in multiples of 16.
  *
- * Case columns x rows = 16*16 x 16:
+ * Case `columns x rows = 16*16 x 16`:
  * - has been shown to work
  * - are dimension which I consider to efficiently use the QPU
  */
@@ -46,12 +46,15 @@ struct matrix {
 	matrix transpose() const;
 
 	std::string dump(bool output_int = false) const;
+	float &at(int i, int j);
+	float at(int i, int j) const;
 
 protected:
+	void rows(int rhs)    { m_rows = rhs; }
 	void columns(int rhs) { m_columns = rhs; }
 
 	void transfer(matrix const &rhs);
-	std::string dump_dimensions() const;
+	std::string dump_dim() const;
 
 	std::shared_ptr<Float::Array> m_arr;
 
@@ -76,8 +79,8 @@ matrix operator*(float scalar, matrix /* const */ &mat);
  * Size must be a multiple of 16
  */
 struct vector : public matrix {
-
 	vector(vector &rhs);
+	vector(matrix rhs);
 	vector(int rows);
 
 	void set(float *rhs, int in_size);
@@ -96,7 +99,8 @@ struct vector : public matrix {
 
 private:
 
-	// TODO: should probably clean this up
+	// TODO: should probably clean this up.
+	//       ptr's not cleaned up on exit, better would be shared or unique ptr.
 	// For now, it works
 	static BaseKernel *m_sub;
 	static BaseKernel *m_op;

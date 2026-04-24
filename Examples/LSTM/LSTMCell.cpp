@@ -1,4 +1,5 @@
 #include "LSTMCell.h"
+#include "convert.h"
 
 LSTMCell::LSTMCell(int input_size, int hidden_size) : input_size(input_size), hidden_size(hidden_size) {
 	auto width = input_size + hidden_size;
@@ -32,6 +33,8 @@ LSTMCell::LSTMCell(int input_size, int hidden_size) : input_size(input_size), hi
 
 /**
  * @brief Forward pass implementation as described in the blog
+ *
+ * **NOTE**: In default app, x is a vector of size 1
  */
 std::pair<vector, vector> LSTMCell::forward(vector const &x, vector const &h_prev, vector const &c_prev) {
   // Store for backpropagation
@@ -41,12 +44,44 @@ std::pair<vector, vector> LSTMCell::forward(vector const &x, vector const &h_pre
         
   // Concatenate input and previous hidden state
   vector x_h = concat(x, h_prev);
-        
+
   // Forget gate
   f_t = (Wf*x_h).sigmoid(bf);
-        
+
   // Input gate
   i_t = (Wi*x_h).sigmoid(bi);
+
+	//
+	// QPU
+	//
+	auto q_x = copy(x);                 assert(same(q_x, x));           // x is vector of size 1
+	auto q_h_prev = copy(h_prev);       assert(same(q_h_prev, h_prev)); // h_prev size 32
+  auto q_x_h = qpu_concat(x, h_prev); assert(same(q_x_h, x_h));
+
+	auto q_Wf = copy(Wf);               assert(same(q_Wf, Wf));
+	auto q_bf = copy(bf);               assert(same(q_bf, bf));
+
+	auto q_Wi = copy(Wi);               assert(same(q_Wi, Wi));
+	auto q_bi = copy(bi);               assert(same(q_bi, bi));
+
+  // Forget gate
+  auto q_f_t = qpu::vector(q_Wf*q_x_h).sigmoid(q_bf);
+	assert(same(q_f_t, f_t, 5.0e-7f));  // Precision for vc7
+
+  // Input gate
+  auto q_i_t = qpu::vector(q_Wi*q_x_h).sigmoid(q_bi);
+	assert(same(q_i_t, i_t, 5.0e-7f));  // Precision for vc7
+
+/*
+	warn << "Wf   : " << Wf.dump_dim();
+	warn << "x_h  : " << x_h.dump();
+	warn << "q_x_h: " << q_x_h.dump();
+*/	
+
+	//
+	// End QPU
+	//
+        
         
   // Cell state candidate
   c_tilde = tanh(Wc*x_h + bc);
@@ -94,10 +129,10 @@ std::tuple<vector, vector, vector> LSTMCell::backward(
   vector x_h = concat(x_t, h_prev);
         
   // Gradient clipping to prevent exploding gradients
-  do_t     = clip(do_t, -clip_value, clip_value);
-  di_t     = clip(di_t, -clip_value, clip_value);
-  dc_tilde = clip(dc_tilde, -clip_value, clip_value);
-  df_t     = clip(df_t, -clip_value, clip_value);
+  do_t    .clip(clip_value);
+  di_t    .clip(clip_value);
+  dc_tilde.clip(clip_value);
+  df_t    .clip(clip_value);
         
   // Update weights using gradients
   // This is a simple implementation of gradient descent

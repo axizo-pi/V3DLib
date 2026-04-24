@@ -1,5 +1,6 @@
 #include "lstm_matrix.h"
 #include "scalar.h"
+#include "Support/basics.h"
 #include <cassert>
 #include <cmath>    // tanh()
 
@@ -14,6 +15,14 @@ using std::size_t;
  */
 
 namespace lstm {
+namespace {
+
+// Gradient clipping as mentioned in the blog
+float clip_intern(float value, float min_value, float max_value) {
+  return std::max(min_value, std::min(value, max_value));
+}
+
+} // anon namespace
 
 vector vector::operator+(vector const &b) const {
   vector const &a= *this;
@@ -52,6 +61,32 @@ vector vector::sigmoid(vector const &bias) {
 }
 
 
+void vector::clip(float extreme) {
+	assert(extreme > 0);
+	float min_value = -extreme;
+	float max_value = extreme;
+
+  for (size_t i = 0; i < size(); i++) {
+    at(i) = clip_intern(at(i), min_value, max_value);
+  }
+}
+
+
+std::string vector::dump() const {
+	std::string ret;
+
+	ret << "(" << size() << ")[";
+
+	for (int i = 0; i < (int) size(); ++i) {
+		ret << at(i) << ", ";
+	}
+
+	ret << "]";
+
+	return ret;
+}
+
+
 vector operator*(float scalar, vector const &v) {
   vector result(v.size());
 
@@ -72,6 +107,38 @@ lstm::vector matrix::operator*(lstm::vector const &v) {
     }
   }
   return result;
+}
+
+
+std::string matrix::dump_dim() const {
+	assert(size() >= 1);
+	auto width = at(0).size();
+
+	std::string ret;
+	ret << "(" << size() << ", " << width << ")";
+	return ret;
+}
+
+
+std::string matrix::dump() const {
+	assert(size() >= 1);
+	auto width = at(0).size();
+
+	std::string ret;
+	ret << dump_dim() << " [\n  ";
+
+  for (std::size_t i = 0; i < size(); i++) {
+		ret << i << ": [";
+    for (std::size_t j = 0; j < width; j++) {
+      ret << at(i)[j] << ", ";
+    }
+
+		ret << "]\n  ";
+  }
+
+	ret << "]";
+
+	return ret;
 }
 
 
@@ -119,24 +186,6 @@ vector dtanh(vector const &v) {
 vector concat(vector const &a, vector const &b) {
   vector result = a;
   result.insert(result.end(), b.begin(), b.end());
-  return result;
-}
-
-namespace {
-
-// Gradient clipping as mentioned in the blog
-float clip(float value, float min_value, float max_value) {
-  return std::max(min_value, std::min(value, max_value));
-}
-
-} // anon namespace
-
-
-vector clip(vector const &v, float min_value, float max_value) {
-  vector result(v.size());
-  for (size_t i = 0; i < v.size(); i++) {
-    result[i] = clip(v[i], min_value, max_value);
-  }
   return result;
 }
 

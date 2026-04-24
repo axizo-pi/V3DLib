@@ -1,6 +1,7 @@
 #ifndef _LSTM_LSTM_MATRIX_H
 #define _LSTM_LSTM_MATRIX_H
 #include <vector>
+#include <string>
 
 namespace lstm {
 
@@ -17,6 +18,12 @@ public:
   vector operator*(vector const &b) const;
 
 	vector sigmoid(vector const &bias);
+	void clip(float extreme);
+	std::string dump() const;
+
+private:
+	float &at(std::size_t i) { return Parent::at(i); }	
+	float at(std::size_t i) const { return Parent::at(i); }	
 };
 
 
@@ -30,6 +37,8 @@ public:
   matrix(std::size_t height, std::size_t width) : Parent(height, lstm::vector(width)) {}
 
   lstm::vector operator*(lstm::vector const &v);
+	std::string dump_dim() const;
+	std::string dump() const;
 };
 
 //
@@ -43,7 +52,6 @@ vector dtanh(vector const &v);
 // Vector operations
 //
 vector concat(vector const &a, vector const &b);
-vector clip(vector const &v, float min_value, float max_value);
 
 } // namespace lstm
 
