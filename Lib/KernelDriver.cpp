@@ -104,11 +104,11 @@ void KernelDriver::init_compile() {
 #endif // OUTPUT_COMPILEDATA
 
   // Initialize reserved general-purpose variables.
-	// Assignment to Int are required; unit tests fail otherwise.
+  // Assignment to Int are required; unit tests fail otherwise.
   Int qpuId    = getUniformInt();  comment("QPU id");
   Int qpuCount = getUniformInt();  comment("Num QPUs");
   
-	init_uniforms();  // v3d only
+  init_uniforms();  // v3d only
 
   //Log::warn << "init_compile stack:\n" << m_stmtStack.dump();
 }
@@ -122,7 +122,6 @@ void KernelDriver::obtain_ast() {
   }
 
   //Log::warn << "obtain_ast stack:\n" << m_stmtStack.dump();
-
   m_body = *m_stmtStack.pop();
 }
 

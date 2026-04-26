@@ -9,6 +9,12 @@ namespace V3DLib {
 
 using ::operator<<;  // C++ weirdness
 
+namespace {
+
+int s_qpu_call_count =0;
+
+}  // anon namespace
+
 BaseKernel::BaseKernel(BaseSettings const &settings) : m_settings(settings) {}
 
 
@@ -193,10 +199,16 @@ void BaseKernel::qpu(bool wait_complete) {
   assert(!m_settings.compile_only);    // Paranoia
 
 #ifdef QPU_MODE
+	s_qpu_call_count++;
   driver().invoke(numQPUs(), uniforms, wait_complete);
 #else
   fatal("qpu(): QPU mode not enabled, can not run on hardware.");
 #endif  // QPU_MODE
+}
+
+
+int BaseKernel::qpu_call_count() {
+	return s_qpu_call_count;
 }
 
 

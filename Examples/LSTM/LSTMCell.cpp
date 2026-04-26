@@ -1,7 +1,7 @@
 #include "LSTMCell.h"
 
 LSTMCell::LSTMCell(int input_size, int hidden_size) : input_size(input_size), hidden_size(hidden_size) {
-	auto width = input_size + hidden_size;
+  auto width = input_size + hidden_size;
 
   Wf = matrix(hidden_size, width);
   bf = vector(hidden_size, 0.0f);
@@ -62,59 +62,59 @@ std::pair<vector, vector> LSTMCell::forward(vector const &x, vector const &h_pre
   // Hidden state
   h_t = o_t * tanh(c_t);
 
-	//
-	// QPU
-	//
-	auto q_x = copy(x);                 assert(same(q_x, x));           // x is vector of size 1
-	auto q_h_prev = copy(h_prev);       assert(same(q_h_prev, h_prev)); // h_prev size 32
+  //
+  // QPU
+  //
+  auto q_x = copy(x);                 assert(same(q_x, x));           // x is vector of size 1
+  auto q_h_prev = copy(h_prev);       assert(same(q_h_prev, h_prev)); // h_prev size 32
   auto q_x_h = qpu_concat(x, h_prev); assert(same(q_x_h, x_h));
 
-	auto q_Wf = copy(Wf);               assert(same(q_Wf, Wf));
-	auto q_bf = copy(bf);               assert(same(q_bf, bf));
+  auto q_Wf = copy(Wf);               assert(same(q_Wf, Wf));
+  auto q_bf = copy(bf);               assert(same(q_bf, bf));
 
-	auto q_Wi = copy(Wi);               assert(same(q_Wi, Wi));
-	auto q_bi = copy(bi);               assert(same(q_bi, bi));
+  auto q_Wi = copy(Wi);               assert(same(q_Wi, Wi));
+  auto q_bi = copy(bi);               assert(same(q_bi, bi));
 
-	auto q_Wc = copy(Wc);               assert(same(q_Wc, Wc));
-	auto q_bc = copy(bc);               assert(same(q_bc, bc));
+  auto q_Wc = copy(Wc);               assert(same(q_Wc, Wc));
+  auto q_bc = copy(bc);               assert(same(q_bc, bc));
 
-	auto q_c_prev = copy(c_prev);       assert(same(q_c_prev, c_prev));
+  q_c_prev = copy(c_prev);            assert(same(q_c_prev, c_prev));
 
-	auto q_Wo = copy(Wo);               assert(same(q_Wo, Wo));
-	auto q_bo = copy(bo);               assert(same(q_bo, bo));
+  auto q_Wo = copy(Wo);               assert(same(q_Wo, Wo));
+  auto q_bo = copy(bo);               assert(same(q_bo, bo));
 
   // Forget gate
-  auto q_f_t = qpu::vector(q_Wf*q_x_h).sigmoid(q_bf);
-	assert(same(q_f_t, f_t, 5.0e-7f));  // Precision for vc7
+  q_f_t = qpu::vector(q_Wf*q_x_h).sigmoid(q_bf);
+  assert(same(q_f_t, f_t, 5.0e-7f));  // Precision for vc7
 
   // Input gate
-  auto q_i_t = qpu::vector(q_Wi*q_x_h).sigmoid(q_bi);
-	assert(same(q_i_t, i_t, 5.0e-7f));  // Precision for vc7
+  q_i_t = qpu::vector(q_Wi*q_x_h).sigmoid(q_bi);
+  assert(same(q_i_t, i_t, 5.0e-7f));  // Precision for vc7
         
   // Cell state candidate
-  auto q_c_tilde = (qpu::vector(q_Wc*q_x_h) + q_bc).tanh();
-	assert(same(q_c_tilde, c_tilde, 5.0e-7f));  // Precision for vc7
+  q_c_tilde = (qpu::vector(q_Wc*q_x_h) + q_bc).tanh();
+  assert(same(q_c_tilde, c_tilde, 5.0e-7f));  // Precision for vc7
         
   // Cell state update
   q_c_t = q_f_t.mul(q_c_prev) + q_i_t.mul(q_c_tilde);
-	assert(same(q_c_t, c_t, 1.0e-6f));  // Precision for vc7
+  assert(same(q_c_t, c_t, 1.0e-6f));  // Precision for vc7
         
   // Output gate
   q_o_t = qpu::vector(q_Wo*q_x_h).sigmoid(q_bo);
-	assert(same(q_o_t, o_t, 5.0e-7f));  // Precision for vc7
+  assert(same(q_o_t, o_t, 5.0e-7f));  // Precision for vc7
         
   // Hidden state
   auto q_h_t = q_o_t.mul(q_c_t.tanh());
-	assert(same(q_h_t, h_t, 1.0e-6f));  // Precision for vc7
+  assert(same(q_h_t, h_t, 1.0e-6f));  // Precision for vc7
 
 /*
-	warn << "Wf   : " << Wf.dump_dim();
-	warn << "q_x_h: " << q_x_h.dump();
-*/	
+  warn << "Wf   : " << Wf.dump_dim();
+  warn << "q_x_h: " << q_x_h.dump();
+*/  
 
-	//
-	// End QPU
-	//
+  //
+  // End QPU
+  //
         
   return {h_t, c_t};
 }
@@ -137,32 +137,46 @@ std::tuple<vector, vector, vector> LSTMCell::backward(
   // Gradient of the cell state
   vector dc_t = dc_next + dh_next * o_t * dtanh(tanh(c_t));
 
-	//
-	// QPU
-	//
-	auto q_dh_next = copy(dh_next);               assert(same(q_dh_next, dh_next));
-	auto q_dc_next = copy(dc_next);               assert(same(q_dc_next, dc_next));
-	//warn << "dh_next: " << dh_next.dump();
-        
-  // Gradient of the output gate
-	//qpu::vector q_do_t = q_dh_next.mul(q_c_t.tanh()).mul(q_o_t.dsigmoid());
-	//assert(same(q_do_t, do_t, 1.0e-6f));  // Precision for vc7
-        
-  // Gradient of the cell state
-	//qpu::vector q_dc_t = q_dc_next + q_dh_next * q_o_t * q_c_t.tanh().dtanh();
-
-	//
-	// EndQPU
-	//
-        
   // Gradient of the input gate
   vector di_t = dc_t * c_tilde * dsigmoid(i_t);
-        
+
   // Gradient of the cell state candidate
   vector dc_tilde = dc_t * i_t * dtanh(c_tilde);
         
   // Gradient of the forget gate
   vector df_t = dc_t * c_prev * dsigmoid(f_t);
+
+  //
+  // QPU
+  //
+  auto q_dh_next = copy(dh_next);               assert(same(q_dh_next, dh_next));
+  auto q_dc_next = copy(dc_next);               assert(same(q_dc_next, dc_next));
+        
+  // Gradient of the output gate
+  qpu::vector q_do_t = q_dh_next.mul(q_c_t.tanh()).mul(q_o_t.dsigmoid());
+  assert(same(q_do_t, do_t, 1.0e-6f));  // Precision for vc7
+        
+  // Gradient of the cell state
+  qpu::vector q_dc_t = q_dc_next + q_dh_next.mul(q_o_t.mul(q_c_t.tanh().dtanh()));
+  assert(same(q_dc_t, dc_t, 1.0e-6f));  // Precision for vc7
+        
+  // Gradient of the input gate
+	qpu::vector q_di_t = q_dc_t.mul(q_c_tilde.mul(q_i_t.dsigmoid()));
+  assert(same(q_di_t, di_t, 1.0e-6f));  // Precision for vc7
+        
+  // Gradient of the cell state candidate
+	qpu::vector q_dc_tilde = q_dc_t.mul(q_i_t.mul(q_c_tilde.dtanh()));
+  assert(same(q_dc_tilde, dc_tilde, 1.0e-6f));  // Precision for vc7
+        
+  // Gradient of the forget gate
+	qpu::vector q_df_t = q_dc_t.mul(q_c_prev.mul(q_f_t.dsigmoid()));
+  assert(same(q_df_t, df_t, 1.0e-6f));  // Precision for vc7
+
+  //warn << "q_i_t: " << q_i_t.dump();
+
+  //
+  // EndQPU
+  //
         
   // Concatenate x and h_prev for weight gradient computation
   vector x_h = concat(x_t, h_prev);
@@ -172,9 +186,11 @@ std::tuple<vector, vector, vector> LSTMCell::backward(
   di_t    .clip(clip_value);
   dc_tilde.clip(clip_value);
   df_t    .clip(clip_value);
-        
+  
+	//	
   // Update weights using gradients
   // This is a simple implementation of gradient descent
+	//
         
   // Update forget gate weights and biases
   for (int i = 0; i < hidden_size; i++) {

@@ -655,12 +655,12 @@ void _encode(V3DLib::Instr::List const &instrs, Instructions &dst) {
 #ifdef QPU_MODE
 
 void load_uniforms(
-	Data &unif,
-	int numQPUs,
-	Data const &devnull,
-	Data const &done,
-	IntList const &params,
-	UniformConstants const &uniform_constants
+  Data &unif,
+  int numQPUs,
+  Data const &devnull,
+  Data const &done,
+  IntList const &params,
+  UniformConstants const &uniform_constants
 ) {
   unif.alloc(params.size() + 4 + (int) uniform_constants.size());
 
@@ -676,31 +676,31 @@ void load_uniforms(
  }
 
 /*
-	{
-		std::string buf;
-	  buf << "load_uniforms:";
-	  for (int j = 0; j < params.size(); j++) {
-	    buf << "\n  param " << j << ": " << params[j];
-	  }
-		warn << buf;
-	}
-*/	
+  {
+    std::string buf;
+    buf << "load_uniforms:";
+    for (int j = 0; j < params.size(); j++) {
+      buf << "\n  param " << j << ": " << params[j];
+    }
+    warn << buf;
+  }
+*/  
 
-	uniform_constants.load(unif, offset);
+  uniform_constants.load(unif, offset);
 
   // The last item is for the 'done' location;
   unif[offset] = (uint32_t) done.getAddress();
 
-/*	
-	{
-		std::string buf = "load_uniforms post:";
-	  for (int j = 0; j <= offset; j++) {
-	    buf << "\n  " << j << ": " << unif[j]
-				  << " (" << *((float *) &unif[j]) << ")" ;
-  	}
-		warn << buf;
-	}
-*/	
+/*  
+  {
+    std::string buf = "load_uniforms post:";
+    for (int j = 0; j <= offset; j++) {
+      buf << "\n  " << j << ": " << unif[j]
+          << " (" << *((float *) &unif[j]) << ")" ;
+    }
+    warn << buf;
+  }
+*/  
 }
 
 #endif  // QPU_MODE
@@ -709,7 +709,7 @@ void load_uniforms(
 
 
 void KernelDriver::init_uniforms()  {
-	//warn << "Called v3d::KernelDriver::init_uniforms()";
+  //warn << "Called v3d::KernelDriver::init_uniforms()";
   Int devnull = getUniformInt();  comment("devnull");
 }
 
@@ -803,31 +803,31 @@ ByteCode KernelDriver::to_opcodes() {
 void KernelDriver::compile_intern() {
   obtain_ast();
 
-	uniform_constants.reset();
-	uniform_constants.last_uniform(m_body);
+  uniform_constants.reset();
+  uniform_constants.last_uniform(m_body);
   encode_source(m_targetCode, m_body);
 
-	if (!uniform_constants.empty()) {
-		//
-		// Add the uniform constants to the Source code and redo the encoding
-		//
-		warn << "=== Uniform constants changed! Redoing encode ===";
+  if (!uniform_constants.empty()) {
+    //
+    // Add the uniform constants to the Source code and redo the encoding
+    //
+    warn << "=== Uniform constants changed! Redoing encode ===";
 
-		uniform_constants.add_uniforms(m_body);
+    uniform_constants.add_uniforms(m_body);
 
-		// Store constant values in driver for invocation
-		m_uniform_constants = uniform_constants.list();
+    // Store constant values in driver for invocation
+    m_uniform_constants = uniform_constants.list();
 
-		// Was fully expecting for following to be necessary; alas
-		//VarGen::reset();
-		m_targetCode.clear();
-  	encode_source(m_targetCode, m_body);
-	}
+    // Was fully expecting for following to be necessary; alas
+    //VarGen::reset();
+    m_targetCode.clear();
+    encode_source(m_targetCode, m_body);
+  }
 
 
-	//uniform_constants.add(m_targetCode);
+  //uniform_constants.add(m_targetCode);
 
-	add_init_block(m_targetCode);
+  add_init_block(m_targetCode);
   adjust_immediates(m_targetCode);
 
   // Perform register allocation

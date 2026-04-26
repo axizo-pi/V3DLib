@@ -14,8 +14,8 @@ UniformConstantsHandler::UniformConstantsHandler() {}
 
 
 void UniformConstantsHandler::reset() {
-	m_last_uniform = -1;
-	m_list.clear();
+  m_last_uniform = -1;
+  m_list.clear();
 }
 
 
@@ -25,7 +25,7 @@ void UniformConstantsHandler::reset() {
  * This is to add the uniform constants at the proper location later on.
  */
 void UniformConstantsHandler::last_uniform(Stmts &source) {
-	m_last_uniform = source.lastUniform(false);
+  m_last_uniform = source.lastUniform(false);
 }
 
 
@@ -36,30 +36,30 @@ void UniformConstantsHandler::last_uniform(Stmts &source) {
  * This assumes that the var index generation has **not** been reset.
  */
 void UniformConstantsHandler::add_uniforms(Stmts &source) {
-	//m_last_uniform = source.lastUniform();
-	assert(m_last_uniform != -1);
-	
-	auto list = tempStmt([&] () {
-		for (int i = 0; i < (int) m_list.size(); ++i) {
-		  Int tmp = getUniformInt();  comment(m_list[i].comment);
-		}
-	});
+  //m_last_uniform = source.lastUniform();
+  assert(m_last_uniform != -1);
+  
+  auto list = tempStmt([&] () {
+    for (int i = 0; i < (int) m_list.size(); ++i) {
+      Int tmp = getUniformInt();  comment(m_list[i].comment);
+    }
+  });
 
-	int index = m_last_uniform;
-	warn << "add_uniforms: " << index;
-	warn << list.dump();
+  int index = m_last_uniform;
+  //warn << "add_uniforms: " << index;
+  //warn << list.dump();
 
-	// Retrieve the var indexes from the created code
-	for (int i = 0; i < (int) list.size(); ++i) {
-		int id = list[i]->lhs()->var().id();
-		//warn << "lhs id: " << id;
-		m_list[i].var_id = id;
-	}
+  // Retrieve the var indexes from the created code
+  for (int i = 0; i < (int) list.size(); ++i) {
+    int id = list[i]->lhs()->var().id();
+    //warn << "lhs id: " << id;
+    m_list[i].var_id = id;
+  }
 
   source.insert(source.begin() + index + 1, list.begin(), list.end());
 
-	//warn << "==== Post ===";
-	//source.lastUniform();
+  //warn << "==== Post ===";
+  //source.lastUniform();
 }
 
 
@@ -70,36 +70,36 @@ void UniformConstantsHandler::add_uniforms(Stmts &source) {
  * the second pass returns the proper var index.
  */
 int UniformConstantsHandler::get(float val) {
-	assert(m_last_uniform != -1);
-	uint32_t tmp = *((uint32_t *) &val);
+  assert(m_last_uniform != -1);
+  uint32_t tmp = *((uint32_t *) &val);
 
-	int index = -1;
+  int index = -1;
 
-	for (int i = 0; i < (int) m_list.size(); ++i) {
-		if (tmp == m_list[i].val) {
-			index = i;
-			break;
-		}
-	}
+  for (int i = 0; i < (int) m_list.size(); ++i) {
+    if (tmp == m_list[i].val) {
+      index = i;
+      break;
+    }
+  }
 
-	// If not present, add it
-	if (index == -1) {
-		std::string comment = std::to_string(val);
-		m_list.push_back(UniformConstant(val, comment));
+  // If not present, add it
+  if (index == -1) {
+    std::string comment = std::to_string(val);
+    m_list.push_back(UniformConstant(val, comment));
 
-		index = (int) m_list.size() - 1;
-	}
+    index = (int) m_list.size() - 1;
+  }
 
-	// var_id is -1 for first encoding run.
-	return m_list[index].var_id;
+  // var_id is -1 for first encoding run.
+  return m_list[index].var_id;
 }
 
 
 UniformConstant::UniformConstant(float in_val, std::string const &in_comment) :
-	comment(in_comment)
+  comment(in_comment)
 {
-	// Store float into uint32_t
-	val = *((uint32_t *) &in_val);
+  // Store float into uint32_t
+  val = *((uint32_t *) &in_val);
 }
 
 
@@ -108,13 +108,13 @@ UniformConstant::UniformConstant(float in_val, std::string const &in_comment) :
  *        to pass into the kernel.
  */
 void UniformConstants::load(Data &unif, int &offset) const {
-	if (empty()) return;
-	//warn << "Called UniformConstants::load()";
+  if (empty()) return;
+  //warn << "Called UniformConstants::load()";
 
-	for (int i = 0; i < (int) size(); ++i) {
-  	//warn <<  "val: " << at(i).val; 
-  	unif[offset++] = at(i).val; 
-	}
+  for (int i = 0; i < (int) size(); ++i) {
+    //warn <<  "val: " << at(i).val; 
+    unif[offset++] = at(i).val; 
+  }
 }
 
 

@@ -39,6 +39,8 @@ int main() {
     std::cout << "Input: " << x << ", Actual: " << actual << ", "
               << "Predicted: " << predicted << std::endl;
   }
+
+	warn << "QPU Call Count: " << BaseKernel::qpu_call_count();
     
   return 0;
 }

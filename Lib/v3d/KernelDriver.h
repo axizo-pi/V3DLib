@@ -42,14 +42,14 @@ private:
   Data   devnull;
   Data   done;
   Driver drv;
-	UniformConstants m_uniform_constants;
+  UniformConstants m_uniform_constants;
 
   void compile_intern() override;
 
   void allocate();
   ByteCode to_opcodes();
   std::string emit_opcodes() override;
-	void init_uniforms() override;
+  void init_uniforms() override;
 };
 
 }  // namespace v3d

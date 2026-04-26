@@ -12,33 +12,33 @@ namespace V3DLib {
 namespace v3d {
 
 struct UniformConstant {
-	UniformConstant(float in_val, std::string const &in_comment = "");
+  UniformConstant(float in_val, std::string const &in_comment = "");
 
-	uint32_t    val;
-	std::string comment;
-	int         var_id = -1;
+  uint32_t    val;
+  std::string comment;
+  int         var_id = -1;
 };
 
 
 class UniformConstants : public std::vector<UniformConstant> {
-public:	
-	void load(Data &unif, int &offset) const;
+public:  
+  void load(Data &unif, int &offset) const;
 };
 
 
 class UniformConstantsHandler {
 public:
-	UniformConstantsHandler();
-	void reset();
-	void last_uniform(Stmts &source);
-	void add_uniforms(Stmts &source);
-	bool empty() const { return m_list.empty(); }
-	int get(float in_val);
-	UniformConstants list() const { return m_list; }
+  UniformConstantsHandler();
+  void reset();
+  void last_uniform(Stmts &source);
+  void add_uniforms(Stmts &source);
+  bool empty() const { return m_list.empty(); }
+  int get(float in_val);
+  UniformConstants list() const { return m_list; }
 
-private:	
-	int m_last_uniform = -1;
-	UniformConstants m_list;
+private:  
+  int m_last_uniform = -1;
+  UniformConstants m_list;
 };
 
 // Needs to be global during encoding; see RegOrImm
