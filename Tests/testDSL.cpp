@@ -967,9 +967,9 @@ TEST_CASE("Test functions [dsl][func]") {
     k.load(&results_qpu, &input_qpu, NumValues).run();
 
     for (int n = 0; n < NumValues; ++n) {
-      INFO("input_qpu     : " << dump_array2(input_qpu));
-      INFO("results_scalar: " << dump_array2(results_scalar, NumValues));
-      INFO("results_qpu   : " << dump_array2(results_qpu));
+      INFO("input_qpu     : " << dump_array(input_qpu));
+      INFO("results_scalar: " << dump_array(results_scalar, NumValues));
+      INFO("results_qpu   : " << dump_array(results_qpu));
       INFO("n: " << n);
       REQUIRE(results_scalar[n] == results_qpu[n]);
     }
@@ -989,8 +989,8 @@ TEST_CASE("Test functions [dsl][func]") {
     k.load(&results_qpu, &input_qpu, NumValues).run();
 
     for (int n = 0; n < NumValues; ++n) {
-      INFO("results_scalar: " << dump_array2(results_scalar, NumValues));
-      INFO("results_qpu   : " << dump_array2(results_qpu));
+      INFO("results_scalar: " << dump_array(results_scalar, NumValues));
+      INFO("results_qpu   : " << dump_array(results_qpu));
       INFO("n: " << n);
       REQUIRE(results_scalar[n] == results_qpu[n]);
     }

@@ -10,10 +10,10 @@
 namespace V3DLib {
 namespace v3d {
 
-UniformConstants::UniformConstants() {}
+UniformConstantsHandler::UniformConstantsHandler() {}
 
 
-void UniformConstants::reset() {
+void UniformConstantsHandler::reset() {
 	m_last_uniform = -1;
 	m_list.clear();
 }
@@ -24,7 +24,7 @@ void UniformConstants::reset() {
  *
  * This is to add the uniform constants at the proper location later on.
  */
-void UniformConstants::last_uniform(Stmts &source) {
+void UniformConstantsHandler::last_uniform(Stmts &source) {
 	m_last_uniform = source.lastUniform(false);
 }
 
@@ -35,7 +35,7 @@ void UniformConstants::last_uniform(Stmts &source) {
  *
  * This assumes that the var index generation has **not** been reset.
  */
-void UniformConstants::add_uniforms(Stmts &source) {
+void UniformConstantsHandler::add_uniforms(Stmts &source) {
 	//m_last_uniform = source.lastUniform();
 	assert(m_last_uniform != -1);
 	
@@ -46,8 +46,8 @@ void UniformConstants::add_uniforms(Stmts &source) {
 	});
 
 	int index = m_last_uniform;
-	//warn << "add_uniforms: " << index;
-	//warn << list.dump();
+	warn << "add_uniforms: " << index;
+	warn << list.dump();
 
 	// Retrieve the var indexes from the created code
 	for (int i = 0; i < (int) list.size(); ++i) {
@@ -64,27 +64,12 @@ void UniformConstants::add_uniforms(Stmts &source) {
 
 
 /**
- * @brief Load constant into the uniforms Data array,
- *        to pass into the kernel.
- */
-void UniformConstants::load(Data &unif, int &offset) {
-	if (m_list.empty()) return;
-	//warn << "Called UniformConstants::load()";
-
-	for (int i = 0; i < (int) m_list.size(); ++i) {
-  	//warn <<  "val: " << m_list[i].val; 
-  	unif[offset++] = m_list[i].val; 
-	}
-}
-
-
-/**
  * Return var index for given value
  *
  * This assumes two passes; the first pass returns -1.
  * the second pass returns the proper var index.
  */
-int UniformConstants::get(float val) {
+int UniformConstantsHandler::get(float val) {
 	assert(m_last_uniform != -1);
 	uint32_t tmp = *((uint32_t *) &val);
 
@@ -110,7 +95,7 @@ int UniformConstants::get(float val) {
 }
 
 
-UniformConstants::UniformConstant::UniformConstant(float in_val, std::string const &in_comment) :
+UniformConstant::UniformConstant(float in_val, std::string const &in_comment) :
 	comment(in_comment)
 {
 	// Store float into uint32_t
@@ -118,7 +103,22 @@ UniformConstants::UniformConstant::UniformConstant(float in_val, std::string con
 }
 
 
-UniformConstants uniform_constants;
+/**
+ * @brief Load constant into the uniforms Data array,
+ *        to pass into the kernel.
+ */
+void UniformConstants::load(Data &unif, int &offset) const {
+	if (empty()) return;
+	//warn << "Called UniformConstants::load()";
+
+	for (int i = 0; i < (int) size(); ++i) {
+  	//warn <<  "val: " << at(i).val; 
+  	unif[offset++] = at(i).val; 
+	}
+}
+
+
+UniformConstantsHandler uniform_constants;
 
 }  // namespace v3d
 }  // namespace V3DLib

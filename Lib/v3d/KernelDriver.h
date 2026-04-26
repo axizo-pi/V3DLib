@@ -6,6 +6,7 @@
 #include "instr/Instr.h"
 #include "BufferObject.h"
 #include "Driver.h"
+#include "UniformConstants.h"
 
 namespace V3DLib {
 namespace v3d {
@@ -41,6 +42,7 @@ private:
   Data   devnull;
   Data   done;
   Driver drv;
+	UniformConstants m_uniform_constants;
 
   void compile_intern() override;
 

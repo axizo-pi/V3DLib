@@ -110,40 +110,57 @@ void make_test_dir() {
 namespace {
 
 template<typename T>
-std::string dump_array_template(T const &a, int size,  int linesize, bool as_int = false) {
-  std::string str("<");
+std::string dump_array_template(
+	T const &a,
+	int size,
+	int linesize,
+	bool as_int = false,
+	bool do_first = false
+) {
+	assertq(linesize == -1 || linesize > 0, "linesize must be -1 or positive");
 
-  for (int i = 0; i < (int) size; i++) {
-    if (linesize != -1) {
-      if (i % linesize == 0) {
-        str << "\n";
-      }
-    }
+  std::string ret("<");
+
+	auto output = [&a, as_int] (int i) -> std::string {
+		std::string ret;
 
     if (as_int) {
-      str << (int) a[i] << ", " ;
+      ret << (int) a[i] << ", " ;
     } else {
-      str << a[i] << ", " ;
+      ret << a[i] << ", " ;
     }
+
+		return ret;
+	};
+
+	if (do_first) {
+		assertq(linesize != -1, "do_first requires linesize");
+
+	  for (int i = 0; i < (int) size; i += linesize) {
+			ret << output(i);
+		}
+	} else {
+	  for (int i = 0; i < (int) size; i++) {
+	    if (linesize != -1) {
+	      if (i % linesize == 0) {
+	        ret << "\n";
+	      }
+	    }
+			ret << output(i);
+		}
   }
 
-
-  str << ">";
-  return str;
+  ret << ">";
+  return ret;
 }
 
 }  // anon namespace
 
+
 /**
  * Show contents of main memory array
  */
-void dump_array(float *a, int size,  int linesize) {
-  auto str = dump_array_template(a, size, linesize);
-  printf("%s\n", str.c_str());
-}
-
-
-std::string dump_array2(float *a, int size,  int linesize) {
+std::string dump_array(float *a, int size,  int linesize) {
   return dump_array_template(a, size, linesize);
 }
 
@@ -151,20 +168,13 @@ std::string dump_array2(float *a, int size,  int linesize) {
 /**
  * Show contents of SharedArray instance
  */
-void dump_array(V3DLib::Float::Array const &a, int linesize) {
-  auto str = dump_array_template(a, a.size(), linesize, no_fractions(a));
-  printf("%s\n", str.c_str());
+std::string dump_array(V3DLib::Float::Array const &a, int linesize, bool do_first) {
+  return dump_array_template(a, a.size(), linesize, no_fractions(a), do_first);
 }
 
 
-std::string dump_array2(V3DLib::Float::Array const &a, int linesize) {
-  return dump_array_template(a, a.size(), linesize, no_fractions(a));
-}
-
-
-void dump_array(V3DLib::Int::Array const &a, int linesize) {
-  auto str = dump_array_template(a, a.size(), linesize);
-  printf("%s\n", str.c_str());
+std::string dump_array(V3DLib::Int::Array const &a, int linesize) {
+  return dump_array_template(a, a.size(), linesize);
 }
 
 
@@ -172,34 +182,38 @@ namespace {
 
 // Source: https://stackoverflow.com/questions/216823/how-can-i-trim-a-stdstring
 
-// Trim from the start (in place)
+/**
+ * @brief Trim from the start (in place)
+ */
 inline void ltrim(std::string &s) {
-    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
-        return !std::isspace(ch);
-    }));
+  s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
+    return !std::isspace(ch);
+  }));
 }
 
-// Trim from the end (in place)
+
+/**
+ * @brief Trim from the end (in place)
+ */
 inline void rtrim(std::string &s) {
-    s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
-        return !std::isspace(ch);
-    }).base(), s.end());
+  s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
+    return !std::isspace(ch);
+  }).base(), s.end());
 }
+
 
 inline void trim(std::string &s) {
-    rtrim(s);
-    ltrim(s);
+  rtrim(s);
+  ltrim(s);
 }
 
 
-struct BothAre
-{
-    char c;
-    BothAre(char r) : c(r) {}
-    bool operator()(char l, char r) const
-    {
-            return r == c && l == c;
-    }
+struct BothAre {
+  char c;
+  BothAre(char r) : c(r) {}
+  bool operator()(char l, char r) const {
+    return r == c && l == c;
+  }
 };
 
 }  // anon namespace

@@ -11,31 +11,38 @@
 namespace V3DLib {
 namespace v3d {
 
-class UniformConstants {
+struct UniformConstant {
+	UniformConstant(float in_val, std::string const &in_comment = "");
+
+	uint32_t    val;
+	std::string comment;
+	int         var_id = -1;
+};
+
+
+class UniformConstants : public std::vector<UniformConstant> {
+public:	
+	void load(Data &unif, int &offset) const;
+};
+
+
+class UniformConstantsHandler {
 public:
-	UniformConstants();
+	UniformConstantsHandler();
 	void reset();
 	void last_uniform(Stmts &source);
 	void add_uniforms(Stmts &source);
-	void load(Data &unif, int &offset);
-	int size() const { return (int) m_list.size(); }
+	bool empty() const { return m_list.empty(); }
 	int get(float in_val);
+	UniformConstants list() const { return m_list; }
 
 private:	
-
-	struct UniformConstant {
-		UniformConstant(float in_val, std::string const &in_comment = "");
-
-		uint32_t    val;
-		std::string comment;
-		int         var_id = -1;
-	};
-
 	int m_last_uniform = -1;
-	std::vector<UniformConstant> m_list;
+	UniformConstants m_list;
 };
 
-extern UniformConstants uniform_constants;
+// Needs to be global during encoding; see RegOrImm
+extern UniformConstantsHandler uniform_constants;
 
 }  // namespace v3d
 }  // namespace V3DLib

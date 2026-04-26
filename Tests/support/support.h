@@ -94,11 +94,9 @@ void dump_data(T const &arr, bool do_all = false, bool as_float = false) {
 }
 
 
-void dump_array(float *a, int size, int linesize = -1);
-std::string dump_array2(float *a, int size, int linesize = -1);
-void dump_array(V3DLib::Float::Array const &a, int linesize = -1);
-std::string dump_array2(V3DLib::Float::Array const &a, int linesize = -1);
-void dump_array(V3DLib::Int::Array const &a, int linesize = -1);
+std::string dump_array(float *a, int size, int linesize = -1);
+std::string dump_array(V3DLib::Float::Array const &a, int linesize = -1, bool do_first = false);
+std::string dump_array(V3DLib::Int::Array const &a, int linesize = -1);
 
 
 extern const char *SUDO;

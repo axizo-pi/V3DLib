@@ -420,10 +420,11 @@ Instr::List bexp(Var dst, RegOrImm const &srcA) {
 
 
 /**
- * @brief Return 2 to the power of e.
+ * @brief Return e to the power `dst`.
  */
 Instr::List bexp_e(Var dst, RegOrImm const &srcA) {
   const float e_const = 2.71828f;
+  //const float e_const = 4.0f;
 
   RegOrImm e(e_const);
   Reg tmp(V3DLib::VarGen::fresh());

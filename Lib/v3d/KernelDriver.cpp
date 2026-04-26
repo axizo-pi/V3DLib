@@ -17,7 +17,6 @@
 #include "Combine.h"
 #include "LibSettings.h"
 #include "Source/Lang.h"            // comment()
-#include "UniformConstants.h"
 #include <iostream>
 #include <memory>
 
@@ -655,8 +654,15 @@ void _encode(V3DLib::Instr::List const &instrs, Instructions &dst) {
 
 #ifdef QPU_MODE
 
-void load_uniforms(Data &unif, int numQPUs, Data const &devnull, Data const &done, IntList const &params) {
-  unif.alloc(params.size() + 4 + uniform_constants.size());
+void load_uniforms(
+	Data &unif,
+	int numQPUs,
+	Data const &devnull,
+	Data const &done,
+	IntList const &params,
+	UniformConstants const &uniform_constants
+) {
+  unif.alloc(params.size() + 4 + (int) uniform_constants.size());
 
   int offset = 0;
 
@@ -666,24 +672,35 @@ void load_uniforms(Data &unif, int numQPUs, Data const &devnull, Data const &don
   unif[offset++] = devnull.getAddress();  // Memory location for values to be discarded
 
   for (int j = 0; j < params.size(); j++) {
-    //Log::warn << "load_uniforms param " << j << ": " << params[j];
-    unif[offset++] = params[j];
-  }
+   unif[offset++] = params[j];
+ }
+
+/*
+	{
+		std::string buf;
+	  buf << "load_uniforms:";
+	  for (int j = 0; j < params.size(); j++) {
+	    buf << "\n  param " << j << ": " << params[j];
+	  }
+		warn << buf;
+	}
+*/	
 
 	uniform_constants.load(unif, offset);
-
 
   // The last item is for the 'done' location;
   unif[offset] = (uint32_t) done.getAddress();
 
-/*
-	std::string buf = "load_uniforms:";
-  for (int j = 0; j <= offset; j++) {
-    buf << "\n  " << j << ": " << unif[j]
-			  << " (" << *((float *) &unif[j]) << ")" ;
-  }
-	warn << buf;
-*/
+/*	
+	{
+		std::string buf = "load_uniforms post:";
+	  for (int j = 0; j <= offset; j++) {
+	    buf << "\n  " << j << ": " << unif[j]
+				  << " (" << *((float *) &unif[j]) << ")" ;
+  	}
+		warn << buf;
+	}
+*/	
 }
 
 #endif  // QPU_MODE
@@ -787,15 +804,19 @@ void KernelDriver::compile_intern() {
   obtain_ast();
 
 	uniform_constants.reset();
-	int pre = uniform_constants.size();
 	uniform_constants.last_uniform(m_body);
   encode_source(m_targetCode, m_body);
 
-	if (pre != uniform_constants.size()) {
+	if (!uniform_constants.empty()) {
+		//
+		// Add the uniform constants to the Source code and redo the encoding
+		//
 		warn << "=== Uniform constants changed! Redoing encode ===";
 
-		// Add the uniform constants and redo the encoding
 		uniform_constants.add_uniforms(m_body);
+
+		// Store constant values in driver for invocation
+		m_uniform_constants = uniform_constants.list();
 
 		// Was fully expecting for following to be necessary; alas
 		//VarGen::reset();
@@ -881,7 +902,7 @@ void KernelDriver::invoke(int numQPUs, IntList &params, bool wait_complete) {
   done.alloc(1);
   done[0] = 0;
 
-  load_uniforms(uniforms, numQPUs, devnull, done, params);
+  load_uniforms(uniforms, numQPUs, devnull, done, params, m_uniform_constants);
 
   drv.add_bo(getBufferObject().getHandle());
   drv.execute(m_code, &uniforms, numQPUs, wait_complete);

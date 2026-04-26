@@ -1,7 +1,8 @@
 #include "doctest.h"
+#include "V3DLib.h"
+#include "support/support.h"
 #include <iostream>
 #include <cmath>
-#include "V3DLib.h"
 
 using namespace V3DLib;
 
@@ -25,7 +26,7 @@ void sfu_kernel(Float x, Float::Ptr r) {
   *r = V3DLib::recipsqrt(x); r.inc();
   *r = V3DLib::log(x);       r.inc();
   *r = V3DLib::exp_e(1);     r.inc();
-  *r = V3DLib::exp_e(x);
+  *r = V3DLib::exp_e(x);     r.inc();
 }
 
 
@@ -40,7 +41,7 @@ void check(float val, Float::Array &results, double precision) {
   REQUIRE(abs(results[ 16*7] - (1/sqrt(val))) <   precision);
   REQUIRE(abs(results[ 16*8] - log2(val))     <   precision);
   REQUIRE(abs(results[ 16*9] - exp(1))        < 2*precision);  // A bit less precise, is a calc
-  REQUIRE(abs(results[16*10] - exp(val))     <  50*precision);
+  REQUIRE(abs(results[16*10] - exp(val))      <  50*precision);
 }
 
 /*
@@ -80,8 +81,12 @@ TEST_CASE("Test SFU functions [sfu]") {
 
 	INFO("Testing 1.0f");
   k.load(1.0f, &results).run();
-  //Log::warn << vector_dump(results);
   check(1.0f, results, precision);
+
+	INFO("Testing 0.5f");
+  k.load(2.5f, &results).run();
+  //Log::warn << dump_array(results, 16, true);
+  check(2.5f, results, precision);
 
 	INFO("Testing 1.1f");
   k.load(1.1f, &results).run();
