@@ -213,7 +213,7 @@ std::string matrix::dump(bool output_int) const {
 	assert(m_arr != nullptr);
 	std::string ret;
 
-	ret << "Here " << dump_dim();
+	ret << dump_dim();
 
 	if (m_columns == 1) {
 		ret << "(tr) ";  // Signal transposed
@@ -275,14 +275,21 @@ matrix operator*(float scalar, matrix /* const */ &mat) {
 // Class vector 
 ////////////////////////////////////////////////
 
-BaseKernel *vector::m_sub     = nullptr;
-BaseKernel *vector::m_add     = nullptr;
-BaseKernel *vector::m_op      = nullptr;
-BaseKernel *vector::m_sigmoid = nullptr;
-BaseKernel *vector::m_tanh = nullptr;
+BaseKernel *vector::m_sub      = nullptr;
+BaseKernel *vector::m_add      = nullptr;
+BaseKernel *vector::m_op       = nullptr;
+BaseKernel *vector::m_sigmoid  = nullptr;
+BaseKernel *vector::m_dsigmoid = nullptr;
+BaseKernel *vector::m_tanh     = nullptr;
+BaseKernel *vector::m_dtanh    = nullptr;
 
 
 vector::vector(vector &rhs) : matrix(rhs) {
+	*this = rhs;
+	init_static();
+}
+
+vector::vector(vector &&rhs) : matrix(rhs) {
 	*this = rhs;
 	init_static();
 }
@@ -307,10 +314,16 @@ vector::vector(matrix rhs) : matrix(rhs) {
 }
 
 
-vector::vector(int rows) : matrix(rows, 1) {
+vector::vector(int rows, float val) : matrix(rows, 1) {
 	if ((rows & 0xf) != 0) {
 		cerr << "vector ctor: " << rows << " rows passed in,  must be a multiple of 16" << thrw;
 	}
+
+	auto &r = matrix::arr();
+
+  for (int i = 0; i < rows; i++) {
+    r[i] = val;
+  }
 
 	init_static();
 }
@@ -414,6 +427,13 @@ vector &vector::operator=(matrix const &rhs) {
 }
 
 
+vector &vector::operator=(vector const &rhs) {
+	assert(rhs.columns() == 1);
+	transfer(rhs);
+	return *this;
+}
+
+
 matrix vector::outer(matrix const &rhs) const {
 	assert(rhs.columns() == 1);  // Expecting a vector as input
 	if ((rows() & 0xf) != 0)     { cerr << "vector outer: expecting rows to be a multiple of 16" << thrw; }
@@ -428,8 +448,14 @@ matrix vector::outer(matrix const &rhs) const {
 
 vector vector::sigmoid(vector const &bias) {
 	vector ret(rows());
-
 	m_sigmoid->load(&arr(), &bias.arr(), &ret.arr(), rows()/16).run();
+	return ret;	
+}
+
+
+vector vector::dsigmoid() {
+	vector ret(rows());
+	m_dsigmoid->load(&arr(), &ret.arr(), rows()/16).run();
 	return ret;	
 }
 
@@ -438,6 +464,14 @@ vector vector::tanh() {
 	vector ret(rows());
 
 	m_tanh->load(&arr(), &ret.arr(), rows()/16).run();
+	return ret;	
+}
+
+
+vector vector::dtanh() {
+	vector ret(rows());
+
+	m_dtanh->load(&arr(), &ret.arr(), rows()/16).run();
 	return ret;	
 }
 
@@ -458,11 +492,18 @@ BaseKernel &vector::op_kernel() {
 
 
 void vector::init_static() {
-	if (m_sub     == nullptr) { m_sub     = new BaseKernel(compile_b(vector_sub,   settings())); }
-	if (m_add     == nullptr) { m_add     = new BaseKernel(compile_b(vector_add,   settings())); }
-	if (m_op      == nullptr) { m_op      = new BaseKernel(compile(outer_product,  settings())); }
-	if (m_sigmoid == nullptr) { m_sigmoid = new BaseKernel(compile(kernel_sigmoid, settings())); }
-	if (m_tanh    == nullptr) { m_tanh    = new BaseKernel(compile(kernel_tanh,    settings())); }
+	if (m_sub      == nullptr) { m_sub      = new BaseKernel(compile_b(vector_sub,    settings())); }
+	if (m_add      == nullptr) { m_add      = new BaseKernel(compile_b(vector_add,    settings())); }
+	if (m_op       == nullptr) { m_op       = new BaseKernel(compile(outer_product,   settings())); }
+
+	if (m_sigmoid  == nullptr) {
+		m_sigmoid  = new BaseKernel(compile(kernel_sigmoid,  settings()));
+		//to_file("kernel_sigmoid.txt", m_sigmoid->dump());
+	}
+
+	if (m_dsigmoid == nullptr) { m_dsigmoid = new BaseKernel(compile(kernel_dsigmoid, settings())); }
+	if (m_tanh     == nullptr) { m_tanh     = new BaseKernel(compile(kernel_tanh,     settings())); }
+	if (m_dtanh    == nullptr) { m_dtanh    = new BaseKernel(compile(kernel_dtanh,    settings())); }
 }
 
 } // namespace qpu

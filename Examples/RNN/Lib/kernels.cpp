@@ -22,11 +22,49 @@ void kernel_sigmoid(Float::Ptr in, Float::Ptr bias, Float::Ptr out, Int N) {
 }
 
 
+/**
+ * @brief Calculate the derivate of `sigmoid()`.
+ *
+ * Input is `v = sigmoid(x)`
+ */
+void kernel_dsigmoid(Float::Ptr in, Float::Ptr out, Int N) {
+  For (Int h = 0, h < N, h++)
+    Float x = *in;
+
+    x = x*(1.0 - x);
+
+    *out = x;
+
+    in.inc();
+    out.inc();
+  End
+}
+
+
 void kernel_tanh(Float::Ptr in, Float::Ptr out, Int N) {
   For (Int h = 0, h < N, h++)
     Float x = *in;
 
     x = tanh(x);
+
+    *out = x;
+
+    in.inc();
+    out.inc();
+  End
+}
+
+
+/**
+ * @brief Calculate the derivate of `tanh()`.
+ *
+ * Input is `v = tanh(x)`
+ */
+void kernel_dtanh(Float::Ptr in, Float::Ptr out, Int N) {
+  For (Int h = 0, h < N, h++)
+    Float x = *in;
+
+    x = 1.0f - x*x;
 
     *out = x;
 

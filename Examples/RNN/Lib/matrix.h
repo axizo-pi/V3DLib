@@ -22,7 +22,6 @@ using namespace V3DLib;
  * - are dimension which I consider to efficiently use the QPU
  */
 struct matrix {
-
 	matrix(int rows, int columns);
 	matrix(matrix &rhs);
 
@@ -80,8 +79,9 @@ matrix operator*(float scalar, matrix /* const */ &mat);
  */
 struct vector : public matrix {
 	vector(vector &rhs);
-	vector(matrix rhs);
-	vector(int rows);
+	vector(vector &&rhs);
+	explicit vector(matrix rhs);
+	explicit vector(int rows, float val = 0.0f);
 
 	void set(float *rhs, int in_size);
 	void set(float init_val);
@@ -93,9 +93,12 @@ struct vector : public matrix {
 	vector operator+(vector const &rhs);
 	vector mul(vector const &rhs);
 	vector &operator=(matrix const &rhs);
+	vector &operator=(vector const &rhs);
 	matrix outer(matrix const &rhs) const;
 	vector sigmoid(vector const &bias);
+	vector dsigmoid();
 	vector tanh();
+	vector dtanh();
 	static BaseKernel &op_kernel();
 
 	std::string dump(bool output_int = false) const;
@@ -109,7 +112,9 @@ private:
 	static BaseKernel *m_add;
 	static BaseKernel *m_op;
 	static BaseKernel *m_sigmoid;
+	static BaseKernel *m_dsigmoid;
 	static BaseKernel *m_tanh;
+	static BaseKernel *m_dtanh;
 
 	static void init_static();
 };

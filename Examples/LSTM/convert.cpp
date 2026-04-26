@@ -91,8 +91,10 @@ bool same(qpu::vector const &lhs, lstm::vector const &rhs, float precision) {
 				return false;
 			}
 		} else {
-			if (abs(lhs[i] - rhs[i]) > precision) {
-				warn << "same(vector, vector) fails with precision at index: " << i;
+			float diff = abs(lhs[i] - rhs[i]);
+			if (diff > precision) {
+				warn << "same(vector, vector) precision fails at index " << i << ": "
+				     << "diff: " << diff;
 				return false;
 			}
 		}

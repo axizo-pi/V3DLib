@@ -2,6 +2,7 @@
 #define _LSTM_LSTMCELL_H
 #include "lstm_matrix.h"
 #include "helpers.h"
+#include "convert.h"
 #include <tuple>
 
 using namespace lstm;
@@ -38,6 +39,16 @@ private:
     
   // Random number generator for weight initialization
 	normal_rand gen;
+
+	//
+	// QPU
+	//
+	qpu::vector q_c_t{32};  // Dummy init value
+	qpu::vector q_o_t{32};  // "
+
+	//
+	// End QPU
+	//
 
 public:
 	LSTMCell(int input_size, int hidden_size);

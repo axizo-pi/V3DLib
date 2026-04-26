@@ -1,5 +1,4 @@
 #include "LSTMCell.h"
-#include "convert.h"
 
 LSTMCell::LSTMCell(int input_size, int hidden_size) : input_size(input_size), hidden_size(hidden_size) {
 	auto width = input_size + hidden_size;
@@ -97,11 +96,11 @@ std::pair<vector, vector> LSTMCell::forward(vector const &x, vector const &h_pre
 	assert(same(q_c_tilde, c_tilde, 5.0e-7f));  // Precision for vc7
         
   // Cell state update
-  auto q_c_t = q_f_t.mul(q_c_prev) + q_i_t.mul(q_c_tilde);
+  q_c_t = q_f_t.mul(q_c_prev) + q_i_t.mul(q_c_tilde);
 	assert(same(q_c_t, c_t, 1.0e-6f));  // Precision for vc7
         
   // Output gate
-  auto q_o_t = qpu::vector(q_Wo*q_x_h).sigmoid(q_bo);
+  q_o_t = qpu::vector(q_Wo*q_x_h).sigmoid(q_bo);
 	assert(same(q_o_t, o_t, 5.0e-7f));  // Precision for vc7
         
   // Hidden state
@@ -137,6 +136,24 @@ std::tuple<vector, vector, vector> LSTMCell::backward(
         
   // Gradient of the cell state
   vector dc_t = dc_next + dh_next * o_t * dtanh(tanh(c_t));
+
+	//
+	// QPU
+	//
+	auto q_dh_next = copy(dh_next);               assert(same(q_dh_next, dh_next));
+	auto q_dc_next = copy(dc_next);               assert(same(q_dc_next, dc_next));
+	//warn << "dh_next: " << dh_next.dump();
+        
+  // Gradient of the output gate
+	//qpu::vector q_do_t = q_dh_next.mul(q_c_t.tanh()).mul(q_o_t.dsigmoid());
+	//assert(same(q_do_t, do_t, 1.0e-6f));  // Precision for vc7
+        
+  // Gradient of the cell state
+	//qpu::vector q_dc_t = q_dc_next + q_dh_next * q_o_t * q_c_t.tanh().dtanh();
+
+	//
+	// EndQPU
+	//
         
   // Gradient of the input gate
   vector di_t = dc_t * c_tilde * dsigmoid(i_t);
