@@ -111,18 +111,18 @@ namespace {
 
 template<typename T>
 std::string dump_array_template(
-	T const &a,
-	int size,
-	int linesize,
-	bool as_int = false,
-	bool do_first = false
+  T const &a,
+  int size,
+  int linesize,
+  bool as_int = false,
+  bool do_first = false
 ) {
-	assertq(linesize == -1 || linesize > 0, "linesize must be -1 or positive");
+  assertq(linesize == -1 || linesize > 0, "linesize must be -1 or positive");
 
   std::string ret("<");
 
-	auto output = [&a, as_int] (int i) -> std::string {
-		std::string ret;
+  auto output = [&a, as_int] (int i) -> std::string {
+    std::string ret;
 
     if (as_int) {
       ret << (int) a[i] << ", " ;
@@ -130,24 +130,24 @@ std::string dump_array_template(
       ret << a[i] << ", " ;
     }
 
-		return ret;
-	};
+    return ret;
+  };
 
-	if (do_first) {
-		assertq(linesize != -1, "do_first requires linesize");
+  if (do_first) {
+    assertq(linesize != -1, "do_first requires linesize");
 
-	  for (int i = 0; i < (int) size; i += linesize) {
-			ret << output(i);
-		}
-	} else {
-	  for (int i = 0; i < (int) size; i++) {
-	    if (linesize != -1) {
-	      if (i % linesize == 0) {
-	        ret << "\n";
-	      }
-	    }
-			ret << output(i);
-		}
+    for (int i = 0; i < (int) size; i += linesize) {
+      ret << output(i);
+    }
+  } else {
+    for (int i = 0; i < (int) size; i++) {
+      if (linesize != -1) {
+        if (i % linesize == 0) {
+          ret << "\n";
+        }
+      }
+      ret << output(i);
+    }
   }
 
   ret << ">";

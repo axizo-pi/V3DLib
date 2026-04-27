@@ -43,12 +43,15 @@ private:
 	//
 	// QPU
 	//
-	qpu::vector q_c_t{32};      // Dummy init value
-	qpu::vector q_o_t{32};      // " etc
-	qpu::vector q_i_t{32};
-	qpu::vector q_c_tilde{32};
-	qpu::vector q_c_prev{32};
-	qpu::vector q_f_t{32};
+	qpu::vector q_c_t;      // Dummy init value
+	qpu::vector q_o_t;      // " etc
+	qpu::vector q_i_t;
+	qpu::vector q_c_tilde;
+	qpu::vector q_c_prev;
+	qpu::vector q_f_t;
+	qpu::matrix q_Wf;
+	qpu::vector q_x_h;
+	qpu::vector q_bf;
 
 	//
 	// End QPU

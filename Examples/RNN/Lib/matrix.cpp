@@ -21,16 +21,30 @@ void frand_array(Float::Array &rhs) {
 BaseKernel *matrix::m_mult_vec = nullptr;
 
 matrix::matrix(int rows, int columns) : m_rows(rows), m_columns(columns) {
-  if (m_rows <= 0)     { cerr << "vector ctor: rows must be positive"    << thrw; }
-  if (m_columns <= 0)  { cerr << "vector ctor: columns must be positive" << thrw; }
+	// Allow initialization of empty matrix.
+	if (m_rows == 0) {
+		assert(m_columns == 0 || m_columns == 1);  // By syntax, a single empty vector is allowed
+  	init_static();
+		return;
+	}
 
-  m_arr.reset(new Float::Array(m_columns*m_rows));
+	//warn << "matrix ctor (rows, columns): (" << m_rows << ", " << m_columns << ")";
+  if (m_rows <= 0)     { cerr << "matrix ctor: rows must be positive"    << thrw; }
+  if (m_columns <= 0)  { cerr << "matrix ctor: columns must be positive" << thrw; }
+
+ 	m_arr.reset(new Float::Array(m_columns*m_rows));
 
   init_static();
 }
 
 
-matrix::matrix(matrix &rhs) {
+matrix::matrix(matrix const &rhs) : m_arr(rhs.m_arr), m_rows(rhs.rows()), m_columns(rhs.columns())   {
+  //*this = rhs;
+  init_static();
+}
+
+
+matrix::matrix(matrix &&rhs) {
   *this = rhs;
   init_static();
 }
@@ -87,7 +101,7 @@ void matrix::frand() {
 }
 
 
-matrix &matrix::operator=(matrix &rhs) {
+matrix &matrix::operator=(matrix const &rhs) {
   transfer(rhs);
   return *this;
 }
@@ -140,6 +154,7 @@ matrix matrix::operator*(matrix const &rhs) const {
   assert(m_rows > 0);
 
   if (m_columns != rhs.rows()) {
+		breakpoint;
     cerr << "Matrix::operator*() Inner dimension does not match. "
          << "this(rows, columns): (" << m_rows << ", " << m_columns << "), "
          << "rhs(rows, columns):  (" << rhs.rows() << ", " << rhs.columns() << ")"
@@ -152,11 +167,11 @@ matrix matrix::operator*(matrix const &rhs) const {
   matrix ret(m_rows, 1);
 
   V3DLib::timers.start("mult load");
-   m_mult_vec->load(&rhs.arr(), &arr(), &ret.arr(), m_columns/16, m_rows);
+  m_mult_vec->load(&rhs.arr(), &arr(), &ret.arr(), m_columns/16, m_rows);
   V3DLib::timers.stop("mult load");
 
   V3DLib::timers.start("mult run");
-   m_mult_vec->run();
+  m_mult_vec->run();
   V3DLib::timers.stop("mult run");
 
   return ret;
@@ -258,6 +273,9 @@ void matrix::transfer(matrix const &rhs) {
 }
 
 
+/**
+ * @brief Initialize local kernels
+ */
 void matrix::init_static() {
   if (m_mult_vec == nullptr) {
     m_mult_vec = new BaseKernel(compile(kernel_mult_vec, settings()));
@@ -282,6 +300,7 @@ BaseKernel *vector::m_sigmoid  = nullptr;
 BaseKernel *vector::m_dsigmoid = nullptr;
 BaseKernel *vector::m_tanh     = nullptr;
 BaseKernel *vector::m_dtanh    = nullptr;
+BaseKernel *vector::m_clip     = nullptr;
 
 
 vector::vector(vector &rhs) : matrix(rhs) {
@@ -319,10 +338,12 @@ vector::vector(int rows, float val) : matrix(rows, 1) {
     cerr << "vector ctor: " << rows << " rows passed in,  must be a multiple of 16" << thrw;
   }
 
-  auto &r = matrix::arr();
+	if (!empty()) {
+  	auto &r = matrix::arr();
 
-  for (int i = 0; i < rows; i++) {
-    r[i] = val;
+	  for (int i = 0; i < rows; i++) {
+	    r[i] = val;
+	  }
   }
 
   init_static();
@@ -476,6 +497,18 @@ vector vector::dtanh() {
 }
 
 
+/**
+ * Value changed internally, no return value.
+ */
+void vector::clip(float clip_value) {
+  vector ret(rows());
+
+  m_clip->load(&arr(), &ret.arr(), rows()/16, clip_value).run();
+
+	*this = ret;
+}
+
+
 std::string vector::dump(bool output_int) const {
   std::string ret;
   ret << dump_dim()
@@ -504,6 +537,7 @@ void vector::init_static() {
   if (m_dsigmoid == nullptr) { m_dsigmoid = new BaseKernel(compile(kernel_dsigmoid, settings())); }
   if (m_tanh     == nullptr) { m_tanh     = new BaseKernel(compile(kernel_tanh,     settings())); }
   if (m_dtanh    == nullptr) { m_dtanh    = new BaseKernel(compile(kernel_dtanh,    settings())); }
+  if (m_clip     == nullptr) { m_clip     = new BaseKernel(compile(kernel_clip,     settings())); }
 }
 
 } // namespace qpu

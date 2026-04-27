@@ -9,16 +9,17 @@ class vector : public std::vector<float> {
   using Parent = std::vector<float>;
 
 public:
-  vector() = default;
+  //vector() = default;
   vector(vector const &val) = default;
-  vector(std::size_t size) : Parent(size) {}
-  vector(std::size_t size, float val) : Parent(size, val) {}
+  //vector(std::size_t size = 16) : Parent(size) {}
+  vector(std::size_t size = 0, float val = 0.0f) : Parent(size, val) {}
 
   vector operator+(vector const &b) const;
   vector operator*(vector const &b) const;
 
 	vector sigmoid(vector const &bias);
 	void clip(float extreme);
+	std::string dump_dim() const;
 	std::string dump() const;
 
 private:
@@ -33,13 +34,14 @@ class matrix: public std::vector<lstm::vector> {
   using Parent = std::vector<lstm::vector>;
     
 public:    
-  matrix() = default;
-  matrix(std::size_t height, std::size_t width) : Parent(height, lstm::vector(width)) {}
+  //matrix() = default;
+  matrix(std::size_t height = 0, std::size_t width = 0) : Parent(height, lstm::vector(width)) {}
 
   lstm::vector operator*(lstm::vector const &v);
 	std::string dump_dim() const;
 	std::string dump() const;
 };
+
 
 //
 // Helper functions

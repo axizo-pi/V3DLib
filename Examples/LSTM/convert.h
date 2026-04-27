@@ -6,7 +6,7 @@
 qpu::vector copy(lstm::vector const &rhs);
 qpu::matrix copy(lstm::matrix const &rhs);
 bool same(qpu::vector const &lhs, lstm::vector const &rhs, float precision = 0.0f);
-bool same(qpu::matrix const &lhs, lstm::matrix const &rhs);
+bool same(qpu::matrix const &lhs, lstm::matrix const &rhs, float precision = 0.0f);
 qpu::vector qpu_concat(lstm::vector const &x, lstm::vector const &y);
 
 #endif // _LSTM_LSTM_CONVERT_H

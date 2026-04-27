@@ -1,4 +1,20 @@
 #include "LSTMCell.h"
+#include "../RNN/Lib/helpers.h" // settings()
+
+namespace {
+
+// TODO: ptr's not cleaned up on exit, better would be shared or unique ptr.
+BaseKernel *s_update_gate_kernel = nullptr;
+
+BaseKernel &update_gate_kernel() {
+  if (s_update_gate_kernel == nullptr) {
+		s_update_gate_kernel = new BaseKernel(compile(update_gate, settings()));
+	}
+
+	return *s_update_gate_kernel;
+}
+
+} // anon namespace
 
 LSTMCell::LSTMCell(int input_size, int hidden_size) : input_size(input_size), hidden_size(hidden_size) {
   auto width = input_size + hidden_size;
@@ -40,7 +56,7 @@ std::pair<vector, vector> LSTMCell::forward(vector const &x, vector const &h_pre
   this->x_t = x;
   this->h_prev = h_prev;
   this->c_prev = c_prev;
-        
+
   // Concatenate input and previous hidden state
   vector x_h = concat(x, h_prev);
 
@@ -67,10 +83,10 @@ std::pair<vector, vector> LSTMCell::forward(vector const &x, vector const &h_pre
   //
   auto q_x = copy(x);                 assert(same(q_x, x));           // x is vector of size 1
   auto q_h_prev = copy(h_prev);       assert(same(q_h_prev, h_prev)); // h_prev size 32
-  auto q_x_h = qpu_concat(x, h_prev); assert(same(q_x_h, x_h));
+  q_x_h = qpu_concat(x, h_prev);      assert(same(q_x_h, x_h));
 
-  auto q_Wf = copy(Wf);               assert(same(q_Wf, Wf));
-  auto q_bf = copy(bf);               assert(same(q_bf, bf));
+  q_Wf = copy(Wf);                    assert(same(q_Wf, Wf));
+  q_bf = copy(bf);                    assert(same(q_bf, bf));
 
   auto q_Wi = copy(Wi);               assert(same(q_Wi, Wi));
   auto q_bi = copy(bi);               assert(same(q_bi, bi));
@@ -85,6 +101,10 @@ std::pair<vector, vector> LSTMCell::forward(vector const &x, vector const &h_pre
 
   // Forget gate
   q_f_t = qpu::vector(q_Wf*q_x_h).sigmoid(q_bf);
+  warn << "bf   : " << bf.dump();
+  warn << "q_bf : " << q_bf.dump();
+  warn << "f_t  : " << f_t.dump();
+  warn << "q_f_t: " << q_f_t.dump();
   assert(same(q_f_t, f_t, 5.0e-7f));  // Precision for vc7
 
   // Input gate
@@ -106,11 +126,6 @@ std::pair<vector, vector> LSTMCell::forward(vector const &x, vector const &h_pre
   // Hidden state
   auto q_h_t = q_o_t.mul(q_c_t.tanh());
   assert(same(q_h_t, h_t, 1.0e-6f));  // Precision for vc7
-
-/*
-  warn << "Wf   : " << Wf.dump_dim();
-  warn << "q_x_h: " << q_x_h.dump();
-*/  
 
   //
   // End QPU
@@ -146,6 +161,12 @@ std::tuple<vector, vector, vector> LSTMCell::backward(
   // Gradient of the forget gate
   vector df_t = dc_t * c_prev * dsigmoid(f_t);
 
+  // Gradient clipping to prevent exploding gradients
+  do_t    .clip(clip_value);
+  di_t    .clip(clip_value);
+  dc_tilde.clip(clip_value);
+  df_t    .clip(clip_value);
+
   //
   // QPU
   //
@@ -172,25 +193,38 @@ std::tuple<vector, vector, vector> LSTMCell::backward(
 	qpu::vector q_df_t = q_dc_t.mul(q_c_prev.mul(q_f_t.dsigmoid()));
   assert(same(q_df_t, df_t, 1.0e-6f));  // Precision for vc7
 
-  //warn << "q_i_t: " << q_i_t.dump();
-
-  //
-  // EndQPU
-  //
-        
   // Concatenate x and h_prev for weight gradient computation
   vector x_h = concat(x_t, h_prev);
         
   // Gradient clipping to prevent exploding gradients
-  do_t    .clip(clip_value);
-  di_t    .clip(clip_value);
-  dc_tilde.clip(clip_value);
-  df_t    .clip(clip_value);
+
+  q_do_t    .clip(clip_value);
+  q_di_t    .clip(clip_value);
+  q_dc_tilde.clip(clip_value);
+  q_df_t    .clip(clip_value);
+
+  assert(same(q_do_t, do_t, 1.0e-6f));  // Precision for vc7
+  assert(same(q_di_t, di_t, 1.0e-6f));  // Precision for vc7
+  assert(same(q_dc_tilde, dc_tilde, 1.0e-6f));  // Precision for vc7
+  assert(same(q_df_t, df_t, 1.0e-6f));  // Precision for vc7
+
+  //
+  // EndQPU
+  //
   
 	//	
   // Update weights using gradients
   // This is a simple implementation of gradient descent
 	//
+  warn << "Wf  : " << Wf.dump_dim();
+  warn << "q_Wf: " << q_Wf.dump_dim();
+/*	
+  warn << "df_t: " << df_t.dump_dim();
+  warn << "x_h : " << x_h.dump_dim();
+  warn << "q_Wf  : " << q_Wf.dump_dim();
+  warn << "q_df_t: " << q_df_t.dump_dim();
+  warn << "q_x_h : " << q_x_h.dump_dim();
+*/
         
   // Update forget gate weights and biases
   for (int i = 0; i < hidden_size; i++) {
@@ -199,7 +233,24 @@ std::tuple<vector, vector, vector> LSTMCell::backward(
     }
     bf[i] -= learning_rate * df_t[i];
   }
-        
+/*
+	assert(q_Wf.columns() % 16 == 0);
+	update_gate_kernel().load(
+		&q_Wf.arr(),
+		&q_df_t.arr(),
+	 	&q_x_h.arr(),
+		&q_bf.arr(),
+	 	q_Wf.rows(),
+		q_Wf.columns()/16,
+		learning_rate
+	).run();
+
+//  warn << "Wf   : " << Wf.dump();
+//  warn << "q_Wf : " << q_Wf.dump();
+  warn << "bf   : " << bf.dump();
+  warn << "q_bf : " << q_bf.dump();
+  assert(same(q_Wf, Wf, 1.0e-6f));  // Precision for vc7
+*/        
   // Update input gate weights and biases
   for (int i = 0; i < hidden_size; i++) {
     for (int j = 0; j < input_size + hidden_size; j++) {

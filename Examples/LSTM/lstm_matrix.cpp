@@ -77,10 +77,19 @@ void vector::clip(float extreme) {
 }
 
 
+std::string vector::dump_dim() const {
+	std::string ret;
+
+	ret << "vec(" << size() << ")";
+
+	return ret;
+}
+
+
 std::string vector::dump() const {
 	std::string ret;
 
-	ret << "vec(" << size() << ")[";
+	ret << dump_dim() << "[";
 
 	for (int i = 0; i < (int) size(); ++i) {
 		ret << at(i) << ", ";

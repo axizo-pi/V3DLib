@@ -22,8 +22,9 @@ using namespace V3DLib;
  * - are dimension which I consider to efficiently use the QPU
  */
 struct matrix {
-  matrix(int rows, int columns);
-  matrix(matrix &rhs);
+  matrix(int rows = 0, int columns = 0);
+  matrix(matrix const &rhs);
+  matrix(matrix &&rhs);
 
   int columns() const  { return m_columns; }
   int rows() const     { return m_rows; }
@@ -36,7 +37,7 @@ struct matrix {
   void set(Float::Array const &rhs);
   void frand();
 
-  matrix &operator=(matrix &rhs);
+  matrix &operator=(matrix const &rhs);
   matrix operator-(matrix const &rhs);
   matrix &operator-=(matrix const &rhs);
   matrix operator*(float rhs);
@@ -44,6 +45,7 @@ struct matrix {
   matrix sigmoid_derivative(matrix const &rhs);
   matrix transpose() const;
 
+  std::string dump_dim() const;
   std::string dump(bool output_int = false) const;
   float &at(int i, int j);
   float at(int i, int j) const;
@@ -53,7 +55,6 @@ protected:
   void columns(int rhs) { m_columns = rhs; }
 
   void transfer(matrix const &rhs);
-  std::string dump_dim() const;
 
   std::shared_ptr<Float::Array> m_arr;
 
@@ -81,7 +82,7 @@ struct vector : public matrix {
   vector(vector &rhs);
   vector(vector &&rhs);
   explicit vector(matrix rhs);
-  explicit vector(int rows, float val = 0.0f);
+  explicit vector(int rows = 0, float val = 0.0f);
 
   void set(float *rhs, int in_size);
   void set(float init_val);
@@ -99,11 +100,14 @@ struct vector : public matrix {
   vector dsigmoid();
   vector tanh();
   vector dtanh();
+  void clip(float clip_value);
   static BaseKernel &op_kernel();
 
+  //std::string dump_dim() const { return matrix::dump_dim(); }
   std::string dump(bool output_int = false) const;
 
 private:
+	bool empty() const { return m_arr == nullptr; }
 
   // TODO: should probably clean this up.
   //       ptr's not cleaned up on exit, better would be shared or unique ptr.
@@ -115,6 +119,7 @@ private:
   static BaseKernel *m_dsigmoid;
   static BaseKernel *m_tanh;
   static BaseKernel *m_dtanh;
+  static BaseKernel *m_clip;
 
   static void init_static();
 };

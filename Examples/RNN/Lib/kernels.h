@@ -13,5 +13,16 @@ void kernel_mult_vec(Float::Ptr input, Float::Ptr mat, Float::Ptr result, Int M,
 void outer_product(Float::Ptr left, Float::Ptr right, Float::Ptr out_matrix, Int N, Int M);
 void vector_sub(Float::Ptr left, Float::Ptr right, Float::Ptr out, Int N);
 void vector_add(Float::Ptr left, Float::Ptr right, Float::Ptr out, Int N);
+void kernel_clip(Float::Ptr in, Float::Ptr out, Int N, Float clip_value);
+
+void update_gate(
+	Float::Ptr W,
+	Float::Ptr d_t,
+	Float::Ptr x_h,
+	Float::Ptr bias,
+	Int rows,
+	Int columns,
+	Float learning_rate
+);
 
 #endif //  _INCLUDE_RNN_KERNELS
