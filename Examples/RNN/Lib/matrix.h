@@ -24,7 +24,6 @@ using namespace V3DLib;
 struct matrix {
   matrix(int rows = 0, int columns = 0);
   matrix(matrix const &rhs);
-  matrix(matrix &&rhs);
 
   int columns() const  { return m_columns; }
   int rows() const     { return m_rows; }
@@ -41,7 +40,7 @@ struct matrix {
   matrix operator-(matrix const &rhs);
   matrix &operator-=(matrix const &rhs);
   matrix operator*(float rhs);
-  matrix operator*(matrix const &rhs) const;
+  matrix mul(matrix const &rhs) const;
   matrix sigmoid_derivative(matrix const &rhs);
   matrix transpose() const;
 
@@ -80,7 +79,6 @@ matrix operator*(float scalar, matrix /* const */ &mat);
  */
 struct vector : public matrix {
   vector(vector &rhs);
-  vector(vector &&rhs);
   explicit vector(matrix rhs);
   explicit vector(int rows = 0, float val = 0.0f);
 
@@ -123,6 +121,9 @@ private:
 
   static void init_static();
 };
+
+
+vector operator*(matrix const &lhs, vector const &rhs);
 
 } // namespace qpu
 

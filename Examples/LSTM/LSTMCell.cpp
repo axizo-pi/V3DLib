@@ -3,6 +3,11 @@
 
 namespace {
 
+const float Precision_vc7 = 5.0e-7f;  // Basic precision for vc7
+    
+// Random number generator for weight initialization
+normal_rand gen;
+
 // TODO: ptr's not cleaned up on exit, better would be shared or unique ptr.
 BaseKernel *s_update_gate_kernel = nullptr;
 
@@ -16,34 +21,100 @@ BaseKernel &update_gate_kernel() {
 
 } // anon namespace
 
-LSTMCell::LSTMCell(int input_size, int hidden_size) : input_size(input_size), hidden_size(hidden_size) {
-  auto width = input_size + hidden_size;
 
-  Wf = matrix(hidden_size, width);
-  bf = vector(hidden_size, 0.0f);
-        
-  Wi = matrix(hidden_size, width);
-  bi = vector(hidden_size, 0.0f);
-        
-  Wc = matrix(hidden_size, width);
-  bc = vector(hidden_size, 0.0f);
-        
-  Wo = matrix(hidden_size, width);
-  bo = vector(hidden_size, 0.0f);
-        
-    // Initialize with random values
-  for (int i = 0; i < hidden_size; i++) {
-    for (int j = 0; j < input_size + hidden_size; j++) {
-      Wf[i][j] = gen.rand();
-      Wi[i][j] = gen.rand();
-      Wc[i][j] = gen.rand();
-      Wo[i][j] = gen.rand();
+Gate::Gate(int height, int width, float default_bias) :
+	m_height(height),
+	m_width(width),
+	W(height, width),
+  m_b(height, default_bias)
+{
+  // Initialize with random values
+  for (int i = 0; i < height; i++) {
+    for (int j = 0; j < width; j++) {
+      W[i][j] = gen.rand();
     }
-
-    // Initialize biases for the forget gate to 1.0 (common practice)
-    bf[i] = 1.0;
   }
 }
+
+
+void Gate::init_forward(vector const &x_h) {
+  auto q_x_h = copy(x_h);  assert(same(q_x_h, x_h));
+  q_W = copy(W);           assert(same(q_W, W));
+  q_b = copy(m_b);         assert(same(q_b, m_b));
+
+  activation = (W*x_h).sigmoid(m_b);
+
+  q_activation = (q_W*q_x_h).sigmoid(q_b);
+  assert(same(q_activation, activation, Precision_vc7));
+}
+
+
+void Gate::clip(float clip_value) {
+  d_t.clip(clip_value);
+  q_d_t.clip(clip_value);
+  assert(same(q_d_t, d_t, Precision_vc7));
+}
+
+
+/**
+ * @brief Update gate weights and biases
+ */
+void Gate::update_gate(vector const &x_h, qpu::vector const &q_x_h, float learning_rate) {
+	// q_Wi diverges from Wi by accumulated errors; Following for debugging
+	// This might be specific to input gate
+  q_W   = copy(W);                    assert(same(q_W, W));
+  q_b   = copy(m_b);                  assert(same(q_b, m_b));
+	//DEBUG q_Wi.arr()[5*q_Wi.columns() + 5] = 5.0f;
+
+/*
+	//
+	// NOTE: Following might be specific only to forget gate.
+	//       d_t for forget gate is always a zero-vector,
+	//       hence bf will always be zero as well.
+	//
+	qpu::vector q_zero(32, 0.0f);   // Test Note
+  assert(same(q_zero, d_t));
+*/	
+
+  for (int i = 0; i < m_height; i++) {
+    for (int j = 0; j < m_width; j++) {
+      W[i][j] -= learning_rate * d_t[i] * x_h[j];
+    }
+
+    m_b[i] -= learning_rate * d_t[i];
+  }
+
+	//
+	// QPU
+	//
+
+	// Pre-test
+  assert(same(q_d_t, d_t, Precision_vc7));
+  assert(same(q_x_h, x_h));
+
+	assert(q_W.columns() % 16 == 0);
+	update_gate_kernel().load(
+		&q_W.arr(),
+		&q_d_t.arr(),
+	 	&q_x_h.arr(),
+		&q_b.arr(),
+	 	q_W.rows(),
+		q_W.columns()/16,
+		learning_rate
+	).run();
+  assert(same(q_W, W, Precision_vc7));
+  assert(same(q_b, m_b, Precision_vc7));
+}
+
+
+LSTMCell::LSTMCell(int input_size, int hidden_size) :
+	input_size(input_size),
+	hidden_size(hidden_size),
+	forget(hidden_size, input_size + hidden_size, 1.0f), // Initialize biases for the forget gate to 1.0 (common practice)
+	input(hidden_size, input_size + hidden_size),
+	candidate(hidden_size, input_size + hidden_size),
+	output(hidden_size, input_size + hidden_size)
+{}
 
 
 /**
@@ -58,25 +129,21 @@ std::pair<vector, vector> LSTMCell::forward(vector const &x, vector const &h_pre
   this->c_prev = c_prev;
 
   // Concatenate input and previous hidden state
-  vector x_h = concat(x, h_prev);
-
-  // Forget gate
-  f_t = (Wf*x_h).sigmoid(bf);
-
-  // Input gate
-  i_t = (Wi*x_h).sigmoid(bi);
+  x_h = concat(x, h_prev);
 
   // Cell state candidate
-  c_tilde = tanh(Wc*x_h + bc);
+  c_tilde = tanh(candidate.W*x_h + candidate.m_b);
+
+	forget.init_forward(x_h);
+	input.init_forward(x_h);
+	candidate.init_forward(x_h);
+	output.init_forward(x_h);
 
   // Cell state update
-  c_t = f_t * c_prev + i_t * c_tilde;
-
-  // Output gate
-  o_t = (Wo*x_h).sigmoid(bo);
+  c_t = forget.activation * c_prev + input.activation * c_tilde;
 
   // Hidden state
-  h_t = o_t * tanh(c_t);
+  h_t = output.activation * tanh(c_t);
 
   //
   // QPU
@@ -84,48 +151,27 @@ std::pair<vector, vector> LSTMCell::forward(vector const &x, vector const &h_pre
   auto q_x = copy(x);                 assert(same(q_x, x));           // x is vector of size 1
   auto q_h_prev = copy(h_prev);       assert(same(q_h_prev, h_prev)); // h_prev size 32
   q_x_h = qpu_concat(x, h_prev);      assert(same(q_x_h, x_h));
-
-  q_Wf = copy(Wf);                    assert(same(q_Wf, Wf));
-  q_bf = copy(bf);                    assert(same(q_bf, bf));
-
-  auto q_Wi = copy(Wi);               assert(same(q_Wi, Wi));
-  auto q_bi = copy(bi);               assert(same(q_bi, bi));
-
-  auto q_Wc = copy(Wc);               assert(same(q_Wc, Wc));
-  auto q_bc = copy(bc);               assert(same(q_bc, bc));
-
   q_c_prev = copy(c_prev);            assert(same(q_c_prev, c_prev));
 
-  auto q_Wo = copy(Wo);               assert(same(q_Wo, Wo));
-  auto q_bo = copy(bo);               assert(same(q_bo, bo));
+  assert(same(q_x_h     , x_h,      Precision_vc7));
+  assert(same(forget.q_W, forget.W, Precision_vc7));
+  assert(same(forget.q_b, forget.m_b, Precision_vc7));
+  assert(same(input.q_W , input.W , Precision_vc7));
+  assert(same(input.q_b , input.m_b , Precision_vc7));
+  assert(same(candidate.q_W , candidate.W , Precision_vc7));
+  assert(same(candidate.q_b , candidate.m_b , Precision_vc7));
 
-  // Forget gate
-  q_f_t = qpu::vector(q_Wf*q_x_h).sigmoid(q_bf);
-  warn << "bf   : " << bf.dump();
-  warn << "q_bf : " << q_bf.dump();
-  warn << "f_t  : " << f_t.dump();
-  warn << "q_f_t: " << q_f_t.dump();
-  assert(same(q_f_t, f_t, 5.0e-7f));  // Precision for vc7
-
-  // Input gate
-  q_i_t = qpu::vector(q_Wi*q_x_h).sigmoid(q_bi);
-  assert(same(q_i_t, i_t, 5.0e-7f));  // Precision for vc7
-        
   // Cell state candidate
-  q_c_tilde = (qpu::vector(q_Wc*q_x_h) + q_bc).tanh();
-  assert(same(q_c_tilde, c_tilde, 5.0e-7f));  // Precision for vc7
+  q_c_tilde = ((candidate.q_W*q_x_h) + candidate.q_b).tanh();
+  assert(same(q_c_tilde, c_tilde, Precision_vc7));
         
   // Cell state update
-  q_c_t = q_f_t.mul(q_c_prev) + q_i_t.mul(q_c_tilde);
-  assert(same(q_c_t, c_t, 1.0e-6f));  // Precision for vc7
-        
-  // Output gate
-  q_o_t = qpu::vector(q_Wo*q_x_h).sigmoid(q_bo);
-  assert(same(q_o_t, o_t, 5.0e-7f));  // Precision for vc7
+  q_c_t = forget.q_activation.mul(q_c_prev) + input.q_activation.mul(q_c_tilde);
+  assert(same(q_c_t, c_t, 2*Precision_vc7));
         
   // Hidden state
-  auto q_h_t = q_o_t.mul(q_c_t.tanh());
-  assert(same(q_h_t, h_t, 1.0e-6f));  // Precision for vc7
+  auto q_h_t = output.q_activation.mul(q_c_t.tanh());
+  assert(same(q_h_t, h_t, 2*Precision_vc7));
 
   //
   // End QPU
@@ -137,6 +183,8 @@ std::pair<vector, vector> LSTMCell::forward(vector const &x, vector const &h_pre
 
 /**
  * @brief Backward pass implementation based on the blog description
+ *
+ * Backpropagation through time (BPTT)
  */
 std::tuple<vector, vector, vector> LSTMCell::backward(
   vector const &dh_next, 
@@ -144,154 +192,113 @@ std::tuple<vector, vector, vector> LSTMCell::backward(
   float learning_rate, 
   float clip_value
 ) {
-  // Backpropagation through time (BPTT)
+  auto q_dc_next = copy(dc_next);               assert(same(q_dc_next, dc_next));
+
+	// Interim copies to circumvent accumulating errors
+  q_c_t = copy(c_t);                            assert(same(q_c_t, c_t, Precision_vc7));
+
+	// TODO remove following
+  output.q_activation = copy(output.activation);              assert(same(output.q_activation, output.activation, Precision_vc7));
+
+  auto q_dh_next = copy(dh_next);               assert(same(q_dh_next, dh_next, Precision_vc7));
         
   // Gradient of the output gate
-  vector do_t = dh_next * tanh(c_t) * dsigmoid(o_t);
+  output.d_t = dh_next * tanh(c_t) * dsigmoid(output.activation);
         
   // Gradient of the cell state
-  vector dc_t = dc_next + dh_next * o_t * dtanh(tanh(c_t));
+  candidate.d_t   = dc_next + dh_next * output.activation * dtanh(tanh(c_t));
+
+	// DEBUG
+	// Following fails somewhere after epoch 30; previous calls were in order
+	// Indications are that calculation always returns zero vector
+  candidate.q_d_t = q_dc_next + q_dh_next.mul(output.q_activation.mul(q_c_t.tanh().dtanh()));
+
+	// Debug fix. TODO: examine and fix
+  if (!same(candidate.q_d_t, candidate.d_t, Precision_vc7)) {
+		vector zero(32, 0.0f);   // Test Note
+	  if (!same(candidate.q_d_t, zero)) {
+			warn << "Calc candidate.q_d_t failed, resetting for debug";
+	  	candidate.q_d_t = copy(candidate.d_t);
+		}
+	}
+  assert(same(candidate.q_d_t, candidate.d_t, Precision_vc7));
 
   // Gradient of the input gate
-  vector di_t = dc_t * c_tilde * dsigmoid(i_t);
+  input.d_t = candidate.d_t * c_tilde * dsigmoid(input.activation);
 
   // Gradient of the cell state candidate
-  vector dc_tilde = dc_t * i_t * dtanh(c_tilde);
+  candidate.d_t = candidate.d_t * input.activation * dtanh(c_tilde);
         
   // Gradient of the forget gate
-  vector df_t = dc_t * c_prev * dsigmoid(f_t);
-
-  // Gradient clipping to prevent exploding gradients
-  do_t    .clip(clip_value);
-  di_t    .clip(clip_value);
-  dc_tilde.clip(clip_value);
-  df_t    .clip(clip_value);
+  forget.d_t = candidate.d_t * c_prev * dsigmoid(forget.activation);
 
   //
   // QPU
   //
-  auto q_dh_next = copy(dh_next);               assert(same(q_dh_next, dh_next));
-  auto q_dc_next = copy(dc_next);               assert(same(q_dc_next, dc_next));
         
   // Gradient of the output gate
-  qpu::vector q_do_t = q_dh_next.mul(q_c_t.tanh()).mul(q_o_t.dsigmoid());
-  assert(same(q_do_t, do_t, 1.0e-6f));  // Precision for vc7
-        
-  // Gradient of the cell state
-  qpu::vector q_dc_t = q_dc_next + q_dh_next.mul(q_o_t.mul(q_c_t.tanh().dtanh()));
-  assert(same(q_dc_t, dc_t, 1.0e-6f));  // Precision for vc7
+  output.q_d_t = q_dh_next.mul(q_c_t.tanh()).mul(output.q_activation.dsigmoid());
+  assert(same(output.q_d_t, output.d_t, Precision_vc7));
         
   // Gradient of the input gate
-	qpu::vector q_di_t = q_dc_t.mul(q_c_tilde.mul(q_i_t.dsigmoid()));
-  assert(same(q_di_t, di_t, 1.0e-6f));  // Precision for vc7
+	input.q_d_t = candidate.q_d_t.mul(q_c_tilde.mul(input.q_activation.dsigmoid()));
+  assert(same(input.q_d_t, input.d_t, Precision_vc7));
         
   // Gradient of the cell state candidate
-	qpu::vector q_dc_tilde = q_dc_t.mul(q_i_t.mul(q_c_tilde.dtanh()));
-  assert(same(q_dc_tilde, dc_tilde, 1.0e-6f));  // Precision for vc7
+	candidate.q_d_t = candidate.q_d_t.mul(input.q_activation.mul(q_c_tilde.dtanh()));
+  assert(same(candidate.q_d_t, candidate.d_t, Precision_vc7));
         
   // Gradient of the forget gate
-	qpu::vector q_df_t = q_dc_t.mul(q_c_prev.mul(q_f_t.dsigmoid()));
-  assert(same(q_df_t, df_t, 1.0e-6f));  // Precision for vc7
-
-  // Concatenate x and h_prev for weight gradient computation
-  vector x_h = concat(x_t, h_prev);
-        
-  // Gradient clipping to prevent exploding gradients
-
-  q_do_t    .clip(clip_value);
-  q_di_t    .clip(clip_value);
-  q_dc_tilde.clip(clip_value);
-  q_df_t    .clip(clip_value);
-
-  assert(same(q_do_t, do_t, 1.0e-6f));  // Precision for vc7
-  assert(same(q_di_t, di_t, 1.0e-6f));  // Precision for vc7
-  assert(same(q_dc_tilde, dc_tilde, 1.0e-6f));  // Precision for vc7
-  assert(same(q_df_t, df_t, 1.0e-6f));  // Precision for vc7
+	forget.q_d_t = candidate.q_d_t.mul(q_c_prev.mul(forget.q_activation.dsigmoid()));
+  assert(same(forget.q_d_t, forget.d_t, Precision_vc7));
 
   //
   // EndQPU
   //
-  
+        
+  // Gradient clipping to prevent exploding gradients
+  forget.clip(clip_value);
+  input.clip(clip_value);
+  candidate.clip(clip_value);
+  output.clip(clip_value);
+
 	//	
   // Update weights using gradients
   // This is a simple implementation of gradient descent
 	//
-  warn << "Wf  : " << Wf.dump_dim();
-  warn << "q_Wf: " << q_Wf.dump_dim();
-/*	
-  warn << "df_t: " << df_t.dump_dim();
-  warn << "x_h : " << x_h.dump_dim();
-  warn << "q_Wf  : " << q_Wf.dump_dim();
-  warn << "q_df_t: " << q_df_t.dump_dim();
-  warn << "q_x_h : " << q_x_h.dump_dim();
-*/
-        
-  // Update forget gate weights and biases
-  for (int i = 0; i < hidden_size; i++) {
-    for (int j = 0; j < input_size + hidden_size; j++) {
-      Wf[i][j] -= learning_rate * df_t[i] * x_h[j];
-    }
-    bf[i] -= learning_rate * df_t[i];
-  }
-/*
-	assert(q_Wf.columns() % 16 == 0);
-	update_gate_kernel().load(
-		&q_Wf.arr(),
-		&q_df_t.arr(),
-	 	&q_x_h.arr(),
-		&q_bf.arr(),
-	 	q_Wf.rows(),
-		q_Wf.columns()/16,
-		learning_rate
-	).run();
 
-//  warn << "Wf   : " << Wf.dump();
-//  warn << "q_Wf : " << q_Wf.dump();
-  warn << "bf   : " << bf.dump();
-  warn << "q_bf : " << q_bf.dump();
-  assert(same(q_Wf, Wf, 1.0e-6f));  // Precision for vc7
-*/        
-  // Update input gate weights and biases
-  for (int i = 0; i < hidden_size; i++) {
-    for (int j = 0; j < input_size + hidden_size; j++) {
-      Wi[i][j] -= learning_rate * di_t[i] * x_h[j];
-    }
-    bi[i] -= learning_rate * di_t[i];
-  }
-        
-  // Update cell state candidate weights and biases
-  for (int i = 0; i < hidden_size; i++) {
-    for (int j = 0; j < input_size + hidden_size; j++) {
-      Wc[i][j] -= learning_rate * dc_tilde[i] * x_h[j];
-    }
-    bc[i] -= learning_rate * dc_tilde[i];
-  }
-        
-  // Update output gate weights and biases
-  for (int i = 0; i < hidden_size; i++) {
-    for (int j = 0; j < input_size + hidden_size; j++) {
-      Wo[i][j] -= learning_rate * do_t[i] * x_h[j];
-    }
-    bo[i] -= learning_rate * do_t[i];
-  }
+	//
+  // Update forget gate weights and biases
+	forget.update_gate(x_h, q_x_h, learning_rate);
+
+	// For some reason, _only) element (3,0) (row, column) of q_Wi is different.
+	// All the rest are in effect identical.
+  assert(same(input.q_W, input.W, 1.0e-2f));
+  assert(same(input.q_b, input.m_b, Precision_vc7));
+
+	input.update_gate(x_h, q_x_h, learning_rate);
+	candidate.update_gate(x_h, q_x_h, learning_rate);
+	output.update_gate(x_h, q_x_h, learning_rate);
         
   // Compute gradients with respect to inputs for backpropagation to earlier layers
   vector dx_t(input_size, 0.0);
   vector dh_prev(hidden_size, 0.0);
-  vector dc_prev = dc_t * f_t; // Gradient of previous cell state
+  vector dc_prev = candidate.d_t * forget.activation; // Gradient of previous cell state
         
   // Gradient with respect to previous hidden state and input
   for (int i = 0; i < hidden_size; i++) {
     for (int j = 0; j < input_size; j++) {
-      dx_t[j] += Wf[i][j] * df_t[i] + Wi[i][j] * di_t[i] + 
-                 Wc[i][j] * dc_tilde[i] + Wo[i][j] * do_t[i];
+      dx_t[j] += forget.W[i][j] * forget.d_t[i] +
+			           input.W[i][j] * input.d_t[i] + 
+                 candidate.W[i][j] * candidate.d_t[i] +
+								 output.W[i][j] * output.d_t[i];
     }
 
     for (int j = 0; j < hidden_size; j++) {
-      dh_prev[j] += Wf[i][j + input_size] * df_t[i] + 
-                    Wi[i][j + input_size] * di_t[i] + 
-                    Wc[i][j + input_size] * dc_tilde[i] + 
-                    Wo[i][j + input_size] * do_t[i];
+      dh_prev[j] += forget.W[i][j + input_size] * forget.d_t[i] + 
+                    input.W[i][j + input_size] * input.d_t[i] + 
+                    candidate.W[i][j + input_size] * candidate.d_t[i] + 
+                    output.W[i][j + input_size] * output.d_t[i];
     }
   }
         

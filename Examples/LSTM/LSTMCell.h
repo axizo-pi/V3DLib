@@ -7,6 +7,35 @@
 
 using namespace lstm;
 
+class Gate {
+private:
+	int m_height;	
+	int m_width;	
+
+public:	
+	Gate(int height, int width, float default_bias = 0.0f);
+
+	void init_forward(vector const &x_h);
+	void clip(float clip_value);
+	void update_gate(vector const &x_h, qpu::vector const &q_x_h, float learning_rate);
+
+  // Weights and biases
+  matrix W;
+  vector m_b;         // gate bias
+
+  vector activation;
+
+	// QPU
+	qpu::matrix q_W;
+	qpu::vector q_b;
+	qpu::vector q_activation;
+
+	// Following should actually be local to forward()
+  vector d_t;         // Gradient of the gate; for candidate it was called dc_tilde
+	qpu::vector q_d_t;
+};
+
+
 /**
  * @brief LSTM Cell implementation as described in the blog
  */
@@ -14,48 +43,32 @@ class LSTMCell {
 private:
   int input_size;
   int hidden_size;
-    
-  // Weights and biases
-  matrix Wf;         // Forget gate weights
-  vector bf;         // Forget gate bias
-  matrix Wi;         // Input gate weights
-  vector bi;         // Input gate bias
 
-  matrix Wc;         // Cell state candidate weights
-  vector bc;         // Cell state candidate bias
-  matrix Wo;         // Output gate weights
-  vector bo;         // Output gate bias
+	Gate forget;
+	Gate input;
+	Gate candidate;  // Cell state candidate
+	Gate output;
     
   // For backpropagation
   vector x_t;        // Input at time t
   vector h_prev;     // Previous hidden state
+  vector x_h;        // Concatenated x_t and h_prev
   vector c_prev;     // Previous cell state
-  vector f_t;        // Forget gate activation
-  vector i_t;        // Input gate activation
   vector c_tilde;    // Cell state candidate
   vector c_t;        // Current cell state
-  vector o_t;        // Output gate activation
+  //vector o_t;        // Output gate activation
   vector h_t;        // Current hidden state
-    
-  // Random number generator for weight initialization
-	normal_rand gen;
 
 	//
 	// QPU
 	//
-	qpu::vector q_c_t;      // Dummy init value
-	qpu::vector q_o_t;      // " etc
-	qpu::vector q_i_t;
+	qpu::vector q_c_t;
+	//qpu::vector q_o_t;
 	qpu::vector q_c_tilde;
 	qpu::vector q_c_prev;
-	qpu::vector q_f_t;
-	qpu::matrix q_Wf;
 	qpu::vector q_x_h;
-	qpu::vector q_bf;
 
-	//
 	// End QPU
-	//
 
 public:
 	LSTMCell(int input_size, int hidden_size);

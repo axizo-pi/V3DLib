@@ -188,43 +188,71 @@ void kernel_clip(Float::Ptr in, Float::Ptr out, Int N, Float clip_value) {
   End
 }
 
+namespace {
+
+/**
+ * @brief Set all values in vector to value at index n
+ */
+void set_all(Float &input, Float &result, Int n) {
+	Float tmp = 0.0f;
+	set_at(tmp, n, input);
+	rotate_sum(tmp, result);
+}
+
+} // anon namespace
+
 
 /**
  * @brief Update gate weights and biases
  *
- * Dimension of `columns` in blocks of 16
+ * @param         W weight matrix, input/output 
+ * @param columns Number of columns, dimension in blocks of 16
+ * @param bias    bias vector, output only
  */
 void update_gate(
 	Float::Ptr W,
-	Float::Ptr d_t,
+	Float::Ptr in_d_t,
 	Float::Ptr x_h,
 	Float::Ptr bias,
 	Int rows,
 	Int columns,
 	Float learning_rate
 ) {
-	Float tmp;
 	Int stride = 16*4*columns;
+	Float::Ptr d_t = in_d_t;
+	Float d_t_val = *d_t;
 
   For (Int i = 0, i < rows, i++)
 		Float::Ptr w_start = W.offset(i*stride);
 		Float::Ptr x_h_start = x_h;
 
+		If (i > 0 && ((i & 0xf) == 0))
+			d_t.inc();
+			d_t_val = *d_t;
+		End
+
+		Float d_t_i;
+		set_all(d_t_val, d_t_i, (i & 0xf));
+	
     For (Int j = 0, j < columns, j++)
-			tmp = *w_start;
-      tmp -= learning_rate * (*d_t) * (*x_h_start);
+			Float tmp = *w_start;
+      tmp -= (learning_rate * d_t_i * (*x_h_start));
       *w_start = tmp;
 
 			w_start.inc();
 			x_h_start.inc();
     End
+  End
 
-		tmp = *bias;
+	d_t = in_d_t;
+	Int count = rows >> 4;
+  For (Int i = 0, i < count, i++)
+		Float tmp = *bias;
     tmp -= learning_rate * (*d_t);
 		*bias = tmp;
-
+		
 		d_t.inc();
 		bias.inc();
-  End
+	End
 }
 

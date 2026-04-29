@@ -107,6 +107,7 @@ bool same(qpu::vector const &lhs, lstm::vector const &rhs, float precision) {
 bool same(qpu::matrix const &lhs, lstm::matrix const &rhs, float precision) {
 	assert(rhs.size() >= 1);
 	auto width = rhs[0].size();
+	bool ret = true;
 
   for (std::size_t i = 0; i < rhs.size(); i++) {
     for (std::size_t j = 0; j < width; j++) {
@@ -120,16 +121,16 @@ bool same(qpu::matrix const &lhs, lstm::matrix const &rhs, float precision) {
       	float diff = abs(lhs.at((int) i, (int) j) - rhs[i][j]);
 
 				if (diff > precision) {
-					warn << "same(matrix, matrix) precision failed"
+					warn << "same(matrix, matrix) precision failed "
 					     <<	"at (i,j) : (" << i << ", " << j << "): "
 					     << "diff: " << diff;
-					return false;
+					ret = false;
 				}
 			}
     }
   }
 
-	return true;
+	return ret;
 }
 
 

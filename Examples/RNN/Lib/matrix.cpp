@@ -39,13 +39,8 @@ matrix::matrix(int rows, int columns) : m_rows(rows), m_columns(columns) {
 
 
 matrix::matrix(matrix const &rhs) : m_arr(rhs.m_arr), m_rows(rhs.rows()), m_columns(rhs.columns())   {
+	//warn << "Called ctor matrix(matrix &)";
   //*this = rhs;
-  init_static();
-}
-
-
-matrix::matrix(matrix &&rhs) {
-  *this = rhs;
   init_static();
 }
 
@@ -147,7 +142,7 @@ matrix matrix::operator*(float rhs) {
  * Currently rhs must absolutely be a vector.
  * I fully realize the parameter is confusing.
  */
-matrix matrix::operator*(matrix const &rhs) const {
+matrix matrix::mul(matrix const &rhs) const {
   //warn << "Called matrix matrix::operator*()";
   //warn << "matrix: " << dump_dim() << "rhs: " << rhs.dump_dim();
   assert(m_columns > 0);
@@ -308,13 +303,10 @@ vector::vector(vector &rhs) : matrix(rhs) {
   init_static();
 }
 
-vector::vector(vector &&rhs) : matrix(rhs) {
-  *this = rhs;
-  init_static();
-}
-
 
 vector::vector(matrix rhs) : matrix(rhs) {
+	//warn << "Called ctor vector(matrix) m_arr:" << hex << (unsigned long) rhs.arr().ptr();
+	//warn << "vector m_arr:" << hex << (unsigned long) arr().ptr();
   assert(
     (rhs.rows() > 1  && rhs.columns() == 1) ||
     (rhs.rows() == 1 && rhs.columns() > 1)
@@ -501,6 +493,7 @@ vector vector::dtanh() {
  * Value changed internally, no return value.
  */
 void vector::clip(float clip_value) {
+	//warn << "Called clip";
   vector ret(rows());
 
   m_clip->load(&arr(), &ret.arr(), rows()/16, clip_value).run();
@@ -538,6 +531,16 @@ void vector::init_static() {
   if (m_tanh     == nullptr) { m_tanh     = new BaseKernel(compile(kernel_tanh,     settings())); }
   if (m_dtanh    == nullptr) { m_dtanh    = new BaseKernel(compile(kernel_dtanh,    settings())); }
   if (m_clip     == nullptr) { m_clip     = new BaseKernel(compile(kernel_clip,     settings())); }
+}
+
+
+vector operator*(matrix const &lhs, vector const &rhs) {
+	//warn << "Called vector operator*(matrix const &lhs, vector const &rhs)";
+	matrix ret;
+
+	ret = lhs.mul(rhs);
+
+	return vector(ret);
 }
 
 } // namespace qpu
