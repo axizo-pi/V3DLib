@@ -6,12 +6,10 @@
  * Support routines for converting lstm vector/matrix to qpu
  */
 
-namespace {
-
 /**
  * Ensure that size is a multiple of 16
  */
-int resize(std::size_t in_size, bool do_dump = false) {
+int resize(std::size_t in_size, bool do_dump) {
 	int size = (int) in_size;
 
 	if ((size & 0xf) != 0) {
@@ -25,8 +23,6 @@ int resize(std::size_t in_size, bool do_dump = false) {
 
 	return size;
 }
-
-} // anon namespace
 
 
 qpu::vector copy(lstm::vector const &rhs) {

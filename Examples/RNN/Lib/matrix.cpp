@@ -505,7 +505,7 @@ void vector::clip(float clip_value) {
 std::string vector::dump(bool output_int) const {
   std::string ret;
   ret << dump_dim()
-       << vector_dump(arr(), rows(), 0, output_int);
+      << "[" << vector_dump(arr(), rows(), 0, output_int) << "]";
 
   return ret;
 }

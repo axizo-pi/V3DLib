@@ -3,6 +3,7 @@
 #include "matrix.h"
 #include "lstm_matrix.h"
 
+int resize(std::size_t in_size, bool do_dump = false);
 qpu::vector copy(lstm::vector const &rhs);
 qpu::matrix copy(lstm::matrix const &rhs);
 bool same(qpu::vector const &lhs, lstm::vector const &rhs, float precision = 0.0f);
