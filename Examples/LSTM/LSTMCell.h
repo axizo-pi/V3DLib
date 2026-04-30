@@ -16,7 +16,7 @@ public:
   Gate(int height, int width, float default_bias = 0.0f);
 
   void init_forward(vector const &x_h);
-  void clip(float clip_value);
+  void clip(float clip_value, bool do_qpu = true);
 	void check_same();
   void update_gate(vector const &x_h, qpu::vector const &q_x_h, float learning_rate);
 
@@ -45,6 +45,8 @@ private:
   int input_size;
   int hidden_size;
 
+	int qpu_columns() const { return resize(input_size + hidden_size); }
+
   Gate forget;
   Gate input;
   Gate candidate;  // Cell state candidate
@@ -72,9 +74,15 @@ private:
 public:
   LSTMCell(int input_size, int hidden_size);
 
+	void gradient_input_gate();
+	void gradient_output_gate(vector const &dh_next, qpu::vector /* const */ &q_dh_next);
+	void gradient_cell_state(vector const &dc_next, vector const &dh_next, qpu::vector /* const */ &q_dh_next);
+	void gradient_candidate();
+	void gradient_forget_gate();
+
   std::pair<vector, vector> forward(vector const &x, vector const &h_prev, vector const &c_prev);
   std::tuple<vector, vector, vector> backward(vector const &dh_next, vector const &dc_next,
-                                              float learning_rate, float clip_value = 5.0);
+                                              float learning_rate);
 };
 
 #endif // _LSTM_LSTMCELL_H

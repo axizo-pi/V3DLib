@@ -80,7 +80,7 @@ matrix operator*(float scalar, matrix /* const */ &mat);
 struct vector : public matrix {
   vector(vector &rhs);
   explicit vector(matrix rhs);
-  explicit vector(int rows = 0, float val = 0.0f);
+  vector(int rows = 0, float val = 0.0f);
 
   void set(float *rhs, int in_size);
   void set(float init_val);

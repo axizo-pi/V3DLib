@@ -5,6 +5,8 @@
 
 using namespace V3DLib;
 
+void clip_partial(Float &val, Float &clip_min, Float &clip_max);
+
 void kernel_sigmoid(Float::Ptr in, Float::Ptr bias, Float::Ptr out, Int N);
 void kernel_dsigmoid(Float::Ptr in, Float::Ptr out, Int N);
 void kernel_tanh(Float::Ptr in, Float::Ptr out, Int N);
@@ -14,30 +16,5 @@ void outer_product(Float::Ptr left, Float::Ptr right, Float::Ptr out_matrix, Int
 void vector_sub(Float::Ptr left, Float::Ptr right, Float::Ptr out, Int N);
 void vector_add(Float::Ptr left, Float::Ptr right, Float::Ptr out, Int N);
 void kernel_clip(Float::Ptr in, Float::Ptr out, Int N, Float clip_value);
-
-void update_gate(
-  Float::Ptr W,
-  Float::Ptr d_t,
-  Float::Ptr x_h,
-  Float::Ptr bias,
-  Int rows,
-  Int columns,
-  Float learning_rate
-);
-
-
-void gradient_previous_state_input(
-  Int hidden_size,
-  Int input_size,
-  Float::Ptr forget_W,
-  Float::Ptr forget_d_t,
-  Float::Ptr input_W,
-  Float::Ptr input_d_t,
-  Float::Ptr candidate_W,
-  Float::Ptr candidate_d_t,
-  Float::Ptr output_W,
-  Float::Ptr output_d_t,
-  Float::Ptr result
-);
 
 #endif //  _INCLUDE_RNN_KERNELS

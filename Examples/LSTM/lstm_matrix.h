@@ -9,9 +9,7 @@ class vector : public std::vector<float> {
   using Parent = std::vector<float>;
 
 public:
-  //vector() = default;
   vector(vector const &val) = default;
-  //vector(std::size_t size = 16) : Parent(size) {}
   vector(std::size_t size = 0, float val = 0.0f) : Parent(size, val) {}
 
   vector operator+(vector const &b) const;
