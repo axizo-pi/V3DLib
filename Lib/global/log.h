@@ -16,12 +16,12 @@ class Logger;
  */
 enum LogFlag {
   none,
-	dec,        ///< Default; Show integers in decimal notation
+  dec,        ///< Default; Show integers in decimal notation
   hex,        ///< Show integers as hexadecimal values
   thrw,       ///< Throw exception after next log output. Can't use 'throw', reserved keyword
   fixed,      ///< Next float value is displayed in fixed format
   scientific, ///< Next float value is displayed in scientific format
-	global      ///< Next LogFlag modifier is remembered for all subsequent log calls 
+  global      ///< Next LogFlag modifier is remembered for all subsequent log calls 
 };
 
 
@@ -64,8 +64,8 @@ public:
   Logger(Level level = INFO) : m_level(level) {}
 
 
-	template <typename T>
-	inline LogItem operator<<(T rhs) { auto ret = LogItem(*this); ret << rhs; return ret; };
+  template <typename T>
+  inline LogItem operator<<(T rhs) { auto ret = LogItem(*this); ret << rhs; return ret; };
 
   std::stringstream &buf() { return m_buf; }
   void flush(bool do_throw);

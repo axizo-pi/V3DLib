@@ -466,8 +466,8 @@ Instr::List tanh(Var dst, RegOrImm const &srcA) {
       << fadd(div, a, b)
       << fdiv(dst, nom, div);
 
-	ret.front().comment("Start tanh");
-	ret.back().comment("End tanh");
+  ret.front().comment("Start tanh");
+  ret.back().comment("End tanh");
 
   return ret;
 }

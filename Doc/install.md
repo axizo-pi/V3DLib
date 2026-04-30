@@ -1,5 +1,5 @@
 <head>
-	<link rel="stylesheet" type="text/css" href="css/docs.css">
+  <link rel="stylesheet" type="text/css" href="css/docs.css">
 </head>
 
 # Install Instructions
@@ -9,7 +9,7 @@ I'm sorry, I can't make this easy. You've got to jump through several hoops to m
 It is not possible to run the library on Pi's which have graphical output[^1]. The Pi needs to run **headless**.
 
 [^1]: Not entirely true. The library will work *sometimes* if you're lucky. The only Pi on which
-			successful execution can be guaranteed is the `Pi1`, which at this point is 'a passed station'[^2].
+      successful execution can be guaranteed is the `Pi1`, which at this point is 'a passed station'[^2].
 
 [^2]: This is a *Dutchism*. It represents my sentiments perfectly.
 
@@ -35,13 +35,13 @@ To recap, because they are referenced in this page:
   If 64-bit is available, select that.
 - Select the SD-card you want to install on.
 - _Choose hostname_: Your choice; I prefer using easily memorable names.
-  for exampleA my Pi5's are called **pi5-1** and **pi5-2**.
+  for example my Pi5's are called **pi5-1** and **pi5-2**.
 - _Localisation_ and _Customisation_ should be 0bvious (I hope), except perhaps for:
   * _enable SSH_ - you need this. Initially, select _Use password authentication_
   * Don't bother with _Rapberry Pi Connect_ unless you're sure you want it.
 - _Write_ and wait.
 
-Are there errors during execution of `rpi-imager`?  Check **Note 1** below.
+eAre there errors during execution of `rpi-imager`? Check **Note 1** below.
 
 ## Start the Pi up
 
@@ -60,9 +60,9 @@ Fill in `user` and `pi` for your situation.
 
 From `main`:
 
-	ssh-copy-id user@pi
-	scp .vimrc user@pi:~    # Personal configuration, YMMV
-	ssh pi                  # Test login
+  ssh-copy-id user@pi
+  scp .vimrc user@pi:~    # Personal configuration, YMMV
+  ssh pi                  # Test login
 
 
 ### Set memory split for `VideoCore IV`
@@ -163,8 +163,8 @@ To install, from the `V3DLib` base directory:
 
     [FileOps] io_uring short write: expected 0, got 4194304
 
-This is a [https://forums.raspberrypi.com/viewtopic.php?t=397059](known error) and is fixed in `v2.0.7`.
-I am anxiously waiting for the upgrade (supplied `AppImage` didn't work for me.
+This is a [Known error}(https://forums.raspberrypi.com/viewtopic.php?t=397059) and is fixed in `v2.0.7`.
+I am anxiously waiting for the upgrade. The supplied `AppImage` didn't work for me.
 
 In the meantime, the best advice I can give you is: try another SD-card.
 
@@ -209,32 +209,32 @@ This is for `Pi1`, `Pi2`, `Pi3` and `Zero`.
 `dtoverlay` should *not* be specified for Pi1.
 In addition, this sets the memory split with `gpu_mem`.
 
-	sudo vi /boot/firmware/config.txt
+  sudo vi /boot/firmware/config.txt
 
 Find the following lines:
 
-	# Enable DRM VC4 V3D driver on top of the dispmanx display stack
-	dtoverlay=vc4-fkms-v3d
-	max_framebuffers=2
+  # Enable DRM VC4 V3D driver on top of the dispmanx display stack
+  dtoverlay=vc4-fkms-v3d
+  max_framebuffers=2
 
 On `Pi Zero`, the text is:
 
-	# Enable DRM VC4 V3D driver
-	dtoverlay=vc4-kms-v3d
-	max_framebuffers=2
+  # Enable DRM VC4 V3D driver
+  dtoverlay=vc4-kms-v3d
+  max_framebuffers=2
 
 Replace with:
 
-	#dtoverlay=vc4-fkms-v3d
-	max_framebuffers=2
-	gpu_mem=128
+  #dtoverlay=vc4-fkms-v3d
+  max_framebuffers=2
+  gpu_mem=128
 
 
 Reboot after the edit.
 
 To check the memory split:
 
-	vcgencmd get_mem gpu
+  vcgencmd get_mem gpu
 
 
 ### 4. Set localization on `pi`
@@ -245,7 +245,7 @@ There are other ways of doing this, this way is mainly my tactile memory.
 
 On `pi`:
 
-	sudo raspi-config
+  sudo raspi-config
 
 - Select 5. Localization Options
 - Select Locale
