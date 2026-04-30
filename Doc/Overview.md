@@ -51,7 +51,7 @@ I believe that there is no performance gain to be found here, quite the contrary
 
 I have 14 Pi's organized in clusters:
 
-[Pi Clusters(./images/Pi clusters.png)
+[Pi Clusters(./images/Pi clusters.png])
 
 Getting these clustered Pi's to work together is an ongoing, separate project.
 

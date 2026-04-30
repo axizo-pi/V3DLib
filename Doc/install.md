@@ -163,7 +163,7 @@ To install, from the `V3DLib` base directory:
 
     [FileOps] io_uring short write: expected 0, got 4194304
 
-This is a [Known error}(https://forums.raspberrypi.com/viewtopic.php?t=397059) and is fixed in `v2.0.7`.
+This is a [Known error](https://forums.raspberrypi.com/viewtopic.php?t=397059) and is fixed in `v2.0.7`.
 I am anxiously waiting for the upgrade. The supplied `AppImage` didn't work for me.
 
 In the meantime, the best advice I can give you is: try another SD-card.
