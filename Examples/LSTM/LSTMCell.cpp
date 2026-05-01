@@ -64,8 +64,8 @@ void Gate::check_same() {
 void Gate::update_gate(vector const &x_h, qpu::vector const &q_x_h, float learning_rate) {
   // q_Wi diverges from Wi by accumulated errors; Following for debugging
   // This might be specific to input gate
-  q_W   = copy(W);                    assert(same(q_W, W));
-  q_b   = copy(m_b);                  assert(same(q_b, m_b));
+  q_W   = copy(W);    assert(same(q_W, W));
+  q_b   = copy(m_b);  assert(same(q_b, m_b));
 
   for (int i = 0; i < m_height; i++) {
     for (int j = 0; j < m_width; j++) {
@@ -114,9 +114,9 @@ std::pair<vector, vector> LSTMCell::forward(vector const &x, vector const &h_pre
   this->h_prev = h_prev;
   this->c_prev = c_prev;
 
-  auto q_x      = copy(x);               assert(same(q_x, x));           // x is vector of size 1
-  auto q_h_prev = copy(h_prev);          assert(same(q_h_prev, h_prev)); // h_prev size 32
-  q_c_prev      = copy(c_prev);          assert(same(q_c_prev, c_prev));
+  auto q_x      = copy(x);       assert(same(q_x, x));           // x is vector of size 1
+  auto q_h_prev = copy(h_prev);  assert(same(q_h_prev, h_prev)); // h_prev size 32
+  q_c_prev      = copy(c_prev);  assert(same(q_c_prev, c_prev));
 
   // Concatenate input and previous hidden state
   x_h   = concat(x, h_prev);
@@ -264,7 +264,7 @@ void LSTMCell::gradient_candidate() {
 
 
 /**
- * @brief Gradient of the  forget gate
+ * @brief Gradient of the forget gate
  */
 void LSTMCell::gradient_forget_gate() {
   forget.d_t = candidate.d_t * c_prev * dsigmoid(forget.activation);
@@ -286,7 +286,6 @@ void LSTMCell::gradient_forget_gate() {
 
   forget.clip(clip_value, false);
   assert(same(forget.q_d_t, forget.d_t, Precision_vc7));
-
 }
 
 
@@ -303,7 +302,7 @@ std::tuple<vector, vector, vector> LSTMCell::backward(
   auto q_dh_next = copy(dh_next);
 
   // Interim copies to circumvent accumulating errors
-  q_c_t = copy(c_t);                             assert(same(q_c_t, c_t, Precision_vc7));
+  q_c_t = copy(c_t);  assert(same(q_c_t, c_t, Precision_vc7));
 
 	gradient_output_gate(dh_next, q_dh_next);
 	gradient_cell_state(dc_next, dh_next, q_dh_next);

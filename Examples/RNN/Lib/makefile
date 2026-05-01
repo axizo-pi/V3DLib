@@ -3,5 +3,5 @@ IS_LIB=1
 
 SRCDIR=./
 
--include /home/wim/projects/V3DLib/script/mak/config.mak
--include /home/wim/projects/V3DLib/script/mak/subproject.mak
+-include ../../../script/mak/config.mak
+-include ../../../script/mak/subproject.mak

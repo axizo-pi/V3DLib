@@ -9,6 +9,7 @@
 #include "Platform.h"
 #include "Support/basics.h"
 #include <iostream>
+#include <filesystem>
 
 namespace {
 
@@ -163,7 +164,9 @@ void Settings::init(int argc, const char *argv[]) {
 
   check_params(m_all_params, argc, argv);
 
-  set_log_dir("/home/wim/projects/V3DLib/log");
+	std::filesystem::path cwd = std::filesystem::current_path() / "log";
+	//warn << "Log path: " << cwd.string();
+  set_log_dir(cwd.string());
   set_log_file("V3DLib.log");
 }
 
