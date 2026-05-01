@@ -10,6 +10,10 @@
 //
 // Indications till now is that QPU converges less rapidly than LSTM.
 //
+// You can _either_ disable LSTM calcs _or_ the QPU calcs; you can't
+// disable both. At least one should be enabled.
+// But it is possible to enable both.
+//
 
 //
 // Do not do LSTM calculations where possible
@@ -66,9 +70,9 @@ void Gate::init_forward(vector const &x_h) {
 void Gate::clip(float clip_value, bool do_qpu) {
   d_t.clip(clip_value);
 
-	if (do_qpu) {
-  	q_d_t.clip(clip_value);
-	}
+  if (do_qpu) {
+    q_d_t.clip(clip_value);
+  }
   assert(same(q_d_t, d_t, Precision_vc7));
 }
 
@@ -93,7 +97,7 @@ void Gate::update_gate(vector const &x_h, qpu::vector const &q_x_h, float learni
   q_W   = copy(W);    assert(same(q_W, W));
   q_b   = copy(m_b);  assert(same(q_b, m_b));
 
-#ifndef SKIP_LSTM_CALCULATIONS	
+#ifndef SKIP_LSTM_CALCULATIONS  
   for (int i = 0; i < m_height; i++) {
     for (int j = 0; j < m_width; j++) {
       W[i][j] -= learning_rate * d_t[i] * x_h[j];
@@ -101,7 +105,7 @@ void Gate::update_gate(vector const &x_h, qpu::vector const &q_x_h, float learni
 
     m_b[i] -= learning_rate * d_t[i];
   }
-#endif // SKIP_LSTM_CALCULATIONS	
+#endif // SKIP_LSTM_CALCULATIONS  
 
   assert(same(q_d_t, d_t, Precision_vc7));
   assert(same(q_x_h, x_h));
@@ -117,10 +121,10 @@ void Gate::update_gate(vector const &x_h, qpu::vector const &q_x_h, float learni
     learning_rate
   ).run();
 
-#ifndef SKIP_LSTM_CALCULATIONS	
+#ifndef SKIP_LSTM_CALCULATIONS  
   assert(same(q_W, W, Precision_vc7));
   assert(same(q_b, m_b, Precision_vc7));
-#endif // SKIP_LSTM_CALCULATIONS	
+#endif // SKIP_LSTM_CALCULATIONS  
 }
 
 
@@ -160,22 +164,44 @@ std::pair<vector, vector> LSTMCell::forward(vector const &x, vector const &h_pre
 
   // Cell state candidate
   c_tilde   = tanh(candidate.W*x_h + candidate.m_b);
-  q_c_tilde = ((candidate.q_W*q_x_h) + candidate.q_b).tanh();
-  assert(same(q_c_tilde, c_tilde, Precision_vc7));
 
   // Cell state update
   c_t = forget.activation * c_prev + input.activation * c_tilde;
-  q_c_t = forget.q_activation.mul(q_c_prev) + input.q_activation.mul(q_c_tilde);
-  assert(same(q_c_t, c_t, 2*Precision_vc7));
 
   // Hidden state
   h_t = output.activation * tanh(c_t);
-  auto q_h_t = output.q_activation.mul(q_c_t.tanh());
-  assert(same(q_h_t, h_t, 2*Precision_vc7));
 
-	forget.check_same();
-	input.check_same();
-	candidate.check_same();
+  qpu::vector tmp(candidate.q_W.rows());
+  qpu::vector res(candidate.q_W.rows());
+  qpu::vector res2(candidate.q_W.rows());
+  qpu::vector res3(candidate.q_W.rows());
+
+  forward_states_kernel().load(
+    &q_x_h.arr(),
+    &candidate.q_W.arr(),
+    &tmp.arr(),
+    &candidate.q_b.arr(),
+    &res.arr(),
+    &forget.q_activation.arr(),
+    &q_c_prev.arr(),
+    &input.q_activation.arr(),
+    &res2.arr(),
+    &output.q_activation.arr(),
+    &res3.arr(),
+    candidate.q_W.columns(),
+    candidate.q_W.rows()
+  ).run();
+  assert(same(res , c_tilde, 2*Precision_vc7));
+  assert(same(res2, c_t    , 2*Precision_vc7));
+  assert(same(res3, h_t    , 2*Precision_vc7));
+
+  q_c_tilde  = res;
+  q_c_t      = res2;
+  auto q_h_t = res3;
+
+  forget.check_same();
+  input.check_same();
+  candidate.check_same();
         
   return {h_t, c_t};
 }
@@ -187,20 +213,20 @@ std::pair<vector, vector> LSTMCell::forward(vector const &x, vector const &h_pre
 void LSTMCell::gradient_input_gate() {
   input.d_t = candidate.d_t * c_tilde * dsigmoid(input.activation);
 
-	// Size should be the same for all vectors
-	int size = q_c_tilde.size();
-	qpu::vector ret(size);
+  // Size should be the same for all vectors
+  int size = q_c_tilde.size();
+  qpu::vector ret(size);
 
-	gradient_input_gate_kernel().load(
-  	&ret.arr(),
-	  &candidate.q_d_t.arr(),
-		&q_c_tilde.arr(),
-		&input.q_activation.arr(),
-		size >> 4
-	).run();
-	//warn << "q_d_t: " << input.q_d_t.dump();
-	//warn << "ret  : " << ret.dump();
-	//assert(same(input.q_d_t, ret, Precision_vc7));
+  gradient_input_gate_kernel().load(
+    &ret.arr(),
+    &candidate.q_d_t.arr(),
+    &q_c_tilde.arr(),
+    &input.q_activation.arr(),
+    size >> 4
+  ).run();
+  //warn << "q_d_t: " << input.q_d_t.dump();
+  //warn << "ret  : " << ret.dump();
+  //assert(same(input.q_d_t, ret, Precision_vc7));
   input.q_d_t = ret;
 
   assert(same(input.q_d_t, input.d_t, Precision_vc7));
@@ -216,21 +242,21 @@ void LSTMCell::gradient_input_gate() {
 void LSTMCell::gradient_output_gate(vector const &dh_next, qpu::vector /* const */ &q_dh_next) {
   output.d_t = dh_next * tanh(c_t) * dsigmoid(output.activation);
 
-	// Size should be the same for all vectors
-	int size = q_dh_next.size();
-	qpu::vector ret(size);
+  // Size should be the same for all vectors
+  int size = q_dh_next.size();
+  qpu::vector ret(size);
 
-	gradient_output_gate_kernel().load(
-  	&ret.arr(),
-	  &q_dh_next.arr(),
-		&q_c_t.arr(),
-		&output.q_activation.arr(),
-		size >> 4,
-		clip_value
-	).run();
-	//warn << "q_d_t: " << output.q_d_t.dump();
-	//warn << "ret  : " << ret.dump();
-	//assert(same(output.q_d_t, ret)); // Compare is precise
+  gradient_output_gate_kernel().load(
+    &ret.arr(),
+    &q_dh_next.arr(),
+    &q_c_t.arr(),
+    &output.q_activation.arr(),
+    size >> 4,
+    clip_value
+  ).run();
+  //warn << "q_d_t: " << output.q_d_t.dump();
+  //warn << "ret  : " << ret.dump();
+  //assert(same(output.q_d_t, ret)); // Compare is precise
   output.q_d_t = ret;
 
   output.clip(clip_value, false);
@@ -242,26 +268,26 @@ void LSTMCell::gradient_output_gate(vector const &dh_next, qpu::vector /* const 
  * @brief Gradient of the cell state
  */
 void LSTMCell::gradient_cell_state(
-	vector const &dc_next,
-	vector const &dh_next,
-	qpu::vector /* const */ &q_dh_next
+  vector const &dc_next,
+  vector const &dh_next,
+  qpu::vector /* const */ &q_dh_next
 ) {
   auto q_dc_next = copy(dc_next); assert(same(q_dc_next, dc_next));
 
   candidate.d_t = dc_next + dh_next * output.activation * dtanh(tanh(c_t));
 
-	// Size should be the same for all vectors
-	int size = q_dc_next.size();
-	qpu::vector ret(size);
+  // Size should be the same for all vectors
+  int size = q_dc_next.size();
+  qpu::vector ret(size);
 
-	gradient_cell_state_kernel().load(
-  	&ret.arr(),
-		&q_dc_next.arr(),
-	  &q_dh_next.arr(),
-		&output.q_activation.arr(),
-		&q_c_t.arr(),
-		size >> 4
-	).run();
+  gradient_cell_state_kernel().load(
+    &ret.arr(),
+    &q_dc_next.arr(),
+    &q_dh_next.arr(),
+    &output.q_activation.arr(),
+    &q_c_t.arr(),
+    size >> 4
+  ).run();
 
   candidate.q_d_t = ret;
   assert(same(candidate.q_d_t, candidate.d_t, 2*Precision_vc7));
@@ -274,19 +300,19 @@ void LSTMCell::gradient_cell_state(
 void LSTMCell::gradient_candidate() {
   candidate.d_t = candidate.d_t * input.activation * dtanh(c_tilde);
 
-	// Size should be the same for all vectors
-	int size = q_c_tilde.size();
-	qpu::vector ret(size);
+  // Size should be the same for all vectors
+  int size = q_c_tilde.size();
+  qpu::vector ret(size);
 
-	// Note that output is also an input; take care here
-	gradient_candidate_kernel().load(
-  	&ret.arr(),
-		&candidate.q_d_t.arr(),
-		&input.q_activation.arr(),
-		&q_c_tilde.arr(),
-		size >> 4,
-		clip_value
-	).run();
+  // Note that output is also an input; take care here
+  gradient_candidate_kernel().load(
+    &ret.arr(),
+    &candidate.q_d_t.arr(),
+    &input.q_activation.arr(),
+    &q_c_tilde.arr(),
+    size >> 4,
+    clip_value
+  ).run();
   candidate.q_d_t = ret;
 
   candidate.clip(clip_value, false);
@@ -300,19 +326,19 @@ void LSTMCell::gradient_candidate() {
 void LSTMCell::gradient_forget_gate() {
   forget.d_t = candidate.d_t * c_prev * dsigmoid(forget.activation);
 
-	// Size should be the same for all vectors
-	int size = q_c_prev.size();
-	qpu::vector ret(size);
+  // Size should be the same for all vectors
+  int size = q_c_prev.size();
+  qpu::vector ret(size);
 
-	// Note that output is also an input; take care here
-	gradient_forget_kernel().load(
-  	&ret.arr(),
-		&candidate.q_d_t.arr(),
-		&q_c_prev.arr(),
-		&forget.q_activation.arr(),
-		size >> 4,
-		clip_value
-	).run();
+  // Note that output is also an input; take care here
+  gradient_forget_kernel().load(
+    &ret.arr(),
+    &candidate.q_d_t.arr(),
+    &q_c_prev.arr(),
+    &forget.q_activation.arr(),
+    size >> 4,
+    clip_value
+  ).run();
   forget.q_d_t = ret;
 
   forget.clip(clip_value, false);
@@ -335,11 +361,11 @@ std::tuple<vector, vector, vector> LSTMCell::backward(
   // Interim copies to circumvent accumulating errors
   q_c_t = copy(c_t);  assert(same(q_c_t, c_t, Precision_vc7));
 
-	gradient_output_gate(dh_next, q_dh_next);
-	gradient_cell_state(dc_next, dh_next, q_dh_next);
-	gradient_input_gate();
-	gradient_candidate();
-	gradient_forget_gate();
+  gradient_output_gate(dh_next, q_dh_next);
+  gradient_cell_state(dc_next, dh_next, q_dh_next);
+  gradient_input_gate();
+  gradient_candidate();
+  gradient_forget_gate();
 
   //  
   // Update weights using gradients
@@ -350,13 +376,13 @@ std::tuple<vector, vector, vector> LSTMCell::backward(
   // Update forget gate weights and biases
   forget.update_gate(x_h, q_x_h, learning_rate);
 
-	//
-	// Specific for forget gate:
-	//
+  //
+  // Specific for forget gate:
+  //
   // For some reason, _only_ element (3,0) (row, column) of q_Wi is different.
   // All the rest are in effect identical.
   // I suspect that there is some subtle bug in the update_gate kernel.
-	//
+  //
   assert(same(input.q_W, input.W, 1.0e-2f));
   assert(same(input.q_b, input.m_b, Precision_vc7));
 
@@ -364,12 +390,12 @@ std::tuple<vector, vector, vector> LSTMCell::backward(
   candidate.update_gate(x_h, q_x_h, learning_rate);
   output.update_gate(x_h, q_x_h, learning_rate);
     
-	//	
+  //  
   // Compute gradients with respect to inputs for backpropagation to earlier layers
-	//
+  //
   vector dc_prev = candidate.d_t * forget.activation; // Gradient of previous cell state
 
-#ifndef SKIP_LSTM_CALCULATIONS	
+#ifndef SKIP_LSTM_CALCULATIONS  
   vector dx_t(input_size, 0.0);
   vector dh_prev(hidden_size, 0.0);
         
@@ -390,11 +416,11 @@ std::tuple<vector, vector, vector> LSTMCell::backward(
     }
   }
 
-	forget.check_same();
-	input.check_same();
-	candidate.check_same();
-	output.check_same();
-#endif // SKIP_LSTM_CALCULATIONS	
+  forget.check_same();
+  input.check_same();
+  candidate.check_same();
+  output.check_same();
+#endif // SKIP_LSTM_CALCULATIONS  
 
   int columns = resize(input_size + hidden_size);
   qpu::vector result(columns, 0.0f);
@@ -413,21 +439,21 @@ std::tuple<vector, vector, vector> LSTMCell::backward(
     &result.arr()
   ).run();
 
-	lstm::vector q_dx_t    = copy(result, 0, input_size);
-	lstm::vector q_dh_prev = copy(result, input_size, hidden_size);
+  lstm::vector q_dx_t    = copy(result, 0, input_size);
+  lstm::vector q_dh_prev = copy(result, input_size, hidden_size);
 
-/*	
-	warn << "dx_t  : " << dx_t.dump();
-	warn << "q_dx_t: " << q_dx_t.dump();
-	warn << "dh_prev  : " << dh_prev.dump();
-	warn << "q_dh_prev: " << q_dh_prev.dump();
-	//warn << "result: " << result.dump();
-*/	
+/*  
+  warn << "dx_t  : " << dx_t.dump();
+  warn << "q_dx_t: " << q_dx_t.dump();
+  warn << "dh_prev  : " << dh_prev.dump();
+  warn << "q_dh_prev: " << q_dh_prev.dump();
+  //warn << "result: " << result.dump();
+*/  
 
-#ifndef SKIP_LSTM_CALCULATIONS	
-	assert(same(dx_t, q_dx_t, Precision_vc7));
-	assert(same(dh_prev, q_dh_prev, Precision_vc7));
-#endif // SKIP_LSTM_CALCULATIONS	
+#ifndef SKIP_LSTM_CALCULATIONS  
+  assert(same(dx_t, q_dx_t, Precision_vc7));
+  assert(same(dh_prev, q_dh_prev, Precision_vc7));
+#endif // SKIP_LSTM_CALCULATIONS  
         
 #ifdef USE_QPU_RESULTS
   return {q_dx_t, q_dh_prev, dc_prev};

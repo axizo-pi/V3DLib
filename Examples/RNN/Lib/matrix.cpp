@@ -21,25 +21,25 @@ void frand_array(Float::Array &rhs) {
 BaseKernel *matrix::m_mult_vec = nullptr;
 
 matrix::matrix(int rows, int columns) : m_rows(rows), m_columns(columns) {
-	// Allow initialization of empty matrix.
-	if (m_rows == 0) {
-		assert(m_columns == 0 || m_columns == 1);  // By syntax, a single empty vector is allowed
-  	init_static();
-		return;
-	}
+  // Allow initialization of empty matrix.
+  if (m_rows == 0) {
+    assert(m_columns == 0 || m_columns == 1);  // By syntax, a single empty vector is allowed
+    init_static();
+    return;
+  }
 
-	//warn << "matrix ctor (rows, columns): (" << m_rows << ", " << m_columns << ")";
+  //warn << "matrix ctor (rows, columns): (" << m_rows << ", " << m_columns << ")";
   if (m_rows <= 0)     { cerr << "matrix ctor: rows must be positive"    << thrw; }
   if (m_columns <= 0)  { cerr << "matrix ctor: columns must be positive" << thrw; }
 
- 	m_arr.reset(new Float::Array(m_columns*m_rows));
+   m_arr.reset(new Float::Array(m_columns*m_rows));
 
   init_static();
 }
 
 
 matrix::matrix(matrix const &rhs) : m_arr(rhs.m_arr), m_rows(rhs.rows()), m_columns(rhs.columns())   {
-	//warn << "Called ctor matrix(matrix &)";
+  //warn << "Called ctor matrix(matrix &)";
   //*this = rhs;
   init_static();
 }
@@ -149,7 +149,7 @@ matrix matrix::mul(matrix const &rhs) const {
   assert(m_rows > 0);
 
   if (m_columns != rhs.rows()) {
-		breakpoint;
+    breakpoint;
     cerr << "Matrix::operator*() Inner dimension does not match. "
          << "this(rows, columns): (" << m_rows << ", " << m_columns << "), "
          << "rhs(rows, columns):  (" << rhs.rows() << ", " << rhs.columns() << ")"
@@ -305,8 +305,8 @@ vector::vector(vector &rhs) : matrix(rhs) {
 
 
 vector::vector(matrix rhs) : matrix(rhs) {
-	//warn << "Called ctor vector(matrix) m_arr:" << hex << (unsigned long) rhs.arr().ptr();
-	//warn << "vector m_arr:" << hex << (unsigned long) arr().ptr();
+  //warn << "Called ctor vector(matrix) m_arr:" << hex << (unsigned long) rhs.arr().ptr();
+  //warn << "vector m_arr:" << hex << (unsigned long) arr().ptr();
   assert(
     (rhs.rows() > 1  && rhs.columns() == 1) ||
     (rhs.rows() == 1 && rhs.columns() > 1)
@@ -330,12 +330,12 @@ vector::vector(int rows, float val) : matrix(rows, 1) {
     cerr << "vector ctor: " << rows << " rows passed in,  must be a multiple of 16" << thrw;
   }
 
-	if (!empty()) {
-  	auto &r = matrix::arr();
+  if (!empty()) {
+    auto &r = matrix::arr();
 
-	  for (int i = 0; i < rows; i++) {
-	    r[i] = val;
-	  }
+    for (int i = 0; i < rows; i++) {
+      r[i] = val;
+    }
   }
 
   init_static();
@@ -493,12 +493,12 @@ vector vector::dtanh() {
  * Value changed internally, no return value.
  */
 void vector::clip(float clip_value) {
-	//warn << "Called clip";
+  //warn << "Called clip";
   vector ret(rows());
 
   m_clip->load(&arr(), &ret.arr(), rows()/16, clip_value).run();
 
-	*this = ret;
+  *this = ret;
 }
 
 
@@ -535,12 +535,12 @@ void vector::init_static() {
 
 
 vector operator*(matrix const &lhs, vector const &rhs) {
-	//warn << "Called vector operator*(matrix const &lhs, vector const &rhs)";
-	matrix ret;
+  //warn << "Called vector operator*(matrix const &lhs, vector const &rhs)";
+  matrix ret;
 
-	ret = lhs.mul(rhs);
+  ret = lhs.mul(rhs);
 
-	return vector(ret);
+  return vector(ret);
 }
 
 } // namespace qpu

@@ -17,8 +17,10 @@ public:
 
   void init_forward(vector const &x_h);
   void clip(float clip_value, bool do_qpu = true);
-	void check_same();
+  void check_same();
   void update_gate(vector const &x_h, qpu::vector const &q_x_h, float learning_rate);
+  int height() const { return m_height; }
+  int width() const { return m_width; }
 
   // Weights and biases
   matrix W;
@@ -45,7 +47,7 @@ private:
   int input_size;
   int hidden_size;
 
-	int qpu_columns() const { return resize(input_size + hidden_size); }
+  int qpu_columns() const { return resize(input_size + hidden_size); }
 
   Gate forget;
   Gate input;
@@ -74,11 +76,11 @@ private:
 public:
   LSTMCell(int input_size, int hidden_size);
 
-	void gradient_input_gate();
-	void gradient_output_gate(vector const &dh_next, qpu::vector /* const */ &q_dh_next);
-	void gradient_cell_state(vector const &dc_next, vector const &dh_next, qpu::vector /* const */ &q_dh_next);
-	void gradient_candidate();
-	void gradient_forget_gate();
+  void gradient_input_gate();
+  void gradient_output_gate(vector const &dh_next, qpu::vector /* const */ &q_dh_next);
+  void gradient_cell_state(vector const &dc_next, vector const &dh_next, qpu::vector /* const */ &q_dh_next);
+  void gradient_candidate();
+  void gradient_forget_gate();
 
   std::pair<vector, vector> forward(vector const &x, vector const &h_prev, vector const &c_prev);
   std::tuple<vector, vector, vector> backward(vector const &dh_next, vector const &dc_next,

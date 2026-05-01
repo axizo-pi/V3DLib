@@ -89,16 +89,16 @@ TEST_CASE("Test working of Rot3D example [rot3d][pass3]") {
     float* z_scalar = new float [N];
     initArrays(x_scalar, y_scalar, N);
 
-		// Run scalar
-		scalar_rot3D(N, 0, 0, 1, x_scalar, y_scalar, z_scalar);
+    // Run scalar
+    scalar_rot3D(N, 0, 0, 1, x_scalar, y_scalar, z_scalar);
 
     // Storage for first kernel results
     float* x_1 = new float [N];
     float* y_1 = new float [N];
 
-		//
+    //
     // Compare scalar with output of vector kernel with 1 QPU - may not be exact
-		//
+    //
     {
       INFO("Running kernel 1 QPU");
       Float::Array x(N), y(N), z(N);  // z not used for output
@@ -106,7 +106,7 @@ TEST_CASE("Test working of Rot3D example [rot3d][pass3]") {
 
       auto k = compile(vector_rot3D);
       //k.load(N, cosf(THETA), sinf(THETA), &x, &y).run();
-			k.load(N, 0.0f, 0.0f, 0.5f /* == PI */, &x, &y, &z).run();
+      k.load(N, 0.0f, 0.0f, 0.5f /* == PI */, &x, &y, &z).run();
       compareResults(x_scalar, y_scalar, x, y, N, "Rot3D", false);
 
       // Save results for compare with other kernels 
@@ -117,9 +117,9 @@ TEST_CASE("Test working of Rot3D example [rot3d][pass3]") {
 
     }
 
-		//
+    //
     // Compare scalar with output of vector kernel with mulitple QPU's - also not exact
-		//
+    //
     {
       INFO("Running kernel with 8 QPUs");
       Float::Array x(N), y(N), z(N);  // z not used for output
@@ -129,8 +129,8 @@ TEST_CASE("Test working of Rot3D example [rot3d][pass3]") {
       k.setNumQPUs(8);
 
       //k.load(N, cosf(THETA), sinf(THETA), &x, &y).run();
-			k.load(N, 0.0f, 0.0f, 0.5f /* == PI */, &x, &y, &z).run();
-			INFO("Loaded and ran the kernel");
+      k.load(N, 0.0f, 0.0f, 0.5f /* == PI */, &x, &y, &z).run();
+      INFO("Loaded and ran the kernel");
       compareResults(x_1, y_1, x, y, N, "Rot3D_3 8 QPUs", false);
     }
 

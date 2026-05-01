@@ -177,16 +177,16 @@ void gradient_previous_state_input(
  *    candidate.q_d_t = q_dc_next + q_dh_next.mul(output.q_activation.mul(q_c_t.tanh().dtanh()));
  */
 void gradient_cell_state(
-	Float::Ptr d_t,       // Output param
-	Float::Ptr dc_next,
-	Float::Ptr dh_next,
-	Float::Ptr activation,
-	Float::Ptr c_t,
-	Int N
+  Float::Ptr d_t,       // Output param
+  Float::Ptr dc_next,
+  Float::Ptr dh_next,
+  Float::Ptr activation,
+  Float::Ptr c_t,
+  Int N
 ) {
   For (Int h = 0, h < N, h++)
     Float x = *c_t;
-		Float x2 = tanh(x);
+    Float x2 = tanh(x);
     Float x3 = 1.0f - x2*x2;     // dtanh()
 
     Float x4 = (*dc_next) + ((*dh_next) * (*activation) * x3);
@@ -207,11 +207,11 @@ void gradient_cell_state(
  *    input.q_d_t = candidate.q_d_t.mul(q_c_tilde.mul(input.q_activation.dsigmoid()));
  */
 void gradient_input_gate(
-	Float::Ptr input_d_t,       // Output param
-	Float::Ptr candidate_d_t,
-	Float::Ptr c_tilde,
-	Float::Ptr activation,
-	Int N
+  Float::Ptr input_d_t,       // Output param
+  Float::Ptr candidate_d_t,
+  Float::Ptr c_tilde,
+  Float::Ptr activation,
+  Int N
 ) {
   For (Int h = 0, h < N, h++)
     Float x  = *activation;
@@ -236,12 +236,12 @@ void gradient_input_gate(
  *    output.q_d_t = q_dh_next.mul(q_c_t.tanh()).mul(output.q_activation.dsigmoid());
  */
 void gradient_output_gate(
-	Float::Ptr d_t,       // Output param
-	Float::Ptr dh_next,
-	Float::Ptr c_t,
-	Float::Ptr activation,
-	Int N,
-	Float clip_value
+  Float::Ptr d_t,       // Output param
+  Float::Ptr dh_next,
+  Float::Ptr c_t,
+  Float::Ptr activation,
+  Int N,
+  Float clip_value
 ) {
   Float clip_min = -1.0f*clip_value; // TODO: implement float operator-
 
@@ -253,7 +253,7 @@ void gradient_output_gate(
     Float x4  = tanh(x3);
 
     Float x5 = (*dh_next) * x4 * x2;
-		clip_partial(x5, clip_min, clip_value);
+    clip_partial(x5, clip_min, clip_value);
     *d_t = x5;
 
     d_t.inc();
@@ -270,12 +270,12 @@ void gradient_output_gate(
  *    candidate.q_d_t = candidate.q_d_t.mul(input.q_activation.mul(q_c_tilde.dtanh()));
  */
 void gradient_candidate(
-	Float::Ptr ret,       // Output param
-	Float::Ptr d_t,
-	Float::Ptr activation,
-	Float::Ptr c_tilde,
-	Int N,
-	Float clip_value
+  Float::Ptr ret,       // Output param
+  Float::Ptr d_t,
+  Float::Ptr activation,
+  Float::Ptr c_tilde,
+  Int N,
+  Float clip_value
 ) {
   Float clip_min = -1.0f*clip_value; // TODO: implement float operator-
 
@@ -285,7 +285,7 @@ void gradient_candidate(
 
     Float x3 = (*d_t) * (*activation) * x2;
 
-		clip_partial(x3, clip_min, clip_value);
+    clip_partial(x3, clip_min, clip_value);
     *ret = x3;
 
     ret.inc();
@@ -302,12 +302,12 @@ void gradient_candidate(
  *    forget.q_d_t = candidate.q_d_t.mul(q_c_prev.mul(forget.q_activation.dsigmoid()));
  */
 void gradient_forget(
-	Float::Ptr ret,       // Output param
-	Float::Ptr d_t,
-	Float::Ptr c_prev,
-	Float::Ptr activation,
-	Int N,
-	Float clip_value
+  Float::Ptr ret,       // Output param
+  Float::Ptr d_t,
+  Float::Ptr c_prev,
+  Float::Ptr activation,
+  Int N,
+  Float clip_value
 ) {
   Float clip_min = -1.0f*clip_value; // TODO: implement float operator-
 
@@ -317,7 +317,7 @@ void gradient_forget(
 
     Float x3 = (*d_t) * (*c_prev) * x2;
 
-		clip_partial(x3, clip_min, clip_value);
+    clip_partial(x3, clip_min, clip_value);
     *ret = x3;
 
     ret.inc();
@@ -328,14 +328,82 @@ void gradient_forget(
 }
 
 
+/**
+ * @brief Perform update state calculations for the forward step
+ *
+ * @param tmp  Vector for storing result of matrix*vector calculation
+ * @param M    Width of matrix W and length of all vectors
+ * @param N    Height of matrix W
+ */
+void forward_states(
+  Float::Ptr x_h,
+  Float::Ptr W,
+  Float::Ptr tmp_ptr,           // Output param
+  Float::Ptr q_b,
+  Float::Ptr c_tilde,           // Output param
+  Float::Ptr forget_activation,
+  Float::Ptr c_prev,
+  Float::Ptr input_activation,
+  Float::Ptr c_t,               // Output param
+  Float::Ptr output_activation,
+  Float::Ptr h_t,               // Output param
+  Int M,
+  Int N
+) {
+  Int rows = M >> 4;
+  Int count = N >> 4;
+
+  // Following part of Cell state candidate
+  Float::Ptr tmp_local = tmp_ptr;  // ptr changed in following calculation
+  mult_vec_partial(x_h, W, tmp_local, rows, N);
+
+  For (Int j = 0, j < count, j++)
+    //
+    // Cell state candidate
+    // Original:     q_c_tilde = ((candidate.q_W*q_x_h) + candidate.q_b).tanh();
+    // Calculation is exact.
+    //
+    Float x = *tmp_ptr;
+    Float x2 = x + *q_b;
+    Float tmp_c_tilde = tanh(x2);  // Interim value for c_tilde
+    *c_tilde = tmp_c_tilde;
+  
+    //
+    // Cell state update
+    // Original: q_c_t = forget.q_activation.mul(q_c_prev) + input.q_activation.mul(q_c_tilde);
+    //
+    Float tmp_c_t = (*forget_activation) * (*c_prev) + (*input_activation) * tmp_c_tilde;
+    *c_t = tmp_c_t;
+
+    //
+    // Hidden state
+    // Original: auto q_h_t = output.q_activation.mul(q_c_t.tanh());
+    //
+    *h_t = (*output_activation) * tanh(tmp_c_t);
+
+
+    tmp_ptr.inc();
+    q_b.inc();
+    c_tilde.inc();
+    forget_activation.inc();
+    c_prev.inc();
+    input_activation.inc();
+    c_t.inc();
+    output_activation.inc();
+    h_t.inc();
+  End
+}
+
+
 // TODO: ptr's not cleaned up on exit, better would be shared or unique ptr.
-BaseKernel *s_update_gate_kernel = nullptr;
+BaseKernel *s_update_gate_kernel                   = nullptr;
 BaseKernel *s_gradient_previous_state_input_kernel = nullptr;
-BaseKernel *s_gradient_cell_state_kernel = nullptr;
-BaseKernel *s_gradient_input_gate_kernel = nullptr;
-BaseKernel *s_gradient_output_gate_kernel = nullptr;
-BaseKernel *s_gradient_candidate_kernel = nullptr;
-BaseKernel *s_gradient_forget_kernel = nullptr;
+BaseKernel *s_gradient_cell_state_kernel           = nullptr;
+BaseKernel *s_gradient_input_gate_kernel           = nullptr;
+BaseKernel *s_gradient_output_gate_kernel          = nullptr;
+BaseKernel *s_gradient_candidate_kernel            = nullptr;
+BaseKernel *s_gradient_forget_kernel               = nullptr;
+BaseKernel *s_forward_states_kernel                = nullptr;
 
 } // anon namespace
 
@@ -406,4 +474,14 @@ BaseKernel &gradient_forget_kernel() {
   }
 
   return *s_gradient_forget_kernel;
+}
+
+
+BaseKernel &forward_states_kernel() {
+  if (s_forward_states_kernel == nullptr) {
+    s_forward_states_kernel = new BaseKernel(
+      compile(forward_states, settings()));
+  }
+
+  return *s_forward_states_kernel;
 }

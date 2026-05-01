@@ -67,12 +67,9 @@ void kernel_dtanh(Float::Ptr in, Float::Ptr out, Int N) {
 
 
 /**
- * Multiply matrix mat with vector input.
- *
- * @param M length of vector in blocks of 16
- * @param N height of matrix.
+ * Exposed for combined kernels
  */
-void kernel_mult_vec(Float::Ptr input, Float::Ptr mat, Float::Ptr result, Int M, Int N) {
+void mult_vec_partial(Float::Ptr &input, Float::Ptr &mat, Float::Ptr &result, Int &M, Int &N) {
   Float res = 0;
   Int mat_offset = 4*16*M;
 
@@ -103,6 +100,17 @@ void kernel_mult_vec(Float::Ptr input, Float::Ptr mat, Float::Ptr result, Int M,
   End
 
   *result = res;
+}
+
+
+/**
+ * Multiply matrix mat with vector input.
+ *
+ * @param M length of vector in blocks of 16
+ * @param N height of matrix.
+ */
+void kernel_mult_vec(Float::Ptr input, Float::Ptr mat, Float::Ptr result, Int M, Int N) {
+  mult_vec_partial(input, mat, result, M, N);
 }
 
 
@@ -179,7 +187,7 @@ void kernel_clip(Float::Ptr in, Float::Ptr out, Int N, Float clip_value) {
 
   For (Int i = 0, i < N, i++)
     tmp = *in; 
-		clip_partial(tmp, clip_min, clip_value);
+    clip_partial(tmp, clip_min, clip_value);
     *out = tmp;
 
     in.inc();

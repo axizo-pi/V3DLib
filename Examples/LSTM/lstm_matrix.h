@@ -15,14 +15,14 @@ public:
   vector operator+(vector const &b) const;
   vector operator*(vector const &b) const;
 
-	vector sigmoid(vector const &bias);
-	void clip(float extreme);
-	std::string dump_dim() const;
-	std::string dump() const;
+  vector sigmoid(vector const &bias);
+  void clip(float extreme);
+  std::string dump_dim() const;
+  std::string dump() const;
 
 private:
-	float &at(std::size_t i) { return Parent::at(i); }	
-	float at(std::size_t i) const { return Parent::at(i); }	
+  float &at(std::size_t i) { return Parent::at(i); }  
+  float at(std::size_t i) const { return Parent::at(i); }  
 };
 
 
@@ -36,8 +36,8 @@ public:
   matrix(std::size_t height = 0, std::size_t width = 0) : Parent(height, lstm::vector(width)) {}
 
   lstm::vector operator*(lstm::vector const &v);
-	std::string dump_dim() const;
-	std::string dump() const;
+  std::string dump_dim() const;
+  std::string dump() const;
 };
 
 

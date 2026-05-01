@@ -22,7 +22,7 @@ int main(int argc, const char *argv[]) {
   int epochs          = 50;    // As mentioned in the blog
     
   DataSamples training_data;
-	training_data.init();
+  training_data.init();
     
   // Create and train the LSTM network
   LSTMNetwork lstm(input_size, hidden_size, output_size, learning_rate, epochs);
@@ -43,7 +43,7 @@ int main(int argc, const char *argv[]) {
               << "Predicted: " << predicted << std::endl;
   }
 
-	warn << "QPU Call Count: " << BaseKernel::qpu_call_count();
+  warn << "QPU Call Count: " << BaseKernel::qpu_call_count();
     
   return 0;
 }

@@ -13,8 +13,8 @@ struct DataSample {
 
 
 class DataSamples : public std::vector<DataSample> {
-public:	
-	void init();
+public:  
+  void init();
 };
 
 
@@ -43,7 +43,7 @@ public:
   LSTMNetwork(int input_size, int hidden_size, int output_size, 
               float learning_rate = 0.01f, int epochs = 50);
     
-	float train(DataSamples &training_data);
+  float train(DataSamples &training_data);
   float predict(const vector & features);
 };
 

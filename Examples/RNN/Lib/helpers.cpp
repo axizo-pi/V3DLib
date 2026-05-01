@@ -55,39 +55,39 @@ float frand() {
 
 
 unsigned rrand() {
-	s_seed = lcg(s_seed);
-	return s_seed;
+  s_seed = lcg(s_seed);
+  return s_seed;
 }
 
 
 float frrand() {
-	s_frrand_count++;
-	unsigned val = rrand();
-	return -1.0f + 2.0f*((float) val)/((float) s_m);
+  s_frrand_count++;
+  unsigned val = rrand();
+  return -1.0f + 2.0f*((float) val)/((float) s_m);
 }
 
 
 unsigned frrand_count() {
-	return s_frrand_count;
+  return s_frrand_count;
 }
 
 
 std::string vector_dump(Float::Array const &src, int size, int start_index, bool output_int) {
-	assert(size <= (int) src.size());
-	std::string buf;
+  assert(size <= (int) src.size());
+  std::string buf;
 
   for (int h = 0; h < size; ++h) {
-		if (output_int) {
-    	buf << (int) src[start_index + h] << ", ";
-		} else {
-    	buf << src[start_index + h] << ", ";
-		}
+    if (output_int) {
+      buf << (int) src[start_index + h] << ", ";
+    } else {
+      buf << src[start_index + h] << ", ";
+    }
   }
 
-	return buf;
+  return buf;
 }
 
 
 Settings &settings() {
-	return _settings;
+  return _settings;
 }
