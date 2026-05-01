@@ -2,8 +2,7 @@
 COMPILE := $(CXX) -std=c++17 -c $(CXX_FLAGS) $(INCLUDE)
 
 ifeq ($(IS_LIB), 1)
-
-$(info Doing Lib make1 )
+#$(info Doing Lib make1 )
 
 LIB_FULL=$(OBJDIR)/lib$(NAME).a
 TARGET=$(LIB_FULL)
@@ -19,7 +18,7 @@ OBJ_LOCAL=${OBJDIR}/${NAME}
 STRUCTURE := $(shell ls -r)     
 #$(info structure: $(STRUCTURE))
 SRCFILES := $(filter %.c %.cpp,$(STRUCTURE))
-$(info  src: $(SRCFILES))
+#$(info  src: $(SRCFILES))
 OBJFILES := $(subst .cpp,.o,$(SRCFILES))
 OBJFILES := $(subst .c,.o,$(OBJFILES))
 #$(info  obj: $(OBJFILES))
@@ -55,8 +54,7 @@ $(OBJ_LOCAL)/%.o: %.cpp $(HEADERFILES)
 	@$(COMPILE) -o $@ $< -MMD -MP -MF"$(@:%.o=%.d)" $(INCLUDE) 
 
 ifeq ($(IS_LIB), 1)
-
-$(info Doing Lib make )
+#$(info Doing Lib make )
 
 $(TARGET): $(OBJFILES) # $(LIB) $(MESA_LIB) $(VCSM_LIB)
 	@echo Creating $@

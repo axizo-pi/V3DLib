@@ -4,13 +4,16 @@
  * Source: https://github.com/anudeepadi/lstmcpp
  */
 #include "LSTMNetwork.h"
+#include "../RNN/Lib/helpers.h"     // settings()
 #include <iostream>
 
 
 /**
  * @brief Main function to demonstrate the LSTM network
  */
-int main() {
+int main(int argc, const char *argv[]) {
+  settings().init(argc, argv);
+
   // Example parameters based on the blog post
   int input_size      = 1;
   int hidden_size     = 32;    // As mentioned in the blog
@@ -36,7 +39,7 @@ int main() {
     float actual = (float) sin(x);
     float predicted = lstm.predict(vec);
 
-    std::cout << "Input: " << x << ", Actual: " << actual << ", "
+    std::cout << "  Input: " << x << ", Actual: " << actual << ", "
               << "Predicted: " << predicted << std::endl;
   }
 

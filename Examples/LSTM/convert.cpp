@@ -28,8 +28,9 @@ bool check_precision(float lhs, float rhs, float precision) {
 
 } // anon namespace
 
+
 /**
- * Ensure that size is a multiple of 16
+ * Return a size that is a multiple of 16
  */
 int resize(std::size_t in_size, bool do_dump) {
 	int size = (int) in_size;
@@ -47,6 +48,35 @@ int resize(std::size_t in_size, bool do_dump) {
 }
 
 
+/**
+ * @brief Initialize an LSTM vector from a QPU vector
+ *
+ * @param rhs    QPU vector to copy from
+ * @param offset Index of first element to copy.
+ * @param length Number of elements to copy. If -1, copy all elements.
+ */
+lstm::vector copy(qpu::vector const &rhs, int offset, int length) {
+	assert(offset >= 0);
+	if (length == -1) {
+		length = rhs.size() - offset;
+	}
+	assert(length + offset <= rhs.size());
+
+	lstm::vector ret(length, 0.0f);
+
+	for (int i = 0; i < length; ++i) {
+		ret[i] = rhs[i + offset];
+	}
+
+	return ret;
+}
+
+
+/**
+ * @brief Initialize a QPU vector from an LSTM vector
+ *
+ * The underlying type for `lstm::vector` is `std::vector`.
+ */
 qpu::vector copy(lstm::vector const &rhs) {
 	int size = resize(rhs.size());
 	qpu::vector ret(size);
@@ -60,6 +90,11 @@ qpu::vector copy(lstm::vector const &rhs) {
 }
 
 
+/**
+ * @brief Initialize a QPU matrix from an LSTM matrix
+ *
+ * The underlying type for `lstm::matrix` is `std::vector<std::vector<float>>`.
+ */
 qpu::matrix copy(lstm::matrix const &rhs) {
 	int height = resize(rhs.size());
 	assert(rhs.size() >= 1);
@@ -105,6 +140,23 @@ bool same(qpu::vector const &lhs, lstm::vector const &rhs, float precision) {
 	for (int i = 0; i < (int) rhs.size(); ++i) {
 		if (!check_precision(lhs[i], rhs[i], precision)) {
 			warn << "Fail same(qpu::vector, lstm::vector), index: " << i;
+			return false;
+		}			
+	}
+
+	return true;
+}
+
+
+bool same(lstm::vector const &lhs, lstm::vector const &rhs, float precision) {
+	if (lhs.size() != rhs.size()) {
+		warn << "Fail same(lstm::vector, lstm::vector), sizes differ";
+		return false;
+	}
+
+	for (int i = 0; i < (int) rhs.size(); ++i) {
+		if (!check_precision(lhs[i], rhs[i], precision)) {
+			warn << "Fail same(lstm::vector, lstm::vector), index: " << i;
 			return false;
 		}			
 	}
