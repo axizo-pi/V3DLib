@@ -9,10 +9,8 @@ using namespace V3DLib;
 void kernel_sigmoid(Float::Ptr in, Float::Ptr bias, Float::Ptr out, Int N) {
   For (Int h = 0, h < N, h++)
     Float x = *in;
-
     x += *bias;
-    x = (1.0/(1.0 + exp_e(-1.0*x)));
-
+    x = (1.0f/(1.0f + exp_e(-1.0f*x)));
     *out = x;
 
     in.inc();
@@ -30,9 +28,7 @@ void kernel_sigmoid(Float::Ptr in, Float::Ptr bias, Float::Ptr out, Int N) {
 void kernel_dsigmoid(Float::Ptr in, Float::Ptr out, Int N) {
   For (Int h = 0, h < N, h++)
     Float x = *in;
-
     x = x*(1.0f - x);
-
     *out = x;
 
     in.inc();
@@ -44,9 +40,7 @@ void kernel_dsigmoid(Float::Ptr in, Float::Ptr out, Int N) {
 void kernel_tanh(Float::Ptr in, Float::Ptr out, Int N) {
   For (Int h = 0, h < N, h++)
     Float x = *in;
-
     x = tanh(x);
-
     *out = x;
 
     in.inc();
@@ -63,9 +57,7 @@ void kernel_tanh(Float::Ptr in, Float::Ptr out, Int N) {
 void kernel_dtanh(Float::Ptr in, Float::Ptr out, Int N) {
   For (Int h = 0, h < N, h++)
     Float x = *in;
-
     x = 1.0f - x*x;
-
     *out = x;
 
     in.inc();
@@ -84,8 +76,8 @@ void kernel_mult_vec(Float::Ptr input, Float::Ptr mat, Float::Ptr result, Int M,
   Float res = 0;
   Int mat_offset = 4*16*M;
 
-   For (Int n = 0, n < N, n++)
-    If (n > 0 && (n % 16 == 0))
+  For (Int n = 0, n < N, n++)
+    If (n > 0 && ((n & 0xf) == 0))
       *result = res;
       result.inc();
       res = 0;
@@ -96,7 +88,7 @@ void kernel_mult_vec(Float::Ptr input, Float::Ptr mat, Float::Ptr result, Int M,
     Float::Ptr tmp_mat = mat.offset(n*mat_offset);
     Float::Ptr tmp_vec = input;
 
-     For (Int m = 0, m < M, m++)
+    For (Int m = 0, m < M, m++)
       tmp += (*tmp_mat) * (*tmp_vec);
       tmp_mat.inc();
       tmp_vec.inc();
@@ -104,7 +96,7 @@ void kernel_mult_vec(Float::Ptr input, Float::Ptr mat, Float::Ptr result, Int M,
 
     rotate_sum(tmp, tmp);
 
-    Where (index() == (n % 16))
+    Where (index() == (n & 0xf))
       res = tmp;
     End
 

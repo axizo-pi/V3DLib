@@ -16,8 +16,8 @@ STL_LIB=$(STL_DIR)/bin/libstl.a
 LIB_DEPEND= \
   $(STL_LIB)
 
--include /home/wim/projects/V3DLib/script/mak/config.mak
--include /home/wim/projects/V3DLib/script/mak/subproject.mak
+-include ../../script/mak/config.mak
+-include ../../script/mak/subproject.mak
 
 $(STL_LIB):
 	cd ../../extern/stl && make
