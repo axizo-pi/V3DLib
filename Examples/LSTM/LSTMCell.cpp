@@ -18,7 +18,7 @@
 //
 // Do not do LSTM calculations where possible
 //
-//#define SKIP_LSTM_CALCULATIONS
+#define SKIP_LSTM_CALCULATIONS
 
 #define USE_QPU_RESULTS
 
@@ -49,18 +49,25 @@ Gate::Gate(int height, int width, float default_bias) :
       W[i][j] = gen.rand();
     }
   }
+
+  q_W = copy(W);           assert(same(q_W, W));
 }
 
 
 void Gate::init_forward(vector const &x_h) {
   auto q_x_h = copy(x_h);  assert(same(q_x_h, x_h));
-  q_W = copy(W);           assert(same(q_W, W));
   q_b = copy(m_b);         assert(same(q_b, m_b));
 
+#ifndef SKIP_LSTM_CALCULATIONS
+  q_W = copy(W);           assert(same(q_W, W));
   activation = (W*x_h).sigmoid(m_b);
+#endif // SKIP_LSTM_CALCULATIONS
 
   q_activation = (q_W*q_x_h).sigmoid(q_b);
+
+#ifndef SKIP_LSTM_CALCULATIONS
   assert(same(q_activation, activation, Precision_vc7));
+#endif // SKIP_LSTM_CALCULATIONS
 }
 
 
@@ -92,12 +99,18 @@ void Gate::check_same() {
  * @brief Update gate weights and biases
  */
 void Gate::update_gate(vector const &x_h, qpu::vector const &q_x_h, float learning_rate) {
+
+#ifndef SKIP_LSTM_CALCULATIONS  
+  V3DLib::timers.start("update_gate overhead1");
   // q_Wi diverges from Wi by accumulated errors; Following for debugging
   // This might be specific to input gate
   q_W   = copy(W);    assert(same(q_W, W));
   q_b   = copy(m_b);  assert(same(q_b, m_b));
 
-#ifndef SKIP_LSTM_CALCULATIONS  
+  V3DLib::timers.stop("update_gate overhead1");
+
+  V3DLib::timers.start("update_gate LSTM");
+
   for (int i = 0; i < m_height; i++) {
     for (int j = 0; j < m_width; j++) {
       W[i][j] -= learning_rate * d_t[i] * x_h[j];
@@ -105,10 +118,15 @@ void Gate::update_gate(vector const &x_h, qpu::vector const &q_x_h, float learni
 
     m_b[i] -= learning_rate * d_t[i];
   }
+
+  V3DLib::timers.stop("update_gate LSTM");
 #endif // SKIP_LSTM_CALCULATIONS  
+
+  V3DLib::timers.start("update_gate QPU");
 
   assert(same(q_d_t, d_t, Precision_vc7));
   assert(same(q_x_h, x_h));
+
 
   assert(q_W.columns() % 16 == 0);
   update_gate_kernel().load(
@@ -121,9 +139,15 @@ void Gate::update_gate(vector const &x_h, qpu::vector const &q_x_h, float learni
     learning_rate
   ).run();
 
+  V3DLib::timers.stop("update_gate QPU");
+
 #ifndef SKIP_LSTM_CALCULATIONS  
+  V3DLib::timers.start("update_gate overhead2");
+
   assert(same(q_W, W, Precision_vc7));
   assert(same(q_b, m_b, Precision_vc7));
+
+  V3DLib::timers.stop("update_gate overhead2");
 #endif // SKIP_LSTM_CALCULATIONS  
 }
 
@@ -144,6 +168,8 @@ LSTMCell::LSTMCell(int input_size, int hidden_size) :
  * **NOTE**: In default app, x is a vector of size 1
  */
 std::pair<vector, vector> LSTMCell::forward(vector const &x, vector const &h_prev, vector const &c_prev) {
+  V3DLib::timers.start("forward");
+
   // Store for backpropagation
   this->x_t = x;
   this->h_prev = h_prev;
@@ -191,19 +217,38 @@ std::pair<vector, vector> LSTMCell::forward(vector const &x, vector const &h_pre
     candidate.q_W.columns(),
     candidate.q_W.rows()
   ).run();
-  assert(same(res , c_tilde, 2*Precision_vc7));
-  assert(same(res2, c_t    , 2*Precision_vc7));
-  assert(same(res3, h_t    , 2*Precision_vc7));
 
   q_c_tilde  = res;
   q_c_t      = res2;
   auto q_h_t = res3;
 
+#ifndef SKIP_LSTM_CALCULATIONS
+  assert(same(res , c_tilde, 2*Precision_vc7));
+  assert(same(res2, c_t    , 2*Precision_vc7));
+  assert(same(res3, h_t    , 2*Precision_vc7));
+
   forget.check_same();
   input.check_same();
   candidate.check_same();
+#endif // SKIP_LSTM_CALCULATIONS
+
+/*  
+  warn << "h_t  : " << h_t.dump();
+  warn << "q_h_t: " << q_h_t.dump();
+  warn << "c_t  : " << c_t.dump();
+  warn << "q_c_t: " << q_c_t.dump();
+*/  
         
+  V3DLib::timers.stop("forward");
+
+#ifdef USE_QPU_RESULTS
+  lstm::vector out_h_t = copy(q_h_t);
+  lstm::vector out_c_t = copy(q_c_t);
+
+  return {out_h_t, out_c_t};
+#else  
   return {h_t, c_t};
+#endif // USE_QPU_RESULTS
 }
 
 
@@ -240,7 +285,9 @@ void LSTMCell::gradient_input_gate() {
  * @brief Gradient of the output gate
  */
 void LSTMCell::gradient_output_gate(vector const &dh_next, qpu::vector /* const */ &q_dh_next) {
+#ifndef SKIP_LSTM_CALCULATIONS
   output.d_t = dh_next * tanh(c_t) * dsigmoid(output.activation);
+#endif // SKIP_LSTM_CALCULATIONS
 
   // Size should be the same for all vectors
   int size = q_dh_next.size();
@@ -273,8 +320,10 @@ void LSTMCell::gradient_cell_state(
   qpu::vector /* const */ &q_dh_next
 ) {
   auto q_dc_next = copy(dc_next); assert(same(q_dc_next, dc_next));
-
+#ifndef SKIP_LSTM_CALCULATIONS
   candidate.d_t = dc_next + dh_next * output.activation * dtanh(tanh(c_t));
+#endif // SKIP_LSTM_CALCULATIONS
+
 
   // Size should be the same for all vectors
   int size = q_dc_next.size();
@@ -290,7 +339,10 @@ void LSTMCell::gradient_cell_state(
   ).run();
 
   candidate.q_d_t = ret;
+
+#ifndef SKIP_LSTM_CALCULATIONS
   assert(same(candidate.q_d_t, candidate.d_t, 2*Precision_vc7));
+#endif // SKIP_LSTM_CALCULATIONS
 }
 
 
@@ -356,16 +408,24 @@ std::tuple<vector, vector, vector> LSTMCell::backward(
   vector const &dc_next, 
   float learning_rate
 ) {
+  V3DLib::timers.start("backward");
+
   auto q_dh_next = copy(dh_next);
 
+#ifndef SKIP_LSTM_CALCULATIONS
   // Interim copies to circumvent accumulating errors
   q_c_t = copy(c_t);  assert(same(q_c_t, c_t, Precision_vc7));
+#endif // SKIP_LSTM_CALCULATIONS
+
+  V3DLib::timers.start("backward gradient gates");
 
   gradient_output_gate(dh_next, q_dh_next);
   gradient_cell_state(dc_next, dh_next, q_dh_next);
   gradient_input_gate();
   gradient_candidate();
   gradient_forget_gate();
+
+  V3DLib::timers.stop("backward gradient gates");
 
   //  
   // Update weights using gradients
@@ -376,6 +436,7 @@ std::tuple<vector, vector, vector> LSTMCell::backward(
   // Update forget gate weights and biases
   forget.update_gate(x_h, q_x_h, learning_rate);
 
+#ifndef SKIP_LSTM_CALCULATIONS
   //
   // Specific for forget gate:
   //
@@ -385,6 +446,7 @@ std::tuple<vector, vector, vector> LSTMCell::backward(
   //
   assert(same(input.q_W, input.W, 1.0e-2f));
   assert(same(input.q_b, input.m_b, Precision_vc7));
+#endif // SKIP_LSTM_CALCULATIONS
 
   input.update_gate(x_h, q_x_h, learning_rate);
   candidate.update_gate(x_h, q_x_h, learning_rate);
@@ -396,6 +458,8 @@ std::tuple<vector, vector, vector> LSTMCell::backward(
   vector dc_prev = candidate.d_t * forget.activation; // Gradient of previous cell state
 
 #ifndef SKIP_LSTM_CALCULATIONS  
+  V3DLib::timers.start("backward gradient LSTM");
+
   vector dx_t(input_size, 0.0);
   vector dh_prev(hidden_size, 0.0);
         
@@ -420,7 +484,11 @@ std::tuple<vector, vector, vector> LSTMCell::backward(
   input.check_same();
   candidate.check_same();
   output.check_same();
+
+  V3DLib::timers.stop("backward gradient LSTM");
 #endif // SKIP_LSTM_CALCULATIONS  
+
+  V3DLib::timers.start("backward gradient QPU");
 
   int columns = resize(input_size + hidden_size);
   qpu::vector result(columns, 0.0f);
@@ -439,23 +507,29 @@ std::tuple<vector, vector, vector> LSTMCell::backward(
     &result.arr()
   ).run();
 
-  lstm::vector q_dx_t    = copy(result, 0, input_size);
-  lstm::vector q_dh_prev = copy(result, input_size, hidden_size);
+  V3DLib::timers.stop("backward gradient QPU");
 
 /*  
   warn << "dx_t  : " << dx_t.dump();
   warn << "q_dx_t: " << q_dx_t.dump();
+  warn << "result: " << result.dump();
+*/  
+        
+  V3DLib::timers.stop("backward");
+
+#ifdef USE_QPU_RESULTS
+  lstm::vector q_dx_t    = copy(result, 0, input_size);
+  lstm::vector q_dh_prev = copy(result, input_size, hidden_size);
+/*  
   warn << "dh_prev  : " << dh_prev.dump();
   warn << "q_dh_prev: " << q_dh_prev.dump();
-  //warn << "result: " << result.dump();
-*/  
+*/
 
 #ifndef SKIP_LSTM_CALCULATIONS  
   assert(same(dx_t, q_dx_t, Precision_vc7));
   assert(same(dh_prev, q_dh_prev, Precision_vc7));
 #endif // SKIP_LSTM_CALCULATIONS  
-        
-#ifdef USE_QPU_RESULTS
+
   return {q_dx_t, q_dh_prev, dc_prev};
 #else
   return {dx_t, dh_prev, dc_prev};

@@ -149,7 +149,6 @@ matrix matrix::mul(matrix const &rhs) const {
   assert(m_rows > 0);
 
   if (m_columns != rhs.rows()) {
-    breakpoint;
     cerr << "Matrix::operator*() Inner dimension does not match. "
          << "this(rows, columns): (" << m_rows << ", " << m_columns << "), "
          << "rhs(rows, columns):  (" << rhs.rows() << ", " << rhs.columns() << ")"
@@ -161,13 +160,8 @@ matrix matrix::mul(matrix const &rhs) const {
 
   matrix ret(m_rows, 1);
 
-  V3DLib::timers.start("mult load");
   m_mult_vec->load(&rhs.arr(), &arr(), &ret.arr(), m_columns/16, m_rows);
-  V3DLib::timers.stop("mult load");
-
-  V3DLib::timers.start("mult run");
   m_mult_vec->run();
-  V3DLib::timers.stop("mult run");
 
   return ret;
 }
@@ -237,22 +231,6 @@ std::string matrix::dump(bool output_int) const {
   }
 
   return ret;
-}
-
-
-float &matrix::at(int i, int j) {
-  assert(m_arr != nullptr);
-  auto width = columns();
-
-  return (*m_arr)[i*width + j];
-}
-
-
-float matrix::at(int i, int j) const {
-  assert(m_arr != nullptr);
-  auto width = columns();
-
-  return (*m_arr)[i*width + j];
 }
 
 

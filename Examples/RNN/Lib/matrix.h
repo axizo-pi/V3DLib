@@ -46,8 +46,8 @@ struct matrix {
 
   std::string dump_dim() const;
   std::string dump(bool output_int = false) const;
-  float &at(int i, int j);
-  float at(int i, int j) const;
+  inline float &at(int i, int j)       { return (*m_arr)[i*m_columns + j]; }
+  inline float  at(int i, int j) const { return (*m_arr)[i*m_columns + j]; }
 
 protected:
   void rows(int rhs)    { m_rows = rhs; }

@@ -45,5 +45,6 @@ int main(int argc, const char *argv[]) {
 
   warn << "QPU Call Count: " << BaseKernel::qpu_call_count();
     
+  V3DLib::timers.end();
   return 0;
 }
