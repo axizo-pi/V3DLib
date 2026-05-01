@@ -1,6 +1,27 @@
 #include "LSTMCell.h"
 #include "lstm_kernel.h"
 
+//
+// Define's to ease the transitioning to QPU
+//
+// LSTM will be phased out progressively.
+// Actually, it is useful to retain the LSTM calculations as reference;
+// Figuring out how to do this.
+//
+// Indications till now is that QPU converges less rapidly than LSTM.
+//
+
+//
+// Do not do LSTM calculations where possible
+//
+//#define SKIP_LSTM_CALCULATIONS
+
+#define USE_QPU_RESULTS
+
+//
+// End define's
+//
+
 namespace {
 
 const float Precision_vc7 = 5.0e-7f;  // Basic precision for vc7
@@ -52,6 +73,11 @@ void Gate::clip(float clip_value, bool do_qpu) {
 }
 
 
+/**
+ * @brief Check that the computations of LSTM and QPU are similar
+ *
+ * This call is irrelevant if either LSTM calc or QPU calc is absent.
+ */
 void Gate::check_same() {
   assert(same(q_W, W, Precision_vc7));
   assert(same(q_b, m_b, Precision_vc7));
@@ -67,6 +93,7 @@ void Gate::update_gate(vector const &x_h, qpu::vector const &q_x_h, float learni
   q_W   = copy(W);    assert(same(q_W, W));
   q_b   = copy(m_b);  assert(same(q_b, m_b));
 
+#ifndef SKIP_LSTM_CALCULATIONS	
   for (int i = 0; i < m_height; i++) {
     for (int j = 0; j < m_width; j++) {
       W[i][j] -= learning_rate * d_t[i] * x_h[j];
@@ -74,6 +101,7 @@ void Gate::update_gate(vector const &x_h, qpu::vector const &q_x_h, float learni
 
     m_b[i] -= learning_rate * d_t[i];
   }
+#endif // SKIP_LSTM_CALCULATIONS	
 
   assert(same(q_d_t, d_t, Precision_vc7));
   assert(same(q_x_h, x_h));
@@ -88,8 +116,11 @@ void Gate::update_gate(vector const &x_h, qpu::vector const &q_x_h, float learni
     q_W.columns()/16,
     learning_rate
   ).run();
+
+#ifndef SKIP_LSTM_CALCULATIONS	
   assert(same(q_W, W, Precision_vc7));
   assert(same(q_b, m_b, Precision_vc7));
+#endif // SKIP_LSTM_CALCULATIONS	
 }
 
 
@@ -332,11 +363,15 @@ std::tuple<vector, vector, vector> LSTMCell::backward(
   input.update_gate(x_h, q_x_h, learning_rate);
   candidate.update_gate(x_h, q_x_h, learning_rate);
   output.update_gate(x_h, q_x_h, learning_rate);
-        
+    
+	//	
   // Compute gradients with respect to inputs for backpropagation to earlier layers
+	//
+  vector dc_prev = candidate.d_t * forget.activation; // Gradient of previous cell state
+
+#ifndef SKIP_LSTM_CALCULATIONS	
   vector dx_t(input_size, 0.0);
   vector dh_prev(hidden_size, 0.0);
-  vector dc_prev = candidate.d_t * forget.activation; // Gradient of previous cell state
         
   // Gradient with respect to previous hidden state and input
   for (int i = 0; i < hidden_size; i++) {
@@ -359,6 +394,7 @@ std::tuple<vector, vector, vector> LSTMCell::backward(
 	input.check_same();
 	candidate.check_same();
 	output.check_same();
+#endif // SKIP_LSTM_CALCULATIONS	
 
   int columns = resize(input_size + hidden_size);
   qpu::vector result(columns, 0.0f);
@@ -377,10 +413,26 @@ std::tuple<vector, vector, vector> LSTMCell::backward(
     &result.arr()
   ).run();
 
-	//warn << "dx_t: " << dx_t.dump();
-	//warn << "dh_prev: " << dh_prev.dump();
+	lstm::vector q_dx_t    = copy(result, 0, input_size);
+	lstm::vector q_dh_prev = copy(result, input_size, hidden_size);
+
+/*	
+	warn << "dx_t  : " << dx_t.dump();
+	warn << "q_dx_t: " << q_dx_t.dump();
+	warn << "dh_prev  : " << dh_prev.dump();
+	warn << "q_dh_prev: " << q_dh_prev.dump();
 	//warn << "result: " << result.dump();
+*/	
+
+#ifndef SKIP_LSTM_CALCULATIONS	
+	assert(same(dx_t, q_dx_t, Precision_vc7));
+	assert(same(dh_prev, q_dh_prev, Precision_vc7));
+#endif // SKIP_LSTM_CALCULATIONS	
         
+#ifdef USE_QPU_RESULTS
+  return {q_dx_t, q_dh_prev, dc_prev};
+#else
   return {dx_t, dh_prev, dc_prev};
+#endif // USE_QPU_RESULTS
 }
 

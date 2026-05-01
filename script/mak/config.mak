@@ -1,4 +1,6 @@
-BASE= $(shell pwd)
+BASE=~/projects/V3DLib
+#BASE= $(shell pwd)
+#$(info BASE: $(BASE))
 
 ROOT=$(BASE)/Lib
 

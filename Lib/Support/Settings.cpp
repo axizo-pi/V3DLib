@@ -171,6 +171,17 @@ void Settings::init(int argc, const char *argv[]) {
 }
 
 
+std::string Settings::dump() const {
+	std::string ret;
+
+	// Log dir and file are actually not part of settings, showing because useful
+	ret << " Log Dir : " << Log::log_dir()  << "\n"
+	    << " Log File: " << Log::log_file();
+
+	return ret;
+}
+
+
 void Settings::show_help() {
   std::string ret;
 

@@ -811,7 +811,7 @@ void KernelDriver::compile_intern() {
     //
     // Add the uniform constants to the Source code and redo the encoding
     //
-    warn << "=== Uniform constants changed! Redoing encode ===";
+    info << "=== Uniform constants changed! Redoing encode ===";
 
     uniform_constants.add_uniforms(m_body);
 

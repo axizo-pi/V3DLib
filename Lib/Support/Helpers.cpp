@@ -100,7 +100,7 @@ platform_info get_platform_info() {
 
   static bool showed_msg = false;
   if (!showed_msg) {
-    warn << "platform_info:" << p_i.dump();
+    info << "platform_info:" << p_i.dump();
     showed_msg = true;
   }
 
@@ -353,8 +353,10 @@ bool uniforms_reversed() {
 
   if (!did_first) {
     ret = get_platform_info();
-    if (!ret.is_x86()) {  // Actually, reversal appears to happen explicitly on x64
-      warn << "No need to reverse the parameter indexes";
+    if (ret.is_x86()) {
+      warn << "x86: Need to reverse the parameter indexes";
+		} else {
+      debug << "No need to reverse the parameter indexes";
     }
 
     did_first = true;

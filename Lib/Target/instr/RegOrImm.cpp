@@ -22,9 +22,8 @@ RegOrImm::RegOrImm(float rhs) : m_is_reg(false), m_imm(rhs) {
 
 
 	int index = v3d::uniform_constants.get(rhs);
-	//warn << "get: " << index;
 	set_reg(Var(STANDARD, index));
-	warn << "Called RegOrImm(float): " << rhs << " -> " << dump();
+	info << "Called RegOrImm(float): " << rhs << " -> " << dump();
 }
 
 Reg &RegOrImm::reg()                  { assert(is_reg()); return m_reg; }

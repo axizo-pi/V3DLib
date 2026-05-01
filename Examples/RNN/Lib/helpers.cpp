@@ -88,4 +88,6 @@ std::string vector_dump(Float::Array const &src, int size, int start_index, bool
 }
 
 
-Settings &settings() { return _settings; }
+Settings &settings() {
+	return _settings;
+}
