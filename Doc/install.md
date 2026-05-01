@@ -209,32 +209,32 @@ This is for `Pi1`, `Pi2`, `Pi3` and `Zero`.
 `dtoverlay` should *not* be specified for Pi1.
 In addition, this sets the memory split with `gpu_mem`.
 
-  sudo vi /boot/firmware/config.txt
+    sudo vi /boot/firmware/config.txt
 
 Find the following lines:
 
-  # Enable DRM VC4 V3D driver on top of the dispmanx display stack
-  dtoverlay=vc4-fkms-v3d
-  max_framebuffers=2
+    # Enable DRM VC4 V3D driver on top of the dispmanx display stack
+    dtoverlay=vc4-fkms-v3d
+    max_framebuffers=2
 
 On `Pi Zero`, the text is:
 
-  # Enable DRM VC4 V3D driver
-  dtoverlay=vc4-kms-v3d
-  max_framebuffers=2
+    # Enable DRM VC4 V3D driver
+    dtoverlay=vc4-kms-v3d
+    max_framebuffers=2
 
 Replace with:
 
-  #dtoverlay=vc4-fkms-v3d
-  max_framebuffers=2
-  gpu_mem=128
+    #dtoverlay=vc4-fkms-v3d
+    max_framebuffers=2
+    gpu_mem=128
 
 
 Reboot after the edit.
 
 To check the memory split:
 
-  vcgencmd get_mem gpu
+    > vcgencmd get_mem gpu
 
 
 ### 4. Set localization on `pi`
@@ -245,7 +245,7 @@ There are other ways of doing this, this way is mainly my tactile memory.
 
 On `pi`:
 
-  sudo raspi-config
+    > sudo raspi-config
 
 - Select 5. Localization Options
 - Select Locale

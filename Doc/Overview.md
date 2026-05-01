@@ -49,7 +49,7 @@ I believe that there is no performance gain to be found here, quite the contrary
 
 # Supported Pi's
 
-I have 14 Pi's organized in clusters:
+I have 14 Pi's organized in three clusters:
 
 ![Pi Clusters](./images/Pi_clusters.jpeg)
 
