@@ -202,7 +202,7 @@ int Instr::small_imm_value() const {
   }
 
   assert(false); // Not expecting to get here, warn me if it  happens.
-  if (!has_small_imm()) return NO_SMALL_IMM;
+  return NO_SMALL_IMM;
 }
 
 
