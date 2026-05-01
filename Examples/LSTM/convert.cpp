@@ -8,22 +8,24 @@
 
 namespace {
 
-bool check_precision(float lhs, float rhs, float precision) {
+inline bool check_precision(float lhs, float rhs, float precision) {
+  bool ret = true;
+
   if (precision == 0.0f) {
     if (lhs != rhs) {
       warn << "check_precision fail";
-      return false;
+      ret = false;
     }
   } else {
     float diff = abs(lhs - rhs);
     if (diff > precision) {
       warn << "check_precision fails with "
            << "diff: " << diff << " for precision: " << precision;
-      return false;
+      ret = false;
     }
   }
 
-  return true;
+  return ret;
 }
 
 } // anon namespace
@@ -177,19 +179,29 @@ bool same(qpu::vector const &lhs, qpu::vector const &rhs, float precision) {
 }
 
 
+/**
+ * This checks takes almost half the total runtime.
+ * However, I don't see what else could be optimized here.
+ */
 bool same(qpu::matrix const &lhs, lstm::matrix const &rhs, float precision) {
-  assert(rhs.size() >= 1);
-  auto width = rhs[0].size();
+  //V3DLib::timers.start("same(matrix,matrix)");
 
-  for (std::size_t i = 0; i < rhs.size(); i++) {
-    for (std::size_t j = 0; j < width; j++) {
-      if (!check_precision(lhs.at((int) i, (int) j), rhs[i][j], precision)) {
+  int height = (int) rhs.size();
+  assert(height >= 1);
+  int width = (int) rhs[0].size();
+
+  for (int i = 0; i < height; i++) {
+    auto const &row = rhs[i];
+
+    for (int j = 0; j < width; j++) {
+      if (!check_precision(lhs.at(i, j), row[j], precision)) {
         warn << "Fail same(qpu::matrix, qpu::matrix), (i,j): (" << i << ", " << j << ")";
         return false;
       }
     }
   }
 
+  //V3DLib::timers.stop("same(matrix,matrix)");
   return true;
 }
 
