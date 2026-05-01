@@ -87,7 +87,7 @@ public:
 
   bool has_errors() const;
   std::string info() const;
-	static int qpu_call_count();
+  static int qpu_call_count();
 
   /**
    * Load uniform values.

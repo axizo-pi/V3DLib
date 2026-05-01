@@ -164,21 +164,21 @@ void Settings::init(int argc, const char *argv[]) {
 
   check_params(m_all_params, argc, argv);
 
-	std::filesystem::path cwd = std::filesystem::current_path() / "log";
-	//warn << "Log path: " << cwd.string();
+  std::filesystem::path cwd = std::filesystem::current_path() / "log";
+  //warn << "Log path: " << cwd.string();
   set_log_dir(cwd.string());
   set_log_file("V3DLib.log");
 }
 
 
 std::string Settings::dump() const {
-	std::string ret;
+  std::string ret;
 
-	// Log dir and file are actually not part of settings, showing because useful
-	ret << " Log Dir : " << Log::log_dir()  << "\n"
-	    << " Log File: " << Log::log_file();
+  // Log dir and file are actually not part of settings, showing because useful
+  ret << " Log Dir : " << Log::log_dir()  << "\n"
+      << " Log File: " << Log::log_file();
 
-	return ret;
+  return ret;
 }
 
 

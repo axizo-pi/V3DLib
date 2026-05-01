@@ -355,7 +355,7 @@ bool uniforms_reversed() {
     ret = get_platform_info();
     if (ret.is_x86()) {
       warn << "x86: Need to reverse the parameter indexes";
-		} else {
+    } else {
       debug << "No need to reverse the parameter indexes";
     }
 

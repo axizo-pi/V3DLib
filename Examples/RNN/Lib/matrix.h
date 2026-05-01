@@ -105,7 +105,7 @@ struct vector : public matrix {
   std::string dump(bool output_int = false) const;
 
 private:
-	bool empty() const { return m_arr == nullptr; }
+  bool empty() const { return m_arr == nullptr; }
 
   // TODO: should probably clean this up.
   //       ptr's not cleaned up on exit, better would be shared or unique ptr.

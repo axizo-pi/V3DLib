@@ -199,7 +199,7 @@ void BaseKernel::qpu(bool wait_complete) {
   assert(!m_settings.compile_only);    // Paranoia
 
 #ifdef QPU_MODE
-	s_qpu_call_count++;
+  s_qpu_call_count++;
   driver().invoke(numQPUs(), uniforms, wait_complete);
 #else
   fatal("qpu(): QPU mode not enabled, can not run on hardware.");
@@ -208,7 +208,7 @@ void BaseKernel::qpu(bool wait_complete) {
 
 
 int BaseKernel::qpu_call_count() {
-	return s_qpu_call_count;
+  return s_qpu_call_count;
 }
 
 

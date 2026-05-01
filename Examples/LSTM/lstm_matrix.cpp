@@ -56,7 +56,7 @@ vector vector::operator*(vector const &b) const {
  */
 vector vector::sigmoid(vector const &bias) {
   vector const &v = *this;
-	assert(v.size() == bias.size());
+  assert(v.size() == bias.size());
 
   vector result(v.size());
   for (size_t i = 0; i < v.size(); i++) {
@@ -67,9 +67,9 @@ vector vector::sigmoid(vector const &bias) {
 
 
 void vector::clip(float extreme) {
-	assert(extreme > 0);
-	float min_value = -extreme;
-	float max_value = extreme;
+  assert(extreme > 0);
+  float min_value = -extreme;
+  float max_value = extreme;
 
   for (size_t i = 0; i < size(); i++) {
     at(i) = clip_intern(at(i), min_value, max_value);
@@ -78,26 +78,26 @@ void vector::clip(float extreme) {
 
 
 std::string vector::dump_dim() const {
-	std::string ret;
+  std::string ret;
 
-	ret << "vec(" << size() << ")";
+  ret << "vec(" << size() << ")";
 
-	return ret;
+  return ret;
 }
 
 
 std::string vector::dump() const {
-	std::string ret;
+  std::string ret;
 
-	ret << dump_dim() << "[";
+  ret << dump_dim() << "[";
 
-	for (int i = 0; i < (int) size(); ++i) {
-		ret << at(i) << ", ";
-	}
+  for (int i = 0; i < (int) size(); ++i) {
+    ret << at(i) << ", ";
+  }
 
-	ret << "]";
+  ret << "]";
 
-	return ret;
+  return ret;
 }
 
 
@@ -125,34 +125,34 @@ lstm::vector matrix::operator*(lstm::vector const &v) {
 
 
 std::string matrix::dump_dim() const {
-	assert(size() >= 1);
-	auto width = at(0).size();
+  assert(size() >= 1);
+  auto width = at(0).size();
 
-	std::string ret;
-	ret << "(" << size() << ", " << width << ")";
-	return ret;
+  std::string ret;
+  ret << "(" << size() << ", " << width << ")";
+  return ret;
 }
 
 
 std::string matrix::dump() const {
-	assert(size() >= 1);
-	auto width = at(0).size();
+  assert(size() >= 1);
+  auto width = at(0).size();
 
-	std::string ret;
-	ret << dump_dim() << " [\n  ";
+  std::string ret;
+  ret << dump_dim() << " [\n  ";
 
   for (std::size_t i = 0; i < size(); i++) {
-		ret << i << ": [";
+    ret << i << ": [";
     for (std::size_t j = 0; j < width; j++) {
       ret << at(i)[j] << ", ";
     }
 
-		ret << "]\n  ";
+    ret << "]\n  ";
   }
 
-	ret << "]";
+  ret << "]";
 
-	return ret;
+  return ret;
 }
 
 

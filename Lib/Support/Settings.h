@@ -13,7 +13,7 @@ struct Settings : public BaseSettings {
   void init(int argc, const char *argv[]);
   virtual bool init_params() { return true; }
   TypedParameter::List const &parameters() const { return m_all_params.parameters(); }
-	std::string dump() const;
+  std::string dump() const;
 
 private:
   CmdParameters * const m_derived_params;

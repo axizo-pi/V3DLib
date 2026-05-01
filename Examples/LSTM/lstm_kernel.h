@@ -12,5 +12,6 @@ V3DLib::BaseKernel &gradient_input_gate_kernel();
 V3DLib::BaseKernel &gradient_output_gate_kernel();
 V3DLib::BaseKernel &gradient_candidate_kernel();
 V3DLib::BaseKernel &gradient_forget_kernel();
+V3DLib::BaseKernel &forward_states_kernel();
 
 #endif // _LSTM_LSTM_KERNEL_H

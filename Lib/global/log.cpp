@@ -36,78 +36,78 @@ public:
   bool    m_next_is_hex    = false;  // If false, next int is dec
   bool    m_next_is_fixed  = false;  // If false, next float is scientific
 
-	bool s_hex   = false;
-	bool s_fixed = false;
+  bool s_hex   = false;
+  bool s_fixed = false;
 
-	bool do_throw() { bool ret = m_throw; m_throw = false; return ret; }
-	void handle(LogFlag f);
-	bool do_hex();
-	bool do_fixed();
+  bool do_throw() { bool ret = m_throw; m_throw = false; return ret; }
+  void handle(LogFlag f);
+  bool do_hex();
+  bool do_fixed();
 };
 
 void Modifiers::handle(LogFlag f) {
-	if (m_next_is_global) {
-		//std::cout << "Handling global: " << f << "\n";
+  if (m_next_is_global) {
+    //std::cout << "Handling global: " << f << "\n";
 
-		switch (f) {
-			case none:       assert(false);    break; // Not expecting 'none' as input
-			case dec:        s_hex         = false;
-			                 m_next_is_hex = false;
-			break;
-			case hex:        s_hex         = true;
-			                 m_next_is_hex = true;
-			break;
-			case fixed:      s_fixed         = true;
-			                 m_next_is_fixed = true;
-			break;
-			case scientific: s_fixed         = false;
-			                 m_next_is_fixed = false;
-			break;
-			case global:     assert(false);    break; // Disallow multiple globals in a row
-			default: break; // Rest ignored 
-		}
+    switch (f) {
+      case none:       assert(false);    break; // Not expecting 'none' as input
+      case dec:        s_hex         = false;
+                       m_next_is_hex = false;
+      break;
+      case hex:        s_hex         = true;
+                       m_next_is_hex = true;
+      break;
+      case fixed:      s_fixed         = true;
+                       m_next_is_fixed = true;
+      break;
+      case scientific: s_fixed         = false;
+                       m_next_is_fixed = false;
+      break;
+      case global:     assert(false);    break; // Disallow multiple globals in a row
+      default: break; // Rest ignored 
+    }
 
-		m_next_is_global = false;
-	} else {
-		//std::cout << "Handling next\n";
+    m_next_is_global = false;
+  } else {
+    //std::cout << "Handling next\n";
 
-		switch (f) {
-			case none:       assert(false);            break; // Not expecting 'none' as input
-			case dec:        m_next_is_hex    = false; break;
-			case hex:        m_next_is_hex    = true;  break;
-	  	case thrw:       m_throw          = true;  break;
-			case fixed:      m_next_is_fixed  = true;  break;
-			case scientific: m_next_is_fixed  = false; break;
-			case global:     m_next_is_global = true;  break;
-			default: assert(false); break;
-		}
-	}
+    switch (f) {
+      case none:       assert(false);            break; // Not expecting 'none' as input
+      case dec:        m_next_is_hex    = false; break;
+      case hex:        m_next_is_hex    = true;  break;
+      case thrw:       m_throw          = true;  break;
+      case fixed:      m_next_is_fixed  = true;  break;
+      case scientific: m_next_is_fixed  = false; break;
+      case global:     m_next_is_global = true;  break;
+      default: assert(false); break;
+    }
+  }
 }
 
 
 bool Modifiers::do_hex() {
-	bool ret = s_hex;
+  bool ret = s_hex;
 
   if (m_next_is_hex != s_hex) {
-		//std::cout << "do_hex() global != next\n";
-		ret = m_next_is_hex;
-  	m_next_is_hex = !m_next_is_hex;
-	}
+    //std::cout << "do_hex() global != next\n";
+    ret = m_next_is_hex;
+    m_next_is_hex = !m_next_is_hex;
+  }
 
-	return ret;
+  return ret;
 }
 
 
 bool Modifiers::do_fixed() {
-	bool ret = s_fixed;
+  bool ret = s_fixed;
 
   if (m_next_is_fixed != s_fixed) {
-		//std::cout << "do_fixed() global != next\n";
-		ret = m_next_is_fixed;
-  	m_next_is_fixed = !m_next_is_fixed;
-	}
+    //std::cout << "do_fixed() global != next\n";
+    ret = m_next_is_fixed;
+    m_next_is_fixed = !m_next_is_fixed;
+  }
 
-	return ret;
+  return ret;
 }
 
 Modifiers s_modifiers;
@@ -375,24 +375,24 @@ LogItem &LogItem::operator<<(unsigned long n) {
 
 LogItem &LogItem::operator<<(float n) {
   if (s_modifiers.do_fixed()) {
-  	m_log.buf().setf(std::ios_base::fixed, std::ios_base::floatfield);
-	} else {
-  	m_log.buf().setf(std::ios_base::scientific, std::ios_base::floatfield);
-	}
+    m_log.buf().setf(std::ios_base::fixed, std::ios_base::floatfield);
+  } else {
+    m_log.buf().setf(std::ios_base::scientific, std::ios_base::floatfield);
+  }
   m_log.buf()  << n;
   return *this;
 }
 
 
 LogItem &LogItem::operator<<(double n) {
-	// NOTE: No modifiers handled here
+  // NOTE: No modifiers handled here
   m_log.buf() << n;
   return *this;
 }
 
 
 LogItem &LogItem::operator<<(LogFlag f) {
-	s_modifiers.handle(f);
+  s_modifiers.handle(f);
   return *this;
 }
 

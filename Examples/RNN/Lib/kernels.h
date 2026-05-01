@@ -5,6 +5,7 @@
 
 using namespace V3DLib;
 
+void mult_vec_partial(Float::Ptr &input, Float::Ptr &mat, Float::Ptr &result, Int &M, Int &N);
 void clip_partial(Float &val, Float &clip_min, Float &clip_max);
 
 void kernel_sigmoid(Float::Ptr in, Float::Ptr bias, Float::Ptr out, Int N);
