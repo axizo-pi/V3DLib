@@ -78,7 +78,7 @@ std::string errStatLabel(ErrStatFields val) {
     case VCMRE:    return "VCM error (renderer)";
     case VCMBE:    return "VCM error (binner)";
     case L2CARE:   return "L2C AXI Receive Fifo Overrun error";
-    default: assert(false);
+    default:       assert(false); return "";
   }
 }
 
