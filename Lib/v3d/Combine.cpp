@@ -1793,13 +1793,11 @@ void combine_old(Instructions &instructions) {
 
 /**
  *
- * @return true if tmu load detected and converted, false otherwise
+ * @return true if at least one tmu load detected and converted, false otherwise
  *
  * ======================================
  * NOTES
  * -----
- *
- * - Current implementation handles only 1 TMU load at a time.
  *
  * - The format of the TMU load appears to be:
  *
@@ -1808,17 +1806,114 @@ void combine_old(Instructions &instructions) {
  *    any()                         ; any()
  *    nop                           ; nop                         ; ldtmu.rf2
  *
- * The `ldtmu` sig must be in a double nop operation.
+ * The `ldtmu` sig _must_ be in a double nop operation.
  * The mul `any()` on the `mov tmua` is a hypothesis, supported by `py-videocore7`;
- * TODO need to double check.
+ * TODO double check.
+ *
+ * - Overlapping TMU loads are not converted optimally. Eg.:
+ *
+ *    17: mov tmua, rf1                 ; nop                         ; thrsw
+ *    18: nop                           ; nop
+ *    19: nop                           ; nop
+ *    20: nop                           ; nop                         ; ldtmu.rf2
+ *    21: mov tmua, rf0                 ; nop                         ; thrsw
+ *    22: nop                           ; nop
+ *    23: nop                           ; nop
+ *    24: nop                           ; nop                         ; ldtmu.rf3
+ *    25: mov rf4, 0                    ; nop
+ *    26: mov rf5, 0                    ; nop                           # Load full imm int 16
+ *    27: add rf5, rf5, 1               ; nop
+ *
+ * converts to:
+ *
+ *    17: mov tmua, rf1                 ; nop                         ; thrsw
+ *    18: mov tmua, rf0                 ; nop                         ; thrsw
+ *    19: mov rf4, 0                    ; nop
+ *    20: nop                           ; nop                         ; ldtmu.rf2
+ *    21: mov rf5, 0                    ; nop                           # Load full imm int 16
+ *    22: nop                           ; nop                         ; ldtmu.rf3
+ *    23: add rf5, rf5, 1               ; nop                           # Load full imm int 16
+ *
+ * Operation `22` could have been one index previous.
+ * I can live with this; this IMHO needs brute force and I don't feel like it right now.
+ * Perhaps inspiration will hit me one day.
+ *
+ * - In unit tests, **TMU loads can not overlap**
+ *   This is weird, because in example program `OET` overlapping TMU loads _did_ work;
+ *   see previous note which comes from `OET`.
  */
-bool tmu_reads(Instructions &instrs) {
+MAYBE_UNUSED bool tmu_reads(Instructions &instrs) {
 	warn << "Doing tmu_reads()";
+	bool ret = false;
 
-	// Detect all tmu reads
-	// Going back to front in instruction list
+	//
+	// Check if this is a clean read, ie. unchanged since generation
+	// The clean form is:
+	//
+	//    17: mov tmua, rf1                 ; nop                         ; thrsw
+	//    18: nop                           ; nop
+	//    19: nop                           ; nop
+	//    20: nop                           ; nop                         ; ldtmu.rf2
+	//
+	auto clean_read = [&instrs] (int i) -> bool {
+		assert(i + 3 < (int) instrs.size());
+
+		bool ret =  (
+				instrs[i].sig.thrsw
+		 &&	instrs[i + 1].is_nop() && !instrs[i + 1].has_signal(true)
+		 && instrs[i + 2].is_nop() && !instrs[i + 2].has_signal(true)
+		 && instrs[i + 3].is_nop() &&  instrs[i + 3].sig.ldtmu
+		);
+
+		return ret;
+	};
+
+
+	//
+	// Check if it is safe to collapse the nop's of a tmua load
+	//
+	auto is_safe = [&instrs] (int i) -> bool {
+		auto const &sig_addr = instrs[i + 3].sig_dest();
+		assert(sig_addr.used());
+		//warn << "Doing is_save(), sig_addr: " << sig_addr.dump();
+
+		const int Min_Offset = 6;  // Minimal offset where the sig_addr can be used
+		bool ret = true;
+		int tmua_count = 0;  // Prevent TMU loads from overlapping
+
+  	for (int j = i + 4; j <  i + Min_Offset; j++) {
+			assert(!instrs[j].skip()); // Warn me if this case happens
+
+			// Don't go past another ldtmu sig address
+			if (instrs[j].uses_sig_dst()) {
+				//warn << "using sig_dst index " << j << ": " << instrs[j].mnemonic(true);
+				ret = false;
+				break;  // Don't continue;
+			}
+
+			if (check_register_used(instrs[j], sig_addr)) {
+				ret = false;
+				break;
+			}
+
+			if (is_tmua(instrs[j])) {
+				++tmua_count; 
+			}
+		}
+
+		if (tmua_count > 0) {
+			warn << "tmua_count: " << tmua_count;
+			ret = false;
+		}
+
+		return ret;
+	};
+
+	//
+	// Detect all tmu reads.
+	// Going back to front in instruction list.
+	//
   for (int i = (int) instrs.size() - 1; i >= 0; i--) {
-  //for (int i = 0; i < (int) instrs.size(); i++) {
     auto &instr = instrs[i];
 
 		if (!is_tmua(instr)) continue; 
@@ -1827,70 +1922,47 @@ bool tmu_reads(Instructions &instrs) {
 		assert(i > 0);
 		if (is_tmud(instrs[i - 1])) continue; 
 
-		warn << "tmua read at index " << i << ": " << instr.dump();
+		//warn << "tmua load at index " << i << ": " << instr.dump();
 
-		// Check if this is a clean read, ie. unchanged since generation
-		// The form is:
-		//
-		//    17: mov tmua, rf1                 ; nop                         ; thrsw
-		//    18: nop                           ; nop
-		//    19: nop                           ; nop
-		//    20: nop                           ; nop                         ; ldtmu.rf2
-		//
-		assert(i + 3 < (int) instrs.size());
-		bool clean_read =  (
-				instr.sig.thrsw
-		 &&	instrs[i + 1].is_nop() && !instrs[i + 1].has_signal(true)
-		 && instrs[i + 2].is_nop() && !instrs[i + 2].has_signal(true)
-		 && instrs[i + 3].is_nop() &&  instrs[i + 3].sig.ldtmu
-		);
+		if (!clean_read(i)) continue;
+		//warn << "Clean read; considering following:\n"
+		//		 << sub_dump(instrs, i, 8);
 
-		if (!clean_read) continue;
-
-		warn << "Clean read; considering following:\n"
-				 << sub_dump(instrs, i, 8);
-
-		auto const &sig_addr = instrs[i + 3].sig_dest();
-		assert(sig_addr.used());
-		warn << "sig_addr: " << sig_addr.dump();
-
-		// Find first usage of sig_addr
-		int index = -1;
-  	for (int j = i + 4; j <  (int) instrs.size(); j++) {
-			if (instrs[j].uses_sig_dst()) {
-				warn << "using sig_dst index " << j << ": " << instrs[j].mnemonic(true);
-				if (j > i + 4) {
-					index = j - 1;
-				}
-				break;  // Don't continue;
-			}
-
-			if (check_register_used(instrs[j], sig_addr)) {
-				index = j;
-				break;
-			}
-		}
-		assert(index != -1);
-		warn << "Found usage sig_addr at:\n"
-		     << sub_dump(instrs, index - 1, 3);
-
-		if (index >= i + 6) {
-			// Safe to convert
-/*			
-			instrs.insert(instrs.begin() + i + 6, instrs[i + 3]); 
-			instrs[i + 1].skip(true);
-			instrs[i + 2].skip(true);
-			instrs[i + 3].skip(true);
-*/			
+		if (is_safe(i)) {
+			// Safe to convert; move two instructions up to fill the nop's
 			instrs[i + 1] = instrs[i + 4];
 			instrs[i + 2] = instrs[i + 5];
 			instrs[i + 4].skip(true);
 			instrs[i + 5].skip(true);
-			return true;
+			ret = true;
 		}
 	}
 
-	return false;
+	return ret;
+}
+
+
+/**
+ * Debug routine; check definitions of branches.
+ *
+ * This is display only; branch labels are resolved downstream.
+ */
+MAYBE_UNUSED void check_branches(Instructions &instrs) {
+	std::string buf;
+
+  for (int i = 0; i < (int) instrs.size(); i++) {
+    auto &instr = instrs[i];
+		if (instr.is_branch()) {
+			buf  << "  Branch with label '" << instr.branch_label()  << "' at index " << i << ": " << instr.mnemonic(true) << "\n";
+		}
+
+		if (instr.is_label()) {
+			buf  << "  Label '" << instr.label()  << "' at index " << i << ": " << instr.mnemonic(true) << "\n";
+		}
+	}
+
+	warn << "Branches:\n"
+		   << buf;
 }
 
 } // anon namespace
@@ -1907,9 +1979,19 @@ try {
 
   if (Platform::compiling_for_vc7()) {
 /*		
-		while (tmu_reads(instrs)) {
-    	count += remove_skips(instrs);
+		int tmua_count = 0;
+
+		if (tmu_reads(instrs)) {
+    	tmua_count += remove_skips(instrs);
+			//check_branches(instrs);
 		}
+
+		if (tmua_count > 0) {
+			warn << "tmu_reads removed " << tmua_count << " instructions";
+			count += tmua_count;
+		}
+
+		warn << "Done tmu_reads()";
 */		
 	} else {
 		// Doesn't work (any more) on vc7
