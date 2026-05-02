@@ -102,12 +102,13 @@ public:
   bool check_dst() const;
   bool uses_sig_dst() const;
   bool is_ldtmu() const { assert(sig_dst_count() <= 1); return sig.ldtmu; }
+	Instr &ldtmu(DestReg const &reg);
   DestReg sig_dest() const;
   DestReg add_dest() const;
   DestReg mul_dest() const;
 
 private:
-  DestReg add_src_dest(v3d_qpu_input src) const;
+  DestReg add_src_dest(v3d_qpu_input src, bool is_small_imm) const;
   
 public:
   DestReg add_src_a() const;
@@ -212,7 +213,7 @@ public:
   ByteCode bytecode() const;
   std::string dump() const;
 
-private  :
+private:
   bool uses_acc() const;
 };
 

@@ -24,6 +24,7 @@ public:
   bool operator==(Register const &rhs) const;
 
   bool is_magic() const { return m_magic_write; }
+  uint8_t raddr() const { return  m_waddr; }
 
   std::string dump() const;
 
