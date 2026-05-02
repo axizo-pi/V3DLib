@@ -652,6 +652,20 @@ void Instr::set_sig_addr(Location const &loc) {
 }
 
 
+/**
+ * @brief Set sig_addr for ldtmu
+ */
+Instr &Instr::ldtmu(DestReg const &reg) {
+	assert(reg.used());
+	assert(!reg.is_magic());
+  assert(sig_dst_count() == 0);
+
+	sig.ldtmu = true;
+	sig_addr = reg.raddr();
+
+	return *this;
+}
+
 DestReg Instr::sig_dest() const {
   if (uses_sig_dst()) {
     return DestReg(sig_addr, sig_magic);
@@ -680,14 +694,25 @@ DestReg Instr::mul_dest() const {
 }
 
 
-DestReg Instr::add_src_dest(v3d_qpu_input src) const {
-  if (src.mux < V3D_QPU_MUX_A) {
-    return DestReg(src.mux, true);
-  } else if (src.mux == V3D_QPU_MUX_A) {
-    return DestReg(raddr_a, false);
-  } else if (!sig.small_imm_b) {
-    return DestReg(raddr_b, false);
-  }
+/**
+ * @param is_small_imm  vc7 only; true is sig small imm flag set for this field.
+ *                      Ignored for vc6.
+ */
+DestReg Instr::add_src_dest(v3d_qpu_input src, bool is_small_imm) const {
+	if (Platform::compiling_for_vc7()) {
+	  if (!is_small_imm) {
+	    return DestReg(src.raddr, false);
+		}
+	} else {
+		// vc6
+	  if (src.mux < V3D_QPU_MUX_A) {
+	    return DestReg(src.mux, true);
+	  } else if (src.mux == V3D_QPU_MUX_A) {
+	    return DestReg(raddr_a, false);
+	  } else if (!sig.small_imm_b) {
+	    return DestReg(raddr_b, false);
+	  }
+	}
 
   return DestReg();
 }
@@ -697,7 +722,7 @@ DestReg Instr::add_src_a() const {
   if (Oper::num_operands(alu.add.op) == 0) return DestReg();
   if (alu.add.op == V3D_QPU_A_NOP) return DestReg();
 
-  return add_src_dest(alu.add.a);
+  return add_src_dest(alu.add.a, sig.small_imm_a);
 }
 
 
@@ -705,19 +730,19 @@ DestReg Instr::add_src_b() const {
   if (Oper::num_operands(alu.add.op) < 2) return DestReg();
   if (alu.add.op == V3D_QPU_A_NOP) return DestReg();
 
-  return add_src_dest(alu.add.b);
+  return add_src_dest(alu.add.b, sig.small_imm_b);
 }
 
 
 DestReg Instr::mul_src_a() const {
   if (alu.mul.op == V3D_QPU_M_NOP) return DestReg();
-  return add_src_dest(alu.mul.a);
+  return add_src_dest(alu.mul.a, sig.small_imm_c);
 }
 
 
 DestReg Instr::mul_src_b() const {
   if (alu.mul.op == V3D_QPU_M_NOP) return DestReg();
-  return add_src_dest(alu.mul.b);
+  return add_src_dest(alu.mul.b, sig.small_imm_d);
 }
 
 

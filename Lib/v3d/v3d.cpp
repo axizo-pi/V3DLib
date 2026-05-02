@@ -111,7 +111,7 @@ bool alloc_intern(
     // Returns offset to use for mmap() in mmap_bo
     int result = ioctl(fd, DRM_IOCTL_V3D_MMAP_BO, &mmap_bo);
     if (result != 0) {
-       cerr << "alloc_intern() mmap bo: " << strerror(errno);
+      cerr << "alloc_intern() mmap bo: " << strerror(errno);
       return false;
     }
   }
@@ -119,7 +119,7 @@ bool alloc_intern(
   {
     void *result = mmap(NULL, size, PROT_READ | PROT_WRITE, MAP_SHARED, fd, (__off_t) mmap_bo.offset);
     if (result == MAP_FAILED) {
-       cerr << "alloc_intern() mmap: " << strerror(errno); 
+      cerr << "alloc_intern() mmap: " << strerror(errno); 
       cerr << "mmap() failure, size: " << size << ", offset: " << (int) mmap_bo.offset;
       return false;
     }
@@ -134,7 +134,6 @@ bool alloc_intern(
 
 
 namespace v3d {
-
 
 bool alloc(uint32_t size, uint32_t &handle, uint32_t &phyaddr, void **usraddr) {
   assert(size > 0);
