@@ -33,6 +33,38 @@ using ::operator<<;  // C++ weirdness
 
 namespace {
 
+using V3DLib::v3d::instr::tmua;
+using V3DLib::v3d::instr::tmud;
+
+bool is_tmua(Instr const &instr) {
+	return (instr.alu.add.op == V3D_QPU_A_MOV  && instr.alu_add_dst() == tmua);
+}
+
+
+bool is_tmud(Instr const &instr) {
+	return (instr.alu.add.op == V3D_QPU_A_MOV  && instr.alu_add_dst() == tmud);
+}
+
+
+/**
+ * @brief Display a sub-sequence in the instruction list
+ */
+std::string sub_dump(Instructions &instrs, int start, int length) {
+	assert(start >= 0);
+	assert(length > 0);
+	assert(start + length < (int) instrs.size());
+
+	std::string ret;
+
+	for (int i = 0; i < length; ++i) {
+		int index = start + i;
+		ret << "  " << index << ": " << instrs[index].mnemonic(true) << "\n";
+	}
+
+	return ret;
+}
+
+
 /**
  * vc6-specific.
  *
@@ -1172,14 +1204,6 @@ MAYBE_UNUSED void combine_read_write(Instructions &instr) {
 
   int end = (int) instr.size();
 
-  auto is_tmua = [] (Instr const &instr) -> bool {
-     return (instr.alu.add.op == V3D_QPU_A_MOV  && instr.alu_add_dst() == tmua);
-  };
-
-  auto is_tmud = [] (Instr const &instr) -> bool {
-     return (instr.alu.add.op == V3D_QPU_A_MOV  && instr.alu_add_dst() == tmud);
-  };
-
   auto is_tmwt = [] (Instr const &instr) -> bool {
      return (instr.alu.add.op == V3D_QPU_A_TMUWT);
   };
@@ -1189,10 +1213,7 @@ MAYBE_UNUSED void combine_read_write(Instructions &instr) {
 
     if (is_tmud(instr[i]) && is_tmua(instr[i + 1]) && is_tmwt(instr[i + 2])) {
       warn << "combine_read_write tmu write detected\n"
-           << "  " << i       << ": " << instr[i].mnemonic(true)      << "\n"
-           << "  " << (i + 1) << ": " << instr[i + 1].mnemonic(true)  << "\n"
-           << "  " << (i + 2) << ": " << instr[i + 2].mnemonic(true)
-      ;
+				 	 << sub_dump(instr, i, 3);
 
 if (false) {      
       //
@@ -1412,7 +1433,19 @@ MAYBE_UNUSED void combine(Instructions &instr) {
 
 
 /**
+ * @brief Check if passed register `reg` is used in any way in instruction `instr`.
+ */
+bool check_register_used(v3d::instr::Instr const &instr, instr::DestReg const &reg) {
+	return instr.is_src(reg)
+      || instr.is_dst(reg);
+}
+
+
+/**
  * @brief Check if given instructions have a dependency on each other.
+ *
+ * All destination registers of `first` are checked against all src/dst registers
+ * of `second`.
  *
  * Pre: Instruction 'first' is predecessor of 'second'.
  * There is a dependency if:
@@ -1757,6 +1790,109 @@ void combine_old(Instructions &instructions) {
   }
 }
 
+
+/**
+ *
+ * @return true if tmu load detected and converted, false otherwise
+ *
+ * ======================================
+ * NOTES
+ * -----
+ *
+ * - Current implementation handles only 1 TMU load at a time.
+ *
+ * - The format of the TMU load appears to be:
+ *
+ *    mov tmua, rf1                 ; any()                       ; thrsw
+ *    any()                         ; any() 
+ *    any()                         ; any()
+ *    nop                           ; nop                         ; ldtmu.rf2
+ *
+ * The `ldtmu` sig must be in a double nop operation.
+ * The mul `any()` on the `mov tmua` is a hypothesis, supported by `py-videocore7`;
+ * TODO need to double check.
+ */
+bool tmu_reads(Instructions &instrs) {
+	warn << "Doing tmu_reads()";
+
+	// Detect all tmu reads
+	// Going back to front in instruction list
+  for (int i = (int) instrs.size() - 1; i >= 0; i--) {
+  //for (int i = 0; i < (int) instrs.size(); i++) {
+    auto &instr = instrs[i];
+
+		if (!is_tmua(instr)) continue; 
+
+		// Skip reads
+		assert(i > 0);
+		if (is_tmud(instrs[i - 1])) continue; 
+
+		warn << "tmua read at index " << i << ": " << instr.dump();
+
+		// Check if this is a clean read, ie. unchanged since generation
+		// The form is:
+		//
+		//    17: mov tmua, rf1                 ; nop                         ; thrsw
+		//    18: nop                           ; nop
+		//    19: nop                           ; nop
+		//    20: nop                           ; nop                         ; ldtmu.rf2
+		//
+		assert(i + 3 < (int) instrs.size());
+		bool clean_read =  (
+				instr.sig.thrsw
+		 &&	instrs[i + 1].is_nop() && !instrs[i + 1].has_signal(true)
+		 && instrs[i + 2].is_nop() && !instrs[i + 2].has_signal(true)
+		 && instrs[i + 3].is_nop() &&  instrs[i + 3].sig.ldtmu
+		);
+
+		if (!clean_read) continue;
+
+		warn << "Clean read; considering following:\n"
+				 << sub_dump(instrs, i, 8);
+
+		auto const &sig_addr = instrs[i + 3].sig_dest();
+		assert(sig_addr.used());
+		warn << "sig_addr: " << sig_addr.dump();
+
+		// Find first usage of sig_addr
+		int index = -1;
+  	for (int j = i + 4; j <  (int) instrs.size(); j++) {
+			if (instrs[j].uses_sig_dst()) {
+				warn << "using sig_dst index " << j << ": " << instrs[j].mnemonic(true);
+				if (j > i + 4) {
+					index = j - 1;
+				}
+				break;  // Don't continue;
+			}
+
+			if (check_register_used(instrs[j], sig_addr)) {
+				index = j;
+				break;
+			}
+		}
+		assert(index != -1);
+		warn << "Found usage sig_addr at:\n"
+		     << sub_dump(instrs, index - 1, 3);
+
+		if (index >= i + 6) {
+			// Safe to convert
+/*			
+			instrs.insert(instrs.begin() + i + 6, instrs[i + 3]); 
+			instrs[i + 1].skip(true);
+			instrs[i + 2].skip(true);
+			instrs[i + 3].skip(true);
+*/			
+			instrs[i + 1] = instrs[i + 4];
+			instrs[i + 2] = instrs[i + 5];
+			instrs[i + 4].skip(true);
+			instrs[i + 5].skip(true);
+			return true;
+		}
+	}
+
+	return false;
+}
+
 } // anon namespace
 
 
@@ -1769,7 +1905,14 @@ int optimize(Instructions &instrs) {
 try {
   count += remove_useless(instrs);
 
-  if (!Platform::compiling_for_vc7()) {  // Doesn't work (any more) on vc7
+  if (Platform::compiling_for_vc7()) {
+/*		
+		while (tmu_reads(instrs)) {
+    	count += remove_skips(instrs);
+		}
+*/		
+	} else {
+		// Doesn't work (any more) on vc7
     combine_old(instrs);
     count += remove_skips(instrs);
   }

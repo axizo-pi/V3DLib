@@ -103,7 +103,6 @@ void Gate::update_gate(vector const &x_h, qpu::vector const &q_x_h, float learni
 #ifndef SKIP_LSTM_CALCULATIONS  
   V3DLib::timers.start("update_gate overhead1");
   // q_Wi diverges from Wi by accumulated errors; Following for debugging
-  // This might be specific to input gate
   q_W   = copy(W);    assert(same(q_W, W));
   q_b   = copy(m_b);  assert(same(q_b, m_b));
 
