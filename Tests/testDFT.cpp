@@ -12,6 +12,7 @@
 #include "LibSettings.h"
 #include "Support/Timer.h"
 #include "support/ProfileOutput.h"
+#include "Support/Helpers.h"        // to_file()
 
 using namespace V3DLib;
 
