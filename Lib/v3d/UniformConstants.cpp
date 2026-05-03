@@ -1,5 +1,3 @@
-#ifdef QPU_MODE
-
 #include "UniformConstants.h"
 #include "Support/basics.h"
 #include "Source/Int.h"
@@ -122,5 +120,3 @@ UniformConstantsHandler uniform_constants;
 
 }  // namespace v3d
 }  // namespace V3DLib
-
-#endif  // QPU_MODE

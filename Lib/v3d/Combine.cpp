@@ -37,12 +37,12 @@ using V3DLib::v3d::instr::tmua;
 using V3DLib::v3d::instr::tmud;
 
 bool is_tmua(Instr const &instr) {
-	return (instr.alu.add.op == V3D_QPU_A_MOV  && instr.alu_add_dst() == tmua);
+  return (instr.alu.add.op == V3D_QPU_A_MOV  && instr.alu_add_dst() == tmua);
 }
 
 
 bool is_tmud(Instr const &instr) {
-	return (instr.alu.add.op == V3D_QPU_A_MOV  && instr.alu_add_dst() == tmud);
+  return (instr.alu.add.op == V3D_QPU_A_MOV  && instr.alu_add_dst() == tmud);
 }
 
 
@@ -50,18 +50,18 @@ bool is_tmud(Instr const &instr) {
  * @brief Display a sub-sequence in the instruction list
  */
 std::string sub_dump(Instructions &instrs, int start, int length) {
-	assert(start >= 0);
-	assert(length > 0);
-	assert(start + length < (int) instrs.size());
+  assert(start >= 0);
+  assert(length > 0);
+  assert(start + length < (int) instrs.size());
 
-	std::string ret;
+  std::string ret;
 
-	for (int i = 0; i < length; ++i) {
-		int index = start + i;
-		ret << "  " << index << ": " << instrs[index].mnemonic(true) << "\n";
-	}
+  for (int i = 0; i < length; ++i) {
+    int index = start + i;
+    ret << "  " << index << ": " << instrs[index].mnemonic(true) << "\n";
+  }
 
-	return ret;
+  return ret;
 }
 
 
@@ -1213,7 +1213,7 @@ MAYBE_UNUSED void combine_read_write(Instructions &instr) {
 
     if (is_tmud(instr[i]) && is_tmua(instr[i + 1]) && is_tmwt(instr[i + 2])) {
       warn << "combine_read_write tmu write detected\n"
-				 	 << sub_dump(instr, i, 3);
+            << sub_dump(instr, i, 3);
 
 if (false) {      
       //
@@ -1436,7 +1436,7 @@ MAYBE_UNUSED void combine(Instructions &instr) {
  * @brief Check if passed register `reg` is used in any way in instruction `instr`.
  */
 bool check_register_used(v3d::instr::Instr const &instr, instr::DestReg const &reg) {
-	return instr.is_src(reg)
+  return instr.is_src(reg)
       || instr.is_dst(reg);
 }
 
@@ -1843,102 +1843,102 @@ void combine_old(Instructions &instructions) {
  *   see previous note which comes from `OET`.
  */
 MAYBE_UNUSED bool tmu_reads(Instructions &instrs) {
-	warn << "Doing tmu_reads()";
-	bool ret = false;
+  warn << "Doing tmu_reads()";
+  bool ret = false;
 
-	//
-	// Check if this is a clean read, ie. unchanged since generation
-	// The clean form is:
-	//
-	//    17: mov tmua, rf1                 ; nop                         ; thrsw
-	//    18: nop                           ; nop
-	//    19: nop                           ; nop
-	//    20: nop                           ; nop                         ; ldtmu.rf2
-	//
-	auto clean_read = [&instrs] (int i) -> bool {
-		assert(i + 3 < (int) instrs.size());
+  //
+  // Check if this is a clean read, ie. unchanged since generation
+  // The clean form is:
+  //
+  //    17: mov tmua, rf1                 ; nop                         ; thrsw
+  //    18: nop                           ; nop
+  //    19: nop                           ; nop
+  //    20: nop                           ; nop                         ; ldtmu.rf2
+  //
+  auto clean_read = [&instrs] (int i) -> bool {
+    assert(i + 3 < (int) instrs.size());
 
-		bool ret =  (
-				instrs[i].sig.thrsw
-		 &&	instrs[i + 1].is_nop() && !instrs[i + 1].has_signal(true)
-		 && instrs[i + 2].is_nop() && !instrs[i + 2].has_signal(true)
-		 && instrs[i + 3].is_nop() &&  instrs[i + 3].sig.ldtmu
-		);
+    bool ret =  (
+        instrs[i].sig.thrsw
+     &&  instrs[i + 1].is_nop() && !instrs[i + 1].has_signal(true)
+     && instrs[i + 2].is_nop() && !instrs[i + 2].has_signal(true)
+     && instrs[i + 3].is_nop() &&  instrs[i + 3].sig.ldtmu
+    );
 
-		return ret;
-	};
+    return ret;
+  };
 
 
-	//
-	// Check if it is safe to collapse the nop's of a tmua load
-	//
-	auto is_safe = [&instrs] (int i) -> bool {
-		auto const &sig_addr = instrs[i + 3].sig_dest();
-		assert(sig_addr.used());
-		//warn << "Doing is_save(), sig_addr: " << sig_addr.dump();
+  //
+  // Check if it is safe to collapse the nop's of a tmua load
+  //
+  auto is_safe = [&instrs] (int i) -> bool {
+    auto const &sig_addr = instrs[i + 3].sig_dest();
+    assert(sig_addr.used());
+    //warn << "Doing is_save(), sig_addr: " << sig_addr.dump();
 
-		const int Min_Offset = 6;  // Minimal offset where the sig_addr can be used
-		bool ret = true;
-		int tmua_count = 0;  // Prevent TMU loads from overlapping
+    const int Min_Offset = 6;  // Minimal offset where the sig_addr can be used
+    bool ret = true;
+    int tmua_count = 0;  // Prevent TMU loads from overlapping
 
-  	for (int j = i + 4; j <  i + Min_Offset; j++) {
-			assert(!instrs[j].skip()); // Warn me if this case happens
+    for (int j = i + 4; j <  i + Min_Offset; j++) {
+      assert(!instrs[j].skip()); // Warn me if this case happens
 
-			// Don't go past another ldtmu sig address
-			if (instrs[j].uses_sig_dst()) {
-				//warn << "using sig_dst index " << j << ": " << instrs[j].mnemonic(true);
-				ret = false;
-				break;  // Don't continue;
-			}
+      // Don't go past another ldtmu sig address
+      if (instrs[j].uses_sig_dst()) {
+        //warn << "using sig_dst index " << j << ": " << instrs[j].mnemonic(true);
+        ret = false;
+        break;  // Don't continue;
+      }
 
-			if (check_register_used(instrs[j], sig_addr)) {
-				ret = false;
-				break;
-			}
+      if (check_register_used(instrs[j], sig_addr)) {
+        ret = false;
+        break;
+      }
 
-			if (is_tmua(instrs[j])) {
-				++tmua_count; 
-			}
-		}
+      if (is_tmua(instrs[j])) {
+        ++tmua_count; 
+      }
+    }
 
-		if (tmua_count > 0) {
-			warn << "tmua_count: " << tmua_count;
-			ret = false;
-		}
+    if (tmua_count > 0) {
+      warn << "tmua_count: " << tmua_count;
+      ret = false;
+    }
 
-		return ret;
-	};
+    return ret;
+  };
 
-	//
-	// Detect all tmu reads.
-	// Going back to front in instruction list.
-	//
+  //
+  // Detect all tmu reads.
+  // Going back to front in instruction list.
+  //
   for (int i = (int) instrs.size() - 1; i >= 0; i--) {
     auto &instr = instrs[i];
 
-		if (!is_tmua(instr)) continue; 
+    if (!is_tmua(instr)) continue; 
 
-		// Skip reads
-		assert(i > 0);
-		if (is_tmud(instrs[i - 1])) continue; 
+    // Skip reads
+    assert(i > 0);
+    if (is_tmud(instrs[i - 1])) continue; 
 
-		//warn << "tmua load at index " << i << ": " << instr.dump();
+    //warn << "tmua load at index " << i << ": " << instr.dump();
 
-		if (!clean_read(i)) continue;
-		//warn << "Clean read; considering following:\n"
-		//		 << sub_dump(instrs, i, 8);
+    if (!clean_read(i)) continue;
+    //warn << "Clean read; considering following:\n"
+    //     << sub_dump(instrs, i, 8);
 
-		if (is_safe(i)) {
-			// Safe to convert; move two instructions up to fill the nop's
-			instrs[i + 1] = instrs[i + 4];
-			instrs[i + 2] = instrs[i + 5];
-			instrs[i + 4].skip(true);
-			instrs[i + 5].skip(true);
-			ret = true;
-		}
-	}
+    if (is_safe(i)) {
+      // Safe to convert; move two instructions up to fill the nop's
+      instrs[i + 1] = instrs[i + 4];
+      instrs[i + 2] = instrs[i + 5];
+      instrs[i + 4].skip(true);
+      instrs[i + 5].skip(true);
+      ret = true;
+    }
+  }
 
-	return ret;
+  return ret;
 }
 
 
@@ -1948,21 +1948,21 @@ MAYBE_UNUSED bool tmu_reads(Instructions &instrs) {
  * This is display only; branch labels are resolved downstream.
  */
 MAYBE_UNUSED void check_branches(Instructions &instrs) {
-	std::string buf;
+  std::string buf;
 
   for (int i = 0; i < (int) instrs.size(); i++) {
     auto &instr = instrs[i];
-		if (instr.is_branch()) {
-			buf  << "  Branch with label '" << instr.branch_label()  << "' at index " << i << ": " << instr.mnemonic(true) << "\n";
-		}
+    if (instr.is_branch()) {
+      buf  << "  Branch with label '" << instr.branch_label()  << "' at index " << i << ": " << instr.mnemonic(true) << "\n";
+    }
 
-		if (instr.is_label()) {
-			buf  << "  Label '" << instr.label()  << "' at index " << i << ": " << instr.mnemonic(true) << "\n";
-		}
-	}
+    if (instr.is_label()) {
+      buf  << "  Label '" << instr.label()  << "' at index " << i << ": " << instr.mnemonic(true) << "\n";
+    }
+  }
 
-	warn << "Branches:\n"
-		   << buf;
+  warn << "Branches:\n"
+       << buf;
 }
 
 } // anon namespace
@@ -1978,23 +1978,23 @@ try {
   count += remove_useless(instrs);
 
   if (Platform::compiling_for_vc7()) {
-/*		
-		int tmua_count = 0;
+/*    
+    int tmua_count = 0;
 
-		if (tmu_reads(instrs)) {
-    	tmua_count += remove_skips(instrs);
-			//check_branches(instrs);
-		}
+    if (tmu_reads(instrs)) {
+      tmua_count += remove_skips(instrs);
+      //check_branches(instrs);
+    }
 
-		if (tmua_count > 0) {
-			warn << "tmu_reads removed " << tmua_count << " instructions";
-			count += tmua_count;
-		}
+    if (tmua_count > 0) {
+      warn << "tmu_reads removed " << tmua_count << " instructions";
+      count += tmua_count;
+    }
 
-		warn << "Done tmu_reads()";
-*/		
-	} else {
-		// Doesn't work (any more) on vc7
+    warn << "Done tmu_reads()";
+*/    
+  } else {
+    // Doesn't work (any more) on vc7
     combine_old(instrs);
     count += remove_skips(instrs);
   }

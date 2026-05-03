@@ -20,9 +20,7 @@ struct BaseSettings {
   RunType run_type     = QPU;
   int     num_qpus     = 1;
   bool    output_code  = false;
-#ifdef QPU_MODE
   bool    show_perf_counters = false;
-#endif  // QPU_MODE
 
   void startPerfCounters();
   void stopPerfCounters();

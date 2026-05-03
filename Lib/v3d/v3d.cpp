@@ -3,8 +3,6 @@
  */
 #include "Support/basics.h"
 
-#ifdef QPU_MODE
-
 #define USE_MESA_BUFMGR 1
 
 #if USE_MESA_BUFMGR == 0
@@ -409,8 +407,6 @@ int ioctl(unsigned cmd, void *param) {
 
 } // namespace v3d
 
-#endif  // QPU_MODE
-
 
 namespace v3d {
 
@@ -423,8 +419,6 @@ namespace v3d {
  * @return true if opening succeeded, false otherwise
  */
 bool open() {
-#ifdef QPU_MODE
-
   if (Platform::compiling_for_vc4()) {
     cerr << "Running on vc4, not opening the v3d card.";
     return true;
@@ -448,12 +442,7 @@ bool open() {
   assert(fd > 0);
 
   set_fd(fd);
-
-#else  
-  info << "Running in non-QPU mode, not opening the v3d card.";
-#endif  // QPU_MODE
   return true;
-
 }
 
 } // namespace v3d

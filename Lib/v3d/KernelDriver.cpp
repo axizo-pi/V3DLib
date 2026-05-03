@@ -1,4 +1,3 @@
-#ifdef QPU_MODE
 #include "KernelDriver.h"
 #include "Source/Translate.h"
 #include "Target/instr/Mnemonics.h"
@@ -652,8 +651,6 @@ void _encode(V3DLib::Instr::List const &instrs, Instructions &dst) {
 }
 
 
-#ifdef QPU_MODE
-
 void load_uniforms(
   Data &unif,
   int numQPUs,
@@ -702,8 +699,6 @@ void load_uniforms(
   }
 */  
 }
-
-#endif  // QPU_MODE
 
 }  // anon namespace
 
@@ -866,9 +861,6 @@ void KernelDriver::allocate() {
  * Invoke kernel on QPUs
  */
 void KernelDriver::invoke(int numQPUs, IntList &params, bool wait_complete) {
-#ifndef QPU_MODE
-  assertq("Cannot run v3d invoke(), QPU_MODE not enabled");
-#else
   assert(params.size() != 0);
 
   if (has_errors()) {
@@ -906,7 +898,6 @@ void KernelDriver::invoke(int numQPUs, IntList &params, bool wait_complete) {
 
   drv.add_bo(getBufferObject().getHandle());
   drv.execute(m_code, &uniforms, numQPUs, wait_complete);
-#endif  // QPU_MODE
 }
 
 
@@ -951,5 +942,3 @@ void KernelDriver::wait_complete() {
 
 }  // namespace v3d
 }  // namespace V3DLib
-
-#endif  // QPU_MODE

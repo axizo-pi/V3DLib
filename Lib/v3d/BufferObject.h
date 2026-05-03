@@ -1,11 +1,7 @@
 #ifndef _V3DLIB_V3D_BUFFEROBJECT_H_
 #define _V3DLIB_V3D_BUFFEROBJECT_H_
-
-#ifdef QPU_MODE
-
 #include <vector>
 #include "Common/BufferObject.h"
-
 
 namespace V3DLib {
 namespace v3d {
@@ -38,7 +34,5 @@ private:
 
 }  // namespace v3d
 }  // namespace V3DLib
-
-#endif  // QPU_MODE
 
 #endif  // _V3DLIB_V3D_BUFFEROBJECT_H_

@@ -131,15 +131,6 @@ bool Rot3DSettings::init_params() {
 
   kernel       = p["Kernel"]->get_int_value();
 
-#ifndef QPU_MODE
-  if (kernel == 0 && run_type == V3DLib::QPU) {
-    if (!silent) {
-      std::cout << "WARNING: Compiled in non-QPU mode, forcing kernel type `cpu`\n";
-    }
-    kernel = 1;
-  }
-#endif
-
   show_results = p["Display Results"]->get_bool_value();
   num_vertices = p["Number of vertices"]->get_int_value();
 

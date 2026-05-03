@@ -3,13 +3,6 @@
 #
 # > script/gen.sh
 #
-# There are four builds possible, with output directories:
-#
-#   obj/emu          - using emulator
-#   obj/emu-debug    - output debug info, using emulator
-#   obj/qpu          - using hardware
-#   obj/qpu-debug    - output debug info, using hardware
-#
 #==============================================================================
 # NOTES
 # =====
@@ -39,28 +32,15 @@
 #
 ###############################################################################
 
-QPU=1
 DEBUG=1
 
-RET := $(shell ./Tools/detectPlatform.sh 1>/dev/null && echo "yes" || echo "no")
-ifeq ($(RET), no)
-$(info Building on a non-Pi platform; using QPU=0)
-QPU := 0
-endif
-
-ifeq ($(QPU), 1)
 ifeq ($(DEBUG), 1)
-$(info Using default values QPU=1 and DEBUG=1)
-$(info To override, call make with `make (-e) QPU=0` and/or `DEBUG=0`)
-endif
+$(info Using default value and DEBUG=1)
+$(info To override, call make with `make (-e) `DEBUG=0`)
 endif
 
-## sudo required for QPU-mode on Pi
-ifeq ($(QPU), 1)
-	SUDO := sudo
-else
-	SUDO :=
-endif
+## sudo required on Pi
+SUDO := sudo
 
 -include script/mak/config.mak
 -include sources.mk
@@ -81,7 +61,7 @@ TESTS_OBJ = $(patsubst %,$(OBJDIR)/%,$(TESTS_FILES))
 help:
 	@echo 'Usage:'
 	@echo
-	@echo '    make [target]* [QPU=1] [DEBUG=1]'
+	@echo '    make [target]* [DEBUG=1]'
 	@echo
 	@echo 'Where target:'
 	@echo
@@ -93,16 +73,11 @@ help:
 	@echo
 	@echo '    one of the example programs - $(EXAMPLES)'
 	@echo
-	@echo 'Flags:'
-	@echo
-	@echo '    QPU=1         - Output code for hardware. If not specified, the code is compiled for the emulator'
-	@echo '    DEBUG=1       - If specified, the source code and target code is shown on stdout when running a test'
-	@echo
 
 all: $(V3DLIB) $(EXAMPLES) ${SUB_PROJECTS}
 
 clean:
-	@$(SUDO) rm -rf obj/emu obj/emu-debug obj/qpu obj/qpu-debug obj/test
+	@$(SUDO) rm -rf obj/debug obj/release obj/test
 
 init:
 	@./script/install.sh

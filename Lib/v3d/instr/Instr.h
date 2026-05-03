@@ -102,7 +102,7 @@ public:
   bool check_dst() const;
   bool uses_sig_dst() const;
   bool is_ldtmu() const { assert(sig_dst_count() <= 1); return sig.ldtmu; }
-	Instr &ldtmu(DestReg const &reg);
+  Instr &ldtmu(DestReg const &reg);
   DestReg sig_dest() const;
   DestReg add_dest() const;
   DestReg mul_dest() const;

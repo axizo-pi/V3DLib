@@ -28,7 +28,6 @@
 //          The result of the condition goes into a. The previous value of a goes into b
 //
 ///////////////////////////////////////////////////////////////////////////////
-#ifdef QPU_MODE
 #include "support/support.h"
 #include "Support/pgm.h"
 
@@ -545,5 +544,3 @@ TEST_CASE("Test multiple and/or [andor][cond]") {
     check_output(result, "multi_if_qpu");
   }
 }
-
-#endif  // ifdef QPU_MODE

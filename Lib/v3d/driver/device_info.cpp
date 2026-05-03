@@ -34,8 +34,6 @@ int drmIoctl(int fd, unsigned long request, void *arg) {
 #pragma GCC diagnostic pop
 
 
-#ifdef QPU_MODE
-
 bool did_devinfo = false;
 struct v3d_device_info s_devinfo = { .ver = 0 /* 0 signals no v3d */ };
 
@@ -70,31 +68,19 @@ bool _v3d_device_info() {
   return ret;
 }
 
-#endif // QPU_MODE
-
 }  // anon namespace
 
 
-#ifdef QPU_MODE
 uint8_t devinfo_ver() {
   return devinfo()->ver;
 }
-#else
 
-
-/**
- * @brief Empty call to satisfy linking in non-QPU mode.
- */
-uint8_t devinfo_ver() { return 0; }
-
-#endif // QPU_MODE
 
 #ifdef __cplusplus
 // Used in v3d/instr/v3d_api.c, hence the 'extern' brackets
 extern "C" {
 #endif
 
-#ifdef QPU_MODE
 struct v3d_device_info const *devinfo() {
   if(!_v3d_device_info()) {
     cerr << "devinfo: Call to _v3d_device_info() failed";
@@ -103,16 +89,6 @@ struct v3d_device_info const *devinfo() {
 
   return &s_devinfo;
 }
-#else
-
-/**
- * @brief Empty call to satisfy linking in non-QPU mode.
- * 
- * v3d should never be used anyway in that case.
- */
-struct v3d_device_info const *devinfo() { return NULL; }
-
-#endif
 
 #ifdef __cplusplus
 }
@@ -120,7 +96,6 @@ struct v3d_device_info const *devinfo() { return NULL; }
 
 
 std::string v3d_device_info() {
-#ifdef QPU_MODE
   std::stringstream buf;
 
   if(!_v3d_device_info()) {
@@ -162,7 +137,4 @@ std::string v3d_device_info() {
   ;
 
   return buf.str();
-#else
-  return "v3d_device_info() compiled in non-QPU mode; v3d device info not available.";
-#endif // QPU_MODE
 }

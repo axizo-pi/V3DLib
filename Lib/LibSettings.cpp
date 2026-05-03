@@ -93,7 +93,6 @@ void dump_line_numbers(bool val) { _dump_line_numbers = val; }
  * This is only meant for `vc4 QPU`.
  */
 void L2Cache_enable(bool enable) {
-#ifdef QPU_MODE
   if (!Platform::run_vc4()) {
     warn << "L2Cache_enable() for vc4 QPU mode only, ignoring call.";
     return;
@@ -101,9 +100,6 @@ void L2Cache_enable(bool enable) {
 
   warn << "Called L2Cache_enable(" << enable << ").";
   RegisterMap::L2Cache_enable(enable);
-#else
-  warn << "L2Cache_enable() does nothing in non-QPU mode.";
-#endif
 }
 
 

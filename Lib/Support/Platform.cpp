@@ -187,15 +187,9 @@ PlatformInfo::PlatformInfo() {
     vc4;
   }
 
-#ifndef QPU_MODE
-  // Allow only emulator and interpreter modes, no hardware
-  m_use_main_memory = true;
-  vc_type = vc4;             // run vc4 code only
-#else
   // As default, select compiling for the platform you are on.
   // If you want to compile to vc4, you need to explicitly set this.
   m_compiling_for_vc4 = (vc_type == vc4);
-#endif
 }
 
 
@@ -260,15 +254,7 @@ PlatformInfo &instance() {
 
 
 void use_main_memory(bool val) {
-#ifdef QPU_MODE
   instance().m_use_main_memory = val;
-#else
-  assertq(instance().m_use_main_memory, "Should only use main memory for emulator and interpreter");
-
-  if (!val) {
-    cdebug << "use_main_memory(): ignoring passed value 'false', because QPU mode is disabled";
-  }
-#endif
 }
 
 

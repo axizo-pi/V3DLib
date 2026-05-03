@@ -1,5 +1,3 @@
-#ifdef QPU_MODE
-
 #include "BufferObject.h"
 #include "Mailbox.h"
 #include "vc4.h"
@@ -87,5 +85,3 @@ BufferObject &BufferObject::getHeap() {
 
 }  // namespace vc4
 }  // namespace V3DLib
-
-#endif  // QPU_MODE

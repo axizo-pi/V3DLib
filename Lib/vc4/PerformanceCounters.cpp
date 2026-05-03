@@ -1,4 +1,3 @@
-#ifdef QPU_MODE
 #include "PerformanceCounters.h"
 #include <sstream>
 #include "Support/debug.h"
@@ -226,6 +225,3 @@ std::string PerformanceCounters::showEnabled() {
 
 }  // namespace vc4
 }  // namespace V3DLib
-
-
-#endif  // QPU_MODE

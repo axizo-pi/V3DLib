@@ -63,9 +63,6 @@ TEST_CASE("Test working of Rot3D example [rot3d][pass3]") {
    *      calculations.
    * vc6, vc7: No rounding errors, calc's should match exact.
    *
-   * If the code is compiled for emulator only (QPU_MODE=0), this
-   * test will fail.
-   *
    * vc4: No problem at all when all kernels loaded in same BO.
    * v3d: rot3D_1 and rot3D_2 can be loaded together, adding the 3-kernels
    *      leads to persistent timeout:
@@ -105,8 +102,7 @@ TEST_CASE("Test working of Rot3D example [rot3d][pass3]") {
       initArrays(x, y, N);
 
       auto k = compile(vector_rot3D);
-			to_file("vector_rot3D.txt", k.dump());
-      //k.load(N, cosf(THETA), sinf(THETA), &x, &y).run();
+      //to_file("vector_rot3D.txt", k.dump());
       k.load(N, 0.0f, 0.0f, 0.5f /* == PI */, &x, &y, &z).run();
       compareResults(x_scalar, y_scalar, x, y, N, "Rot3D", false);
 

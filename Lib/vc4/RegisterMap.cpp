@@ -1,5 +1,3 @@
-#ifdef QPU_MODE
-
 #include "RegisterMap.h"
 #include "Support/Platform.h"
 #include "Support/basics.h"   // fatal()
@@ -519,5 +517,3 @@ std::string ErrorStatus() {
 
 } // RegisterMap
 }  // namespace V3DLib
-
-#endif  // QPU_MODE

@@ -46,11 +46,6 @@ std::string stem(const char *input) {
 
 const char *blurb =
   "Example Program\n"      // TODO Perhaps fill this in dynamically
-#ifdef QPU_MODE
-  "\nRunning in QPU mode.\n"
-#else
-  "\nRunning in emulation mode.\n"
-#endif
 ;
 
 
@@ -77,13 +72,11 @@ CmdParameters base_params = {
     {"-s", "-silent"},
     ParamType::NONE,
     "Do not show the logging output on standard output"
-#ifdef QPU_MODE
   }, {
     "Performance Counters",
     "-pc",
     ParamType::NONE,
     "Show the values of the performance counters"
-#endif  // QPU_MODE
   }, {
     "QPU timeout",
     { "-t=", "-timeout="},
@@ -257,9 +250,7 @@ bool Settings::process() {
   assert(QPU <= tmp && tmp <= Debugger);
   run_type     = (RunType) tmp;
 
-#ifdef QPU_MODE
   show_perf_counters = p["Performance Counters"]->get_bool_value();
-#endif  // QPU_MODE
 
   int qpu_timeout  = p["QPU timeout"]->get_int_value();
   LibSettings::qpu_timeout(qpu_timeout);

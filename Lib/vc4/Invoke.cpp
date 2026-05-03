@@ -157,25 +157,10 @@ void init_launch_messages(
 }
 
 
-void check_platform() {
-#ifdef QPU_MODE
-  if (!Platform::is_pi_platform()) {
-    cerr << "check_platform(): will not run on this platform, only on Raspberry Pi's.";
-    cerr << "Can not run kernel on current platform." << thrw;
-  }
-#else 
-  cerr << "check_platform(): will not run, QPU mode not enabled.";
-  cerr << "Can not run kernel in non-QPU mode." << thrw;
-#endif
-}
-
-
 /**
  * @brief Run the kernel on vc4 hardware
  */
 void invoke_jobs(int numQPUs, Data const &launch_messages) {
-  check_platform();
-
   enableQPUs();
 
   unsigned result = execute_qpu(
@@ -219,7 +204,6 @@ void MailBoxInvoke::invoke(int numQPUs, Code const &code, IntList const &params)
     init_launch_messages(numQPUs, launch_messages, code, params, uniforms);
     invoke_jobs(numQPUs, launch_messages);
   } else {
-#ifdef QPU_MODE
     uint32_t unif_size = num_params(params);
 
     //
@@ -233,11 +217,7 @@ void MailBoxInvoke::invoke(int numQPUs, Code const &code, IntList const &params)
     }
     sleep(1);
     warn << "ProgramRequestStatus Post: " << RegisterMap::ProgramRequestStatus();
-#else
-    assert(false);
-#endif
   }
-
 }
 
 

@@ -135,13 +135,7 @@ MAYBE_UNUSED int gnu_version(bool show = true) {
  */
 std::string sudo_prefix() {
   std::string ret;
-
-#ifdef QPU_MODE
-const char *SUDO = (V3DLib::Platform::run_vc4())? "sudo " : "";  // sudo needed for vc4
-#else
-const char *SUDO = "";
-#endif
-
+	const char *SUDO = (V3DLib::Platform::run_vc4())? "sudo " : "";  // sudo needed for vc4
   ret << SUDO;
 
   //warn << "sudo_prefix() ret:\n" << ret;

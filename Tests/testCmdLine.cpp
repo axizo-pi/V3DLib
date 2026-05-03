@@ -104,24 +104,24 @@ void run_output_cmd(
  * Note that return value contains doubles.
  */
 std::vector<double> float_values(std::string const &filename) {
-	std::vector<double> ret;
+  std::vector<double> ret;
   auto buf = load_file_vec(filename);
 
-	for(std::string line : buf) {
-		if (contains(line, "Data")) continue;
-		for (auto val : split(line, ",")) {
-			ret.push_back(atof(val.c_str()));
-		}
+  for(std::string line : buf) {
+    if (contains(line, "Data")) continue;
+    for (auto val : split(line, ",")) {
+      ret.push_back(atof(val.c_str()));
+    }
   }
 
 /*
-	std::cout << "! ";
-	for(auto val : ret) {
-		std::cout << val << " ";
-	}
-	std::cout << "\n";
+  std::cout << "! ";
+  for(auto val : ret) {
+    std::cout << val << " ";
+  }
+  std::cout << "\n";
 */
-	return ret;
+  return ret;
 }
 
 /**
@@ -139,18 +139,18 @@ void check_rot3d_run(
 
   run_output_cmd(program, run_type, extra_params, show_output);
 
-	// Test each float separately
-	auto output   = float_values(output_filename);
-	auto expected = float_values(expected_filename);
-	REQUIRE(output.size() == expected.size());
+  // Test each float separately
+  auto output   = float_values(output_filename);
+  auto expected = float_values(expected_filename);
+  REQUIRE(output.size() == expected.size());
 
-	const double PRECISION = 3e-5;
-	for (int i = 0; i < (int) output.size(); ++i) {
-	 	double diff = abs(output[i] - expected[i]);
+  const double PRECISION = 3e-5;
+  for (int i = 0; i < (int) output.size(); ++i) {
+     double diff = abs(output[i] - expected[i]);
 
-		INFO("Diff index: " << i << " different!");
-	 	REQUIRE(diff <= PRECISION);
-	}
+    INFO("Diff index: " << i << " different!");
+     REQUIRE(diff <= PRECISION);
+  }
 }
 
 
@@ -193,11 +193,7 @@ void check_output_example(std::string const &program, std::string const &extra_p
 TEST_CASE("Detect platform scripts should both return the same thing [cmdline]") {
   // It is possible to compile QPU=0 on a Pi.
   // In that case, the return values will be logically different; skip that case.
-#ifdef QPU_MODE
   const int cpp_expected = 0;
-#else
-  const int cpp_expected = 1;
-#endif
 
   init_msg();
   std::string cmd;

@@ -48,7 +48,6 @@ void BaseKernel::compile_init() {
     select_kernel = vc4;
   }
 
-#ifdef QPU_MODE
   if (!m_settings.compile_only) {
     if (Platform::use_main_memory() && m_settings.run_type == QPU) {
       Log::info << "Main memory selected in QPU mode, running on emulator instead of QPU.";
@@ -56,7 +55,6 @@ void BaseKernel::compile_init() {
       select_kernel = vc4;
     }
   }
-#endif
 
   if (m_settings.run_type != QPU || Platform::run_vc4()) {   // Compile vc4
     select_kernel = vc4;
@@ -70,12 +68,8 @@ void BaseKernel::compile_init() {
     Platform::compiling_for_vc4(true);
     m_driver.reset(new vc4::KernelDriver);
   } else {
-#ifdef QPU_MODE
     Platform::compiling_for_vc4(false);
     m_driver.reset(new v3d::KernelDriver);
-#else
-    assertq(false, "Can only run vc4 kernel in non-QPU mode");
-#endif
   }
 
   driver().init_compile();
@@ -95,7 +89,6 @@ std::string BaseKernel::dump() {
 void BaseKernel::run(bool wait_complete) {
   assert(m_driver.get() != nullptr);
 
-#ifdef QPU_MODE
   if (Platform::use_main_memory()) {
     if (m_driver->is_v3d()) {
        if (!m_settings.compile_only) {
@@ -108,13 +101,6 @@ void BaseKernel::run(bool wait_complete) {
       }
     }
   }
-#else
-  if (m_settings.run_type == QPU) {
-    assert(!m_driver->is_v3d());
-    cdebug << "Not compiled for QPU, running on emulator instead of QPU.";
-    m_settings.run_type = Emulator;
-  }
-#endif
 
   m_settings.startPerfCounters();
 
@@ -178,15 +164,6 @@ void BaseKernel::interpret() {
     return;
   }
 
-  {
-    std::string buf;
-    buf << "interpreter uniforms: ";
-    for (int i = 0; i < uniforms.size(); ++i) {
-      buf << uniforms.get(i) << ", ";
-    }
-    warn << buf;
-  }
-
   assert(uniforms.size() != 0);
   interpreter(numQPUs(), driver().sourceCode(), driver().numVars(), uniforms, getBufferObject());
 }
@@ -198,12 +175,8 @@ void BaseKernel::interpret() {
 void BaseKernel::qpu(bool wait_complete) {
   assert(!m_settings.compile_only);    // Paranoia
 
-#ifdef QPU_MODE
   s_qpu_call_count++;
   driver().invoke(numQPUs(), uniforms, wait_complete);
-#else
-  fatal("qpu(): QPU mode not enabled, can not run on hardware.");
-#endif  // QPU_MODE
 }
 
 

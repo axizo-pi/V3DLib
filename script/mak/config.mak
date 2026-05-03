@@ -21,17 +21,12 @@ LIB_EXTERN+= \
  -L $(OBJDIR)
 
 # For bcm_host shared lib; actually vc4 only
-ifeq ($(QPU), 1)
-
 INCLUDE_EXTERN+= \
  -I $(BASE)/extern/userland/host_applications/linux/libs/bcm_host/include \
  -I $(BASE)/extern/userland/
 
 LIB_EXTERN+= \
  -l bcm_host
-
-endif
-
 
 
 # NOTE: Last items after single \ required in mesa lib include files
@@ -64,36 +59,26 @@ CXX= g++
 LINK= g++
 
 
-
-# QPU or emulation mode
-ifeq ($(QPU), 1)
-$(info Building for QPU)
-
 # Check platform before building.
 # Can't be indented, otherwise make complains.
 RET := $(shell ${BASE}/Tools/detectPlatform.sh 1>/dev/null && echo "yes" || echo "no")
 #$(info  info: '$(RET)')
 ifneq ($(RET), yes)
-$(error QPU-mode specified on a non-Pi platform; aborting)
-else
-$(info Building on a Pi platform)
+$(error Can not compile on a non-Pi platform; aborting)
 endif
 
-  CXX_FLAGS += -DQPU_MODE -I /opt/vc/include
-  OBJDIR := $(OBJDIR)/qpu
-	LIBS += -L /opt/vc/lib -l bcm_host
-else
-  OBJDIR := $(OBJDIR)/emu
-endif
+CXX_FLAGS += -I /opt/vc/include
+LIBS += -L /opt/vc/lib -l bcm_host
 
 # Debug mode
 ifeq ($(DEBUG), 1)
   CXX_FLAGS += -DDEBUG -g
-  OBJDIR := $(OBJDIR)-debug
+  OBJDIR := $(OBJDIR)/debug
 else
   # -DNDEBUG	disables assertions
   # -g0 still adds debug info, using -s instead
-  CXX_FLAGS += -DNDEBUG -s
+  CXX_FLAGS += -DNDEBUG -s -Wno-unused-variable -Wno-unused-but-set-variable
+  OBJDIR := $(OBJDIR)/release
 endif
 
 ifeq ($(DEBUG), 1)

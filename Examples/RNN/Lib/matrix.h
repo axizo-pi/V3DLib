@@ -39,7 +39,7 @@ struct matrix {
   matrix &operator=(matrix const &rhs);
   matrix operator-(matrix const &rhs);
   matrix &operator-=(matrix const &rhs);
-  matrix operator*(float rhs);
+  matrix operator*(float rhs) const;
   matrix mul(matrix const &rhs) const;
   matrix sigmoid_derivative(matrix const &rhs);
   matrix transpose() const;
@@ -67,7 +67,7 @@ private:
 };
 
 
-matrix operator*(float scalar, matrix /* const */ &mat);
+matrix operator*(float scalar, matrix const &mat);
 
 
 ////////////////////////////////////////////////

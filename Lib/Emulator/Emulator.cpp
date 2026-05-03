@@ -516,15 +516,6 @@ void emulate(
   BufferObject &heap,
   bool do_debug
 ) {
-	{
-		std::string buf;
-		buf << "emulator uniforms   : ";
-		for (int i = 0; i < uniforms.size(); ++i) {
-			buf << uniforms.get(i) << ", ";
-		}
-		warn << buf;
-	}
-
   Platform::running_emulator(true);
   State state(numQPUs, uniforms);
   state.emuHeap.heap_view(heap);

@@ -1,7 +1,5 @@
-#ifndef _LIB_V3D_UNIFORMCONSTANTS_H
-#define _LIB_V3D_UNIFORMCONSTANTS_H
-#ifdef QPU_MODE
-
+#ifndef _V3DLIB_V3D_UNIFORMCONSTANTS_H
+#define _V3DLIB_V3D_UNIFORMCONSTANTS_H
 #include "Common/SharedArray.h"    // Data
 #include "Source/Stmt.h"
 #include "Target/instr/Instr.h"
@@ -47,5 +45,4 @@ extern UniformConstantsHandler uniform_constants;
 }  // namespace v3d
 }  // namespace V3DLib
 
-#endif  // QPU_MODE
-#endif // _LIB_V3D_UNIFORMCONSTANTS_H
+#endif // _V3DLIB_V3D_UNIFORMCONSTANTS_H
