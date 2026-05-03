@@ -5,6 +5,11 @@
 #include "Emulator/Interpreter.h"  // interpreter()
 #include "Emulator/Emulator.h"     // emulate()
 
+/**
+ * /file
+ * Basic Kernel class.
+ */
+
 namespace V3DLib {
 
 using ::operator<<;  // C++ weirdness

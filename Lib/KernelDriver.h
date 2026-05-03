@@ -77,4 +77,4 @@ private
 
 }  // namespace V3DLib
 
-#endif  // _LIB_vc4_KERNELDRIVER_H
+#endif // _LIB_KERNELDRIVER_H

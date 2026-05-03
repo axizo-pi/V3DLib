@@ -6,9 +6,14 @@
 #include "Support/Timer.h"
 #include <memory>
 
+/**
+ * @brief Library namespace
+ */
 namespace V3DLib {
 
 /**
+ * @brief class BaseKernel
+ *
  * -------------------------
  * NOTES
  * =====
