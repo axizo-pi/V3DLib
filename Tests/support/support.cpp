@@ -12,20 +12,13 @@ using namespace V3DLib;
 // get the base directory right for calling compiled apps.
 //
 #ifdef DEBUG
-  #define POSTFIX_DEBUG "-debug"
+  #define POSTFIX_DEBUG "debug"
 #else
-  #define POSTFIX_DEBUG ""
+  #define POSTFIX_DEBUG "release"
 #endif
 
-#ifdef QPU_MODE
-//  #pragma message "QPU mode enabled"
-#define POSTFIX_QPU "qpu"
-#else
-#define POSTFIX_QPU "emu"
-#endif
-
-#define BIN_PATH  "obj/" POSTFIX_QPU POSTFIX_DEBUG "/bin"
-#define TEST_PATH "obj/" POSTFIX_QPU POSTFIX_DEBUG "/test"
+#define BIN_PATH  "obj/" POSTFIX_DEBUG "/bin"
+#define TEST_PATH "obj/" POSTFIX_DEBUG "/test"
 
 
 std::string bin_path()  { return BIN_PATH;  }

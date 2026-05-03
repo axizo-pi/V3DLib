@@ -1,12 +1,9 @@
 #include "BaseSettings.h"
 #include "Kernel.h"
 #include "Helpers.h"
-
-#ifdef QPU_MODE
 #include "Support/Platform.h"
 #include "vc4/PerformanceCounters.h"
 #include "v3d/PerformanceCounters.h"
-#endif  // QPU_MODE
 
 namespace V3DLib {
 
@@ -35,8 +32,6 @@ void BaseSettings::dump_code(BaseKernel &k) {
  * @brief Performance Counters: Enable the counters we are interested in
  */
 void BaseSettings::startPerfCounters() {
-
-#ifdef QPU_MODE
   if (!show_perf_counters) return;
 
   using PC = V3DLib::vc4::PerformanceCounters;
@@ -72,12 +67,10 @@ void BaseSettings::startPerfCounters() {
       pc::V3D_PERFCNT_QPU_IDLE_CYCLES,
     });
   }
-#endif
 }
 
 
 void BaseSettings::stopPerfCounters() {
-#ifdef QPU_MODE
   if (!show_perf_counters) return;
  
   std::string output;
@@ -95,8 +88,6 @@ void BaseSettings::stopPerfCounters() {
   }
 
   printf("%s\n", output.c_str());
-#endif
 }
-
 
 } // namespace V3DLib

@@ -1,8 +1,5 @@
-#ifndef _V3D_V3D_H
-#define _V3D_V3D_H
-
-#ifdef QPU_MODE
-
+#ifndef _V3DLIB_V3D_H
+#define _V3DLIB_V3D_H
 #include "driver/v3d_drm.h"  
 //#include <drm/v3d_drm.h> // What we will use eventually on Debian 12
 
@@ -15,15 +12,7 @@ bool unmap(uint32_t size, uint32_t handle, void *usraddr);
 int get_fd();
 int ioctl(unsigned cmd, void *param);
 
-}
-
-#endif  // QPU_MODE
-
-
-namespace v3d {
-
 bool open();
-
 }
 
-#endif  // _V3D_V3D_H
+#endif  // _V3DLIB_V3D_H

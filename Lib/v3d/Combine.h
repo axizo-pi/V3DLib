@@ -1,5 +1,5 @@
-#ifndef _LIB_V3D_COMBINE_H
-#define _LIB_V3D_COMBINE_H
+#ifndef _V3DLIB_V3D_COMBINE_H
+#define _V3DLIB_V3D_COMBINE_H
 #include "instr/Instr.h"
 
 namespace V3DLib {
@@ -14,5 +14,4 @@ int optimize(Instructions &instrs);
 }  // namespace v3d
 }  // namespace V3DLib
 
-
-#endif //  _LIB_V3D_COMBINE_H
+#endif //  _V3DLIB_V3D_COMBINE_H

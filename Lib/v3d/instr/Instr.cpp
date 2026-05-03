@@ -656,14 +656,14 @@ void Instr::set_sig_addr(Location const &loc) {
  * @brief Set sig_addr for ldtmu
  */
 Instr &Instr::ldtmu(DestReg const &reg) {
-	assert(reg.used());
-	assert(!reg.is_magic());
+  assert(reg.used());
+  assert(!reg.is_magic());
   assert(sig_dst_count() == 0);
 
-	sig.ldtmu = true;
-	sig_addr = reg.raddr();
+  sig.ldtmu = true;
+  sig_addr = reg.raddr();
 
-	return *this;
+  return *this;
 }
 
 DestReg Instr::sig_dest() const {
@@ -699,20 +699,20 @@ DestReg Instr::mul_dest() const {
  *                      Ignored for vc6.
  */
 DestReg Instr::add_src_dest(v3d_qpu_input src, bool is_small_imm) const {
-	if (Platform::compiling_for_vc7()) {
-	  if (!is_small_imm) {
-	    return DestReg(src.raddr, false);
-		}
-	} else {
-		// vc6
-	  if (src.mux < V3D_QPU_MUX_A) {
-	    return DestReg(src.mux, true);
-	  } else if (src.mux == V3D_QPU_MUX_A) {
-	    return DestReg(raddr_a, false);
-	  } else if (!sig.small_imm_b) {
-	    return DestReg(raddr_b, false);
-	  }
-	}
+  if (Platform::compiling_for_vc7()) {
+    if (!is_small_imm) {
+      return DestReg(src.raddr, false);
+    }
+  } else {
+    // vc6
+    if (src.mux < V3D_QPU_MUX_A) {
+      return DestReg(src.mux, true);
+    } else if (src.mux == V3D_QPU_MUX_A) {
+      return DestReg(raddr_a, false);
+    } else if (!sig.small_imm_b) {
+      return DestReg(raddr_b, false);
+    }
+  }
 
   return DestReg();
 }

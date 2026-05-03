@@ -1,15 +1,13 @@
 #include "doctest.h"
-#include <cstdlib>
 #include "../Lib/Support/Platform.h"
-
-#ifdef QPU_MODE
 #include "../Lib/vc4/vc4.h"
 #include "../Lib/vc4/RegisterMap.h"
 #include "../Lib/v3d/RegisterMapping.h"
+#include <cstdlib>
 
 using namespace V3DLib;
 namespace V3DLib {
-	using namespace RegisterMap;
+using namespace RegisterMap;
 }
 
 TEST_CASE("Test correct working of RegisterMap [regmap]") {
@@ -37,5 +35,3 @@ TEST_CASE("Test correct working of RegisterMap [regmap]") {
     REQUIRE(MAX_QPUS_V3D == map_v3d.info_per_core(0).num_qpu);
   }
 }
-
-#endif  // QPU_MODE

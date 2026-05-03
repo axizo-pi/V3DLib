@@ -17,7 +17,7 @@ namespace V3DLib {
  *
  *     - interpret(...)  - run on source code interpreter
  *     - emu(...)        - run on the target code emulator (`vc4` code only)
- *     - qpu(...)        - run on physical QPUs (when QPU_MODE enabled, run emu()))
+ *     - qpu(...)        - run on physical QPUs
  *     - run(...)        - Call the best run option from previous depending on settings and compile options
  *
  *    The interpreter and emulator are useful for:
@@ -29,13 +29,7 @@ namespace V3DLib {
  *    in comparison to the hardware.
  *
  *
- * 2. The interpreter and emulator will run on any architecture.
- *
- *    The compile-time option `-D QPU_MODE` enables the execution of code on
- *    the physical VideoCore. This will work only on the Rasberry Pi.
- *    This define is disabled in the makefile for non-Pi platforms.
- *
- *    There are three possible shared memory allocation schemes:
+ * 2. There are three possible shared memory allocation schemes:
  *
  *    1. Using main memory - selectable in code, will not work for hardware GPU
  *    2. `vc4` memory allocation - used when communicating with hardware GPU on

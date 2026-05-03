@@ -74,7 +74,7 @@ struct platform_info {
 /**
  * @brief retrieve essential platform info
  */
-platform_info get_platform_info() {
+MAYBE_UNUSED platform_info get_platform_info() {
   platform_info p_i;
 
   auto ret = exec("hostnamectl");
@@ -135,13 +135,7 @@ MAYBE_UNUSED int gnu_version(bool show = true) {
  */
 std::string sudo_prefix() {
   std::string ret;
-
-#ifdef QPU_MODE
-const char *SUDO = (V3DLib::Platform::run_vc4())? "sudo " : "";  // sudo needed for vc4
-#else
-const char *SUDO = "";
-#endif
-
+  const char *SUDO = (V3DLib::Platform::run_vc4())? "sudo " : "";  // sudo needed for vc4
   ret << SUDO;
 
   //warn << "sudo_prefix() ret:\n" << ret;
@@ -324,45 +318,6 @@ std::vector<std::string> split(std::string s, std::string const &delimiter) {
 int num_newlines(std::string const &s) {
   auto ret = split(s, "\n");
   return (int) (ret.size() - 1);
-}
-
-
-/**
- * @brief Detect if the parameters (i.e. uniforms) are reversed on current platform.
- *
- * On `x86`, the kernel parameters are reversed.
- * Thus, last parameter in the kernel function call is initialized first.
- * This screws up initialization of the uniforms in the kernel.
- *
- * @return true if uniforms reversed, false otherwise
- *
- * =========================================
- *
- * Notes
- * -----
- *
- * The original hypothesis was  that the parameter reversal occured with gnu c++ v14.2.0.
- * This is not true; given compiler running on `Pi3B+` with `Debian 13 (Trixie) arm64` does not 
- * reverse.
- *
- * So, it must be the hardware platform, i.e. `x86`. This is the current hypothesis.
- */
-bool uniforms_reversed() {
-  static bool did_first = false;
-  static platform_info ret;
-
-  if (!did_first) {
-    ret = get_platform_info();
-    if (ret.is_x86()) {
-      warn << "x86: Need to reverse the parameter indexes";
-    } else {
-      debug << "No need to reverse the parameter indexes";
-    }
-
-    did_first = true;
-  }
-
-  return ret.is_x86();
 }
 
 }  // namespace V3DLib

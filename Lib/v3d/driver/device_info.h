@@ -1,5 +1,5 @@
-#ifndef _V3D_DEVICE_INFO_H
-#define _V3D_DEVICE_INFO_H
+#ifndef _V3DLIB_DEVICE_INFO_H
+#define _V3DLIB_DEVICE_INFO_H
 
 #include <stdint.h>
 
@@ -19,4 +19,4 @@ struct v3d_device_info const *devinfo();
 }
 #endif
 
-#endif // _V3D_DEVICE_INFO_H
+#endif // _V3DLIB_DEVICE_INFO_H

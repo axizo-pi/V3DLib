@@ -1,6 +1,5 @@
-#ifndef _LIB_V3D_KERNELDRIVER_H
-#define _LIB_V3D_KERNELDRIVER_H
-#ifdef QPU_MODE
+#ifndef _V3DLIB_V3D_KERNELDRIVER_H
+#define _V3DLIB_V3D_KERNELDRIVER_H
 #include "../KernelDriver.h"
 #include "Common/SharedArray.h"
 #include "instr/Instr.h"
@@ -55,5 +54,4 @@ private:
 }  // namespace v3d
 }  // namespace V3DLib
 
-#endif  // QPU_MODE
-#endif  // _LIB_V3d_KERNELDRIVER_H
+#endif  // _V3DLIB_V3d_KERNELDRIVER_H

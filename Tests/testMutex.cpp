@@ -165,8 +165,6 @@ TEST_CASE("Test mutexes emulator[mutex]") {
     REQUIRE(result == expected);
   }
 
-#ifdef QPU_MODE
-
   SUBCASE("Test QPU") {
     if (!Platform::compiling_for_vc4()) {
       warn << "Doing mutexes only for vc4";
@@ -193,8 +191,6 @@ TEST_CASE("Test mutexes emulator[mutex]") {
     k.run();
     REQUIRE(result == expected);
   }
-
-#endif  // QPU_MODE
 }
 
 

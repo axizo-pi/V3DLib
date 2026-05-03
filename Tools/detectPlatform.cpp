@@ -1,14 +1,12 @@
-#ifdef QPU_MODE
 #include "vc4/vc4.h"
 #include "vc4/Mailbox.h"
 #include "vc4/RegisterMap.h"
 #include "v3d/driver/device_info.h"
 #include "v3d/RegisterMapping.h"
-#include <unistd.h>  // geteuid()
-#include <iostream>
-#endif
 #include <CmdParameters.h>
 #include "Support/Platform.h"
+#include <unistd.h>  // geteuid()
+#include <iostream>
 
 
 using namespace V3DLib;
@@ -21,7 +19,7 @@ CmdParameters params = {
     "Extended Info",
     { "-x", "-extended"},
     ParamType::NONE,
-    "Show more fields for current platform. Only displays when QPU_MODE is enabled."
+    "Show more fields for current platform."
   }, {
     "Reset Scheduler Registers",
     "-reset-scheduler",
@@ -60,15 +58,10 @@ struct Settings {
       return CmdParameters::EXIT_ERROR;
     }
 
-#ifndef QPU_MODE
-    printf("Note: QPU mode is not enabled for this build. To enable, recompile with QPU=1 defined.\n\n");
-    return CmdParameters::EXIT_NO_ERROR;
-#else
     if (geteuid() != 0) {  // Only do this as root (sudo)
       printf("You need to run this with `sudo` to access the device file\n\n");
       return CmdParameters::EXIT_NO_ERROR;
     }
-#endif  // QPU_MODE
 
     auto ret = params.handle_commandline(argc, argv, false);
     if (ret != CmdParameters::ALL_IS_WELL) return ret;
@@ -91,9 +84,6 @@ struct Settings {
   }
   
 } settings;
-
-
-#ifdef QPU_MODE
 
 
 /**
@@ -235,8 +225,6 @@ void detect_vc4() {
   disableQPUs();
 }
 
-#endif  // QPU_MODE
-
 
 /**
  * @brief Detect if this is running on a Rpi.
@@ -244,8 +232,6 @@ void detect_vc4() {
  * @returns 0 if this is so, 1 if it's a different platform.
  */
 int main(int argc, char const *argv[]) {
-
-#ifdef QPU_MODE
   int ret = settings.init(argc, argv);
   if (ret != CmdParameters::ALL_IS_WELL) return ret;
 
@@ -268,9 +254,4 @@ int main(int argc, char const *argv[]) {
   }
 
   return 0;
-#else
-  printf("This application is compiled in non-QPU mode; can not detect Pi or VideoCore\n");
-  return 1;
-#endif  // QPU_MODE
-
 }

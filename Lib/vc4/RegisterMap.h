@@ -1,5 +1,3 @@
-#ifdef QPU_MODE
-
 #ifndef _V3DLIB_VC4_REGISTERMAP_H
 #define _V3DLIB_VC4_REGISTERMAP_H
 #include <stdint.h>
@@ -7,7 +5,7 @@
 
 namespace V3DLib {
 
-/**	
+/**  
  * Needs to be public, used in PerformanceCounters.
  */
 enum Index {
@@ -138,4 +136,3 @@ std::string ErrorStatus();
 }  // namespace V3DLib
 
 #endif  // _V3DLIB_VC4_REGISTERMAP_H
-#endif  // QPU_MODE

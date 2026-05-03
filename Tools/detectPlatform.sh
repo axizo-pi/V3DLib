@@ -48,8 +48,8 @@ if [ $ret -eq 0 ]
 then
   echo This is a Pi platform
   exit 0
+else  
+  echo This is not a Pi platform
+  exit 1
 fi
 
-
-echo This is not a Pi platform
-exit 1

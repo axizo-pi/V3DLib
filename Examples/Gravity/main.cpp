@@ -27,13 +27,11 @@ using namespace Log;
  *
  */
 void init_platform() {
-#ifdef QPU_MODE
   // Disable the cache - vc4 only
   if (Platform::compiling_for_vc4() && settings.run_type == QPU) {
     // Disable L2 cache: this ensure that DMA and TMU can work together
     LibSettings::L2Cache_enable(false);
   }
-#endif // QPU_MODE  
 
   // Set TMU/DMA load - does nothing for vc7
   // WRONG: LibSettings::tmu_load tmu(false);

@@ -912,9 +912,6 @@ ByteCode summation_kernel(uint8_t num_qpus, int unroll_shift, int code_offset) {
 // example here.
 //
 void run_summation_kernel(ByteCode &bytecode, uint8_t num_qpus, int unroll_shift) {
-#ifndef QPU_MODE
-  assertq(false, "Cannot run run_summation_kernel(), QPU_MODE not enabled");
-#else
   using namespace V3DLib::v3d;
 
   //printf("bytecode size: %u\n", bytecode.size());
@@ -988,6 +985,5 @@ void run_summation_kernel(ByteCode &bytecode, uint8_t num_qpus, int unroll_shift
 
   // Check if values supplied
   REQUIRE(sumY()  == 1llu*(length - 1)*length/2);
-#endif  // QPU_MODE
 }
 

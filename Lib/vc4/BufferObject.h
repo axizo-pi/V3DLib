@@ -1,8 +1,5 @@
 #ifndef _V3DLIB_VC4_BUFFEROBJECT_H_
 #define _V3DLIB_VC4_BUFFEROBJECT_H_
-
-#ifdef QPU_MODE
-
 #include "Common/BufferObject.h"
 
 namespace V3DLib {
@@ -21,11 +18,7 @@ private:
   void dealloc();
 };
 
-
-
 }  // namespace vc4
 }  // namespace V3DLib
-
-#endif  // QPU_MODE
 
 #endif  // _V3DLIB_VC4_BUFFEROBJECT_H_

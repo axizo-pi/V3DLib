@@ -1,8 +1,5 @@
-#ifndef _LIB_V3D_PERFORMANCECOUNTERS_H
-#define _LIB_V3D_PERFORMANCECOUNTERS_H
-
-#ifdef QPU_MODE
-
+#ifndef _V3DLIB_V3D_PERFORMANCECOUNTERS_H
+#define _V3DLIB_V3D_PERFORMANCECOUNTERS_H
 #include <vector>
 #include <string>
 #include <stdint.h>
@@ -171,6 +168,4 @@ private:
 }  // namespace v3d
 }  // namespace V3DLib
 
-#endif  // QPU_MODE
-
-#endif  // _LIB_V3D_PERFORMANCECOUNTERS_H
+#endif  // _V3DLIB_V3D_PERFORMANCECOUNTERS_H

@@ -399,9 +399,6 @@ ByteCode rotate_kernel() {
 
 
 void run_rotate_alias_kernel(ByteCode const &bytecode) {
-#ifndef QPU_MODE
-  assertq(false, "Cannot run run_rotate_alias_kernel(), QPU_MODE not enabled");
-#else
   using namespace V3DLib::v3d;
   REQUIRE(bytecode.size() > 0);
 
@@ -446,5 +443,4 @@ void run_rotate_alias_kernel(ByteCode const &bytecode) {
       }
     }
   }
-#endif  // QPU_MODE
 }

@@ -1,5 +1,3 @@
-#ifdef QPU_MODE
-
 #ifndef _V3DLIB_VC4_PERFORMANCECOUNTERS_H
 #define _V3DLIB_VC4_PERFORMANCECOUNTERS_H
 #include <string>
@@ -86,5 +84,3 @@ class PerformanceCounters {
 }  // namespace V3DLib
 
 #endif  // _V3DLIB_VC4_PERFORMANCECOUNTERS_H
-
-#endif  // QPU_MODE

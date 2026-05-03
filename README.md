@@ -4,26 +4,10 @@
 
 # V3DLib
 
-**Version 0.8.0**
+**Version 0.8.1**
 
 
-`V3DLib` is a C++ library for creating programs to run on the VideoCore GPU's of all versions of the [Raspberry Pi](https://www.raspberrypi.org/).
-
-## Recent History
-
-**20260404 - I just got this project on GitHub. Lots of things broken, busy fixing it**
-
-**20260407** - All units tests passing on all Pi's. There are still issues for non-QPU mode compilation[^1].
-
-**20260411** - Units tests passing for non-QPU mode on Pi's. Still issues for non-Pi.
-
-**20260416** - Compiling for Debian 13 (Trixie) on Pi. Works in principle, but need to fix issues.
-               **Fixed**. All unit tests passing for this case.
-
-[^1]: **Non-QPU mode** is intended to make the project compilable for platforms without a `VideoCore`.
-      Seriously considering dropping the non-QPU mode, I don't see the point any more.
-      Previously, it had some use to compile on my Intel i7 because it was faster; nowadays, a `Pi5` is plenty fast enough.
-
+`V3DLib` is a C++ library for creating programs to run on the GPU's of _all_ versions of the [Raspberry Pi](https://www.raspberrypi.org/).
 
 ## Supported Pi's
 

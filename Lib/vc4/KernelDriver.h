@@ -1,5 +1,5 @@
-#ifndef _LIB_VC4_KERNELDRIVER_H
-#define _LIB_VC4_KERNELDRIVER_H
+#ifndef _V3DLIB_VC4_KERNELDRIVER_H
+#define _V3DLIB_VC4_KERNELDRIVER_H
 #include "../KernelDriver.h"
 #include "Common/SharedArray.h"
 #include "Encode.h"
@@ -27,4 +27,4 @@ private:
 }  // namespace vc4
 }  // namespace V3DLib
 
-#endif  // _LIB_VC4_KERNELDRIVER_H
+#endif  // _V3DLIB_VC4_KERNELDRIVER_H

@@ -26,7 +26,7 @@
  * - raddr_a, raddr_b do not register (expected)
  * - add raddr's: smallest value always put in a from instr struct (check 4x?)
  * - sig, can not combine:
- *		- thrsw, small_imm_a
+ *    - thrsw, small_imm_a
  * - When a small_imm field is set, set corresponding raddr is a small immediate
  *    - int range: -16..15
  * - Setting 2 fields to small_imm results in assertion on disasm.
@@ -58,72 +58,72 @@ string line =
 string h =
 "|63|62|61|60|59|58|57|56|55|54|53|52|51|50|49|48|47|46|45|44|43|42|41|40|39|38|37|36|35|34|33|32|\n"
 "|31|30|29|28|27|26|25|24|23|22|21|20|19|18|17|16|15|14|13|12|11|10|09|08|07|06|05|04|03|02|01|00|\n"
-	;
+  ;
 
 string h2_temp =
 "|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |\n"
 "|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |\n"
-	;
+  ;
 
 std::string format_bits(uint64_t val) {
-	stringstream buf;
+  stringstream buf;
 
-	for (int n = 63; n >= 0; n--) {
-		int bit = (val >> n) & 1;
+  for (int n = 63; n >= 0; n--) {
+    int bit = (val >> n) & 1;
 
-		buf << "|" << setw(2) << bit;
+    buf << "|" << setw(2) << bit;
 
-		if (n == 32) buf << "|\n";
-	}
-	buf << "|\n";
+    if (n == 32) buf << "|\n";
+  }
+  buf << "|\n";
 
-	return buf.str();
+  return buf.str();
 }
 
 
 MAYBE_UNUSED std::string diff_bits(uint64_t a, uint64_t b) {
-	int count = 0;
-	stringstream buf;
+  int count = 0;
+  stringstream buf;
 
-	buf << line;
+  buf << line;
 
-	for (int n = 63; n >= 0; n--) {
-		int bit_a = (a >> n) & 1;
-		int bit_b = (b >> n) & 1;
+  for (int n = 63; n >= 0; n--) {
+    int bit_a = (a >> n) & 1;
+    int bit_b = (b >> n) & 1;
 
-		if (bit_a == bit_b) {
-			buf << "|  ";
-		} else {
-			count++;
-			if (bit_a == 1) {
-				buf << "| a";
-			} else {
-				buf << "| b";
-			}
-		}
+    if (bit_a == bit_b) {
+      buf << "|  ";
+    } else {
+      count++;
+      if (bit_a == 1) {
+        buf << "| a";
+      } else {
+        buf << "| b";
+      }
+    }
 
-		if (n == 32) buf << "|\n";
-	}
-	buf << "|\n";
+    if (n == 32) buf << "|\n";
+  }
+  buf << "|\n";
 
-	buf << line;
+  buf << line;
 
-	stringstream buf2;
-	buf2 << "\n" << count << " diffs\n";
+  stringstream buf2;
+  buf2 << "\n" << count << " diffs\n";
 
-	return buf2.str() + buf.str();
+  return buf2.str() + buf.str();
 }
 
 
 string instr_format(string h2, string desc, uint64_t val, bool show_desc = false) {
-	stringstream buf;
+  stringstream buf;
 
-	buf << line << h << line << h2 << line << format_bits(val) << line;
-	if (show_desc) {
-		buf << desc;
-	}
+  buf << line << h << line << h2 << line << format_bits(val) << line;
+  if (show_desc) {
+    buf << desc;
+  }
 
-	return buf.str();
+  return buf.str();
 }
 
 } // anon namespace
@@ -131,25 +131,25 @@ string instr_format(string h2, string desc, uint64_t val, bool show_desc = false
 
 
 std::string b(bool val) {
-	return val?"true":"false";
+  return val?"true":"false";
 }
 
 
 std::string disp_flags(struct v3d_qpu_flags const &f) {
-	stringstream buf;
+  stringstream buf;
 
-	buf
-		<< "ac : " << f.ac  << "; mc : " << f.mc  << "; "
-		<< "apf: " << f.apf << "; mpf: " << f.mpf << "; "
-		<< "auf: " << f.auf << "; muf: " << f.muf
-	;
+  buf
+    << "ac : " << f.ac  << "; mc : " << f.mc  << "; "
+    << "apf: " << f.apf << "; mpf: " << f.mpf << "; "
+    << "auf: " << f.auf << "; muf: " << f.muf
+  ;
 
-	return buf.str();
+  return buf.str();
 }
 
 
 std::string disp_sig(struct v3d_qpu_sig const &sig) {
-	stringstream buf;
+  stringstream buf;
 
   if (sig.thrsw) buf << " thrsw";
   if (sig.ldunif) buf << " ldunif";
@@ -169,27 +169,27 @@ std::string disp_sig(struct v3d_qpu_sig const &sig) {
   if (sig.small_imm_c) buf << " small_imm_c"; /* raddr_c (mul a), since V3D 7.x */
   if (sig.small_imm_d) buf << " small_imm_d"; /* raddr_d (mul b), since V3D 7.x */
 
-	return buf.str();
+  return buf.str();
 }
 
 
 std::string disp_input(struct v3d_qpu_input const &n) {
-	stringstream buf;
+  stringstream buf;
 
-	buf << "{ " 
+  buf << "{ " 
     //enum v3d_qpu_mux mux; // V3D 4.x
     << "raddr: "    << ((unsigned) n.raddr) // V3D 7.x
-		<< ", unpack: " << n.unpack
-		<< "}";
+    << ", unpack: " << n.unpack
+    << "}";
 
-	return buf.str();
+  return buf.str();
 }
 
 
 std::string disp_alu_instr(struct v3d_qpu_alu_instr const &n) {
-	stringstream buf;
+  stringstream buf;
 
-	buf <<
+  buf <<
 "  {\n"
 "    add {\n"
 "      op         : " << n.add.op                 << ";\n"
@@ -210,21 +210,21 @@ std::string disp_alu_instr(struct v3d_qpu_alu_instr const &n) {
 "    }\n"
 
 "  }\n";
-	return buf.str();
+  return buf.str();
 }
 
 
 std::string disp_branch_instr(struct v3d_qpu_branch_instr const &b) {
-	stringstream buf;
+  stringstream buf;
 
-	buf << "TODO\n";
+  buf << "TODO\n";
 
-	return buf.str();
+  return buf.str();
 }
 
 
 void display_instr(struct v3d_qpu_instr const &instr) {
-	cout <<
+  cout <<
 "\n"
 "struct v3d_qpu_instr {\n"
 "  type     : " << instr.type                       << ";\n"
@@ -236,238 +236,232 @@ void display_instr(struct v3d_qpu_instr const &instr) {
 "  flags    : " << disp_flags(instr.flags)          << ";\n"
 "\n";
 
-	if (instr.type == V3D_QPU_INSTR_TYPE_ALU) {
-		cout << disp_alu_instr(instr.alu);
-	} else {
-		cout << disp_branch_instr(instr.branch);
-	}
+  if (instr.type == V3D_QPU_INSTR_TYPE_ALU) {
+    cout << disp_alu_instr(instr.alu);
+  } else {
+    cout << disp_branch_instr(instr.branch);
+  }
 
-	cout << "};\n" ;
+  cout << "};\n" ;
 }
 
 
 std::string instr_format_alu_7x(uint64_t val) {
 
-	string h2 =
+  string h2 =
 "|  |  |  |  |  | 1| sig          |sm| sig_addr (2apf?)|mw|aw| mul waddr       | add waddr       |\n"
 "|     | a_pa|                                                                                   |\n"
 "| add_op    |  |1?|  |1?| mul a raddr     | mul b raddr     | add a raddr     | add b raddr     |\n"
-	;
+  ;
 
-	string desc = "\n"
-		"- mw  : mul magic write\n"
-		"- aw  : add magic write\n"
-		"- a_pa: add output pack; overlaps with add op\n"
-		"- ac: flags\n"
-		"  - 51: condition enabled\n"
-		"  - 50: 0\n"
-		"  - 49: negate condition\n"
-		"  - 48: 0=a, 1=b\n"
-		"- apf?: there is overlap with mpf. I don't get it yet\n"
-		"  - It looks like apf/mpf share the same field, and bit 50 is set for mul\n"
-		"    I get the impression that add/mul exclude each other on push\n"
-		"- sm  : sig_magic; true handles sig_addr as v3d_qpu_waddr\n"
-		"- sig:\n"
-		"                   53: thrsw \n"
-		"               54    : ldunif    - combines with thrsw; can't combine with ldunifa, ldunifrf, ldunifarf\n"
-		"   57, 56            : ldunifa   - can't combine with thrsw\n"
-		"       56, 55        : ldunifrf  - with sig_addr\n"
-		"   57, 56,         53: ldunifarf\n"
-		"           55        : ldtmu\n"
-		"       56            : ldvary\n"
-		"                     : ldvpm     - error disasm when used on its own\n"
-		"   57                : ldtlb\n"
-		"   57,             53: ldtmu\n"
-		"   57,     55, 54    : ucb\n"
-		"                     : rotate    - error disasm when used on its own\n"
-		"   57,         54    : wrtmuc\n"
-		"\n"
-		"       56, 55, 54    : small_imm_a - 0 in raddr does not register for small_imm's\n"
-		"       56, 55, 54, 53: small_imm_b\n"
-		"   57, 56, 55, 54    : small_imm_c\n"
-		"   57, 56, 55, 54, 53: small_imm_d\n"
-	;
+  string desc = "\n"
+    "- mw  : mul magic write\n"
+    "- aw  : add magic write\n"
+    "- a_pa: add output pack; overlaps with add op\n"
+    "- ac: flags\n"
+    "  - 51: condition enabled\n"
+    "  - 50: 0\n"
+    "  - 49: negate condition\n"
+    "  - 48: 0=a, 1=b\n"
+    "- apf?: there is overlap with mpf. I don't get it yet\n"
+    "  - It looks like apf/mpf share the same field, and bit 50 is set for mul\n"
+    "    I get the impression that add/mul exclude each other on push\n"
+    "- sm  : sig_magic; true handles sig_addr as v3d_qpu_waddr\n"
+    "- sig:\n"
+    "                   53: thrsw \n"
+    "               54    : ldunif    - combines with thrsw; can't combine with ldunifa, ldunifrf, ldunifarf\n"
+    "   57, 56            : ldunifa   - can't combine with thrsw\n"
+    "       56, 55        : ldunifrf  - with sig_addr\n"
+    "   57, 56,         53: ldunifarf\n"
+    "           55        : ldtmu\n"
+    "       56            : ldvary\n"
+    "                     : ldvpm     - error disasm when used on its own\n"
+    "   57                : ldtlb\n"
+    "   57,             53: ldtmu\n"
+    "   57,     55, 54    : ucb\n"
+    "                     : rotate    - error disasm when used on its own\n"
+    "   57,         54    : wrtmuc\n"
+    "\n"
+    "       56, 55, 54    : small_imm_a - 0 in raddr does not register for small_imm's\n"
+    "       56, 55, 54, 53: small_imm_b\n"
+    "   57, 56, 55, 54    : small_imm_c\n"
+    "   57, 56, 55, 54, 53: small_imm_d\n"
+  ;
 
 
-	return instr_format(h2, desc, val);
+  return instr_format(h2, desc, val);
 }
 
 
 std::string instr_format_branch_7x(uint64_t val) {
 
-	string h2 =
+  string h2 =
 "|  |  |  |  |  | 0| 1|  | offset_bottom                                                | cond   |\n"
 "| offset_top            |  | fign|  |  |  |  | bdu |ub| bdi | raddr_a         |  |  |  |  |  |  |\n"
-	;
+  ;
 
-	string desc = "\n"
-		"- offset_top   : top 8 bits of 32-bit offset address\n"
-		"- offset_bottom: lower 24 bits of 32-bit offset address. The bottom 3 bits are left out\n"
-		"- fign         : msfign\n"
-		"- cond         : enum values of cond are not consecutive in the packed instr\n"
-		"- ub           : if set, adds 'a:unif' to mnemonic\n"
-		"- bdu          : only set if ub set. a:absolute, r:relative, lri:link regfile, rf: regfile\n"
-		"- offset       : 16-bit aligned. The bottom nibble is rounded downward.\n"
-		"                 not set if bdi = _REGFILE\n"
-		"- raddr_a      : only filled in if bdi == _REGFILE\n"
-	;
+  string desc = "\n"
+    "- offset_top   : top 8 bits of 32-bit offset address\n"
+    "- offset_bottom: lower 24 bits of 32-bit offset address. The bottom 3 bits are left out\n"
+    "- fign         : msfign\n"
+    "- cond         : enum values of cond are not consecutive in the packed instr\n"
+    "- ub           : if set, adds 'a:unif' to mnemonic\n"
+    "- bdu          : only set if ub set. a:absolute, r:relative, lri:link regfile, rf: regfile\n"
+    "- offset       : 16-bit aligned. The bottom nibble is rounded downward.\n"
+    "                 not set if bdi = _REGFILE\n"
+    "- raddr_a      : only filled in if bdi == _REGFILE\n"
+  ;
 
-	return instr_format(h2, desc, val, true);
+  return instr_format(h2, desc, val, true);
 }
 
 
 std::string instr_format_alu_4x(uint64_t val) {
 
-	string h2 =
+  string h2 =
 "|  |  |  |  |  | 1| 0|  |  |  |  |  |  |  |  |  |  |  |  |  | mul_waddr       | add_waddr       |\n"
 "|  |  |  |  |  |1?|  |1?|mul_muxb|mul_muxa|add_muxb|add_muxa| raddr_a         | raddr_b         |\n"
-	;
+  ;
 
-	string desc = "\n"
-	;
+  string desc = "\n"
+  ;
 
 
-	return instr_format(h2, desc, val);
+  return instr_format(h2, desc, val);
 }
 
 
 std::string instr_format_branch_4x(uint64_t val) {
 
-	string h2 =
+  string h2 =
 "|  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |  |\n"
 "| offset_top            |  | fign|  |  |  |  | bdu |ub| bdi |  |  |  |  |  |  |  |  |  |  |  |  |\n"
-	;
+  ;
 
-	string desc = "\n"
-	;
+  string desc = "\n"
+  ;
 
-	return instr_format(h2, desc, val);
+  return instr_format(h2, desc, val);
 }
 
 
 int main(int argc, const char *argv[]) {
-#ifdef QPU_MODE
-	MAYBE_UNUSED struct v3d_qpu_instr instr_alu = {
-		.type = V3D_QPU_INSTR_TYPE_ALU,
-		.sig  = {
-			.thrsw = 1,
-			//.ldunifrf = 1
-			//.ldtmu = 1,
-			//.wrtmuc = 1
-			//.small_imm_a = 1,
-			//.small_imm_b = 1,
-	 	},
-		//.sig_addr = 18,
-		//.sig_magic = true,
+  MAYBE_UNUSED struct v3d_qpu_instr instr_alu = {
+    .type = V3D_QPU_INSTR_TYPE_ALU,
+    .sig  = {
+      .thrsw = 1,
+      //.ldunifrf = 1
+      //.ldtmu = 1,
+      //.wrtmuc = 1
+      //.small_imm_a = 1,
+      //.small_imm_b = 1,
+     },
+    //.sig_addr = 18,
+    //.sig_magic = true,
     //.raddr_a = 3,  // 4x
     //.raddr_b = 0,  // 4x
-		.flags = {
-		  //.ac = V3D_QPU_COND_IFA,
-		  //.mc = V3D_QPU_COND_IFA
-			//.apf = V3D_QPU_PF_PUSHZ,
-			//.mpf = V3D_QPU_PF_PUSHC,
-		},
-		.alu = {
-			.add = {
-					.op = V3D_QPU_A_BARRIERID,
-				  //.op = V3D_QPU_A_MOV,
-			  	.a = {
+    .flags = {
+      //.ac = V3D_QPU_COND_IFA,
+      //.mc = V3D_QPU_COND_IFA
+      //.apf = V3D_QPU_PF_PUSHZ,
+      //.mpf = V3D_QPU_PF_PUSHC,
+    },
+    .alu = {
+      .add = {
+          .op = V3D_QPU_A_BARRIERID,
+          //.op = V3D_QPU_A_MOV,
+          .a = {
             //.mux = V3D_QPU_MUX_B,
             .raddr = 0 
           },
-			  	.b = {
+          .b = {
             //.mux = V3D_QPU_MUX_B,
             .raddr = 1 
           },
-		 	    .waddr = 16,
-					//.waddr = V3D_QPU_WADDR_SYNCB,
-		 	    //.waddr = V3D_QPU_WADDR_NOP,
-					//.magic_write = true,
-			},
-			.mul = {
-				  .op = V3D_QPU_M_NOP,
-				  //.op = V3D_QPU_M_FMOV,
-			  	.a = {
+           .waddr = 16,
+          //.waddr = V3D_QPU_WADDR_SYNCB,
+           //.waddr = V3D_QPU_WADDR_NOP,
+          //.magic_write = true,
+      },
+      .mul = {
+          .op = V3D_QPU_M_NOP,
+          //.op = V3D_QPU_M_FMOV,
+          .a = {
             //.mux = V3D_QPU_MUX_R4,
             .raddr = 0
           },
-			  	.b = {
+          .b = {
             //.mux = V3D_QPU_MUX_B,
             .raddr = 0
           },
-					//.output_pack = V3D_QPU_PACK_NONE  // Other values fail disasm
-		 	    .waddr = 0, //V3D_QPU_WADDR_TMUA,
-					.magic_write = false,
-			},
-		},
-	};
+          //.output_pack = V3D_QPU_PACK_NONE  // Other values fail disasm
+           .waddr = 0, //V3D_QPU_WADDR_TMUA,
+          .magic_write = false,
+      },
+    },
+  };
 
-	MAYBE_UNUSED struct v3d_qpu_instr instr_branch = {
-		.type = V3D_QPU_INSTR_TYPE_BRANCH,
-		.branch = {
-			//.cond = V3D_QPU_BRANCH_COND_ANYNA,
-			//.msfign = V3D_QPU_MSFIGN_Q,
+  MAYBE_UNUSED struct v3d_qpu_instr instr_branch = {
+    .type = V3D_QPU_INSTR_TYPE_BRANCH,
+    .branch = {
+      //.cond = V3D_QPU_BRANCH_COND_ANYNA,
+      //.msfign = V3D_QPU_MSFIGN_Q,
 
-			//.bdi = V3D_QPU_BRANCH_DEST_REL,
-			.bdi = V3D_QPU_BRANCH_DEST_REGFILE,
+      //.bdi = V3D_QPU_BRANCH_DEST_REL,
+      .bdi = V3D_QPU_BRANCH_DEST_REGFILE,
 
       .bdu = V3D_QPU_BRANCH_DEST_REL,
 
-			.ub = false,
-			.raddr_a = 33,
-			.offset = 0x10
-		}
-	};
+      .ub = false,
+      .raddr_a = 33,
+      .offset = 0x10
+    }
+  };
 
-	cout << "Doing ALU instruction\n"
-		   << "========================\n";
-	auto &instr = instr_alu;
+  cout << "Doing ALU instruction\n"
+       << "========================\n";
+  auto &instr = instr_alu;
 /*
-	cout << "Doing Branch instruction\n"
-		   << "========================\n";
-	auto &instr = instr_branch;
-*/	
+  cout << "Doing Branch instruction\n"
+       << "========================\n";
+  auto &instr = instr_branch;
+*/  
 
   //display_instr(instr);
 
-	uint64_t packed =  0;
-	// THISuint64_t packed =  instr_pack(&instr);
+  uint64_t packed =  0;
+  // THISuint64_t packed =  instr_pack(&instr);
 
 
-	cout << "\n";
-	cout << "Packed: " << hex << packed << "\n";
-	cout << "Decode: " << qpu_decode(&instr) << "\n";
-	cout << "Disasm: " << qpu_disasm(packed) << "\n\n";
+  cout << "\n";
+  cout << "Packed: " << hex << packed << "\n";
+  cout << "Decode: " << qpu_decode(&instr) << "\n";
+  cout << "Disasm: " << qpu_disasm(packed) << "\n\n";
 
   if (devinfo_ver() == 42) {
-		cout << "---- vc4 instruction ----\n";
+    cout << "---- vc4 instruction ----\n";
 
-  	if (instr.type == V3D_QPU_INSTR_TYPE_ALU) {
-  		cout << instr_format_alu_4x(packed);
-  	} else {
-  		cout << instr_format_branch_4x(packed);
-  	}
+    if (instr.type == V3D_QPU_INSTR_TYPE_ALU) {
+      cout << instr_format_alu_4x(packed);
+    } else {
+      cout << instr_format_branch_4x(packed);
+    }
   } else {
-		cout << "---- v3d instruction ----\n";
+    cout << "---- v3d instruction ----\n";
 
-  	if (instr.type == V3D_QPU_INSTR_TYPE_ALU) {
-			cout << "7\n";
-  		cout << instr_format_alu_7x(packed);
-  	} else {
-  		cout << instr_format_branch_7x(packed);
-  	}
+    if (instr.type == V3D_QPU_INSTR_TYPE_ALU) {
+      cout << "7\n";
+      cout << instr_format_alu_7x(packed);
+    } else {
+      cout << instr_format_branch_7x(packed);
+    }
   }
 
 /*
   uint64_t const prev = 0x38000000f903f003;  
-	cout << "\n\nPrev  : " << hex << prev << "\n";
-	cout << "Disasm: " << qpu_disasm(prev) << "\n";
-	cout << diff_bits(prev, packed);
+  cout << "\n\nPrev  : " << hex << prev << "\n";
+  cout << "Disasm: " << qpu_disasm(prev) << "\n";
+  cout << diff_bits(prev, packed);
 */
   return 0;
-#else
-  cerr << "Can't use Instruction in non-QPU mode. "
-       << "There are too many dependencies with `vc4` and v3d`.\n";
-  return 1;
-#endif  // QPU_MODE
 }

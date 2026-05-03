@@ -69,7 +69,6 @@ bool BufferObject::is_cleared() const {
 
 
 BufferObject &getBufferObject() {
-#ifdef QPU_MODE
   if (Platform::use_main_memory()) {
     return emu::BufferObject::getHeap();
   } else if (Platform::run_vc4()) {
@@ -77,9 +76,6 @@ BufferObject &getBufferObject() {
   } else {
     return v3d::BufferObject::getHeap();
   }
-#else
-  return emu::BufferObject::getHeap();
-#endif
 }
 
 }  // namespace V3DLib

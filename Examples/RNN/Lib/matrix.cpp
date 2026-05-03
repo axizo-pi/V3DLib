@@ -125,7 +125,7 @@ matrix &matrix::operator-=(matrix const &rhs) {
 }
 
 
-matrix matrix::operator*(float rhs) {
+matrix matrix::operator*(float rhs) const {
   matrix ret(m_rows, m_columns);
 
   for (int i = 0; i < (int) m_arr->size(); ++i) {
@@ -256,7 +256,7 @@ void matrix::init_static() {
 }
 
 
-matrix operator*(float scalar, matrix /* const */ &mat) {
+matrix operator*(float scalar, matrix const &mat) {
   auto ret = mat * scalar;
   return ret;
 }

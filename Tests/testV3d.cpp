@@ -15,7 +15,6 @@
  *    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
  *
  ******************************************************************************/
-#ifdef QPU_MODE
 #include "support/support.h"
 #include "v3d/v3d.h"
 #include "support/summation_kernel.h"
@@ -525,6 +524,3 @@ TEST_CASE("Check v3d opcodes [v3d][opcodes]") {
 }
 
 #undef ARRAY_LENGTH
-
-#endif  // QPU_MODE
-

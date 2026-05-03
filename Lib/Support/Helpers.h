@@ -26,11 +26,6 @@ bool hasEnding (std::string const &fullString, std::string const &ending);
 std::vector<std::string> split(std::string s, std::string const &delimiter);
 int num_newlines(std::string const &s);
 
-//
-// Other functions
-//
-bool uniforms_reversed();
-
 }  // namespace V3DLib
 
 #endif  // _V3DLIB_SUPPORT_HELPERS_H_
