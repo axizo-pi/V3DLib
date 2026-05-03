@@ -419,8 +419,13 @@ namespace v3d {
  * @return true if opening succeeded, false otherwise
  */
 bool open() {
+  static bool did_first = false;
+
   if (Platform::compiling_for_vc4()) {
-    cerr << "Running on vc4, not opening the v3d card.";
+    if (!did_first) {
+      cerr << "Running on vc4, not opening the v3d card.";
+      did_first = true;
+    }
     return true;
   }
 
