@@ -22,7 +22,8 @@ model::model(int n_size, int m_size) : s_tmp(n_size) {
  */
 vector model::forward(vector const &input) {
   V3DLib::timers.start("forward transpose");
-  z1 = w1.transpose() * input;    // Input from layer 1 
+	//z1 = qpu::vector(w1.mul_t(input));  // Input from layer 1
+	z1 = w1.mul_t(input);  // Input from layer 1
   V3DLib::timers.stop("forward transpose");
 
   V3DLib::timers.start("forward sigmoid");
@@ -30,7 +31,7 @@ vector model::forward(vector const &input) {
   V3DLib::timers.stop("forward sigmoid");
 
   V3DLib::timers.start("forward transpose");
-  z2 = w2.transpose() * a1;
+	z2 = w2.mul_t(a1);
   V3DLib::timers.stop("forward transpose");
 
   V3DLib::timers.start("forward sigmoid");

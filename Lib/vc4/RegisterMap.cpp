@@ -105,7 +105,7 @@ public:
   /**
    * @brief Set the 32-bit value of the register at the given offset in the map
    */
-  void RegisterMapClass::write(int offset, uint32_t value) {
+  void write(int offset, uint32_t value) {
     m_addr[V3D_BASE + offset] = value;
   }
 

@@ -163,5 +163,6 @@ int main(int argc, const char *argv[]) {
   predict(inputs[1], k_model);
   predict(inputs[2], k_model);
 
+  V3DLib::timers.end();
   return 0;
 }

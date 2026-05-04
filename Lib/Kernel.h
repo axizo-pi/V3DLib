@@ -51,7 +51,7 @@ namespace V3DLib {
  */
 template <typename... ts>
 struct Kernel : public BaseKernel {
-	using KernelFunction = void (*)(ts... params);
+  using KernelFunction = void (*)(ts... params);
 
 public:
   Kernel(Kernel const &k) = delete;

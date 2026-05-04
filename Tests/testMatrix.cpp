@@ -496,7 +496,7 @@ void test_complex_matrix_multiplication(
   int num_blocks = 1,
   complex init_a = {1, 0},
   complex init_b = {1, 0},
-	bool do_emulate = false
+  bool do_emulate = false
 ) {
   REQUIRE(rows > 0);
   REQUIRE(inner > 0);
@@ -511,8 +511,8 @@ void test_complex_matrix_multiplication(
   // Test using decorator - this does not use num_blocks
   //
   INFO("Doing Decorator");
-	BaseSettings settings;
-	if (do_emulate) {
+  BaseSettings settings;
+  if (do_emulate) {
     settings.run_type = Emulator;
   }
 
@@ -537,15 +537,15 @@ void test_complex_matrix_multiplication(
   m.num_blocks(num_blocks);
 
   //if (do_emulate) {
-	//	Log::warn << "Doing emulate";
-	//}
-	m.call(do_emulate?EMULATE:CALL);
-	//Log::warn << "Matrix after call()";
+  //  Log::warn << "Doing emulate";
+  //}
+  m.call(do_emulate?EMULATE:CALL);
+  //Log::warn << "Matrix after call()";
   INFO("Matrix info:\n" << m.info());
-	//to_file("matrix_k.txt", m.k_dump());  // m_k is compiled in call(), need to call dump() here
-	//m.result().fill({-2.0f, -1.0f});
-	//Log::warn << "\n" << m.dump();
-	//Log::warn << m.result().dump();
+  //to_file("matrix_k.txt", m.k_dump());  // m_k is compiled in call(), need to call dump() here
+  //m.result().fill({-2.0f, -1.0f});
+  //Log::warn << "\n" << m.dump();
+  //Log::warn << m.result().dump();
 
   check_complex_matrix_multiplication(rows, inner, cols, m.result(), init_a*init_b);
 }
@@ -585,7 +585,7 @@ TEST_CASE("Test complex matrix algebra with varying sizes [matrix][complex][dot]
     copy_array(a.re(), scalar);
     a.im().fill(0.0f);
     {
-    	k.load(&result, &a, &a).run();
+      k.load(&result, &a, &a).run();
     }
     compare_arrays(result.re(), scalar_result);
     compare_array_scalar(result.im(), 0.0f);
@@ -597,7 +597,7 @@ TEST_CASE("Test complex matrix algebra with varying sizes [matrix][complex][dot]
     copy_array(a.im(), scalar);
     a.re().fill(0.0f);
     {
-    	k.load(&result, &a, &a).run();
+      k.load(&result, &a, &a).run();
     }
 
     // Negate result
@@ -614,7 +614,7 @@ TEST_CASE("Test complex matrix algebra with varying sizes [matrix][complex][dot]
 
 
 TEST_CASE("Check complex matrix multiplication [matrix][complex]") {
-	
+  
   auto test = [] (int num_qpus, int num_blocks = 1) {
     // num_blocks factor for inner dimension is there to ensure block sizes are always valid
     test_complex_matrix_multiplication(  1,    16*num_blocks,  1, num_qpus, num_blocks, {1,0}, {1,0}, true);
@@ -801,7 +801,7 @@ TEST_CASE("Test matrix mult on emulator [matrix][emu]") {
   //   - Interpreter will not work, because VPM operations are not supported in it
   test_complex_matrix_multiplication(  2,  3*16,  2,  1, 1, {-1.0f, 2.0f}, { 1.0f, -1.0f }, true);
   test_complex_matrix_multiplication(  2,  4*16,  5,  1, 2, {-1.0f, 2.0f}, { 1.0f, -1.0f }, true);
-	test_complex_matrix_multiplication(  3,  4*16,  17, 7, 1, {-1.0f, 2.0f}, { 1.0f, -1.0f }, true);
+  test_complex_matrix_multiplication(  3,  4*16,  17, 7, 1, {-1.0f, 2.0f}, { 1.0f, -1.0f }, true);
 
   Platform::use_main_memory(false);
 }

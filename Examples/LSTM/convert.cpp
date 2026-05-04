@@ -6,30 +6,7 @@
  * Support routines for converting lstm vector/matrix to qpu
  */
 
-namespace {
-
-inline bool check_precision(float lhs, float rhs, float precision) {
-  bool ret = true;
-
-  if (precision == 0.0f) {
-    if (lhs != rhs) {
-      warn << "check_precision fail";
-      ret = false;
-    }
-  } else {
-    float diff = abs(lhs - rhs);
-    if (diff > precision) {
-      warn << "check_precision fails with "
-           << "diff: " << diff << " for precision: " << precision;
-      ret = false;
-    }
-  }
-
-  return ret;
-}
-
-} // anon namespace
-
+using namespace qpu;
 
 /**
  * Return a size that is a multiple of 16
@@ -161,18 +138,6 @@ bool same(lstm::vector const &lhs, lstm::vector const &rhs, float precision) {
       warn << "Fail same(lstm::vector, lstm::vector), index: " << i;
       return false;
     }      
-  }
-
-  return true;
-}
-
-
-bool same(qpu::vector const &lhs, qpu::vector const &rhs, float precision) {
-  for (int i = 0; i < (int) rhs.size(); ++i) {
-    if (!check_precision(lhs[i], rhs[i], precision)) {
-      warn << "Fail same(qpu::vector, qpu::vector), index: " << i;
-      return false;
-    }
   }
 
   return true;

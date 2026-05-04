@@ -67,7 +67,9 @@ void kernel_dtanh(Float::Ptr in, Float::Ptr out, Int N) {
 
 
 /**
- * Exposed for combined kernels
+ * @brief Multiply matrix mat with vector input.
+ *
+ * Exposed for combined kernels.
  */
 void mult_vec_partial(Float::Ptr &input, Float::Ptr &mat, Float::Ptr &result, Int &M, Int &N) {
   Float res = 0;
@@ -77,7 +79,7 @@ void mult_vec_partial(Float::Ptr &input, Float::Ptr &mat, Float::Ptr &result, In
     If (n > 0 && ((n & 0xf) == 0))
       *result = res;
       result.inc();
-      res = 0;
+      res = 0.0f;
     End
 
     Float tmp = 0.0f;
@@ -104,13 +106,64 @@ void mult_vec_partial(Float::Ptr &input, Float::Ptr &mat, Float::Ptr &result, In
 
 
 /**
- * Multiply matrix mat with vector input.
+ * @brief Multiply matrix mat with vector input.
  *
- * @param M length of vector in blocks of 16
- * @param N height of matrix.
+ * The matrix calculation is:
+ *
+ *     result = mat*input
+ *
+ * @param input   vector to multiply with
+ * @param mat     matrix to multiply with
+ * @param result  array to store result in
+ * @param M       length of vector in blocks of 16
+ * @param N       height of matrix
  */
 void kernel_mult_vec(Float::Ptr input, Float::Ptr mat, Float::Ptr result, Int M, Int N) {
   mult_vec_partial(input, mat, result, M, N);
+}
+
+
+/**
+ * @brief Multiply matrix mat with vector input, where matrix is transposed in the calculation.
+ *
+ * The matrix calculation is:
+ *
+ *     result = mat^T*input
+ *
+ * @param input   vector to multiply with
+ * @param mat     matrix to multiply with, not transposed beforehand
+ * @param result  array to store result in
+ * @param M       length of vector
+ * @param N       height of matrix, in blocks of 16
+ */
+void kernel_mult_vec_transposed(Float::Ptr input, Float::Ptr mat, Float::Ptr result, Int M, Int N) {
+  Float res = 0.0f;
+	Float tmp = 0.0f;
+	Float::Ptr mat_base = mat;
+	mat_base -= index();
+
+  For (Int m = 0, m < M, m++)     // Iterate over matrix columns
+    If (m > 0 && ((m & 0xf) == 0))
+      *result = res;
+      result.inc();
+      res = 0.0f;
+    End
+
+		Float::Ptr vec = input;
+
+  	For (Int n = 0, n < N, n++)   // Iterate over matrix rows
+			Float row	= *(mat_base + m + n*16*M + M*index());
+
+			tmp += (*vec)*row;
+			vec.inc();
+		End
+
+    rotate_sum(tmp, tmp);
+		res.set_at(m, tmp);
+		tmp = 0.0f;
+	End
+
+  *result = res;
 }
 
 
