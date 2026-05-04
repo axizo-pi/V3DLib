@@ -1,7 +1,7 @@
 #include "Matrix.h"
-#include <functional>
 #include "Support/basics.h"
 #include "Source/Functions.h"
+#include <functional>
 
 namespace kernels {
 

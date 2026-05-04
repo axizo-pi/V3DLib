@@ -222,7 +222,6 @@ void matrix_mult_scalar(int N, float *dst, float *a, float *b);
  */
 inline auto matrix_mult_decorator(int rows, int inner, int columns) -> decltype(*matrix_mult<Float::Ptr>) {
   auto &settings = get_matrix_settings();
-
   settings.set(rows, inner, columns);
   return matrix_mult<Float::Ptr>;
 }
@@ -392,15 +391,15 @@ public:
     MAX_FULL_BLOCKS_V3D = 800,  // Highest dimension where full mult can be used for v3d
   };
 
-  using BlockKernelPtr = std::unique_ptr<BlockKernelType>;
+  using BaseKernelPtr = std::unique_ptr<BaseKernel>;
 
 
   ResultArray &result() {
-    //Log::warn << "&result(): " << Log::hex << (unsigned long) (&m_result);
+    //Log::warn << "BlockMatrix &result(): " << Log::hex << (unsigned long) (&m_result);
     return m_result;
   }
 
-  BlockKernelType &kernel() { return *m_k; }
+  BaseKernel &kernel()      { return *m_k; }
   void compile()            { init_block(CALL); }
   bool has_errors() const   { return (m_k_first && m_k_first->has_errors()) || m_k->has_errors(); }
 
@@ -466,10 +465,7 @@ public:
     if constexpr (std::is_same<Array, Float::Array2D>::value) {
       zero = 0.0f;
     }
-    //Log::warn << "call() pre m_result: " << m_result.dump();
     m_result.fill(zero);  // Apparently necessary; 1-ones mult -> final element is + 1 for some reason
-    //Log::warn << "&call() after fill() m_result: " << Log::hex << (unsigned long) (&m_result);
-    //Log::warn << "call() after fill() m_result: " << m_result.dump();
 
     if (m_k_first.get() != nullptr) m_k_first->setNumQPUs(m_num_qpus);
     if (m_k.get()       != nullptr) m_k->setNumQPUs(m_num_qpus);
@@ -535,7 +531,7 @@ protected:
   bool m_force_multi_kernels_calls = false;
 
   virtual void init_block(CallType call_type) = 0;
-  virtual void load(BlockKernelPtr &k, int offset) = 0;
+  virtual void load(BaseKernelPtr &k, int offset) = 0;
 
 
   bool use_multi_kernel_calls(CallType call_type) const {
@@ -568,7 +564,7 @@ protected:
     kernels::init_result_array(m_result);
 
     settings.add_result = false;
-    m_k_first.reset(new BlockKernelType(V3DLib::compile(kernel)));
+    m_k_first.reset(new BaseKernel(V3DLib::compile(kernel)));
 
     if (m_k_first->has_errors()) {
       warn << "compile failed of first kernel";
@@ -577,7 +573,7 @@ protected:
     }
 
     settings.add_result = true;
-    m_k.reset(new BlockKernelType(V3DLib::compile(kernel)));
+    m_k.reset(new BaseKernel(V3DLib::compile(kernel)));
 
     if (m_k->has_errors()) {
       cerr << "Compile failed of block kernel";
@@ -592,8 +588,8 @@ private:
   int m_num_blocks = DEFAULT_NUM_BLOCKS;
   ResultArray m_result;
 
-  std::unique_ptr<BlockKernelType> m_k_first;
-  std::unique_ptr<BlockKernelType> m_k;
+  std::unique_ptr<BaseKernel> m_k_first;
+  std::unique_ptr<BaseKernel> m_k;
 
 
   /**
@@ -633,8 +629,7 @@ private:
 template<
   typename Array2D,
   typename Ptr = typename std::conditional<std::is_same<Array2D, Float::Array2D>::value, Float::Ptr, Complex::Ptr>::type,
-  typename BlockKernelType = V3DLib::Kernel<Ptr, Ptr, Ptr, Int>,
-  typename Parent = BlockMatrix<Array2D, Ptr, BlockKernelType>
+  typename Parent = BlockMatrix<Array2D, Ptr, BaseKernel>
 >
 class Matrix : public Parent {
 public:
@@ -643,7 +638,7 @@ public:
     settings.set(m_a.rows(), m_a.columns(), m_b.rows());
   }
 
-  void load(std::unique_ptr<BlockKernelType> &k, int offset) override {
+  void load(std::unique_ptr<BaseKernel> &k, int offset) override {
     //Log::warn << "load() &Parent::result(): " << Log::hex << (unsigned long) (&Parent::result());
     k->load(&Parent::result(), &m_a, &m_b, offset);
   } 
@@ -689,7 +684,7 @@ public:
     settings.set(1, m_a.size(), m_a.size());
   }
 
-  void load(std::unique_ptr<BlockKernelType> &k, int offset) override {
+  void load(std::unique_ptr<BaseKernel> &k, int offset) override {
     k->load(&Parent::result(), &m_a, offset);
   } 
 

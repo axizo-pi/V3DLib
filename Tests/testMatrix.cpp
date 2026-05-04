@@ -531,7 +531,6 @@ void test_complex_matrix_multiplication(
   // Test using class Matrix
   //
   INFO("Doing Matrix");
-	//Log::warn << "Doing Matrix";
   Matrix m(a, b);
 
   m.setNumQPUs(num_qpus);
