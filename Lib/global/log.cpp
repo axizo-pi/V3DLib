@@ -45,6 +45,7 @@ public:
   bool do_fixed();
 };
 
+
 void Modifiers::handle(LogFlag f) {
   if (m_next_is_global) {
     //std::cout << "Handling global: " << f << "\n";

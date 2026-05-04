@@ -21,7 +21,6 @@ namespace V3DLib {
  *     - run(...)        - Call the best run option from previous depending on settings and compile options
  *
  *    The interpreter and emulator are useful for:
- *      - cross-platform compatibility
  *      - development/debugging
  *      - equivalence testing for the hardware QPU
  *
@@ -49,6 +48,7 @@ namespace V3DLib {
  *    the vc4 kernel driver is always used, even if only assembling for v3d.
  */
 class BaseKernel {
+
 public:
   BaseKernel(BaseSettings const &settings);
   BaseKernel(BaseKernel &&k) = default;
