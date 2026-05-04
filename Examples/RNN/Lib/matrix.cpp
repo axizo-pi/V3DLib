@@ -496,8 +496,8 @@ BaseKernel &vector::op_kernel() {
 
 
 void vector::init_static() {
-  if (m_sub      == nullptr) { m_sub      = new BaseKernel(compile_b(vector_sub,    settings())); }
-  if (m_add      == nullptr) { m_add      = new BaseKernel(compile_b(vector_add,    settings())); }
+  if (m_sub      == nullptr) { m_sub      = new BaseKernel(compile(vector_sub,    settings())); }
+  if (m_add      == nullptr) { m_add      = new BaseKernel(compile(vector_add,    settings())); }
   if (m_op       == nullptr) { m_op       = new BaseKernel(compile(outer_product,   settings())); }
 
   if (m_sigmoid  == nullptr) {
