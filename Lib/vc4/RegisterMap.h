@@ -131,8 +131,7 @@ void ProgramRequest(uint32_t address, uint32_t uniforms, uint32_t uniforms_lengt
 std::string ProgramRequestStatus();
 std::string ErrorStatus();
 
-} // RegisterMap
-
-}  // namespace V3DLib
+} // namespace RegisterMap
+} // namespace V3DLib
 
 #endif  // _V3DLIB_VC4_REGISTERMAP_H

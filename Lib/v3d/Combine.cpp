@@ -1800,40 +1800,40 @@ void combine_old(Instructions &instructions) {
  * -----
  *
  * - The format of the TMU load appears to be:
- *
- *    mov tmua, rf1                 ; any()                       ; thrsw
- *    any()                         ; any() 
- *    any()                         ; any()
- *    nop                           ; nop                         ; ldtmu.rf2
- *
+ *```
+ *   mov tmua, rf1                 ; any()                       ; thrsw
+ *   any()                         ; any() 
+ *   any()                         ; any()
+ *   nop                           ; nop                         ; ldtmu.rf2
+ *```
  * The `ldtmu` sig _must_ be in a double nop operation.
  * The mul `any()` on the `mov tmua` is a hypothesis, supported by `py-videocore7`;
  * TODO double check.
  *
  * - Overlapping TMU loads are not converted optimally. Eg.:
- *
- *    17: mov tmua, rf1                 ; nop                         ; thrsw
- *    18: nop                           ; nop
- *    19: nop                           ; nop
- *    20: nop                           ; nop                         ; ldtmu.rf2
- *    21: mov tmua, rf0                 ; nop                         ; thrsw
- *    22: nop                           ; nop
- *    23: nop                           ; nop
- *    24: nop                           ; nop                         ; ldtmu.rf3
- *    25: mov rf4, 0                    ; nop
- *    26: mov rf5, 0                    ; nop                           # Load full imm int 16
- *    27: add rf5, rf5, 1               ; nop
- *
+ *```
+ *   17: mov tmua, rf1                 ; nop                         ; thrsw
+ *   18: nop                           ; nop
+ *   19: nop                           ; nop
+ *   20: nop                           ; nop                         ; ldtmu.rf2
+ *   21: mov tmua, rf0                 ; nop                         ; thrsw
+ *   22: nop                           ; nop
+ *   23: nop                           ; nop
+ *   24: nop                           ; nop                         ; ldtmu.rf3
+ *   25: mov rf4, 0                    ; nop
+ *   26: mov rf5, 0                    ; nop                           # Load full imm int 16
+ *   27: add rf5, rf5, 1               ; nop
+ *```
  * converts to:
- *
- *    17: mov tmua, rf1                 ; nop                         ; thrsw
- *    18: mov tmua, rf0                 ; nop                         ; thrsw
- *    19: mov rf4, 0                    ; nop
- *    20: nop                           ; nop                         ; ldtmu.rf2
- *    21: mov rf5, 0                    ; nop                           # Load full imm int 16
- *    22: nop                           ; nop                         ; ldtmu.rf3
- *    23: add rf5, rf5, 1               ; nop                           # Load full imm int 16
- *
+ *```
+ *   17: mov tmua, rf1                 ; nop                         ; thrsw
+ *   18: mov tmua, rf0                 ; nop                         ; thrsw
+ *   19: mov rf4, 0                    ; nop
+ *   20: nop                           ; nop                         ; ldtmu.rf2
+ *   21: mov rf5, 0                    ; nop                           # Load full imm int 16
+ *   22: nop                           ; nop                         ; ldtmu.rf3
+ *   23: add rf5, rf5, 1               ; nop                           # Load full imm int 16
+ *```
  * Operation `22` could have been one index previous.
  * I can live with this; this IMHO needs brute force and I don't feel like it right now.
  * Perhaps inspiration will hit me one day.

@@ -1,7 +1,7 @@
 [//]: # (Construct `<a name="performance-1"></a>` is used to disambiguate internal links)
 [//]: # (This is not required for unambiguous links, `markdown` and/or `gitlit` can deal with these)
 <head>
-	<link rel="stylesheet" type="text/css" href="css/docs.css">
+  <link rel="stylesheet" type="text/css" href="css/docs.css">
 </head>
 
 # Examples

@@ -44,14 +44,17 @@ I believe that there is no performance gain to be found here, quite the contrary
 - The user-level language is an [Embedded Domain Specific Language](https://wiki.c2.com/?EmbeddedDomainSpecificLanguage).
   There are no pre-processors being used other than the standard C pre-processor.
   The output is standard C++ code.
-- Kernel programs are compiled dynamically, so that a given program can run unchanged on any version
-  of the RaspBerry Pi.
+- Kernel programs are compiled dynamically, so that a given program can run unchanged on any version  of the RaspBerry Pi.
   The kernels are generated inline and offloaded to the GPU's at runtime.
-
 
 # Supported Pi's
 
-I have about 14 Pi's foraging around here, which I intend to cluster.
+I have 14 Pi's organized in three clusters:
+
+![Pi Clusters](./images/Pi_clusters.jpeg)
+
+Getting these clustered Pi's to work together is an ongoing, separate project.
+
 
 Unit tests are run regularly on the following Pi versions:
 

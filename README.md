@@ -21,8 +21,8 @@ The Following Pi's are supported:
 | Pi5   | VII               |
 | Pi4   | VI                |
 | Zero  | IV                |
-| Pi3   | IV                |
 | Pi3B+ | IV                |
+| Pi3   | IV                |
 | Pi2   | IV                |
 | Pi1   | IV                |
 

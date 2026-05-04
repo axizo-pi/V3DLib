@@ -1,5 +1,5 @@
 <head>
-	<link rel="stylesheet" type="text/css" href="css/docs.css">
+  <link rel="stylesheet" type="text/css" href="css/docs.css">
 </head>
 
 # VideoCore Basics - What you need to know
@@ -27,7 +27,7 @@ the elements by their position and working on each pair.
 For example, an add operation working on two registers `RF0` and `RF1`:
 
     add RF0, RF0, RF1      // first operand is destination
-	
+  
 with:
 
     RF0 = <10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25>
@@ -123,8 +123,8 @@ For example, consider a two-dimensional array, of which each row is processed by
 The following loop can be specified:
 
     For (Int row = me(), row < row_size, row += numQPUs())
-	  // Do something useful per row
-	End
+      // Do something useful per row
+    End
 
 
 ## Slices and TMU
@@ -189,9 +189,9 @@ In general, there are three great ways to improve performance and throughput on 
 2. Use multiple QPUs for a given calculation
 3. Use the Add and Mul ALUs simultaneously
 
-Combining these results in a program running on a Pi which tears my Intel i7 to shreds.
+Combining these results in a program running on a Pi tears my Intel i7 to shreds[^1].
 
-*(...okay, let's be honest about this: single thread, CPU only, no SSE. In this case, the i7 is eating dust)*
+[^1]: ...okay, let's be honest about this: Intel i7, single thread, CPU only, no SSE. In this case, the i7 is eating dust.
 
 -----
 
@@ -256,7 +256,7 @@ By adding `index()`, each vector element of `x` will point to consecutive values
 On the assignment to `a`, these consecutive values will be loaded into the vector elements of `a`.
 
 
-When using multiple QPUs, you could load consecutive blocks of values into separate QPUs int the following way:
+When using multiple QPUs, you could load consecutive blocks of values into separate QPUs in the following way:
 
     void kernel(Ptr<Float> x) {
       x = x + index() + (me() << 4);
@@ -273,7 +273,8 @@ Adding `index()` to uniform pointers is so common in kernel code, that I made th
 This means that if a parameter `Int::Ptr ptr` is passed into a kernel with an assigned memory address value `addr`,
 It will be initialized as:
 
-    ptr = <addr addr+4 addr+8 addr+12 addr+16 addr+20 addr+24 addr+28 addr+32 addr+36 addr+40 addr+44 addr+48 addr+52 addr+56 addr+60>
+    ptr = <addr addr+4 addr+8 addr+12 addr+16 addr+20 addr+24 addr+28 addr+32
+           addr+36 addr+40 addr+44 addr+48 addr+52 addr+56 addr+60>
 
 You are free to adjust the offsets as required in your application.
 A nice example is **Cursors**.

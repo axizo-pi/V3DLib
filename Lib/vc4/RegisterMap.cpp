@@ -82,6 +82,7 @@ std::string errStatLabel(ErrStatFields val) {
 
 
 /**
+ * @brief Class RegisterMapClass
  *
  * Implemented as singleton with lazy load, so that it's 
  * not initialized when it's not used.
@@ -94,8 +95,19 @@ public:
   RegisterMapClass();
   ~RegisterMapClass();
 
-  uint32_t read(int offset) const;
-  void write(int offset, uint32_t value);
+  /**
+   * @brief Get the 32-bit value of the register at the given offset in the map
+   */
+  uint32_t read(int offset) const {
+    return m_addr[V3D_BASE + offset];
+  }
+
+  /**
+   * @brief Set the 32-bit value of the register at the given offset in the map
+   */
+  void write(int offset, uint32_t value) {
+    m_addr[V3D_BASE + offset] = value;
+  }
 
   volatile uint32_t *m_addr{nullptr};
   unsigned m_size{0};
@@ -125,22 +137,6 @@ RegisterMapClass::RegisterMapClass() {
 RegisterMapClass::~RegisterMapClass() {
   unmapmem((void *) m_addr, m_size);
   disableQPUs();
-}
-
-
-/**
- * @brief Get the 32-bit value of the register at the given offset in the map
- */
-uint32_t RegisterMapClass::read(int offset) const {
-  return m_addr[V3D_BASE + offset];
-}
-
-
-/**
- * @brief Set the 32-bit value of the register at the given offset in the map
- */
-void RegisterMapClass::write(int offset, uint32_t value) {
-  m_addr[V3D_BASE + offset] = value;
 }
 
 
@@ -460,6 +456,8 @@ bool checkThreadErrors() {
 
 
 /**
+ * @param address          address of kernel code to use
+ * @param uniforms         passed uniforms
  * @param uniforms_length  number of passed uniforms.
  *        0 disables the uniforms stream.
  *        > 1023 implies an unlimited uniforms stream.
@@ -515,5 +513,5 @@ std::string ErrorStatus() {
   return ret;
 }
 
-} // RegisterMap
-}  // namespace V3DLib
+} // namespace RegisterMap
+} // namespace V3DLib
