@@ -172,7 +172,7 @@ PGM &PGM::plot(float const *arr, int size, int color) {
 
     if (y >= m_height) {
       // clip if out of bounds
-      cdebug << "pgm y value " << y << " >= " << m_height << " out of bounds, clipped";
+      //cdebug << "pgm y value " << y << " >= " << m_height << " out of bounds, clipped";
       y = m_height -1;
     }
 

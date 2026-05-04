@@ -119,6 +119,40 @@ template <typename ...t> bool ppassParam(
   return ret & ppassParam(uniforms, typelist, index, x...);
 }
 
+
+// Construct an argument of QPU type 't'.
+template <typename T> inline T mkArg(std::vector<std::size_t> &typelist) {
+  auto t_hash = typeid(T).hash_code(); //both T and T::Ptr return the same value: N6V3DLib7Complex3PtrE
+  //Log::warn << "Doing mkArg";
+  //Log::warn << "mkArg t_hash: " << typeid(T).name();
+
+  auto c_hash = typeid(typename Complex::Ptr).hash_code();
+  auto i_hash = typeid(int).hash_code();
+  //Log::warn << "mkArg i_hash    : " << typeid(int).name();
+
+  if (t_hash == c_hash) {
+    //Log::warn << "mkArg: Complex::Ptr detected";
+
+    // Add two Float ptr's for Re and Im
+    auto p_hash = typeid(typename Float::Ptr).hash_code();
+    typelist.push_back(p_hash);
+    typelist.push_back(p_hash);
+  } else if (t_hash == i_hash) {
+    Log::warn << "mkArg doing i_hash";  // Hypothesis: this is probably useless
+    typelist.push_back(i_hash);
+  } else {
+    auto hash = typeid(typename T::Ptr).hash_code();
+    //Log::warn << "mkArg adding hash: " << typeid(typename T::Ptr).name();
+    //Log::warn << "mkArg hash T     : " << typeid(T).name();
+    //auto hash = typeid(T).hash_code();
+    typelist.push_back(hash);
+  }
+
+
+  auto ret = T::mkArg();  
+  return ret;
+}
+
 }  // namespace V3DLib
 
 #endif // _V3D_KERNEL_PARAMS_H_

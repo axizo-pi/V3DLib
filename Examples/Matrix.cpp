@@ -1,10 +1,11 @@
-#include <unistd.h>  // sleep()
-#include <math.h>
 #include <V3DLib.h>
 #include "Support/Settings.h"
 #include "Support/Timer.h"
 #include "Support/debug.h"
+#include "Support/Helpers.h"   // random_float()
 #include "Kernels/Matrix.h"
+#include <unistd.h>            // sleep()
+#include <math.h>
 
 using namespace V3DLib;
 using namespace kernels;

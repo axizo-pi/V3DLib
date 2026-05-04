@@ -251,7 +251,7 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
         }
 
         if (can_remove) {
-          info << "combineImmediates can_remove, instr: " << instr.dump();
+          //info << "combineImmediates can_remove, instr: " << instr.dump();
           instr.set_skip();
         }
       }

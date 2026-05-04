@@ -74,14 +74,14 @@ void QPUState::upkeep(State &state) {
 
   dmaLoad.upkeep();
   if (dmaLoad.done_waiting()) {
-    cdebug << "QPUState::upkeep() DMA load done waiting";
+    //cdebug << "QPUState::upkeep() DMA load done waiting";
     DMA::load(this, &state);
     dmaLoad.active(false);
   }
 
   dmaStore.upkeep();
   if (dmaStore.done_waiting()) {
-    cdebug << "QPUState::upkeep() DMA store done waiting";
+    //cdebug << "QPUState::upkeep() DMA store done waiting";
     DMA::store(this, &state);
     dmaStore.active(false);
   }
