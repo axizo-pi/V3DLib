@@ -35,7 +35,7 @@
 DEBUG=1
 
 ifeq ($(DEBUG), 1)
-$(info Using default value and DEBUG=1)
+$(info Using default DEBUG=1)
 $(info To override, call make with `make (-e) `DEBUG=0`)
 endif
 
