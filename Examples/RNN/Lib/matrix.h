@@ -41,6 +41,7 @@ struct matrix {
   matrix &operator-=(matrix const &rhs);
   matrix operator*(float rhs) const;
   matrix mul(matrix const &rhs) const;
+  matrix mul_t(matrix const &rhs) const;
   matrix sigmoid_derivative(matrix const &rhs);
   matrix transpose() const;
 
@@ -62,6 +63,7 @@ private:
   int m_columns  = 0;
 
   static BaseKernel *m_mult_vec;
+  static BaseKernel *m_mult_vec_transposed;
 
   void init_static();
 };
@@ -124,6 +126,9 @@ private:
 
 
 vector operator*(matrix const &lhs, vector const &rhs);
+
+bool check_precision(float lhs, float rhs, float precision);
+bool same(qpu::vector const &lhs, qpu::vector const &rhs, float precision = 0.0f);
 
 } // namespace qpu
 

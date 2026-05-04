@@ -13,6 +13,7 @@ void kernel_dsigmoid(Float::Ptr in, Float::Ptr out, Int N);
 void kernel_tanh(Float::Ptr in, Float::Ptr out, Int N);
 void kernel_dtanh(Float::Ptr in, Float::Ptr out, Int N);
 void kernel_mult_vec(Float::Ptr input, Float::Ptr mat, Float::Ptr result, Int M, Int N);
+void kernel_mult_vec_transposed(Float::Ptr input, Float::Ptr mat, Float::Ptr result, Int M, Int N);
 void outer_product(Float::Ptr left, Float::Ptr right, Float::Ptr out_matrix, Int N, Int M);
 void vector_sub(Float::Ptr left, Float::Ptr right, Float::Ptr out, Int N);
 void vector_add(Float::Ptr left, Float::Ptr right, Float::Ptr out, Int N);

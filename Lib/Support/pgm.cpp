@@ -196,7 +196,6 @@ void PGM::save(char const *filename) {
          << m_width << " " << m_height << "\n"
          << MAX_COLOR << "\n";
 
-
   int *arr = m_arr;
 
   output_ppm_file(header, m_width, m_height, filename, [arr] (int index) -> std::string {

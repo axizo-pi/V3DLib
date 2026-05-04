@@ -19,6 +19,7 @@ void frand_array(Float::Array &rhs) {
 ////////////////////////////////////////////////
 
 BaseKernel *matrix::m_mult_vec = nullptr;
+BaseKernel *matrix::m_mult_vec_transposed = nullptr;
 
 matrix::matrix(int rows, int columns) : m_rows(rows), m_columns(columns) {
   // Allow initialization of empty matrix.
@@ -149,12 +150,11 @@ matrix matrix::mul(matrix const &rhs) const {
   assert(m_rows > 0);
 
   if (m_columns != rhs.rows()) {
-    cerr << "Matrix::operator*() Inner dimension does not match. "
+    cerr << "Matrix::mul() Inner dimension does not match. "
          << "this(rows, columns): (" << m_rows << ", " << m_columns << "), "
          << "rhs(rows, columns):  (" << rhs.rows() << ", " << rhs.columns() << ")"
           << thrw;
   }
-  //assert(m_columns == rhs.rows());    // Inner dimension must match
 
   assert((m_columns % 16) == 0);      // Inner dimension must be multiple of 16
 
@@ -162,6 +162,34 @@ matrix matrix::mul(matrix const &rhs) const {
 
   m_mult_vec->load(&rhs.arr(), &arr(), &ret.arr(), m_columns/16, m_rows);
   m_mult_vec->run();
+
+  return ret;
+}
+
+
+/**
+ * @brief Perform multiplication between a matrix and a vector,
+ *        where the matrix is transposed in the calculation
+ */
+matrix matrix::mul_t(matrix const &rhs) const {
+  //warn << "Called matrix matrix::mul_t()";
+  //warn << "matrix: " << dump_dim() << "rhs: " << rhs.dump_dim();
+  assert(m_columns > 0);
+  assert(m_rows > 0);
+
+  if (m_rows != rhs.rows()) {
+    cerr << "Matrix::mul_t() Inner dimension does not match. "
+         << "this(rows, columns): (" << m_rows << ", " << m_columns << "), "
+         << "rhs(rows, columns):  (" << rhs.rows() << ", " << rhs.columns() << ")"
+          << thrw;
+  }
+
+  assert((m_rows % 16) == 0);
+
+  matrix ret(m_columns, 1);
+
+  m_mult_vec_transposed->load(&rhs.arr(), &arr(), &ret.arr(), m_columns, m_rows/16);
+  m_mult_vec_transposed->run();
 
   return ret;
 }
@@ -250,9 +278,11 @@ void matrix::transfer(matrix const &rhs) {
  * @brief Initialize local kernels
  */
 void matrix::init_static() {
-  if (m_mult_vec == nullptr) {
-    m_mult_vec = new BaseKernel(compile(kernel_mult_vec, settings()));
-  }
+  if (m_mult_vec == nullptr) m_mult_vec = new BaseKernel(compile(kernel_mult_vec, settings()));
+
+  if (m_mult_vec_transposed == nullptr) {
+		m_mult_vec_transposed = new BaseKernel(compile(kernel_mult_vec_transposed, settings()));
+	}
 }
 
 
@@ -496,8 +526,8 @@ BaseKernel &vector::op_kernel() {
 
 
 void vector::init_static() {
-  if (m_sub      == nullptr) { m_sub      = new BaseKernel(compile_b(vector_sub,    settings())); }
-  if (m_add      == nullptr) { m_add      = new BaseKernel(compile_b(vector_add,    settings())); }
+  if (m_sub      == nullptr) { m_sub      = new BaseKernel(compile(vector_sub,    settings())); }
+  if (m_add      == nullptr) { m_add      = new BaseKernel(compile(vector_add,    settings())); }
   if (m_op       == nullptr) { m_op       = new BaseKernel(compile(outer_product,   settings())); }
 
   if (m_sigmoid  == nullptr) {
@@ -519,6 +549,39 @@ vector operator*(matrix const &lhs, vector const &rhs) {
   ret = lhs.mul(rhs);
 
   return vector(ret);
+}
+
+
+bool check_precision(float lhs, float rhs, float precision) {
+  bool ret = true;
+
+  if (precision == 0.0f) {
+    if (lhs != rhs) {
+      warn << "check_precision fail";
+      ret = false;
+    }
+  } else {
+    float diff = abs(lhs - rhs);
+    if (diff > precision) {
+      warn << "check_precision fails with "
+           << "diff: " << diff << " for precision: " << precision;
+      ret = false;
+    }
+  }
+
+  return ret;
+}
+
+
+bool same(qpu::vector const &lhs, qpu::vector const &rhs, float precision) {
+  for (int i = 0; i < (int) rhs.size(); ++i) {
+    if (!check_precision(lhs[i], rhs[i], precision)) {
+      warn << "Fail same(qpu::vector, qpu::vector), index: " << i;
+      return false;
+    }
+  }
+
+  return true;
 }
 
 } // namespace qpu
