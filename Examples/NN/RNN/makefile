@@ -1,4 +1,5 @@
-NAME=GRU
+NAME=RNN
+
 
 SRCDIR=./
 

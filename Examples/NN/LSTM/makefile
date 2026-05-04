@@ -1,4 +1,4 @@
-NAME=GRU
+NAME=LSTM
 
 SRCDIR=./
 

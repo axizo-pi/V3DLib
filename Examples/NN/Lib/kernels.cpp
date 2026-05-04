@@ -138,9 +138,9 @@ void kernel_mult_vec(Float::Ptr input, Float::Ptr mat, Float::Ptr result, Int M,
  */
 void kernel_mult_vec_transposed(Float::Ptr input, Float::Ptr mat, Float::Ptr result, Int M, Int N) {
   Float res = 0.0f;
-	Float tmp = 0.0f;
-	Float::Ptr mat_base = mat;
-	mat_base -= index();
+  Float tmp = 0.0f;
+  Float::Ptr mat_base = mat;
+  mat_base -= index();
 
   For (Int m = 0, m < M, m++)     // Iterate over matrix columns
     If (m > 0 && ((m & 0xf) == 0))
@@ -149,19 +149,19 @@ void kernel_mult_vec_transposed(Float::Ptr input, Float::Ptr mat, Float::Ptr res
       res = 0.0f;
     End
 
-		Float::Ptr vec = input;
+    Float::Ptr vec = input;
 
-  	For (Int n = 0, n < N, n++)   // Iterate over matrix rows
-			Float row	= *(mat_base + m + n*16*M + M*index());
+    For (Int n = 0, n < N, n++)   // Iterate over matrix rows
+      Float row  = *(mat_base + m + n*16*M + M*index());
 
-			tmp += (*vec)*row;
-			vec.inc();
-		End
+      tmp += (*vec)*row;
+      vec.inc();
+    End
 
     rotate_sum(tmp, tmp);
-		res.set_at(m, tmp);
-		tmp = 0.0f;
-	End
+    res.set_at(m, tmp);
+    tmp = 0.0f;
+  End
 
   *result = res;
 }

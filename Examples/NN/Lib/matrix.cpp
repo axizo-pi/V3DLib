@@ -281,8 +281,8 @@ void matrix::init_static() {
   if (m_mult_vec == nullptr) m_mult_vec = new BaseKernel(compile(kernel_mult_vec, settings()));
 
   if (m_mult_vec_transposed == nullptr) {
-		m_mult_vec_transposed = new BaseKernel(compile(kernel_mult_vec_transposed, settings()));
-	}
+    m_mult_vec_transposed = new BaseKernel(compile(kernel_mult_vec_transposed, settings()));
+  }
 }
 
 
