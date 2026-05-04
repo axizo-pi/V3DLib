@@ -7,6 +7,7 @@ obj*
 *.bmp
 *.swp
 *.stl
+*.zip
 *.org~
 .~lock.*
 *_code.txt
@@ -21,3 +22,8 @@ CMakeFiles
 extern/userland/**/Makefile
 extern/userland/build
 extern/userland/vmcs_config.h
+Examples/NN/GRU/Tools/GRU/Weights/
+Examples/NN/GRU/Tools/GRU/test
+Examples/NN/GRU/Tools/GRU/train
+Examples/NN/GRU/Tools/GRU_final/
+

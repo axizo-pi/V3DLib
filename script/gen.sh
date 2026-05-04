@@ -55,7 +55,7 @@ EXAMPLES=$(echo "$EXE2" | sed "s/^.*\//  /g")
 
 # Get list of example makefiles
 MAKEFILES=$(find Examples -name 'makefile') # | tr '\n' ' ')
-#echo $MAKEFILES
+echo $MAKEFILES
 
 # Jezus Christ, it took me ages to figure following out.
 # Translate string to array.
@@ -64,17 +64,20 @@ makelist=""
 projects=""
 for item in "${ARR[@]}"; do
 	echo Item: $item
-	basedir=$(echo "$item" | awk -F '/' '{print $1}')
-	name=$(echo "$item" | awk -F '/' '{print $2}')
+	basedir=$(echo "$item" | awk 'BEGIN{FS=OFS="/"}{NF--; NF--; print}')
+	name=$(echo "$item" | awk 'BEGIN{FS=OFS="/"}{print $(NF-1)}')
 
 	projects="${projects}  ${name} \\
 "
 
 	makelist="$makelist
 $name: \$(V3DLIB)
-	@cd "$basedir/$name" && make DEBUG=\${DEBUG} QPU=\${QPU} 
+	@cd "$basedir/$name" && make DEBUG=\${DEBUG}
 	"
 done
+
+echo Projects: $projects
+echo $makelist
 
 mkdir -p obj
 
