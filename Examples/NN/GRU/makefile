@@ -1,5 +1,8 @@
 NAME=GRU
 
+INCLUDE_EXTERN+= \
+ -I Tools/GRU
+
 SRCDIR=./
 
 -include ../../../script/mak/config.mak
