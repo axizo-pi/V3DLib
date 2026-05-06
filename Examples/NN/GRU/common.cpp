@@ -95,3 +95,31 @@ void read_output(MatrixXf& Y, std::ifstream& outputFile, int time_steps) {
     }
     Y.eval();
 }
+
+std::string dump_dim(MatrixXf const &m) {
+		std::string buf;
+		buf << "(rows,cols) = (" << m.rows() << ", " << m.cols() << ")";
+		return buf;
+}
+
+
+qpu::vector copy(MatrixXf const &rhs) {
+	if (rhs.rows() != 1) {
+		breakpoint;
+		warn << "copy(MatrixXf) failed due to dimensions, dim rhs: " << dump_dim(rhs) << thrw;
+	}
+	assert(rhs.cols() % 16 == 0);
+
+  //int height = resize(rhs.size());
+  //auto width = resize(rhs[0].size());
+  int width = (int) rhs.cols();
+
+  qpu::vector ret(width);
+  ret.set(0.0f);
+
+  for (int i = 0; i < rhs.cols(); i++) {
+  	ret.at(0, i) = rhs(0, i);
+  }
+
+  return ret;
+}

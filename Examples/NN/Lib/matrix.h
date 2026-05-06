@@ -39,6 +39,8 @@ struct matrix {
   matrix &operator=(matrix const &rhs);
   matrix operator-(matrix const &rhs);
   matrix &operator-=(matrix const &rhs);
+  matrix operator+(matrix const &rhs);
+  matrix &operator+=(matrix const &rhs);
   matrix operator*(float rhs) const;
   matrix mul(matrix const &rhs) const;
   matrix mul_t(matrix const &rhs) const;
@@ -55,6 +57,7 @@ protected:
   void columns(int rhs) { m_columns = rhs; }
 
   void transfer(matrix const &rhs);
+  matrix mul_elem(matrix const &rhs) const;
 
   std::shared_ptr<Float::Array> m_arr;
 
@@ -80,6 +83,8 @@ matrix operator*(float scalar, matrix const &mat);
  * Size must be a multiple of 16
  */
 struct vector : public matrix {
+	using Parent = matrix;
+
   vector(vector &rhs);
   explicit vector(matrix rhs);
   vector(int rows = 0, float val = 0.0f);
@@ -92,6 +97,7 @@ struct vector : public matrix {
 
   vector operator-(vector const &rhs);
   vector operator+(vector const &rhs);
+  vector &operator+=(vector const &rhs) { *this = *this + rhs;  return *this; }
   vector mul(vector const &rhs);
   vector &operator=(matrix const &rhs);
   vector &operator=(vector const &rhs);

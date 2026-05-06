@@ -1,7 +1,7 @@
 #include "lstm_kernel.h"
 #include "V3DLib.h"
-#include "../RNN/Lib/helpers.h" // settings()
-#include "kernels.h"            // clip_partial()
+#include "../Lib/helpers.h"  // settings()
+#include "kernels.h"         // clip_partial()
 
 using namespace V3DLib;
 
@@ -253,7 +253,7 @@ void gradient_output_gate(
     Float x4  = tanh(x3);
 
     Float x5 = (*dh_next) * x4 * x2;
-    clip_partial(x5, clip_min, clip_value);
+		kernel::clip_partial(x5, clip_min, clip_value);
     *d_t = x5;
 
     d_t.inc();
@@ -285,7 +285,7 @@ void gradient_candidate(
 
     Float x3 = (*d_t) * (*activation) * x2;
 
-    clip_partial(x3, clip_min, clip_value);
+		kernel::clip_partial(x3, clip_min, clip_value);
     *ret = x3;
 
     ret.inc();
@@ -317,7 +317,7 @@ void gradient_forget(
 
     Float x3 = (*d_t) * (*c_prev) * x2;
 
-    clip_partial(x3, clip_min, clip_value);
+		kernel::clip_partial(x3, clip_min, clip_value);
     *ret = x3;
 
     ret.inc();
@@ -355,7 +355,7 @@ void forward_states(
 
   // Following part of Cell state candidate
   Float::Ptr tmp_local = tmp_ptr;  // ptr changed in following calculation
-  mult_vec_partial(x_h, W, tmp_local, rows, N);
+	kernel::mult_vec_partial(x_h, W, tmp_local, rows, N);
 
   For (Int j = 0, j < count, j++)
     //

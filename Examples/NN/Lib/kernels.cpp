@@ -1,12 +1,12 @@
 #include "kernels.h"
 #include "V3DLib.h"
 
-using namespace V3DLib;
+namespace kernel {
 
 /**
  * @brief calculate `sigmoid(in + bias)`.
  */
-void kernel_sigmoid(Float::Ptr in, Float::Ptr bias, Float::Ptr out, Int N) {
+void sigmoid(Float::Ptr in, Float::Ptr bias, Float::Ptr out, Int N) {
   For (Int h = 0, h < N, h++)
     Float x = *in;
     x += *bias;
@@ -25,7 +25,7 @@ void kernel_sigmoid(Float::Ptr in, Float::Ptr bias, Float::Ptr out, Int N) {
  *
  * Input is `v = sigmoid(x)`
  */
-void kernel_dsigmoid(Float::Ptr in, Float::Ptr out, Int N) {
+void dsigmoid(Float::Ptr in, Float::Ptr out, Int N) {
   For (Int h = 0, h < N, h++)
     Float x = *in;
     x = x*(1.0f - x);
@@ -37,7 +37,7 @@ void kernel_dsigmoid(Float::Ptr in, Float::Ptr out, Int N) {
 }
 
 
-void kernel_tanh(Float::Ptr in, Float::Ptr out, Int N) {
+void tanh(Float::Ptr in, Float::Ptr out, Int N) {
   For (Int h = 0, h < N, h++)
     Float x = *in;
     x = tanh(x);
@@ -54,13 +54,25 @@ void kernel_tanh(Float::Ptr in, Float::Ptr out, Int N) {
  *
  * Input is `in = tanh(x)`
  */
-void kernel_dtanh(Float::Ptr in, Float::Ptr out, Int N) {
+void dtanh(Float::Ptr in, Float::Ptr out, Int N) {
   For (Int h = 0, h < N, h++)
     Float x = *in;
     x = 1.0f - x*x;
     *out = x;
 
     in.inc();
+    out.inc();
+  End
+}
+
+
+void mul_element(Float::Ptr out, Float::Ptr lhs, Float::Ptr rhs, Int N) {
+  For (Int h = 0, h < N, h++)
+    Float x = (*lhs) * (*rhs);
+    *out = x;
+
+    lhs.inc();
+    rhs.inc();
     out.inc();
   End
 }
@@ -118,7 +130,7 @@ void mult_vec_partial(Float::Ptr &input, Float::Ptr &mat, Float::Ptr &result, In
  * @param M       length of vector in blocks of 16
  * @param N       height of matrix
  */
-void kernel_mult_vec(Float::Ptr input, Float::Ptr mat, Float::Ptr result, Int M, Int N) {
+void mult_vec(Float::Ptr input, Float::Ptr mat, Float::Ptr result, Int M, Int N) {
   mult_vec_partial(input, mat, result, M, N);
 }
 
@@ -136,7 +148,7 @@ void kernel_mult_vec(Float::Ptr input, Float::Ptr mat, Float::Ptr result, Int M,
  * @param M       length of vector
  * @param N       height of matrix, in blocks of 16
  */
-void kernel_mult_vec_transposed(Float::Ptr input, Float::Ptr mat, Float::Ptr result, Int M, Int N) {
+void mult_vec_transposed(Float::Ptr input, Float::Ptr mat, Float::Ptr result, Int M, Int N) {
   Float res = 0.0f;
   Float tmp = 0.0f;
   Float::Ptr mat_base = mat;
@@ -234,7 +246,7 @@ void clip_partial(Float &val, Float &clip_min, Float &clip_max) {
 /**
  * `clip_value` assumed to be positive
  */
-void kernel_clip(Float::Ptr in, Float::Ptr out, Int N, Float clip_value) {
+void clip(Float::Ptr in, Float::Ptr out, Int N, Float clip_value) {
   Float tmp;
   Float clip_min = -1.0f*clip_value; // TODO: implement float operator-
 
@@ -248,3 +260,4 @@ void kernel_clip(Float::Ptr in, Float::Ptr out, Int N, Float clip_value) {
   End
 }
 
+} // namespace kernel

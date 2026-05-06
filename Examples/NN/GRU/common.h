@@ -1,6 +1,7 @@
 #ifndef _GRU_COMMON_H
 #define _GRU_COMMON_H
 #include "Support/Timer.h"
+#include "../Lib/matrix.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wfloat-conversion"
@@ -28,5 +29,8 @@ float log_matrix(float x);
 
 void read_input(MatrixXf& X, std::ifstream& inputFile, int time_steps);
 void read_output(MatrixXf& Y, std::ifstream& outputFile, int time_steps);
+
+std::string dump_dim(MatrixXf const &m);
+qpu::vector copy(MatrixXf const &rhs);
 
 #endif // _GRU_COMMON_H

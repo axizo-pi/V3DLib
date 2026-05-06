@@ -11,6 +11,17 @@ void frand_array(Float::Array &rhs) {
   }
 }
 
+bool done_init = false;
+std::unique_ptr<BaseKernel> s_mul_element;
+
+void init_local() {
+	if (done_init) return;
+
+  s_mul_element.reset(new BaseKernel(compile(kernel::mul_element, settings())));
+
+	done_init = true;
+}
+
 } // anon namespace
 
 
@@ -126,6 +137,29 @@ matrix &matrix::operator-=(matrix const &rhs) {
 }
 
 
+matrix matrix::operator+(matrix const &rhs) {
+  assert(m_columns == rhs.columns() && m_rows == rhs.rows());
+  matrix ret(m_rows, m_columns);
+
+  for (int i = 0; i < (int) m_arr->size(); ++i) {
+    ret.arr()[i] = arr()[i] + rhs.arr()[i];
+  }
+
+  return ret;
+}
+
+
+matrix &matrix::operator+=(matrix const &rhs) {
+  assert(m_columns == rhs.columns() && m_rows == rhs.rows());
+
+  for (int i = 0; i < (int) m_arr->size(); ++i) {
+    arr()[i] += rhs.arr()[i];
+  }
+
+  return *this;
+}
+
+
 matrix matrix::operator*(float rhs) const {
   matrix ret(m_rows, m_columns);
 
@@ -190,6 +224,31 @@ matrix matrix::mul_t(matrix const &rhs) const {
 
   m_mult_vec_transposed->load(&rhs.arr(), &arr(), &ret.arr(), m_columns, m_rows/16);
   m_mult_vec_transposed->run();
+
+  return ret;
+}
+
+
+matrix matrix::mul_elem(matrix const &rhs) const {
+  //warn << "Called matrix matrix::mul_elem()";
+  //warn << "matrix: " << dump_dim() << "rhs: " << rhs.dump_dim();
+  assert(m_columns > 0);
+  assert(m_rows > 0);
+
+  if (m_rows != rhs.rows() || m_columns != rhs.columns()) {
+    cerr << "Matrix::mul() Dimensions don't match. "
+         << "this(rows, columns): (" << m_rows << ", " << m_columns << "), "
+         << "rhs(rows, columns):  (" << rhs.rows() << ", " << rhs.columns() << ")"
+          << thrw;
+  }
+
+  int size = m_rows*m_columns; 
+  assert((size % 16) == 0);      // Total dimension must be multiple of 16
+
+  matrix ret(m_rows, m_columns);
+
+	assert(s_mul_element != nullptr);
+  s_mul_element->load(&ret.arr(), &arr(), &rhs.arr(), size/16).run();
 
   return ret;
 }
@@ -278,10 +337,10 @@ void matrix::transfer(matrix const &rhs) {
  * @brief Initialize local kernels
  */
 void matrix::init_static() {
-  if (m_mult_vec == nullptr) m_mult_vec = new BaseKernel(compile(kernel_mult_vec, settings()));
+  if (m_mult_vec == nullptr) m_mult_vec = new BaseKernel(compile(kernel::mult_vec, settings()));
 
   if (m_mult_vec_transposed == nullptr) {
-    m_mult_vec_transposed = new BaseKernel(compile(kernel_mult_vec_transposed, settings()));
+    m_mult_vec_transposed = new BaseKernel(compile(kernel::mult_vec_transposed, settings()));
   }
 }
 
@@ -431,13 +490,15 @@ vector vector::mul(vector const &rhs) {
   assert(rows() == rhs.rows());
   if ((rows() & 0xf) != 0) { cerr << "vector sub: rows must be a multiple of 16" << thrw; }
 
-  vector ret(rows());
-
+	matrix ret = mul_elem(rhs);
+  return vector(ret);
+/*
+	vector ret(rows());
   for (int i = 0; i < rows(); i++) {
     ret[i] = (*this)[i]*rhs[i];
   }
-
-  return ret;
+	return ret;
+*/
 }
 
 
@@ -526,19 +587,15 @@ BaseKernel &vector::op_kernel() {
 
 
 void vector::init_static() {
-  if (m_sub      == nullptr) { m_sub      = new BaseKernel(compile(vector_sub,    settings())); }
-  if (m_add      == nullptr) { m_add      = new BaseKernel(compile(vector_add,    settings())); }
-  if (m_op       == nullptr) { m_op       = new BaseKernel(compile(outer_product,   settings())); }
-
-  if (m_sigmoid  == nullptr) {
-    m_sigmoid  = new BaseKernel(compile(kernel_sigmoid,  settings()));
-    //to_file("kernel_sigmoid.txt", m_sigmoid->dump());
-  }
-
-  if (m_dsigmoid == nullptr) { m_dsigmoid = new BaseKernel(compile(kernel_dsigmoid, settings())); }
-  if (m_tanh     == nullptr) { m_tanh     = new BaseKernel(compile(kernel_tanh,     settings())); }
-  if (m_dtanh    == nullptr) { m_dtanh    = new BaseKernel(compile(kernel_dtanh,    settings())); }
-  if (m_clip     == nullptr) { m_clip     = new BaseKernel(compile(kernel_clip,     settings())); }
+	init_local();
+  if (m_sub      == nullptr) { m_sub      = new BaseKernel(compile(kernel::vector_sub,    settings())); }
+  if (m_add      == nullptr) { m_add      = new BaseKernel(compile(kernel::vector_add,    settings())); }
+  if (m_op       == nullptr) { m_op       = new BaseKernel(compile(kernel::outer_product, settings())); }
+  if (m_sigmoid  == nullptr) { m_sigmoid  = new BaseKernel(compile(kernel::sigmoid,  settings())); }
+  if (m_dsigmoid == nullptr) { m_dsigmoid = new BaseKernel(compile(kernel::dsigmoid, settings())); }
+  if (m_tanh     == nullptr) { m_tanh     = new BaseKernel(compile(kernel::tanh,     settings())); }
+  if (m_dtanh    == nullptr) { m_dtanh    = new BaseKernel(compile(kernel::dtanh,    settings())); }
+  if (m_clip     == nullptr) { m_clip     = new BaseKernel(compile(kernel::clip,     settings())); }
 }
 
 

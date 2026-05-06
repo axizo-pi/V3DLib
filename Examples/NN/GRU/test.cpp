@@ -18,26 +18,17 @@ int get_max_index(MatrixXf& O, std::vector<int> predictions, int time_steps) {
     return max_index;
 }
 
-void predict(MatrixXf& U_z, MatrixXf& U_r, MatrixXf& U_h, MatrixXf& W_z, MatrixXf& W_r, MatrixXf& W_h, MatrixXf& V,
-          int input_dim, int output_dim, int hidden_dim, int time_steps) {
+void predict(Model &m, int input_dim, int output_dim, int hidden_dim, int time_steps) {
 
     MatrixXf X, Y, U_z_grad, U_r_grad, U_h_grad, W_z_grad, W_r_grad, W_h_grad, V_grad;
 
-    MatrixXf z      = MatrixXf::Zero(time_steps, hidden_dim);
-    MatrixXf r      = MatrixXf::Zero(time_steps, hidden_dim);
-    MatrixXf h      = MatrixXf::Zero(time_steps, hidden_dim);
-    MatrixXf O      = MatrixXf::Zero(time_steps, output_dim);
-    MatrixXf S      = MatrixXf::Zero(time_steps + 1, hidden_dim);
-    S(0, 0)         = static_cast <float> (((float) rand()) / (static_cast <float> (RAND_MAX / 2)) - 1);
+		State state;
+		state.init(time_steps, hidden_dim, output_dim);
 
-    X               = MatrixXf::Zero(time_steps, input_dim);
-    Y               = MatrixXf::Zero(1, output_dim);
+    X = MatrixXf::Zero(time_steps, input_dim);
+    Y = MatrixXf::Zero(1, output_dim);
 
-    z.eval();
-    r.eval();
-    h.eval();
-    O.eval();
-    S.eval();
+		state.eval();
 
     int max_index;
     int start_count;
@@ -51,8 +42,7 @@ void predict(MatrixXf& U_z, MatrixXf& U_r, MatrixXf& U_h, MatrixXf& W_z, MatrixX
 
     std::map<char, int> char_to_int;
 
-    for (int i = 0; i < 63; ++i)
-    {
+    for (int i = 0; i < 63; ++i) {
         char_to_int.insert(std::pair<char, int>(mapping_64[i], i));
     }
 
@@ -74,17 +64,17 @@ void predict(MatrixXf& U_z, MatrixXf& U_r, MatrixXf& U_h, MatrixXf& W_z, MatrixX
 
     X.eval();
 
-    MatrixXf unused      = MatrixXf::Zero(time_steps, hidden_dim);
+    MatrixXf unused = MatrixXf::Zero(time_steps, hidden_dim);
 
-    while(count --)
-    {
-        forward_propagation(U_z, U_r, U_h, W_z, W_r, W_h, V, X, unused, O, S, unused, z, r, h, time_steps, input_dim, hidden_dim, output_dim, true);
-        max_index = get_max_index(O, predictions, time_steps);
+    while(count --) {
+        forward_propagation(m, X, unused, state, time_steps, input_dim, hidden_dim, output_dim, true);
+        max_index = get_max_index(state.O, predictions, time_steps);
         predictions.push_back(max_index);
         X  = MatrixXf::Zero(time_steps, input_dim);
         X.eval();
         s  = (int) predictions.size();
         start_count = time_steps - 1;
+
         for(int i = time_steps - 1; i >= 0; i--) {
             if(s) {
                 X(i, predictions[s - 1]) = 1;
@@ -104,25 +94,18 @@ void predict(MatrixXf& U_z, MatrixXf& U_r, MatrixXf& U_h, MatrixXf& W_z, MatrixX
     std::cout << std::endl;
 }
 
-void test_main(std::string const &epoch, std::string const &loss)
-{
+
+void test_main(std::string const &epoch, std::string const &loss) {
     int time_steps      = 13;
 
-    MatrixXf U_z, U_r, U_h, W_z, W_r, W_h, V;
+		Model m;
+		m.read(epoch, loss);
 
-    read_binary_matrix("Weights/Uz_epoch_" + epoch + "_loss_" + loss + ".bin", U_z);
-    read_binary_matrix("Weights/Uh_epoch_" + epoch + "_loss_" + loss + ".bin", U_h);
-    read_binary_matrix("Weights/Ur_epoch_" + epoch + "_loss_" + loss + ".bin", U_r);
-    read_binary_matrix("Weights/Wz_epoch_" + epoch + "_loss_" + loss + ".bin", W_z);
-    read_binary_matrix("Weights/Wh_epoch_" + epoch + "_loss_" + loss + ".bin", W_h);
-    read_binary_matrix("Weights/Wr_epoch_" + epoch + "_loss_" + loss + ".bin", W_r);
-    read_binary_matrix("Weights/V_epoch_"  + epoch + "_loss_" + loss + ".bin", V);
-
-    int input_dim  = (int) U_z.rows();
-    int hidden_dim = (int) U_z.cols();
-    int output_dim = (int) V.cols();
+    int input_dim  = (int) m.U_z.rows();
+    int hidden_dim = (int) m.U_z.cols();
+    int output_dim = (int) m.V.cols();
 
     std::cout << input_dim << " " << hidden_dim << " " << output_dim << std::endl;
 
-    predict(U_z, U_r, U_h, W_z, W_r, W_h, V, input_dim, output_dim, hidden_dim, time_steps);
+    predict(m, input_dim, output_dim, hidden_dim, time_steps);
 }
