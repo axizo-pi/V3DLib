@@ -22,8 +22,11 @@ using namespace V3DLib;
  * - are dimension which I consider to efficiently use the QPU
  */
 struct matrix {
+  matrix(bool init_static) : m_rows(0), m_columns(0) {}
   matrix(int rows = 0, int columns = 0);
   matrix(matrix const &rhs);
+
+	void resize(int rows, int columns);
 
   int columns() const  { return m_columns; }
   int rows() const     { return m_rows; }
@@ -53,22 +56,16 @@ struct matrix {
   inline float  at(int i, int j) const { return (*m_arr)[i*m_columns + j]; }
 
 protected:
-  void rows(int rhs)    { m_rows = rhs; }
-  void columns(int rhs) { m_columns = rhs; }
-
   void transfer(matrix const &rhs);
   matrix mul_elem(matrix const &rhs) const;
 
   std::shared_ptr<Float::Array> m_arr;
 
-private:
   int m_rows     = 0;
   int m_columns  = 0;
 
-  static BaseKernel *m_mult_vec;
-  static BaseKernel *m_mult_vec_transposed;
-
-  void init_static();
+private:
+	int m_size = 0;
 };
 
 
@@ -114,20 +111,7 @@ struct vector : public matrix {
 
 private:
   bool empty() const { return m_arr == nullptr; }
-
-  // TODO: should probably clean this up.
-  //       ptr's not cleaned up on exit, better would be shared or unique ptr.
-  // For now, it works
-  static BaseKernel *m_sub;
-  static BaseKernel *m_add;
-  static BaseKernel *m_op;
-  static BaseKernel *m_sigmoid;
-  static BaseKernel *m_dsigmoid;
-  static BaseKernel *m_tanh;
-  static BaseKernel *m_dtanh;
-  static BaseKernel *m_clip;
-
-  static void init_static();
+	void transpose();
 };
 
 

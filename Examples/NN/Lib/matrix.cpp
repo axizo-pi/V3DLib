@@ -13,11 +13,34 @@ void frand_array(Float::Array &rhs) {
 
 bool done_init = false;
 std::unique_ptr<BaseKernel> s_mul_element;
+std::unique_ptr<BaseKernel> s_mult_vec_transposed;
+std::unique_ptr<BaseKernel> s_mult_vec;
+std::unique_ptr<BaseKernel> s_matrix_add_self;
+std::unique_ptr<BaseKernel> s_sub;
+std::unique_ptr<BaseKernel> s_add;
+std::unique_ptr<BaseKernel> s_op;
+std::unique_ptr<BaseKernel> s_sigmoid;
+std::unique_ptr<BaseKernel> s_dsigmoid;
+std::unique_ptr<BaseKernel> s_tanh;
+std::unique_ptr<BaseKernel> s_dtanh;
+std::unique_ptr<BaseKernel> s_clip;
+
 
 void init_local() {
 	if (done_init) return;
 
-  s_mul_element.reset(new BaseKernel(compile(kernel::mul_element, settings())));
+  s_mul_element        .reset(new BaseKernel(compile(kernel::mul_element    , settings())));
+  s_mult_vec_transposed.reset(new BaseKernel(compile(kernel::mult_vec_transposed, settings())));
+  s_mult_vec           .reset(new BaseKernel(compile(kernel::mult_vec       , settings())));
+  s_matrix_add_self    .reset(new BaseKernel(compile(kernel::matrix_add_self, settings())));
+  s_sub                .reset(new BaseKernel(compile(kernel::vector_sub     , settings())));
+  s_add                .reset(new BaseKernel(compile(kernel::vector_add     , settings())));
+  s_op                 .reset(new BaseKernel(compile(kernel::outer_product  , settings())));
+  s_sigmoid            .reset(new BaseKernel(compile(kernel::sigmoid        , settings())));
+  s_dsigmoid           .reset(new BaseKernel(compile(kernel::dsigmoid       , settings())));
+  s_tanh               .reset(new BaseKernel(compile(kernel::tanh           , settings())));
+  s_dtanh              .reset(new BaseKernel(compile(kernel::dtanh          , settings())));
+  s_clip               .reset(new BaseKernel(compile(kernel::clip           , settings())));
 
 	done_init = true;
 }
@@ -29,31 +52,47 @@ void init_local() {
 // Class matrix
 ////////////////////////////////////////////////
 
-BaseKernel *matrix::m_mult_vec = nullptr;
-BaseKernel *matrix::m_mult_vec_transposed = nullptr;
-
-matrix::matrix(int rows, int columns) : m_rows(rows), m_columns(columns) {
-  // Allow initialization of empty matrix.
-  if (m_rows == 0) {
-    assert(m_columns == 0 || m_columns == 1);  // By syntax, a single empty vector is allowed
-    init_static();
-    return;
-  }
-
-  //warn << "matrix ctor (rows, columns): (" << m_rows << ", " << m_columns << ")";
-  if (m_rows <= 0)     { cerr << "matrix ctor: rows must be positive"    << thrw; }
-  if (m_columns <= 0)  { cerr << "matrix ctor: columns must be positive" << thrw; }
-
-   m_arr.reset(new Float::Array(m_columns*m_rows));
-
-  init_static();
+matrix::matrix(int rows, int columns) {
+	resize(rows, columns);
+  init_local();
 }
 
 
-matrix::matrix(matrix const &rhs) : m_arr(rhs.m_arr), m_rows(rhs.rows()), m_columns(rhs.columns())   {
+matrix::matrix(matrix const &rhs) :
+	m_arr(rhs.m_arr),
+	m_rows(rhs.m_rows),
+	m_columns(rhs.m_columns),
+	m_size(rhs.m_size)
+{
   //warn << "Called ctor matrix(matrix &)";
-  //*this = rhs;
-  init_static();
+  //// *this = rhs;
+}
+
+
+void matrix::resize(int rows, int columns) {
+  // Allow initialization of empty matrix.
+  if (rows == 0) {
+    assert(columns == 0 || columns == 1);  // By syntax, a single empty vector is allowed
+		m_rows    = rows;
+		m_columns = columns;
+    return;
+  }
+
+  if (rows <= 0)     { cerr << "matrix ctor: rows must be positive"    << thrw; }
+  if (columns <= 0)  { cerr << "matrix ctor: columns must be positive" << thrw; }
+
+	int size      = rows*columns;
+
+	if (size > m_size) {
+		if (m_size > 0) {
+			warn << "matrix resizing from " << m_size << " to " << size;
+		}
+    m_arr.reset(new Float::Array(size));
+		m_size    = size;
+	}
+
+	m_rows    = rows;
+	m_columns = columns;
 }
 
 
@@ -150,11 +189,21 @@ matrix matrix::operator+(matrix const &rhs) {
 
 
 matrix &matrix::operator+=(matrix const &rhs) {
+  if (m_columns != rhs.columns() || m_rows != rhs.rows()) {
+		warn << "matrix::operator+= dimensions don't match: "
+			   << "this: " << dump_dim() << ", "
+				 << "rhs:"   << rhs.dump_dim()
+				 << thrw;
+	}
   assert(m_columns == rhs.columns() && m_rows == rhs.rows());
 
+  s_matrix_add_self->load(&arr(), &rhs.arr(), m_rows*m_columns/16).run();
+
+/*	
   for (int i = 0; i < (int) m_arr->size(); ++i) {
     arr()[i] += rhs.arr()[i];
   }
+*/	
 
   return *this;
 }
@@ -194,9 +243,7 @@ matrix matrix::mul(matrix const &rhs) const {
 
   matrix ret(m_rows, 1);
 
-  m_mult_vec->load(&rhs.arr(), &arr(), &ret.arr(), m_columns/16, m_rows);
-  m_mult_vec->run();
-
+  s_mult_vec->load(&rhs.arr(), &arr(), &ret.arr(), m_columns/16, m_rows).run();
   return ret;
 }
 
@@ -222,8 +269,7 @@ matrix matrix::mul_t(matrix const &rhs) const {
 
   matrix ret(m_columns, 1);
 
-  m_mult_vec_transposed->load(&rhs.arr(), &arr(), &ret.arr(), m_columns, m_rows/16);
-  m_mult_vec_transposed->run();
+  s_mult_vec_transposed->load(&rhs.arr(), &arr(), &ret.arr(), m_columns, m_rows/16).run();
 
   return ret;
 }
@@ -333,18 +379,6 @@ void matrix::transfer(matrix const &rhs) {
 }
 
 
-/**
- * @brief Initialize local kernels
- */
-void matrix::init_static() {
-  if (m_mult_vec == nullptr) m_mult_vec = new BaseKernel(compile(kernel::mult_vec, settings()));
-
-  if (m_mult_vec_transposed == nullptr) {
-    m_mult_vec_transposed = new BaseKernel(compile(kernel::mult_vec_transposed, settings()));
-  }
-}
-
-
 matrix operator*(float scalar, matrix const &mat) {
   auto ret = mat * scalar;
   return ret;
@@ -355,19 +389,17 @@ matrix operator*(float scalar, matrix const &mat) {
 // Class vector 
 ////////////////////////////////////////////////
 
-BaseKernel *vector::m_sub      = nullptr;
-BaseKernel *vector::m_add      = nullptr;
-BaseKernel *vector::m_op       = nullptr;
-BaseKernel *vector::m_sigmoid  = nullptr;
-BaseKernel *vector::m_dsigmoid = nullptr;
-BaseKernel *vector::m_tanh     = nullptr;
-BaseKernel *vector::m_dtanh    = nullptr;
-BaseKernel *vector::m_clip     = nullptr;
-
-
 vector::vector(vector &rhs) : matrix(rhs) {
   *this = rhs;
-  init_static();
+  init_local();
+}
+
+
+void vector::transpose() {
+  warn << "vector transposing";
+  int tmp   = m_rows;
+	m_rows    = m_columns;
+  m_columns = tmp;
 }
 
 
@@ -382,13 +414,10 @@ vector::vector(matrix rhs) : matrix(rhs) {
   *this = rhs;
 
   if (rhs.rows() == 1) {
-    warn << "vector(matrix) ctor: flipping rows and columns";
-    int tmp = rows();
-    rows(columns());
-    columns(tmp);
+		transpose();
   }
 
-  init_static();
+  init_local();
 }
 
 
@@ -405,7 +434,7 @@ vector::vector(int rows, float val) : matrix(rows, 1) {
     }
   }
 
-  init_static();
+  init_local();
 }
 
 
@@ -463,7 +492,7 @@ vector vector::operator-(vector const &rhs) {
 
   vector ret(rows());
 
-  m_sub->load(&arr(), &rhs.arr(), &ret.arr(), rows()/16).run();
+  s_sub->load(&arr(), &rhs.arr(), &ret.arr(), rows()/16).run();
   return ret;
 }
 
@@ -476,7 +505,7 @@ vector vector::operator+(vector const &rhs) {
 
   vector ret(rows());
 
-  m_add->load(&arr(), &rhs.arr(), &ret.arr(), rows()/16).run();
+  s_add->load(&arr(), &rhs.arr(), &ret.arr(), rows()/16).run();
   return ret;
 }
 
@@ -515,29 +544,50 @@ vector &vector::operator=(vector const &rhs) {
   return *this;
 }
 
+namespace {
 
+matrix outer_ret(true);	
+
+} // anon namespace
+
+
+
+/**
+ * ==================================
+ * Notes
+ * -----
+ *
+ * - Unfortunately, defining the return value as a statis does not have much effect
+ *   on the performance.
+ *
+ * - Due to use of a static return value, this method is **not thread-safe**.
+ *   This is not really important, because QPU kernel call should only be called
+ *   from a single thread.
+ */
 matrix vector::outer(matrix const &rhs) const {
   assert(rhs.columns() == 1);  // Expecting a vector as input
   if ((rows() & 0xf) != 0)     { cerr << "vector outer: expecting rows to be a multiple of 16" << thrw; }
   if ((rhs.rows() & 0xf) != 0) { cerr << "vector outer: expecting rhs rows to be a multiple of 16" << thrw; }
 
-  matrix ret(rows(), rhs.rows());
+  outer_ret.resize(rows(), rhs.rows());
 
-  m_op->load(&arr(), &rhs.arr(), &ret.arr(), rows(), rhs.rows()/16).run();
-  return ret;  
+  s_op->load(&arr(), &rhs.arr(), &outer_ret.arr(), rows(), rhs.rows()/16).run();
+
+	//warn << "outer resize: " << outer_ret.dump_dim();
+  return outer_ret;  
 }
 
 
 vector vector::sigmoid(vector const &bias) {
   vector ret(rows());
-  m_sigmoid->load(&arr(), &bias.arr(), &ret.arr(), rows()/16).run();
+  s_sigmoid->load(&arr(), &bias.arr(), &ret.arr(), rows()/16).run();
   return ret;  
 }
 
 
 vector vector::dsigmoid() {
   vector ret(rows());
-  m_dsigmoid->load(&arr(), &ret.arr(), rows()/16).run();
+  s_dsigmoid->load(&arr(), &ret.arr(), rows()/16).run();
   return ret;  
 }
 
@@ -545,7 +595,7 @@ vector vector::dsigmoid() {
 vector vector::tanh() {
   vector ret(rows());
 
-  m_tanh->load(&arr(), &ret.arr(), rows()/16).run();
+  s_tanh->load(&arr(), &ret.arr(), rows()/16).run();
   return ret;  
 }
 
@@ -553,7 +603,7 @@ vector vector::tanh() {
 vector vector::dtanh() {
   vector ret(rows());
 
-  m_dtanh->load(&arr(), &ret.arr(), rows()/16).run();
+  s_dtanh->load(&arr(), &ret.arr(), rows()/16).run();
   return ret;  
 }
 
@@ -562,11 +612,9 @@ vector vector::dtanh() {
  * Value changed internally, no return value.
  */
 void vector::clip(float clip_value) {
-  //warn << "Called clip";
   vector ret(rows());
 
-  m_clip->load(&arr(), &ret.arr(), rows()/16, clip_value).run();
-
+  s_clip->load(&arr(), &ret.arr(), rows()/16, clip_value).run();
   *this = ret;
 }
 
@@ -581,21 +629,8 @@ std::string vector::dump(bool output_int) const {
 
 
 BaseKernel &vector::op_kernel() {
-  init_static();
-  return *m_op;
-}
-
-
-void vector::init_static() {
-	init_local();
-  if (m_sub      == nullptr) { m_sub      = new BaseKernel(compile(kernel::vector_sub,    settings())); }
-  if (m_add      == nullptr) { m_add      = new BaseKernel(compile(kernel::vector_add,    settings())); }
-  if (m_op       == nullptr) { m_op       = new BaseKernel(compile(kernel::outer_product, settings())); }
-  if (m_sigmoid  == nullptr) { m_sigmoid  = new BaseKernel(compile(kernel::sigmoid,  settings())); }
-  if (m_dsigmoid == nullptr) { m_dsigmoid = new BaseKernel(compile(kernel::dsigmoid, settings())); }
-  if (m_tanh     == nullptr) { m_tanh     = new BaseKernel(compile(kernel::tanh,     settings())); }
-  if (m_dtanh    == nullptr) { m_dtanh    = new BaseKernel(compile(kernel::dtanh,    settings())); }
-  if (m_clip     == nullptr) { m_clip     = new BaseKernel(compile(kernel::clip,     settings())); }
+  init_local();
+  return *s_op;
 }
 
 

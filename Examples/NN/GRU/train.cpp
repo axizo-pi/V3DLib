@@ -15,6 +15,8 @@ using namespace Log;
 
 namespace {
 
+const float Precision = 1.0e-7f;	
+
 MAYBE_UNUSED std::string dump(MatrixXf const &m) {
   std::string buf;
   buf << dump_dim(m) << " [\n";
@@ -53,7 +55,7 @@ qpu::matrix copy_m(MatrixXf const &rhs) {
 }
 
 
-bool same(qpu::vector const &lhs, MatrixXf const &rhs, float precision = 0.0f) {
+MAYBE_UNUSED bool same(qpu::vector const &lhs, MatrixXf const &rhs, float precision = 0.0f) {
 	assert(rhs.rows() == 1);
 
   for (int i = 0; i < (int) rhs.cols(); ++i) {
@@ -91,6 +93,9 @@ float calculate_cost(MatrixXf& E, int time_steps) {
     return (E.sum() / (float) time_steps);
 }
 
+std::vector<int> x_input;
+std::vector<int> x_output;
+
 } // anon namespace
 
 
@@ -122,7 +127,9 @@ void back_propagation(Model &m, Model &grad, State &state, MatrixXf& X, MatrixXf
 	auto ones = MatrixXf::Ones(1, hidden_dim);
 	auto q_ones = copy(ones);
 	qpu::matrix q_dU_h = copy_m(grad.U_h);
-	qpu::matrix q_W_h = copy_m(m.W_h);
+	m.q_W_h = copy_m(m.W_h);
+	grad.q_W_h = copy_m(grad.W_h);
+	grad.q_U_r = copy_m(grad.U_r);
 
   for(curr_step = time_steps - 1; curr_step >= 0; curr_step--) {
     ds_cur = ds_single.row(curr_step);
@@ -150,12 +157,11 @@ void back_propagation(Model &m, Model &grad, State &state, MatrixXf& X, MatrixXf
       temp_U = (temp_X.transpose().eval() * dreluInput_h);
       grad.U_h = grad.U_h + temp_U;
 			timers.stop("back_propagation dU_h");
-			//warn << "dreluInput_h: " << dump_dim(dreluInput_h);
 
 			timers.start("back_propagation q_dU_h");
       q_dU_h +=  q_temp_X.outer(q_dreluInput_h);
 			timers.stop("back_propagation q_dU_h");
-			//OK assert(same(q_dU_h, dU_h));
+			//assert(same(q_dU_h, dU_h));
 
 
 			timers.start("back_propagation temp_W");
@@ -168,26 +174,36 @@ void back_propagation(Model &m, Model &grad, State &state, MatrixXf& X, MatrixXf
 			//OK assert(same(q_temp_W, temp_W));
 
       grad.W_h = grad.W_h + temp_W;
+      grad.q_W_h = grad.q_W_h + q_temp_W;
+			//warn << "grad.W_h: " << dump(grad.W_h);
+			//warn << "grad.q_W_h: " << grad.q_W_h.dump();
+			assert(same(grad.q_W_h, grad.W_h)); //, Precision));
 
 			timers.start("back_propagation dreluInput_r");
       dsr = dreluInput_h * m.W_h.transpose().eval();
       ds_cur = dsr.cwiseProduct(temp.r);
       dreluInput_r = dsr.cwiseProduct(temp.S).cwiseProduct(temp.r.unaryExpr(&sigmoid_grad));
 			timers.stop("back_propagation dreluInput_r");
-			warn << "dreluInput_h: " << dump_dim(dreluInput_h);
-			warn << "W_h: " << dump_dim(m.W_h);
-			warn << "q_W_h: " << q_W_h.dump_dim();
-			warn << "dsr: " << dump_dim(dsr);
+			//warn << "dreluInput_h: " << dump_dim(dreluInput_h);
+			//warn << "W_h: " << dump_dim(m.W_h);
+			//warn << "q_W_h: " << q_W_h.dump_dim();
 
 			timers.start("back_propagation q_dreluInput_r");
-      auto q_dsr = q_W_h * q_dreluInput_h;
+      auto q_dsr = m.q_W_h * q_dreluInput_h;
       q_ds_cur = q_dsr.mul(temp.q_r);
       auto q_dreluInput_r = q_dsr.mul(temp.q_S).mul(temp.q_r.dsigmoid());
 			timers.stop("back_propagation q_dreluInput_r");
-			assert(same(q_dsr, dsr));
+			//OK assert(same(q_dreluInput_r, dreluInput_r, Precision));
 
+			timers.start("back_propagation grad.U_r");
       temp_U = (temp_X.transpose().eval() * dreluInput_r);
       grad.U_r = grad.U_r + temp_U;
+			timers.stop("back_propagation grad.U_r");
+
+			timers.start("back_propagation grad.q_U_r");
+      grad.q_U_r +=  q_temp_X.outer(q_dreluInput_r);
+			timers.stop("back_propagation grad.q_U_r");
+			assert(same(grad.q_U_r, grad.U_r, Precision));
 
       temp_W = (temp.S.transpose().eval() * dreluInput_r);
       grad.W_r = grad.W_r + temp_W;
@@ -251,11 +267,6 @@ int get_input_size(std::string filename) {
 
     inputFile.close();
     return inputSize;
-}
-
-namespace {
-	std::vector<int> x_input;
-	std::vector<int> x_output;
 }
 
 void read_x_y(MatrixXf& x, MatrixXf& y, std::string filename_input, std::string filename_output, int time_steps, int pos) {
@@ -346,39 +357,30 @@ void train(std::string filename_input, std::string filename_output, float learni
 		Model grad;
 		Model cache;
 
-		m.init();
+		m.init(input_dim, hidden_dim, output_dim);
 		grad_batch.init_zeroes(m.input_dim(), m.hidden_dim(), m.output_dim());
 		grad.init_zeroes(m.input_dim(), m.hidden_dim(), m.output_dim(), true);
-		grad.init_ones(m.input_dim(), m.hidden_dim(), m.output_dim());
+		cache.init_ones(m.input_dim(), m.hidden_dim(), m.output_dim());
 
     for(int epoch = 0; epoch < nepoch; epoch++) {
 				warn << "train loop epoch: " << epoch << ", limit: " << limit;
 
         float loss = 0;
         for(int i = 0; i < limit; i++) {
-						if (i >= 30) break; // DEBUG
+						if (i >= 10) break; // DEBUG
 						warn << "train loop i: " << i;
 
 						timers.start("train limit loop");
 
 						State state;
 						state.init(time_steps, hidden_dim, output_dim);
-/*
-            MatrixXf E      = MatrixXf::Zero(1, time_steps);
-            MatrixXf z      = MatrixXf::Zero(time_steps, hidden_dim);
-            MatrixXf r      = MatrixXf::Zero(time_steps, hidden_dim);
-            MatrixXf h      = MatrixXf::Zero(time_steps, hidden_dim);
-            MatrixXf O      = MatrixXf::Zero(time_steps, output_dim);
-            MatrixXf S      = MatrixXf::Zero(time_steps + 1, hidden_dim);
-            S(0, 0)         = static_cast <float> (((float) rand()) / (static_cast <float> (RAND_MAX / 2)) - 1);
-*/						
+
             MatrixXf currX  = MatrixXf::Zero(time_steps, input_dim);
             MatrixXf currY  = MatrixXf::Zero(time_steps, output_dim);
 
             read_x_y(currX, currY, filename_input, filename_output, time_steps, i);
 
 						state.eval();
-
             currX.eval();
             currY.eval();
 

@@ -36,3 +36,5 @@ With default settings:
 - **276 epochs in 12 hours 33 minutes.**
 - **369 epochs in 17 hours 46 minutes.**
 - **768 epochs in 35 hours 22 minutes.**
+- **857 epochs in 41 hours 03 minutes.**
+- **958 epochs in 45 hours 56 minutes.**

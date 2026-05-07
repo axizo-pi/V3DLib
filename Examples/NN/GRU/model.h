@@ -12,9 +12,12 @@ public:
 	MatrixXf W_h;
 	MatrixXf V;
 
+	qpu::matrix q_W_h;
+	qpu::matrix q_U_r;
+
   void read(std::string const &epoch, std::string const &loss);
   void write(int epoch, float loss);
-	void init();
+	void init(int input_dim, int hidden_dim, int output_dim);
 	void init_zeroes(int input_dim, int hidden_dim, int output_dim, bool do_eval = false);
 	void init_ones(int input_dim, int hidden_dim, int output_dim);
 
@@ -27,6 +30,7 @@ public:
 	void divide(Model &grad, Model &cache);
 	void adjust_learning_rate(float learning_rate, Model &rhs);
 	void eval();
+	std::string dump_dim() const;
 };
 
 

@@ -65,17 +65,19 @@ void Model::write(int epoch, float loss) {
 }
 
 
-void Model::init() {
-	// TODO use members
-  int input_dim  = (int) U_z.rows();
-  int hidden_dim = (int) U_z.cols();
-  int output_dim = (int) V.cols();
+std::string Model::dump_dim() const {
+	std::string ret;
 
-	warn << "Doing init_weight_matrices()\n"
-			"  input_dim : " << input_dim  << "\n"
-			"  hidden_dim: " << hidden_dim << "\n"
-			"  output_dim: " << output_dim
-	;
+	ret << "(input, hidden, output): ("
+	    << input_dim()  << ", "
+			<< hidden_dim() << ", "
+			<< output_dim() << ")";
+
+	return ret;
+}	
+
+
+void Model::init(int input_dim, int hidden_dim, int output_dim) {
 
   init_matrix(U_z, input_dim, hidden_dim);
   init_matrix(U_r, input_dim, hidden_dim);
@@ -86,7 +88,7 @@ void Model::init() {
   init_matrix(V, hidden_dim, output_dim);
 
 	eval();
-	warn << "Done init_weight_matrices()";
+	warn << "Done Model::init()\n" << dump_dim();
 }
 
 
@@ -132,6 +134,9 @@ void Model::grad_div_steps(float steps) {
 
 
 void Model::cache_decay(float decay, Model &grad) {
+	//warn << "grad:" << grad.dump_dim();
+	//warn << "U_z :" << ::dump_dim(U_z);
+
   U_z = decay * U_z + (1 - decay) * (grad.U_z.cwiseProduct(grad.U_z)).eval();
   U_r = decay * U_r + (1 - decay) * (grad.U_r.cwiseProduct(grad.U_r)).eval();
   U_h = decay * U_h + (1 - decay) * (grad.U_h.cwiseProduct(grad.U_h)).eval();
@@ -230,6 +235,7 @@ void State::set_step(int time_step, State &state) {
 
   copy_q();
 }
+
 
 /**
  * =============================
