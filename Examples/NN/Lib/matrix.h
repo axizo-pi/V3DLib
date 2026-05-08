@@ -1,6 +1,6 @@
 #ifndef _INCLUDE_RNNSUPPORT_MATRIX_H
 #define _INCLUDE_RNNSUPPORT_MATRIX_H
-#include "kernels.h"
+#include "../Lib/kernels.h"
 #include "Support/basics.h"
 #include "Support/Settings.h"
 
@@ -30,6 +30,13 @@ struct matrix {
 
   int columns() const  { return m_columns; }
   int rows() const     { return m_rows; }
+	int size() const     { return m_columns*m_rows; }
+
+	bool is_vector() const {
+		return
+			(m_columns == 1 && m_rows >  1) || 
+			(m_columns >  1 && m_rows == 1);
+	}
 
   Float::Array &operator &();
   Float::Array &arr();
@@ -42,13 +49,15 @@ struct matrix {
   matrix &operator=(matrix const &rhs);
   matrix operator-(matrix const &rhs);
   matrix &operator-=(matrix const &rhs);
-  matrix operator+(matrix const &rhs);
+  matrix operator+(matrix const &rhs) const;
   matrix &operator+=(matrix const &rhs);
   matrix operator*(float rhs) const;
   matrix mul(matrix const &rhs) const;
   matrix mul_t(matrix const &rhs) const;
+  matrix mul_e(matrix const &rhs) const;
   matrix sigmoid_derivative(matrix const &rhs);
   matrix transpose() const;
+  matrix outer(matrix const &rhs) const;
 
   std::string dump_dim() const;
   std::string dump(bool output_int = false) const;
@@ -57,7 +66,6 @@ struct matrix {
 
 protected:
   void transfer(matrix const &rhs);
-  matrix mul_elem(matrix const &rhs) const;
 
   std::shared_ptr<Float::Array> m_arr;
 
@@ -98,11 +106,10 @@ struct vector : public matrix {
   vector mul(vector const &rhs);
   vector &operator=(matrix const &rhs);
   vector &operator=(vector const &rhs);
-  matrix outer(matrix const &rhs) const;
   vector sigmoid(vector const &bias);
-  vector dsigmoid();
+  vector dsigmoid() const;
   vector tanh();
-  vector dtanh();
+  vector dtanh() const;
   void clip(float clip_value);
   static BaseKernel &op_kernel();
 
@@ -115,7 +122,7 @@ private:
 };
 
 
-vector operator*(matrix const &lhs, vector const &rhs);
+vector operator*(matrix const &lhs, matrix const &rhs);
 
 bool check_precision(float lhs, float rhs, float precision);
 bool same(qpu::vector const &lhs, qpu::vector const &rhs, float precision = 0.0f);

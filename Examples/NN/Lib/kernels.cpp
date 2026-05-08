@@ -78,6 +78,18 @@ void mul_element(Float::Ptr out, Float::Ptr lhs, Float::Ptr rhs, Int N) {
 }
 
 
+void matrix_add(Float::Ptr ret, Float::Ptr lhs, Float::Ptr rhs, Int N) {
+  For (Int h = 0, h < N, h++)
+    Float x = (*lhs) + (*rhs);
+    *ret = x;
+
+    ret.inc();
+    lhs.inc();
+    rhs.inc();
+  End
+}
+
+
 void matrix_add_self(Float::Ptr lhs, Float::Ptr rhs, Int N) {
   For (Int h = 0, h < N, h++)
     Float x = (*lhs) + (*rhs);

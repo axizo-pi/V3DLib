@@ -1,5 +1,6 @@
 #include "model.h"
 #include "global/log.h"
+#include "./kernel.h"
 #include <iostream>
 
 using namespace std;
@@ -37,15 +38,170 @@ void divide_matrix(MatrixXf& gradient_total, MatrixXf gradient, MatrixXf cache) 
 } // anon namespace
 
 
+void MMatrix::init_zeroes(int dim) {
+  m_Xf  = MatrixXf::Zero(1, dim);
+	m_qpu = copy_m(m_Xf);
+}
+
+
+void MMatrix::init_ones(int dim) {
+  m_Xf  = MatrixXf::Ones(1, dim);
+	m_qpu = copy_m(m_Xf);
+}
+
+
+void MMatrix::set(MatrixXf const &rhs) {
+	m_Xf = rhs;
+	m_qpu = copy_m(m_Xf);
+}
+
+
+bool MMatrix::same(MMatrix const &rhs, float precision) const {
+	return
+		::same(m_qpu, m_Xf, precision) &&
+		::same(rhs.m_qpu, rhs.m_Xf, precision) &&
+		::same(m_qpu, rhs.m_Xf, precision)
+	;
+}
+
+std::string MMatrix::dump_dim() const {
+	std::string ret;
+	ret << ::dump_dim(m_Xf) << ", " << m_qpu.dump_dim();
+
+	return ret;
+}
+
+
+void MMatrix::operator+=(MMatrix const &rhs) {
+  timers.start("MMatrix += Xf");
+	m_Xf = m_Xf + rhs.m_Xf;
+  timers.stop("MMatrix += Xf");
+
+  timers.start("MMatrix += qpu");
+	m_qpu += rhs.m_qpu;
+  timers.stop("MMatrix += qpu");
+}
+
+
+void MMatrix::operator/=(float steps) {
+	m_Xf /= steps;
+	m_qpu = copy_m(m_Xf);
+}
+
+
+MMatrix MMatrix::operator*(MMatrix const &rhs) {
+	MMatrix ret;
+
+  timers.start("MMatrix * Xf");
+	ret.m_Xf = m_Xf * rhs.m_Xf.transpose().eval();
+  timers.stop("MMatrix * Xf");
+
+  timers.start("MMatrix * qpu");
+	ret.m_qpu = rhs.m_qpu * m_qpu;
+  timers.stop("MMatrix * qpu");
+
+	return ret;
+}
+
+
+void MMatrix::mul_e(MMatrix const &rhs, State const &temp) {
+  timers.start("MMatrix mul_e state Xf");
+	m_Xf = rhs.m_Xf.cwiseProduct(temp.r);
+  timers.stop("MMatrix mul_e state Xf");
+
+  timers.start("MMatrix mul_e state qpu");
+  m_qpu = rhs.m_qpu.mul_e(temp.q_r);
+  timers.stop("MMatrix mul_e state qpu");
+}
+
+
+MMatrix MMatrix::mul_e(MMatrix const &rhs) {
+	MMatrix ret;
+
+  timers.start("MMatrix mul_e Xf");
+	ret.m_Xf = m_Xf.cwiseProduct(rhs.m_Xf);
+  timers.stop("MMatrix mul_e Xf");
+
+  timers.start("MMatrix mul_e qpu");
+  ret.m_qpu = m_qpu.mul_e(rhs.m_qpu);
+  timers.stop("MMatrix mul_e qpu");
+
+	return ret;
+}
+
+
+MMatrix MMatrix::outer(MMatrix const &rhs) {
+	MMatrix ret;
+  timers.start("MMatrix outer Xf");
+  ret.m_Xf  = m_Xf.transpose().eval() * rhs.m_Xf;
+  timers.stop("MMatrix outer Xf");
+
+  timers.start("MMatrix outer qpu");
+	ret.m_qpu = m_qpu.outer(rhs.m_qpu);
+  timers.stop("MMatrix outer qpu");
+
+	return ret;
+}
+
+
+void MMatrix::back_prop_1(MMatrix const &ds_cur, State const &temp) {
+	MMatrix ones;
+	ones.init_ones(ds_cur.cols());
+
+	timers.start("back_prop_1 Xf");
+	m_Xf = ds_cur.m_Xf.cwiseProduct(ones.m_Xf - temp.z.m_Xf).cwiseProduct(temp.h.unaryExpr(&tanh_grad));  //.cwiseProduct(temp_S.unaryExpr(&tanh_grad));
+	timers.stop("back_prop_1 Xf");
+
+	m_qpu.resize(ds_cur.cols(), 1);
+/*	
+	warn << "m_qpu: " << m_qpu.dump_dim();
+	warn << "ds_cur: " << ds_cur.dump_dim();
+	assert(m_qpu.rows() == ds_cur.cols() && m_qpu.columns() == 1);
+*/	
+
+	timers.start("back_prop_1 qpu");
+	//Original: m_qpu = ds_cur.m_qpu.mul_e(ones.m_qpu - temp.q_z).mul_e(temp.q_h.dtanh());
+	gru_kernel::back_prop_1(m_qpu, ds_cur.m_qpu, temp.z.m_qpu, temp.q_h);
+	timers.stop("back_prop_1 qpu");
+
+	//OK assert(::same(m_qpu, m_Xf)); 
+}
+
+
+void MMatrix::back_prop_2(State const &temp, MMatrix const &dreluInput_h) {
+	timers.start("back_prop_2 Xf");
+	m_Xf = temp.S.Xf().cwiseProduct(temp.r).transpose().eval() * dreluInput_h.Xf();
+	timers.stop("back_prop_2 Xf");
+
+	timers.start("back_prop_2 qpu");
+	m_qpu = temp.S.qpu().mul_e(temp.q_r).outer(dreluInput_h.qpu());
+	timers.stop("back_prop_2 qpu");
+
+	assert(::same(m_qpu, m_Xf)); 
+}
+
+
+void MMatrix::back_prop_3(MMatrix const &dsr, State const &temp) {
+	timers.start("back_prop_3 Xf");
+	m_Xf = dsr.m_Xf.cwiseProduct(temp.S.Xf()).cwiseProduct(temp.r.unaryExpr(&sigmoid_grad));
+	timers.stop("back_prop_3 Xf");
+
+	timers.start("back_prop_3 qpu");
+	m_qpu = dsr.m_qpu.mul_e(temp.S.qpu()).mul_e(temp.q_r.dsigmoid());
+	timers.stop("back_prop_3 qpu");
+}
+
+
 void Model::read(string const &epoch, string const &loss) {
   string postfix = "_epoch_" + epoch + "_loss_" + loss + ".bin";
+	MatrixXf tmp;
 
   read_binary_matrix("Weights/Uz" + postfix, U_z);
-  read_binary_matrix("Weights/Uh" + postfix, U_h);
-  read_binary_matrix("Weights/Ur" + postfix, U_r);
+  read_binary_matrix("Weights/Uh" + postfix, tmp); U_h.set(tmp);
+  read_binary_matrix("Weights/Ur" + postfix, tmp); U_r.set(tmp);
   read_binary_matrix("Weights/Wz" + postfix, W_z);
-  read_binary_matrix("Weights/Wh" + postfix, W_h);
-  read_binary_matrix("Weights/Wr" + postfix, W_r);
+  read_binary_matrix("Weights/Wh" + postfix, tmp); W_h.set(tmp);
+  read_binary_matrix("Weights/Wr" + postfix, tmp); W_r.set(tmp);
   read_binary_matrix("Weights/V"  + postfix, V);
 }
 
@@ -56,11 +212,11 @@ void Model::write(int epoch, float loss) {
 	string postfix = "_epoch_" + std::to_string(epoch) + "_loss_" + std::to_string(loss) + ".bin";
 
   write_binary_matrix("Weights/Uz" + postfix, U_z);
-  write_binary_matrix("Weights/Uh" + postfix, U_h);
-  write_binary_matrix("Weights/Ur" + postfix, U_r);
+  write_binary_matrix("Weights/Uh" + postfix, U_h.Xf());
+  write_binary_matrix("Weights/Ur" + postfix, U_r.Xf());
   write_binary_matrix("Weights/Wz" + postfix, W_z);
-  write_binary_matrix("Weights/Wh" + postfix, W_h);
-  write_binary_matrix("Weights/Wr" + postfix, W_r);
+  write_binary_matrix("Weights/Wh" + postfix, W_h.Xf());
+  write_binary_matrix("Weights/Wr" + postfix, W_r.Xf());
   write_binary_matrix("Weights/V"  + postfix, V);
 }
 
@@ -78,13 +234,16 @@ std::string Model::dump_dim() const {
 
 
 void Model::init(int input_dim, int hidden_dim, int output_dim) {
+	MatrixXf tmp;
 
   init_matrix(U_z, input_dim, hidden_dim);
-  init_matrix(U_r, input_dim, hidden_dim);
-  init_matrix(U_h, input_dim, hidden_dim);
+  init_matrix(tmp, input_dim, hidden_dim); U_r.set(tmp);
+  init_matrix(tmp, input_dim, hidden_dim); U_h.set(tmp);
+
   init_matrix(W_z, hidden_dim, hidden_dim);
-  init_matrix(W_r, hidden_dim, hidden_dim);
-  init_matrix(W_h, hidden_dim, hidden_dim);
+  init_matrix(tmp, hidden_dim, hidden_dim); W_r.set(tmp);
+  init_matrix(tmp, hidden_dim, hidden_dim); W_h.set(tmp);
+
   init_matrix(V, hidden_dim, output_dim);
 
 	eval();
@@ -93,13 +252,18 @@ void Model::init(int input_dim, int hidden_dim, int output_dim) {
 
 
 void Model::init_zeroes(int input_dim, int hidden_dim, int output_dim, bool do_eval) {
-  U_z = MatrixXf::Zero(input_dim, hidden_dim);
-  U_r = MatrixXf::Zero(input_dim, hidden_dim);
-  U_h = MatrixXf::Zero(input_dim, hidden_dim);
-  W_z = MatrixXf::Zero(hidden_dim, hidden_dim);
-  W_r = MatrixXf::Zero(hidden_dim, hidden_dim);
-  W_h = MatrixXf::Zero(hidden_dim, hidden_dim);
-  V   = MatrixXf::Zero(hidden_dim, output_dim);
+  auto zero   = MatrixXf::Zero(input_dim, hidden_dim);
+	auto zero_h = MatrixXf::Zero(hidden_dim, hidden_dim);
+
+  U_z = zero;
+  U_r.set(zero);
+  U_h.set(zero);
+
+  W_z = zero_h;
+  W_r.set(zero_h);
+  W_h.set(zero_h);
+
+  V = MatrixXf::Zero(hidden_dim, output_dim);
 
 	if (do_eval) {
 		eval();
@@ -108,12 +272,15 @@ void Model::init_zeroes(int input_dim, int hidden_dim, int output_dim, bool do_e
 
 
 void Model::init_ones(int input_dim, int hidden_dim, int output_dim) {
-  U_z = MatrixXf::Ones(input_dim, hidden_dim);
-  U_r = MatrixXf::Ones(input_dim, hidden_dim);
-  U_h = MatrixXf::Ones(input_dim, hidden_dim);
-  W_z = MatrixXf::Ones(hidden_dim, hidden_dim);
-  W_r = MatrixXf::Ones(hidden_dim, hidden_dim);
-  W_h = MatrixXf::Ones(hidden_dim, hidden_dim);
+  auto ones   = MatrixXf::Ones(input_dim, hidden_dim);
+  auto ones_h = MatrixXf::Ones(hidden_dim, hidden_dim);
+
+  U_z = ones;
+  U_r.set(ones);
+  U_h.set(ones);
+  W_z = ones_h;
+  W_r.set(ones_h);
+  W_h.set(ones_h);
   V   = MatrixXf::Ones(hidden_dim, output_dim);
 
 	eval();
@@ -138,11 +305,11 @@ void Model::cache_decay(float decay, Model &grad) {
 	//warn << "U_z :" << ::dump_dim(U_z);
 
   U_z = decay * U_z + (1 - decay) * (grad.U_z.cwiseProduct(grad.U_z)).eval();
-  U_r = decay * U_r + (1 - decay) * (grad.U_r.cwiseProduct(grad.U_r)).eval();
-  U_h = decay * U_h + (1 - decay) * (grad.U_h.cwiseProduct(grad.U_h)).eval();
+  U_r.set(decay * U_r.Xf() + (1 - decay) * (grad.U_r.Xf().cwiseProduct(grad.U_r.Xf())).eval());
+  U_h.set(decay * U_h.Xf() + (1 - decay) * (grad.U_h.Xf().cwiseProduct(grad.U_h.Xf())).eval());
   W_z = decay * W_z + (1 - decay) * (grad.W_z.cwiseProduct(grad.W_z)).eval();
-  W_r = decay * W_r + (1 - decay) * (grad.W_r.cwiseProduct(grad.W_r)).eval();
-  W_h = decay * W_h + (1 - decay) * (grad.W_h.cwiseProduct(grad.W_h)).eval();
+  W_r.set(decay * W_r.Xf() + (1 - decay) * (grad.W_r.Xf().cwiseProduct(grad.W_r.Xf())).eval());
+  W_h.set(decay * W_h.Xf() + (1 - decay) * (grad.W_h.Xf().cwiseProduct(grad.W_h.Xf())).eval());
   V   = decay * V   + (1 - decay) * (grad.V  .cwiseProduct(grad.V  )).eval();
 
   eval();
@@ -151,11 +318,25 @@ void Model::cache_decay(float decay, Model &grad) {
 
 void Model::divide(Model &grad, Model &cache) {
   divide_matrix(U_z, grad.U_z, cache.U_z);
-  divide_matrix(U_r, grad.U_r, cache.U_r);
-  divide_matrix(U_h, grad.U_h, cache.U_h);
+
+	MatrixXf tmp = U_r.Xf();
+  divide_matrix(tmp, grad.U_r.Xf(), cache.U_r.Xf());
+	U_r.set(tmp);
+
+	tmp = U_h.Xf();
+  divide_matrix(tmp, grad.U_h.Xf(), cache.U_h.Xf());
+	U_h.set(tmp);
+
   divide_matrix(W_z, grad.W_z, cache.W_z);
-  divide_matrix(W_r, grad.W_r, cache.W_r);
-  divide_matrix(W_h, grad.W_h, cache.W_h);
+
+	tmp = W_r.Xf();
+  divide_matrix(tmp, grad.W_r.Xf(), cache.W_r.Xf());
+	W_r.set(tmp);
+
+	tmp = W_h.Xf();
+  divide_matrix(tmp, grad.W_h.Xf(), cache.W_h.Xf());
+	W_h.set(tmp);
+
   divide_matrix(V  , grad.V  , cache.V);
 
   eval();
@@ -164,11 +345,11 @@ void Model::divide(Model &grad, Model &cache) {
 
 void Model::adjust_learning_rate(float learning_rate, Model &rhs) {
   U_z -= learning_rate * rhs.U_z;
-  U_r -= learning_rate * rhs.U_r;
-  U_h -= learning_rate * rhs.U_h;
+  U_r.set(U_r.Xf() - learning_rate * rhs.U_r.Xf());
+  U_h.set(U_h.Xf() - learning_rate * rhs.U_h.Xf());
   W_z -= learning_rate * rhs.W_z;
-  W_r -= learning_rate * rhs.W_r;
-  W_h -= learning_rate * rhs.W_h;
+  W_r.set(W_r.Xf() - learning_rate * rhs.W_r.Xf());
+  W_h.set(W_h.Xf() - learning_rate * rhs.W_h.Xf());
   V   -= learning_rate * rhs.V;
 }
 
@@ -187,20 +368,25 @@ void Model::eval() {
 void State::init(int time_steps, int hidden_dim, int output_dim) {
 	if (m_do_temp) {
 		assert(time_steps == 1);
+    auto zero = MatrixXf::Zero(1, hidden_dim);
 
-    S = MatrixXf::Zero(1, hidden_dim);
-    z = MatrixXf::Zero(1, hidden_dim);
-    r = MatrixXf::Zero(1, hidden_dim);
-    h = MatrixXf::Zero(1, hidden_dim);
+    S.set(zero);
+    z.set(zero);
+    r = zero;
+    h = zero;
 
 	} else {
+	  auto zero = MatrixXf::Zero(time_steps, hidden_dim);
+
 	  E = MatrixXf::Zero(1, time_steps);
-	  z = MatrixXf::Zero(time_steps, hidden_dim);
-	  r = MatrixXf::Zero(time_steps, hidden_dim);
-  	h = MatrixXf::Zero(time_steps, hidden_dim);
+	  z.set(zero);
+	  r = zero;
+  	h = zero;
 	  O = MatrixXf::Zero(time_steps, output_dim);
-	  S = MatrixXf::Zero(time_steps + 1, hidden_dim);
-	  S(0, 0) = static_cast <float> (((float) rand()) / (static_cast <float> (RAND_MAX / 2)) - 1);
+
+	  MatrixXf tmp_S = MatrixXf::Zero(time_steps + 1, hidden_dim);
+	  tmp_S(0, 0) = static_cast <float> (((float) rand()) / (static_cast <float> (RAND_MAX / 2)) - 1);
+		S.set(tmp_S);
 	}
 }
 
@@ -218,9 +404,7 @@ void State::eval() {
 void State::copy_q() {
 	assert(m_do_temp);
 
-	q_S = copy(S);
 	q_r = copy(r);
-	q_z = copy(z);
 	q_h = copy(h);
 }
 
@@ -228,9 +412,9 @@ void State::copy_q() {
 void State::set_step(int time_step, State &state) {
 	assert(m_do_temp);
 
-  S = state.S.row(time_step);
+  S.set(state.S.row(time_step));
   r = state.r.row(time_step);
-  z = state.z.row(time_step);
+  z.set(state.z.row(time_step));
   h = state.h.row(time_step);
 
   copy_q();
@@ -271,25 +455,25 @@ void forward_propagation(
   MatrixXf temp_hidden = MatrixXf::Zero(1, hidden_dim);
 
   for(int i = 0; i < time_steps; i++) {
-    temp            = (X.row(i) * (m.U_z)) + (state.S.row(i) * (m.W_z));
-    temp.eval();
-    state.z.row(i)  = temp.unaryExpr(&sigmoid);
-    state.z.eval();
+		auto S_row = state.S.Xf().row(i);
 
-    temp            = (X.row(i) * (m.U_r)) + (state.S.row(i) * (m.W_r));
+    temp            = (X.row(i) * (m.U_z)) + (S_row * (m.W_z));
+    temp.eval();
+    state.z.row(i, temp.unaryExpr(&sigmoid));
+
+    temp            = (X.row(i) * (m.U_r.Xf())) + (S_row * (m.W_r.Xf()));
     temp.eval();
     state.r.row(i)  = temp.unaryExpr(&sigmoid);
     state.r.eval();
 
-    temp            = (X.row(i) * (m.U_h)) + (state.S.row(i).cwiseProduct(state.r.row(i))) * (m.W_h);
+    temp            = (X.row(i) * (m.U_h.Xf())) + (S_row.cwiseProduct(state.r.row(i))) * (m.W_h.Xf());
     temp.eval();
     state.h.row(i)  = temp.unaryExpr(&tanh_activation);
     state.h.eval();
 
     temp_hidden     = (MatrixXf::Ones(1, hidden_dim) - state.z.row(i)).cwiseProduct(state.h.row(i)) + state.z.row(i).cwiseProduct(state.S.row(i));
     temp_hidden.eval();
-    state.S.row(i + 1) = temp_hidden;
-    state.S.eval();
+    state.S.row(i + 1, temp_hidden);
 
     temp_output   = state.S.row(i + 1) * (m.V);
     temp_output.eval();
@@ -311,4 +495,60 @@ void forward_propagation(
   }
 
 	timers.stop("forward_propagation");
+}
+
+
+bool same(qpu::matrix const &lhs, MatrixXf const &rhs, float precision) {
+	// Special case for 2 input vectors: accept transposed vectors
+	if(lhs.columns() == 1 && lhs.columns() == rhs.rows() && lhs.rows() == rhs.cols() ) {
+		int size = lhs.rows();
+  	for (int i = 0; i < size; ++i) {
+	    if (!qpu::check_precision(lhs.at(i, 0), rhs(0, i), precision)) {
+	      warn << "Fail same(vector, vector), (i,j): " << i << ", 0)";
+	      return false;
+	    }      
+	  }
+
+		return true;
+	}
+
+	// Do full matrices
+	if(lhs.rows() != rhs.rows() || lhs.columns() != rhs.cols() ) {
+     warn << "Fail same(qpu::matrix, MatrixXf) dimensionis differ: "
+			    << "lhs: " << lhs.dump_dim() << ", "
+					<< "rhs: " << dump_dim(rhs);
+
+		 return false;
+	}
+
+  for (int i = 0; i < (int) rhs.rows(); ++i) {
+  	for (int j = 0; j < (int) rhs.cols(); ++j) {
+	    if (!qpu::check_precision(lhs.at(i, j), rhs(i, j), precision)) {
+	      warn << "Fail same(qpu::matrix, MatrixXf), (i,j): " << i << ", " << j << ")";
+	      return false;
+	    }      
+	  }
+	}
+
+  return true;
+}
+
+
+qpu::matrix copy_m(MatrixXf const &rhs) {
+	//assert(rhs.rows() == 1 || rhs.rows() % 16 == 0);  // Taking vectors into account
+	//assert(rhs.cols() % 16 == 0);
+
+  int height = (int) rhs.rows();
+  int width = (int) rhs.cols();
+
+  qpu::matrix ret(height, width);
+  ret.set(0.0f);
+
+  for (int i = 0; i < rhs.rows(); i++) {
+  	for (int j = 0; j < rhs.cols(); j++) {
+  		ret.at(i, j) = rhs(i, j);
+		}
+  }
+
+  return ret;
 }

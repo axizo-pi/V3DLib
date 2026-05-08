@@ -15,6 +15,7 @@ void dsigmoid(Float::Ptr in, Float::Ptr out, Int N);
 void tanh(Float::Ptr in, Float::Ptr out, Int N);
 void dtanh(Float::Ptr in, Float::Ptr out, Int N);
 void mul_element(Float::Ptr out, Float::Ptr lhs, Float::Ptr rhs, Int N);
+void matrix_add(Float::Ptr ret, Float::Ptr lhs, Float::Ptr rhs, Int N);
 void matrix_add_self(Float::Ptr lhs, Float::Ptr rhs, Int N);
 void mult_vec(Float::Ptr input, Float::Ptr mat, Float::Ptr result, Int M, Int N);
 void mult_vec_transposed(Float::Ptr input, Float::Ptr mat, Float::Ptr result, Int M, Int N);

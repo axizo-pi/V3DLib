@@ -2,18 +2,71 @@
 #define _GRU_MODEL_H
 #include "common.h"
 
+bool same(qpu::matrix const &lhs, MatrixXf const &rhs, float precision = 0.0f);
+qpu::matrix copy_m(MatrixXf const &rhs);
+
+class State;
+
+class MMatrix {
+public:	
+
+	void init_zeroes(int dim);
+	void init_ones(int dim);
+	void set(MatrixXf const &rhs);
+
+	int rows() const { return (int) m_Xf.rows(); }
+	int cols() const { return (int) m_Xf.cols(); }
+
+	void row(int index, MatrixXf const &val) {
+    m_Xf.row(index) = val;
+    m_Xf.eval();
+	}
+
+	MatrixXf row(int index) const {
+		return m_Xf.row(index);
+	}
+
+	MatrixXf    const &Xf()  const { return m_Xf; }
+	qpu::matrix const &qpu() const { return m_qpu; }
+
+	void Xf(MatrixXf const &val)     { m_Xf  = val; }
+	void qpu(qpu::matrix const &val) { m_qpu = val; }
+
+	bool same(float precision = 0.0f) const {
+		return ::same(m_qpu, m_Xf, precision);
+	}
+
+	bool same(MMatrix const &rhs, float precision = 0.0f) const;
+
+	std::string dump_dim() const;
+	void eval() { m_Xf.eval(); }
+
+	void operator+=(MMatrix const &rhs);
+	void operator/=(float steps);
+	MMatrix operator*(MMatrix const &rhs);
+	void mul_e(MMatrix const &rhs, State const &temp);
+	MMatrix mul_e(MMatrix const &rhs);
+
+	MMatrix outer(MMatrix const &rhs);
+	void back_prop_1(MMatrix const &ds_cur, State const &temp);
+	void back_prop_2(State const &temp, MMatrix const &dreluInput_h);
+	void back_prop_3(MMatrix const &dsr, State const &temp);
+
+private:	
+	MatrixXf    m_Xf;
+	qpu::matrix m_qpu;
+};
+
+
 class Model {
 public:
   MatrixXf U_z;
-	MatrixXf U_r;
-	MatrixXf U_h;
+	MMatrix  U_r;
+	MMatrix  U_h;
 	MatrixXf W_z;
-	MatrixXf W_r;
-	MatrixXf W_h;
+	MMatrix  W_r;
+	MMatrix  W_h;
 	MatrixXf V;
-
-	qpu::matrix q_W_h;
-	qpu::matrix q_U_r;
 
   void read(std::string const &epoch, std::string const &loss);
   void write(int epoch, float loss);
@@ -37,15 +90,13 @@ public:
 class State {
 public:	
   MatrixXf E;  // Unused in test
-  MatrixXf z;
+  MMatrix z;
   MatrixXf r;
   MatrixXf h;
   MatrixXf O;
-  MatrixXf S;
+  MMatrix S;
 
-	qpu::vector q_S;
 	qpu::vector q_r;
-	qpu::vector q_z;
 	qpu::vector q_h;
 
 	State(bool do_temp = false) : m_do_temp(do_temp) {}

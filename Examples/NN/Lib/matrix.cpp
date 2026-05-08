@@ -15,6 +15,7 @@ bool done_init = false;
 std::unique_ptr<BaseKernel> s_mul_element;
 std::unique_ptr<BaseKernel> s_mult_vec_transposed;
 std::unique_ptr<BaseKernel> s_mult_vec;
+std::unique_ptr<BaseKernel> s_matrix_add;
 std::unique_ptr<BaseKernel> s_matrix_add_self;
 std::unique_ptr<BaseKernel> s_sub;
 std::unique_ptr<BaseKernel> s_add;
@@ -32,6 +33,7 @@ void init_local() {
   s_mul_element        .reset(new BaseKernel(compile(kernel::mul_element    , settings())));
   s_mult_vec_transposed.reset(new BaseKernel(compile(kernel::mult_vec_transposed, settings())));
   s_mult_vec           .reset(new BaseKernel(compile(kernel::mult_vec       , settings())));
+  s_matrix_add         .reset(new BaseKernel(compile(kernel::matrix_add     , settings())));
   s_matrix_add_self    .reset(new BaseKernel(compile(kernel::matrix_add_self, settings())));
   s_sub                .reset(new BaseKernel(compile(kernel::vector_sub     , settings())));
   s_add                .reset(new BaseKernel(compile(kernel::vector_add     , settings())));
@@ -154,7 +156,11 @@ matrix &matrix::operator=(matrix const &rhs) {
 
 
 matrix matrix::operator-(matrix const &rhs) {
-  assert(m_columns == rhs.columns() && m_rows == rhs.rows());
+  assert(
+	 // Allow transposed vectors
+	 (m_rows == 1 && rhs.columns() == 1 && m_rows == rhs.columns()) ||
+	 (m_columns == rhs.columns() && m_rows == rhs.rows())
+	);
   matrix ret(m_rows, m_columns);
 
   for (int i = 0; i < (int) m_arr->size(); ++i) {
@@ -176,28 +182,40 @@ matrix &matrix::operator-=(matrix const &rhs) {
 }
 
 
-matrix matrix::operator+(matrix const &rhs) {
+matrix matrix::operator+(matrix const &rhs) const {
+  if (!(m_columns == rhs.columns() && m_rows == rhs.rows())) {
+		warn << "matrix operator+ dimensions don't match: "
+			   << "this: " << dump_dim() << ", "
+			   << "rhs: " << rhs.dump_dim();
+	}
   assert(m_columns == rhs.columns() && m_rows == rhs.rows());
   matrix ret(m_rows, m_columns);
 
+  s_matrix_add->load(&ret.arr(), &arr(), &rhs.arr(), m_rows*m_columns/16).run();
+/*
   for (int i = 0; i < (int) m_arr->size(); ++i) {
     ret.arr()[i] = arr()[i] + rhs.arr()[i];
   }
-
+*/
   return ret;
 }
 
 
 matrix &matrix::operator+=(matrix const &rhs) {
-  if (m_columns != rhs.columns() || m_rows != rhs.rows()) {
-		warn << "matrix::operator+= dimensions don't match: "
-			   << "this: " << dump_dim() << ", "
-				 << "rhs:"   << rhs.dump_dim()
-				 << thrw;
+	if (is_vector() && rhs.is_vector()) {
+		// Allow transposed vectors
+		assert(size() == rhs.size());
+	} else {
+  	if (m_columns != rhs.columns() || m_rows != rhs.rows()) {
+			warn << "matrix::operator+= dimensions don't match: "
+				   << "this: " << dump_dim() << ", "
+					 << "rhs:"   << rhs.dump_dim()
+					 << thrw;
+		}
+  	assert(m_columns == rhs.columns() && m_rows == rhs.rows());
 	}
-  assert(m_columns == rhs.columns() && m_rows == rhs.rows());
 
-  s_matrix_add_self->load(&arr(), &rhs.arr(), m_rows*m_columns/16).run();
+  s_matrix_add_self->load(&arr(), &rhs.arr(), size()/16).run();
 
 /*	
   for (int i = 0; i < (int) m_arr->size(); ++i) {
@@ -275,20 +293,26 @@ matrix matrix::mul_t(matrix const &rhs) const {
 }
 
 
-matrix matrix::mul_elem(matrix const &rhs) const {
-  //warn << "Called matrix matrix::mul_elem()";
+/**
+ * @brief By-element product of the two matrices.
+ */
+matrix matrix::mul_e(matrix const &rhs) const {
+  //warn << "Called matrix matrix::mul_e()";
   //warn << "matrix: " << dump_dim() << "rhs: " << rhs.dump_dim();
   assert(m_columns > 0);
   assert(m_rows > 0);
 
-  if (m_rows != rhs.rows() || m_columns != rhs.columns()) {
-    cerr << "Matrix::mul() Dimensions don't match. "
+	// Keep the calc flexible, just check size
+	int size = m_rows*m_columns;
+	int in_size = rhs.rows()*rhs.columns();
+
+  if (size != in_size) {
+    cerr << "Matrix::mul_e() Dimensions don't match. "
          << "this(rows, columns): (" << m_rows << ", " << m_columns << "), "
          << "rhs(rows, columns):  (" << rhs.rows() << ", " << rhs.columns() << ")"
           << thrw;
   }
 
-  int size = m_rows*m_columns; 
   assert((size % 16) == 0);      // Total dimension must be multiple of 16
 
   matrix ret(m_rows, m_columns);
@@ -336,6 +360,46 @@ matrix matrix::transpose() const {
 
   t_3.stop();
   return ret;
+}
+
+
+namespace {
+
+matrix outer_ret(true);	
+
+} // anon namespace
+
+
+
+/**
+ * @brief Calculate outer product of two vectors.
+ *
+ * This and rhs are both defined as matrix, because this fits the programming logic.
+ * Vectors are special cases of matrices anyway.
+ *
+ * ==================================
+ * Notes
+ * -----
+ *
+ * - Unfortunately, defining the return value as a static does not have much effect
+ *   on the performance.
+ *
+ * - Due to use of a static return value, this method is **not thread-safe**.
+ *   This is not really important, because QPU kernel call should only be called
+ *   from a single thread.
+ */
+matrix matrix::outer(matrix const &rhs) const {
+	assert(is_vector());
+	assert(rhs.is_vector());
+  if ((size() & 0xf) != 0)     { cerr << "vector outer: expecting rows to be a multiple of 16" << thrw; }
+  if ((rhs.size() & 0xf) != 0) { cerr << "vector outer: expecting rhs rows to be a multiple of 16" << thrw; }
+
+  outer_ret.resize(size(), rhs.size());
+
+  s_op->load(&arr(), &rhs.arr(), &outer_ret.arr(), size(), rhs.size()/16).run();
+
+	//warn << "outer resize: " << outer_ret.dump_dim();
+  return outer_ret;  
 }
 
 
@@ -519,7 +583,7 @@ vector vector::mul(vector const &rhs) {
   assert(rows() == rhs.rows());
   if ((rows() & 0xf) != 0) { cerr << "vector sub: rows must be a multiple of 16" << thrw; }
 
-	matrix ret = mul_elem(rhs);
+	matrix ret = mul_e(rhs);
   return vector(ret);
 /*
 	vector ret(rows());
@@ -544,38 +608,6 @@ vector &vector::operator=(vector const &rhs) {
   return *this;
 }
 
-namespace {
-
-matrix outer_ret(true);	
-
-} // anon namespace
-
-
-
-/**
- * ==================================
- * Notes
- * -----
- *
- * - Unfortunately, defining the return value as a statis does not have much effect
- *   on the performance.
- *
- * - Due to use of a static return value, this method is **not thread-safe**.
- *   This is not really important, because QPU kernel call should only be called
- *   from a single thread.
- */
-matrix vector::outer(matrix const &rhs) const {
-  assert(rhs.columns() == 1);  // Expecting a vector as input
-  if ((rows() & 0xf) != 0)     { cerr << "vector outer: expecting rows to be a multiple of 16" << thrw; }
-  if ((rhs.rows() & 0xf) != 0) { cerr << "vector outer: expecting rhs rows to be a multiple of 16" << thrw; }
-
-  outer_ret.resize(rows(), rhs.rows());
-
-  s_op->load(&arr(), &rhs.arr(), &outer_ret.arr(), rows(), rhs.rows()/16).run();
-
-	//warn << "outer resize: " << outer_ret.dump_dim();
-  return outer_ret;  
-}
 
 
 vector vector::sigmoid(vector const &bias) {
@@ -585,7 +617,7 @@ vector vector::sigmoid(vector const &bias) {
 }
 
 
-vector vector::dsigmoid() {
+vector vector::dsigmoid() const {
   vector ret(rows());
   s_dsigmoid->load(&arr(), &ret.arr(), rows()/16).run();
   return ret;  
@@ -600,7 +632,7 @@ vector vector::tanh() {
 }
 
 
-vector vector::dtanh() {
+vector vector::dtanh() const {
   vector ret(rows());
 
   s_dtanh->load(&arr(), &ret.arr(), rows()/16).run();
@@ -634,12 +666,12 @@ BaseKernel &vector::op_kernel() {
 }
 
 
-vector operator*(matrix const &lhs, vector const &rhs) {
+vector operator*(matrix const &lhs, matrix const &rhs) {
   //warn << "Called vector operator*(matrix const &lhs, vector const &rhs)";
+  assert(rhs.columns() == 1);  // Expecting a vector as input
   matrix ret;
 
   ret = lhs.mul(rhs);
-
   return vector(ret);
 }
 

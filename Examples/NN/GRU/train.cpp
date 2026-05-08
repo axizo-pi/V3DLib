@@ -1,15 +1,4 @@
 #include "model.h"
-#include "global/log.h"
-#include "Support/basics.h"
-#include <sys/stat.h>
-#include <unistd.h>
-#include <iostream>
-#include <cstdlib>
-#include <ctime>
-#include <climits>
-#include <cmath>
-#include <math.h>
-#include <vector>
 
 using namespace Log;
 
@@ -33,28 +22,6 @@ MAYBE_UNUSED std::string dump(MatrixXf const &m) {
 }
 
 
-qpu::matrix copy_m(MatrixXf const &rhs) {
-	assert(rhs.rows() % 16 == 0);
-	assert(rhs.cols() % 16 == 0);
-
-  //int height = resize(rhs.size());
-  //auto width = resize(rhs[0].size());
-  int height = (int) rhs.rows();
-  int width = (int) rhs.cols();
-
-  qpu::matrix ret(height, width);
-  ret.set(0.0f);
-
-  for (int i = 0; i < rhs.rows(); i++) {
-  	for (int j = 0; j < rhs.cols(); j++) {
-  		ret.at(i, j) = rhs(i, j);
-		}
-  }
-
-  return ret;
-}
-
-
 MAYBE_UNUSED bool same(qpu::vector const &lhs, MatrixXf const &rhs, float precision = 0.0f) {
 	assert(rhs.rows() == 1);
 
@@ -64,25 +31,6 @@ MAYBE_UNUSED bool same(qpu::vector const &lhs, MatrixXf const &rhs, float precis
       return false;
     }      
   }
-
-  return true;
-}
-
-
-MAYBE_UNUSED bool same(qpu::matrix const &lhs, MatrixXf const &rhs, float precision = 0.0f) {
-	if(lhs.rows() != rhs.rows() || lhs.columns() != rhs.cols() ) {
-     warn << "Fail same(qpu::matrix, MatrixXf) dimensiona differ";
-		 return false;
-	}
-
-  for (int i = 0; i < (int) rhs.rows(); ++i) {
-  	for (int j = 0; j < (int) rhs.cols(); ++j) {
-	    if (!qpu::check_precision(lhs.at(i, j), rhs(i, j), precision)) {
-	      warn << "Fail same(qpu::vector, MatrixXf), (i,j): " << i << ", " << j << ")";
-	      return false;
-	    }      
-	  }
-	}
 
   return true;
 }
@@ -106,121 +54,88 @@ void back_propagation(Model &m, Model &grad, State &state, MatrixXf& X, MatrixXf
   int time_step, curr_step;
 	grad.init_zeroes(m.input_dim(), m.hidden_dim(), m.output_dim());
 
-   MatrixXf ds_0, dsr, ds_single, ds_cur, ds_cur_bk, dz, delta_y, db_V, dreluInput_z, dreluInput_r, dreluInput_h, temp_X, temp_W, temp_U, temp_V;
-   dsr = MatrixXf::Zero(1, hidden_dim);
+	MatrixXf ds_0, ds_single;
+ 	MMatrix	ds_cur;
+  MMatrix	ds_cur_bk;
+  MatrixXf	dz, delta_y, db_V, dreluInput_z;
+	MMatrix dreluInput_r;
+	MMatrix dreluInput_h;
+	MMatrix temp_X;
+	MMatrix temp_W;
+	MatrixXf temp_U, temp_V;
 
 	State temp(true);
 	temp.init(1, hidden_dim, -1);
 
-  temp_X = MatrixXf::Zero(1, input_dim);
-  ds_cur_bk = MatrixXf::Zero(1, hidden_dim);
+	temp_X.init_zeroes(input_dim);
+
+  ds_cur_bk.set(MatrixXf::Zero(1, hidden_dim));
 
   delta_y = state.O - Y;
 
   for(time_step = time_steps - 1; time_step >= 0; time_step--) {
-    temp.S = state.S.row(time_step + 1);
-    grad.V += temp.S.transpose().eval() * delta_y.row(time_step);
+    temp.S.set(state.S.row(time_step + 1));
+    grad.V += temp.S.Xf().transpose().eval() * delta_y.row(time_step);
   }
 
   ds_single = delta_y * m.V.transpose().eval();
 
 	auto ones = MatrixXf::Ones(1, hidden_dim);
 	auto q_ones = copy(ones);
-	qpu::matrix q_dU_h = copy_m(grad.U_h);
-	m.q_W_h = copy_m(m.W_h);
-	grad.q_W_h = copy_m(grad.W_h);
-	grad.q_U_r = copy_m(grad.U_r);
+	//grad.q_U_r = copy_m(grad.U_r);
 
   for(curr_step = time_steps - 1; curr_step >= 0; curr_step--) {
-    ds_cur = ds_single.row(curr_step);
+    ds_cur.set(ds_single.row(curr_step));
+
     for(time_step = curr_step; time_step >= 0; time_step--) {
 			timers.start("back_propagation for inner");
 
       ds_cur_bk = ds_cur;
 			temp.set_step(time_step, state);
-			temp_X = X.row(time_step);
-			auto q_temp_X = copy(temp_X);
-			auto q_ds_cur = copy(ds_cur);
+			temp_X.set(X.row(time_step));
 
-			timers.start("back_propagation dreluInput_h");
-      dreluInput_h = ds_cur.cwiseProduct(ones - temp.z).cwiseProduct(temp.h.unaryExpr(&tanh_grad));//.cwiseProduct(temp_S.unaryExpr(&tanh_grad));
-			timers.stop("back_propagation dreluInput_h");
+			timers.start("back_propagation converted");
 
-			timers.start("back_propagation q_dreluInput_h");
-			auto q_dreluInput_h = q_ds_cur.mul(q_ones - temp.q_z).mul(temp.q_h.dtanh());
-			timers.stop("back_propagation q_dreluInput_h");
-			//warn << "dreluInput_h: " << dump(dreluInput_h);
-			//warn << "q_dreluInput_h: " << q_dreluInput_h.dump();
-			//OK assert(same(q_dreluInput_h, dreluInput_h));
+		  dreluInput_h.back_prop_1(ds_cur, temp);
+      grad.U_h += temp_X.outer(dreluInput_h);      //OK assert(grad.U_h.same());
 
-			timers.start("back_propagation dU_h");
-      temp_U = (temp_X.transpose().eval() * dreluInput_h);
-      grad.U_h = grad.U_h + temp_U;
-			timers.stop("back_propagation dU_h");
+			temp_W.back_prop_2(temp, dreluInput_h);
+      grad.W_h += temp_W;                          //OK assert(grad.W_h.same());
 
-			timers.start("back_propagation q_dU_h");
-      q_dU_h +=  q_temp_X.outer(q_dreluInput_h);
-			timers.stop("back_propagation q_dU_h");
-			//assert(same(q_dU_h, dU_h));
+			auto dsr = dreluInput_h * m.W_h;
+      ds_cur.mul_e(dsr, temp);
+      dreluInput_r.back_prop_3(dsr, temp);         //OK assert(dreluInput_r.same(Precision));
 
+      grad.U_r += temp_X.outer(dreluInput_r);      //OK assert(grad.U_r.same(Precision));
 
-			timers.start("back_propagation temp_W");
-      temp_W = ((temp.S.cwiseProduct(temp.r)).transpose().eval() * dreluInput_h);
-			timers.stop("back_propagation temp_W");
+      temp_W = temp.S.outer(dreluInput_r);
+      grad.W_r += temp_W;
 
-			timers.start("back_propagation q_temp_W");
-      auto q_temp_W = temp.q_S.mul(temp.q_r).outer(q_dreluInput_h);
-			timers.stop("back_propagation q_temp_W");
-			//OK assert(same(q_temp_W, temp_W));
+      ds_cur += dreluInput_r * m.W_r;
 
-      grad.W_h = grad.W_h + temp_W;
-      grad.q_W_h = grad.q_W_h + q_temp_W;
-			//warn << "grad.W_h: " << dump(grad.W_h);
-			//warn << "grad.q_W_h: " << grad.q_W_h.dump();
-			assert(same(grad.q_W_h, grad.W_h)); //, Precision));
+      //Original: ds_cur.set(ds_cur.Xf() + ds_cur_bk.Xf().cwiseProduct(temp.z.Xf()));
+      ds_cur += ds_cur_bk.mul_e(temp.z);
 
-			timers.start("back_propagation dreluInput_r");
-      dsr = dreluInput_h * m.W_h.transpose().eval();
-      ds_cur = dsr.cwiseProduct(temp.r);
-      dreluInput_r = dsr.cwiseProduct(temp.S).cwiseProduct(temp.r.unaryExpr(&sigmoid_grad));
-			timers.stop("back_propagation dreluInput_r");
-			//warn << "dreluInput_h: " << dump_dim(dreluInput_h);
-			//warn << "W_h: " << dump_dim(m.W_h);
-			//warn << "q_W_h: " << q_W_h.dump_dim();
+			timers.stop("back_propagation converted");
 
-			timers.start("back_propagation q_dreluInput_r");
-      auto q_dsr = m.q_W_h * q_dreluInput_h;
-      q_ds_cur = q_dsr.mul(temp.q_r);
-      auto q_dreluInput_r = q_dsr.mul(temp.q_S).mul(temp.q_r.dsigmoid());
-			timers.stop("back_propagation q_dreluInput_r");
-			//OK assert(same(q_dreluInput_r, dreluInput_r, Precision));
+			///////////////////////////////////////
 
-			timers.start("back_propagation grad.U_r");
-      temp_U = (temp_X.transpose().eval() * dreluInput_r);
-      grad.U_r = grad.U_r + temp_U;
-			timers.stop("back_propagation grad.U_r");
+			timers.start("back_propagation rest");
 
-			timers.start("back_propagation grad.q_U_r");
-      grad.q_U_r +=  q_temp_X.outer(q_dreluInput_r);
-			timers.stop("back_propagation grad.q_U_r");
-			assert(same(grad.q_U_r, grad.U_r, Precision));
+			//assert(tmp_ds_cur.same(ds_cur, Precision));
 
-      temp_W = (temp.S.transpose().eval() * dreluInput_r);
-      grad.W_r = grad.W_r + temp_W;
+      dz = ds_cur_bk.Xf().cwiseProduct(temp.S.Xf() - temp.h);
+      dreluInput_z = dz.cwiseProduct(temp.z.Xf().unaryExpr(&sigmoid_grad));
 
-      ds_cur = ds_cur + (dreluInput_r * m.W_r.transpose().eval());
-      ds_cur = ds_cur + ds_cur_bk.cwiseProduct(temp.z);
-      dz = ds_cur_bk.cwiseProduct(temp.S - temp.h);
-      dreluInput_z = dz.cwiseProduct(temp.z.unaryExpr(&sigmoid_grad));
-
-      temp_U = (temp_X.transpose().eval() * dreluInput_z);
+      temp_U = (temp_X.Xf().transpose().eval() * dreluInput_z);
       grad.U_z = grad.U_z + temp_U;
 
-      temp_W = (temp.S.transpose().eval() * dreluInput_z);
-      grad.W_z = grad.W_z + temp_W;
+      temp_W.Xf((temp.S.Xf().transpose().eval() * dreluInput_z));
+      grad.W_z = grad.W_z + temp_W.Xf();
 
-      ds_cur = ds_cur + (dreluInput_z * m.W_z.transpose().eval());
+      ds_cur.set(ds_cur.Xf() + (dreluInput_z * m.W_z.transpose().eval()));
 
+			timers.stop("back_propagation rest");
 			timers.stop("back_propagation for inner");
     }
   }
