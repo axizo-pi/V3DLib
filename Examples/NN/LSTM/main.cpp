@@ -4,7 +4,7 @@
  * Source: https://github.com/anudeepadi/lstmcpp
  */
 #include "LSTMNetwork.h"
-#include "../RNN/Lib/helpers.h"     // settings()
+#include "../Lib/helpers.h"     // settings()
 #include <iostream>
 
 
@@ -43,7 +43,7 @@ int main(int argc, const char *argv[]) {
               << "Predicted: " << predicted << std::endl;
   }
 
-  warn << "QPU Call Count: " << BaseKernel::qpu_call_count();
+  warn << "QPU Call Count: " << V3DLib::BaseKernel::qpu_call_count();
     
   V3DLib::timers.end();
   return 0;

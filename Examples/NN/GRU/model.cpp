@@ -187,13 +187,18 @@ void MMatrix::back_prop_2(State const &temp, MMatrix const &dreluInput_h, float 
 }
 
 
-void MMatrix::back_prop_3(MMatrix const &dsr, State const &temp) {
+void MMatrix::back_prop_3(MMatrix const &dsr, State const &temp, float precision) {
 	timers.start("back_prop_3 Xf");
 	m_Xf = dsr.m_Xf.cwiseProduct(temp.S.Xf()).cwiseProduct(temp.r.Xf().unaryExpr(&sigmoid_grad));
 	timers.stop("back_prop_3 Xf");
 
+	//OK assert(m_qpu.size() == dsr.m_qpu.size());
+
+	m_qpu.resize(dsr.cols(), dsr.rows()); // sic; dimensions reversed
+
 	timers.start("back_prop_3 qpu");
-	m_qpu = dsr.m_qpu.mul_e(temp.S.qpu()).mul_e(qpu::vector(temp.r.qpu()).dsigmoid());
+
+	gru_kernel::back_prop_3(m_qpu, dsr.m_qpu, temp.S.m_qpu, temp.r.m_qpu);
 	timers.stop("back_prop_3 qpu");
 }
 
@@ -373,7 +378,9 @@ void Model::divide(Model &grad, Model &cache) {
 
 
 void Model::adjust_learning_rate(float learning_rate, Model &rhs) {
+  //U_z -= learning_rate * rhs.U_z;
   U_z.set(U_z.Xf() - learning_rate * rhs.U_z.Xf());
+
   U_r.set(U_r.Xf() - learning_rate * rhs.U_r.Xf());
   U_h.set(U_h.Xf() - learning_rate * rhs.U_h.Xf());
   W_z.set(W_z.Xf() - learning_rate * rhs.W_z.Xf());
@@ -517,6 +524,8 @@ void forward_propagation(
 
 
 bool same(qpu::matrix const &lhs, MatrixXf const &rhs, float precision) {
+	//warn << "Called same(qpu::matrix, MatrixXf)";
+
 	// Special case for 2 input vectors: accept transposed vectors
 	if(lhs.columns() == 1 && lhs.columns() == rhs.rows() && lhs.rows() == rhs.cols() ) {
 		int size = lhs.rows();
@@ -532,7 +541,7 @@ bool same(qpu::matrix const &lhs, MatrixXf const &rhs, float precision) {
 
 	// Do full matrices
 	if(lhs.rows() != rhs.rows() || lhs.columns() != rhs.cols() ) {
-     warn << "Fail same(qpu::matrix, MatrixXf) dimensionis differ: "
+     warn << "Fail same(qpu::matrix, MatrixXf) dimensions differ: "
 			    << "lhs: " << lhs.dump_dim() << ", "
 					<< "rhs: " << dump_dim(rhs);
 
@@ -543,6 +552,44 @@ bool same(qpu::matrix const &lhs, MatrixXf const &rhs, float precision) {
   	for (int j = 0; j < (int) rhs.cols(); ++j) {
 	    if (!qpu::check_precision(lhs.at(i, j), rhs(i, j), precision)) {
 	      warn << "Fail same(qpu::matrix, MatrixXf), (i,j): " << i << ", " << j << ")";
+	      return false;
+	    }      
+	  }
+	}
+
+  return true;
+}
+
+
+bool same(qpu::matrix const &lhs, qpu::matrix const &rhs, float precision) {
+	//warn << "Called same(qpu::matrix, qpu::matrix)";
+
+	// Special case for 2 input vectors: accept transposed vectors
+	if(lhs.columns() == 1 && lhs.columns() == rhs.rows() && lhs.rows() == rhs.columns() ) {
+		int size = lhs.rows();
+  	for (int i = 0; i < size; ++i) {
+	    if (!qpu::check_precision(lhs.at(i, 0), rhs.at(0, i), precision)) {
+	      warn << "Fail same(vector, vector), (i,j): " << i << ", 0)";
+	      return false;
+	    }      
+	  }
+
+		return true;
+	}
+
+	// Do full matrices
+	if(lhs.rows() != rhs.rows() || lhs.columns() != rhs.columns() ) {
+     warn << "Fail same(qpu::matrix, qpu::matrix) dimensions differ: "
+			    << "lhs: " << lhs.dump_dim() << ", "
+					<< "rhs: " << rhs.dump_dim();
+
+		 return false;
+	}
+
+  for (int i = 0; i < (int) rhs.rows(); ++i) {
+  	for (int j = 0; j < (int) rhs.columns(); ++j) {
+	    if (!qpu::check_precision(lhs.at(i, j), rhs.at(i, j), precision)) {
+	      warn << "Fail same(qpu::matrix, qpu::matrix), (i,j): " << i << ", " << j << ")";
 	      return false;
 	    }      
 	  }

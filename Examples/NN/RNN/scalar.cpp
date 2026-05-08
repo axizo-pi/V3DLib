@@ -1,5 +1,5 @@
 #include "scalar.h"
-#include "Lib/scalar.h"
+#include "../Lib/scalar.h"
 
 namespace scalar {
 	

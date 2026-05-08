@@ -90,24 +90,22 @@ void back_propagation(Model &m, Model &grad, State &state, MatrixXf& X, MatrixXf
     for(time_step = curr_step; time_step >= 0; time_step--) {
 			timers.start("back_propagation for inner");  // All the time here in this loop
 
-			timers.start("back_propagation pre");
       ds_cur_bk = ds_cur;
 			temp.set_step(time_step, state);
 			temp_X.set(X.row(time_step));
-			timers.stop("back_propagation pre");
 
 		  dreluInput_h.back_prop_1(ds_cur, temp);
-      grad.U_h += temp_X.outer(dreluInput_h);      //OK assert(grad.U_h.same());
+      grad.U_h += temp_X.outer(dreluInput_h);            //OK assert(grad.U_h.same());
 
 			temp_W.back_prop_2(temp, dreluInput_h, Precision);
-      grad.W_h += temp_W;                          //OK assert(grad.W_h.same());
+      grad.W_h += temp_W;                                //OK assert(grad.W_h.same());
 
 			auto dsr = m.W_h * dreluInput_h;
       ds_cur.mul_e(dsr, temp);
-      dreluInput_r.back_prop_3(dsr, temp);         //OK assert(dreluInput_r.same(Precision));
+      dreluInput_r.back_prop_3(dsr, temp, Precision);    //OK assert(dreluInput_r.same(Precision));
 
 
-      grad.U_r += temp_X.outer(dreluInput_r);      //OK assert(grad.U_r.same(Precision));
+      grad.U_r += temp_X.outer(dreluInput_r);            //OK assert(grad.U_r.same(Precision));
       grad.W_r += temp.S.outer(dreluInput_r);
       ds_cur   += m.W_r * dreluInput_r;
       ds_cur   += ds_cur_bk.mul_e(temp.z);

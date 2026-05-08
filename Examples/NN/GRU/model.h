@@ -3,6 +3,7 @@
 #include "common.h"
 
 bool same(qpu::matrix const &lhs, MatrixXf const &rhs, float precision = 0.0f);
+bool same(qpu::matrix const &lhs, qpu::matrix const &rhs, float precision = 0.0f);
 qpu::matrix copy_m(MatrixXf const &rhs);
 
 class State;
@@ -50,7 +51,7 @@ public:
 	MMatrix outer(MMatrix const &rhs);
 	void back_prop_1(MMatrix const &ds_cur, State const &temp);
 	void back_prop_2(State const &temp, MMatrix const &dreluInput_h, float precision);
-	void back_prop_3(MMatrix const &dsr, State const &temp);
+	void back_prop_3(MMatrix const &dsr, State const &temp, float precision);
 	void back_prop_4(MMatrix const &ds_cur_bk, State const &temp);
 
 private:	
