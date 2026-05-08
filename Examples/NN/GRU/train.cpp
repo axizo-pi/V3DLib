@@ -54,15 +54,16 @@ void back_propagation(Model &m, Model &grad, State &state, MatrixXf& X, MatrixXf
   int time_step, curr_step;
 	grad.init_zeroes(m.input_dim(), m.hidden_dim(), m.output_dim());
 
-	MatrixXf ds_0, ds_single;
+	MatrixXf ds_single;
  	MMatrix	ds_cur;
   MMatrix	ds_cur_bk;
-  MatrixXf	dz, delta_y, db_V, dreluInput_z;
+  MatrixXf	delta_y;
+	MMatrix dreluInput_z;
 	MMatrix dreluInput_r;
 	MMatrix dreluInput_h;
 	MMatrix temp_X;
 	MMatrix temp_W;
-	MatrixXf temp_U, temp_V;
+	MMatrix temp_U;
 
 	State temp(true);
 	temp.init(1, hidden_dim, -1);
@@ -82,60 +83,45 @@ void back_propagation(Model &m, Model &grad, State &state, MatrixXf& X, MatrixXf
 
 	auto ones = MatrixXf::Ones(1, hidden_dim);
 	auto q_ones = copy(ones);
-	//grad.q_U_r = copy_m(grad.U_r);
 
   for(curr_step = time_steps - 1; curr_step >= 0; curr_step--) {
     ds_cur.set(ds_single.row(curr_step));
 
     for(time_step = curr_step; time_step >= 0; time_step--) {
-			timers.start("back_propagation for inner");
+			timers.start("back_propagation for inner");  // All the time here in this loop
 
+			timers.start("back_propagation pre");
       ds_cur_bk = ds_cur;
 			temp.set_step(time_step, state);
 			temp_X.set(X.row(time_step));
-
-			timers.start("back_propagation converted");
+			timers.stop("back_propagation pre");
 
 		  dreluInput_h.back_prop_1(ds_cur, temp);
       grad.U_h += temp_X.outer(dreluInput_h);      //OK assert(grad.U_h.same());
 
-			temp_W.back_prop_2(temp, dreluInput_h);
+			temp_W.back_prop_2(temp, dreluInput_h, Precision);
       grad.W_h += temp_W;                          //OK assert(grad.W_h.same());
 
-			auto dsr = dreluInput_h * m.W_h;
+			auto dsr = m.W_h * dreluInput_h;
       ds_cur.mul_e(dsr, temp);
       dreluInput_r.back_prop_3(dsr, temp);         //OK assert(dreluInput_r.same(Precision));
 
+
       grad.U_r += temp_X.outer(dreluInput_r);      //OK assert(grad.U_r.same(Precision));
+      grad.W_r += temp.S.outer(dreluInput_r);
+      ds_cur   += m.W_r * dreluInput_r;
+      ds_cur   += ds_cur_bk.mul_e(temp.z);
 
-      temp_W = temp.S.outer(dreluInput_r);
-      grad.W_r += temp_W;
+			dreluInput_z.back_prop_4(ds_cur_bk, temp);
 
-      ds_cur += dreluInput_r * m.W_r;
+			temp_U = temp_X.outer(dreluInput_z);
+      grad.U_z += temp_U;
 
-      //Original: ds_cur.set(ds_cur.Xf() + ds_cur_bk.Xf().cwiseProduct(temp.z.Xf()));
-      ds_cur += ds_cur_bk.mul_e(temp.z);
+			temp_W = temp.S.outer(dreluInput_z);
+      grad.W_z += temp_W;
 
-			timers.stop("back_propagation converted");
+      ds_cur +=  m.W_z * dreluInput_z;
 
-			///////////////////////////////////////
-
-			timers.start("back_propagation rest");
-
-			//assert(tmp_ds_cur.same(ds_cur, Precision));
-
-      dz = ds_cur_bk.Xf().cwiseProduct(temp.S.Xf() - temp.h);
-      dreluInput_z = dz.cwiseProduct(temp.z.Xf().unaryExpr(&sigmoid_grad));
-
-      temp_U = (temp_X.Xf().transpose().eval() * dreluInput_z);
-      grad.U_z = grad.U_z + temp_U;
-
-      temp_W.Xf((temp.S.Xf().transpose().eval() * dreluInput_z));
-      grad.W_z = grad.W_z + temp_W.Xf();
-
-      ds_cur.set(ds_cur.Xf() + (dreluInput_z * m.W_z.transpose().eval()));
-
-			timers.stop("back_propagation rest");
 			timers.stop("back_propagation for inner");
     }
   }

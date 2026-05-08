@@ -47,7 +47,7 @@ struct matrix {
   void frand();
 
   matrix &operator=(matrix const &rhs);
-  matrix operator-(matrix const &rhs);
+  matrix operator-(matrix const &rhs) const;
   matrix &operator-=(matrix const &rhs);
   matrix operator+(matrix const &rhs) const;
   matrix &operator+=(matrix const &rhs);

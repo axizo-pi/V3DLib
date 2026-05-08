@@ -49,8 +49,9 @@ public:
 
 	MMatrix outer(MMatrix const &rhs);
 	void back_prop_1(MMatrix const &ds_cur, State const &temp);
-	void back_prop_2(State const &temp, MMatrix const &dreluInput_h);
+	void back_prop_2(State const &temp, MMatrix const &dreluInput_h, float precision);
 	void back_prop_3(MMatrix const &dsr, State const &temp);
+	void back_prop_4(MMatrix const &ds_cur_bk, State const &temp);
 
 private:	
 	MatrixXf    m_Xf;
@@ -60,10 +61,10 @@ private:
 
 class Model {
 public:
-  MatrixXf U_z;
+  MMatrix  U_z;
 	MMatrix  U_r;
 	MMatrix  U_h;
-	MatrixXf W_z;
+	MMatrix  W_z;
 	MMatrix  W_r;
 	MMatrix  W_h;
 	MatrixXf V;
@@ -91,19 +92,15 @@ class State {
 public:	
   MatrixXf E;  // Unused in test
   MMatrix z;
-  MatrixXf r;
-  MatrixXf h;
+  MMatrix r;
+  MMatrix h;
   MatrixXf O;
   MMatrix S;
-
-	qpu::vector q_r;
-	qpu::vector q_h;
 
 	State(bool do_temp = false) : m_do_temp(do_temp) {}
 
   void init(int time_steps, int hidden_dim, int output_dim);
 	void eval();
-	void copy_q();
 	void set_step(int time_step, State &state);
 
 private:

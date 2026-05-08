@@ -155,7 +155,7 @@ matrix &matrix::operator=(matrix const &rhs) {
 }
 
 
-matrix matrix::operator-(matrix const &rhs) {
+matrix matrix::operator-(matrix const &rhs) const {
   assert(
 	 // Allow transposed vectors
 	 (m_rows == 1 && rhs.columns() == 1 && m_rows == rhs.columns()) ||
@@ -247,10 +247,11 @@ matrix matrix::operator*(float rhs) const {
 matrix matrix::mul(matrix const &rhs) const {
   //warn << "Called matrix matrix::operator*()";
   //warn << "matrix: " << dump_dim() << "rhs: " << rhs.dump_dim();
+	assert(rhs.is_vector());
   assert(m_columns > 0);
   assert(m_rows > 0);
 
-  if (m_columns != rhs.rows()) {
+  if (m_columns != rhs.size()) {
     cerr << "Matrix::mul() Inner dimension does not match. "
          << "this(rows, columns): (" << m_rows << ", " << m_columns << "), "
          << "rhs(rows, columns):  (" << rhs.rows() << ", " << rhs.columns() << ")"
@@ -460,7 +461,7 @@ vector::vector(vector &rhs) : matrix(rhs) {
 
 
 void vector::transpose() {
-  warn << "vector transposing";
+  //warn << "vector transposing";
   int tmp   = m_rows;
 	m_rows    = m_columns;
   m_columns = tmp;
@@ -596,7 +597,7 @@ vector vector::mul(vector const &rhs) {
 
 
 vector &vector::operator=(matrix const &rhs) {
-  assert(rhs.columns() == 1);
+  assert(rhs.is_vector());
   transfer(rhs);
   return *this;
 }
@@ -667,10 +668,10 @@ BaseKernel &vector::op_kernel() {
 
 
 vector operator*(matrix const &lhs, matrix const &rhs) {
-  //warn << "Called vector operator*(matrix const &lhs, vector const &rhs)";
-  assert(rhs.columns() == 1);  // Expecting a vector as input
-  matrix ret;
+	//warn << "rhs: " << rhs.dump_dim();
+  assert(rhs.is_vector());
 
+  matrix ret;
   ret = lhs.mul(rhs);
   return vector(ret);
 }
