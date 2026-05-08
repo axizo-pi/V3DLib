@@ -8,7 +8,7 @@
 ## LSTM - Long Short-Term Memory
 
 - Reference project: [lstmcpp](https://github.com/anudeepadi/lstmcpp)  
-- [Documentation](https://medium.com/analytics-vidhya/lstms-explained-a-complete-technically-accurate-conceptual-guide-with-keras-2a650327e8f2](https://medium.com/analytics-vidhya/lstms-explained-a-complete-technically-accurate-conceptual-guide-with-keras-2a650327e8f2)  
+- [Documentation](https://medium.com/analytics-vidhya/lstms-explained-a-complete-technically-accurate-conceptual-guide-with-keras-2a650327e8f2)
 - Possibly useful project: [kaldi-lstm](https://github.com/dophist/kaldi-lstmr)
 
 
@@ -19,19 +19,17 @@
 
 Took an earlier commit, because the latest doesn't work (missing input file).
 
-The convergense is dismal:
+The convergence is dismal:
 
 With default settings:
 
-|---------------|---|----------|
-| input_dim     | = | 64;      |
-| hidden_dim    | = | 128;     |
-| output_dim    | = | 64;      |
-| learning_rate | = | 0.0005f; |
-| nepochs       | = | 1000;    |
-| time_steps    | = | 20;      |
-| decay         | = | 0.000f;  |
-|---------------|---|----------|
+    input_dim     = 64;
+    hidden_dim    = 128;
+    output_dim    = 64;
+    learning_rate = 0.0005f;
+    nepochs       = 1000;
+    time_steps    = 20;
+    decay         = 0.000f;
 
 - **276 epochs in 12 hours 33 minutes.**
 - **369 epochs in 17 hours 46 minutes.**
