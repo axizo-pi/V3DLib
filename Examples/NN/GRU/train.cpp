@@ -6,22 +6,6 @@ namespace {
 
 const float Precision = 1.0e-7f;	
 
-MAYBE_UNUSED std::string dump(MatrixXf const &m) {
-  std::string buf;
-  buf << dump_dim(m) << " [\n";
-
-  for (int i = 0; i < m.rows(); ++i) {
-    for (int j = 0; j < m.cols(); ++j) {
-      buf << "  " << m(i,j) << ", ";
-    }
-    buf << "\n";
-  }
-  buf << "]";
-
-  return buf;
-}
-
-
 MAYBE_UNUSED bool same(qpu::vector const &lhs, MatrixXf const &rhs, float precision = 0.0f) {
 	assert(rhs.rows() == 1);
 
@@ -63,7 +47,6 @@ void back_propagation(Model &m, Model &grad, State &state, MatrixXf& X, MatrixXf
 	MMatrix dreluInput_h;
 	MMatrix temp_X;
 	MMatrix temp_W;
-	MMatrix temp_U;
 
 	State temp(true);
 	temp.init(1, hidden_dim, -1);
@@ -81,14 +64,11 @@ void back_propagation(Model &m, Model &grad, State &state, MatrixXf& X, MatrixXf
 
   ds_single = delta_y * m.V.transpose().eval();
 
-	auto ones = MatrixXf::Ones(1, hidden_dim);
-	auto q_ones = copy(ones);
-
-  for(curr_step = time_steps - 1; curr_step >= 0; curr_step--) {
+  for (curr_step = time_steps - 1; curr_step >= 0; curr_step--) {
     ds_cur.set(ds_single.row(curr_step));
 
-    for(time_step = curr_step; time_step >= 0; time_step--) {
-			timers.start("back_propagation for inner");  // All the time here in this loop
+    for (time_step = curr_step; time_step >= 0; time_step--) {
+			timers.start("back_propagation for inner");        // All the time here in this loop
 
       ds_cur_bk = ds_cur;
 			temp.set_step(time_step, state);
@@ -112,13 +92,9 @@ void back_propagation(Model &m, Model &grad, State &state, MatrixXf& X, MatrixXf
 
 			dreluInput_z.back_prop_4(ds_cur_bk, temp);
 
-			temp_U = temp_X.outer(dreluInput_z);
-      grad.U_z += temp_U;
-
-			temp_W = temp.S.outer(dreluInput_z);
-      grad.W_z += temp_W;
-
-      ds_cur +=  m.W_z * dreluInput_z;
+      grad.U_z += temp_X.outer(dreluInput_z);
+      grad.W_z += temp.S.outer(dreluInput_z);
+      ds_cur   +=  m.W_z * dreluInput_z;
 
 			timers.stop("back_propagation for inner");
     }
@@ -176,8 +152,7 @@ void read_x_y(MatrixXf& x, MatrixXf& y, std::string filename_input, std::string 
 		   << "  pos       : " << pos
 	;
 */
-    int count = 0;
-
+  int count = 0;
 
 	if (x_input.empty()) {
 		warn << "read_x_y() read input file";
@@ -231,13 +206,13 @@ void read_x_y(MatrixXf& x, MatrixXf& y, std::string filename_input, std::string 
     file_output.close();
 	}
 
-    count = 0;
+  count = 0;
 
-    while((pos + count) < (int) x_input.size() && count < time_steps) {
-			int index = pos + count;
-        y(count, x_output[index]) = 1;
-        count++;
-    }
+  while((pos + count) < (int) x_input.size() && count < time_steps) {
+		int index = pos + count;
+    y(count, x_output[index]) = 1;
+    count++;
+  }
 
 	timers.stop("read_x_y");
 }

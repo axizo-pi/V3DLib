@@ -95,7 +95,7 @@ std::string Timer::dump(int width) {
     auto avg_sec = tmp/1000000l;
     auto avg_usec = tmp % 1000000l;
 
-    sprintf(buf, format " in %4d steps, average: %2ld.%06lds",
+    sprintf(buf, format " in %5d steps, average: %2ld.%06lds",
       tvTotal.tv_sec, tvTotal.tv_usec,
       count,
       avg_sec, avg_usec
