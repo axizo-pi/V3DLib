@@ -2,15 +2,17 @@
 #include "model.h"
 #include "./kernel.h"
 
+MMatrix::MMatrix(int rows, int columns, float val) {
+	assert(rows > 0);
+	assert(columns > 0);
+	assert(val == 0.0f || val == 1.0f);
 
-void MMatrix::init_zeroes(int dim) {
-  m_Xf  = MatrixXf::Zero(1, dim);
-  m_qpu = copy_m(m_Xf);
-}
+	if (val == 0.0f) {
+  	m_Xf = MatrixXf::Zero(rows, columns);
+	} else {
+  	m_Xf = MatrixXf::Ones(rows, columns);
+	}
 
-
-void MMatrix::init_ones(int dim) {
-  m_Xf  = MatrixXf::Ones(1, dim);
   m_qpu = copy_m(m_Xf);
 }
 
@@ -143,8 +145,9 @@ MMatrix MMatrix::outer(MMatrix const &rhs) {
 
 
 void MMatrix::back_prop_1(MMatrix const &ds_cur, State const &temp) {
-  MMatrix ones;
-  ones.init_ones(ds_cur.cols());
+  MMatrix ones(1, ds_cur.cols(), 1.0f);
+	//warn << "ones: " << ones.dump_dim();
+	//warn << "ones: " << ones.qpu().dump();
 
   timers.start("back_prop_1 Xf");
   m_Xf = ds_cur.m_Xf.cwiseProduct(ones.m_Xf - temp.z.m_Xf).cwiseProduct(temp.h.Xf().unaryExpr(&tanh_grad));  //.cwiseProduct(temp_S.unaryExpr(&tanh_grad));
@@ -219,6 +222,15 @@ void MMatrix::divide_matrix(MMatrix const &gradient, MMatrix const &in_cache) {
   }
 
   timers.stop("divide_matrix");
+}
+
+
+void MMatrix::update_E(int index, MatrixXf const &Y, State const &state) {
+  auto temp_output = state.O.row(index);
+  temp_output.eval();
+
+  m_Xf(0, index) += -1 * (Y.row(index).cwiseProduct(temp_output.unaryExpr(&log_matrix)).sum());
+  m_Xf.eval();
 }
 
 

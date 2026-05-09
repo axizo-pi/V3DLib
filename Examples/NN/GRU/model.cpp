@@ -157,7 +157,7 @@ void Model::cache_decay(float decay, Model &grad) {
 
 
 void Model::divide(Model &grad, Model &cache) {
-	timers.start("divide");
+	//timers.start("divide");
 
   U_z.divide_matrix(grad.U_z, cache.U_z);
   U_r.divide_matrix(grad.U_r, cache.U_r);
@@ -169,7 +169,7 @@ void Model::divide(Model &grad, Model &cache) {
 
   eval();
 
-	timers.stop("divide");
+	//timers.stop("divide");
 }
 
 
@@ -210,13 +210,15 @@ void State::init(int time_steps, int hidden_dim, int output_dim) {
     h.set(zero);
 
   } else {
-    auto zero = MatrixXf::Zero(time_steps, hidden_dim);
+    auto zero   = MatrixXf::Zero(time_steps, hidden_dim);
+    auto zero_1 = MatrixXf::Zero(1, time_steps);
+    auto zero_o = MatrixXf::Zero(time_steps, output_dim);
 
-    E = MatrixXf::Zero(1, time_steps);
+    E.set(zero_1);
     z.set(zero);
     r.set(zero);
     h.set(zero);
-    O = MatrixXf::Zero(time_steps, output_dim);
+    O.set(zero_o);
 
     MatrixXf tmp_S = MatrixXf::Zero(time_steps + 1, hidden_dim);
     tmp_S(0, 0) = static_cast <float> (((float) rand()) / (static_cast <float> (RAND_MAX / 2)) - 1);
@@ -280,16 +282,17 @@ void forward_propagation(
 
   for(int i = 0; i < time_steps; i++) {
     auto S_row = state.S.Xf().row(i);
+    auto X_row = X.row(i);
 
-    temp            = (X.row(i) * (m.U_z.Xf())) + (S_row * (m.W_z.Xf()));
+    temp            = (X_row * (m.U_z.Xf())) + (S_row * (m.W_z.Xf()));
     temp.eval();
     state.z.row(i, temp.unaryExpr(&sigmoid));
 
-    temp            = (X.row(i) * (m.U_r.Xf())) + (S_row * (m.W_r.Xf()));
+    temp            = (X_row * (m.U_r.Xf())) + (S_row * (m.W_r.Xf()));
     temp.eval();
     state.r.row(i, temp.unaryExpr(&sigmoid));
 
-    temp            = (X.row(i) * (m.U_h.Xf())) + (S_row.cwiseProduct(state.r.row(i))) * (m.W_h.Xf());
+    temp            = (X_row * (m.U_h.Xf())) + (S_row.cwiseProduct(state.r.row(i))) * (m.W_h.Xf());
     temp.eval();
     state.h.row(i, temp.unaryExpr(&tanh_activation));
 
@@ -304,15 +307,11 @@ void forward_propagation(
     temp_output    = temp_output.unaryExpr(&softmax);
     temp_output.eval();
 
-    state.O.row(i) = temp_output / temp_output.sum();
+    state.O.row(i, temp_output / temp_output.sum());
     state.O.eval();
 
-    temp_output = state.O.row(i);
-    temp_output.eval();
-
     if (!do_test) {
-      state.E(0, i) += -1 * (Y.row(i).cwiseProduct(temp_output.unaryExpr(&log_matrix)).sum());
-      state.E.eval();
+			state.E.update_E(i, Y, state);
     }
   }
 

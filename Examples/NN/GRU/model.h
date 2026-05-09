@@ -34,11 +34,11 @@ public:
 
 class State {
 public:  
-  MatrixXf E;  // Unused in test
+  MMatrix E;  // Unused in test
   MMatrix z;
   MMatrix r;
   MMatrix h;
-  MatrixXf O;
+  MMatrix O;
   MMatrix S;
 
   State(bool do_temp = false) : m_do_temp(do_temp) {}

@@ -10,7 +10,7 @@
 #include <map>
 
 
-int get_max_index(MatrixXf& O, std::vector<int> predictions, int time_steps) {
+int get_max_index(MatrixXf const &O, int time_steps) {
   int max_index;
   int index = time_steps - 1;
   O.row(index).maxCoeff(&max_index);
@@ -68,7 +68,7 @@ void predict(Model &m, int input_dim, int output_dim, int hidden_dim, int time_s
 
   while (count --) {
     forward_propagation(m, X, unused, state, time_steps, input_dim, hidden_dim, output_dim, true);
-    max_index = get_max_index(state.O, predictions, time_steps);
+    max_index = get_max_index(state.O.Xf(), time_steps);
     predictions.push_back(max_index);
     X  = MatrixXf::Zero(time_steps, input_dim);
     X.eval();

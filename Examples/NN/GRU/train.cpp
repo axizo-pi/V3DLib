@@ -20,10 +20,13 @@ MAYBE_UNUSED bool same(qpu::vector const &lhs, MatrixXf const &rhs, float precis
 }
 
 
-float calculate_cost(MatrixXf& E, int time_steps) {
-    /* Possibly - Move to forward propagation or Train */
-    return (E.sum() / (float) time_steps);
+/**
+ * 	Possibly - Move to forward propagation or Train
+ */
+float calculate_cost(MMatrix const &E, int time_steps) {
+  return (E.Xf().sum() / (float) time_steps);
 }
+
 
 std::vector<int> x_input;
 std::vector<int> x_output;
@@ -39,23 +42,22 @@ void back_propagation(Model &m, Model &grad, State &state, MatrixXf& X, MatrixXf
   grad.init_zeroes(m.input_dim(), m.hidden_dim(), m.output_dim());
 
   MatrixXf ds_single;
-   MMatrix  ds_cur;
-  MMatrix  ds_cur_bk;
-  MatrixXf  delta_y;
+  MMatrix  ds_cur;
+  MMatrix  ds_cur_bk(1, hidden_dim);
+  MatrixXf delta_y;
   MMatrix dreluInput_z;
   MMatrix dreluInput_r;
   MMatrix dreluInput_h;
-  MMatrix temp_X;
+  MMatrix temp_X(1, input_dim);
   MMatrix temp_W;
 
   State temp(true);
   temp.init(1, hidden_dim, -1);
 
-  temp_X.init_zeroes(input_dim);
+	//warn << "temp_X: " << temp_X.dump_dim();
+	//warn << "temp_X: " << temp_X.qpu().dump();
 
-  ds_cur_bk.set(MatrixXf::Zero(1, hidden_dim));
-
-  delta_y = state.O - Y;
+  delta_y = state.O.Xf() - Y;
 
   for(time_step = time_steps - 1; time_step >= 0; time_step--) {
     temp.S.set(state.S.row(time_step + 1));
@@ -225,12 +227,10 @@ void train(std::string filename_input, std::string filename_output, float learni
   //std::cout << "Size of input file is : " << inputSize << std::endl;
 
   Model m;
-  Model grad_batch;  // Unused, only initialized
   Model grad;
   Model cache;
 
   m.init(input_dim, hidden_dim, output_dim);
-  grad_batch.init_zeroes(m.input_dim(), m.hidden_dim(), m.output_dim());
   grad.init_zeroes(m.input_dim(), m.hidden_dim(), m.output_dim(), true);
   cache.init_ones(m.input_dim(), m.hidden_dim(), m.output_dim());
 
@@ -268,7 +268,6 @@ void train(std::string filename_input, std::string filename_output, float learni
       timers.stop("train limit loop");
     }
 
-    grad_batch.init_zeroes(m.input_dim(), m.hidden_dim(), m.output_dim());
     std::cout << "Loss: " << loss << ", Epoch: "<< epoch << std::endl;
 
     if (loss > prev_loss && prev_loss != 0) {

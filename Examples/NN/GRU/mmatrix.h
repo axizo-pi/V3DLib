@@ -10,10 +10,10 @@ std::string dump(MatrixXf const &m);
 class State;
 
 class MMatrix {
-public:  
+public:
+	MMatrix() = default;
+	MMatrix(int rows, int columns, float val = 0.0f);
 
-  void init_zeroes(int dim);
-  void init_ones(int dim);
   void set(MatrixXf const &rhs);
 
   int rows() const { return (int) m_Xf.rows(); }
@@ -50,13 +50,15 @@ public:
 	MMatrix operator*(float val) const;
   void mul_e(MMatrix const &rhs, State const &temp);
   MMatrix mul_e(MMatrix const &rhs);
-
   MMatrix outer(MMatrix const &rhs);
+
+	// Application-specific methods
   void back_prop_1(MMatrix const &ds_cur, State const &temp);
   void back_prop_2(State const &temp, MMatrix const &dreluInput_h, float precision);
   void back_prop_3(MMatrix const &dsr, State const &temp, float precision);
   void back_prop_4(MMatrix const &ds_cur_bk, State const &temp);
 	void divide_matrix(MMatrix const &gradient, MMatrix const &in_cache);
+	void update_E(int index, MatrixXf const &Y, State const &state);
 
   void set_decay(float decay, MMatrix const &rhs);
 
