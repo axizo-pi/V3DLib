@@ -32,14 +32,13 @@ bool MMatrix::same(MMatrix const &rhs, float precision) const {
   return
     ::same(m_qpu, m_Xf, precision) &&
     ::same(rhs.m_qpu, rhs.m_Xf, precision) &&
-    ::same(m_qpu, rhs.m_Xf, precision)
-  ;
+    ::same(m_qpu, rhs.m_Xf, precision);
 }
+
 
 std::string MMatrix::dump_dim() const {
   std::string ret;
   ret << ::dump_dim(m_Xf) << ", " << m_qpu.dump_dim();
-
   return ret;
 }
 

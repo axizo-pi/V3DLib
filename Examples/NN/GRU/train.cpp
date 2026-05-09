@@ -54,9 +54,6 @@ void back_propagation(Model &m, Model &grad, State &state, MatrixXf& X, MatrixXf
   State temp(true);
   temp.init(1, hidden_dim, -1);
 
-	//warn << "temp_X: " << temp_X.dump_dim();
-	//warn << "temp_X: " << temp_X.qpu().dump();
-
   delta_y = state.O.Xf() - Y;
 
   for(time_step = time_steps - 1; time_step >= 0; time_step--) {

@@ -19,6 +19,11 @@ BufferObject heap;
 }
 
 
+BufferObject::~BufferObject() {
+	//warn << "vc4 BufferObject dtor called";
+	dealloc();
+}
+
 /**
  * @brief Allocate GPU memory and map it into ARM address space
  */

@@ -80,8 +80,9 @@ void BaseSharedArray::dealloc() {
     assert(m_heap != nullptr);
     if (!m_is_heap_view) { 
       //warn << "Calling dealloc_array";
-      m_heap->dealloc_array(m_phyaddr, m_mem_size);
-      //warn << m_heap->dump();
+			if (m_heap->is_active()) {  // Don't bother if heap manager already destructed
+	      m_heap->dealloc_array(m_phyaddr, m_mem_size);
+			}
     }
 
     m_phyaddr      = 0;

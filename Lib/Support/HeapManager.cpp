@@ -15,6 +15,43 @@ HeapManager::HeapManager() {
   m_free_ranges.reserve(INITIAL_FREE_RANGE_SIZE);
 }
 
+
+HeapManager::~HeapManager() {
+	//warn << "HeapManager dtor called";
+	m_active = false;
+}
+
+
+/**
+ * @brief Determine if HeapManager instance already destructed
+ *
+ * This is somewhat (euphemism) of a hack, to prevent Segment Violations on shutdown.
+ *
+ * Heap managers are global statics, as well as some kernels, e.g. in `GRU`.
+ * The kernels, more specifically the shared memories used within the kernels,
+ * access the global heap managers via member pointers.
+ *
+ * You have no control of the destruction order of the globals on shutdown,
+ * so it happens that a heap manager is destructed before a kernel using it. 
+ * In that case, an access to the heap manager explodes with a segment violation.
+ *
+ * See: `void BaseSharedArray::dealloc()`.
+ *
+ * Member `m_active` is set in the destructor of HeapManager; even though
+ * the instance doesn't exist any more, this member is still present and visible in memory.
+ * This is used to check the existence of the heap manager before trying to deallocate
+ * shared memory.
+ *
+ * The only redeeming factor is that it works; otherwise this is ugly as hell.
+ * Please don't sue me, it was born out of necessity.
+ *
+ * @return true if HeapManager instance active, false if HeapManager dtor called
+ */
+bool HeapManager::is_active() const {
+	return m_active;
+}
+
+
 /**
  * Allocate the buffer object for this instance of HeapManager.
  *

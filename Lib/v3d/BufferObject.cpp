@@ -9,6 +9,7 @@ namespace V3DLib {
 namespace v3d {
 
 BufferObject::~BufferObject() {
+	//warn << "v3d BufferObject dtor called";
   dealloc_mem();
 }
 

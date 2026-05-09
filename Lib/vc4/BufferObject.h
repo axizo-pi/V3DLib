@@ -7,7 +7,7 @@ namespace vc4 {
 
 class BufferObject : public V3DLib::BufferObject {
 public:
-  ~BufferObject() { dealloc(); }
+  ~BufferObject();
 
   static BufferObject &getHeap();
 
