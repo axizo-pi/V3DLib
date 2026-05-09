@@ -53,25 +53,51 @@ void MMatrix::operator+=(MMatrix const &rhs) {
 }
 
 
+void MMatrix::operator-=(MMatrix const &rhs) {
+  //timers.start("MMatrix -= Xf");
+  m_Xf = m_Xf - rhs.m_Xf;
+  //timers.stop("MMatrix -= Xf");
+
+  //timers.start("MMatrix -= qpu");
+  m_qpu -= rhs.m_qpu;
+  //timers.stop("MMatrix -= qpu");
+}
+
+
 void MMatrix::operator/=(float steps) {
   m_Xf /= steps;
   m_qpu = copy_m(m_Xf);
 }
 
 
-MMatrix MMatrix::operator*(MMatrix const &rhs) {
+MMatrix MMatrix::operator*(MMatrix const &rhs) const {
   MMatrix ret;
 
   timers.start("MMatrix * Xf");
   ret.m_Xf = rhs.m_Xf * m_Xf.transpose().eval();
   timers.stop("MMatrix * Xf");
 
-  timers.start("MMatrix * qpu");
   assert(rhs.m_qpu.is_vector());
+  timers.start("MMatrix * qpu");
   ret.m_qpu = m_qpu * rhs.m_qpu;
   timers.stop("MMatrix * qpu");
 
   //OK assert(same());
+  return ret;
+}
+
+
+MMatrix MMatrix::operator*(float val) const {
+  MMatrix ret;
+
+  //timers.start("MMatrix float * Xf");
+  ret.m_Xf = val * m_Xf;
+  //timers.stop("MMatrix float * Xf");
+
+  //timers.start("MMatrix float * qpu");
+  ret.m_qpu = m_qpu * val;
+  //timers.stop("MMatrix float * qpu");
+
   return ret;
 }
 

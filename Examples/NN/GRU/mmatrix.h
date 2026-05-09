@@ -44,8 +44,10 @@ public:
   void eval() { m_Xf.eval(); }
 
   void operator+=(MMatrix const &rhs);
+  void operator-=(MMatrix const &rhs);
   void operator/=(float steps);
-  MMatrix operator*(MMatrix const &rhs);
+  MMatrix operator*(MMatrix const &rhs) const;
+	MMatrix operator*(float val) const;
   void mul_e(MMatrix const &rhs, State const &temp);
   MMatrix mul_e(MMatrix const &rhs);
 
@@ -61,6 +63,11 @@ private:
   MatrixXf    m_Xf;
   qpu::matrix m_qpu;
 };
+
+
+inline MMatrix operator*(float val, MMatrix const &rhs) {
+	return rhs*val;
+}
 
 
 #endif // _GRU_MMATRIX_H

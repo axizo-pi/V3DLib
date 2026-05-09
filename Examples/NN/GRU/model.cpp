@@ -203,20 +203,18 @@ void Model::divide(Model &grad, Model &cache) {
 
 
 void Model::adjust_learning_rate(float learning_rate, Model &rhs) {
-  timers.start("adjust_learning_rate");
+  //timers.start("adjust_learning_rate");
 
-  //U_z -= learning_rate * rhs.U_z;
-  U_z.set(U_z.Xf() - learning_rate * rhs.U_z.Xf());
-
-  U_r.set(U_r.Xf() - learning_rate * rhs.U_r.Xf());
-  U_h.set(U_h.Xf() - learning_rate * rhs.U_h.Xf());
-  W_z.set(W_z.Xf() - learning_rate * rhs.W_z.Xf());
-  W_r.set(W_r.Xf() - learning_rate * rhs.W_r.Xf());
-  W_h.set(W_h.Xf() - learning_rate * rhs.W_h.Xf());
+  U_z -= learning_rate * rhs.U_z;
+  U_r -= learning_rate * rhs.U_r;
+  U_h -= learning_rate * rhs.U_h;
+  W_z -= learning_rate * rhs.W_z;
+  W_r -= learning_rate * rhs.W_r;
+  W_h -= learning_rate * rhs.W_h;
 
   V   -= learning_rate * rhs.V;
 
-  timers.stop("adjust_learning_rate");
+  //timers.stop("adjust_learning_rate");
 }
 
 

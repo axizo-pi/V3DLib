@@ -90,9 +90,31 @@ void matrix_add(Float::Ptr ret, Float::Ptr lhs, Float::Ptr rhs, Int N) {
 }
 
 
+void mul_float(Float::Ptr ret, Float::Ptr lhs, Float val, Int N) {
+  For (Int h = 0, h < N, h++)
+    Float x = (*lhs) * val;
+    *ret = x;
+
+    ret.inc();
+    lhs.inc();
+  End
+}
+
+
 void matrix_add_self(Float::Ptr lhs, Float::Ptr rhs, Int N) {
   For (Int h = 0, h < N, h++)
     Float x = (*lhs) + (*rhs);
+    *lhs = x;
+
+    lhs.inc();
+    rhs.inc();
+  End
+}
+
+
+void matrix_sub_self(Float::Ptr lhs, Float::Ptr rhs, Int N) {
+  For (Int h = 0, h < N, h++)
+    Float x = (*lhs) - (*rhs);
     *lhs = x;
 
     lhs.inc();

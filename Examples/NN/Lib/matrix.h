@@ -66,6 +66,7 @@ struct matrix {
 
 protected:
   void transfer(matrix const &rhs);
+	void check_addsub(matrix const &rhs, std::string const &op) const;
 
   std::shared_ptr<Float::Array> m_arr;
 

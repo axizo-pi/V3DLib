@@ -16,7 +16,9 @@ std::unique_ptr<BaseKernel> s_mul_element;
 std::unique_ptr<BaseKernel> s_mult_vec_transposed;
 std::unique_ptr<BaseKernel> s_mult_vec;
 std::unique_ptr<BaseKernel> s_matrix_add;
+std::unique_ptr<BaseKernel> s_mul_float;
 std::unique_ptr<BaseKernel> s_matrix_add_self;
+std::unique_ptr<BaseKernel> s_matrix_sub_self;
 std::unique_ptr<BaseKernel> s_sub;
 std::unique_ptr<BaseKernel> s_add;
 std::unique_ptr<BaseKernel> s_op;
@@ -34,7 +36,9 @@ void init_local() {
   s_mult_vec_transposed.reset(new BaseKernel(compile(kernel::mult_vec_transposed, settings())));
   s_mult_vec           .reset(new BaseKernel(compile(kernel::mult_vec       , settings())));
   s_matrix_add         .reset(new BaseKernel(compile(kernel::matrix_add     , settings())));
+  s_mul_float          .reset(new BaseKernel(compile(kernel::mul_float      , settings())));
   s_matrix_add_self    .reset(new BaseKernel(compile(kernel::matrix_add_self, settings())));
+  s_matrix_sub_self    .reset(new BaseKernel(compile(kernel::matrix_sub_self, settings())));
   s_sub                .reset(new BaseKernel(compile(kernel::vector_sub     , settings())));
   s_add                .reset(new BaseKernel(compile(kernel::vector_add     , settings())));
   s_op                 .reset(new BaseKernel(compile(kernel::outer_product  , settings())));
@@ -156,11 +160,7 @@ matrix &matrix::operator=(matrix const &rhs) {
 
 
 matrix matrix::operator-(matrix const &rhs) const {
-  assert(
-   // Allow transposed vectors
-   (m_rows == 1 && rhs.columns() == 1 && m_rows == rhs.columns()) ||
-   (m_columns == rhs.columns() && m_rows == rhs.rows())
-  );
+	check_addsub(rhs, "-=");
   matrix ret(m_rows, m_columns);
 
   for (int i = 0; i < (int) m_arr->size(); ++i) {
@@ -172,22 +172,19 @@ matrix matrix::operator-(matrix const &rhs) const {
 
 
 matrix &matrix::operator-=(matrix const &rhs) {
-  assert(m_columns == rhs.columns() && m_rows == rhs.rows());
-
+	check_addsub(rhs, "-=");
+  s_matrix_sub_self->load(&arr(), &rhs.arr(), size()/16).run();
+/*
   for (int i = 0; i < (int) m_arr->size(); ++i) {
     arr()[i] -= rhs.arr()[i];
   }
-
+*/
   return *this;
 }
 
 
 matrix matrix::operator+(matrix const &rhs) const {
-  if (!(m_columns == rhs.columns() && m_rows == rhs.rows())) {
-    warn << "matrix operator+ dimensions don't match: "
-         << "this: " << dump_dim() << ", "
-         << "rhs: " << rhs.dump_dim();
-  }
+	check_addsub(rhs, "+");
   assert(m_columns == rhs.columns() && m_rows == rhs.rows());
   matrix ret(m_rows, m_columns);
 
@@ -201,20 +198,24 @@ matrix matrix::operator+(matrix const &rhs) const {
 }
 
 
-matrix &matrix::operator+=(matrix const &rhs) {
+void matrix::check_addsub(matrix const &rhs, std::string const &op) const {
   if (is_vector() && rhs.is_vector()) {
     // Allow transposed vectors
     assert(size() == rhs.size());
   } else {
     if (m_columns != rhs.columns() || m_rows != rhs.rows()) {
-      warn << "matrix::operator+= dimensions don't match: "
+      warn << "matrix::operator" << op << " dimensions don't match: "
            << "this: " << dump_dim() << ", "
            << "rhs:"   << rhs.dump_dim()
            << thrw;
     }
     assert(m_columns == rhs.columns() && m_rows == rhs.rows());
   }
+}
 
+
+matrix &matrix::operator+=(matrix const &rhs) {
+	check_addsub(rhs, "+=");
   s_matrix_add_self->load(&arr(), &rhs.arr(), size()/16).run();
 
 /*  
@@ -230,10 +231,12 @@ matrix &matrix::operator+=(matrix const &rhs) {
 matrix matrix::operator*(float rhs) const {
   matrix ret(m_rows, m_columns);
 
+  s_mul_float->load(&ret.arr(), &arr(), rhs, m_rows*m_columns/16).run();
+/*
   for (int i = 0; i < (int) m_arr->size(); ++i) {
     ret.arr()[i] = arr()[i]*rhs;
   }
-
+*/
   return ret;
 }
 
