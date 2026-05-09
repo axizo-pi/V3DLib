@@ -1,4 +1,5 @@
 /**
+ * /file
  * Support for Reverse Neural Networks.
  *
  * For a RNN, this example is tiny. It is in fact below the granularity of the QPU's.
@@ -24,10 +25,10 @@ const int NumEpochs = 1000;
 float a[NumInputs][30] = {
 {  
   0, 0, 1, 1, 0, 0,
-   0, 1, 0, 0, 1, 0,
-   1, 1, 1, 1, 1, 1,
-   1, 0, 0, 0, 0, 1,
-   1, 0, 0, 0, 0, 1,
+  0, 1, 0, 0, 1, 0,
+  1, 1, 1, 1, 1, 1,
+  1, 0, 0, 0, 0, 1,
+  1, 0, 0, 0, 0, 1,
 }, {
   0, 1, 1, 1, 1, 0,
   0, 1, 0, 0, 1, 0,

@@ -26,17 +26,17 @@ struct matrix {
   matrix(int rows = 0, int columns = 0);
   matrix(matrix const &rhs);
 
-	void resize(int rows, int columns);
+  void resize(int rows, int columns);
 
   int columns() const  { return m_columns; }
   int rows() const     { return m_rows; }
-	int size() const     { return m_columns*m_rows; }
+  int size() const     { return m_columns*m_rows; }
 
-	bool is_vector() const {
-		return
-			(m_columns == 1 && m_rows >  1) || 
-			(m_columns >  1 && m_rows == 1);
-	}
+  bool is_vector() const {
+    return
+      (m_columns == 1 && m_rows >  1) || 
+      (m_columns >  1 && m_rows == 1);
+  }
 
   Float::Array &operator &();
   Float::Array &arr();
@@ -73,7 +73,7 @@ protected:
   int m_columns  = 0;
 
 private:
-	int m_size = 0;
+  int m_size = 0;
 };
 
 
@@ -88,7 +88,7 @@ matrix operator*(float scalar, matrix const &mat);
  * Size must be a multiple of 16
  */
 struct vector : public matrix {
-	using Parent = matrix;
+  using Parent = matrix;
 
   vector(vector &rhs);
   explicit vector(matrix rhs);
@@ -113,12 +113,11 @@ struct vector : public matrix {
   void clip(float clip_value);
   static BaseKernel &op_kernel();
 
-  //std::string dump_dim() const { return matrix::dump_dim(); }
   std::string dump(bool output_int = false) const;
 
 private:
   bool empty() const { return m_arr == nullptr; }
-	void transpose();
+  void transpose();
 };
 
 

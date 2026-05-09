@@ -17,13 +17,13 @@ void back_prop_1_kernel(Float::Ptr ret, Float::Ptr ds_cur, Float::Ptr q_z, Float
     Float x2 = *q_z;
     x2 = (*ds_cur) * (1.0f - x2);
 
-		*ret = x * x2;
+    *ret = x * x2;
 
-		q_h.inc();
-		q_z.inc();
-		ds_cur.inc();
-		ret.inc();
-	End
+    q_h.inc();
+    q_z.inc();
+    ds_cur.inc();
+    ret.inc();
+  End
 }
 
 
@@ -38,13 +38,13 @@ void back_prop_3_kernel(Float::Ptr ret, Float::Ptr dsr, Float::Ptr S, Float::Ptr
     Float x2 = (1.0f - x)*x;  // dsigmoid
     Float x3 = (*S) * x2;
     Float x4 = (*dsr) * x3;
-		*ret = x4;
+    *ret = x4;
 
-		r.inc();
-		S.inc();
-		dsr.inc();
-		ret.inc();
-	End
+    r.inc();
+    S.inc();
+    dsr.inc();
+    ret.inc();
+  End
 }
 
 
@@ -54,30 +54,30 @@ std::unique_ptr<BaseKernel> s_back_prop_3;
 
 
 void init_local() {
-	if (done_init) return;
+  if (done_init) return;
 
   s_back_prop_1 .reset(new BaseKernel(compile(back_prop_1_kernel, settings())));
   s_back_prop_3 .reset(new BaseKernel(compile(back_prop_3_kernel, settings())));
 
-	done_init = true;
-}	
+  done_init = true;
+}  
 
 } // anon namespace
 
 
 void back_prop_1(matrix &ret, matrix const &ds_cur, matrix const &q_z, matrix const &q_h) {
-	init_local();
+  init_local();
 
-	int size = ds_cur.rows()*ds_cur.columns();
+  int size = ds_cur.rows()*ds_cur.columns();
 
   s_back_prop_1->load(&ret.arr(), &ds_cur.arr(), &q_z.arr(), &q_h.arr(),  size/16).run();
 }
 
 
 void back_prop_3(matrix &ret, matrix const &dsr, matrix const &S, matrix const &r) {
-	init_local();
+  init_local();
 
-	int size = dsr.rows()*dsr.columns();
+  int size = dsr.rows()*dsr.columns();
 
   s_back_prop_3->load(&ret.arr(), &dsr.arr(), &S.arr(), &r.arr(),  size/16).run();
 }

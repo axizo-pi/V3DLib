@@ -27,7 +27,7 @@ void init_matrix(MatrixXf& X, int dimension_row, int dimension_col) {
 
 
 void divide_matrix(MatrixXf& gradient_total, MatrixXf gradient, MatrixXf cache) {
-	timers.start("divide_matrix");
+  timers.start("divide_matrix");
 
   for (int i = 0; i < gradient_total.rows(); ++i) {
     for (int j = 0; j < gradient_total.cols(); ++j) {
@@ -35,7 +35,7 @@ void divide_matrix(MatrixXf& gradient_total, MatrixXf gradient, MatrixXf cache) 
     }
   }
 
-	timers.stop("divide_matrix");
+  timers.stop("divide_matrix");
 }
 
 } // anon namespace
@@ -43,7 +43,7 @@ void divide_matrix(MatrixXf& gradient_total, MatrixXf gradient, MatrixXf cache) 
 
 void Model::read(string const &epoch, string const &loss) {
   string postfix = "_epoch_" + epoch + "_loss_" + loss + ".bin";
-	MatrixXf tmp;
+  MatrixXf tmp;
 
   read_binary_matrix("Weights/Uz" + postfix, tmp); U_z.set(tmp);
   read_binary_matrix("Weights/Uh" + postfix, tmp); U_h.set(tmp);
@@ -58,7 +58,7 @@ void Model::read(string const &epoch, string const &loss) {
 void Model::write(int epoch, float loss) {
   std::cout << "Writing weights to file. " << std::endl;
 
-	string postfix = "_epoch_" + std::to_string(epoch) + "_loss_" + std::to_string(loss) + ".bin";
+  string postfix = "_epoch_" + std::to_string(epoch) + "_loss_" + std::to_string(loss) + ".bin";
 
   write_binary_matrix("Weights/Uz" + postfix, U_z.Xf());
   write_binary_matrix("Weights/Uh" + postfix, U_h.Xf());
@@ -71,19 +71,19 @@ void Model::write(int epoch, float loss) {
 
 
 std::string Model::dump_dim() const {
-	std::string ret;
+  std::string ret;
 
-	ret << "(input, hidden, output): ("
-	    << input_dim()  << ", "
-			<< hidden_dim() << ", "
-			<< output_dim() << ")";
+  ret << "(input, hidden, output): ("
+      << input_dim()  << ", "
+      << hidden_dim() << ", "
+      << output_dim() << ")";
 
-	return ret;
-}	
+  return ret;
+}  
 
 
 void Model::init(int input_dim, int hidden_dim, int output_dim) {
-	MatrixXf tmp;
+  MatrixXf tmp;
 
   init_matrix(tmp, input_dim, hidden_dim); U_z.set(tmp);
   init_matrix(tmp, input_dim, hidden_dim); U_r.set(tmp);
@@ -95,14 +95,13 @@ void Model::init(int input_dim, int hidden_dim, int output_dim) {
 
   init_matrix(V, hidden_dim, output_dim);
 
-	eval();
-	warn << "Done Model::init()\n" << dump_dim();
+  eval();
 }
 
 
 void Model::init_zeroes(int input_dim, int hidden_dim, int output_dim, bool do_eval) {
   auto zero   = MatrixXf::Zero(input_dim, hidden_dim);
-	auto zero_h = MatrixXf::Zero(hidden_dim, hidden_dim);
+  auto zero_h = MatrixXf::Zero(hidden_dim, hidden_dim);
 
   U_z.set(zero);
   U_r.set(zero);
@@ -114,9 +113,9 @@ void Model::init_zeroes(int input_dim, int hidden_dim, int output_dim, bool do_e
 
   V = MatrixXf::Zero(hidden_dim, output_dim);
 
-	if (do_eval) {
-		eval();
-	}
+  if (do_eval) {
+    eval();
+  }
 }
 
 
@@ -134,7 +133,7 @@ void Model::init_ones(int input_dim, int hidden_dim, int output_dim) {
 
   V = MatrixXf::Ones(hidden_dim, output_dim);
 
-	eval();
+  eval();
 }
 
 
@@ -147,60 +146,64 @@ void Model::grad_div_steps(float steps) {
   W_h /= steps;
   V   /= steps;
 
-	eval();
+  eval();
 }
 
 
 void Model::cache_decay(float decay, Model &grad) {
-	//timers.start("cache_decay");
+  //timers.start("cache_decay");
 
-	U_z.set_decay(decay, grad.U_z);
-	U_r.set_decay(decay, grad.U_r);
-	U_h.set_decay(decay, grad.U_h);
-	W_z.set_decay(decay, grad.W_z);
-	W_r.set_decay(decay, grad.W_r);
-	W_h.set_decay(decay, grad.W_h);
+  U_z.set_decay(decay, grad.U_z);
+  U_r.set_decay(decay, grad.U_r);
+  U_h.set_decay(decay, grad.U_h);
+  W_z.set_decay(decay, grad.W_z);
+  W_r.set_decay(decay, grad.W_r);
+  W_h.set_decay(decay, grad.W_h);
 
   V   = decay * V   + (1 - decay) * (grad.V  .cwiseProduct(grad.V  )).eval();
   eval();
 
-	//timers.stop("cache_decay");
+  //timers.stop("cache_decay");
 }
 
 
 void Model::divide(Model &grad, Model &cache) {
-	MatrixXf tmp = U_z.Xf();
+	timers.start("divide");
+
+  MatrixXf tmp = U_z.Xf();
   divide_matrix(tmp, grad.U_z.Xf(), cache.U_z.Xf());
-	U_z.set(tmp);
+  U_z.set(tmp);
 
-	tmp = U_r.Xf();
+  tmp = U_r.Xf();
   divide_matrix(tmp, grad.U_r.Xf(), cache.U_r.Xf());
-	U_r.set(tmp);
+  U_r.set(tmp);
 
-	tmp = U_h.Xf();
+  tmp = U_h.Xf();
   divide_matrix(tmp, grad.U_h.Xf(), cache.U_h.Xf());
-	U_h.set(tmp);
+  U_h.set(tmp);
 
-	tmp = W_z.Xf();
+  tmp = W_z.Xf();
   divide_matrix(tmp, grad.W_z.Xf(), cache.W_z.Xf());
-	W_z.set(tmp);
+  W_z.set(tmp);
 
-	tmp = W_r.Xf();
+  tmp = W_r.Xf();
   divide_matrix(tmp, grad.W_r.Xf(), cache.W_r.Xf());
-	W_r.set(tmp);
+  W_r.set(tmp);
 
-	tmp = W_h.Xf();
+  tmp = W_h.Xf();
   divide_matrix(tmp, grad.W_h.Xf(), cache.W_h.Xf());
-	W_h.set(tmp);
+  W_h.set(tmp);
 
   divide_matrix(V  , grad.V  , cache.V);
 
   eval();
+
+	timers.stop("divide");
 }
 
 
 void Model::adjust_learning_rate(float learning_rate, Model &rhs) {
-	timers.start("adjust_learning_rate");
+  timers.start("adjust_learning_rate");
 
   //U_z -= learning_rate * rhs.U_z;
   U_z.set(U_z.Xf() - learning_rate * rhs.U_z.Xf());
@@ -213,7 +216,7 @@ void Model::adjust_learning_rate(float learning_rate, Model &rhs) {
 
   V   -= learning_rate * rhs.V;
 
-	timers.stop("adjust_learning_rate");
+  timers.stop("adjust_learning_rate");
 }
 
 
@@ -229,8 +232,8 @@ void Model::eval() {
 
 
 void State::init(int time_steps, int hidden_dim, int output_dim) {
-	if (m_do_temp) {
-		assert(time_steps == 1);
+  if (m_do_temp) {
+    assert(time_steps == 1);
     auto zero = MatrixXf::Zero(1, hidden_dim);
 
     S.set(zero);
@@ -238,19 +241,19 @@ void State::init(int time_steps, int hidden_dim, int output_dim) {
     r.set(zero);
     h.set(zero);
 
-	} else {
-	  auto zero = MatrixXf::Zero(time_steps, hidden_dim);
+  } else {
+    auto zero = MatrixXf::Zero(time_steps, hidden_dim);
 
-	  E = MatrixXf::Zero(1, time_steps);
-	  z.set(zero);
-	  r.set(zero);
-  	h.set(zero);
-	  O = MatrixXf::Zero(time_steps, output_dim);
+    E = MatrixXf::Zero(1, time_steps);
+    z.set(zero);
+    r.set(zero);
+    h.set(zero);
+    O = MatrixXf::Zero(time_steps, output_dim);
 
-	  MatrixXf tmp_S = MatrixXf::Zero(time_steps + 1, hidden_dim);
-	  tmp_S(0, 0) = static_cast <float> (((float) rand()) / (static_cast <float> (RAND_MAX / 2)) - 1);
-		S.set(tmp_S);
-	}
+    MatrixXf tmp_S = MatrixXf::Zero(time_steps + 1, hidden_dim);
+    tmp_S(0, 0) = static_cast <float> (((float) rand()) / (static_cast <float> (RAND_MAX / 2)) - 1);
+    S.set(tmp_S);
+  }
 }
 
 
@@ -265,7 +268,7 @@ void State::eval() {
 
 
 void State::set_step(int time_step, State &state) {
-	assert(m_do_temp);
+  assert(m_do_temp);
 
   S.set(state.S.row(time_step));
   r.set(state.r.row(time_step));
@@ -291,24 +294,24 @@ void State::set_step(int time_step, State &state) {
  * where * is matrix multiplication and o is componentwise multiplication
  */
 void forward_propagation(
-	Model &m,
-	MatrixXf& X,
-	MatrixXf& Y,  // Not used in test
-	State &state,
-	int time_steps,
-	int input_dim,
-	int hidden_dim,
-	int output_dim,
-	bool do_test
+  Model &m,
+  MatrixXf& X,
+  MatrixXf& Y,  // Not used in test
+  State &state,
+  int time_steps,
+  int input_dim,
+  int hidden_dim,
+  int output_dim,
+  bool do_test
 ) {
-	timers.start("forward_propagation");
+  timers.start("forward_propagation");
 
   MatrixXf temp        = MatrixXf::Zero(1, hidden_dim);
   MatrixXf temp_output = MatrixXf::Zero(1, output_dim);
   MatrixXf temp_hidden = MatrixXf::Zero(1, hidden_dim);
 
   for(int i = 0; i < time_steps; i++) {
-		auto S_row = state.S.Xf().row(i);
+    auto S_row = state.S.Xf().row(i);
 
     temp            = (X.row(i) * (m.U_z.Xf())) + (S_row * (m.W_z.Xf()));
     temp.eval();
@@ -339,11 +342,11 @@ void forward_propagation(
     temp_output = state.O.row(i);
     temp_output.eval();
 
-		if (!do_test) {
-	    state.E(0, i) += -1 * (Y.row(i).cwiseProduct(temp_output.unaryExpr(&log_matrix)).sum());
-	    state.E.eval();
-	  }
+    if (!do_test) {
+      state.E(0, i) += -1 * (Y.row(i).cwiseProduct(temp_output.unaryExpr(&log_matrix)).sum());
+      state.E.eval();
+    }
   }
 
-	timers.stop("forward_propagation");
+  timers.stop("forward_propagation");
 }

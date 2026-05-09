@@ -28,7 +28,7 @@ std::unique_ptr<BaseKernel> s_clip;
 
 
 void init_local() {
-	if (done_init) return;
+  if (done_init) return;
 
   s_mul_element        .reset(new BaseKernel(compile(kernel::mul_element    , settings())));
   s_mult_vec_transposed.reset(new BaseKernel(compile(kernel::mult_vec_transposed, settings())));
@@ -44,7 +44,7 @@ void init_local() {
   s_dtanh              .reset(new BaseKernel(compile(kernel::dtanh          , settings())));
   s_clip               .reset(new BaseKernel(compile(kernel::clip           , settings())));
 
-	done_init = true;
+  done_init = true;
 }
 
 } // anon namespace
@@ -55,16 +55,16 @@ void init_local() {
 ////////////////////////////////////////////////
 
 matrix::matrix(int rows, int columns) {
-	resize(rows, columns);
+  resize(rows, columns);
   init_local();
 }
 
 
 matrix::matrix(matrix const &rhs) :
-	m_arr(rhs.m_arr),
-	m_rows(rhs.m_rows),
-	m_columns(rhs.m_columns),
-	m_size(rhs.m_size)
+  m_arr(rhs.m_arr),
+  m_rows(rhs.m_rows),
+  m_columns(rhs.m_columns),
+  m_size(rhs.m_size)
 {
   //warn << "Called ctor matrix(matrix &)";
   //// *this = rhs;
@@ -75,26 +75,26 @@ void matrix::resize(int rows, int columns) {
   // Allow initialization of empty matrix.
   if (rows == 0) {
     assert(columns == 0 || columns == 1);  // By syntax, a single empty vector is allowed
-		m_rows    = rows;
-		m_columns = columns;
+    m_rows    = rows;
+    m_columns = columns;
     return;
   }
 
   if (rows <= 0)     { cerr << "matrix ctor: rows must be positive"    << thrw; }
   if (columns <= 0)  { cerr << "matrix ctor: columns must be positive" << thrw; }
 
-	int size      = rows*columns;
+  int size      = rows*columns;
 
-	if (size > m_size) {
-		if (m_size > 0) {
-			warn << "matrix resizing from " << m_size << " to " << size;
-		}
+  if (size > m_size) {
+    if (m_size > 0) {
+      warn << "matrix resizing from " << m_size << " to " << size;
+    }
     m_arr.reset(new Float::Array(size));
-		m_size    = size;
-	}
+    m_size    = size;
+  }
 
-	m_rows    = rows;
-	m_columns = columns;
+  m_rows    = rows;
+  m_columns = columns;
 }
 
 
@@ -157,10 +157,10 @@ matrix &matrix::operator=(matrix const &rhs) {
 
 matrix matrix::operator-(matrix const &rhs) const {
   assert(
-	 // Allow transposed vectors
-	 (m_rows == 1 && rhs.columns() == 1 && m_rows == rhs.columns()) ||
-	 (m_columns == rhs.columns() && m_rows == rhs.rows())
-	);
+   // Allow transposed vectors
+   (m_rows == 1 && rhs.columns() == 1 && m_rows == rhs.columns()) ||
+   (m_columns == rhs.columns() && m_rows == rhs.rows())
+  );
   matrix ret(m_rows, m_columns);
 
   for (int i = 0; i < (int) m_arr->size(); ++i) {
@@ -184,10 +184,10 @@ matrix &matrix::operator-=(matrix const &rhs) {
 
 matrix matrix::operator+(matrix const &rhs) const {
   if (!(m_columns == rhs.columns() && m_rows == rhs.rows())) {
-		warn << "matrix operator+ dimensions don't match: "
-			   << "this: " << dump_dim() << ", "
-			   << "rhs: " << rhs.dump_dim();
-	}
+    warn << "matrix operator+ dimensions don't match: "
+         << "this: " << dump_dim() << ", "
+         << "rhs: " << rhs.dump_dim();
+  }
   assert(m_columns == rhs.columns() && m_rows == rhs.rows());
   matrix ret(m_rows, m_columns);
 
@@ -202,26 +202,26 @@ matrix matrix::operator+(matrix const &rhs) const {
 
 
 matrix &matrix::operator+=(matrix const &rhs) {
-	if (is_vector() && rhs.is_vector()) {
-		// Allow transposed vectors
-		assert(size() == rhs.size());
-	} else {
-  	if (m_columns != rhs.columns() || m_rows != rhs.rows()) {
-			warn << "matrix::operator+= dimensions don't match: "
-				   << "this: " << dump_dim() << ", "
-					 << "rhs:"   << rhs.dump_dim()
-					 << thrw;
-		}
-  	assert(m_columns == rhs.columns() && m_rows == rhs.rows());
-	}
+  if (is_vector() && rhs.is_vector()) {
+    // Allow transposed vectors
+    assert(size() == rhs.size());
+  } else {
+    if (m_columns != rhs.columns() || m_rows != rhs.rows()) {
+      warn << "matrix::operator+= dimensions don't match: "
+           << "this: " << dump_dim() << ", "
+           << "rhs:"   << rhs.dump_dim()
+           << thrw;
+    }
+    assert(m_columns == rhs.columns() && m_rows == rhs.rows());
+  }
 
   s_matrix_add_self->load(&arr(), &rhs.arr(), size()/16).run();
 
-/*	
+/*  
   for (int i = 0; i < (int) m_arr->size(); ++i) {
     arr()[i] += rhs.arr()[i];
   }
-*/	
+*/  
 
   return *this;
 }
@@ -247,7 +247,7 @@ matrix matrix::operator*(float rhs) const {
 matrix matrix::mul(matrix const &rhs) const {
   //warn << "Called matrix matrix::operator*()";
   //warn << "matrix: " << dump_dim() << "rhs: " << rhs.dump_dim();
-	assert(rhs.is_vector());
+  assert(rhs.is_vector());
   assert(m_columns > 0);
   assert(m_rows > 0);
 
@@ -303,9 +303,9 @@ matrix matrix::mul_e(matrix const &rhs) const {
   assert(m_columns > 0);
   assert(m_rows > 0);
 
-	// Keep the calc flexible, just check size
-	int size = m_rows*m_columns;
-	int in_size = rhs.rows()*rhs.columns();
+  // Keep the calc flexible, just check size
+  int size = m_rows*m_columns;
+  int in_size = rhs.rows()*rhs.columns();
 
   if (size != in_size) {
     cerr << "Matrix::mul_e() Dimensions don't match. "
@@ -318,7 +318,7 @@ matrix matrix::mul_e(matrix const &rhs) const {
 
   matrix ret(m_rows, m_columns);
 
-	assert(s_mul_element != nullptr);
+  assert(s_mul_element != nullptr);
   s_mul_element->load(&ret.arr(), &arr(), &rhs.arr(), size/16).run();
 
   return ret;
@@ -366,7 +366,7 @@ matrix matrix::transpose() const {
 
 namespace {
 
-matrix outer_ret(true);	
+matrix outer_ret(true);  
 
 } // anon namespace
 
@@ -390,8 +390,8 @@ matrix outer_ret(true);
  *   from a single thread.
  */
 matrix matrix::outer(matrix const &rhs) const {
-	assert(is_vector());
-	assert(rhs.is_vector());
+  assert(is_vector());
+  assert(rhs.is_vector());
   if ((size() & 0xf) != 0)     { cerr << "vector outer: expecting rows to be a multiple of 16" << thrw; }
   if ((rhs.size() & 0xf) != 0) { cerr << "vector outer: expecting rhs rows to be a multiple of 16" << thrw; }
 
@@ -399,7 +399,7 @@ matrix matrix::outer(matrix const &rhs) const {
 
   s_op->load(&arr(), &rhs.arr(), &outer_ret.arr(), size(), rhs.size()/16).run();
 
-	//warn << "outer resize: " << outer_ret.dump_dim();
+  //warn << "outer resize: " << outer_ret.dump_dim();
   return outer_ret;  
 }
 
@@ -463,7 +463,7 @@ vector::vector(vector &rhs) : matrix(rhs) {
 void vector::transpose() {
   //warn << "vector transposing";
   int tmp   = m_rows;
-	m_rows    = m_columns;
+  m_rows    = m_columns;
   m_columns = tmp;
 }
 
@@ -479,7 +479,7 @@ vector::vector(matrix rhs) : matrix(rhs) {
   *this = rhs;
 
   if (rhs.rows() == 1) {
-		transpose();
+    transpose();
   }
 
   init_local();
@@ -584,14 +584,14 @@ vector vector::mul(vector const &rhs) {
   assert(rows() == rhs.rows());
   if ((rows() & 0xf) != 0) { cerr << "vector sub: rows must be a multiple of 16" << thrw; }
 
-	matrix ret = mul_e(rhs);
+  matrix ret = mul_e(rhs);
   return vector(ret);
 /*
-	vector ret(rows());
+  vector ret(rows());
   for (int i = 0; i < rows(); i++) {
     ret[i] = (*this)[i]*rhs[i];
   }
-	return ret;
+  return ret;
 */
 }
 
@@ -668,7 +668,7 @@ BaseKernel &vector::op_kernel() {
 
 
 vector operator*(matrix const &lhs, matrix const &rhs) {
-	//warn << "rhs: " << rhs.dump_dim();
+  //warn << "rhs: " << rhs.dump_dim();
   assert(rhs.is_vector());
 
   matrix ret;
