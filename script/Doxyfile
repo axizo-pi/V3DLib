@@ -952,6 +952,8 @@ INPUT                  =            \
   ../Lib/Source/                    \
   ../Lib/Kernel.h                   \
   ../Lib/Support/Helpers.cpp        \
+  ../Lib/Support/HeapManager.h      \
+  ../Lib/Support/HeapManager.cpp    \
   ../Lib/Source/Stmt.h              \
   ../Lib/Source/Stmt.cpp            \
   ../Lib/Source/Var.cpp             \

@@ -29,8 +29,7 @@ HeapManager::~HeapManager() {
  *
  * Heap managers are global statics, as well as some kernels, e.g. in `GRU`.
  * The kernels, more specifically the shared memories used within the kernels,
- * access the global heap managers via member pointers.
- *
+ * access the global heap managers via member pointers.  
  * You have no control of the destruction order of the globals on shutdown,
  * so it happens that a heap manager is destructed before a kernel using it. 
  * In that case, an access to the heap manager explodes with a segment violation.
