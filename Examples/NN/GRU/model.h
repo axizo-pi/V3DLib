@@ -11,7 +11,7 @@ public:
   MMatrix  W_z;
   MMatrix  W_r;
   MMatrix  W_h;
-  MatrixXf V;
+  MMatrix  V;
 
   void read(std::string const &epoch, std::string const &loss);
   void write(int epoch, float loss);

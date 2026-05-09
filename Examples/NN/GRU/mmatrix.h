@@ -56,6 +56,7 @@ public:
   void back_prop_2(State const &temp, MMatrix const &dreluInput_h, float precision);
   void back_prop_3(MMatrix const &dsr, State const &temp, float precision);
   void back_prop_4(MMatrix const &ds_cur_bk, State const &temp);
+	void divide_matrix(MMatrix const &gradient, MMatrix const &in_cache);
 
   void set_decay(float decay, MMatrix const &rhs);
 

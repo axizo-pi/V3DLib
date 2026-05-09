@@ -59,10 +59,10 @@ void back_propagation(Model &m, Model &grad, State &state, MatrixXf& X, MatrixXf
 
   for(time_step = time_steps - 1; time_step >= 0; time_step--) {
     temp.S.set(state.S.row(time_step + 1));
-    grad.V += temp.S.Xf().transpose().eval() * delta_y.row(time_step);
+    grad.V.set(grad.V.Xf() + temp.S.Xf().transpose().eval() * delta_y.row(time_step));
   }
 
-  ds_single = delta_y * m.V.transpose().eval();
+  ds_single = delta_y * m.V.Xf().transpose().eval();
 
   for (curr_step = time_steps - 1; curr_step >= 0; curr_step--) {
     ds_cur.set(ds_single.row(curr_step));

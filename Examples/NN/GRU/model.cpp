@@ -25,19 +25,6 @@ void init_matrix(MatrixXf& X, int dimension_row, int dimension_col) {
   X = (X + MatrixXf::Constant(dimension_row, dimension_col, lowerlimit));
 }
 
-
-void divide_matrix(MatrixXf& gradient_total, MatrixXf gradient, MatrixXf cache) {
-  timers.start("divide_matrix");
-
-  for (int i = 0; i < gradient_total.rows(); ++i) {
-    for (int j = 0; j < gradient_total.cols(); ++j) {
-      gradient_total(i, j) = ( gradient(i, j) / ( sqrt(cache(i, j)) + 0.00000001f) );
-    }
-  }
-
-  timers.stop("divide_matrix");
-}
-
 } // anon namespace
 
 
@@ -51,7 +38,7 @@ void Model::read(string const &epoch, string const &loss) {
   read_binary_matrix("Weights/Wz" + postfix, tmp); W_z.set(tmp);
   read_binary_matrix("Weights/Wh" + postfix, tmp); W_h.set(tmp);
   read_binary_matrix("Weights/Wr" + postfix, tmp); W_r.set(tmp);
-  read_binary_matrix("Weights/V"  + postfix, V);
+  read_binary_matrix("Weights/V"  + postfix, tmp);   V.set(tmp);
 }
 
 
@@ -66,7 +53,7 @@ void Model::write(int epoch, float loss) {
   write_binary_matrix("Weights/Wz" + postfix, W_z.Xf());
   write_binary_matrix("Weights/Wh" + postfix, W_h.Xf());
   write_binary_matrix("Weights/Wr" + postfix, W_r.Xf());
-  write_binary_matrix("Weights/V"  + postfix, V);
+  write_binary_matrix("Weights/V"  + postfix,   V.Xf());
 }
 
 
@@ -92,8 +79,8 @@ void Model::init(int input_dim, int hidden_dim, int output_dim) {
   init_matrix(tmp, hidden_dim, hidden_dim); W_z.set(tmp);
   init_matrix(tmp, hidden_dim, hidden_dim); W_r.set(tmp);
   init_matrix(tmp, hidden_dim, hidden_dim); W_h.set(tmp);
-
-  init_matrix(V, hidden_dim, output_dim);
+  
+  init_matrix(tmp, hidden_dim, output_dim);   V.set(tmp);
 
   eval();
 }
@@ -102,6 +89,7 @@ void Model::init(int input_dim, int hidden_dim, int output_dim) {
 void Model::init_zeroes(int input_dim, int hidden_dim, int output_dim, bool do_eval) {
   auto zero   = MatrixXf::Zero(input_dim, hidden_dim);
   auto zero_h = MatrixXf::Zero(hidden_dim, hidden_dim);
+  auto zero_o = MatrixXf::Zero(hidden_dim, output_dim);
 
   U_z.set(zero);
   U_r.set(zero);
@@ -111,7 +99,7 @@ void Model::init_zeroes(int input_dim, int hidden_dim, int output_dim, bool do_e
   W_r.set(zero_h);
   W_h.set(zero_h);
 
-  V = MatrixXf::Zero(hidden_dim, output_dim);
+  V.set(zero_o);
 
   if (do_eval) {
     eval();
@@ -122,6 +110,7 @@ void Model::init_zeroes(int input_dim, int hidden_dim, int output_dim, bool do_e
 void Model::init_ones(int input_dim, int hidden_dim, int output_dim) {
   auto ones   = MatrixXf::Ones(input_dim, hidden_dim);
   auto ones_h = MatrixXf::Ones(hidden_dim, hidden_dim);
+  auto ones_o = MatrixXf::Ones(hidden_dim, output_dim);
 
   U_z.set(ones);
   U_r.set(ones);
@@ -131,7 +120,7 @@ void Model::init_ones(int input_dim, int hidden_dim, int output_dim) {
   W_r.set(ones_h);
   W_h.set(ones_h);
 
-  V = MatrixXf::Ones(hidden_dim, output_dim);
+  V.set(ones_o);
 
   eval();
 }
@@ -159,8 +148,8 @@ void Model::cache_decay(float decay, Model &grad) {
   W_z.set_decay(decay, grad.W_z);
   W_r.set_decay(decay, grad.W_r);
   W_h.set_decay(decay, grad.W_h);
+    V.set_decay(decay, grad.V  );
 
-  V   = decay * V   + (1 - decay) * (grad.V  .cwiseProduct(grad.V  )).eval();
   eval();
 
   //timers.stop("cache_decay");
@@ -170,31 +159,13 @@ void Model::cache_decay(float decay, Model &grad) {
 void Model::divide(Model &grad, Model &cache) {
 	timers.start("divide");
 
-  MatrixXf tmp = U_z.Xf();
-  divide_matrix(tmp, grad.U_z.Xf(), cache.U_z.Xf());
-  U_z.set(tmp);
-
-  tmp = U_r.Xf();
-  divide_matrix(tmp, grad.U_r.Xf(), cache.U_r.Xf());
-  U_r.set(tmp);
-
-  tmp = U_h.Xf();
-  divide_matrix(tmp, grad.U_h.Xf(), cache.U_h.Xf());
-  U_h.set(tmp);
-
-  tmp = W_z.Xf();
-  divide_matrix(tmp, grad.W_z.Xf(), cache.W_z.Xf());
-  W_z.set(tmp);
-
-  tmp = W_r.Xf();
-  divide_matrix(tmp, grad.W_r.Xf(), cache.W_r.Xf());
-  W_r.set(tmp);
-
-  tmp = W_h.Xf();
-  divide_matrix(tmp, grad.W_h.Xf(), cache.W_h.Xf());
-  W_h.set(tmp);
-
-  divide_matrix(V  , grad.V  , cache.V);
+  U_z.divide_matrix(grad.U_z, cache.U_z);
+  U_r.divide_matrix(grad.U_r, cache.U_r);
+  U_h.divide_matrix(grad.U_h, cache.U_h);
+  W_z.divide_matrix(grad.W_z, cache.W_z);
+  W_r.divide_matrix(grad.W_r, cache.W_r);
+  W_h.divide_matrix(grad.W_h, cache.W_h);
+    V.divide_matrix(grad.V  , cache.V  );
 
   eval();
 
@@ -211,8 +182,7 @@ void Model::adjust_learning_rate(float learning_rate, Model &rhs) {
   W_z -= learning_rate * rhs.W_z;
   W_r -= learning_rate * rhs.W_r;
   W_h -= learning_rate * rhs.W_h;
-
-  V   -= learning_rate * rhs.V;
+    V -= learning_rate * rhs.V;
 
   //timers.stop("adjust_learning_rate");
 }
@@ -327,7 +297,7 @@ void forward_propagation(
     temp_hidden.eval();
     state.S.row(i + 1, temp_hidden);
 
-    temp_output   = state.S.row(i + 1) * (m.V);
+    temp_output   = state.S.row(i + 1) * (m.V.Xf());
     temp_output.eval();
 
     s_max          = temp_output.maxCoeff();

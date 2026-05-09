@@ -207,6 +207,21 @@ void MMatrix::back_prop_4(MMatrix const &ds_cur_bk, State const &temp) {
 }
 
 
+void MMatrix::divide_matrix(MMatrix const &gradient, MMatrix const &in_cache) {
+  timers.start("divide_matrix");
+	auto const &grad  = gradient.Xf();
+	auto const &cache = in_cache.Xf();
+
+  for (int i = 0; i < m_Xf.rows(); ++i) {
+    for (int j = 0; j < m_Xf.cols(); ++j) {
+      m_Xf(i, j) = grad(i, j) / (float) (sqrt(cache(i, j)) + 0.00000001f);
+    }
+  }
+
+  timers.stop("divide_matrix");
+}
+
+
 void MMatrix::set_decay(float decay, MMatrix const &rhs) {
   //timers.start("set_decay Xf");
   m_Xf = decay * m_Xf + (1 - decay) * (rhs.m_Xf.cwiseProduct(rhs.m_Xf)).eval();
