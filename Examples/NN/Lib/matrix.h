@@ -27,6 +27,7 @@ struct matrix {
   matrix(matrix const &rhs);
 
   void resize(int rows, int columns);
+  matrix row(int index) const;
 
   int columns() const  { return m_columns; }
   int rows() const     { return m_rows; }

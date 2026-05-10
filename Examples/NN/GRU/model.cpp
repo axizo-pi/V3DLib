@@ -222,7 +222,10 @@ void State::init(int time_steps, int hidden_dim, int output_dim) {
 
     MatrixXf tmp_S = MatrixXf::Zero(time_steps + 1, hidden_dim);
     tmp_S(0, 0) = static_cast <float> (((float) rand()) / (static_cast <float> (RAND_MAX / 2)) - 1);
+		//tmp_S.eval();
+
     S.set(tmp_S);
+		// OK warn << "State::init S: " << S.dump();
   }
 }
 
@@ -279,10 +282,12 @@ void forward_propagation(
   MatrixXf temp        = MatrixXf::Zero(1, hidden_dim);
   MatrixXf temp_output = MatrixXf::Zero(1, output_dim);
   MatrixXf temp_hidden = MatrixXf::Zero(1, hidden_dim);
+	MatrixXf ones        = MatrixXf::Ones(1, hidden_dim);
 
   for(int i = 0; i < time_steps; i++) {
-    auto S_row = state.S.Xf().row(i);
+    auto S_row = state.S.row(i).Xf();
     auto X_row = X.row(i);
+    auto z_row = state.z.row(i).Xf();
 
     temp            = (X_row * (m.U_z.Xf())) + (S_row * (m.W_z.Xf()));
     temp.eval();
@@ -292,15 +297,15 @@ void forward_propagation(
     temp.eval();
     state.r.row(i, temp.unaryExpr(&sigmoid));
 
-    temp            = (X_row * (m.U_h.Xf())) + (S_row.cwiseProduct(state.r.row(i))) * (m.W_h.Xf());
+    temp            = (X_row * (m.U_h.Xf())) + (S_row.cwiseProduct(state.r.row(i).Xf())) * (m.W_h.Xf());
     temp.eval();
     state.h.row(i, temp.unaryExpr(&tanh_activation));
 
-    temp_hidden     = (MatrixXf::Ones(1, hidden_dim) - state.z.row(i)).cwiseProduct(state.h.row(i)) + state.z.row(i).cwiseProduct(state.S.row(i));
+    temp_hidden     = (ones - z_row).cwiseProduct(state.h.row(i).Xf() + z_row).cwiseProduct(S_row);
     temp_hidden.eval();
     state.S.row(i + 1, temp_hidden);
 
-    temp_output   = state.S.row(i + 1) * (m.V.Xf());
+    temp_output   = state.S.row(i + 1).Xf() * (m.V.Xf());
     temp_output.eval();
 
     s_max          = temp_output.maxCoeff();

@@ -13,21 +13,17 @@ class MMatrix {
 public:
   MMatrix() = default;
   MMatrix(int rows, int columns, float val = 0.0f);
+	MMatrix(MMatrix const &rhs);
 
   void set(MatrixXf const &rhs);
+	void set(MMatrix const &rhs);
   void sync_qpu();
 
   int rows() const { return (int) m_Xf.rows(); }
   int cols() const { return (int) m_Xf.cols(); }
 
-  void row(int index, MatrixXf const &val) {
-    m_Xf.row(index) = val;
-    m_Xf.eval();
-  }
-
-  MatrixXf row(int index) const {
-    return m_Xf.row(index);
-  }
+  void row(int index, MatrixXf const &val);
+  MMatrix row(int index) const;
 
   MatrixXf    const &Xf()  const { return m_Xf; }
   qpu::matrix const &qpu() const { return m_qpu; }
@@ -42,6 +38,7 @@ public:
   bool same(MMatrix const &rhs, float precision = 0.0f) const;
 
   std::string dump_dim() const;
+  std::string dump() const;
   void eval() { m_Xf.eval(); }
 
   void operator+=(MMatrix const &rhs);

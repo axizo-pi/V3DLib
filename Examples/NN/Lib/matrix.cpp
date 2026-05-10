@@ -104,6 +104,19 @@ void matrix::resize(int rows, int columns) {
 }
 
 
+matrix matrix::row(int index) const {
+	assert(index >= 0 && index < rows());
+	int width = columns();
+	matrix ret(1, width);
+
+	for (int i = 0; i < width; ++i) {
+		ret.arr()[i] = arr()[index * width + i];
+	}
+
+	return ret;
+}
+
+
 Float::Array &matrix::operator &() {
   assert(m_arr != nullptr);
   return (*m_arr);

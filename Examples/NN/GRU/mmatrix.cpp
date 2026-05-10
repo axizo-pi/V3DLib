@@ -17,6 +17,11 @@ MMatrix::MMatrix(int rows, int columns, float val) {
 }
 
 
+MMatrix::MMatrix(MMatrix const &rhs) {
+	set(rhs);
+}
+
+
 void MMatrix::set(MatrixXf const &rhs) {
   timers.start("set Xf");
   m_Xf = rhs;
@@ -28,8 +33,35 @@ void MMatrix::set(MatrixXf const &rhs) {
 }
 
 
+void MMatrix::set(MMatrix const &rhs) {
+  m_Xf = rhs.m_Xf;
+
+	// TODO Note that rhs.m_qpu is ignored here
+  m_qpu = copy_m(rhs.m_Xf);
+}
+
+
 void MMatrix::sync_qpu() {
   m_qpu = copy_m(m_Xf);
+}
+
+
+void MMatrix::row(int index, MatrixXf const &val) {
+  m_Xf.row(index) = val;
+  m_Xf.eval();
+
+	// TODO: Following inefficient and ugly
+	m_qpu = copy_m(m_Xf);
+}
+
+
+MMatrix MMatrix::row(int index) const {
+	MMatrix ret;
+  ret.m_Xf = m_Xf.row(index);
+  ret.m_qpu = m_qpu.row(index);
+	//OK assert(ret.same());
+
+	return ret;
 }
 
 
@@ -44,6 +76,15 @@ bool MMatrix::same(MMatrix const &rhs, float precision) const {
 std::string MMatrix::dump_dim() const {
   std::string ret;
   ret << ::dump_dim(m_Xf) << ", " << m_qpu.dump_dim();
+  return ret;
+}
+
+
+std::string MMatrix::dump() const {
+  std::string ret;
+  ret << dump_dim() << ": \n"
+		  << "  m_Xf : " << ::dump(m_Xf) << "\n"
+		  << "  m_qpu: " << m_qpu.dump();
   return ret;
 }
 
@@ -242,10 +283,10 @@ void MMatrix::divide_matrix(MMatrix const &gradient, MMatrix const &in_cache) {
 
 
 void MMatrix::update_E(int index, MatrixXf const &Y, State const &state) {
-  auto temp_output = state.O.row(index);
+  auto temp_output = state.O.row(index).Xf();
   temp_output.eval();
 
-  m_Xf(0, index) += -1 * (Y.row(index).cwiseProduct(temp_output.unaryExpr(&log_matrix)).sum());
+  m_Xf(0, index) += -1 * Y.row(index).cwiseProduct(temp_output.unaryExpr(&log_matrix)).sum();
   m_Xf.eval();
 }
 
