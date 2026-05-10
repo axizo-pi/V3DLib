@@ -160,7 +160,7 @@ matrix &matrix::operator=(matrix const &rhs) {
 
 
 matrix matrix::operator-(matrix const &rhs) const {
-	check_addsub(rhs, "-=");
+  check_addsub(rhs, "-=");
   matrix ret(m_rows, m_columns);
 
   for (int i = 0; i < (int) m_arr->size(); ++i) {
@@ -172,7 +172,7 @@ matrix matrix::operator-(matrix const &rhs) const {
 
 
 matrix &matrix::operator-=(matrix const &rhs) {
-	check_addsub(rhs, "-=");
+  check_addsub(rhs, "-=");
   s_matrix_sub_self->load(&arr(), &rhs.arr(), size()/16).run();
 /*
   for (int i = 0; i < (int) m_arr->size(); ++i) {
@@ -184,7 +184,7 @@ matrix &matrix::operator-=(matrix const &rhs) {
 
 
 matrix matrix::operator+(matrix const &rhs) const {
-	check_addsub(rhs, "+");
+  check_addsub(rhs, "+");
   assert(m_columns == rhs.columns() && m_rows == rhs.rows());
   matrix ret(m_rows, m_columns);
 
@@ -215,7 +215,7 @@ void matrix::check_addsub(matrix const &rhs, std::string const &op) const {
 
 
 matrix &matrix::operator+=(matrix const &rhs) {
-	check_addsub(rhs, "+=");
+  check_addsub(rhs, "+=");
   s_matrix_add_self->load(&arr(), &rhs.arr(), size()/16).run();
 
 /*  

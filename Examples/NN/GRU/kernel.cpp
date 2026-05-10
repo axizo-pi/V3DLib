@@ -48,9 +48,33 @@ void back_prop_3_kernel(Float::Ptr ret, Float::Ptr dsr, Float::Ptr S, Float::Ptr
 }
 
 
+/**
+ * Original:
+ *
+ *      qpu::matrix q_dz = ds_cur_bk.qpu().mul_e(temp.S.qpu() - temp.h.qpu());
+ *      m_qpu = q_dz.mul_e(qpu::vector(temp.z.qpu()).dsigmoid());
+ */
+void back_prop_4_kernel(Float::Ptr ret, Float::Ptr ds_cur_bk, Float::Ptr z, Float::Ptr S, Float::Ptr h, Int N) {
+  For (Int i = 0, i < N, i++)
+		Float x    = (*S) - (*h);
+	  Float q_dz = *ds_cur_bk * x;
+		Float x2 = *z;
+    Float x3 = (1.0f - x2)*x2;  // dsigmoid
+    *ret = q_dz * x3;
+
+    h.inc();
+    S.inc();
+    z.inc();
+    ds_cur_bk.inc();
+    ret.inc();
+  End
+}
+
+
 bool done_init = false;
 std::unique_ptr<BaseKernel> s_back_prop_1;
 std::unique_ptr<BaseKernel> s_back_prop_3;
+std::unique_ptr<BaseKernel> s_back_prop_4;
 
 
 void init_local() {
@@ -58,6 +82,7 @@ void init_local() {
 
   s_back_prop_1 .reset(new BaseKernel(compile(back_prop_1_kernel, settings())));
   s_back_prop_3 .reset(new BaseKernel(compile(back_prop_3_kernel, settings())));
+  s_back_prop_4 .reset(new BaseKernel(compile(back_prop_4_kernel, settings())));
 
   done_init = true;
 }  
@@ -80,6 +105,15 @@ void back_prop_3(matrix &ret, matrix const &dsr, matrix const &S, matrix const &
   int size = dsr.rows()*dsr.columns();
 
   s_back_prop_3->load(&ret.arr(), &dsr.arr(), &S.arr(), &r.arr(),  size/16).run();
+}
+
+
+void back_prop_4(matrix &ret, matrix const &ds_cur_bk, matrix const &z, matrix const &S, matrix const &h) {
+  init_local();
+
+  int size = ds_cur_bk.rows()*ds_cur_bk.columns();
+
+	s_back_prop_4->load(&ret.arr(), &ds_cur_bk.arr(), &z.arr(), &S.arr(), &h.arr(), size/16).run();
 }
 
 

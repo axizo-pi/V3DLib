@@ -139,6 +139,7 @@ MMatrix MMatrix::outer(MMatrix const &rhs) {
   ret.m_qpu = m_qpu.outer(rhs.m_qpu);
   timers.stop("MMatrix outer qpu");
 
+	//OK assert(same());
   return ret;
 }
 
@@ -194,18 +195,24 @@ void MMatrix::back_prop_3(MMatrix const &dsr, State const &temp, float precision
 }
 
 
-void MMatrix::back_prop_4(MMatrix const &ds_cur_bk, State const &temp) {
+/**
+ * Xf/qpu slowly diverge upon sequential loops.
+ */
+void MMatrix::back_prop_4(MMatrix const &ds_cur_bk, State const &temp, float precision) {
   timers.start("back_prop_4 Xf");
   auto dz = ds_cur_bk.Xf().cwiseProduct(temp.S.Xf() - temp.h.Xf());
   m_Xf = dz.cwiseProduct(temp.z.Xf().unaryExpr(&sigmoid_grad));
   timers.stop("back_prop_4 Xf");
 
+	m_qpu.resize(ds_cur_bk.rows(), ds_cur_bk.cols());
+
   timers.start("back_prop_4 qpu");
-  qpu::matrix q_dz = ds_cur_bk.qpu().mul_e(temp.S.qpu() - temp.h.qpu());
-  m_qpu = q_dz.mul_e(qpu::vector(temp.z.qpu()).dsigmoid());
+	gru_kernel::back_prop_4(m_qpu, ds_cur_bk.qpu(), temp.z.qpu(), temp.S.qpu(), temp.h.qpu());
   timers.stop("back_prop_4 qpu");
 
-  //OK assert(same());
+	//warn << "m_Xf: " << dump(m_Xf);
+	//warn << "m_qpu: " << m_qpu.dump();
+  //Good enough assert(same(precision));
 }
 
 

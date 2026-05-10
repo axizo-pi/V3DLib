@@ -11,8 +11,8 @@ class State;
 
 class MMatrix {
 public:
-	MMatrix() = default;
-	MMatrix(int rows, int columns, float val = 0.0f);
+  MMatrix() = default;
+  MMatrix(int rows, int columns, float val = 0.0f);
 
   void set(MatrixXf const &rhs);
 
@@ -47,18 +47,18 @@ public:
   void operator-=(MMatrix const &rhs);
   void operator/=(float steps);
   MMatrix operator*(MMatrix const &rhs) const;
-	MMatrix operator*(float val) const;
+  MMatrix operator*(float val) const;
   void mul_e(MMatrix const &rhs, State const &temp);
   MMatrix mul_e(MMatrix const &rhs);
   MMatrix outer(MMatrix const &rhs);
 
-	// Application-specific methods
+  // Application-specific methods
   void back_prop_1(MMatrix const &ds_cur, State const &temp);
   void back_prop_2(State const &temp, MMatrix const &dreluInput_h, float precision);
   void back_prop_3(MMatrix const &dsr, State const &temp, float precision);
-  void back_prop_4(MMatrix const &ds_cur_bk, State const &temp);
-	void divide_matrix(MMatrix const &gradient, MMatrix const &in_cache);
-	void update_E(int index, MatrixXf const &Y, State const &state);
+  void back_prop_4(MMatrix const &ds_cur_bk, State const &temp, float precision);
+  void divide_matrix(MMatrix const &gradient, MMatrix const &in_cache);
+  void update_E(int index, MatrixXf const &Y, State const &state);
 
   void set_decay(float decay, MMatrix const &rhs);
 
@@ -69,7 +69,7 @@ private:
 
 
 inline MMatrix operator*(float val, MMatrix const &rhs) {
-	return rhs*val;
+  return rhs*val;
 }
 
 

@@ -232,10 +232,11 @@ void outer_product(Float::Ptr left, Float::Ptr right, Float::Ptr out_matrix, Int
   left -= index();
 
   For (Int i = 0, i < N, i++)
+		Float left_val = *left;
     Float::Ptr start = right;
 
     For (Int j = 0, j < M, j++)
-      *out_matrix = *left * *start;
+      *out_matrix = left_val * *start;
 
       out_matrix.inc();
       start.inc();

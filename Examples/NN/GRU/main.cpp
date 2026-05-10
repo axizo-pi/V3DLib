@@ -1,4 +1,5 @@
 #include "Support/Timer.h"
+#include "BaseKernel.h"
 #include <iostream>
 
 using namespace V3DLib;
@@ -36,6 +37,7 @@ int main(int argc, char *argv[]) {
     std::cout << "Can't perform action '" << action << "'" << std::endl;
   }
 
-  timers.end();
+  timers.end(); //true); // Param to enable display min/max
+	std::cout << "QPU Call Count: " << V3DLib::BaseKernel::qpu_call_count() << std::endl;
   return 0;
 }
