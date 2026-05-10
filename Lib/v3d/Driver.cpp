@@ -38,6 +38,7 @@
 #include "Driver.h"
 #include "v3d.h"
 #include "LibSettings.h"
+#include "Support/Timer.h"
 #include <algorithm>  // find()
 
 namespace V3DLib {
@@ -82,9 +83,24 @@ uint32_t roundup(uint32_t n, uint32_t d) {
  * 1. It doesn't appear to be necessary to add the code BO to the bo handles list.
  *    All unit tests pass without doing this.
  *    This is something to keep in mind; it might go awkward later on.
+ *
  * 2. Totally no clue what the workgroup is for and what it does.
  *    Can't find anything about it online, just what `py-videocore6` gives,
  *    which I plain took over.
+ *
+ * 3. Profiling: The timing values for `submit_csd()` varies wildly:
+ *
+ *     Driver submit_csd: Min:  0.000030s, Max::  0.003463s
+ *
+ * The indication is that the first call consistently takes more time, so this might
+ * be a sort of initialization:
+ *
+ *     Driver submit_csd first: Min:  0.003469s, Max::  0.003469s
+ *
+ * However, this high time also happens on some subsequent calls, so the call might
+ * re-init in between.
+ *
+ * _(timing values determined in `GRU`)_
  */
 bool Driver::execute(Code &code, Data *uniforms, uint32_t thread, bool wait_complete) {
   uint32_t code_phyaddr = code.getAddress();
@@ -150,12 +166,16 @@ bool Driver::execute(Code &code, Data *uniforms, uint32_t thread, bool wait_comp
     .flags           = 0,
   };
 
+  //timers.start("Driver submit_csd");
 
   bool ret = (0 == ::v3d::submit_csd(st));
   assert(ret);
   if (ret && wait_complete) {
     ret = wait_bo();
   }
+
+  //timers.stop("Driver submit_csd");
+
   assert(ret);
   return ret;
 }

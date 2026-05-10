@@ -19,7 +19,7 @@ public:
   void stop();
 
   std::string const &label() const { return m_label; }
-  std::string dump(int width = -1);
+  std::string dump(int width = -1, bool show_minmax = false);
   std::string end(bool show_output = true);
 
 private:
@@ -31,6 +31,9 @@ private:
   int count = 0;
   bool started = false;
   float m_diff;
+
+  timeval tvMin;
+  timeval tvMax = {0,0};
 
   timeval diff_time();
 };
@@ -53,7 +56,7 @@ class Timers {
 public:
   Timer &start(std::string const &label);
   void stop(std::string const &label);
-  void end();
+  void end(bool show_minmax = false);
 
 private:
   std::vector<Timer> m_list;

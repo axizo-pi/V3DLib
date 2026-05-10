@@ -89,9 +89,16 @@ public:
   static int qpu_call_count();
 
   /**
-   * Load uniform values.
+   * @brief Load uniform values
    *
    * This version checks the args types at run time.
+   *
+   * ==================================================
+   * Notes
+   * -----
+   *
+   * - Profiling: the overhead of this call is minimal, about
+   *   1% of run().
    */
   template <typename... us>
   BaseKernel &load(us... args) {

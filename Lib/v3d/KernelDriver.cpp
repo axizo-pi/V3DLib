@@ -16,6 +16,7 @@
 #include "Combine.h"
 #include "LibSettings.h"
 #include "Source/Lang.h"            // comment()
+#include "Support/Timer.h"
 #include <iostream>
 #include <memory>
 

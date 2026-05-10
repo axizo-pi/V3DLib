@@ -74,15 +74,14 @@ void BaseSharedArray::alloc(uint32_t n) {
  * Forget the allocation and size and notify the underlying heap.
  */
 void BaseSharedArray::dealloc() {
-
   if (m_mem_size > 0) {
     assert(allocated());
     assert(m_heap != nullptr);
     if (!m_is_heap_view) { 
       //warn << "Calling dealloc_array";
-			if (m_heap->is_active()) {  // Don't bother if heap manager already destructed
-	      m_heap->dealloc_array(m_phyaddr, m_mem_size);
-			}
+      if (m_heap->is_active()) {  // Don't bother if heap manager already destructed
+        m_heap->dealloc_array(m_phyaddr, m_mem_size);
+      }
     }
 
     m_phyaddr      = 0;

@@ -17,8 +17,8 @@ HeapManager::HeapManager() {
 
 
 HeapManager::~HeapManager() {
-	//warn << "HeapManager dtor called";
-	m_active = false;
+  //warn << "HeapManager dtor called";
+  m_active = false;
 }
 
 
@@ -47,7 +47,7 @@ HeapManager::~HeapManager() {
  * @return true if HeapManager instance active, false if HeapManager dtor called
  */
 bool HeapManager::is_active() const {
-	return m_active;
+  return m_active;
 }
 
 

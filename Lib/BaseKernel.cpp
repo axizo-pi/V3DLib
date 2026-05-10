@@ -91,6 +91,15 @@ std::string BaseKernel::dump() {
 }
 
 
+/**
+ * ==================================================
+ * Notes
+ * -----
+ *
+ * - Profiling: For v3d, practically all time goes into the
+ *   underlying call `submit_csd(). The overhead of the encompassing
+ *   code is about 1%.
+ */
 void BaseKernel::run(bool wait_complete) {
   assert(m_driver.get() != nullptr);
 

@@ -24,8 +24,13 @@ using namespace Log;
 
 namespace V3DLib {
 
-Timer::Timer(std::string const &label, bool disp_in_dtor) : m_disp_in_dtor(disp_in_dtor), m_label(label) {
+Timer::Timer(std::string const &label, bool disp_in_dtor) :
+  m_disp_in_dtor(disp_in_dtor),
+  m_label(label)
+{
   gettimeofday(&tvStart, NULL);
+
+  tvMin = tvStart;
 }
 
 
@@ -54,6 +59,15 @@ void Timer::stop() {
   timersub(&tvEnd, &tvStart, &tvDiff);
 
   timeradd(&tvDiff, &tvTotal, &tvTotal);
+
+  if (timercmp(&tvDiff, &tvMin, <)) {
+    tvMin = tvDiff;
+  }
+
+  if (timercmp(&tvDiff, &tvMax, >)) {
+    tvMax = tvDiff;
+  }
+
   started = false;
 }
 
@@ -76,30 +90,41 @@ timeval Timer::diff_time() {
 }
 
 
-std::string Timer::dump(int width) {
+std::string Timer::dump(int width, bool show_minmax) {
   assert(!m_label.empty());
 
 #define format "%2ld.%06lds"
 
-  char buf[128]; 
+  auto time_to_str = [] (timeval const &val, int count) -> std::string {
+    assert(count > 0);
+    char buf[128]; 
 
-  if (count == 0) {
-    timeval time = diff_time();
-    sprintf(buf, format, time.tv_sec, time.tv_usec);
-  } else {
-    if (started) {
-      stop();
-    }
-
-    auto tmp = (tvTotal.tv_sec*1000000l + tvTotal.tv_usec)/count;  // type long int
+    auto tmp = (val.tv_sec*1000000l + val.tv_usec)/count;  // type long int
     auto avg_sec = tmp/1000000l;
     auto avg_usec = tmp % 1000000l;
 
-    sprintf(buf, format " in %5d steps, average: %2ld.%06lds",
-      tvTotal.tv_sec, tvTotal.tv_usec,
-      count,
-      avg_sec, avg_usec
-    );
+    sprintf(buf, format, avg_sec, avg_usec);
+
+    return buf;
+  };
+
+
+  std::string buf2;
+
+  if (count == 0) {
+    timeval time = diff_time();
+    buf2 << time_to_str(time, 1);
+  } else {
+    if (started) stop();
+
+    char buf[64]; 
+    sprintf(buf, " in %5d steps", count);
+
+    buf2 << time_to_str(tvTotal, 1) << buf << ", average: " << time_to_str(tvTotal, count);
+
+    if (show_minmax) {
+      buf2 << " - Min: " << time_to_str(tvMin, 1) << ", Max:: " << time_to_str(tvMax, 1);
+    }
   }
 
   std::string ret = m_label;
@@ -108,7 +133,7 @@ std::string Timer::dump(int width) {
     ret << indentBy(width - (int) m_label.size());
   }
 
-  ret << ": " << buf;
+  ret << ": " << buf2;
 
   return ret;
 
@@ -168,7 +193,7 @@ void Timers::stop(std::string const &label) {
 }
 
 
-void Timers::end() {
+void Timers::end(bool show_minmax) {
   assert(!m_list.empty());
 
   // Determine label width
@@ -182,11 +207,10 @@ void Timers::end() {
 
   std::string buf;
   for (int i = 0; i < (int) m_list.size(); ++i) {
-    buf << "  " << m_list[i].dump(width) << "\n";
+    buf << "  " << m_list[i].dump(width, show_minmax) << "\n";
   }
 
-  warn << "Timers end:\n"
-       << buf;
+  warn << "Timers end:\n" << buf;
 }
 
 

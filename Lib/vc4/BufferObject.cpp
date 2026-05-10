@@ -20,8 +20,8 @@ BufferObject heap;
 
 
 BufferObject::~BufferObject() {
-	//warn << "vc4 BufferObject dtor called";
-	dealloc();
+  //warn << "vc4 BufferObject dtor called";
+  dealloc();
 }
 
 /**

@@ -15,13 +15,13 @@ class HeapManager {
 public:
   HeapManager();
   HeapManager(HeapManager *object) = delete;
-	~HeapManager();
+  ~HeapManager();
 
   void alloc_bo(uint32_t size_in_bytes);
   uint32_t size() const { return m_size; }
   bool empty() const { return m_offset == 0; }
   std::string dump() const;
-	bool is_active() const;
+  bool is_active() const;
 
   // Intended for unit tests
   uint32_t num_free_ranges() const { return (uint32_t) m_free_ranges.size(); }
@@ -41,7 +41,7 @@ private:
 
   uint32_t m_size   = 0;  // Total allocated size of derived heap/buffer object
   uint32_t m_offset = 0;
-	bool m_active = true;
+  bool m_active = true;
 
   struct FreeRange {
     uint32_t left  = 0;
