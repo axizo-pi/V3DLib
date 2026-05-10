@@ -22,6 +22,7 @@ std::unique_ptr<BaseKernel> s_matrix_sub_self;
 std::unique_ptr<BaseKernel> s_sub;
 std::unique_ptr<BaseKernel> s_add;
 std::unique_ptr<BaseKernel> s_op;
+std::unique_ptr<BaseKernel> s_op_add;
 std::unique_ptr<BaseKernel> s_sigmoid;
 std::unique_ptr<BaseKernel> s_dsigmoid;
 std::unique_ptr<BaseKernel> s_tanh;
@@ -42,6 +43,7 @@ void init_local() {
   s_sub                .reset(new BaseKernel(compile(kernel::vector_sub     , settings())));
   s_add                .reset(new BaseKernel(compile(kernel::vector_add     , settings())));
   s_op                 .reset(new BaseKernel(compile(kernel::outer_product  , settings())));
+  s_op_add             .reset(new BaseKernel(compile(kernel::outer_add      , settings())));
   s_sigmoid            .reset(new BaseKernel(compile(kernel::sigmoid        , settings())));
   s_dsigmoid           .reset(new BaseKernel(compile(kernel::dsigmoid       , settings())));
   s_tanh               .reset(new BaseKernel(compile(kernel::tanh           , settings())));
@@ -371,6 +373,13 @@ namespace {
 
 matrix outer_ret(true);  
 
+void outer_check(matrix const &lhs, matrix const &rhs) {
+  assert(lhs.is_vector());
+  assert(rhs.is_vector());
+  if ((lhs.size() & 0xf) != 0) { cerr << "vector outer: expecting lhs rows to be a multiple of 16" << thrw; }
+  if ((rhs.size() & 0xf) != 0) { cerr << "vector outer: expecting rhs rows to be a multiple of 16" << thrw; }
+}
+
 } // anon namespace
 
 
@@ -393,17 +402,21 @@ matrix outer_ret(true);
  *   from a single thread.
  */
 matrix matrix::outer(matrix const &rhs) const {
-  assert(is_vector());
-  assert(rhs.is_vector());
-  if ((size() & 0xf) != 0)     { cerr << "vector outer: expecting rows to be a multiple of 16" << thrw; }
-  if ((rhs.size() & 0xf) != 0) { cerr << "vector outer: expecting rhs rows to be a multiple of 16" << thrw; }
-
+  outer_check(*this, rhs);
   outer_ret.resize(size(), rhs.size());
 
-  s_op->load(&arr(), &rhs.arr(), &outer_ret.arr(), size(), rhs.size()/16).run();
+  s_op->load(&outer_ret.arr(), &arr(), &rhs.arr(), size(), rhs.size()/16).run();
 
   //warn << "outer resize: " << outer_ret.dump_dim();
   return outer_ret;  
+}
+
+
+void matrix::outer_add(matrix const &lhs, matrix const &rhs) {
+  outer_check(lhs, rhs);
+  assert(rows() == lhs.size() && columns() == rhs.size());
+
+  s_op_add->load(&arr(), &lhs.arr(), &rhs.arr(), lhs.size(), rhs.size()/16).run();
 }
 
 
@@ -685,7 +698,8 @@ bool check_precision(float lhs, float rhs, float precision) {
 
   if (precision == 0.0f) {
     if (lhs != rhs) {
-      warn << "check_precision fail";
+      float diff = abs(lhs - rhs);
+      warn << "check_precision fail, diff: " << diff;
       ret = false;
     }
   } else {

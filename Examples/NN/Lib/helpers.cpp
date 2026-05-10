@@ -80,7 +80,11 @@ std::string vector_dump(Float::Array const &src, int size, int start_index, bool
     if (output_int) {
       buf << (int) src[start_index + h] << ", ";
     } else {
-      buf << src[start_index + h] << ", ";
+      if (src[start_index + h] == 0.0f) {
+        buf << "0, ";
+      } else {
+        buf << src[start_index + h] << ", ";
+      }
     }
   }
 

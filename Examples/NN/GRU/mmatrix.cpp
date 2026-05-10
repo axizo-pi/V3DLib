@@ -3,15 +3,15 @@
 #include "./kernel.h"
 
 MMatrix::MMatrix(int rows, int columns, float val) {
-	assert(rows > 0);
-	assert(columns > 0);
-	assert(val == 0.0f || val == 1.0f);
+  assert(rows > 0);
+  assert(columns > 0);
+  assert(val == 0.0f || val == 1.0f);
 
-	if (val == 0.0f) {
-  	m_Xf = MatrixXf::Zero(rows, columns);
-	} else {
-  	m_Xf = MatrixXf::Ones(rows, columns);
-	}
+  if (val == 0.0f) {
+    m_Xf = MatrixXf::Zero(rows, columns);
+  } else {
+    m_Xf = MatrixXf::Ones(rows, columns);
+  }
 
   m_qpu = copy_m(m_Xf);
 }
@@ -25,6 +25,11 @@ void MMatrix::set(MatrixXf const &rhs) {
   timers.start("set qpu");
   m_qpu = copy_m(m_Xf);
   timers.stop("set qpu");
+}
+
+
+void MMatrix::sync_qpu() {
+  m_qpu = copy_m(m_Xf);
 }
 
 
@@ -129,7 +134,7 @@ MMatrix MMatrix::mul_e(MMatrix const &rhs) {
 }
 
 
-MMatrix MMatrix::outer(MMatrix const &rhs) {
+MMatrix MMatrix::outer(MMatrix const &rhs) const {
   MMatrix ret;
   timers.start("MMatrix outer Xf");
   ret.m_Xf  = m_Xf.transpose().eval() * rhs.m_Xf;
@@ -139,33 +144,38 @@ MMatrix MMatrix::outer(MMatrix const &rhs) {
   ret.m_qpu = m_qpu.outer(rhs.m_qpu);
   timers.stop("MMatrix outer qpu");
 
-	//OK assert(same());
+  //OK assert(same());
   return ret;
+}
+
+
+void MMatrix::outer_add(MMatrix const &lhs, MMatrix const &rhs) {
+  timers.start("MMatrix outer_add Xf");
+  m_Xf  = m_Xf + lhs.m_Xf.transpose().eval() * rhs.m_Xf;
+  timers.stop("MMatrix outer_add Xf");
+
+  timers.start("MMatrix outer_add qpu");
+  m_qpu.outer_add(lhs.m_qpu, rhs.m_qpu);
+  timers.stop("MMatrix outer_add qpu");
+  //assert(::same(tmp, m_Xf));
+
+  //OK assert(same());
 }
 
 
 void MMatrix::back_prop_1(MMatrix const &ds_cur, State const &temp) {
   MMatrix ones(1, ds_cur.cols(), 1.0f);
-	//warn << "ones: " << ones.dump_dim();
-	//warn << "ones: " << ones.qpu().dump();
 
   timers.start("back_prop_1 Xf");
   m_Xf = ds_cur.m_Xf.cwiseProduct(ones.m_Xf - temp.z.m_Xf).cwiseProduct(temp.h.Xf().unaryExpr(&tanh_grad));  //.cwiseProduct(temp_S.unaryExpr(&tanh_grad));
   timers.stop("back_prop_1 Xf");
 
   m_qpu.resize(ds_cur.cols(), 1);
-/*  
-  warn << "m_qpu: " << m_qpu.dump_dim();
-  warn << "ds_cur: " << ds_cur.dump_dim();
-  assert(m_qpu.rows() == ds_cur.cols() && m_qpu.columns() == 1);
-*/  
 
   timers.start("back_prop_1 qpu");
   //Original: m_qpu = ds_cur.m_qpu.mul_e(ones.m_qpu - temp.q_z).mul_e(temp.q_h.dtanh());
   gru_kernel::back_prop_1(m_qpu, ds_cur.m_qpu, temp.z.m_qpu, temp.h.qpu());
   timers.stop("back_prop_1 qpu");
-
-  //OK assert(::same(m_qpu, m_Xf)); 
 }
 
 
@@ -204,22 +214,22 @@ void MMatrix::back_prop_4(MMatrix const &ds_cur_bk, State const &temp, float pre
   m_Xf = dz.cwiseProduct(temp.z.Xf().unaryExpr(&sigmoid_grad));
   timers.stop("back_prop_4 Xf");
 
-	m_qpu.resize(ds_cur_bk.rows(), ds_cur_bk.cols());
+  m_qpu.resize(ds_cur_bk.rows(), ds_cur_bk.cols());
 
   timers.start("back_prop_4 qpu");
-	gru_kernel::back_prop_4(m_qpu, ds_cur_bk.qpu(), temp.z.qpu(), temp.S.qpu(), temp.h.qpu());
+  gru_kernel::back_prop_4(m_qpu, ds_cur_bk.qpu(), temp.z.qpu(), temp.S.qpu(), temp.h.qpu());
   timers.stop("back_prop_4 qpu");
 
-	//warn << "m_Xf: " << dump(m_Xf);
-	//warn << "m_qpu: " << m_qpu.dump();
+  //warn << "m_Xf: " << dump(m_Xf);
+  //warn << "m_qpu: " << m_qpu.dump();
   //Good enough assert(same(precision));
 }
 
 
 void MMatrix::divide_matrix(MMatrix const &gradient, MMatrix const &in_cache) {
   timers.start("divide_matrix");
-	auto const &grad  = gradient.Xf();
-	auto const &cache = in_cache.Xf();
+  auto const &grad  = gradient.Xf();
+  auto const &cache = in_cache.Xf();
 
   for (int i = 0; i < m_Xf.rows(); ++i) {
     for (int j = 0; j < m_Xf.cols(); ++j) {
@@ -358,10 +368,18 @@ std::string dump(MatrixXf const &m) {
   buf << dump_dim(m) << " [\n";
 
   for (int i = 0; i < m.rows(); ++i) {
+    buf << "  " << i << ": [";
+
     for (int j = 0; j < m.cols(); ++j) {
-      buf << "  " << m(i,j) << ", ";
+      if (m(i,j) == 0.0f) {
+        buf << "0";
+      } else {
+        buf  << m(i,j);
+      }
+
+      buf << ", ";
     }
-    buf << "\n";
+    buf << "]\n";
   }
   buf << "]";
 

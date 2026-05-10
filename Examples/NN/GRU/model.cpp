@@ -157,7 +157,7 @@ void Model::cache_decay(float decay, Model &grad) {
 
 
 void Model::divide(Model &grad, Model &cache) {
-	//timers.start("divide");
+  //timers.start("divide");
 
   U_z.divide_matrix(grad.U_z, cache.U_z);
   U_r.divide_matrix(grad.U_r, cache.U_r);
@@ -169,7 +169,7 @@ void Model::divide(Model &grad, Model &cache) {
 
   eval();
 
-	//timers.stop("divide");
+  //timers.stop("divide");
 }
 
 
@@ -311,7 +311,7 @@ void forward_propagation(
     state.O.eval();
 
     if (!do_test) {
-			state.E.update_E(i, Y, state);
+      state.E.update_E(i, Y, state);
     }
   }
 

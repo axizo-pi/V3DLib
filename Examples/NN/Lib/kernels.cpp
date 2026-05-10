@@ -228,17 +228,36 @@ void mult_vec_transposed(Float::Ptr input, Float::Ptr mat, Float::Ptr result, In
  * @param N  length of left input vector
  * @param M  length of right input vector, in blocks of 16
  */
-void outer_product(Float::Ptr left, Float::Ptr right, Float::Ptr out_matrix, Int N, Int M) {
+void outer_product(Float::Ptr ret, Float::Ptr left, Float::Ptr right, Int N, Int M) {
   left -= index();
 
   For (Int i = 0, i < N, i++)
-		Float left_val = *left;
+    Float left_val = *left;
     Float::Ptr start = right;
 
     For (Int j = 0, j < M, j++)
-      *out_matrix = left_val * *start;
+      *ret = left_val * *start;
 
-      out_matrix.inc();
+      ret.inc();
+      start.inc();
+    End
+
+    left++;
+  End
+}
+
+
+void outer_add(Float::Ptr ret, Float::Ptr left, Float::Ptr right, Int N, Int M) {
+  left -= index();
+
+  For (Int i = 0, i < N, i++)
+    Float left_val = *left;
+    Float::Ptr start = right;
+
+    For (Int j = 0, j < M, j++)
+      *ret = *ret + left_val * *start;  // The only difference with outer_product()
+
+      ret.inc();
       start.inc();
     End
 

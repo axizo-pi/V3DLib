@@ -38,6 +38,6 @@ int main(int argc, char *argv[]) {
   }
 
   timers.end(); //true); // Param to enable display min/max
-	std::cout << "QPU Call Count: " << V3DLib::BaseKernel::qpu_call_count() << std::endl;
+  std::cout << "QPU Call Count: " << V3DLib::BaseKernel::qpu_call_count() << std::endl;
   return 0;
 }

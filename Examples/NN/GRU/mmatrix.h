@@ -15,6 +15,7 @@ public:
   MMatrix(int rows, int columns, float val = 0.0f);
 
   void set(MatrixXf const &rhs);
+  void sync_qpu();
 
   int rows() const { return (int) m_Xf.rows(); }
   int cols() const { return (int) m_Xf.cols(); }
@@ -50,7 +51,8 @@ public:
   MMatrix operator*(float val) const;
   void mul_e(MMatrix const &rhs, State const &temp);
   MMatrix mul_e(MMatrix const &rhs);
-  MMatrix outer(MMatrix const &rhs);
+  MMatrix outer(MMatrix const &rhs) const;
+  void outer_add(MMatrix const &lhs, MMatrix const &rhs);
 
   // Application-specific methods
   void back_prop_1(MMatrix const &ds_cur, State const &temp);

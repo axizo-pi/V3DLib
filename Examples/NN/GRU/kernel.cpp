@@ -56,9 +56,9 @@ void back_prop_3_kernel(Float::Ptr ret, Float::Ptr dsr, Float::Ptr S, Float::Ptr
  */
 void back_prop_4_kernel(Float::Ptr ret, Float::Ptr ds_cur_bk, Float::Ptr z, Float::Ptr S, Float::Ptr h, Int N) {
   For (Int i = 0, i < N, i++)
-		Float x    = (*S) - (*h);
-	  Float q_dz = *ds_cur_bk * x;
-		Float x2 = *z;
+    Float x    = (*S) - (*h);
+    Float q_dz = *ds_cur_bk * x;
+    Float x2 = *z;
     Float x3 = (1.0f - x2)*x2;  // dsigmoid
     *ret = q_dz * x3;
 
@@ -113,7 +113,7 @@ void back_prop_4(matrix &ret, matrix const &ds_cur_bk, matrix const &z, matrix c
 
   int size = ds_cur_bk.rows()*ds_cur_bk.columns();
 
-	s_back_prop_4->load(&ret.arr(), &ds_cur_bk.arr(), &z.arr(), &S.arr(), &h.arr(), size/16).run();
+  s_back_prop_4->load(&ret.arr(), &ds_cur_bk.arr(), &z.arr(), &S.arr(), &h.arr(), size/16).run();
 }
 
 

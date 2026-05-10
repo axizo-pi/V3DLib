@@ -58,6 +58,7 @@ struct matrix {
   matrix sigmoid_derivative(matrix const &rhs);
   matrix transpose() const;
   matrix outer(matrix const &rhs) const;
+  void   outer_add(matrix const &lhs, matrix const &rhs);
 
   std::string dump_dim() const;
   std::string dump(bool output_int = false) const;
@@ -66,7 +67,7 @@ struct matrix {
 
 protected:
   void transfer(matrix const &rhs);
-	void check_addsub(matrix const &rhs, std::string const &op) const;
+  void check_addsub(matrix const &rhs, std::string const &op) const;
 
   std::shared_ptr<Float::Array> m_arr;
 
