@@ -1,4 +1,5 @@
 #include "model.h"
+#include "helpers.h"  // resize_16()
 
 using namespace Log;
 
@@ -28,6 +29,76 @@ float calculate_cost(MMatrix const &E, int time_steps) {
 }
 
 
+MAYBE_UNUSED MMatrix move_rows(int step, MMatrix const &rhs) {
+  if (step == 0) {
+    // Nothing to do
+    return rhs;
+  }
+
+  warn << "Called move_rows(" << step << ")";
+
+  assert(abs(step) < rhs.rows());
+
+  MMatrix ret(rhs.rows(), rhs.cols());
+
+  for (int i = 0; i < rhs.rows(); ++i) {
+    if (i + step < 0) continue;
+    if (i + step >= rhs.rows()) continue;
+
+    ret.row(i + step, rhs.row(i), false);
+  }
+
+  ret.sync_qpu();
+/*
+  warn << "move_rows(" << step << "):\n"
+       << "rhs: " << rhs.dump() << "\n"
+       << "ret: " << ret.dump() << "\n";
+*/
+  return ret;
+}
+
+
+MAYBE_UNUSED MMatrix remove_last_rows(int num, MMatrix const &rhs) {
+  if (num == 0) {
+    // Nothing to do
+    return rhs;
+  }
+
+  //warn << "Called remove_last_rows(" << num << ")";
+
+  assert(num > 0 && num < rhs.rows());
+
+  MMatrix ret(rhs.rows() - num, rhs.cols());
+
+  for (int i = 0; i < rhs.rows() - num; ++i) {
+    ret.row(i, rhs.row(i), false);
+  }
+
+  ret.sync_qpu();
+/*
+  warn << "remove_last_rows(" << num << "):\n"
+       << "rhs: " << rhs.dump() << "\n"
+       << "ret: " << ret.dump() << "\n";
+*/
+  return ret;
+}
+
+
+MAYBE_UNUSED MMatrix to_matrix(int rows, MMatrix const &vec) {
+  assert(vec.rows() == 1);
+  assert(vec.cols() > 1);
+
+  MMatrix ret(rows, vec.cols());
+
+  for (int i = 0; i < rows; ++i) {
+    ret.row(i, vec, false);
+  }
+
+  ret.sync_qpu();
+  return ret;
+}
+
+
 std::vector<int> x_input;
 std::vector<int> x_output;
 
@@ -47,7 +118,6 @@ void back_propagation(Model &m, Model &grad, State &state, MatrixXf& X, MatrixXf
   timers.start("back_propagation");
 
   /* gradients = dLdV, dLdU0, dLdU1, dLdU2, dLdW0, dLdW1, dLdW2 */
-  int time_step, curr_step;
   grad.init_zeroes(m.input_dim(), m.hidden_dim(), m.output_dim());
 
   MatrixXf ds_single;
@@ -65,18 +135,59 @@ void back_propagation(Model &m, Model &grad, State &state, MatrixXf& X, MatrixXf
 
   delta_y = state.O.Xf() - Y;
 
-  for(time_step = time_steps - 1; time_step >= 0; time_step--) {
+  for(int time_step = time_steps - 1; time_step >= 0; time_step--) {
     temp.S.set(state.S.row(time_step + 1));
     grad.V.set(grad.V.Xf() + temp.S.Xf().transpose().eval() * delta_y.row(time_step));
   }
 
   ds_single = delta_y * m.V.Xf().transpose().eval();
+/*
+  warn << "time_steps: " << time_steps;
+  warn << "ds_single: " << dump_dim(ds_single);
+*/
 
-  for (curr_step = time_steps - 1; curr_step >= 0; curr_step--) {
-    ds_cur.set(ds_single.row(curr_step));
+  MMatrix x_ds_single;   x_ds_single.set(ds_single);
+  MMatrix x_X;           x_X .set(X);
+  warn << "x_X: " << x_X.dump_dim();
 
-    for (time_step = curr_step; time_step >= 0; time_step--) {
-      timers.start("back_propagation for inner");             // All processing timehere in this loop
+  MMatrix x_ds_cur;
+  x_ds_cur.set(ds_single);
+  warn << "x_ds_cur: "  << x_ds_cur.dump_dim();
+
+  MMatrix x_dreluInput_h;
+  x_dreluInput_h.back_prop_1(x_ds_cur, state);
+
+  State x_state = state;
+  x_state.S = remove_last_rows(1, state.S);
+  //warn << "x_state.S: "     << x_state.S.dump_dim();
+  //warn << "x_dreluInput_h: " << x_dreluInput_h.dump_dim();
+  
+  auto x_dsr = m.W_h * x_dreluInput_h;
+  MMatrix x_dreluInput_r;
+  x_dreluInput_r.back_prop_3(x_dsr, x_state);
+
+  for (int cur_step = time_steps - 1; cur_step >= 0; cur_step--) {
+    ds_cur.set(ds_single.row(cur_step));
+    //warn << "ds_cur: "  << ds_cur.dump_dim();
+
+/*
+    MMatrix x_dreluInput_h;
+
+    int step = (time_steps - 1 - cur_step);
+    x_dreluInput_h.back_prop_1(move_rows(-step, x_ds_cur), state);
+    x_dreluInput_h = move_rows(step, x_dreluInput_h);
+    warn << "x_dreluInput_h: " << x_dreluInput_h.dump_dim();
+*/
+
+    // This is a cumulative sum. You can only compare if the entire double loop is done.
+    //
+    //MMatrix x_U_h(grad.U_h);
+    // x_U_h.outer_add_rows(x_X, x_dreluInput_h);
+    //warn << "x_U_h: " << x_U_h.dump_dim();
+
+    for (int time_step = cur_step; time_step >= 0; time_step--) {
+      warn << "cur_step, time_step: " << cur_step << ", " << time_step;
+      timers.start("back_propagation for inner");             // All processing time here in this loop
 
       ds_cur_bk = ds_cur;
       temp.set_step(time_step, state);
@@ -92,9 +203,18 @@ void back_propagation(Model &m, Model &grad, State &state, MatrixXf& X, MatrixXf
 
       auto dsr = m.W_h * dreluInput_h;
       ds_cur.mul_e(dsr, temp);
+      dsr.sync_qpu();                                  // See Note 1
 
       dreluInput_r.back_prop_3(dsr, temp, Precision);
       dreluInput_r.sync_qpu();                                  // See Note 1
+      //warn << "dreluInput_r: " << dreluInput_r.dump_dim();
+
+      if (time_step == cur_step) {
+        assert(dreluInput_h.same(x_dreluInput_h.row(time_step)));
+
+        // Becomes increasingly imprecise after cur_step, time_step: 3, 3
+        assert(dreluInput_r.same(x_dreluInput_r.row(time_step), 20*Precision));
+      }
 
       grad.U_r.outer_add(temp_X, dreluInput_r);
       grad.W_r.outer_add(temp.S, dreluInput_r);
@@ -109,6 +229,8 @@ void back_propagation(Model &m, Model &grad, State &state, MatrixXf& X, MatrixXf
       grad.W_z.outer_add(temp.S, dreluInput_z);
 
       ds_cur   +=  m.W_z * dreluInput_z;
+
+      x_ds_cur.row(time_step, ds_cur);
 
       timers.stop("back_propagation for inner");
     }
@@ -231,6 +353,17 @@ void read_x_y(MatrixXf& x, MatrixXf& y, std::string filename_input, std::string 
 
 
 void train(std::string filename_input, std::string filename_output, float learning_rate, int nepoch, int input_dim, int hidden_dim, int output_dim, int time_steps, float decay) {
+  warn << "=== Testing matrix     ===";
+  qpu::matrix lhs(5, 16);
+  lhs.set(1.0f);
+  qpu::matrix rhs(16, 3);
+  rhs.set(3.0f);
+  auto ret = lhs.mul_matrix(rhs);
+  //warn << "lhs: " << lhs.dump();
+  //warn << "rhs: " << rhs.dump();
+  warn << "ret: " << ret.dump();
+  warn << "=== End testing matrix ===";
+
   float prev_loss = 0.0f;
 
   int inputSize   = get_input_size(filename_input) - time_steps - 1;

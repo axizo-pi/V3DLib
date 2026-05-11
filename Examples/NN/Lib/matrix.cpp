@@ -15,6 +15,7 @@ bool done_init = false;
 std::unique_ptr<BaseKernel> s_mul_element;
 std::unique_ptr<BaseKernel> s_mult_vec_transposed;
 std::unique_ptr<BaseKernel> s_mult_vec;
+std::unique_ptr<BaseKernel> s_mult_matrix;
 std::unique_ptr<BaseKernel> s_matrix_add;
 std::unique_ptr<BaseKernel> s_mul_float;
 std::unique_ptr<BaseKernel> s_matrix_add_self;
@@ -36,6 +37,7 @@ void init_local() {
   s_mul_element        .reset(new BaseKernel(compile(kernel::mul_element    , settings())));
   s_mult_vec_transposed.reset(new BaseKernel(compile(kernel::mult_vec_transposed, settings())));
   s_mult_vec           .reset(new BaseKernel(compile(kernel::mult_vec       , settings())));
+  s_mult_matrix        .reset(new BaseKernel(compile(kernel::mult_matrix    , settings())));
   s_matrix_add         .reset(new BaseKernel(compile(kernel::matrix_add     , settings())));
   s_mul_float          .reset(new BaseKernel(compile(kernel::mul_float      , settings())));
   s_matrix_add_self    .reset(new BaseKernel(compile(kernel::matrix_add_self, settings())));
@@ -105,15 +107,16 @@ void matrix::resize(int rows, int columns) {
 
 
 matrix matrix::row(int index) const {
-	assert(index >= 0 && index < rows());
-	int width = columns();
-	matrix ret(1, width);
+  assert(index >= 0 && index < rows());
+  int width = columns();
+  matrix ret(1, width);
 
-	for (int i = 0; i < width; ++i) {
-		ret.arr()[i] = arr()[index * width + i];
-	}
+  for (int i = 0; i < width; ++i) {
+    ret.arr()[i] = arr()[index * width + i];
+  }
 
-	return ret;
+  //warn << "row ret: " << ret.dump();
+  return ret;
 }
 
 
@@ -281,6 +284,19 @@ matrix matrix::mul(matrix const &rhs) const {
   matrix ret(m_rows, 1);
 
   s_mult_vec->load(&rhs.arr(), &arr(), &ret.arr(), m_columns/16, m_rows).run();
+  return ret;
+}
+
+
+matrix matrix::mul_matrix(matrix const &rhs) const {
+  assert((m_columns % 16) == 0);      // Inner dimension must be multiple of 16
+  assert(m_columns == rhs.m_rows);
+
+  matrix ret(m_rows, resize_16(rhs.m_columns));
+  ret.set(0.0f);
+
+  s_mult_matrix->load(&ret.arr(), &arr(), &rhs.arr(), m_rows, m_columns, rhs.m_columns).run();
+
   return ret;
 }
 

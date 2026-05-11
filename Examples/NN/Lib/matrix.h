@@ -55,6 +55,7 @@ struct matrix {
   matrix operator*(float rhs) const;
   matrix mul(matrix const &rhs) const;
   matrix mul_t(matrix const &rhs) const;
+  matrix mul_matrix(matrix const &rhs) const;
   matrix mul_e(matrix const &rhs) const;
   matrix sigmoid_derivative(matrix const &rhs);
   matrix transpose() const;

@@ -489,7 +489,7 @@ std::tuple<vector, vector, vector> LSTMCell::backward(
 
   V3DLib::timers.start("backward gradient QPU");
 
-  int columns = resize(input_size + hidden_size);
+  int columns = resize_16(input_size + hidden_size);
   qpu::vector result(columns, 0.0f);
 
   gradient_previous_state_input_kernel().load(

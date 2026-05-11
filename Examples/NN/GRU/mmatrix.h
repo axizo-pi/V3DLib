@@ -23,6 +23,7 @@ public:
   int cols() const { return (int) m_Xf.cols(); }
 
   void row(int index, MatrixXf const &val);
+  void row(int index, MMatrix const &val, bool sync_qpu = true);
   MMatrix row(int index) const;
 
   MatrixXf    const &Xf()  const { return m_Xf; }
@@ -47,14 +48,16 @@ public:
   MMatrix operator*(MMatrix const &rhs) const;
   MMatrix operator*(float val) const;
   void mul_e(MMatrix const &rhs, State const &temp);
-  MMatrix mul_e(MMatrix const &rhs);
+  MMatrix mul_e(MMatrix const &rhs) const;
   MMatrix outer(MMatrix const &rhs) const;
   void outer_add(MMatrix const &lhs, MMatrix const &rhs);
+  void outer_add_rows(MMatrix const &lhs, MMatrix const &rhs);
+  void outer_rows(MMatrix const &lhs, MMatrix const &rhs);
 
   // Application-specific methods
   void back_prop_1(MMatrix const &ds_cur, State const &temp);
   void back_prop_2(State const &temp, MMatrix const &dreluInput_h, float precision);
-  void back_prop_3(MMatrix const &dsr, State const &temp, float precision);
+  void back_prop_3(MMatrix const &dsr, State const &temp, float precision = 0.0f);
   void back_prop_4(MMatrix const &ds_cur_bk, State const &temp, float precision);
   void divide_matrix(MMatrix const &gradient, MMatrix const &in_cache);
   void update_E(int index, MatrixXf const &Y, State const &state);
@@ -64,6 +67,8 @@ public:
 private:  
   MatrixXf    m_Xf;
   qpu::matrix m_qpu;
+
+	void reset();
 };
 
 

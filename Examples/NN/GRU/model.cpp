@@ -1,5 +1,6 @@
 #include "model.h"
 #include "global/log.h"
+#include "helpers.h"  // resize_16()
 #include <iostream>
 
 using namespace std;
@@ -210,6 +211,7 @@ void State::init(int time_steps, int hidden_dim, int output_dim) {
     h.set(zero);
 
   } else {
+    //auto zero   = MatrixXf::Zero(resize_16(time_steps), hidden_dim);
     auto zero   = MatrixXf::Zero(time_steps, hidden_dim);
     auto zero_1 = MatrixXf::Zero(1, time_steps);
     auto zero_o = MatrixXf::Zero(time_steps, output_dim);
@@ -220,6 +222,7 @@ void State::init(int time_steps, int hidden_dim, int output_dim) {
     h.set(zero);
     O.set(zero_o);
 
+    //MatrixXf tmp_S = MatrixXf::Zero(resize_16(time_steps + 1), hidden_dim);
     MatrixXf tmp_S = MatrixXf::Zero(time_steps + 1, hidden_dim);
     tmp_S(0, 0) = static_cast <float> (((float) rand()) / (static_cast <float> (RAND_MAX / 2)) - 1);
 		//tmp_S.eval();

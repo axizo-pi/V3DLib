@@ -95,3 +95,23 @@ std::string vector_dump(Float::Array const &src, int size, int start_index, bool
 Settings &settings() {
   return _settings;
 }
+
+
+/**
+ * @brief Return the lowest upper of 16 for val.
+ */
+int resize_16(int in_val, bool do_dump) {
+  int val = in_val;
+
+  if ((val & 0xf) != 0) {
+    val = (val + 15) & ~0xf;
+
+    if (do_dump) {
+      warn << "resize_16(): size " << in_val << " passed in,  adjusting to multiple of 16"
+           << " -> " << val;
+    }
+  }
+
+  return val;
+}
+

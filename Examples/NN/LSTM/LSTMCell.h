@@ -2,6 +2,7 @@
 #define _LSTM_LSTMCELL_H
 #include "lstm_matrix.h"
 #include "helpers.h"
+#include "../Lib/helpers.h"  // resize_16()
 #include "convert.h"
 #include <tuple>
 
@@ -47,7 +48,7 @@ private:
   int input_size;
   int hidden_size;
 
-  int qpu_columns() const { return resize(input_size + hidden_size); }
+  int qpu_columns() const { return resize_16(input_size + hidden_size); }
 
   Gate forget;
   Gate input;

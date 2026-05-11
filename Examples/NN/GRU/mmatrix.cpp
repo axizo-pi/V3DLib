@@ -1,6 +1,7 @@
 #include "mmatrix.h"
 #include "model.h"
 #include "./kernel.h"
+#include "helpers.h"  // resize_16()
 
 MMatrix::MMatrix(int rows, int columns, float val) {
   assert(rows > 0);
@@ -18,7 +19,7 @@ MMatrix::MMatrix(int rows, int columns, float val) {
 
 
 MMatrix::MMatrix(MMatrix const &rhs) {
-	set(rhs);
+  set(rhs);
 }
 
 
@@ -36,8 +37,14 @@ void MMatrix::set(MatrixXf const &rhs) {
 void MMatrix::set(MMatrix const &rhs) {
   m_Xf = rhs.m_Xf;
 
-	// TODO Note that rhs.m_qpu is ignored here
+  // TODO Note that rhs.m_qpu is ignored here
   m_qpu = copy_m(rhs.m_Xf);
+}
+
+
+void MMatrix::reset() {
+  m_Xf = MatrixXf::Zero(rows(), cols());
+  m_qpu.set(0.0f);
 }
 
 
@@ -50,18 +57,30 @@ void MMatrix::row(int index, MatrixXf const &val) {
   m_Xf.row(index) = val;
   m_Xf.eval();
 
-	// TODO: Following inefficient and ugly
-	m_qpu = copy_m(m_Xf);
+  // TODO: Following inefficient and ugly
+  m_qpu = copy_m(m_Xf);
+}
+
+
+void MMatrix::row(int index, MMatrix const &val, bool sync_qpu) {
+  m_Xf.row(index) = val.m_Xf;
+
+  if (sync_qpu) {
+    // TODO: Following inefficient and ugly
+    m_qpu = copy_m(m_Xf);
+  }
 }
 
 
 MMatrix MMatrix::row(int index) const {
-	MMatrix ret;
+  //warn << "row: " << dump();
+
+  MMatrix ret;
   ret.m_Xf = m_Xf.row(index);
   ret.m_qpu = m_qpu.row(index);
-	//OK assert(ret.same());
 
-	return ret;
+  // assert(ret.same()); // Fails on diff 4.814825e-35; gimme a break
+  return ret;
 }
 
 
@@ -83,8 +102,8 @@ std::string MMatrix::dump_dim() const {
 std::string MMatrix::dump() const {
   std::string ret;
   ret << dump_dim() << ": \n"
-		  << "  m_Xf : " << ::dump(m_Xf) << "\n"
-		  << "  m_qpu: " << m_qpu.dump();
+      << "  m_Xf : " << ::dump(m_Xf) << "\n"
+      << "  m_qpu: " << m_qpu.dump();
   return ret;
 }
 
@@ -160,7 +179,7 @@ void MMatrix::mul_e(MMatrix const &rhs, State const &temp) {
 }
 
 
-MMatrix MMatrix::mul_e(MMatrix const &rhs) {
+MMatrix MMatrix::mul_e(MMatrix const &rhs) const {
   MMatrix ret;
 
   timers.start("MMatrix mul_e Xf");
@@ -204,14 +223,48 @@ void MMatrix::outer_add(MMatrix const &lhs, MMatrix const &rhs) {
 }
 
 
+
+/**
+ * This is not a full outer product of tensors,
+ * but a per-row calculation of outer products, which are all added to current instance.
+ *
+ * Note that the rows of rhs are technically transposed for the outer products.
+ */
+void MMatrix::outer_add_rows(MMatrix const &lhs, MMatrix const &rhs) {
+  assert(lhs.rows() == rhs.rows());
+  assert(lhs.rows() > 1);
+  MMatrix tmp(lhs.cols(), rhs.cols());
+
+  for (int i = 0; i < lhs.rows(); ++i) {
+    tmp.outer_add(lhs.row(i), rhs.row(i));
+  }
+
+  *this += tmp;
+}
+
+
+void MMatrix::outer_rows(MMatrix const &lhs, MMatrix const &rhs) {
+  assert(lhs.rows() == rhs.rows());
+  assert(lhs.rows() > 1);
+  MMatrix tmp(lhs.cols(), rhs.cols());
+
+  for (int i = 0; i < lhs.rows(); ++i) {
+    tmp.outer_add(lhs.row(i), rhs.row(i));
+  }
+
+  set(tmp);
+}
+
+
 void MMatrix::back_prop_1(MMatrix const &ds_cur, State const &temp) {
-  MMatrix ones(1, ds_cur.cols(), 1.0f);
+  //MMatrix ones(resize_16(ds_cur.rows()), ds_cur.cols(), 1.0f);
+  MMatrix ones(ds_cur.rows(), ds_cur.cols(), 1.0f);
 
   timers.start("back_prop_1 Xf");
   m_Xf = ds_cur.m_Xf.cwiseProduct(ones.m_Xf - temp.z.m_Xf).cwiseProduct(temp.h.Xf().unaryExpr(&tanh_grad));  //.cwiseProduct(temp_S.unaryExpr(&tanh_grad));
   timers.stop("back_prop_1 Xf");
 
-  m_qpu.resize(ds_cur.cols(), 1);
+  m_qpu.resize(ds_cur.rows(), ds_cur.cols());
 
   timers.start("back_prop_1 qpu");
   //Original: m_qpu = ds_cur.m_qpu.mul_e(ones.m_qpu - temp.q_z).mul_e(temp.q_h.dtanh());
@@ -238,7 +291,8 @@ void MMatrix::back_prop_3(MMatrix const &dsr, State const &temp, float precision
   m_Xf = dsr.m_Xf.cwiseProduct(temp.S.Xf()).cwiseProduct(temp.r.Xf().unaryExpr(&sigmoid_grad));
   timers.stop("back_prop_3 Xf");
 
-  m_qpu.resize(dsr.cols(), dsr.rows()); // sic; dimensions reversed
+  //m_qpu.resize(dsr.cols(), dsr.rows()); // sic; dimensions reversed
+  m_qpu.resize(dsr.rows(), dsr.cols()); // sic; dimensions reversed
 
   timers.start("back_prop_3 qpu");
   gru_kernel::back_prop_3(m_qpu, dsr.m_qpu, temp.S.m_qpu, temp.r.m_qpu);

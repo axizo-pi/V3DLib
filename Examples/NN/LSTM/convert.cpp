@@ -1,4 +1,5 @@
 #include "convert.h"
+#include "../Lib/helpers.h"  // resize_16()
 
 /**
  * /file
@@ -7,24 +8,6 @@
  */
 
 using namespace qpu;
-
-/**
- * Return a size that is a multiple of 16
- */
-int resize(std::size_t in_size, bool do_dump) {
-  int size = (int) in_size;
-
-  if ((size & 0xf) != 0) {
-    size = (size + 15) & ~0xf;
-
-    if (do_dump) {
-      warn << "resize(): size " << in_size << " passed in,  adjusting to multiple of 16"
-           << " -> " << size;
-    }
-  }
-
-  return size;
-}
 
 
 /**
@@ -57,7 +40,7 @@ lstm::vector copy(qpu::vector const &rhs, int offset, int length) {
  * The underlying type for `lstm::vector` is `std::vector`.
  */
 qpu::vector copy(lstm::vector const &rhs) {
-  int size = resize(rhs.size());
+  int size = resize_16((int) rhs.size());
   qpu::vector ret(size);
   ret.set(0.0f);
 
@@ -75,9 +58,9 @@ qpu::vector copy(lstm::vector const &rhs) {
  * The underlying type for `lstm::matrix` is `std::vector<std::vector<float>>`.
  */
 qpu::matrix copy(lstm::matrix const &rhs) {
-  int height = resize(rhs.size());
+  int height = resize_16((int)  rhs.size());
   assert(rhs.size() >= 1);
-  auto width = resize(rhs[0].size());
+  auto width = resize_16((int)rhs[0].size());
 
   qpu::matrix ret(height, (int) width);
   ret.set(0.0f);
@@ -93,7 +76,7 @@ qpu::matrix copy(lstm::matrix const &rhs) {
 
 
 qpu::vector qpu_concat(lstm::vector const &x, lstm::vector const &y) {
-  int size = resize(x.size() + y.size());
+  int size = resize_16((int) (x.size() + y.size()));
   qpu::vector ret(size);
   ret.set(0.0f);
 

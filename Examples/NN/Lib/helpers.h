@@ -19,4 +19,6 @@ std::string vector_dump(
 
 V3DLib::Settings &settings();
 
+int resize_16(int in_val, bool do_dump = false);
+
 #endif // _INCLUDE_RNNSUPPORT_HELPERS_H
