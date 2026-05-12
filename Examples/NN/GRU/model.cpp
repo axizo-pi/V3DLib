@@ -201,6 +201,8 @@ void Model::eval() {
 
 
 void State::init(int time_steps, int hidden_dim, int output_dim) {
+  //warn << "State::init()";
+
   if (m_do_temp) {
     assert(time_steps == 1);
     auto zero = MatrixXf::Zero(1, hidden_dim);

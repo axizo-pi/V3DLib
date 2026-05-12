@@ -314,6 +314,7 @@ matrix matrix::mul_matrix_t(matrix const &rhs) const {
   matrix ret(m_rows, resize_16(rhs.m_rows));
   ret.set(0.0f);
 
+  s_mult_matrix_t->setNumQPUs(16);
   s_mult_matrix_t->load(&ret.arr(), &arr(), &rhs.arr(), m_rows, m_columns, rhs.m_rows).run();
 
   return ret;

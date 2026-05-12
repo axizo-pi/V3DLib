@@ -188,7 +188,7 @@ void mult_matrix(Float::Ptr in_ret, Float::Ptr lhs, Float::Ptr rhs, Int lhs_rows
   Float ret_acc = 0.0f;
   Float::Ptr ret;
 
-  For (Int row = 0, row < lhs_rows, row++)
+  For (Int row = me(), row < lhs_rows, row += numQPUs())
     ret = in_ret + row*((rhs_cols + 15) & ~0xf);  // Output width must be a multiple of 16
 
     For (Int col = 0, col < rhs_cols, col++)
@@ -229,7 +229,7 @@ void mult_matrix_t(Float::Ptr in_ret, Float::Ptr lhs, Float::Ptr rhs, Int lhs_ro
   Float ret_acc = 0.0f;
   Float::Ptr ret;
 
-  For (Int l_row = 0, l_row < lhs_rows, l_row++)
+  For (Int l_row = me(), l_row < lhs_rows, l_row += numQPUs())
     ret = in_ret + l_row*((rhs_rows + 15) & ~0xf);  // output width must be a multiple of 16
 
     For (Int r_row = 0, r_row < rhs_rows, r_row++)

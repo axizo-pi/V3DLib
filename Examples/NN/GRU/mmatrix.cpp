@@ -15,6 +15,8 @@ MMatrix::MMatrix(int rows, int columns, float val) {
   }
 
   m_qpu = copy_m(m_Xf);
+
+  used_fields(true, true);
 }
 
 
@@ -31,25 +33,37 @@ void MMatrix::set(MatrixXf const &rhs) {
   timers.start("set qpu");
   m_qpu = copy_m(m_Xf);
   timers.stop("set qpu");
+
+  used_fields(true, true);
 }
 
 
 void MMatrix::set(MMatrix const &rhs) {
+  rhs.need_fields(true, false);
+
   m_Xf = rhs.m_Xf;
 
   // TODO Note that rhs.m_qpu is ignored here
   m_qpu = copy_m(rhs.m_Xf);
+
+  used_fields(true, true);
 }
 
 
 void MMatrix::reset() {
   m_Xf = MatrixXf::Zero(rows(), cols());
   m_qpu.set(0.0f);
+
+  used_fields(true, true);
 }
 
 
 void MMatrix::sync_qpu() {
+  need_fields(true, false);
+
   m_qpu = copy_m(m_Xf);
+
+  used_fields(true, true);
 }
 
 
@@ -59,32 +73,55 @@ void MMatrix::row(int index, MatrixXf const &val) {
 
   // TODO: Following inefficient and ugly
   m_qpu = copy_m(m_Xf);
+
+  used_fields(true, true);
 }
 
 
 void MMatrix::row(int index, MMatrix const &val, bool sync_qpu) {
+  val.need_fields(true, false);
+
   m_Xf.row(index) = val.m_Xf;
 
   if (sync_qpu) {
     // TODO: Following inefficient and ugly
     m_qpu = copy_m(m_Xf);
+    used_fields(true, true);
+  } else {
+    used_fields(true, false);
   }
 }
 
 
 MMatrix MMatrix::row(int index) const {
   //warn << "row: " << dump();
+  need_fields(true, true);
 
   MMatrix ret;
   ret.m_Xf = m_Xf.row(index);
   ret.m_qpu = m_qpu.row(index);
 
+  ret.used_fields(true, true);
   // assert(ret.same()); // Fails on diff 4.814825e-35; gimme a break
   return ret;
 }
 
 
+MatrixXf const &MMatrix::Xf() const {
+  need_fields(true, false);
+  return m_Xf;
+}
+
+
+qpu::matrix const &MMatrix::qpu() const {
+  need_fields(false, true);
+  return m_qpu;
+}
+
+
 bool MMatrix::same(MMatrix const &rhs, float precision) const {
+  need_fields(true, true);
+
   return
     ::same(m_qpu, m_Xf, precision) &&
     ::same(rhs.m_qpu, rhs.m_Xf, precision) &&
@@ -93,6 +130,8 @@ bool MMatrix::same(MMatrix const &rhs, float precision) const {
 
 
 std::string MMatrix::dump_dim() const {
+  need_fields(true, true);
+
   std::string ret;
   ret << ::dump_dim(m_Xf) << ", " << m_qpu.dump_dim();
   return ret;
@@ -100,6 +139,8 @@ std::string MMatrix::dump_dim() const {
 
 
 std::string MMatrix::dump() const {
+  need_fields(true, true);
+
   std::string ret;
   ret << dump_dim() << ": \n"
       << "  m_Xf : " << ::dump(m_Xf) << "\n"
@@ -109,6 +150,9 @@ std::string MMatrix::dump() const {
 
 
 void MMatrix::operator+=(MMatrix const &rhs) {
+  rhs.need_fields(true, true);
+  need_fields(true, true);
+
   timers.start("MMatrix += Xf");
   m_Xf = m_Xf + rhs.m_Xf;
   timers.stop("MMatrix += Xf");
@@ -116,10 +160,15 @@ void MMatrix::operator+=(MMatrix const &rhs) {
   timers.start("MMatrix += qpu");
   m_qpu += rhs.m_qpu;
   timers.stop("MMatrix += qpu");
+
+  used_fields(true, true);
 }
 
 
 void MMatrix::operator-=(MMatrix const &rhs) {
+  rhs.need_fields(true, true);
+  need_fields(true, true);
+
   //timers.start("MMatrix -= Xf");
   m_Xf = m_Xf - rhs.m_Xf;
   //timers.stop("MMatrix -= Xf");
@@ -127,10 +176,14 @@ void MMatrix::operator-=(MMatrix const &rhs) {
   //timers.start("MMatrix -= qpu");
   m_qpu -= rhs.m_qpu;
   //timers.stop("MMatrix -= qpu");
+
+  used_fields(true, true);
 }
 
 
 void MMatrix::operator/=(float steps) {
+  need_fields(true, true);
+
   m_Xf /= steps;
   m_qpu = copy_m(m_Xf);
 }
@@ -142,6 +195,9 @@ void MMatrix::operator/=(float steps) {
  *     rhs * lhs^T;    // ^T - transposed
  */
 MMatrix MMatrix::operator*(MMatrix const &rhs) const {
+  rhs.need_fields(true, true);
+  need_fields(true, true);
+
   MMatrix ret;
 
   timers.start("MMatrix * Xf");
@@ -158,11 +214,15 @@ MMatrix MMatrix::operator*(MMatrix const &rhs) const {
     timers.stop("MMatrix * qpu matrix");
   }
 
+  //OK assert(same());
+  ret.used_fields(true, true);
   return ret;
 }
 
 
 MMatrix MMatrix::operator*(float val) const {
+  need_fields(true, true);
+
   MMatrix ret;
 
   //timers.start("MMatrix float * Xf");
@@ -173,22 +233,15 @@ MMatrix MMatrix::operator*(float val) const {
   ret.m_qpu = m_qpu * val;
   //timers.stop("MMatrix float * qpu");
 
+  ret.used_fields(true, true);
   return ret;
 }
 
 
-void MMatrix::mul_e(MMatrix const &rhs, State const &temp) {
-  timers.start("MMatrix mul_e state Xf");
-  m_Xf = rhs.m_Xf.cwiseProduct(temp.r.Xf());
-  timers.stop("MMatrix mul_e state Xf");
-
-  timers.start("MMatrix mul_e state qpu");
-  m_qpu = rhs.m_qpu.mul_e(temp.r.qpu());
-  timers.stop("MMatrix mul_e state qpu");
-}
-
-
 MMatrix MMatrix::mul_e(MMatrix const &rhs) const {
+  rhs.need_fields(true, true);
+  need_fields(true, true);
+
   MMatrix ret;
 
   timers.start("MMatrix mul_e Xf");
@@ -199,11 +252,19 @@ MMatrix MMatrix::mul_e(MMatrix const &rhs) const {
   ret.m_qpu = m_qpu.mul_e(rhs.m_qpu);
   timers.stop("MMatrix mul_e qpu");
 
+  ret.used_fields(true, true);
   return ret;
 }
 
 
+/**
+ * Currently unused
+ */
 MMatrix MMatrix::outer(MMatrix const &rhs) const {
+  assert(false); // Check unused
+  rhs.need_fields(true, true);
+  need_fields(true, true);
+
   MMatrix ret;
   timers.start("MMatrix outer Xf");
   ret.m_Xf  = m_Xf.transpose().eval() * rhs.m_Xf;
@@ -214,11 +275,16 @@ MMatrix MMatrix::outer(MMatrix const &rhs) const {
   timers.stop("MMatrix outer qpu");
 
   //OK assert(same());
+  ret.used_fields(true, true);
   return ret;
 }
 
 
 void MMatrix::outer_add(MMatrix const &lhs, MMatrix const &rhs) {
+  lhs.need_fields(true, true);
+  rhs.need_fields(true, true);
+  need_fields(true, true);
+
   timers.start("MMatrix outer_add Xf");
   m_Xf  = m_Xf + lhs.m_Xf.transpose().eval() * rhs.m_Xf;
   timers.stop("MMatrix outer_add Xf");
@@ -229,6 +295,7 @@ void MMatrix::outer_add(MMatrix const &lhs, MMatrix const &rhs) {
   //assert(::same(tmp, m_Xf));
 
   //OK assert(same());
+  used_fields(true, true);
 }
 
 
@@ -240,6 +307,8 @@ void MMatrix::outer_add(MMatrix const &lhs, MMatrix const &rhs) {
  * Note that the rows of rhs are technically transposed for the outer products.
  */
 void MMatrix::outer_add_rows(MMatrix const &lhs, MMatrix const &rhs) {
+  assert(false); // Check unused
+
   assert(lhs.rows() == rhs.rows());
   assert(lhs.rows() > 1);
   MMatrix tmp(lhs.cols(), rhs.cols());
@@ -253,6 +322,8 @@ void MMatrix::outer_add_rows(MMatrix const &lhs, MMatrix const &rhs) {
 
 
 void MMatrix::outer_rows(MMatrix const &lhs, MMatrix const &rhs) {
+  assert(false); // Check unused
+
   assert(lhs.rows() == rhs.rows());
   assert(lhs.rows() > 1);
   MMatrix tmp(lhs.cols(), rhs.cols());
@@ -266,6 +337,10 @@ void MMatrix::outer_rows(MMatrix const &lhs, MMatrix const &rhs) {
 
 
 void MMatrix::back_prop_1(MMatrix const &ds_cur, State const &temp) {
+  ds_cur.need_fields(true, true);
+  temp.h.need_fields(true, true);
+  temp.z.need_fields(true, true);
+
   //MMatrix ones(resize_16(ds_cur.rows()), ds_cur.cols(), 1.0f);
   MMatrix ones(ds_cur.rows(), ds_cur.cols(), 1.0f);
 
@@ -277,8 +352,10 @@ void MMatrix::back_prop_1(MMatrix const &ds_cur, State const &temp) {
 
   timers.start("back_prop_1 qpu");
   //Original: m_qpu = ds_cur.m_qpu.mul_e(ones.m_qpu - temp.q_z).mul_e(temp.q_h.dtanh());
-  gru_kernel::back_prop_1(m_qpu, ds_cur.m_qpu, temp.z.m_qpu, temp.h.qpu());
+  gru_kernel::back_prop_1(m_qpu, ds_cur.m_qpu, temp.z.m_qpu, temp.h.m_qpu);
   timers.stop("back_prop_1 qpu");
+
+  used_fields(true, true);
 }
 
 
@@ -291,11 +368,16 @@ void MMatrix::back_prop_2(State const &temp, MMatrix const &dreluInput_h, float 
   m_qpu = temp.S.qpu().mul_e(temp.r.qpu()).outer(dreluInput_h.qpu());
   timers.stop("back_prop_2 qpu");
 
+  used_fields(true, true);
   //OK assert(::same(m_qpu, m_Xf, precision)); 
 }
 
 
 void MMatrix::back_prop_3(MMatrix const &dsr, State const &temp, float precision) {
+  dsr.need_fields(true, true);
+  temp.S.need_fields(true, true);
+  temp.r.need_fields(true, true);
+
   timers.start("back_prop_3 Xf");
   m_Xf = dsr.m_Xf.cwiseProduct(temp.S.Xf()).cwiseProduct(temp.r.Xf().unaryExpr(&sigmoid_grad));
   timers.stop("back_prop_3 Xf");
@@ -306,6 +388,8 @@ void MMatrix::back_prop_3(MMatrix const &dsr, State const &temp, float precision
   timers.start("back_prop_3 qpu");
   gru_kernel::back_prop_3(m_qpu, dsr.m_qpu, temp.S.m_qpu, temp.r.m_qpu);
   timers.stop("back_prop_3 qpu");
+
+  used_fields(true, true);
 }
 
 
@@ -327,11 +411,13 @@ void MMatrix::back_prop_4(MMatrix const &ds_cur_bk, State const &temp, float pre
   //warn << "m_Xf: " << dump(m_Xf);
   //warn << "m_qpu: " << m_qpu.dump();
   //Good enough assert(same(precision));
+  used_fields(true, true);
 }
 
 
 void MMatrix::divide_matrix(MMatrix const &gradient, MMatrix const &in_cache) {
   timers.start("divide_matrix");
+
   auto const &grad  = gradient.Xf();
   auto const &cache = in_cache.Xf();
 
@@ -342,10 +428,14 @@ void MMatrix::divide_matrix(MMatrix const &gradient, MMatrix const &in_cache) {
   }
 
   timers.stop("divide_matrix");
+
+  used_fields(true, false);
 }
 
 
 void MMatrix::update_E(int index, MatrixXf const &Y, State const &state) {
+  need_fields(true, false);
+
   auto temp_output = state.O.row(index).Xf();
   temp_output.eval();
 
@@ -355,6 +445,9 @@ void MMatrix::update_E(int index, MatrixXf const &Y, State const &state) {
 
 
 void MMatrix::set_decay(float decay, MMatrix const &rhs) {
+  rhs.need_fields(true, true);
+  need_fields(true, true);
+
   //timers.start("set_decay Xf");
   m_Xf = decay * m_Xf + (1 - decay) * (rhs.m_Xf.cwiseProduct(rhs.m_Xf)).eval();
   //timers.stop("set_decay Xf");
@@ -368,6 +461,23 @@ void MMatrix::set_decay(float decay, MMatrix const &rhs) {
   //timers.stop("set_decay qpu");
 
   //OK assert(::same(m_qpu, m_Xf));
+  used_fields(true, true);
+}
+
+
+void MMatrix::need_fields(bool need_XF, bool need_qpu) const {
+  if (need_XF && !m_using_Xf) {
+    assert(m_using_qpu);
+    warn << "need_fields transferring qpu->Xf";
+    assert(false);  // TODO
+  }
+
+  if (need_qpu && !m_using_qpu) {
+    assert(m_using_Xf);
+    warn << "need_fields transferring Xf->qpu";
+    m_qpu = copy_m(m_Xf);
+    m_using_qpu = true;
+  }
 }
 
 

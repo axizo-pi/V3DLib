@@ -26,8 +26,8 @@ public:
   void row(int index, MMatrix const &val, bool sync_qpu = true);
   MMatrix row(int index) const;
 
-  MatrixXf    const &Xf()  const { return m_Xf; }
-  qpu::matrix const &qpu() const { return m_qpu; }
+  MatrixXf    const &Xf()  const;
+  qpu::matrix const &qpu() const;
 
   void Xf(MatrixXf const &val)     { m_Xf  = val; }
   void qpu(qpu::matrix const &val) { m_qpu = val; }
@@ -47,7 +47,6 @@ public:
   void operator/=(float steps);
   MMatrix operator*(MMatrix const &rhs) const;
   MMatrix operator*(float val) const;
-  void mul_e(MMatrix const &rhs, State const &temp);
   MMatrix mul_e(MMatrix const &rhs) const;
   MMatrix outer(MMatrix const &rhs) const;
   void outer_add(MMatrix const &lhs, MMatrix const &rhs);
@@ -65,8 +64,14 @@ public:
   void set_decay(float decay, MMatrix const &rhs);
 
 private:  
-  MatrixXf    m_Xf;
-  qpu::matrix m_qpu;
+  mutable MatrixXf    m_Xf;
+  mutable qpu::matrix m_qpu;
+
+  mutable bool m_using_Xf  = false;
+  mutable bool m_using_qpu = false;
+
+  void need_fields(bool need_XF, bool need_qpu) const;
+  void used_fields(bool in_XF, bool in_qpu) { m_using_Xf = in_XF; m_using_qpu = in_qpu; }
 
   void reset();
 };

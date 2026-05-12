@@ -174,7 +174,7 @@ void LoopState::init_drelu(MMatrix const &ds_cur, Model const &m) {
 
 
 void LoopState::update(MMatrix &ds_cur, Model const &m) const {
-  ds_cur.mul_e(dsr, m_temp);
+  ds_cur  = dsr.mul_e(m_temp.r);
   ds_cur += m.W_r * dreluInput_r;
   ds_cur += ds_cur_bk.mul_e(m_temp.z);
   ds_cur += m.W_z * dreluInput_z;
