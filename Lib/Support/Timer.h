@@ -23,7 +23,7 @@ public:
   std::string end(bool show_output = true);
 
 private:
-	const int HISTORY_SIZE = 0;
+  const int HISTORY_SIZE = 0;
 
   bool m_disp_in_dtor = false;
   std::string m_label;
@@ -38,9 +38,9 @@ private:
   timeval tvMax = {0,0};
 
   timeval diff_time();
-	std::string time_to_str(timeval const &val, int count = 1);
+  std::string time_to_str(timeval const &val, int count = 1);
 
-	std::vector<timeval> m_history;
+  std::vector<timeval> m_history;
 };
 
 

@@ -104,7 +104,7 @@ std::vector<int> x_output;
 
 
 class LoopState {
-private:	
+private:  
   State m_temp;
 
 public:  
@@ -115,22 +115,22 @@ public:
   MMatrix dreluInput_z;
   MMatrix dsr;
 
-	LoopState(int input_dim, int hidden_dim);
+  LoopState(int input_dim, int hidden_dim);
 
   State const &temp() const { return  m_temp; }
 
-	void set_step(int time_step, State const &state, MatrixXf const &X);
-	void temp_init(int time_steps, State const &state);
+  void set_step(int time_step, State const &state, MatrixXf const &X);
+  void temp_init(int time_steps, State const &state);
   void init_drelu(MMatrix const &ds_cur, Model const &m);
-	void update(MMatrix &ds_cur, Model const &m) const;
-	void update_gradient(Model &grad) const;
+  void update(MMatrix &ds_cur, Model const &m) const;
+  void update_gradient(Model &grad) const;
 };
 
 
 LoopState::LoopState(int input_dim, int hidden_dim) :
-	m_temp(true),
-	temp_X(1, input_dim),
-	ds_cur_bk(1, hidden_dim)
+  m_temp(true),
+  temp_X(1, input_dim),
+  ds_cur_bk(1, hidden_dim)
 {
   m_temp.init(1, hidden_dim, -1);
 }
@@ -214,7 +214,7 @@ void back_propagation(Model &m, Model &grad, State &state, MatrixXf& X, MatrixXf
   grad.init_zeroes(m.input_dim(), m.hidden_dim(), m.output_dim());
 
   LoopState ls(input_dim, hidden_dim);
-	ls.temp_init(time_steps, state);
+  ls.temp_init(time_steps, state);
 
   MatrixXf delta_y = state.O.Xf() - Y;
 
@@ -275,7 +275,7 @@ void back_propagation(Model &m, Model &grad, State &state, MatrixXf& X, MatrixXf
         assert(ls.dreluInput_r.same(x_dreluInput_r.row(time_step), Precision));
       }
 
-			ls.update(ds_cur, m);
+      ls.update(ds_cur, m);
       ls.update_gradient(grad);
 
       x_ds_cur.row(time_step, ds_cur);

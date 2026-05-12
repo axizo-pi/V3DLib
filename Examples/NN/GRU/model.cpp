@@ -225,10 +225,10 @@ void State::init(int time_steps, int hidden_dim, int output_dim) {
     //MatrixXf tmp_S = MatrixXf::Zero(resize_16(time_steps + 1), hidden_dim);
     MatrixXf tmp_S = MatrixXf::Zero(time_steps + 1, hidden_dim);
     tmp_S(0, 0) = static_cast <float> (((float) rand()) / (static_cast <float> (RAND_MAX / 2)) - 1);
-		//tmp_S.eval();
+    //tmp_S.eval();
 
     S.set(tmp_S);
-		// OK warn << "State::init S: " << S.dump();
+    // OK warn << "State::init S: " << S.dump();
   }
 }
 
@@ -285,7 +285,7 @@ void forward_propagation(
   MatrixXf temp        = MatrixXf::Zero(1, hidden_dim);
   MatrixXf temp_output = MatrixXf::Zero(1, output_dim);
   MatrixXf temp_hidden = MatrixXf::Zero(1, hidden_dim);
-	MatrixXf ones        = MatrixXf::Ones(1, hidden_dim);
+  MatrixXf ones        = MatrixXf::Ones(1, hidden_dim);
 
   for(int i = 0; i < time_steps; i++) {
     auto S_row = state.S.row(i).Xf();

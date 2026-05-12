@@ -68,9 +68,9 @@ void Timer::stop() {
     tvMax = tvDiff;
   }
 
-	if ((int) m_history.size() < HISTORY_SIZE) {
-		m_history.push_back(tvDiff);
-	}
+  if ((int) m_history.size() < HISTORY_SIZE) {
+    m_history.push_back(tvDiff);
+  }
 
   started = false;
 }
@@ -132,18 +132,18 @@ std::string Timer::dump(int width, bool show_extended) {
     if (show_extended) {
       buf2 << " - Min: " << time_to_str(tvMin) << ", Max:: " << time_to_str(tvMax);
 
-			if (HISTORY_SIZE > 0) {
-				buf2 << "\n" << indentBy(width) << "    History: [";
+      if (HISTORY_SIZE > 0) {
+        buf2 << "\n" << indentBy(width) << "    History: [";
 
-				for (int i = 0; i < (int) m_history.size(); ++i) {
-					if (i != 0) buf2 << ",";
+        for (int i = 0; i < (int) m_history.size(); ++i) {
+          if (i != 0) buf2 << ",";
 
-					buf2 << time_to_str(m_history[i]);
-	    	}
+          buf2 << time_to_str(m_history[i]);
+        }
 
-				buf2 << "]";
-			}
-  	}
+        buf2 << "]";
+      }
+    }
   }
 
   std::string ret = m_label;
@@ -160,7 +160,7 @@ std::string Timer::end(bool show_output) {
     warn << dump();
   }
 
-	return time_to_str(diff_time());
+  return time_to_str(diff_time());
 }
 
 

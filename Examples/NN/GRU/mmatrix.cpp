@@ -149,14 +149,14 @@ MMatrix MMatrix::operator*(MMatrix const &rhs) const {
   timers.stop("MMatrix * Xf");
 
   if (rhs.m_qpu.is_vector()) {
-	  timers.start("MMatrix * qpu vec");
-	  ret.m_qpu = m_qpu * rhs.m_qpu;
-	  timers.stop("MMatrix * qpu vec");
-	} else {
-	  timers.start("MMatrix * qpu matrix");
-	  ret.m_qpu = rhs.m_qpu.mul_matrix_t(m_qpu);
-	  timers.stop("MMatrix * qpu matrix");
-	}
+    timers.start("MMatrix * qpu vec");
+    ret.m_qpu = m_qpu * rhs.m_qpu;
+    timers.stop("MMatrix * qpu vec");
+  } else {
+    timers.start("MMatrix * qpu matrix");
+    ret.m_qpu = rhs.m_qpu.mul_matrix_t(m_qpu);
+    timers.stop("MMatrix * qpu matrix");
+  }
 
   return ret;
 }

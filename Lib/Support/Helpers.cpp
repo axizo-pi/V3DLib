@@ -190,7 +190,7 @@ float random_float() {
 std::string indentBy(int indent) {
   std::string ret;
 
-	if (indent == -1) return ret;
+  if (indent == -1) return ret;
 
   for (int i = 0; i < indent; i++) ret += " ";
   return ret;

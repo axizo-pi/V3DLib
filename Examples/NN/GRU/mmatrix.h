@@ -13,10 +13,10 @@ class MMatrix {
 public:
   MMatrix() = default;
   MMatrix(int rows, int columns, float val = 0.0f);
-	MMatrix(MMatrix const &rhs);
+  MMatrix(MMatrix const &rhs);
 
   void set(MatrixXf const &rhs);
-	void set(MMatrix const &rhs);
+  void set(MMatrix const &rhs);
   void sync_qpu();
 
   int rows() const { return (int) m_Xf.rows(); }
@@ -68,7 +68,7 @@ private:
   MatrixXf    m_Xf;
   qpu::matrix m_qpu;
 
-	void reset();
+  void reset();
 };
 
 
