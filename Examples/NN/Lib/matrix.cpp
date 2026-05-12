@@ -16,6 +16,7 @@ std::unique_ptr<BaseKernel> s_mul_element;
 std::unique_ptr<BaseKernel> s_mult_vec_transposed;
 std::unique_ptr<BaseKernel> s_mult_vec;
 std::unique_ptr<BaseKernel> s_mult_matrix;
+std::unique_ptr<BaseKernel> s_mult_matrix_t;
 std::unique_ptr<BaseKernel> s_matrix_add;
 std::unique_ptr<BaseKernel> s_mul_float;
 std::unique_ptr<BaseKernel> s_matrix_add_self;
@@ -38,6 +39,7 @@ void init_local() {
   s_mult_vec_transposed.reset(new BaseKernel(compile(kernel::mult_vec_transposed, settings())));
   s_mult_vec           .reset(new BaseKernel(compile(kernel::mult_vec       , settings())));
   s_mult_matrix        .reset(new BaseKernel(compile(kernel::mult_matrix    , settings())));
+  s_mult_matrix_t      .reset(new BaseKernel(compile(kernel::mult_matrix_t  , settings())));
   s_matrix_add         .reset(new BaseKernel(compile(kernel::matrix_add     , settings())));
   s_mul_float          .reset(new BaseKernel(compile(kernel::mul_float      , settings())));
   s_matrix_add_self    .reset(new BaseKernel(compile(kernel::matrix_add_self, settings())));
@@ -296,6 +298,23 @@ matrix matrix::mul_matrix(matrix const &rhs) const {
   ret.set(0.0f);
 
   s_mult_matrix->load(&ret.arr(), &arr(), &rhs.arr(), m_rows, m_columns, rhs.m_columns).run();
+
+  return ret;
+}
+
+
+matrix matrix::mul_matrix_t(matrix const &rhs) const {
+  assert((m_columns % 16) == 0);      // Inner dimension must be multiple of 16
+
+  //warn << "mul_t this: " << dump_dim();
+  //warn << "mul_t rhs: " << rhs.dump_dim();
+
+  assert(m_columns == rhs.m_columns);
+
+  matrix ret(m_rows, resize_16(rhs.m_rows));
+  ret.set(0.0f);
+
+  s_mult_matrix_t->load(&ret.arr(), &arr(), &rhs.arr(), m_rows, m_columns, rhs.m_rows).run();
 
   return ret;
 }

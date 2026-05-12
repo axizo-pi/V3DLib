@@ -181,44 +181,85 @@ void mult_vec(Float::Ptr input, Float::Ptr mat, Float::Ptr result, Int M, Int N)
 
 
 void mult_matrix(Float::Ptr in_ret, Float::Ptr lhs, Float::Ptr rhs, Int lhs_rows, Int inner, Int rhs_cols) {
-	Float::Ptr rhs_base = rhs;
-	rhs_base -= index();
-	Int rhs_offset = index()*rhs_cols;
+  Float::Ptr rhs_base = rhs;
+  rhs_base -= index();
+  Int rhs_offset = index()*rhs_cols;
 
-	Float ret_acc = 0.0f;
-	Float::Ptr ret = in_ret;
+  Float ret_acc = 0.0f;
+  Float::Ptr ret;
 
-	For (Int row = 0, row < lhs_rows, row++)
-		ret = in_ret + row*((rhs_cols + 15) & ~0xf);
+  For (Int row = 0, row < lhs_rows, row++)
+    ret = in_ret + row*((rhs_cols + 15) & ~0xf);  // Output width must be a multiple of 16
 
-		For (Int col = 0, col < rhs_cols, col++)
-    	If (col > 0 && (col & 0xf) == 0)
-				*ret = ret_acc;
-				ret.inc();
-				ret_acc = 0;
-			End
+    For (Int col = 0, col < rhs_cols, col++)
+      If (col > 0 && (col & 0xf) == 0)
+        *ret = ret_acc;
+        ret.inc();
+        ret_acc = 0;
+      End
 
-			Float::Ptr lhs_row = lhs + row*inner;
-			Float::Ptr rhs_col = rhs_base + col + rhs_offset;
-			Float acc = 0.0f;
+      Float::Ptr lhs_row = lhs + row*inner;
+      Float::Ptr rhs_col = rhs_base + col + rhs_offset;
+      Float acc = 0.0f;
 
-			For (Int block = 0, block < (inner >> 4), block++)
-				acc += *lhs_row * *rhs_col;
+      For (Int block = 0, block < (inner >> 4), block++)
+        acc += *lhs_row * *rhs_col;
 
-				lhs_row.inc();
-				rhs_col += 16*rhs_cols;
-			End
+        lhs_row.inc();
+        rhs_col += 16*rhs_cols;
+      End
 
-    	rotate_sum(acc, acc);
+      rotate_sum(acc, acc);
 
-    	Where (index() == (col & 0xf))
-      	ret_acc = acc;
-    	End
-		End
+      Where (index() == (col & 0xf))
+        ret_acc = acc;
+      End
+    End
 
-		*ret = ret_acc;
-		ret_acc = 0;
-	End
+    *ret = ret_acc;
+    ret_acc = 0;
+  End
+}
+
+
+/**
+ * @brief Multiplication of two matrices, where the rhs is regarded as transposed
+ */
+void mult_matrix_t(Float::Ptr in_ret, Float::Ptr lhs, Float::Ptr rhs, Int lhs_rows, Int inner, Int rhs_rows) {
+  Float ret_acc = 0.0f;
+  Float::Ptr ret;
+
+  For (Int l_row = 0, l_row < lhs_rows, l_row++)
+    ret = in_ret + l_row*((rhs_rows + 15) & ~0xf);  // output width must be a multiple of 16
+
+    For (Int r_row = 0, r_row < rhs_rows, r_row++)
+      If (r_row > 0 && (r_row & 0xf) == 0)
+        *ret = ret_acc;
+        ret.inc();
+        ret_acc = 0;
+      End
+
+      Float::Ptr lhs_row = lhs + l_row*inner;
+      Float::Ptr rhs_row = rhs + r_row*inner;
+      Float acc = 0.0f;
+
+      For (Int block = 0, block < (inner >> 4), block++)
+        acc += *lhs_row * *rhs_row;
+
+        lhs_row.inc();
+        rhs_row.inc();
+      End
+
+      rotate_sum(acc, acc);
+
+      Where (index() == (r_row & 0xf))
+        ret_acc = acc;
+      End
+    End
+
+    *ret = ret_acc;
+    ret_acc = 0;
+  End
 }
 
 

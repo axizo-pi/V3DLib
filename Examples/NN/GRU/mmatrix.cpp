@@ -136,6 +136,11 @@ void MMatrix::operator/=(float steps) {
 }
 
 
+/**
+ * Name is a misnomer, the actual calculation is:
+ *
+ *     rhs * lhs^T;    // ^T - transposed
+ */
 MMatrix MMatrix::operator*(MMatrix const &rhs) const {
   MMatrix ret;
 
@@ -143,12 +148,16 @@ MMatrix MMatrix::operator*(MMatrix const &rhs) const {
   ret.m_Xf = rhs.m_Xf * m_Xf.transpose().eval();
   timers.stop("MMatrix * Xf");
 
-  assert(rhs.m_qpu.is_vector());
-  timers.start("MMatrix * qpu");
-  ret.m_qpu = m_qpu * rhs.m_qpu;
-  timers.stop("MMatrix * qpu");
+  if (rhs.m_qpu.is_vector()) {
+	  timers.start("MMatrix * qpu vec");
+	  ret.m_qpu = m_qpu * rhs.m_qpu;
+	  timers.stop("MMatrix * qpu vec");
+	} else {
+	  timers.start("MMatrix * qpu matrix");
+	  ret.m_qpu = rhs.m_qpu.mul_matrix_t(m_qpu);
+	  timers.stop("MMatrix * qpu matrix");
+	}
 
-  //OK assert(same());
   return ret;
 }
 

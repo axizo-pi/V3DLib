@@ -21,6 +21,7 @@ void matrix_add_self(Float::Ptr lhs, Float::Ptr rhs, Int N);
 void matrix_sub_self(Float::Ptr lhs, Float::Ptr rhs, Int N);
 void mult_vec(Float::Ptr input, Float::Ptr mat, Float::Ptr result, Int M, Int N);
 void mult_matrix(Float::Ptr ret, Float::Ptr lhs, Float::Ptr rhs, Int lhs_rows, Int inner, Int rhs_cols);
+void mult_matrix_t(Float::Ptr in_ret, Float::Ptr lhs, Float::Ptr rhs, Int lhs_rows, Int inner, Int rhs_rows);
 void mult_vec_transposed(Float::Ptr input, Float::Ptr mat, Float::Ptr result, Int M, Int N);
 void outer_product(Float::Ptr ret, Float::Ptr left, Float::Ptr right, Int N, Int M);
 void outer_add(Float::Ptr ret, Float::Ptr left, Float::Ptr right, Int N, Int M);
