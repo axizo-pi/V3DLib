@@ -68,6 +68,10 @@ void Timer::stop() {
     tvMax = tvDiff;
   }
 
+	if ((int) m_history.size() < HISTORY_SIZE) {
+		m_history.push_back(tvDiff);
+	}
+
   started = false;
 }
 
@@ -90,54 +94,64 @@ timeval Timer::diff_time() {
 }
 
 
-std::string Timer::dump(int width, bool show_minmax) {
-  assert(!m_label.empty());
+std::string Timer::time_to_str(timeval const &val, int count) {
 
 #define format "%2ld.%06lds"
 
-  auto time_to_str = [] (timeval const &val, int count) -> std::string {
-    assert(count > 0);
-    char buf[128]; 
+  assert(count > 0);
+  char buf[128]; 
 
-    auto tmp = (val.tv_sec*1000000l + val.tv_usec)/count;  // type long int
-    auto avg_sec = tmp/1000000l;
-    auto avg_usec = tmp % 1000000l;
+  auto tmp = (val.tv_sec*1000000l + val.tv_usec)/count;  // type long int
+  auto avg_sec = tmp/1000000l;
+  auto avg_usec = tmp % 1000000l;
 
-    sprintf(buf, format, avg_sec, avg_usec);
+  sprintf(buf, format, avg_sec, avg_usec);
 
-    return buf;
-  };
+  return buf;
 
+#undef format  
+}
+
+
+std::string Timer::dump(int width, bool show_extended) {
+  assert(!m_label.empty());
 
   std::string buf2;
 
   if (count == 0) {
     timeval time = diff_time();
-    buf2 << time_to_str(time, 1);
+    buf2 << time_to_str(time);
   } else {
     if (started) stop();
 
     char buf[64]; 
     sprintf(buf, " in %5d steps", count);
 
-    buf2 << time_to_str(tvTotal, 1) << buf << ", average: " << time_to_str(tvTotal, count);
+    buf2 << time_to_str(tvTotal) << buf << ", average: " << time_to_str(tvTotal, count);
 
-    if (show_minmax) {
-      buf2 << " - Min: " << time_to_str(tvMin, 1) << ", Max:: " << time_to_str(tvMax, 1);
-    }
+    if (show_extended) {
+      buf2 << " - Min: " << time_to_str(tvMin) << ", Max:: " << time_to_str(tvMax);
+
+			if (HISTORY_SIZE > 0) {
+				buf2 << "\n" << indentBy(width) << "    History: [";
+
+				for (int i = 0; i < (int) m_history.size(); ++i) {
+					if (i != 0) buf2 << ",";
+
+					buf2 << time_to_str(m_history[i]);
+	    	}
+
+				buf2 << "]";
+			}
+  	}
   }
 
   std::string ret = m_label;
 
-  if (width != -1) {
-    ret << indentBy(width - (int) m_label.size());
-  }
-
+  ret << indentBy(width - (int) m_label.size());
   ret << ": " << buf2;
 
   return ret;
-
-#undef format  
 }
 
 
@@ -146,10 +160,7 @@ std::string Timer::end(bool show_output) {
     warn << dump();
   }
 
-  char buf[128]; 
-  timeval time = diff_time();
-  sprintf(buf, "%ld.%06ld", time.tv_sec, time.tv_usec);
-  return std::string(buf); 
+	return time_to_str(diff_time());
 }
 
 
@@ -193,7 +204,7 @@ void Timers::stop(std::string const &label) {
 }
 
 
-void Timers::end(bool show_minmax) {
+void Timers::end(bool show_extended) {
   assert(!m_list.empty());
 
   // Determine label width
@@ -207,7 +218,7 @@ void Timers::end(bool show_minmax) {
 
   std::string buf;
   for (int i = 0; i < (int) m_list.size(); ++i) {
-    buf << "  " << m_list[i].dump(width, show_minmax) << "\n";
+    buf << "  " << m_list[i].dump(width, show_extended) << "\n";
   }
 
   warn << "Timers end:\n" << buf;
