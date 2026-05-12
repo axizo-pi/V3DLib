@@ -243,7 +243,7 @@ void State::eval() {
 }
 
 
-void State::set_step(int time_step, State &state) {
+void State::set_step(int time_step, State const &state) {
   assert(m_do_temp);
 
   S.set(state.S.row(time_step));

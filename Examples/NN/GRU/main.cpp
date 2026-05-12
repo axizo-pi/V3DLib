@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
     std::cout << "Can't perform action '" << action << "'" << std::endl;
   }
 
-  timers.end(); //true); // Param to enable display min/max
+  timers.end(false);
   std::cout << "QPU Call Count: " << V3DLib::BaseKernel::qpu_call_count() << std::endl;
   return 0;
 }

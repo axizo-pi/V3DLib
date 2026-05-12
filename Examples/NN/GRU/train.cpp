@@ -102,6 +102,99 @@ MAYBE_UNUSED MMatrix to_matrix(int rows, MMatrix const &vec) {
 std::vector<int> x_input;
 std::vector<int> x_output;
 
+
+class LoopState {
+private:	
+  State m_temp;
+
+public:  
+  MMatrix temp_X;
+  MMatrix  ds_cur_bk;
+  MMatrix dreluInput_h;
+  MMatrix dreluInput_r;
+  MMatrix dreluInput_z;
+  MMatrix dsr;
+
+	LoopState(int input_dim, int hidden_dim);
+
+  State const &temp() const { return  m_temp; }
+
+	void set_step(int time_step, State const &state, MatrixXf const &X);
+	void temp_init(int time_steps, State const &state);
+  void init_drelu(MMatrix const &ds_cur, Model const &m);
+	void update(MMatrix &ds_cur, Model const &m) const;
+	void update_gradient(Model &grad) const;
+};
+
+
+LoopState::LoopState(int input_dim, int hidden_dim) :
+	m_temp(true),
+	temp_X(1, input_dim),
+	ds_cur_bk(1, hidden_dim)
+{
+  m_temp.init(1, hidden_dim, -1);
+}
+
+
+void LoopState::set_step(int time_step, State const &state, MatrixXf const &X) {
+  m_temp.set_step(time_step, state);
+  temp_X.set(X.row(time_step));
+}
+
+
+/**
+ * 
+ */
+void LoopState::temp_init(int time_steps, State const &state) {
+  for(int time_step = time_steps - 1; time_step >= 0; time_step--) {
+    m_temp.S.set(state.S.row(time_step + 1));
+  }
+}
+
+
+void LoopState::init_drelu(MMatrix const &ds_cur, Model const &m) {
+  ds_cur_bk = ds_cur;
+
+  dreluInput_h.back_prop_1(ds_cur, m_temp);
+  dreluInput_h.sync_qpu();                                  // See Note 1
+
+  //warn << "m.W_h: " << m.W_h.dump_dim();
+  //warn << "ls.dreluInput_h: " << ls.dreluInput_h.dump_dim();
+  dsr = m.W_h * dreluInput_h;
+  //assert(dsr.same(Precision));                            // convergence Xf/qpu progressively worse
+  dsr.sync_qpu();                                           // See Note 1
+
+  dreluInput_r.back_prop_3(dsr, m_temp, Precision);
+  dreluInput_r.sync_qpu();                                  // See Note 1
+  //warn << "ls.dreluInput_r: " << ls.dreluInput_r.dump_dim();
+
+  dreluInput_z.back_prop_4(ds_cur_bk, m_temp, 3*Precision);   // convergence Xf/qpu gets progressively worse
+  dreluInput_z.sync_qpu();                                  // See Note 1
+}
+
+
+void LoopState::update(MMatrix &ds_cur, Model const &m) const {
+  ds_cur.mul_e(dsr, m_temp);
+  ds_cur += m.W_r * dreluInput_r;
+  ds_cur += ds_cur_bk.mul_e(m_temp.z);
+  ds_cur += m.W_z * dreluInput_z;
+}
+
+
+void LoopState::update_gradient(Model &grad) const {
+  grad.U_h.outer_add(temp_X, dreluInput_h);
+
+  MMatrix temp_W;
+  temp_W.back_prop_2(m_temp, dreluInput_h, Precision);
+  grad.W_h += temp_W;                                       //OK assert(grad.W_h.same());
+
+  grad.U_r.outer_add(temp_X, dreluInput_r);
+  grad.W_r.outer_add(m_temp.S, dreluInput_r);
+
+  grad.U_z.outer_add(temp_X, dreluInput_z);                 //OK assert(grad.U_z.same());
+  grad.W_z.outer_add(m_temp.S, dreluInput_z);
+}
+
 } // anon namespace
 
 
@@ -120,48 +213,33 @@ void back_propagation(Model &m, Model &grad, State &state, MatrixXf& X, MatrixXf
   /* gradients = dLdV, dLdU0, dLdU1, dLdU2, dLdW0, dLdW1, dLdW2 */
   grad.init_zeroes(m.input_dim(), m.hidden_dim(), m.output_dim());
 
-  MatrixXf ds_single;
-  MMatrix  ds_cur;
-  MMatrix  ds_cur_bk(1, hidden_dim);
-  MatrixXf delta_y;
-  MMatrix dreluInput_z;
-  MMatrix dreluInput_r;
-  MMatrix dreluInput_h;
-  MMatrix temp_X(1, input_dim);
-  MMatrix temp_W;
+  LoopState ls(input_dim, hidden_dim);
+	ls.temp_init(time_steps, state);
 
-  State temp(true);
-  temp.init(1, hidden_dim, -1);
-
-  delta_y = state.O.Xf() - Y;
+  MatrixXf delta_y = state.O.Xf() - Y;
 
   for(int time_step = time_steps - 1; time_step >= 0; time_step--) {
-    temp.S.set(state.S.row(time_step + 1));
-    grad.V.set(grad.V.Xf() + temp.S.Xf().transpose().eval() * delta_y.row(time_step));
+    grad.V.set(grad.V.Xf() + ls.temp().S.Xf().transpose().eval() * delta_y.row(time_step));
   }
 
-  ds_single = delta_y * m.V.Xf().transpose().eval();
-/*
-  warn << "time_steps: " << time_steps;
-  warn << "ds_single: " << dump_dim(ds_single);
-*/
-
+  MatrixXf ds_single = delta_y * m.V.Xf().transpose().eval();
+  MMatrix  ds_cur;
   MMatrix x_ds_single;   x_ds_single.set(ds_single);
-  MMatrix x_X;           x_X .set(X);
-  warn << "x_X: " << x_X.dump_dim();
-
-  MMatrix x_ds_cur;
-  x_ds_cur.set(ds_single);
-  warn << "x_ds_cur: "  << x_ds_cur.dump_dim();
+  MMatrix x_X;           x_X.set(X);
+  MMatrix x_ds_cur;      x_ds_cur.set(ds_single);
 
   MMatrix x_dreluInput_h;
   x_dreluInput_h.back_prop_1(x_ds_cur, state);
 
   State x_state = state;
   x_state.S = remove_last_rows(1, state.S);
+/*  
+  warn << "x_X: " << x_X.dump_dim();
   //warn << "x_state.S: "     << x_state.S.dump_dim();
-  //warn << "x_dreluInput_h: " << x_dreluInput_h.dump_dim();
-  
+  warn << "x_ds_cur: "  << x_ds_cur.dump_dim();
+  warn << "m.W_h: "     << m.W_h.dump_dim();
+  warn << "x_dreluInput_h: " << x_dreluInput_h.dump_dim();
+*/  
   auto x_dsr = m.W_h * x_dreluInput_h;
   MMatrix x_dreluInput_r;
   x_dreluInput_r.back_prop_3(x_dsr, x_state);
@@ -186,49 +264,19 @@ void back_propagation(Model &m, Model &grad, State &state, MatrixXf& X, MatrixXf
     //warn << "x_U_h: " << x_U_h.dump_dim();
 
     for (int time_step = cur_step; time_step >= 0; time_step--) {
-      warn << "cur_step, time_step: " << cur_step << ", " << time_step;
+      //warn << "cur_step, time_step: " << cur_step << ", " << time_step;
       timers.start("back_propagation for inner");             // All processing time here in this loop
 
-      ds_cur_bk = ds_cur;
-      temp.set_step(time_step, state);
-      temp_X.set(X.row(time_step));
+      ls.set_step(time_step, state, X);
+      ls.init_drelu(ds_cur, m);
 
-      dreluInput_h.back_prop_1(ds_cur, temp);
-      dreluInput_h.sync_qpu();                                  // See Note 1
-
-      grad.U_h.outer_add(temp_X, dreluInput_h);
-
-      temp_W.back_prop_2(temp, dreluInput_h, Precision);
-      grad.W_h += temp_W;                                       //OK assert(grad.W_h.same());
-
-      auto dsr = m.W_h * dreluInput_h;
-      ds_cur.mul_e(dsr, temp);
-      dsr.sync_qpu();                                  // See Note 1
-
-      dreluInput_r.back_prop_3(dsr, temp, Precision);
-      dreluInput_r.sync_qpu();                                  // See Note 1
-      //warn << "dreluInput_r: " << dreluInput_r.dump_dim();
-
-      if (time_step == cur_step) {
-        assert(dreluInput_h.same(x_dreluInput_h.row(time_step)));
-
-        // Becomes increasingly imprecise after cur_step, time_step: 3, 3
-        assert(dreluInput_r.same(x_dreluInput_r.row(time_step), 20*Precision));
+      if (time_step == cur_step && cur_step == (time_steps - 1)) {
+        assert(ls.dreluInput_h.same(x_dreluInput_h.row(time_step)));
+        assert(ls.dreluInput_r.same(x_dreluInput_r.row(time_step), Precision));
       }
 
-      grad.U_r.outer_add(temp_X, dreluInput_r);
-      grad.W_r.outer_add(temp.S, dreluInput_r);
-
-      ds_cur   += m.W_r * dreluInput_r;
-      ds_cur   += ds_cur_bk.mul_e(temp.z);
-
-      dreluInput_z.back_prop_4(ds_cur_bk, temp, 3*Precision);   // convergence Xf/qpu gets progressively worse
-      dreluInput_z.sync_qpu();                                  // See Note 1
-
-      grad.U_z.outer_add(temp_X, dreluInput_z);                 //OK assert(grad.U_z.same());
-      grad.W_z.outer_add(temp.S, dreluInput_z);
-
-      ds_cur   +=  m.W_z * dreluInput_z;
+			ls.update(ds_cur, m);
+      ls.update_gradient(grad);
 
       x_ds_cur.row(time_step, ds_cur);
 
@@ -353,17 +401,20 @@ void read_x_y(MatrixXf& x, MatrixXf& y, std::string filename_input, std::string 
 
 
 void train(std::string filename_input, std::string filename_output, float learning_rate, int nepoch, int input_dim, int hidden_dim, int output_dim, int time_steps, float decay) {
+/*  
   warn << "=== Testing matrix     ===";
-  qpu::matrix lhs(5, 16);
+  qpu::matrix lhs(3, 16);
   lhs.set(1.0f);
-  qpu::matrix rhs(16, 3);
+  qpu::matrix rhs(7, 16);
   rhs.set(3.0f);
-  auto ret = lhs.mul_matrix(rhs);
-  //warn << "lhs: " << lhs.dump();
-  //warn << "rhs: " << rhs.dump();
-  warn << "ret: " << ret.dump();
-  warn << "=== End testing matrix ===";
 
+  auto ret = rhs.mul_matrix_t(lhs);
+  warn << "lhs: " << lhs.dump();
+  warn << "rhs: " << rhs.dump();
+  warn << "ret: " << ret.dump();
+
+  warn << "=== End testing matrix ===";
+*/
   float prev_loss = 0.0f;
 
   int inputSize   = get_input_size(filename_input) - time_steps - 1;
