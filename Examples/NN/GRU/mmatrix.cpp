@@ -26,25 +26,30 @@ MMatrix::MMatrix(MMatrix const &rhs) {
 
 
 void MMatrix::set(MatrixXf const &rhs) {
-  timers.start("set Xf");
+  //timers.start("set Xf");
   m_Xf = rhs;
-  timers.stop("set Xf");
+  //timers.stop("set Xf");
 
+/*
   timers.start("set qpu");
   m_qpu = copy_m(m_Xf);
   timers.stop("set qpu");
-
-  used_fields(true, true);
+*/
+  used_fields(true, false);
 }
 
 
 void MMatrix::set(MMatrix const &rhs) {
   rhs.need_fields(true, false);
 
+  timers.start("set Xf");
   m_Xf = rhs.m_Xf;
+  timers.stop("set Xf");
 
+  timers.start("set qpu");
   // TODO Note that rhs.m_qpu is ignored here
   m_qpu = copy_m(rhs.m_Xf);
+  timers.stop("set qpu");
 
   used_fields(true, true);
 }
@@ -97,7 +102,7 @@ MMatrix MMatrix::row(int index) const {
   //warn << "row: " << dump();
   need_fields(true, true);
 
-  MMatrix ret;
+  MMatrix ret; //(1, cols());
   ret.m_Xf = m_Xf.row(index);
   ret.m_qpu = m_qpu.row(index);
 
@@ -119,13 +124,13 @@ qpu::matrix const &MMatrix::qpu() const {
 }
 
 
-bool MMatrix::same(MMatrix const &rhs, float precision) const {
+bool MMatrix::same(MMatrix const &rhs, float precision, bool show_max_diff) const {
   need_fields(true, true);
 
   return
     ::same(m_qpu, m_Xf, precision) &&
     ::same(rhs.m_qpu, rhs.m_Xf, precision) &&
-    ::same(m_qpu, rhs.m_Xf, precision);
+    ::same(m_qpu, rhs.m_Xf, precision, show_max_diff);
 }
 
 
@@ -307,15 +312,18 @@ void MMatrix::outer_add(MMatrix const &lhs, MMatrix const &rhs) {
  * Note that the rows of rhs are technically transposed for the outer products.
  */
 void MMatrix::outer_add_rows(MMatrix const &lhs, MMatrix const &rhs) {
-  assert(false); // Check unused
-
   assert(lhs.rows() == rhs.rows());
   assert(lhs.rows() > 1);
   MMatrix tmp(lhs.cols(), rhs.cols());
+	//warn << "tmp: " << tmp.dump_dim();
+
+	timers.start("outer_add_rows");
 
   for (int i = 0; i < lhs.rows(); ++i) {
     tmp.outer_add(lhs.row(i), rhs.row(i));
   }
+
+	timers.stop("outer_add_rows");
 
   *this += tmp;
 }
@@ -374,22 +382,27 @@ void MMatrix::back_prop_2(State const &temp, MMatrix const &dreluInput_h, float 
 
 
 void MMatrix::back_prop_3(MMatrix const &dsr, State const &temp, float precision) {
+  //warn << "temp.S: "     << temp.S.dump_dim();
+
   dsr.need_fields(true, true);
   temp.S.need_fields(true, true);
   temp.r.need_fields(true, true);
 
   timers.start("back_prop_3 Xf");
-  m_Xf = dsr.m_Xf.cwiseProduct(temp.S.Xf()).cwiseProduct(temp.r.Xf().unaryExpr(&sigmoid_grad));
+  //m_Xf = dsr.m_Xf.cwiseProduct(temp.S.Xf()).cwiseProduct(temp.r.Xf().unaryExpr(&sigmoid_grad));
+  MatrixXf tmp1 = dsr.m_Xf.cwiseProduct(temp.S.Xf());
+  MatrixXf tmp2 = temp.r.Xf().unaryExpr(&sigmoid_grad);
+	m_Xf = tmp1.cwiseProduct(tmp2);
   timers.stop("back_prop_3 Xf");
 
-  //m_qpu.resize(dsr.cols(), dsr.rows()); // sic; dimensions reversed
-  m_qpu.resize(dsr.rows(), dsr.cols()); // sic; dimensions reversed
+  m_qpu.resize(dsr.rows(), dsr.cols());
 
   timers.start("back_prop_3 qpu");
   gru_kernel::back_prop_3(m_qpu, dsr.m_qpu, temp.S.m_qpu, temp.r.m_qpu);
   timers.stop("back_prop_3 qpu");
 
   used_fields(true, true);
+	assert(same(precision));
 }
 
 
@@ -474,30 +487,42 @@ void MMatrix::need_fields(bool need_XF, bool need_qpu) const {
 
   if (need_qpu && !m_using_qpu) {
     assert(m_using_Xf);
-    warn << "need_fields transferring Xf->qpu";
+    //warn << "need_fields transferring Xf->qpu";
     m_qpu = copy_m(m_Xf);
     m_using_qpu = true;
   }
 }
 
 
-bool same(qpu::matrix const &lhs, MatrixXf const &rhs, float precision) {
+bool same(qpu::matrix const &lhs, MatrixXf const &rhs, float precision, bool show_max_diff) {
   //warn << "Called same(qpu::matrix, MatrixXf)";
+	bool ret = true;
+	float max_diff = 0.0f;
 
   // Special case for 2 input vectors: accept transposed vectors
-  if(lhs.columns() == 1 && lhs.columns() == rhs.rows() && lhs.rows() == rhs.cols() ) {
+  if (lhs.columns() == 1 && lhs.columns() == rhs.rows() && lhs.rows() == rhs.cols() ) {
     int size = lhs.rows();
     for (int i = 0; i < size; ++i) {
-      if (!qpu::check_precision(lhs.at(i, 0), rhs(0, i), precision)) {
-        warn << "Fail same(vector, vector), (i,j): " << i << ", 0)";
-        return false;
+      if (!qpu::check_precision(lhs.at(i, 0), rhs(0, i), precision, &max_diff, ret)) {
+				if (ret) {  // Show first fail only
+	        warn << "Fail same(vector, vector), (i,j): " << i << ", 0)";
+				}
+
+        ret = false;
+				if (!show_max_diff) break;
       }      
     }
 
-    return true;
+		if (show_max_diff) {
+			warn << "same(qpu::matrix, MatrixXf) vector max_diff: " << max_diff;
+		}
+    return ret;
   }
 
+	//
   // Do full matrices
+	//
+
   if(lhs.rows() != rhs.rows() || lhs.columns() != rhs.cols() ) {
      warn << "Fail same(qpu::matrix, MatrixXf) dimensions differ: "
           << "lhs: " << lhs.dump_dim() << ", "
@@ -507,15 +532,25 @@ bool same(qpu::matrix const &lhs, MatrixXf const &rhs, float precision) {
   }
 
   for (int i = 0; i < (int) rhs.rows(); ++i) {
+		if (!show_max_diff && !ret) break;
+
     for (int j = 0; j < (int) rhs.cols(); ++j) {
-      if (!qpu::check_precision(lhs.at(i, j), rhs(i, j), precision)) {
-        warn << "Fail same(qpu::matrix, MatrixXf), (i,j): " << i << ", " << j << ")";
-        return false;
-      }      
+      if (!qpu::check_precision(lhs.at(i, j), rhs(i, j), precision, &max_diff, ret)) {
+				if (ret) {  // Show first fail only
+        	warn << "Fail same(qpu::matrix, MatrixXf), (i,j): " << i << ", " << j << ")";
+				}
+
+       	ret = false;
+				if (!show_max_diff) break;
+      }
     }
   }
 
-  return true;
+	if (show_max_diff) {
+		warn << "same(qpu::matrix, MatrixXf) matrix max_diff: " << max_diff;
+	}
+
+  return ret;
 }
 
 
@@ -598,4 +633,29 @@ std::string dump(MatrixXf const &m) {
   buf << "]";
 
   return buf;
+}
+
+
+MMatrix move_rows(int step, MMatrix const &rhs) {
+  if (step == 0) return rhs; // Nothing to do
+
+  //warn << "Called move_rows(" << step << ")";
+  assert(abs(step) < rhs.rows());
+
+  MMatrix ret(rhs.rows(), rhs.cols());
+
+  for (int i = 0; i < rhs.rows(); ++i) {
+    if (i + step < 0) continue;
+    if (i + step >= rhs.rows()) continue;
+
+    ret.row(i + step, rhs.row(i), false);
+  }
+
+  ret.sync_qpu();
+/*
+  warn << "move_rows(" << step << "):\n"
+       << "rhs: " << rhs.dump() << "\n"
+       << "ret: " << ret.dump() << "\n";
+*/
+  return ret;
 }

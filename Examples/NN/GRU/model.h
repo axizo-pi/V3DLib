@@ -46,6 +46,7 @@ public:
   void init(int time_steps, int hidden_dim, int output_dim);
   void eval();
   void set_step(int time_step, State const &state);
+  void move_rows(int step, State const &state);
 
 private:
   bool m_do_temp;  

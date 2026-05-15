@@ -2,7 +2,7 @@
 #define _GRU_MMATRIX_H
 #include "common.h"
 
-bool same(qpu::matrix const &lhs, MatrixXf const &rhs, float precision = 0.0f);
+bool same(qpu::matrix const &lhs, MatrixXf const &rhs, float precision = 0.0f, bool show_max_diff = false);
 bool same(qpu::matrix const &lhs, qpu::matrix const &rhs, float precision = 0.0f);
 qpu::matrix copy_m(MatrixXf const &rhs);
 std::string dump(MatrixXf const &m);
@@ -36,7 +36,7 @@ public:
     return ::same(m_qpu, m_Xf, precision);
   }
 
-  bool same(MMatrix const &rhs, float precision = 0.0f) const;
+  bool same(MMatrix const &rhs, float precision = 0.0f, bool show_max_diff = false) const;
 
   std::string dump_dim() const;
   std::string dump() const;
@@ -81,5 +81,7 @@ inline MMatrix operator*(float val, MMatrix const &rhs) {
   return rhs*val;
 }
 
+
+MMatrix move_rows(int step, MMatrix const &rhs);
 
 #endif // _GRU_MMATRIX_H

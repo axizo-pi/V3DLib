@@ -204,8 +204,7 @@ void State::init(int time_steps, int hidden_dim, int output_dim) {
   //warn << "State::init()";
 
   if (m_do_temp) {
-    assert(time_steps == 1);
-    auto zero = MatrixXf::Zero(1, hidden_dim);
+    auto zero = MatrixXf::Zero(time_steps, hidden_dim);
 
     S.set(zero);
     z.set(zero);
@@ -252,6 +251,24 @@ void State::set_step(int time_step, State const &state) {
   r.set(state.r.row(time_step));
   z.set(state.z.row(time_step));
   h.set(state.h.row(time_step));
+}
+
+
+void State::move_rows(int step, State const &state) {
+  assert(m_do_temp);
+
+	if (step == 0) {
+		// Not really required, just a bit more efficient
+  	S  = state.S;
+	  r  = state.r;
+	  z  = state.z;
+	  h  = state.h;
+	} else {
+  	S  = ::move_rows(step, state.S);
+	  r  = ::move_rows(step, state.r);
+	  z  = ::move_rows(step, state.z);
+	  h  = ::move_rows(step, state.h);
+	}
 }
 
 

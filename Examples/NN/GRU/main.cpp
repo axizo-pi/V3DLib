@@ -1,5 +1,6 @@
 #include "Support/Timer.h"
 #include "BaseKernel.h"
+#include "LibSettings.h"
 #include <iostream>
 
 using namespace V3DLib;

@@ -297,6 +297,7 @@ matrix matrix::mul_matrix(matrix const &rhs) const {
   matrix ret(m_rows, resize_16(rhs.m_columns));
   ret.set(0.0f);
 
+  s_mult_matrix->setNumQPUs(16);
   s_mult_matrix->load(&ret.arr(), &arr(), &rhs.arr(), m_rows, m_columns, rhs.m_columns).run();
 
   return ret;
@@ -423,8 +424,8 @@ namespace {
 matrix outer_ret(true);  
 
 void outer_check(matrix const &lhs, matrix const &rhs) {
-  assert(lhs.is_vector());
-  assert(rhs.is_vector());
+  //assert(lhs.is_vector());
+  //assert(rhs.is_vector());
   if ((lhs.size() & 0xf) != 0) { cerr << "vector outer: expecting lhs rows to be a multiple of 16" << thrw; }
   if ((rhs.size() & 0xf) != 0) { cerr << "vector outer: expecting rhs rows to be a multiple of 16" << thrw; }
 }
@@ -465,6 +466,9 @@ void matrix::outer_add(matrix const &lhs, matrix const &rhs) {
   outer_check(lhs, rhs);
   assert(rows() == lhs.size() && columns() == rhs.size());
 
+	//warn << "lhs: " << lhs.dump_dim();
+	//warn << "rhs: " << rhs.dump_dim();
+
   s_op_add->load(&arr(), &lhs.arr(), &rhs.arr(), lhs.size(), rhs.size()/16).run();
 }
 
@@ -489,7 +493,7 @@ std::string matrix::dump(bool output_int) const {
     ret << "\n";
 
     for (int h = 0; h < m_rows; ++h) {
-       ret << h << ": [" << vector_dump(*m_arr, m_columns, h*m_columns, output_int) << "]\n";
+       ret << "  " << h << ": [" << vector_dump(*m_arr, m_columns, h*m_columns, output_int) << "]\n";
     }
   }
 
@@ -498,14 +502,9 @@ std::string matrix::dump(bool output_int) const {
 
 
 void matrix::transfer(matrix const &rhs) {
-  assert(rhs.m_arr != nullptr);
-
   m_columns  = rhs.m_columns;
-  m_rows = rhs.m_rows;
-
-  //m_arr.reset(rhs.m_arr.release());
-  m_arr = rhs.m_arr;
-  //assert(rhs.m_arr == nullptr);
+  m_rows     = rhs.m_rows;
+  m_arr      = rhs.m_arr;  // nullptr allowed
 }
 
 
@@ -742,23 +741,33 @@ vector operator*(matrix const &lhs, matrix const &rhs) {
 }
 
 
-bool check_precision(float lhs, float rhs, float precision) {
+bool check_precision(float lhs, float rhs, float precision, float *max_diff, bool do_show) {
   bool ret = true;
+	float diff;
 
   if (precision == 0.0f) {
     if (lhs != rhs) {
-      float diff = abs(lhs - rhs);
-      warn << "check_precision fail, diff: " << diff;
+      diff = abs(lhs - rhs);
+
+			if (do_show) {
+	      warn << "check_precision fail, diff: " << diff;
+			}
       ret = false;
     }
   } else {
-    float diff = abs(lhs - rhs);
+    diff = abs(lhs - rhs);
     if (diff > precision) {
-      warn << "check_precision fails with "
-           << "diff: " << diff << " for precision: " << precision;
+			if (do_show) {
+	      warn << "check_precision fails with "
+  	         << "diff: " << diff << " for precision: " << precision;
+			}
       ret = false;
     }
   }
+
+	if (max_diff != nullptr) {
+		if (diff > *max_diff) *max_diff = diff;
+	}
 
   return ret;
 }
