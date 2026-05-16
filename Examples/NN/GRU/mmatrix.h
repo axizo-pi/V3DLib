@@ -17,13 +17,13 @@ public:
 
   void set(MatrixXf const &rhs);
   void set(MMatrix const &rhs);
-  void sync_qpu();
 
-  int rows() const { return (int) m_Xf.rows(); }
-  int cols() const { return (int) m_Xf.cols(); }
+  int rows() const;
+  int cols() const;
 
   void row(int index, MatrixXf const &val);
-  void row(int index, MMatrix const &val, bool sync_qpu = true);
+  void row(int index, MMatrix const &val);
+  void copy_row(int from_index, int to_index, MMatrix const &val);
   MMatrix row(int index) const;
 
   MatrixXf    const &Xf()  const;

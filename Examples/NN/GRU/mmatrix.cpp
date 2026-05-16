@@ -40,18 +40,11 @@ void MMatrix::set(MatrixXf const &rhs) {
 
 
 void MMatrix::set(MMatrix const &rhs) {
-  rhs.need_fields(true, false);
+  rhs.need_fields(false, true);
 
-  timers.start("set Xf");
-  m_Xf = rhs.m_Xf;
-  timers.stop("set Xf");
+  m_qpu = rhs.m_qpu;
 
-  timers.start("set qpu");
-  // TODO Note that rhs.m_qpu is ignored here
-  m_qpu = copy_m(rhs.m_Xf);
-  timers.stop("set qpu");
-
-  used_fields(true, true);
+  used_fields(false, true);
 }
 
 
@@ -63,50 +56,84 @@ void MMatrix::reset() {
 }
 
 
-void MMatrix::sync_qpu() {
-  need_fields(true, false);
+int MMatrix::rows() const {
+	assert(m_using_Xf || m_using_qpu);
 
-  m_qpu = copy_m(m_Xf);
+	if (m_using_Xf) {
+		return (int) m_Xf.rows();
+	} else {
+		return m_qpu.rows();
+	}
+}
 
-  used_fields(true, true);
+
+int MMatrix::cols() const {
+	assert(m_using_Xf || m_using_qpu);
+
+	if (m_using_Xf) {
+		return (int) m_Xf.cols();
+	} else {
+		return m_qpu.columns();
+	}
 }
 
 
 void MMatrix::row(int index, MatrixXf const &val) {
+	timers.start("row(index, val)");
+
   m_Xf.row(index) = val;
   m_Xf.eval();
 
-  // TODO: Following inefficient and ugly
-  m_qpu = copy_m(m_Xf);
-
-  used_fields(true, true);
+	timers.stop("row(index, val)");
+  used_fields(true, false);
 }
 
 
-void MMatrix::row(int index, MMatrix const &val, bool sync_qpu) {
-  val.need_fields(true, false);
+void MMatrix::copy_row(int from_index, int to_index, MMatrix const &val) {
+	assert(cols() == val.cols());
+	assert(from_index >= 0 && from_index < val.rows());
+	assert(to_index >= 0 && to_index < rows());
 
-  m_Xf.row(index) = val.m_Xf;
+  val.need_fields(false, true);
 
-  if (sync_qpu) {
-    // TODO: Following inefficient and ugly
-    m_qpu = copy_m(m_Xf);
-    used_fields(true, true);
-  } else {
-    used_fields(true, false);
-  }
+	timers.start("copy_row");
+
+	for (int i = 0; i < val.cols(); ++i) {
+  	m_qpu.arr()[to_index*cols() + i] = val.m_qpu.arr()[from_index*val.cols() + i];
+	}
+
+	timers.stop("copy_row");
+  used_fields(false, true);
+}
+
+
+void MMatrix::row(int index, MMatrix const &val) {
+	assert(cols() == val.cols());
+	assert(index >=0 && index < rows());
+
+  val.need_fields(false, true);
+
+	for (int i = 0; i < val.cols(); ++i) {
+  	m_qpu.arr()[index*cols() + i] = val.m_qpu.arr()[i];
+	}
+
+  used_fields(false, true);
 }
 
 
 MMatrix MMatrix::row(int index) const {
   //warn << "row: " << dump();
-  need_fields(true, true);
+  need_fields(false, true);
 
-  MMatrix ret; //(1, cols());
-  ret.m_Xf = m_Xf.row(index);
+  timers.start("row(index)");
+
+  MMatrix ret;
+  //ret.m_Xf = m_Xf.row(index);
   ret.m_qpu = m_qpu.row(index);
 
-  ret.used_fields(true, true);
+  timers.stop("row(index)");
+
+  ret.used_fields(false, true);
   // assert(ret.same()); // Fails on diff 4.814825e-35; gimme a break
   return ret;
 }
@@ -124,21 +151,41 @@ qpu::matrix const &MMatrix::qpu() const {
 }
 
 
+/**
+ * Profiling: time negligible
+ */
 bool MMatrix::same(MMatrix const &rhs, float precision, bool show_max_diff) const {
+  rhs.need_fields(true, true);
   need_fields(true, true);
 
-  return
+  bool ret =
     ::same(m_qpu, m_Xf, precision) &&
     ::same(rhs.m_qpu, rhs.m_Xf, precision) &&
     ::same(m_qpu, rhs.m_Xf, precision, show_max_diff);
+
+	return ret;
 }
 
 
 std::string MMatrix::dump_dim() const {
-  need_fields(true, true);
+	assert(m_using_Xf || m_using_qpu);
 
   std::string ret;
-  ret << ::dump_dim(m_Xf) << ", " << m_qpu.dump_dim();
+
+	if (m_using_Xf) {
+	  ret << ::dump_dim(m_Xf);
+	} else {
+	  ret << "(?, ?)";
+	}
+
+	ret << ", ";
+
+	if (m_using_qpu) {
+	  ret << m_qpu.dump_dim();
+	} else {
+	  ret << "(?, ?)";
+	}
+
   return ret;
 }
 
@@ -155,18 +202,18 @@ std::string MMatrix::dump() const {
 
 
 void MMatrix::operator+=(MMatrix const &rhs) {
-  rhs.need_fields(true, true);
-  need_fields(true, true);
-
+  rhs.need_fields(true, false);
+  need_fields(true, false);
+/*
   timers.start("MMatrix += Xf");
   m_Xf = m_Xf + rhs.m_Xf;
   timers.stop("MMatrix += Xf");
-
+*/
   timers.start("MMatrix += qpu");
   m_qpu += rhs.m_qpu;
   timers.stop("MMatrix += qpu");
 
-  used_fields(true, true);
+  used_fields(true, false);
 }
 
 
@@ -200,15 +247,15 @@ void MMatrix::operator/=(float steps) {
  *     rhs * lhs^T;    // ^T - transposed
  */
 MMatrix MMatrix::operator*(MMatrix const &rhs) const {
-  rhs.need_fields(true, true);
-  need_fields(true, true);
+  rhs.need_fields(false, true);
+  need_fields(false, true);
 
   MMatrix ret;
-
+/*
   timers.start("MMatrix * Xf");
   ret.m_Xf = rhs.m_Xf * m_Xf.transpose().eval();
   timers.stop("MMatrix * Xf");
-
+*/
   if (rhs.m_qpu.is_vector()) {
     timers.start("MMatrix * qpu vec");
     ret.m_qpu = m_qpu * rhs.m_qpu;
@@ -220,7 +267,13 @@ MMatrix MMatrix::operator*(MMatrix const &rhs) const {
   }
 
   //OK assert(same());
-  ret.used_fields(true, true);
+  ret.used_fields(false, true);
+/*	
+  if (rhs.m_qpu.is_vector()) {
+		warn << "* rhs: " << rhs.dump_dim();
+		warn << "* vec: " << ret.dump_dim();
+	}
+*/	
   return ret;
 }
 
@@ -286,21 +339,21 @@ MMatrix MMatrix::outer(MMatrix const &rhs) const {
 
 
 void MMatrix::outer_add(MMatrix const &lhs, MMatrix const &rhs) {
-  lhs.need_fields(true, true);
-  rhs.need_fields(true, true);
-  need_fields(true, true);
+  lhs.need_fields(false, true);
+  rhs.need_fields(false, true);
+  need_fields(false, true);
 
+/*  
   timers.start("MMatrix outer_add Xf");
   m_Xf  = m_Xf + lhs.m_Xf.transpose().eval() * rhs.m_Xf;
   timers.stop("MMatrix outer_add Xf");
+*/  
 
   timers.start("MMatrix outer_add qpu");
   m_qpu.outer_add(lhs.m_qpu, rhs.m_qpu);
   timers.stop("MMatrix outer_add qpu");
-  //assert(::same(tmp, m_Xf));
 
-  //OK assert(same());
-  used_fields(true, true);
+  used_fields(false, true);
 }
 
 
@@ -312,20 +365,22 @@ void MMatrix::outer_add(MMatrix const &lhs, MMatrix const &rhs) {
  * Note that the rows of rhs are technically transposed for the outer products.
  */
 void MMatrix::outer_add_rows(MMatrix const &lhs, MMatrix const &rhs) {
-  assert(lhs.rows() == rhs.rows());
-  assert(lhs.rows() > 1);
-  MMatrix tmp(lhs.cols(), rhs.cols());
-	//warn << "tmp: " << tmp.dump_dim();
+	int lhs_rows = lhs.rows();
 
-	timers.start("outer_add_rows");
+  assert(lhs_rows == rhs.rows());
+  assert(lhs_rows > 1);
 
-  for (int i = 0; i < lhs.rows(); ++i) {
-    tmp.outer_add(lhs.row(i), rhs.row(i));
+  timers.start("outer_add_rows");
+  //MMatrix tmp(lhs.cols(), rhs.cols());
+
+  for (int i = 0; i < lhs_rows; ++i) {
+    //tmp.outer_add(lhs.row(i), rhs.row(i));
+    outer_add(lhs.row(i), rhs.row(i));
   }
 
-	timers.stop("outer_add_rows");
+  //*this += tmp;
 
-  *this += tmp;
+  timers.stop("outer_add_rows");
 }
 
 
@@ -392,7 +447,7 @@ void MMatrix::back_prop_3(MMatrix const &dsr, State const &temp, float precision
   //m_Xf = dsr.m_Xf.cwiseProduct(temp.S.Xf()).cwiseProduct(temp.r.Xf().unaryExpr(&sigmoid_grad));
   MatrixXf tmp1 = dsr.m_Xf.cwiseProduct(temp.S.Xf());
   MatrixXf tmp2 = temp.r.Xf().unaryExpr(&sigmoid_grad);
-	m_Xf = tmp1.cwiseProduct(tmp2);
+  m_Xf = tmp1.cwiseProduct(tmp2);
   timers.stop("back_prop_3 Xf");
 
   m_qpu.resize(dsr.rows(), dsr.cols());
@@ -402,7 +457,7 @@ void MMatrix::back_prop_3(MMatrix const &dsr, State const &temp, float precision
   timers.stop("back_prop_3 qpu");
 
   used_fields(true, true);
-	assert(same(precision));
+  assert(same(precision));
 }
 
 
@@ -481,8 +536,21 @@ void MMatrix::set_decay(float decay, MMatrix const &rhs) {
 void MMatrix::need_fields(bool need_XF, bool need_qpu) const {
   if (need_XF && !m_using_Xf) {
     assert(m_using_qpu);
-    warn << "need_fields transferring qpu->Xf";
-    assert(false);  // TODO
+    //warn << "need_fields transferring qpu->Xf";
+
+		timers.start("need_fields qpu->Xf");
+
+    m_Xf = MatrixXf::Zero(m_qpu.rows(), m_qpu.columns());
+
+    for (int i = 0; i < m_qpu.rows(); i++) {
+      for (int j = 0; j < m_qpu.columns(); j++) {
+        m_Xf(i, j) = m_qpu.at(i, j);
+      }
+    }
+
+		timers.stop("need_fields qpu->Xf");
+
+    m_using_Xf = true;
   }
 
   if (need_qpu && !m_using_qpu) {
@@ -496,32 +564,32 @@ void MMatrix::need_fields(bool need_XF, bool need_qpu) const {
 
 bool same(qpu::matrix const &lhs, MatrixXf const &rhs, float precision, bool show_max_diff) {
   //warn << "Called same(qpu::matrix, MatrixXf)";
-	bool ret = true;
-	float max_diff = 0.0f;
+  bool ret = true;
+  float max_diff = 0.0f;
 
   // Special case for 2 input vectors: accept transposed vectors
   if (lhs.columns() == 1 && lhs.columns() == rhs.rows() && lhs.rows() == rhs.cols() ) {
     int size = lhs.rows();
     for (int i = 0; i < size; ++i) {
       if (!qpu::check_precision(lhs.at(i, 0), rhs(0, i), precision, &max_diff, ret)) {
-				if (ret) {  // Show first fail only
-	        warn << "Fail same(vector, vector), (i,j): " << i << ", 0)";
-				}
+        if (ret) {  // Show first fail only
+          warn << "Fail same(vector, vector), (i,j): " << i << ", 0)";
+        }
 
         ret = false;
-				if (!show_max_diff) break;
+        if (!show_max_diff) break;
       }      
     }
 
-		if (show_max_diff) {
-			warn << "same(qpu::matrix, MatrixXf) vector max_diff: " << max_diff;
-		}
+    if (show_max_diff) {
+      warn << "same(qpu::matrix, MatrixXf) vector max_diff: " << max_diff;
+    }
     return ret;
   }
 
-	//
+  //
   // Do full matrices
-	//
+  //
 
   if(lhs.rows() != rhs.rows() || lhs.columns() != rhs.cols() ) {
      warn << "Fail same(qpu::matrix, MatrixXf) dimensions differ: "
@@ -532,23 +600,23 @@ bool same(qpu::matrix const &lhs, MatrixXf const &rhs, float precision, bool sho
   }
 
   for (int i = 0; i < (int) rhs.rows(); ++i) {
-		if (!show_max_diff && !ret) break;
+    if (!show_max_diff && !ret) break;
 
     for (int j = 0; j < (int) rhs.cols(); ++j) {
       if (!qpu::check_precision(lhs.at(i, j), rhs(i, j), precision, &max_diff, ret)) {
-				if (ret) {  // Show first fail only
-        	warn << "Fail same(qpu::matrix, MatrixXf), (i,j): " << i << ", " << j << ")";
-				}
+        if (ret) {  // Show first fail only
+          warn << "Fail same(qpu::matrix, MatrixXf), (i,j): " << i << ", " << j << ")";
+        }
 
-       	ret = false;
-				if (!show_max_diff) break;
+         ret = false;
+        if (!show_max_diff) break;
       }
     }
   }
 
-	if (show_max_diff) {
-		warn << "same(qpu::matrix, MatrixXf) matrix max_diff: " << max_diff;
-	}
+  if (show_max_diff) {
+    warn << "same(qpu::matrix, MatrixXf) matrix max_diff: " << max_diff;
+  }
 
   return ret;
 }
@@ -639,23 +707,23 @@ std::string dump(MatrixXf const &m) {
 MMatrix move_rows(int step, MMatrix const &rhs) {
   if (step == 0) return rhs; // Nothing to do
 
-  //warn << "Called move_rows(" << step << ")";
   assert(abs(step) < rhs.rows());
 
-  MMatrix ret(rhs.rows(), rhs.cols());
+	timers.start("move_rows");
 
-  for (int i = 0; i < rhs.rows(); ++i) {
+	int rhs_rows = rhs.rows();
+
+  MMatrix ret(rhs_rows, rhs.cols());
+
+  for (int i = 0; i < rhs_rows; ++i) {
     if (i + step < 0) continue;
-    if (i + step >= rhs.rows()) continue;
+    if (i + step >= rhs_rows) continue;
 
-    ret.row(i + step, rhs.row(i), false);
+		ret.copy_row(i, i + step, rhs);
+		//OK assert(ret.row(i + step).same(rhs.row(i)));
   }
 
-  ret.sync_qpu();
-/*
-  warn << "move_rows(" << step << "):\n"
-       << "rhs: " << rhs.dump() << "\n"
-       << "ret: " << ret.dump() << "\n";
-*/
+	timers.stop("move_rows");
+
   return ret;
 }

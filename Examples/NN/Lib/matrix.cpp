@@ -109,15 +109,22 @@ void matrix::resize(int rows, int columns) {
 
 
 matrix matrix::row(int index) const {
+	//timers.start("matrix::row(index)");
+
   assert(index >= 0 && index < rows());
   int width = columns();
   matrix ret(1, width);
 
+	int offset = index * width;
+
   for (int i = 0; i < width; ++i) {
-    ret.arr()[i] = arr()[index * width + i];
+    ret.arr()[i] = arr()[offset + i];
   }
 
-  //warn << "row ret: " << ret.dump();
+	// Not working
+	//memcpy((void *) &ret.arr(), (&arr() + offset), width);
+
+	//timers.stop("matrix::row(index)");
   return ret;
 }
 
@@ -466,8 +473,8 @@ void matrix::outer_add(matrix const &lhs, matrix const &rhs) {
   outer_check(lhs, rhs);
   assert(rows() == lhs.size() && columns() == rhs.size());
 
-	//warn << "lhs: " << lhs.dump_dim();
-	//warn << "rhs: " << rhs.dump_dim();
+  //warn << "lhs: " << lhs.dump_dim();
+  //warn << "rhs: " << rhs.dump_dim();
 
   s_op_add->load(&arr(), &lhs.arr(), &rhs.arr(), lhs.size(), rhs.size()/16).run();
 }
@@ -542,7 +549,7 @@ vector::vector(matrix rhs) : matrix(rhs) {
 
   *this = rhs;
 
-  if (rhs.rows() == 1) {
+  if (rhs.columns() == 1) {
     transpose();
   }
 
@@ -743,31 +750,31 @@ vector operator*(matrix const &lhs, matrix const &rhs) {
 
 bool check_precision(float lhs, float rhs, float precision, float *max_diff, bool do_show) {
   bool ret = true;
-	float diff;
+  float diff;
 
   if (precision == 0.0f) {
     if (lhs != rhs) {
       diff = abs(lhs - rhs);
 
-			if (do_show) {
-	      warn << "check_precision fail, diff: " << diff;
-			}
+      if (do_show) {
+        warn << "check_precision fail, diff: " << diff;
+      }
       ret = false;
     }
   } else {
     diff = abs(lhs - rhs);
     if (diff > precision) {
-			if (do_show) {
-	      warn << "check_precision fails with "
-  	         << "diff: " << diff << " for precision: " << precision;
-			}
+      if (do_show) {
+        warn << "check_precision fails with "
+             << "diff: " << diff << " for precision: " << precision;
+      }
       ret = false;
     }
   }
 
-	if (max_diff != nullptr) {
-		if (diff > *max_diff) *max_diff = diff;
-	}
+  if (max_diff != nullptr) {
+    if (diff > *max_diff) *max_diff = diff;
+  }
 
   return ret;
 }
