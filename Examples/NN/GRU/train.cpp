@@ -117,14 +117,14 @@ void LoopState::set_step(int time_step, State const &state, MatrixXf const &X) {
 
 
 void LoopState::x_set_step(int step, State state, MatrixXf const &X) {
-	state.S = remove_last_rows(1, state.S);
+  state.S = remove_last_rows(1, state.S);
   m_temp.move_rows(step, state);
 
-	//warn << "X: " << dump(X);
-	MMatrix tmp;
-	tmp.set(X);
+  //warn << "X: " << dump(X);
+  MMatrix tmp;
+  tmp.set(X);
   temp_X = move_rows(step, tmp);
-	//warn << "temp_X: " << temp_X.dump();
+  //warn << "temp_X: " << temp_X.dump();
 }
 
 
@@ -136,7 +136,7 @@ void LoopState::x_set_step(int step, State state, MatrixXf const &X) {
  */
 void LoopState::temp_init(int time_steps, State const &state) {
   for(int time_step = time_steps - 1; time_step >= 0; time_step--) {
-		// NOTE: This sets S to a single row 20 times
+    // NOTE: This sets S to a single row 20 times
     m_temp.S.set(state.S.row(time_step + 1));
   }
 
@@ -195,7 +195,7 @@ MAYBE_UNUSED void LoopState::update_gradient_rows(Model &grad) const {
   //temp_W.back_prop_2(m_temp, dreluInput_h, Precision);
   //grad.W_h += temp_W;                                       //OK assert(grad.W_h.same());
 
-	MMatrix tmp = m_temp.S.mul_e(m_temp.r);
+  MMatrix tmp = m_temp.S.mul_e(m_temp.r);
   grad.W_h.outer_add_rows(tmp, dreluInput_h);
 
   grad.U_r.outer_add_rows(temp_X, dreluInput_r);
@@ -216,6 +216,10 @@ MAYBE_UNUSED void LoopState::update_gradient_rows(Model &grad) const {
  * 1. DEBUG: Xf/qpu values diverge slightly in the back_prop_x() calls, on the order of <= 1.0e-10.
  *    Due to error accumulation, assertions fail.
  *    For debugging/testing purposes, qpu is syned with Xf. Eventually, this will be removed.
+ *
+ * 2. QPU back prop fully operational, timing before optimization:
+ *
+ *      train limit loop          : 45.632033s in    10 steps, average:  4.563203s
  */
 void back_propagation(Model &m, Model &grad, State &state, MatrixXf& X, MatrixXf& Y, int input_dim, int hidden_dim, int output_dim, int time_steps) {
   timers.start("back_propagation");
@@ -238,22 +242,22 @@ void back_propagation(Model &m, Model &grad, State &state, MatrixXf& X, MatrixXf
   LoopState x_ls(time_steps, input_dim, hidden_dim);
 
   MMatrix x_ds_cur; x_ds_cur.set(ds_single);
+  Model x_grad = grad;
 
-	timers.start("x_step");
+  timers.start("x_step");
 
-	int x_step = time_steps;
-	for (int x = 0; x < x_step; ++x) {
-		x_ls.x_set_step(x, state, X);
-		x_ls.init_drelu(x_ds_cur, m);
-		if (x < x_step - 1) {
-	  	x_ls.update(x_ds_cur, m);
-		}
-	}
+  int x_step = time_steps;
+  for (int x = 0; x < x_step; ++x) {
+    x_ls.x_set_step(x, state, X);
+    x_ls.init_drelu(x_ds_cur, m);
+    if (x < x_step - 1) {
+      x_ls.update(x_ds_cur, m);
+      x_ls.update_gradient_rows(x_grad);
+    }
+  }
 
-	timers.stop("x_step");
+  timers.stop("x_step");
 
-	Model x_grad = grad;
-  x_ls.update_gradient_rows(x_grad);
 
   for (int cur_step = time_steps - 1; cur_step >= 0; cur_step--) {
     ds_cur.set(ds_single.row(cur_step));
@@ -267,31 +271,31 @@ void back_propagation(Model &m, Model &grad, State &state, MatrixXf& X, MatrixXf
 
 
       if (time_step == cur_step - (x_step - 1)) {
-				timers.start("Loop assert");
+        timers.start("Loop assert");
 
-				//warn << ds_cur.dump();
-				//warn << x_ds_cur.row(cur_step).dump();
-				assert(ds_cur.same(x_ds_cur.row(cur_step), Precision));
+        //warn << ds_cur.dump();
+        //warn << x_ds_cur.row(cur_step).dump();
+        assert(ds_cur.same(x_ds_cur.row(cur_step), Precision));
 
-				//warn << ls.temp().S.dump();
-				//warn << x_ls.temp().S.row(cur_step).dump();
-				assert(ls.temp().S.same(x_ls.temp().S.row(cur_step)));
+        //warn << ls.temp().S.dump();
+        //warn << x_ls.temp().S.row(cur_step).dump();
+        assert(ls.temp().S.same(x_ls.temp().S.row(cur_step)));
 
-				timers.stop("Loop assert");
-			}
+        timers.stop("Loop assert");
+      }
 
       ls.update(ds_cur, m);
       ls.update_gradient(grad);
 
 
       if (time_step == cur_step - (x_step - 1)) {
-				timers.start("Loop assert");
+        timers.start("Loop assert");
 
         assert(ls.dreluInput_h.same(x_ls.dreluInput_h.row(cur_step), Precision));
         assert(ls.dreluInput_r.same(x_ls.dreluInput_r.row(cur_step), Precision));
         assert(ls.dreluInput_z.same(x_ls.dreluInput_z.row(cur_step), Precision));
 
-				timers.stop("Loop assert");
+        timers.stop("Loop assert");
       }
 
       timers.stop("back_propagation for inner");
@@ -303,9 +307,11 @@ void back_propagation(Model &m, Model &grad, State &state, MatrixXf& X, MatrixXf
   //MMatrix x_U_h(grad.U_h);
   // x_U_h.outer_add_rows(x_X, x_dreluInput_h);
   //warn << "x_U_h: " << x_U_h.dump_dim();
-	//
-	// Test new loop:
-	//assert(x_grad.U_h.same(grad.U_h));
+  //
+  // Test new loop:
+   x_ls.update(x_ds_cur, m);
+  x_ls.update_gradient_rows(x_grad);
+  //assert(x_grad.U_h.same(grad.U_h));
 
   grad.grad_div_steps((float) time_steps);
 
