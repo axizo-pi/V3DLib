@@ -22,6 +22,14 @@ inline uint32_t param_value(Float::Array const *p) {
   return p->getAddress();
 }
 
+inline std::size_t var_type(Float::Offset val) {
+  return typeid(Float::Ptr).hash_code();
+}
+
+inline uint32_t param_value(Float::Offset val) {
+  return val;
+}
+
 inline std::size_t var_type(Int::Array const *p) {
   return typeid(Int::Ptr).hash_code();
 }

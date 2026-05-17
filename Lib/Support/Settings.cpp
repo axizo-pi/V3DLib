@@ -266,13 +266,7 @@ bool Settings::process() {
     num_qpus    = p["Num QPU's"]->get_int_value();
 
     if (p["Max QPU's"]->get_bool_value()) {
-      if (run_type != 0 || Platform::run_vc4()) {
-        num_qpus = 12;
-      } else if (Platform::run_vc7()) {
-        num_qpus = 16;
-      } else {  // vc6
-        num_qpus = 8;
-      }
+      setMaxQPUs();
     }
 
     if (run_type != 0 || Platform::run_vc4()) {

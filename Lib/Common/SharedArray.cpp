@@ -110,6 +110,12 @@ uint32_t BaseSharedArray::getAddress() const {
 }
 
 
+uint32_t BaseSharedArray::addr(uint32_t offset) const {
+  assert(offset < m_num_elems);
+  return getAddress() + offset*m_element_size;
+}
+
+
 std::string BaseSharedArray::dump() const {
   std::stringstream ret;
 

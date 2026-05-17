@@ -38,6 +38,7 @@ struct Float : public BaseExpr {
   using Array   = V3DLib::SharedArray<float>;
   using Array2D = V3DLib::Shared2DArray<float>;
   using Ptr     = V3DLib::ptr::Ptr<Float>;
+  using Offset  = uint32_t;
 
   Float();
   Float(float x);

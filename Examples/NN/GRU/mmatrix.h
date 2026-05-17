@@ -3,7 +3,7 @@
 #include "common.h"
 
 bool same(qpu::matrix const &lhs, MatrixXf const &rhs, float precision = 0.0f, bool show_max_diff = false);
-bool same(qpu::matrix const &lhs, qpu::matrix const &rhs, float precision = 0.0f);
+bool same(qpu::matrix const &lhs, qpu::matrix const &rhs, float precision = 0.0f, bool show_max_diff = false);
 qpu::matrix copy_m(MatrixXf const &rhs);
 std::string dump(MatrixXf const &m);
 
@@ -12,7 +12,7 @@ class State;
 class MMatrix {
 public:
   MMatrix() = default;
-  MMatrix(int rows, int columns, float val = 0.0f);
+  MMatrix(int rows, int columns, float val = 0.0f, bool set_Xf = false);
   MMatrix(MMatrix const &rhs);
 
   void set(MatrixXf const &rhs);
@@ -50,7 +50,7 @@ public:
   MMatrix mul_e(MMatrix const &rhs) const;
   MMatrix outer(MMatrix const &rhs) const;
   void outer_add(MMatrix const &lhs, MMatrix const &rhs);
-  void outer_add_rows(MMatrix const &lhs, MMatrix const &rhs);
+  void outer_add_rows(MMatrix const &lhs, MMatrix const &rhs, float precision);
   void outer_rows(MMatrix const &lhs, MMatrix const &rhs);
 
   // Application-specific methods

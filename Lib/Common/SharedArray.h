@@ -20,6 +20,7 @@ public:
   void dealloc();
   bool allocated() const;
   uint32_t getAddress() const;
+  uint32_t addr(uint32_t offset) const;
   std::string dump() const;
 
   /**

@@ -62,6 +62,7 @@ struct matrix {
   matrix transpose() const;
   matrix outer(matrix const &rhs) const;
   void   outer_add(matrix const &lhs, matrix const &rhs);
+  void   outer_add_rows(matrix const &lhs, matrix const &rhs);
 
   std::string dump_dim() const;
   std::string dump(bool output_int = false) const;

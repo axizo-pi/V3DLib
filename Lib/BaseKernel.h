@@ -66,6 +66,7 @@ public:
   std::string dump();
 
   BaseKernel &setNumQPUs(int n) { m_settings.num_qpus = n; return *this; }
+  BaseKernel &setMaxQPUs();
   int numQPUs() const { return m_settings.num_qpus; }
 
   void run(bool wait_complete = true);

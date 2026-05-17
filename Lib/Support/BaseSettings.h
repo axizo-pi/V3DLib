@@ -25,6 +25,7 @@ struct BaseSettings {
   void startPerfCounters();
   void stopPerfCounters();
   void dump_code(BaseKernel &k);
+  void setMaxQPUs();
 
 private:
   int output_count = 0;

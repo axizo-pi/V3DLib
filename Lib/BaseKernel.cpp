@@ -91,6 +91,12 @@ std::string BaseKernel::dump() {
 }
 
 
+BaseKernel &BaseKernel::setMaxQPUs() {
+  m_settings.setMaxQPUs();
+  return *this;
+}
+
+
 /**
  * ==================================================
  * Notes

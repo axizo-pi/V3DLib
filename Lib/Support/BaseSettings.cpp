@@ -90,4 +90,15 @@ void BaseSettings::stopPerfCounters() {
   printf("%s\n", output.c_str());
 }
 
+
+void BaseSettings::setMaxQPUs() {
+  if (run_type != 0 || Platform::run_vc4()) {
+    num_qpus = 12;
+  } else if (Platform::run_vc7()) {
+    num_qpus = 16;
+  } else {  // vc6
+    num_qpus = 8;
+  }
+}
+
 } // namespace V3DLib

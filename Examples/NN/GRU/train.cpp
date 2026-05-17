@@ -107,20 +107,20 @@ void LoopState::update(MMatrix &ds_cur, Model const &m) const {
 
 
 MAYBE_UNUSED void LoopState::update_gradient_rows(Model &grad) const {
-  grad.U_h.outer_add_rows(temp_X, dreluInput_h);
+  grad.U_h.outer_add_rows(temp_X, dreluInput_h, Precision);
 
   //MMatrix temp_W;
   //temp_W.back_prop_2(m_temp, dreluInput_h, Precision);
   //grad.W_h += temp_W;                                       //OK assert(grad.W_h.same());
 
   MMatrix tmp = m_temp.S.mul_e(m_temp.r);
-  grad.W_h.outer_add_rows(tmp, dreluInput_h);
+  grad.W_h.outer_add_rows(tmp, dreluInput_h, Precision);
 
-  grad.U_r.outer_add_rows(temp_X, dreluInput_r);
-  grad.W_r.outer_add_rows(m_temp.S, dreluInput_r);
+  grad.U_r.outer_add_rows(temp_X, dreluInput_r, Precision);
+  grad.W_r.outer_add_rows(m_temp.S, dreluInput_r, Precision);
 
-  grad.U_z.outer_add_rows(temp_X, dreluInput_z);                 //OK assert(grad.U_z.same());
-  grad.W_z.outer_add_rows(m_temp.S, dreluInput_z);
+  grad.U_z.outer_add_rows(temp_X, dreluInput_z, Precision);                 //OK assert(grad.U_z.same());
+  grad.W_z.outer_add_rows(m_temp.S, dreluInput_z, Precision);
 }
 
 } // anon namespace
@@ -141,8 +141,8 @@ MAYBE_UNUSED void LoopState::update_gradient_rows(Model &grad) const {
 void back_propagation(Model &m, Model &grad, State &state, MatrixXf& X, MatrixXf& Y, int input_dim, int hidden_dim, int output_dim, int time_steps) {
   timers.start("back_propagation");
 
-	MMatrix x_X;
-	x_X.set(X);
+  MMatrix x_X;
+  x_X.set(X);
 
   /* gradients = dLdV, dLdU0, dLdU1, dLdU2, dLdW0, dLdW1, dLdW2 */
   grad.init_zeroes(m.input_dim(), m.hidden_dim(), m.output_dim());
@@ -163,25 +163,27 @@ void back_propagation(Model &m, Model &grad, State &state, MatrixXf& X, MatrixXf
   MMatrix x_ds_cur; x_ds_cur.set(ds_single);
   Model x_grad = grad;
 
-	State x_state = state;
-	x_state.S = remove_last_rows(1, x_state.S);
+  State x_state = state;
+  x_state.S = remove_last_rows(1, x_state.S);
 
   timers.start("x_step");
 
   int x_step = time_steps;
   for (int x = 0; x < x_step; ++x) {
-  	timers.start("x_step x_set_step");
+    //warn << "x_step x: " << x;
+
+    timers.start("x_step x_set_step");
     x_ls.x_set_step(x, x_state, x_X);
-  	timers.stop("x_step x_set_step");
-  	timers.start("x_step init_drelu");
+    timers.stop("x_step x_set_step");
+    timers.start("x_step init_drelu");
     x_ls.init_drelu(x_ds_cur, m);
-  	timers.stop("x_step init_drelu");
-		timers.start("x_step update");
+    timers.stop("x_step init_drelu");
+    timers.start("x_step update");
     x_ls.update(x_ds_cur, m);
- 		timers.stop("x_step update");
- 		timers.start("x_step update_gradient_rows");
+     timers.stop("x_step update");
+     timers.start("x_step update_gradient_rows");
     x_ls.update_gradient_rows(x_grad);  // Bulk of the time here
- 		timers.stop("x_step update_gradient_rows");
+     timers.stop("x_step update_gradient_rows");
   }
 
   timers.stop("x_step");
@@ -396,14 +398,14 @@ void train_main() {
   float decay         = 0.000f;
 
   train(
-		base + "/donald_trump_input.txt",
-		base + "/donald_trump_output.txt",
-		learning_rate,
-		nepochs,
-		input_dim,
-		hidden_dim,
-		output_dim,
-		time_steps,
-		decay
-	);
+    base + "/donald_trump_input.txt",
+    base + "/donald_trump_output.txt",
+    learning_rate,
+    nepochs,
+    input_dim,
+    hidden_dim,
+    output_dim,
+    time_steps,
+    decay
+  );
 }

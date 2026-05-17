@@ -1,6 +1,7 @@
 #include "matrix.h"
 #include "scalar.h"
-#include "helpers.h"  // frrand()
+#include "helpers.h"          // frrand()
+#include "Support/Helpers.h"  // to_file()
 
 namespace qpu {
 namespace {
@@ -25,6 +26,7 @@ std::unique_ptr<BaseKernel> s_sub;
 std::unique_ptr<BaseKernel> s_add;
 std::unique_ptr<BaseKernel> s_op;
 std::unique_ptr<BaseKernel> s_op_add;
+std::unique_ptr<BaseKernel> s_op_add_rows;
 std::unique_ptr<BaseKernel> s_sigmoid;
 std::unique_ptr<BaseKernel> s_dsigmoid;
 std::unique_ptr<BaseKernel> s_tanh;
@@ -48,6 +50,7 @@ void init_local() {
   s_add                .reset(new BaseKernel(compile(kernel::vector_add     , settings())));
   s_op                 .reset(new BaseKernel(compile(kernel::outer_product  , settings())));
   s_op_add             .reset(new BaseKernel(compile(kernel::outer_add      , settings())));
+  s_op_add_rows        .reset(new BaseKernel(compile(kernel::outer_add_rows , settings())));
   s_sigmoid            .reset(new BaseKernel(compile(kernel::sigmoid        , settings())));
   s_dsigmoid           .reset(new BaseKernel(compile(kernel::dsigmoid       , settings())));
   s_tanh               .reset(new BaseKernel(compile(kernel::tanh           , settings())));
@@ -109,22 +112,22 @@ void matrix::resize(int rows, int columns) {
 
 
 matrix matrix::row(int index) const {
-	//timers.start("matrix::row(index)");
+  //timers.start("matrix::row(index)");
 
   assert(index >= 0 && index < rows());
   int width = columns();
   matrix ret(1, width);
 
-	int offset = index * width;
+  int offset = index * width;
 
   for (int i = 0; i < width; ++i) {
     ret.arr()[i] = arr()[offset + i];
   }
 
-	// Not working
-	//memcpy((void *) &ret.arr(), (&arr() + offset), width);
+  // Not working
+  //memcpy((void *) &ret.arr(), (&arr() + offset), width);
 
-	//timers.stop("matrix::row(index)");
+  //timers.stop("matrix::row(index)");
   return ret;
 }
 
@@ -473,10 +476,26 @@ void matrix::outer_add(matrix const &lhs, matrix const &rhs) {
   outer_check(lhs, rhs);
   assert(rows() == lhs.size() && columns() == rhs.size());
 
+  s_op_add->setMaxQPUs();
+  s_op_add->load(&arr(), &lhs.arr(), &rhs.arr(), lhs.size(), rhs.size()/16).run();
+}
+
+
+void matrix::outer_add_rows(matrix const &lhs, matrix const &rhs) {
   //warn << "lhs: " << lhs.dump_dim();
   //warn << "rhs: " << rhs.dump_dim();
+  //warn << "row: " << row;
 
-  s_op_add->load(&arr(), &lhs.arr(), &rhs.arr(), lhs.size(), rhs.size()/16).run();
+  outer_check(lhs, rhs);  // TODO necessary? Does it work as expected?
+  assert(rows() == lhs.columns() && columns() == rhs.columns());
+
+  timers.start("matrix::outer_add_rows");
+    
+  //to_file("s_op_add_rows.txt", s_op_add_rows->dump());  
+  s_op_add_rows->setNumQPUs(4);
+  s_op_add_rows->load(&arr(), &lhs.arr(), &rhs.arr(), lhs.rows(), lhs.columns(), rhs.columns()).run();
+
+  timers.stop("matrix::outer_add_rows");
 }
 
 

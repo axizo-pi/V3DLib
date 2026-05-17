@@ -330,21 +330,60 @@ void outer_product(Float::Ptr ret, Float::Ptr left, Float::Ptr right, Int N, Int
 }
 
 
-void outer_add(Float::Ptr ret, Float::Ptr left, Float::Ptr right, Int N, Int M) {
-  left -= index();
+namespace {
 
-  For (Int i = 0, i < N, i++)
-    Float left_val = *left;
-    Float::Ptr start = right;
+/**
+ * NumQPU's:
+ *
+ * - 1,2,4: Works perfectly
+ * - 6    : Fails train loop 1
+ * - 8    : Works sometimes within precision OR fails train loop 1,3
+ * - 10   : Fails train loop 0
+ * - 12   : Fails train loop 0
+ * - 16   : Fails train loop 1
+ *
+ * TODO: examine this, expectation is that it should always work
+ */
+void outer_add_partial(Float::Ptr &ret, Float::Ptr &lhs, Float::Ptr &rhs, Int &N, Int &M) {
+  lhs -= index();  comment("Start outer_add_partial");
+
+  For (Int i = me(), i < N, i += numQPUs())
+    Float lhs_val = *(lhs + i);
+    Float::Ptr ret_start = ret + i*M*4;
+    Float::Ptr rhs_start = rhs;
 
     For (Int j = 0, j < M, j++)
-      *ret = *ret + left_val * *start;  // The only difference with outer_product()
+      // The only logical difference with outer_product() is `*res_start += ...`
+      Float val = *ret_start + lhs_val * *rhs_start;
+      *ret_start = val;
 
-      ret.inc();
-      start.inc();
+      ret_start.inc();
+      rhs_start.inc();
     End
+  End
+}
 
-    left++;
+}  // anon namespace
+
+
+void outer_add(Float::Ptr ret, Float::Ptr left, Float::Ptr right, Int N, Int M) {
+  outer_add_partial(ret, left, right, N, M);
+}
+
+
+void outer_add_rows(Float::Ptr ret, Float::Ptr lhs, Float::Ptr rhs, Int lhs_rows, Int lhs_cols, Int rhs_cols) {
+  Int rhs_step = rhs_cols >> 4;
+
+  For (Int row = 0, row < lhs_rows, row++)
+    Float::Ptr start_ret = ret;
+
+    Int lhs_row = row*lhs_cols;
+    Int rhs_row = row*rhs_cols;
+
+    Float::Ptr lhs_offset = lhs + lhs_row;  comment("Set lhs_offset");
+    Float::Ptr rhs_offset = rhs + rhs_row;
+
+    outer_add_partial(start_ret, lhs_offset, rhs_offset, lhs_cols, rhs_step);
   End
 }
 
