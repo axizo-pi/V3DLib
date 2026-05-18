@@ -25,6 +25,7 @@ To get an idea of what VideoCore programming looks like, please view the [Basics
 
 Unit tests are run regularly on the following Pi versions:
 
+| Pi Version | Model | Register Size | Debian version | Memory | VideoCore |             |  |
 |-------|----------------------|-----------|---------------|--------|-----|--------------|----------|
 | Pi5   | Model B Rev 1.0      | 64        | 12 (bookworm) | 4GB    | vc7 | BCM2835      | c04170   |
 | Pi4   | Model B Rev 1.1      | 64        | 12 (bookworm) | 2GB    | vc6 | BCM2711      | b03111   |
