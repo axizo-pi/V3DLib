@@ -25,6 +25,7 @@ To get an idea of what VideoCore programming looks like, please view the [Basics
 
 Unit tests are run regularly on the following Pi versions:
 
+|-------|----------------------|-----------|---------------|--------|-----|--------------|----------|
 | Pi5   | Model B Rev 1.0      | 64        | 12 (bookworm) | 4GB    | vc7 | BCM2835      | c04170   |
 | Pi4   | Model B Rev 1.1      | 64        | 12 (bookworm) | 2GB    | vc6 | BCM2711      | b03111   |
 | Pi3   | Model B Plus Rev 1.3 | 64        | 13 (trixie)   | 1GB    | vc4 | BCM2837      | a020d3   |
@@ -32,6 +33,7 @@ Unit tests are run regularly on the following Pi versions:
 | Zero  | W Rev 1.1            | 32        | 12 (bookworm) | 0.5GB  | vc4 | BCM2835      | 9000c1   |
 | Pi2   | Model B Rev 1.1      | 32        | 12 (bookworm) | 1GB    | vc4 | BCM2836      | a01041   |
 | Pi1   | Model B Rev 2        | 32        | 12 (bookworm) | 0.5GB  | vc4 | BCM2835      | 000e     |
+|-------|----------------------|-----------|---------------|--------|-----|--------------|----------|
 
 
 The notable omissions in this list:
@@ -93,7 +95,7 @@ The following naming is used within the project:
 
 # Specifications 
 
-Here is an overview for the easily comparable stuff:
+This is an overview for the easily comparable stuff:
 
 | Pi Version | CPU # Cores |CPU Clock (Mhz) | GPU Clock (Mhz) | VideoCore version | Wifi | Ethernet |
 |------------|-------------|----------------|-----------------|-------------------|------|----------|
