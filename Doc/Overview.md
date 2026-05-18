@@ -2,20 +2,13 @@
 	<link rel="stylesheet" type="text/css" href="css/docs.css">
 </head>
 
-# Overview
-
-## VideoCore Basics
+# VideoCore Basics
 
 There are three distinct versions of the `VideoCore` GPU:
 
 - **VideoCore IV**  - Used on all Pi's prior to the `Pi4`, and on the `Zero` 
 - **VideoCore VI**  - Used on The `Pi4`
 - **VideoCore VII** - Used on The `Pi5`
-
-The VideoCore is a [vector processor](https://en.wikipedia.org/wiki/Vector_processor)
-developed by [Broadcom](http://www.broadcom.com/) with
-instructions that operate on 16-element vectors of 32-bit integer or floating point values.  
-In other words. the VideCore is an **SIMD processor** ('Single Instruction, Multiple Data').
 
 The basic hardware unit in the VideoCore is the **Quad Processing Unit (QPU)**.
 
@@ -28,7 +21,26 @@ Performance-wise, the `Pi5` absolutely destroys all previous models.
 
 To get an idea of what VideoCore programming looks like, please view the [Basics Page](Basics.md).
 
-### Personal Notes/Gripes
+# Supported Pi's
+
+Unit tests are run regularly on the following Pi versions:
+
+| Pi5   | Model B Rev 1.0      | 64        | 12 (bookworm) | 4GB    | vc7 | BCM2835      | c04170   |
+| Pi4   | Model B Rev 1.1      | 64        | 12 (bookworm) | 2GB    | vc6 | BCM2711      | b03111   |
+| Pi3   | Model B Plus Rev 1.3 | 64        | 13 (trixie)   | 1GB    | vc4 | BCM2837      | a020d3   |
+| Pi3   | Model B Rev 1.2      | 32        | 10 (buster)   | 1GB    | vc4 | BCM2837      | a02082   |
+| Zero  | W Rev 1.1            | 32        | 12 (bookworm) | 0.5GB  | vc4 | BCM2835      | 9000c1   |
+| Pi2   | Model B Rev 1.1      | 32        | 12 (bookworm) | 1GB    | vc4 | BCM2836      | a01041   |
+| Pi1   | Model B Rev 2        | 32        | 12 (bookworm) | 0.5GB  | vc4 | BCM2835      | 000e     |
+
+
+The notable omissions in this list:
+
+- **Raspberry PI Pico**: This is a microcontroller. Can't run Debian, has no VideoCore. 
+- **Raspberry PI Compute Module 5**: As far as I can tell, this is a Pi5 in a sexy casing.
+	I will buy it eventually, but currently I don't see the point.
+
+# Personal Notes/Gripes
 
 - The QPUs are part of the Raspberry Pi's graphics pipeline.  If you're
 interested in doing cool graphics on the Pi then you probably want **OpenGL ES**.
@@ -47,33 +59,6 @@ I believe that there is no performance gain to be found here, quite the contrary
 - Kernel programs are compiled dynamically, so that a given program can run unchanged on any version  of the RaspBerry Pi.
   The kernels are generated inline and offloaded to the GPU's at runtime.
 
-# Supported Pi's
-
-I have 14 Pi's organized in three clusters:
-
-![Pi Clusters](./images/Pi_clusters.jpeg)
-
-Getting these clustered Pi's to work together is an ongoing, separate project.
-
-
-Unit tests are run regularly on the following Pi versions:
-
-| Pi    | Version              | 32/64bits | Debian distro | Memory | GPU | Model Number | Revision |
-| ----- | -------------------- | --------- | ------------- | ------ | --- | ------------ | -------- |
-| Pi5   | Model B Rev 1.0      | 64        | 12 (bookworm) | 4GB    | vc7 | BCM2835      | c04170   |
-| Pi4   | Model B Rev 1.1      | 64        | 12 (bookworm) | 2GB    | vc6 | BCM2711      | b03111   |
-| Pi3   | Model B Plus Rev 1.3 | 64        | 13 (trixie)   | 1GB    | vc4 | BCM2837      | a020d3   |
-| Pi3   | Model B Rev 1.2      | 32        | 10 (buster)   | 1GB    | vc4 | BCM2837      | a02082   |
-| Zero  | W Rev 1.1            | 32        | 12 (bookworm) | 0.5GB  | vc4 | BCM2835      | 9000c1   |
-| Pi2   | Model B Rev 1.1      | 32        | 12 (bookworm) | 1GB    | vc4 | BCM2836      | a01041   |
-| Pi1   | Model B Rev 2        | 32        | 12 (bookworm) | 0.5GB  | vc4 | BCM2835      | 000e     |
-
-
-The notable omissions in this list:
-
-- **Raspberry PI Pico**: This is a microcontroller. Can't run Debian, has no VideoCore. 
-- **Raspberry PI Compute Module 5**: As far as I can tell, this is a Pi5 in a sexy casing.
-	I will buy it eventually, but currently I don't see the point.
 
 # <a name="conventions">Conventions</a>
 
@@ -305,17 +290,17 @@ the following commands are used (20260207):
     > time make all runTest
 
 
-Results per platform, time in seconds
+Results per platform, time in seconds (timing varies a lot! Following is indicative);
 
-| Platform | real (s) | user (s) |
-|----------|----------|----------|
-| Pi-1     | 6903     | 6036     |
-| Zero     | 4288     | 4099     |
-| Pi-2     | 1914     | 1798     |
-| Pi-3     | 1011     |  886     |
-| Pi-3B+   |  879     |  806     |
-| Pi-4     |  795     |  640     |
-| Pi-5     |  130     |  119     |
+| Platform | real (s) |
+|----------|----------|
+| Pi-1     | 6903     |
+| Zero     | 4288     |
+| Pi-2     | 1914     |
+| Pi-3     | 1011     |
+| Pi-3B+   |  879     |
+| Pi-4     |  795     |
+| Pi-5     |  130     |
 
 I should update for all platforms periodically, code is changing continuously.
 
@@ -346,10 +331,19 @@ So, calculation:
     Pi2  : 250x12x8 =  24.0 GFLOPs
     Pi3  : 300x12x8 =  28.8 GFLOPs
     Zero : 300x12x8 =  28.8 GFLOPs
-    Pi3+ : 400x12x8 =  38.4 GFLOPs  # Could be 300; IRL it performs worse than Pi3
+    Pi3+ : 400x12x8 =  38.4 GFLOPs  # Could be 300; used judiciously, it can be faster than the Pi4
     Pi4  : 500x 8x8 =  32.0 GFLOPs  # Less! The improved hardware in `v3d` compensates.
     Pi5  : 960x16x8 = 122.9 GFLOPS
 
+-----
+
+# The Next Step: Clustering
+
+I have 14 Pi's organized in three clusters:
+
+![Pi Clusters](./images/Pi_clusters.jpeg)
+
+Getting these clustered Pi's to work together is an ongoing, separate project.
 
 -------------------
 

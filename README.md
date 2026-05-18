@@ -6,36 +6,49 @@
 
 **Version 0.8.1**
 
+`V3DLib` is a C++ library for programming the GPU's of _all_ versions of the [Raspberry Pi](https://www.raspberrypi.org/).
 
-`V3DLib` is a C++ library for creating programs to run on the GPU's of _all_ versions of the [Raspberry Pi](https://www.raspberrypi.org/).
+The GPU on the Pi's is called the `VideoCore`.
+The `VideoCore` is an **SIMD[^1] [vector processor](https://en.wikipedia.org/wiki/Vector_processor)**
+developed by [Broadcom](http://www.broadcom.com/).
+It employs instructions that operate on 16 consecutive values of 32-bit integer or floating point values.  
 
-## Supported Pi's
+[^1]: **SIMD**: Single Instruction, Multiple Data
 
-The GPU on the Pi's is called the **VideoCore**.
-There are three different versions of the VideoCore over all Pi versions.
+`V3DLib` offers a high-level programming language to facilitate `VideoCore` programming.  
+There are currently three different version of the VideoCore.
+All (three) versions of `VideoCore` are supported.
 
-The Following Pi's are supported:
+_If you want to do fancy direct 3d rendering, `OpenGL` is a better choice. This library is intended
+to make **general purpose** calculations available on the Pi GPU._
 
-| Pi    | VideoCore Version | 
-| ----- | ----------------- |
-| Pi5   | VII               |
-| Pi4   | VI                |
-| Zero  | IV                |
-| Pi3B+ | IV                |
-| Pi3   | IV                |
-| Pi2   | IV                |
-| Pi1   | IV                |
+
+## Example
+
+At the risk of insulting your intelligence, following is the kernel of example program `Hello`:
+
+    void hello(Int::Ptr p) {
+      *p = 1;
+    }
+
+This code translates directly to QPU instructions. The thing to take away here is:
+
+**All values in `QPU` are 16 4-byte values.**
+
+- A parameter of type `Int` is actually represents 16 integer values.
+- An `Int::Ptr` thus points to 16 consecutive integer values. The single operation in the kernel
+  sets _all_ of these integers to `1`.
+
+To get to grip on `VideoCore` programming, see the [Basics Page](Doc/Basics.md).
 
 ## Motivation
 
-The Raspberry Pi's have a pretty nifty *general-purpose* GPU, the `VideoCore`.
-It bothered me to no end that this GPU largely unused; the only thing really using it is `OpenGL`.
-
-The Pi5 has a new version of the GPU. I resolved to update the project when I got the Pi5 to pass all unit tests;
-I have reached this point.
-
-I lost my previous account due to 'enhancements' in the GitHub authentication.
-This account replaces [my previous account](https://github.com/wimrijnders).
+- The Raspberry Pi's have a pretty nifty *general-purpose* GPU, the `VideoCore`.
+  It bothered me to no end that this GPU largely unused; the only thing really using it is `OpenGL`.
+- The Pi5 has a new version of the GPU. I resolved to update the project when I got the Pi5 to pass all unit tests;
+  I have reached this point.
+- I lost my previous account due to changes in the GitHub authentication.
+  This account replaces [my previous account](https://github.com/wimrijnders).
 
 ## Credit where Credit is Due
 
@@ -59,3 +72,5 @@ Plenty of his original code is still present in this project.
   * Please look at the [Known Issues](Doc/Issues.md), so you have an idea what to expect.
 
 --------------------------
+
+#### Footnotes
