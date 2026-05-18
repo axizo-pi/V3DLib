@@ -34,11 +34,15 @@ MAYBE_UNUSED MMatrix remove_last_rows(int num, MMatrix const &rhs) {
 
   assert(num > 0 && num < rhs.rows());
 
+  timers.start("remove_last_rows");
+
   MMatrix ret(rhs.rows() - num, rhs.cols());
 
   for (int i = 0; i < rhs.rows() - num; ++i) {
     ret.row(i, rhs.row(i));
   }
+
+  timers.stop("remove_last_rows");
 
   return ret;
 }
@@ -82,14 +86,14 @@ LoopState::LoopState(int time_steps, int input_dim, int hidden_dim) :
 
 void LoopState::x_set_step(int step, State x_state, MMatrix const &X) {
   m_temp.move_rows(step, x_state);
-  temp_X = move_rows(step, X);
+  temp_X.move_rows(step, X);
 }
 
 
 void LoopState::init_drelu(MMatrix const &ds_cur, Model const &m) {
   ds_cur_bk = ds_cur;
 
-  dreluInput_h.back_prop_1(ds_cur, m_temp);
+  dreluInput_h.back_prop_1(ds_cur, m_temp, Precision);
 
   dsr = m.W_h * dreluInput_h;
   dreluInput_r.back_prop_3(dsr, m_temp, Precision);
@@ -108,10 +112,6 @@ void LoopState::update(MMatrix &ds_cur, Model const &m) const {
 
 MAYBE_UNUSED void LoopState::update_gradient_rows(Model &grad) const {
   grad.U_h.outer_add_rows(temp_X, dreluInput_h, Precision);
-
-  //MMatrix temp_W;
-  //temp_W.back_prop_2(m_temp, dreluInput_h, Precision);
-  //grad.W_h += temp_W;                                       //OK assert(grad.W_h.same());
 
   MMatrix tmp = m_temp.S.mul_e(m_temp.r);
   grad.W_h.outer_add_rows(tmp, dreluInput_h, Precision);
@@ -175,15 +175,18 @@ void back_propagation(Model &m, Model &grad, State &state, MatrixXf& X, MatrixXf
     timers.start("x_step x_set_step");
     x_ls.x_set_step(x, x_state, x_X);
     timers.stop("x_step x_set_step");
+
     timers.start("x_step init_drelu");
     x_ls.init_drelu(x_ds_cur, m);
     timers.stop("x_step init_drelu");
+
     timers.start("x_step update");
     x_ls.update(x_ds_cur, m);
-     timers.stop("x_step update");
-     timers.start("x_step update_gradient_rows");
+    timers.stop("x_step update");
+
+    timers.start("x_step update_gradient_rows");
     x_ls.update_gradient_rows(x_grad);  // Bulk of the time here
-     timers.stop("x_step update_gradient_rows");
+    timers.stop("x_step update_gradient_rows");
   }
 
   timers.stop("x_step");

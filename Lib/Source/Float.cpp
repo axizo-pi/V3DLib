@@ -225,6 +225,8 @@ FloatExpr tanh(FloatExpr x)      { return mkFloatApply(x, Op(TANH     , FLOAT));
 FloatExpr log(FloatExpr x)       { return mkFloatApply(x, Op(LOG      , FLOAT)); }
 
 
+FloatExpr sqrt_f(FloatExpr x) { return recip(recipsqrt(x)); }
+
 /**
  * Should not be used directly in code.
  * use `sin()` below instead

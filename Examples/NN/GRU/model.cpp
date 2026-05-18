@@ -257,10 +257,10 @@ void State::set_step(int time_step, State const &state) {
 void State::move_rows(int step, State const &state) {
   assert(m_do_temp);
 
-  S  = ::move_rows(step, state.S);
-  r  = ::move_rows(step, state.r);
-  z  = ::move_rows(step, state.z);
-  h  = ::move_rows(step, state.h);
+  S.move_rows(step, state.S);
+  r.move_rows(step, state.r);
+  z.move_rows(step, state.z);
+  h.move_rows(step, state.h);
 }
 
 

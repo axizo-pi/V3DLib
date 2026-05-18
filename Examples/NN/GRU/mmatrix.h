@@ -20,10 +20,12 @@ public:
 
   int rows() const;
   int cols() const;
+  int size() const { return rows()*cols(); }
 
   void row(int index, MatrixXf const &val);
   void row(int index, MMatrix const &val);
-  void copy_row(int from_index, int to_index, MMatrix const &val);
+	void move_rows(int step, MMatrix const &rhs);
+
   MMatrix row(int index) const;
 
   MatrixXf    const &Xf()  const;
@@ -54,8 +56,7 @@ public:
   void outer_rows(MMatrix const &lhs, MMatrix const &rhs);
 
   // Application-specific methods
-  void back_prop_1(MMatrix const &ds_cur, State const &temp);
-  void back_prop_2(State const &temp, MMatrix const &dreluInput_h, float precision);
+  void back_prop_1(MMatrix const &ds_cur, State const &temp, float precision);
   void back_prop_3(MMatrix const &dsr, State const &temp, float precision = 0.0f);
   void back_prop_4(MMatrix const &ds_cur_bk, State const &temp, float precision);
   void divide_matrix(MMatrix const &gradient, MMatrix const &in_cache);
@@ -73,6 +74,9 @@ private:
   void need_fields(bool need_XF, bool need_qpu) const;
   void used_fields(bool in_XF, bool in_qpu) { m_using_Xf = in_XF; m_using_qpu = in_qpu; }
 
+  void copy_row(int from_index, int to_index, MMatrix const &val);
+	void copy_block(MMatrix const &rhs, int from_offset, int to_offset, int in_size);
+
   void reset();
 };
 
@@ -82,6 +86,5 @@ inline MMatrix operator*(float val, MMatrix const &rhs) {
 }
 
 
-MMatrix move_rows(int step, MMatrix const &rhs);
 
 #endif // _GRU_MMATRIX_H
