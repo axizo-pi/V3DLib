@@ -1,6 +1,7 @@
 #include "model.h"
 #include "global/log.h"
 #include "helpers.h"  // resize_16()
+//#include "mmatrix.h"
 #include <iostream>
 
 using namespace std;
@@ -294,28 +295,35 @@ void forward_propagation(
   timers.start("forward_propagation");
 
   MatrixXf temp        = MatrixXf::Zero(1, hidden_dim);
+  MMatrix  temp2(1, hidden_dim);
+
   MatrixXf temp_output = MatrixXf::Zero(1, output_dim);
   MatrixXf temp_hidden = MatrixXf::Zero(1, hidden_dim);
   MatrixXf ones        = MatrixXf::Ones(1, hidden_dim);
 
   for(int i = 0; i < time_steps; i++) {
-    auto S_row = state.S.row(i).Xf();
-    auto X_row = X.row(i);
-    auto z_row = state.z.row(i).Xf();
+    auto S_row = state.S.row(i);
+    MMatrix X_row;
+    X_row.set(X.row(i));
+    auto z_row = state.z.row(i);
 
-    temp            = (X_row * (m.U_z.Xf())) + (S_row * (m.W_z.Xf()));
+    temp            = (X_row.Xf() * (m.U_z.Xf())) + (S_row.Xf() * (m.W_z.Xf()));
     temp.eval();
+
+    temp2            = (X_row * m.U_z) + (S_row*m.W_z);
+		assert(::same(temp2.qpu(), temp));
+
     state.z.row(i, temp.unaryExpr(&sigmoid));
 
-    temp            = (X_row * (m.U_r.Xf())) + (S_row * (m.W_r.Xf()));
+    temp            = (X_row.Xf() * (m.U_r.Xf())) + (S_row.Xf() * (m.W_r.Xf()));
     temp.eval();
     state.r.row(i, temp.unaryExpr(&sigmoid));
 
-    temp            = (X_row * (m.U_h.Xf())) + (S_row.cwiseProduct(state.r.row(i).Xf())) * (m.W_h.Xf());
+    temp            = (X_row.Xf() * (m.U_h.Xf())) + (S_row.Xf().cwiseProduct(state.r.row(i).Xf())) * (m.W_h.Xf());
     temp.eval();
     state.h.row(i, temp.unaryExpr(&tanh_activation));
 
-    temp_hidden     = (ones - z_row).cwiseProduct(state.h.row(i).Xf() + z_row).cwiseProduct(S_row);
+    temp_hidden     = (ones - z_row.Xf()).cwiseProduct(state.h.row(i).Xf() + z_row.Xf()).cwiseProduct(S_row.Xf());
     temp_hidden.eval();
     state.S.row(i + 1, temp_hidden);
 

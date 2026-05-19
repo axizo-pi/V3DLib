@@ -231,6 +231,27 @@ std::string MMatrix::dump() const {
 }
 
 
+MMatrix MMatrix::operator+(MMatrix const &rhs) const {
+  rhs.need_fields(true, true);
+  need_fields(true, true);
+
+  MMatrix ret;
+
+  timers.start("MMatrix + Xf");
+  ret.m_Xf = m_Xf + rhs.m_Xf;
+ 	ret.eval();
+  timers.stop("MMatrix + Xf");
+
+  timers.start("MMatrix + qpu");
+  ret.m_qpu = m_qpu + rhs.m_qpu;
+  timers.stop("MMatrix + qpu");
+
+  assert(ret.same());
+  ret.used_fields(true, true);
+  return ret;
+}
+
+
 void MMatrix::operator+=(MMatrix const &rhs) {
   rhs.need_fields(true, false);
   need_fields(true, false);
@@ -271,33 +292,55 @@ void MMatrix::operator/=(float steps) {
 }
 
 
+MMatrix MMatrix::operator*(MMatrix const &rhs) const {
+  rhs.need_fields(true, true);
+  need_fields(true, true);
+
+  MMatrix ret;
+
+  timers.start("MMatrix * Xf");
+  ret.m_Xf = m_Xf * rhs.m_Xf;
+  timers.stop("MMatrix * Xf");
+
+  timers.start("MMatrix * qpu");
+  ret.m_qpu = m_qpu.mul_matrix(rhs.m_qpu);
+  timers.stop("MMatrix * qpu");
+
+  ret.used_fields(true, true);
+	assert(ret.same());
+	return ret;
+}
+
+
 /**
- * Name is a misnomer, the actual calculation is:
+ * @brief Matrix multiplication with transposed matrices.
+ *
+ * The actual calculation is:
  *
  *     rhs * lhs^T;    // ^T - transposed
  */
-MMatrix MMatrix::operator*(MMatrix const &rhs) const {
+MMatrix MMatrix::mul_t(MMatrix const &rhs) const {
   rhs.need_fields(false, true);
   need_fields(false, true);
 
   MMatrix ret;
 /*
-  timers.start("MMatrix * Xf");
+  timers.start("MMatrix mul_t Xf");
   ret.m_Xf = rhs.m_Xf * m_Xf.transpose().eval();
-  timers.stop("MMatrix * Xf");
+  timers.stop("MMatrix mul_t Xf");
 */
   if (rhs.m_qpu.is_vector()) {
 		assert(false); // Check not used
-    timers.start("MMatrix * qpu vec");
+    timers.start("MMatrix mul_t qpu vec");
     ret.m_qpu = m_qpu * rhs.m_qpu;
-    timers.stop("MMatrix * qpu vec");
+    timers.stop("MMatrix mul_t qpu vec");
   } else {
-    timers.start("MMatrix * qpu matrix");
+    timers.start("MMatrix mul_t qpu matrix");
     ret.m_qpu = rhs.m_qpu.mul_matrix_t(m_qpu);
-    timers.stop("MMatrix * qpu matrix");
+    timers.stop("MMatrix mul_t qpu matrix");
   }
 
-  //OK assert(same());
+  //assert(ret.same());
   ret.used_fields(false, true);
   return ret;
 }
@@ -577,8 +620,12 @@ void MMatrix::need_fields(bool need_XF, bool need_qpu) const {
   if (need_qpu && !m_using_qpu) {
     assert(m_using_Xf);
     //warn << "need_fields transferring Xf->qpu";
+
+    timers.start("need_fields Xf->qpu");
     m_qpu = copy_m(m_Xf);
     m_using_qpu = true;
+
+    timers.stop("need_fields Xf->qpu");
   }
 }
 

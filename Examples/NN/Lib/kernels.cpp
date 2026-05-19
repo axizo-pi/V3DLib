@@ -179,7 +179,9 @@ void mult_vec(Float::Ptr input, Float::Ptr mat, Float::Ptr result, Int M, Int N)
   mult_vec_partial(input, mat, result, M, N);
 }
 
-
+/**
+ * Multi-QPU does not increase performance
+ */
 void mult_matrix(Float::Ptr in_ret, Float::Ptr lhs, Float::Ptr rhs, Int lhs_rows, Int inner, Int rhs_cols) {
   Float::Ptr rhs_base = rhs;
   rhs_base -= index();

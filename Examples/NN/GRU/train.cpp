@@ -95,7 +95,7 @@ void LoopState::init_drelu(MMatrix const &ds_cur, Model const &m) {
 
   dreluInput_h.back_prop_1(ds_cur, m_temp, Precision);
 
-  dsr = m.W_h * dreluInput_h;
+  dsr = m.W_h.mul_t(dreluInput_h);
   dreluInput_r.back_prop_3(dsr, m_temp, Precision);
 
   dreluInput_z.back_prop_4(ds_cur_bk, m_temp, 3*Precision);   // convergence Xf/qpu gets progressively worse
@@ -104,9 +104,9 @@ void LoopState::init_drelu(MMatrix const &ds_cur, Model const &m) {
 
 void LoopState::update(MMatrix &ds_cur, Model const &m) const {
   ds_cur  = dsr.mul_e(m_temp.r);
-  ds_cur += m.W_r * dreluInput_r;
+  ds_cur += m.W_r.mul_t(dreluInput_r);
   ds_cur += ds_cur_bk.mul_e(m_temp.z);
-  ds_cur += m.W_z * dreluInput_z;
+  ds_cur += m.W_z.mul_t(dreluInput_z);
 }
 
 

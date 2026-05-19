@@ -300,6 +300,9 @@ matrix matrix::mul(matrix const &rhs) const {
 }
 
 
+/**
+ * Multi-QPU does not increase performance
+ */
 matrix matrix::mul_matrix(matrix const &rhs) const {
   assert((m_columns % 16) == 0);      // Inner dimension must be multiple of 16
   assert(m_columns == rhs.m_rows);
@@ -307,7 +310,7 @@ matrix matrix::mul_matrix(matrix const &rhs) const {
   matrix ret(m_rows, resize_16(rhs.m_columns));
   ret.set(0.0f);
 
-  s_mult_matrix->setNumQPUs(16);
+  //s_mult_matrix->setMaxQPUs();
   s_mult_matrix->load(&ret.arr(), &arr(), &rhs.arr(), m_rows, m_columns, rhs.m_columns).run();
 
   return ret;
@@ -390,11 +393,20 @@ matrix matrix::mul_e(matrix const &rhs) const {
 }
 
 
+matrix matrix::dsigmoid() const {
+  matrix ret(rows(), columns());
+	int size = rows()*columns();
+  s_dsigmoid->load(&arr(), &ret.arr(), size/16).run();
+  return ret;  
+}
+
+
 /**
  * NOTE: this is currently a scalar operation
  */
 matrix matrix::sigmoid_derivative(matrix const &rhs) {
-  assert(m_columns == rhs.columns() && m_rows == rhs.rows());
+	// rhs rows and cols are ignored. This is to allow transposed vectors
+  assert(size() == rhs.size());
 
   matrix ret(m_rows, m_columns);
 
@@ -634,8 +646,7 @@ float vector::operator[](int index) const {
 
 
 int vector::size() const {
-  assert(columns() == 1);
-  return rows();
+  return rows()*columns();
 }
 
 
@@ -702,15 +713,8 @@ vector &vector::operator=(vector const &rhs) {
 
 
 vector vector::sigmoid(vector const &bias) {
-  vector ret(rows());
-  s_sigmoid->load(&arr(), &bias.arr(), &ret.arr(), rows()/16).run();
-  return ret;  
-}
-
-
-vector vector::dsigmoid() const {
-  vector ret(rows());
-  s_dsigmoid->load(&arr(), &ret.arr(), rows()/16).run();
+  vector ret(size());
+  s_sigmoid->load(&arr(), &bias.arr(), &ret.arr(), size()/16).run();
   return ret;  
 }
 
