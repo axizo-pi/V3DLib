@@ -44,10 +44,12 @@ public:
   std::string dump() const;
   void eval() { m_Xf.eval(); }
 
+  MMatrix operator+(MMatrix const &rhs) const;
   void operator+=(MMatrix const &rhs);
   void operator-=(MMatrix const &rhs);
   void operator/=(float steps);
   MMatrix operator*(MMatrix const &rhs) const;
+  MMatrix mul_t(MMatrix const &rhs) const;
   MMatrix operator*(float val) const;
   MMatrix mul_e(MMatrix const &rhs) const;
   MMatrix outer(MMatrix const &rhs) const;
