@@ -1,7 +1,5 @@
-#include "model.h"
 #include "global/log.h"
-#include "helpers.h"  // resize_16()
-//#include "mmatrix.h"
+#include "global.h"
 #include <iostream>
 
 using namespace std;
@@ -295,37 +293,84 @@ void forward_propagation(
   timers.start("forward_propagation");
 
   MatrixXf temp        = MatrixXf::Zero(1, hidden_dim);
-  MMatrix  temp2(1, hidden_dim);
 
   MatrixXf temp_output = MatrixXf::Zero(1, output_dim);
   MatrixXf temp_hidden = MatrixXf::Zero(1, hidden_dim);
   MatrixXf ones        = MatrixXf::Ones(1, hidden_dim);
 
+	warn << "state.S: " << state.S.dump_dim();
+	warn << "m.W_z: " << m.W_z.dump_dim();
+
+  MMatrix x_ones(time_steps, hidden_dim, 1.0f);
+  MMatrix x_X;
+  x_X.set(X);
+  State x_state = state;
+  x_state.S     = remove_last_rows(1, x_state.S);
+	warn << "x_state.S: " << x_state.S.dump_dim();
+
+	timers.start("forward temp2");
+
+  MMatrix temp2 = (x_X * m.U_z) + (x_state.S*m.W_z);
+  x_state.z = temp2.sigmoid();
+
+  MMatrix temp3 = (x_X * m.U_r) + (x_state.S * m.W_r);
+  x_state.r = temp3.sigmoid();
+
+  MMatrix temp4 = (x_X * m.U_h) + (x_state.S.mul_e(x_state.r) * m.W_h);
+
+	x_state.h = temp4.tanh();
+
+  MMatrix x_temp_hidden = (x_ones - x_state.z).mul_e(x_state.h + x_state.z).mul_e(x_state.S);
+
+	timers.stop("forward temp2");
+	warn << "temp2: " << temp2.dump_dim();
+
   for(int i = 0; i < time_steps; i++) {
+		warn << "Forward i: " << i;
+
     auto S_row = state.S.row(i);
+		//warn << "S_row: " << S_row.dump_dim();
     MMatrix X_row;
     X_row.set(X.row(i));
     auto z_row = state.z.row(i);
 
-    temp            = (X_row.Xf() * (m.U_z.Xf())) + (S_row.Xf() * (m.W_z.Xf()));
+		timers.start("forward temp");
+    temp = (X_row.Xf() * (m.U_z.Xf())) + (S_row.Xf() * (m.W_z.Xf()));
     temp.eval();
-
-    temp2            = (X_row * m.U_z) + (S_row*m.W_z);
-		assert(::same(temp2.qpu(), temp));
+		timers.stop("forward temp");
+		assert(::same(temp2.row(i).qpu(), temp));
 
     state.z.row(i, temp.unaryExpr(&sigmoid));
+		assert(x_state.z.row(i).same(state.z.row(i), 4*Precision));  // TODO check precision when forward prop done
 
-    temp            = (X_row.Xf() * (m.U_r.Xf())) + (S_row.Xf() * (m.W_r.Xf()));
+		timers.start("forward temp");
+    temp = (X_row.Xf() * (m.U_r.Xf())) + (S_row.Xf() * (m.W_r.Xf()));
     temp.eval();
+		timers.stop("forward temp");
+		assert(::same(temp3.row(i).qpu(), temp));
+
     state.r.row(i, temp.unaryExpr(&sigmoid));
+		assert(x_state.r.row(i).same(state.r.row(i), 4*Precision));  // TODO check precision when forward prop done
 
-    temp            = (X_row.Xf() * (m.U_h.Xf())) + (S_row.Xf().cwiseProduct(state.r.row(i).Xf())) * (m.W_h.Xf());
+		timers.start("forward temp");
+    temp = (X_row.Xf() * (m.U_h.Xf())) + (S_row.Xf().cwiseProduct(state.r.row(i).Xf())) * (m.W_h.Xf());
     temp.eval();
+
     state.h.row(i, temp.unaryExpr(&tanh_activation));
 
     temp_hidden     = (ones - z_row.Xf()).cwiseProduct(state.h.row(i).Xf() + z_row.Xf()).cwiseProduct(S_row.Xf());
     temp_hidden.eval();
+
+		timers.stop("forward temp");
+
+		assert(::same(temp4.row(i).qpu(), temp));
+		assert(x_state.h.row(i).same(state.h.row(i), 4*Precision));
+		assert(x_temp_hidden.row(i).same(temp_hidden)); //, 4*Precision));
+
+
     state.S.row(i + 1, temp_hidden);
+
+		//==================================
 
     temp_output   = state.S.row(i + 1).Xf() * (m.V.Xf());
     temp_output.eval();

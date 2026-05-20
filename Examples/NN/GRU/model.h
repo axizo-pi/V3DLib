@@ -2,7 +2,6 @@
 #define _GRU_MODEL_H
 #include "mmatrix.h"
 
-
 class Model {
 public:
   MMatrix  U_z;

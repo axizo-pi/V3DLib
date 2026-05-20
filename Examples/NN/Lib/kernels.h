@@ -16,6 +16,7 @@ void tanh(Float::Ptr in, Float::Ptr out, Int N);
 void dtanh(Float::Ptr in, Float::Ptr out, Int N);
 void mul_element(Float::Ptr out, Float::Ptr lhs, Float::Ptr rhs, Int N);
 void matrix_add(Float::Ptr ret, Float::Ptr lhs, Float::Ptr rhs, Int N);
+void matrix_sub(Float::Ptr ret, Float::Ptr lhs, Float::Ptr rhs, Int N);
 void mul_float(Float::Ptr ret, Float::Ptr lhs, Float val, Int N);
 void matrix_add_self(Float::Ptr lhs, Float::Ptr rhs, Int N);
 void matrix_sub_self(Float::Ptr lhs, Float::Ptr rhs, Int N);

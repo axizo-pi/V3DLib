@@ -19,6 +19,7 @@ std::unique_ptr<BaseKernel> s_mult_vec;
 std::unique_ptr<BaseKernel> s_mult_matrix;
 std::unique_ptr<BaseKernel> s_mult_matrix_t;
 std::unique_ptr<BaseKernel> s_matrix_add;
+std::unique_ptr<BaseKernel> s_matrix_sub;
 std::unique_ptr<BaseKernel> s_mul_float;
 std::unique_ptr<BaseKernel> s_matrix_add_self;
 std::unique_ptr<BaseKernel> s_matrix_sub_self;
@@ -43,6 +44,7 @@ void init_local() {
   s_mult_matrix        .reset(new BaseKernel(compile(kernel::mult_matrix    , settings())));
   s_mult_matrix_t      .reset(new BaseKernel(compile(kernel::mult_matrix_t  , settings())));
   s_matrix_add         .reset(new BaseKernel(compile(kernel::matrix_add     , settings())));
+  s_matrix_sub         .reset(new BaseKernel(compile(kernel::matrix_sub     , settings())));
   s_mul_float          .reset(new BaseKernel(compile(kernel::mul_float      , settings())));
   s_matrix_add_self    .reset(new BaseKernel(compile(kernel::matrix_add_self, settings())));
   s_matrix_sub_self    .reset(new BaseKernel(compile(kernel::matrix_sub_self, settings())));
@@ -93,8 +95,12 @@ void matrix::resize(int rows, int columns) {
     return;
   }
 
-  if (rows <= 0)     { cerr << "matrix ctor: rows must be positive"    << thrw; }
-  if (columns <= 0)  { cerr << "matrix ctor: columns must be positive" << thrw; }
+  if (rows <= 0) { 
+		cerr << "matrix ctor: rows must be positive"    << thrw;
+	}
+  if (columns <= 0) {
+		cerr << "matrix ctor: columns must be positive" << thrw;
+	}
 
   int size      = rows*columns;
 
@@ -178,7 +184,6 @@ void matrix::frand() {
 
    for (int i = 0; i < (int) arr().size(); ++i) {
     arr()[i] = frrand();
-    //arr()[i] = ::frand();
    }
 }
 
@@ -190,13 +195,16 @@ matrix &matrix::operator=(matrix const &rhs) {
 
 
 matrix matrix::operator-(matrix const &rhs) const {
-  check_addsub(rhs, "-=");
+  check_addsub(rhs, "-");
+  assert(m_columns == rhs.columns() && m_rows == rhs.rows());
   matrix ret(m_rows, m_columns);
 
+  s_matrix_sub->load(&ret.arr(), &arr(), &rhs.arr(), size()/16).run();
+/*
   for (int i = 0; i < (int) m_arr->size(); ++i) {
     ret.arr()[i] = arr()[i] - rhs.arr()[i];
   }
-
+*/
   return ret;
 }
 
@@ -218,7 +226,7 @@ matrix matrix::operator+(matrix const &rhs) const {
   assert(m_columns == rhs.columns() && m_rows == rhs.rows());
   matrix ret(m_rows, m_columns);
 
-  s_matrix_add->load(&ret.arr(), &arr(), &rhs.arr(), m_rows*m_columns/16).run();
+  s_matrix_add->load(&ret.arr(), &arr(), &rhs.arr(), size()/16).run();
 /*
   for (int i = 0; i < (int) m_arr->size(); ++i) {
     ret.arr()[i] = arr()[i] + rhs.arr()[i];
@@ -390,6 +398,41 @@ matrix matrix::mul_e(matrix const &rhs) const {
   s_mul_element->load(&ret.arr(), &arr(), &rhs.arr(), size/16).run();
 
   return ret;
+}
+
+
+matrix matrix::tanh() const {
+	matrix bias(rows(), columns());
+
+  matrix ret(rows(), columns());
+  s_tanh->load(&arr(), &ret.arr(), size()/16).run();
+  return ret;  
+}
+
+
+matrix matrix::dtanh() const {
+	matrix bias(rows(), columns());
+
+  matrix ret(rows(), columns());
+  s_dtanh->load(&arr(), &ret.arr(), size()/16).run();
+  return ret;  
+}
+
+
+matrix matrix::sigmoid() {
+	matrix bias(rows(), columns());
+	bias.set(0.0f);  // Pedantry, prob not necessary
+
+  matrix ret(rows(), columns());
+  s_sigmoid->load(&arr(), &bias.arr(), &ret.arr(), size()/16).run();
+  return ret;  
+}
+
+
+matrix matrix::sigmoid(matrix const &bias) {
+  matrix ret(rows(), columns());
+  s_sigmoid->load(&arr(), &bias.arr(), &ret.arr(), size()/16).run();
+  return ret;  
 }
 
 
@@ -711,30 +754,6 @@ vector &vector::operator=(vector const &rhs) {
 }
 
 
-
-vector vector::sigmoid(vector const &bias) {
-  vector ret(size());
-  s_sigmoid->load(&arr(), &bias.arr(), &ret.arr(), size()/16).run();
-  return ret;  
-}
-
-
-vector vector::tanh() {
-  vector ret(rows());
-
-  s_tanh->load(&arr(), &ret.arr(), rows()/16).run();
-  return ret;  
-}
-
-
-vector vector::dtanh() const {
-  vector ret(rows());
-
-  s_dtanh->load(&arr(), &ret.arr(), rows()/16).run();
-  return ret;  
-}
-
-
 /**
  * Value changed internally, no return value.
  */
@@ -773,19 +792,16 @@ vector operator*(matrix const &lhs, matrix const &rhs) {
 
 bool check_precision(float lhs, float rhs, float precision, float *max_diff, bool do_show) {
   bool ret = true;
-  float diff;
+  float diff = abs(lhs - rhs);
 
   if (precision == 0.0f) {
     if (lhs != rhs) {
-      diff = abs(lhs - rhs);
-
       if (do_show) {
         warn << "check_precision fail, diff: " << diff;
       }
       ret = false;
     }
   } else {
-    diff = abs(lhs - rhs);
     if (diff > precision) {
       if (do_show) {
         warn << "check_precision fails with "

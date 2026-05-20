@@ -15,7 +15,7 @@ public:
   MMatrix(int rows, int columns, float val = 0.0f, bool set_Xf = false);
   MMatrix(MMatrix const &rhs);
 
-  void set(MatrixXf const &rhs);
+  void set(MatrixXf const &rhs, bool set_qpu = false);
   void set(MMatrix const &rhs);
 
   int rows() const;
@@ -34,10 +34,8 @@ public:
   void Xf(MatrixXf const &val)     { m_Xf  = val; }
   void qpu(qpu::matrix const &val) { m_qpu = val; }
 
-  bool same(float precision = 0.0f) const {
-    return ::same(m_qpu, m_Xf, precision);
-  }
-
+  bool same(float precision = 0.0f) const;
+  bool same(MatrixXf const &rhs, float precision = 0.0f, bool show_max_diff = false) const;
   bool same(MMatrix const &rhs, float precision = 0.0f, bool show_max_diff = false) const;
 
   std::string dump_dim() const;
@@ -45,6 +43,7 @@ public:
   void eval() { m_Xf.eval(); }
 
   MMatrix operator+(MMatrix const &rhs) const;
+  MMatrix operator-(MMatrix const &rhs) const;
   void operator+=(MMatrix const &rhs);
   void operator-=(MMatrix const &rhs);
   void operator/=(float steps);
@@ -52,6 +51,8 @@ public:
   MMatrix mul_t(MMatrix const &rhs) const;
   MMatrix operator*(float val) const;
   MMatrix mul_e(MMatrix const &rhs) const;
+	MMatrix tanh() const;
+	MMatrix sigmoid() const;
   MMatrix outer(MMatrix const &rhs) const;
   void outer_add(MMatrix const &lhs, MMatrix const &rhs);
   void outer_add_rows(MMatrix const &lhs, MMatrix const &rhs, float precision);
@@ -88,5 +89,6 @@ inline MMatrix operator*(float val, MMatrix const &rhs) {
 }
 
 
+MMatrix remove_last_rows(int num, MMatrix const &rhs);
 
 #endif // _GRU_MMATRIX_H

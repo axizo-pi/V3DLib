@@ -1,11 +1,8 @@
-#include "model.h"
-#include "helpers.h"  // resize_16()
+#include "global.h"
 
 using namespace Log;
 
 namespace {
-
-const float Precision = 1.0e-7f;  
 
 MAYBE_UNUSED bool same(qpu::vector const &lhs, MatrixXf const &rhs, float precision = 0.0f) {
   assert(rhs.rows() == 1);
@@ -28,24 +25,6 @@ float calculate_cost(MMatrix const &E, int time_steps) {
   return (E.Xf().sum() / (float) time_steps);
 }
 
-
-MAYBE_UNUSED MMatrix remove_last_rows(int num, MMatrix const &rhs) {
-  if (num == 0) return rhs; // Nothing to do
-
-  assert(num > 0 && num < rhs.rows());
-
-  timers.start("remove_last_rows");
-
-  MMatrix ret(rhs.rows() - num, rhs.cols());
-
-  for (int i = 0; i < rhs.rows() - num; ++i) {
-    ret.row(i, rhs.row(i));
-  }
-
-  timers.stop("remove_last_rows");
-
-  return ret;
-}
 
 std::vector<int> x_input;
 std::vector<int> x_output;

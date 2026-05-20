@@ -58,6 +58,10 @@ struct matrix {
   matrix mul_matrix(matrix const &rhs) const;
   matrix mul_matrix_t(matrix const &rhs) const;
   matrix mul_e(matrix const &rhs) const;
+  matrix tanh() const;
+  matrix dtanh() const;
+  matrix sigmoid();
+  matrix sigmoid(matrix const &bias);
   matrix dsigmoid() const;
   matrix sigmoid_derivative(matrix const &rhs);
   matrix transpose() const;
@@ -113,9 +117,6 @@ struct vector : public matrix {
   vector mul(vector const &rhs);
   vector &operator=(matrix const &rhs);
   vector &operator=(vector const &rhs);
-  vector sigmoid(vector const &bias);
-  vector tanh();
-  vector dtanh() const;
   void clip(float clip_value);
   static BaseKernel &op_kernel();
 
