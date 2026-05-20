@@ -19,6 +19,7 @@ std::unique_ptr<BaseKernel> s_mult_vec;
 std::unique_ptr<BaseKernel> s_mult_matrix;
 std::unique_ptr<BaseKernel> s_mult_matrix_t;
 std::unique_ptr<BaseKernel> s_matrix_add;
+std::unique_ptr<BaseKernel> s_matrix_sub;
 std::unique_ptr<BaseKernel> s_mul_float;
 std::unique_ptr<BaseKernel> s_matrix_add_self;
 std::unique_ptr<BaseKernel> s_matrix_sub_self;
@@ -43,6 +44,7 @@ void init_local() {
   s_mult_matrix        .reset(new BaseKernel(compile(kernel::mult_matrix    , settings())));
   s_mult_matrix_t      .reset(new BaseKernel(compile(kernel::mult_matrix_t  , settings())));
   s_matrix_add         .reset(new BaseKernel(compile(kernel::matrix_add     , settings())));
+  s_matrix_sub         .reset(new BaseKernel(compile(kernel::matrix_sub     , settings())));
   s_mul_float          .reset(new BaseKernel(compile(kernel::mul_float      , settings())));
   s_matrix_add_self    .reset(new BaseKernel(compile(kernel::matrix_add_self, settings())));
   s_matrix_sub_self    .reset(new BaseKernel(compile(kernel::matrix_sub_self, settings())));
@@ -193,13 +195,16 @@ matrix &matrix::operator=(matrix const &rhs) {
 
 
 matrix matrix::operator-(matrix const &rhs) const {
-  check_addsub(rhs, "-=");
+  check_addsub(rhs, "-");
+  assert(m_columns == rhs.columns() && m_rows == rhs.rows());
   matrix ret(m_rows, m_columns);
 
+  s_matrix_sub->load(&ret.arr(), &arr(), &rhs.arr(), size()/16).run();
+/*
   for (int i = 0; i < (int) m_arr->size(); ++i) {
     ret.arr()[i] = arr()[i] - rhs.arr()[i];
   }
-
+*/
   return ret;
 }
 
@@ -221,7 +226,7 @@ matrix matrix::operator+(matrix const &rhs) const {
   assert(m_columns == rhs.columns() && m_rows == rhs.rows());
   matrix ret(m_rows, m_columns);
 
-  s_matrix_add->load(&ret.arr(), &arr(), &rhs.arr(), m_rows*m_columns/16).run();
+  s_matrix_add->load(&ret.arr(), &arr(), &rhs.arr(), size()/16).run();
 /*
   for (int i = 0; i < (int) m_arr->size(); ++i) {
     ret.arr()[i] = arr()[i] + rhs.arr()[i];
@@ -787,19 +792,16 @@ vector operator*(matrix const &lhs, matrix const &rhs) {
 
 bool check_precision(float lhs, float rhs, float precision, float *max_diff, bool do_show) {
   bool ret = true;
-  float diff;
+  float diff = abs(lhs - rhs);
 
   if (precision == 0.0f) {
     if (lhs != rhs) {
-      diff = abs(lhs - rhs);
-
       if (do_show) {
         warn << "check_precision fail, diff: " << diff;
       }
       ret = false;
     }
   } else {
-    diff = abs(lhs - rhs);
     if (diff > precision) {
       if (do_show) {
         warn << "check_precision fails with "
