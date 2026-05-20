@@ -93,8 +93,12 @@ void matrix::resize(int rows, int columns) {
     return;
   }
 
-  if (rows <= 0)     { cerr << "matrix ctor: rows must be positive"    << thrw; }
-  if (columns <= 0)  { cerr << "matrix ctor: columns must be positive" << thrw; }
+  if (rows <= 0) { 
+		cerr << "matrix ctor: rows must be positive"    << thrw;
+	}
+  if (columns <= 0) {
+		cerr << "matrix ctor: columns must be positive" << thrw;
+	}
 
   int size      = rows*columns;
 
@@ -178,7 +182,6 @@ void matrix::frand() {
 
    for (int i = 0; i < (int) arr().size(); ++i) {
     arr()[i] = frrand();
-    //arr()[i] = ::frand();
    }
 }
 
@@ -390,6 +393,41 @@ matrix matrix::mul_e(matrix const &rhs) const {
   s_mul_element->load(&ret.arr(), &arr(), &rhs.arr(), size/16).run();
 
   return ret;
+}
+
+
+matrix matrix::tanh() const {
+	matrix bias(rows(), columns());
+
+  matrix ret(rows(), columns());
+  s_tanh->load(&arr(), &ret.arr(), size()/16).run();
+  return ret;  
+}
+
+
+matrix matrix::dtanh() const {
+	matrix bias(rows(), columns());
+
+  matrix ret(rows(), columns());
+  s_dtanh->load(&arr(), &ret.arr(), size()/16).run();
+  return ret;  
+}
+
+
+matrix matrix::sigmoid() {
+	matrix bias(rows(), columns());
+	bias.set(0.0f);  // Pedantry, prob not necessary
+
+  matrix ret(rows(), columns());
+  s_sigmoid->load(&arr(), &bias.arr(), &ret.arr(), size()/16).run();
+  return ret;  
+}
+
+
+matrix matrix::sigmoid(matrix const &bias) {
+  matrix ret(rows(), columns());
+  s_sigmoid->load(&arr(), &bias.arr(), &ret.arr(), size()/16).run();
+  return ret;  
 }
 
 
@@ -708,30 +746,6 @@ vector &vector::operator=(vector const &rhs) {
   assert(rhs.columns() == 1);
   transfer(rhs);
   return *this;
-}
-
-
-
-vector vector::sigmoid(vector const &bias) {
-  vector ret(size());
-  s_sigmoid->load(&arr(), &bias.arr(), &ret.arr(), size()/16).run();
-  return ret;  
-}
-
-
-vector vector::tanh() {
-  vector ret(rows());
-
-  s_tanh->load(&arr(), &ret.arr(), rows()/16).run();
-  return ret;  
-}
-
-
-vector vector::dtanh() const {
-  vector ret(rows());
-
-  s_dtanh->load(&arr(), &ret.arr(), rows()/16).run();
-  return ret;  
 }
 
 
