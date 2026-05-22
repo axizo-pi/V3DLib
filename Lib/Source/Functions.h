@@ -39,6 +39,7 @@ float sin(float x_in, bool extra_precision = false) noexcept;
 
 void rotate_sum(Int &input, Int &result);
 void rotate_sum(Float &input, Float &result);
+void rotate_max(Float &input, Float &result);
 void set_at(Int &dst, Int n, Int const &src);
 void set_at(Float &dst, Int n, Float const &src);
 

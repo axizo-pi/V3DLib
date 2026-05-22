@@ -85,16 +85,18 @@ Instructions output(Location const &src) {
 //////////////////////////////////
 
 
-  /**
-   * Issues here:
-   * - sin via register always returns 1.0
-   * - ALU op's return nothing
-   */
+/**
+ * SFU function are still present for vc6, but not vc7.
+ *
+ * Issues here:
+ * - sin via register always returns 1.0
+ * - ALU op's return nothing
+ */
 TEST_CASE("Test SFU opcodes [v3d][code][SFU]") {
   if (!v3d_init()) return;
 
   if (V3DLib::Platform::compiling_for_vc7()) {
-    warn << "SFU functions not applicable for vc7, skipping";
+    //warn << "SFU functions not applicable for vc7, skipping";
     return;
   }
 
