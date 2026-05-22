@@ -537,12 +537,43 @@ void rotate_sum(Int &input, Int &result) {
 }
 
 
+/**
+ * @brief Calculate sum of the elements in the input vector
+ *
+ * Result is put in all the elements of the output vector
+ *
+ * Differences in calculation can, in fact, occur per element.
+ * In the unit test, the least significant bit (bit 31) can be different.
+ */
 void rotate_sum(Float &input, Float &result) {
   result = input;              comment("rotate_sum");
   result += rotate(result, 1);
   result += rotate(result, 2);
   result += rotate(result, 4);
   result += rotate(result, 8);
+}
+
+
+/**
+ * @brief Determine max value in the input vector
+ *
+ * Result is put in all the elements of the output vector
+ */
+void rotate_max(Float &input, Float &result) {
+	Float tmp;
+
+  result = input;              comment("rotate_max");
+  tmp = rotate(result, 1);
+	result = max(tmp, result);
+
+  tmp = rotate(result, 2);
+	result = max(tmp, result);
+
+  tmp = rotate(result, 4);
+	result = max(tmp, result);
+
+  tmp = rotate(result, 8);
+	result = max(tmp, result);
 }
 
 
