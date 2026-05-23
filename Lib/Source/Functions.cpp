@@ -543,7 +543,7 @@ void rotate_sum(Int &input, Int &result) {
  * Result is put in all the elements of the output vector
  *
  * Differences in calculation can, in fact, occur per element.
- * In the unit test, the least significant bit (bit 31) can be different.
+ * In the unit test, the least significant bit (bit 31) might be different.
  */
 void rotate_sum(Float &input, Float &result) {
   result = input;              comment("rotate_sum");

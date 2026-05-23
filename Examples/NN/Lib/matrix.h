@@ -15,6 +15,14 @@ using namespace V3DLib;
 ////////////////////////////////////////////////
 
 /**
+ * QPU kernels are arranged in atomic operations.
+ *
+ * This is quite useful for rapid prototyping.  
+ * However, for performance it is better to combine the atomic operations
+ * in encompassing kernels.
+ *
+ * ================================
+ *
  * Width must be in multiples of 16.
  *
  * Case `columns x rows = 16*16 x 16`:
@@ -68,6 +76,7 @@ struct matrix {
   matrix outer(matrix const &rhs) const;
   void   outer_add(matrix const &lhs, matrix const &rhs);
   void   outer_add_rows(matrix const &lhs, matrix const &rhs);
+	void   softmax(float max);
 
   std::string dump_dim() const;
   std::string dump(bool output_int = false) const;
@@ -76,7 +85,6 @@ struct matrix {
 
 protected:
   void transfer(matrix const &rhs);
-  void check_addsub(matrix const &rhs, std::string const &op) const;
 
   std::shared_ptr<Float::Array> m_arr;
 

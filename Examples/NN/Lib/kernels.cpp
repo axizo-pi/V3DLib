@@ -40,7 +40,7 @@ void dsigmoid(Float::Ptr in, Float::Ptr out, Int N) {
 void tanh(Float::Ptr in, Float::Ptr out, Int N) {
   For (Int h = 0, h < N, h++)
     Float x = *in;
-    x = tanh(x);
+    x = V3DLib::tanh(x);
     *out = x;
 
     in.inc();

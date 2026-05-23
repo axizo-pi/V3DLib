@@ -26,6 +26,11 @@ bool hasEnding (std::string const &fullString, std::string const &ending);
 std::vector<std::string> split(std::string s, std::string const &delimiter);
 int num_newlines(std::string const &s);
 
+//
+// Debug Functions
+//
+int bit_diff(float in_val1, float in_val2, int ignore_bit = 0);
+
 }  // namespace V3DLib
 
 #endif  // _V3DLIB_SUPPORT_HELPERS_H_
