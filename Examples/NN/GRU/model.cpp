@@ -1,5 +1,6 @@
 #include "global/log.h"
 #include "global.h"
+#include "Support/Helpers.h"  // bit_diff()
 #include <iostream>
 
 using namespace std;
@@ -298,17 +299,23 @@ void forward_propagation(
   MatrixXf temp_hidden = MatrixXf::Zero(1, hidden_dim);
   MatrixXf ones        = MatrixXf::Ones(1, hidden_dim);
 
-	warn << "state.S: " << state.S.dump_dim();
-	warn << "m.W_z: " << m.W_z.dump_dim();
+  //warn << "state.S: " << state.S.dump_dim();
+  //warn << "m.W_z: " << m.W_z.dump_dim();
+
+  ////// QPU /////
 
   MMatrix x_ones(time_steps, hidden_dim, 1.0f);
   MMatrix x_X;
   x_X.set(X);
+  MMatrix x_z_in;
+  x_z_in.set(state.z);
+
   State x_state = state;
   x_state.S     = remove_last_rows(1, x_state.S);
-	warn << "x_state.S: " << x_state.S.dump_dim();
+  MMatrix x_S_extra(1, hidden_dim);
+  //warn << "x_S_extra: " << x_S_extra.dump();
 
-	timers.start("forward temp2");
+  timers.start("forward temp2");
 
   MMatrix temp2 = (x_X * m.U_z) + (x_state.S*m.W_z);
   x_state.z = temp2.sigmoid();
@@ -318,41 +325,54 @@ void forward_propagation(
 
   MMatrix temp4 = (x_X * m.U_h) + (x_state.S.mul_e(x_state.r) * m.W_h);
 
-	x_state.h = temp4.tanh();
+  x_state.h = temp4.tanh();
 
-  MMatrix x_temp_hidden = (x_ones - x_state.z).mul_e(x_state.h + x_state.z).mul_e(x_state.S);
+  MMatrix x_temp_hidden = (x_ones - x_z_in).mul_e(x_state.h + x_z_in).mul_e(x_state.S);
 
-	timers.stop("forward temp2");
-	warn << "temp2: " << temp2.dump_dim();
+  x_S_extra = x_temp_hidden.row(time_steps - 1);
+  x_state.S.move_rows(1, x_temp_hidden);
+
+  MMatrix x_temp_output = x_temp_hidden * m.V;
+
+  MMatrix x_s_max = x_temp_output.max_row();
+  //warn << "x_s_max: " << x_s_max.dump();
+
+  x_temp_output.softmax();
+
+  x_state.O = x_temp_output.div_e(x_temp_output.sum_row());
+
+  timers.stop("forward temp2");
+
+  ////// End QPU /////
 
   for(int i = 0; i < time_steps; i++) {
-		warn << "Forward i: " << i;
+    warn << "Forward i: " << i;
 
     auto S_row = state.S.row(i);
-		//warn << "S_row: " << S_row.dump_dim();
+    //warn << "S_row: " << S_row.dump_dim();
     MMatrix X_row;
     X_row.set(X.row(i));
     auto z_row = state.z.row(i);
 
-		timers.start("forward temp");
+    timers.start("forward temp");
     temp = (X_row.Xf() * (m.U_z.Xf())) + (S_row.Xf() * (m.W_z.Xf()));
     temp.eval();
-		timers.stop("forward temp");
-		assert(::same(temp2.row(i).qpu(), temp));
+    timers.stop("forward temp");
+    assert(::same(temp2.row(i).qpu(), temp));
 
     state.z.row(i, temp.unaryExpr(&sigmoid));
-		assert(x_state.z.row(i).same(state.z.row(i), 4*Precision));  // TODO check precision when forward prop done
+    assert(x_state.z.row(i).same(state.z.row(i), 4*Precision));  // TODO check precision when forward prop done
 
-		timers.start("forward temp");
+    timers.start("forward temp");
     temp = (X_row.Xf() * (m.U_r.Xf())) + (S_row.Xf() * (m.W_r.Xf()));
     temp.eval();
-		timers.stop("forward temp");
-		assert(::same(temp3.row(i).qpu(), temp));
+    timers.stop("forward temp");
+    assert(::same(temp3.row(i).qpu(), temp));
 
     state.r.row(i, temp.unaryExpr(&sigmoid));
-		assert(x_state.r.row(i).same(state.r.row(i), 4*Precision));  // TODO check precision when forward prop done
+    assert(x_state.r.row(i).same(state.r.row(i), 4*Precision));  // TODO check precision when forward prop done
 
-		timers.start("forward temp");
+    timers.start("forward temp");
     temp = (X_row.Xf() * (m.U_h.Xf())) + (S_row.Xf().cwiseProduct(state.r.row(i).Xf())) * (m.W_h.Xf());
     temp.eval();
 
@@ -361,26 +381,55 @@ void forward_propagation(
     temp_hidden     = (ones - z_row.Xf()).cwiseProduct(state.h.row(i).Xf() + z_row.Xf()).cwiseProduct(S_row.Xf());
     temp_hidden.eval();
 
-		timers.stop("forward temp");
+    timers.stop("forward temp");
 
-		assert(::same(temp4.row(i).qpu(), temp));
-		assert(x_state.h.row(i).same(state.h.row(i), 4*Precision));
-		assert(x_temp_hidden.row(i).same(temp_hidden)); //, 4*Precision));
+    assert(::same(temp4.row(i).qpu(), temp, Precision));
+    assert(x_state.h.row(i).same(state.h.row(i), Precision));
+    assert(x_temp_hidden.row(i).same(temp_hidden, Precision));
 
-
+    // Assumption: value at i == 0 should be retained
     state.S.row(i + 1, temp_hidden);
+    if (i == time_steps - 1) {
+      assert(x_S_extra.same(state.S.row(i)));
+    } else {
+      //warn << "state.S.row(" << (i + 1) << "): " << state.S.row(i + 1).dump();
+      //warn << "x_state.S.row(" << (i + 1) << "): " << x_state.S.row(i + 1).dump();
+      assert(x_state.S.row(i + 1).same(state.S.row(i + 1), Precision));
+    }
 
-		//==================================
+    /// Should be able to use temp_hidden directly, instead of row(i+1)
+    assert(state.S.row(i + 1).same(temp_hidden));
 
     temp_output   = state.S.row(i + 1).Xf() * (m.V.Xf());
     temp_output.eval();
+    //assert(x_temp_output.row(i).same(temp_output, Precision));
 
+    // s_max is a global used in softmax()
     s_max          = temp_output.maxCoeff();
+
     temp_output    = temp_output.unaryExpr(&softmax);
     temp_output.eval();
+    //warn << "temp_output: " << dump(temp_output);
+    //warn << "x_temp_output.row(i): " << x_temp_output.row(i).dump();
+    assert(x_temp_output.row(i).same(temp_output, Precision));
+
+    float temp_sum = temp_output.sum();
+    float x_temp_sum = x_temp_output.sum_row().qpu().at(i, 0);
+    //warn << "temp_output.sum(): " << temp_output.sum();
+    //warn << "x_temp_output.row_sum(), row(i): " << x_temp_output.sum_row().qpu().at(i, 0);
+    //warn << "bit_diff: " << bit_diff(temp_sum, x_temp_sum, -1);
+
+    int diff = bit_diff(temp_sum, x_temp_sum, 3);  // bit index kind of high, usually lower
+		if (diff != -1) {
+			warn << "bit_diff: " << diff;
+			assert(false);
+		}
 
     state.O.row(i, temp_output / temp_output.sum());
     state.O.eval();
+    assert(x_state.O.row(i).same(state.O.row(i), Precision));
+
+    //==================================
 
     if (!do_test) {
       state.E.update_E(i, Y, state);

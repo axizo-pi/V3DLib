@@ -404,6 +404,9 @@ MMatrix MMatrix::operator*(float val) const {
 }
 
 
+/**
+ * @brief Per-element product of two matrices.
+ */
 MMatrix MMatrix::mul_e(MMatrix const &rhs) const {
   rhs.need_fields(false, true);
   need_fields(false, true);
@@ -424,6 +427,17 @@ MMatrix MMatrix::mul_e(MMatrix const &rhs) const {
 }
 
 
+MMatrix MMatrix::div_e(MMatrix const &rhs) const {
+  need_fields(false, true);
+
+	MMatrix ret(rows(), cols());
+	gru_kernel::divide_vector(ret.m_qpu, m_qpu, rhs.m_qpu);
+
+  ret.need_fields(false, true);
+	return ret;
+}
+
+
 MMatrix MMatrix::tanh() const {
   need_fields(true, true);
 
@@ -438,7 +452,7 @@ MMatrix MMatrix::tanh() const {
   timers.stop("MMatrix tanh qpu");
 
   ret.used_fields(true, true);
-	assert(ret.same(4*Precision));
+	assert(ret.same(Precision));
   return ret;
 }
 
@@ -534,6 +548,102 @@ void MMatrix::outer_rows(MMatrix const &lhs, MMatrix const &rhs) {
   }
 
   set(tmp);
+}
+
+
+/**
+ * TODO: make private eventually
+ */
+MMatrix MMatrix::max_row() const {
+  need_fields(false, true);
+
+	MMatrix ret(rows(), 1);
+
+	for (int r = 0; r < rows(); r++) {
+		bool did_first = false;
+		float val;
+
+		for (int c = 0; c < cols(); c++) {
+			float in_val = m_qpu.at(r, c);
+
+			if (!did_first) {
+				val = in_val;
+				did_first = true;
+				continue;
+			}
+
+			if ( val < in_val) {
+				val = in_val;
+			}
+		}
+
+		ret.m_qpu.at(r, 0) = val;
+	}
+
+	ret.used_fields(false, true);
+	return ret;
+}
+
+
+/**
+ * TODO: convert to QPU, currently scalar
+ */
+MMatrix MMatrix::sum_row() const {
+  need_fields(false, true);
+
+	MMatrix ret(rows(), 1);
+
+	for (int r = 0; r < rows(); r++) {
+		float val = 0.0f;
+
+		for (int c = 0; c < cols(); c++) {
+			float in_val = m_qpu.at(r, c);
+
+			val += in_val;
+		}
+
+		ret.m_qpu.at(r, 0) = val;
+	}
+
+	ret.used_fields(false, true);
+	return ret;
+}
+
+
+void MMatrix::softmax() {
+  need_fields(false, true);
+
+	MMatrix max = max_row();
+  max.need_fields(false, true);
+
+	for (int r = 0; r < rows(); r++) {
+		auto tmp = row(r);
+		tmp.m_qpu.softmax(max.m_qpu.at(r, 0));  // TODO: scalar operation, fix
+		row(r, tmp);
+	}
+
+	used_fields(false, true);
+}
+
+
+/**
+ * @brief Replace every element of matrix with inverse of value (1/val).
+ *
+ * TODO: scalar operation, consider making qpu.
+ * TODO: prob not necessary, examine
+ */
+MMatrix MMatrix::invert() const {
+  need_fields(false, true);
+	assert(size() > 0);
+
+	MMatrix ret(rows(), cols());
+
+	for (int i = 0; i < size(); i++) {
+		ret.m_qpu.arr()[i] = 1.0f/m_qpu.arr()[i];
+	}
+
+	ret.used_fields(false, true);
+	return ret;
 }
 
 
@@ -831,7 +941,11 @@ void MMatrix::move_rows(int step, MMatrix const &rhs) {
   int rhs_rows = rhs.rows();
   int rhs_cols = rhs.cols();
 
-  m_qpu.resize(rhs_rows, rhs_cols);
+	assert(m_qpu.rows() == rhs_rows && m_qpu.columns() == rhs_cols);
+	// Retain the lhs value at i == 0
+
+  //m_qpu.resize(rhs_rows, rhs_cols);
+	//m_qpu.set(0.0f);
 
   timers.start("move_rows block");
 

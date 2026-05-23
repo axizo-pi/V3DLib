@@ -51,12 +51,16 @@ public:
   MMatrix mul_t(MMatrix const &rhs) const;
   MMatrix operator*(float val) const;
   MMatrix mul_e(MMatrix const &rhs) const;
+  MMatrix div_e(MMatrix const &rhs) const;
 	MMatrix tanh() const;
 	MMatrix sigmoid() const;
   MMatrix outer(MMatrix const &rhs) const;
   void outer_add(MMatrix const &lhs, MMatrix const &rhs);
   void outer_add_rows(MMatrix const &lhs, MMatrix const &rhs, float precision);
   void outer_rows(MMatrix const &lhs, MMatrix const &rhs);
+	MMatrix max_row() const;
+	MMatrix sum_row() const;
+	void softmax();
 
   // Application-specific methods
   void back_prop_1(MMatrix const &ds_cur, State const &temp, float precision);
@@ -81,6 +85,8 @@ private:
 	void copy_block(MMatrix const &rhs, int from_offset, int to_offset, int in_size);
 
   void reset();
+
+	MMatrix invert() const;
 };
 
 
