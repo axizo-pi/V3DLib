@@ -291,7 +291,6 @@ bool hasEnding (std::string const &fullString, std::string const &ending) {
 }
 
 
-
 /**
  * Split a string into substrings at a given delimiter.
  *
@@ -321,6 +320,63 @@ std::vector<std::string> split(std::string s, std::string const &delimiter) {
 int num_newlines(std::string const &s) {
   auto ret = split(s, "\n");
   return (int) (ret.size() - 1);
+}
+
+
+/**
+ * @brief Determine the first bit that differs in the parameters
+ *
+ * Bits are compared back to front, to catch the most significant
+ * bit where the difference occurs.
+ *
+ * The result is the regular offset, where bit 0 is the least
+ * significant bit of the fraction.
+ *
+ * Source: https://en.wikipedia.org/wiki/Single-precision_floating-point_format
+ *
+ * @param in_val1    First value to check
+ * @param in_val2    Second value to check
+ * @param ignore_bit Index of topmost bit to ignore. Differences in this and lower
+ *                   bits are ignored.
+ *                   Note that the default value is 0, meaning that the least significant
+ *                   bit does not count. This occurs often.
+ *                   To do an exact compare, pass -1 for this parameter.
+ * @return           index of first bit that is different, -1 if values deemed the same
+ */
+int bit_diff(float in_val1, float in_val2, int ignore_bit) {
+  assert(sizeof(uint32_t) == sizeof(float));
+  int size = (int) 8*sizeof(uint32_t);
+  assert(-1 <= ignore_bit && ignore_bit < size);
+  int offset = -1;
+
+  uint32_t val1 = *((uint32_t *) &in_val1);
+  uint32_t val2 = *((uint32_t *) &in_val2);
+  //warn << "val1: " << hex << val1;
+  //warn << "val2: " << hex << val2;
+
+  uint32_t ignore_mask = 0;
+  if (ignore_bit > -1) {
+    ignore_mask = (1 << (ignore_bit + 1)) - 1;
+  }
+
+  uint32_t diff = (val1 ^ val2) & ~ignore_mask;
+
+  if (diff == 0) return offset;
+
+  for (int bit = 0; bit < size; bit++) {
+    uint32_t mask = 1 << (size - 1 - bit);  // Test back to front
+
+    if (diff & mask) {
+      offset = (size - 1 - bit);
+      break;
+    }
+  }
+/*
+  if (offset != -1) {
+    warn << "bit_diff() diff at bit: " << offset;
+  }
+*/
+  return offset;  
 }
 
 }  // namespace V3DLib

@@ -7,8 +7,8 @@ namespace V3DLib {
 
   //
   // Prefixes:
-  //   A_: for 'add' ALU
-  //   M_: for 'mul' ALU
+  //  A_: for 'add' ALU
+  //  M_: for 'mul' ALU
   //
   // Up to Mul, opcodes are values as used directly by vc4.
   //
