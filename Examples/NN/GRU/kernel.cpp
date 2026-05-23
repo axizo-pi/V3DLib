@@ -132,12 +132,38 @@ void divide_matrix_kernel(Float::Ptr ret, Float::Ptr lhs, Float::Ptr rhs, Int N)
 }
 
 
+/**
+ * @brief Do a **per-row division** of lhs values with elements of rhs.
+ */
+void div_vector_kernel(Float::Ptr in_ret, Float::Ptr in_lhs, Float::Ptr in_rhs, Int rows, Int cols) {
+	Float::Ptr rhs = in_rhs;
+	rhs -= index();
+	Int col_count = cols >> 4;
+
+	For (Int r = 0, r < rows, r++)
+		Float val = *rhs;
+		Float::Ptr lhs = in_lhs + r*cols;  // Prob not necessary; TODO check
+		Float::Ptr ret = in_ret + r*cols;  // idem
+
+		For (Int c = 0, c < col_count, c++)
+			*ret = *lhs / val;
+
+			lhs.inc();
+			ret.inc();
+		End
+
+		rhs += 1;
+	End
+}
+
+
 bool done_init = false;
 std::unique_ptr<BaseKernel> s_back_prop_1;
 std::unique_ptr<BaseKernel> s_back_prop_3;
 std::unique_ptr<BaseKernel> s_back_prop_4;
 std::unique_ptr<BaseKernel> s_set_decay;
 std::unique_ptr<BaseKernel> s_divide_matrix;
+std::unique_ptr<BaseKernel> s_div_vector;
 
 
 void init_local() {
@@ -150,6 +176,7 @@ void init_local() {
   s_back_prop_4  .reset(new BaseKernel(compile(back_prop_4_kernel  , settings())));
   s_set_decay    .reset(new BaseKernel(compile(set_decay_kernel    , settings())));
   s_divide_matrix.reset(new BaseKernel(compile(divide_matrix_kernel, settings())));
+  s_div_vector   .reset(new BaseKernel(compile(div_vector_kernel   , settings())));
 
   done_init = true;
 }  
@@ -207,6 +234,15 @@ void divide_matrix(matrix &ret, matrix &lhs, matrix const &rhs) {
   int size = rhs.rows()*rhs.columns();
 
   s_divide_matrix->load(&ret.arr(), &lhs.arr(), &rhs.arr(), size/16).run();
+}
+
+
+void divide_vector(matrix &ret, matrix &lhs, matrix const &rhs) {
+  init_local();
+	assert(lhs.rows() == rhs.rows());
+	assert(rhs.is_vector());
+
+  s_div_vector->load(&ret.arr(), &lhs.arr(), &rhs.arr(), lhs.rows(), lhs.columns()).run();
 }
 
 
