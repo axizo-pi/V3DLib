@@ -249,8 +249,17 @@ TEST_CASE("Test library functions [sfu]") {
 
   REQUIRE(result[  0] ==   120.0f);
   REQUIRE(result[ 16] ==  7059.0f);
-  REQUIRE(result[ 32] ==  7213.93f);
-  REQUIRE(result[ 48] == 14392.93f);
+
+  if (Platform::run_vc4()) {
+    // Tiny differences occur here
+    REQUIRE(bit_diff(result[32],  7213.93f, 1) == -1);
+    REQUIRE(bit_diff(result[48], 14392.93f, 0) == -1);
+  } else {
+    // No problem for v3d.
+    REQUIRE(result[ 32] ==  7213.93f);
+    REQUIRE(result[ 48] == 14392.93f);
+  }
+
   REQUIRE(result[ 64] ==   15.0f);
   REQUIRE(result[ 80] ==  964.0f);
   REQUIRE(result[ 96] ==  914.81f);

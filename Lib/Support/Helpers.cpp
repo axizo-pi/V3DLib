@@ -324,24 +324,42 @@ int num_newlines(std::string const &s) {
 
 
 /**
- * @brief Determine the first bit that differs in the parameters
+ * @brief Determine the first bit that differs in the parameters.
+ *
+ * If the difference falls outside of the specified bit margin,
+ * the bit index is determined.
  *
  * Bits are compared back to front, to catch the most significant
  * bit where the difference occurs.
  *
- * The result is the regular offset, where bit 0 is the least
+ * The result is the regular bit offset, where bit 0 is the least
  * significant bit of the fraction.
  *
  * Source: https://en.wikipedia.org/wiki/Single-precision_floating-point_format
  *
  * @param in_val1    First value to check
  * @param in_val2    Second value to check
- * @param ignore_bit Index of topmost bit to ignore. Differences in this and lower
- *                   bits are ignored.
+ * @param ignore_bit Index of tpmost bit to ignore.
+ *                   What is tested, is the range which the bit represents.
+ *                   (e.g. for `ignore_bit = 1`, a difference of 2 is allowed.
  *                   Note that the default value is 0, meaning that the least significant
  *                   bit does not count. This occurs often.
  *                   To do an exact compare, pass -1 for this parameter.
  * @return           index of first bit that is different, -1 if values deemed the same
+ *
+ * ===============================
+ * Notes
+ * -----
+ *
+ * - Using bitmasks didn't work here, due to rollover.
+ *   E.g. cases encountered:
+ *   * diff 0x02, goes from 0x6f to 0x71 in least significant bits
+ *   * diff 0x01, goes from 0xb7 to 0xb8
+ *
+ *   Thus 2nd case, even if diff is 1 bit in value, the bit change goes up to bit 3.
+ *   Better to use margins instead of masks.
+ *
+ *   Up till now, this occurs for `vc4`. `v3d` calculations are more precise.
  */
 int bit_diff(float in_val1, float in_val2, int ignore_bit) {
   assert(sizeof(uint32_t) == sizeof(float));
@@ -351,17 +369,22 @@ int bit_diff(float in_val1, float in_val2, int ignore_bit) {
 
   uint32_t val1 = *((uint32_t *) &in_val1);
   uint32_t val2 = *((uint32_t *) &in_val2);
-  //warn << "val1: " << hex << val1;
-  //warn << "val2: " << hex << val2;
 
-  uint32_t ignore_mask = 0;
-  if (ignore_bit > -1) {
-    ignore_mask = (1 << (ignore_bit + 1)) - 1;
+  uint32_t bit_margin = 0;
+  if (ignore_bit != -1) {
+    bit_margin = 1 << ignore_bit;
   }
 
-  uint32_t diff = (val1 ^ val2) & ~ignore_mask;
+  uint32_t abs_diff = (val1 > val2)? (val1 - val2): (val2 - val1);
+/*  
+  if (abs_diff > 0) {
+    warn << "abs_diff: " << abs_diff;
+    warn << "bit_margin: " << bit_margin;
+  }
+*/  
+  if (abs_diff <= bit_margin) return offset;
 
-  if (diff == 0) return offset;
+  uint32_t diff = (val1 ^ val2);
 
   for (int bit = 0; bit < size; bit++) {
     uint32_t mask = 1 << (size - 1 - bit);  // Test back to front
@@ -373,6 +396,8 @@ int bit_diff(float in_val1, float in_val2, int ignore_bit) {
   }
 /*
   if (offset != -1) {
+    warn << "val1: " << hex << val1;
+    warn << "val2: " << hex << val2;
     warn << "bit_diff() diff at bit: " << offset;
   }
 */
