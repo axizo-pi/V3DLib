@@ -2,6 +2,7 @@
 #include "scalar.h"
 #include "helpers.h"          // frrand()
 #include "Support/Helpers.h"  // to_file()
+#include <cmath>              // std::exp()
 
 namespace qpu {
 namespace {
@@ -11,6 +12,32 @@ void frand_array(Float::Array &rhs) {
     rhs[i] = frand();
   }
 }
+
+
+/**
+ * 
+ */
+bool check_dimensions(matrix const &lhs, matrix const &rhs, bool size_only = false) {
+  // Allow transposed vectors
+  if (lhs.is_vector() && rhs.is_vector()) {
+		size_only = true;
+  }
+
+	bool check = size_only?
+    (lhs.size() == rhs.size()):
+    (lhs.columns() == rhs.columns() && lhs.rows() == rhs.rows())
+	;
+
+	if (!check) {
+    cerr << "check_dimensions() dimensions don't match: "
+         << "this: " << lhs.dump_dim() << ", "
+         << "rhs:"   << rhs.dump_dim();
+	}
+	//assert(check);
+
+	return check;
+}
+
 
 bool done_init = false;
 std::unique_ptr<BaseKernel> s_mul_element;
@@ -96,11 +123,11 @@ void matrix::resize(int rows, int columns) {
   }
 
   if (rows <= 0) { 
-		cerr << "matrix ctor: rows must be positive"    << thrw;
-	}
+    cerr << "matrix ctor: rows must be positive"    << thrw;
+  }
   if (columns <= 0) {
-		cerr << "matrix ctor: columns must be positive" << thrw;
-	}
+    cerr << "matrix ctor: columns must be positive" << thrw;
+  }
 
   int size      = rows*columns;
 
@@ -195,7 +222,7 @@ matrix &matrix::operator=(matrix const &rhs) {
 
 
 matrix matrix::operator-(matrix const &rhs) const {
-  check_addsub(rhs, "-");
+  assert(check_dimensions(*this, rhs));
   assert(m_columns == rhs.columns() && m_rows == rhs.rows());
   matrix ret(m_rows, m_columns);
 
@@ -210,7 +237,7 @@ matrix matrix::operator-(matrix const &rhs) const {
 
 
 matrix &matrix::operator-=(matrix const &rhs) {
-  check_addsub(rhs, "-=");
+  assert(check_dimensions(*this, rhs));
   s_matrix_sub_self->load(&arr(), &rhs.arr(), size()/16).run();
 /*
   for (int i = 0; i < (int) m_arr->size(); ++i) {
@@ -222,7 +249,7 @@ matrix &matrix::operator-=(matrix const &rhs) {
 
 
 matrix matrix::operator+(matrix const &rhs) const {
-  check_addsub(rhs, "+");
+  assert(check_dimensions(*this, rhs));
   assert(m_columns == rhs.columns() && m_rows == rhs.rows());
   matrix ret(m_rows, m_columns);
 
@@ -236,24 +263,8 @@ matrix matrix::operator+(matrix const &rhs) const {
 }
 
 
-void matrix::check_addsub(matrix const &rhs, std::string const &op) const {
-  if (is_vector() && rhs.is_vector()) {
-    // Allow transposed vectors
-    assert(size() == rhs.size());
-  } else {
-    if (m_columns != rhs.columns() || m_rows != rhs.rows()) {
-      warn << "matrix::operator" << op << " dimensions don't match: "
-           << "this: " << dump_dim() << ", "
-           << "rhs:"   << rhs.dump_dim()
-           << thrw;
-    }
-    assert(m_columns == rhs.columns() && m_rows == rhs.rows());
-  }
-}
-
-
 matrix &matrix::operator+=(matrix const &rhs) {
-  check_addsub(rhs, "+=");
+  assert(check_dimensions(*this, rhs));
   s_matrix_add_self->load(&arr(), &rhs.arr(), size()/16).run();
 
 /*  
@@ -294,9 +305,9 @@ matrix matrix::mul(matrix const &rhs) const {
 
   if (m_columns != rhs.size()) {
     cerr << "Matrix::mul() Inner dimension does not match. "
-         << "this(rows, columns): (" << m_rows << ", " << m_columns << "), "
-         << "rhs(rows, columns):  (" << rhs.rows() << ", " << rhs.columns() << ")"
-          << thrw;
+         << "this: " << dump_dim() << ", "
+         << "rhs:"   << rhs.dump_dim()
+         << thrw;
   }
 
   assert((m_columns % 16) == 0);      // Inner dimension must be multiple of 16
@@ -327,10 +338,6 @@ matrix matrix::mul_matrix(matrix const &rhs) const {
 
 matrix matrix::mul_matrix_t(matrix const &rhs) const {
   assert((m_columns % 16) == 0);      // Inner dimension must be multiple of 16
-
-  //warn << "mul_t this: " << dump_dim();
-  //warn << "mul_t rhs: " << rhs.dump_dim();
-
   assert(m_columns == rhs.m_columns);
 
   matrix ret(m_rows, resize_16(rhs.m_rows));
@@ -355,9 +362,9 @@ matrix matrix::mul_t(matrix const &rhs) const {
 
   if (m_rows != rhs.rows()) {
     cerr << "Matrix::mul_t() Inner dimension does not match. "
-         << "this(rows, columns): (" << m_rows << ", " << m_columns << "), "
-         << "rhs(rows, columns):  (" << rhs.rows() << ", " << rhs.columns() << ")"
-          << thrw;
+         << "this: " << dump_dim() << ", "
+         << "rhs:"   << rhs.dump_dim()
+         << thrw;
   }
 
   assert((m_rows % 16) == 0);
@@ -371,38 +378,24 @@ matrix matrix::mul_t(matrix const &rhs) const {
 
 
 /**
- * @brief By-element product of the two matrices.
+ * @brief Per-element product of two matrices.
  */
 matrix matrix::mul_e(matrix const &rhs) const {
-  //warn << "Called matrix matrix::mul_e()";
-  //warn << "matrix: " << dump_dim() << "rhs: " << rhs.dump_dim();
   assert(m_columns > 0);
   assert(m_rows > 0);
-
-  // Keep the calc flexible, just check size
-  int size = m_rows*m_columns;
-  int in_size = rhs.rows()*rhs.columns();
-
-  if (size != in_size) {
-    cerr << "Matrix::mul_e() Dimensions don't match. "
-         << "this(rows, columns): (" << m_rows << ", " << m_columns << "), "
-         << "rhs(rows, columns):  (" << rhs.rows() << ", " << rhs.columns() << ")"
-          << thrw;
-  }
-
-  assert((size % 16) == 0);      // Total dimension must be multiple of 16
+  assert((size() % 16) == 0);                 // Total dimension must be multiple of 16
+	assert(check_dimensions(*this, rhs, true)); // Keep the calc flexible, just check size
+  assert(s_mul_element != nullptr);
 
   matrix ret(m_rows, m_columns);
-
-  assert(s_mul_element != nullptr);
-  s_mul_element->load(&ret.arr(), &arr(), &rhs.arr(), size/16).run();
+  s_mul_element->load(&ret.arr(), &arr(), &rhs.arr(), size()/16).run();
 
   return ret;
 }
 
 
 matrix matrix::tanh() const {
-	matrix bias(rows(), columns());
+  matrix bias(rows(), columns());
 
   matrix ret(rows(), columns());
   s_tanh->load(&arr(), &ret.arr(), size()/16).run();
@@ -411,7 +404,7 @@ matrix matrix::tanh() const {
 
 
 matrix matrix::dtanh() const {
-	matrix bias(rows(), columns());
+  matrix bias(rows(), columns());
 
   matrix ret(rows(), columns());
   s_dtanh->load(&arr(), &ret.arr(), size()/16).run();
@@ -420,8 +413,8 @@ matrix matrix::dtanh() const {
 
 
 matrix matrix::sigmoid() {
-	matrix bias(rows(), columns());
-	bias.set(0.0f);  // Pedantry, prob not necessary
+  matrix bias(rows(), columns());
+  bias.set(0.0f);  // Pedantry, prob not necessary
 
   matrix ret(rows(), columns());
   s_sigmoid->load(&arr(), &bias.arr(), &ret.arr(), size()/16).run();
@@ -438,7 +431,7 @@ matrix matrix::sigmoid(matrix const &bias) {
 
 matrix matrix::dsigmoid() const {
   matrix ret(rows(), columns());
-	int size = rows()*columns();
+  int size = rows()*columns();
   s_dsigmoid->load(&arr(), &ret.arr(), size/16).run();
   return ret;  
 }
@@ -448,7 +441,7 @@ matrix matrix::dsigmoid() const {
  * NOTE: this is currently a scalar operation
  */
 matrix matrix::sigmoid_derivative(matrix const &rhs) {
-	// rhs rows and cols are ignored. This is to allow transposed vectors
+  // rhs rows and cols are ignored. This is to allow transposed vectors
   assert(size() == rhs.size());
 
   matrix ret(m_rows, m_columns);
@@ -466,6 +459,18 @@ matrix matrix::sigmoid_derivative(matrix const &rhs) {
   }
 
   return ret;
+}
+
+
+/**
+ * TODO: currently scalar, convert to QPU kernel
+ */
+void matrix::softmax(float max) {
+  auto &arr = *m_arr;
+
+  for (int i = 0; i < columns(); i++) {
+    arr[i] = std::exp(arr[i] - max);
+  }
 }
 
 
