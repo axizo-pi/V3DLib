@@ -223,6 +223,7 @@ FloatExpr exp(FloatExpr x)       { return mkFloatApply(x, Op(EXP      , FLOAT));
 FloatExpr exp_e(FloatExpr x)     { return mkFloatApply(x, Op(EXP_E    , FLOAT)); }
 FloatExpr tanh(FloatExpr x)      { return mkFloatApply(x, Op(TANH     , FLOAT)); }
 FloatExpr log(FloatExpr x)       { return mkFloatApply(x, Op(LOG      , FLOAT)); }
+FloatExpr ln(FloatExpr x)        { return mkFloatApply(x, Op(LOG_E    , FLOAT)); }
 
 
 FloatExpr sqrt_f(FloatExpr x) { return recip(recipsqrt(x)); }

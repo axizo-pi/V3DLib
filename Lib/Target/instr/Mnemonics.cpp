@@ -420,7 +420,7 @@ Instr::List bexp(Var dst, RegOrImm const &srcA) {
 
 
 /**
- * @brief Return e to the power `dst`.
+ * @brief Return e to the power `srcA`.
  */
 Instr::List bexp_e(Var dst, RegOrImm const &srcA) {
   const float e_const = 2.718281828459045f;
@@ -434,6 +434,23 @@ Instr::List bexp_e(Var dst, RegOrImm const &srcA) {
       << bexp(dst, tmp);
 
   return ret;
+}
+
+
+/**
+ * @brief Return log base e of `srcA`.
+ */
+Instr::List bln(Var dst, RegOrImm const &srcA) {
+	const float log_2_e_const = 1.4426950409f;
+
+  RegOrImm log_2_e(log_2_e_const);
+  Reg tmp(V3DLib::VarGen::fresh());
+
+  Instr::List ret;
+  ret << blog(tmp, srcA)
+      << fdiv(dst, tmp, log_2_e);
+
+	return ret;
 }
 
 

@@ -59,6 +59,7 @@ std::unique_ptr<BaseKernel> s_sigmoid;
 std::unique_ptr<BaseKernel> s_dsigmoid;
 std::unique_ptr<BaseKernel> s_tanh;
 std::unique_ptr<BaseKernel> s_dtanh;
+std::unique_ptr<BaseKernel> s_ln;
 std::unique_ptr<BaseKernel> s_clip;
 
 
@@ -84,6 +85,7 @@ void init_local() {
   s_dsigmoid           .reset(new BaseKernel(compile(kernel::dsigmoid       , settings())));
   s_tanh               .reset(new BaseKernel(compile(kernel::tanh           , settings())));
   s_dtanh              .reset(new BaseKernel(compile(kernel::dtanh          , settings())));
+  s_ln                 .reset(new BaseKernel(compile(kernel::ln             , settings())));
   s_clip               .reset(new BaseKernel(compile(kernel::clip           , settings())));
 
   done_init = true;
@@ -278,14 +280,23 @@ matrix &matrix::operator+=(matrix const &rhs) {
 
 
 matrix matrix::operator*(float rhs) const {
+	//warn << "matrix * val: " << rhs;
   matrix ret(m_rows, m_columns);
 
-  s_mul_float->load(&ret.arr(), &arr(), rhs, m_rows*m_columns/16).run();
-/*
-  for (int i = 0; i < (int) m_arr->size(); ++i) {
-    ret.arr()[i] = arr()[i]*rhs;
-  }
-*/
+	// Need to take tiny matrices into account.
+	// There is no point in calling the kernel in this case.
+	//
+	// Currently restricting to [1,1] matrices, this might change.
+	if (size() == 1) {
+  	for (int i = 0; i < (int) m_arr->size(); ++i) {
+	    ret.arr()[i] = arr()[i]*rhs;
+	  }
+	} else {
+		assert(size() % 16 == 0);
+  	s_mul_float->load(&ret.arr(), &arr(), rhs, size()/16).run();
+	}
+
+	//warn << "matrix * ret: " << ret.dump();
   return ret;
 }
 
@@ -412,6 +423,13 @@ matrix matrix::dtanh() const {
 }
 
 
+matrix matrix::ln() const {
+  matrix ret(rows(), columns());
+  s_ln->load(&arr(), &ret.arr(), size()/16).run();
+  return ret;  
+}
+
+
 matrix matrix::sigmoid() {
   matrix bias(rows(), columns());
   bias.set(0.0f);  // Pedantry, prob not necessary
@@ -471,6 +489,21 @@ void matrix::softmax(float max) {
   for (int i = 0; i < columns(); i++) {
     arr[i] = std::exp(arr[i] - max);
   }
+}
+
+
+/**
+ * TODO: currently scalar, convert to QPU kernel
+ */
+float matrix::sum() const {
+  auto &arr = *m_arr;
+	float ret = 0.0f;
+
+  for (int i = 0; i < size(); i++) {
+    ret += arr[i];
+  }
+
+	return ret;
 }
 
 
@@ -572,7 +605,7 @@ std::string matrix::dump(bool output_int) const {
 
   ret << dump_dim();
 
-  if (m_columns == 1) {
+  if (m_rows > 1 && m_columns == 1) {
     ret << "(tr) ";  // Signal transposed
     ret << "[" << vector_dump(*m_arr, m_rows, 0, output_int) << "]";
   } else {
@@ -802,7 +835,8 @@ bool check_precision(float lhs, float rhs, float precision, float *max_diff, boo
   if (precision == 0.0f) {
     if (lhs != rhs) {
       if (do_show) {
-        warn << "check_precision fail, diff: " << diff;
+        warn << "check_precision fail, diff: " << diff << ", "
+					   <<"bit: " << bit_diff(lhs, rhs, -1);
       }
       ret = false;
     }
@@ -810,7 +844,8 @@ bool check_precision(float lhs, float rhs, float precision, float *max_diff, boo
     if (diff > precision) {
       if (do_show) {
         warn << "check_precision fails with "
-             << "diff: " << diff << " for precision: " << precision;
+             << "diff: " << diff << " for precision: " << precision << ", "
+					   <<"bit: " << bit_diff(lhs, rhs, -1);
       }
       ret = false;
     }

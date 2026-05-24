@@ -49,6 +49,18 @@ void tanh(Float::Ptr in, Float::Ptr out, Int N) {
 }
 
 
+void ln(Float::Ptr in, Float::Ptr out, Int N) {
+  For (Int h = 0, h < N, h++)
+    Float x = *in;
+    x = V3DLib::ln(x);
+    *out = x;
+
+    in.inc();
+    out.inc();
+  End
+}
+
+
 /**
  * @brief Calculate the derivate of `tanh()`.
  *

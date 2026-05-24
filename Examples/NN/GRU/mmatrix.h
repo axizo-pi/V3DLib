@@ -61,13 +61,14 @@ public:
 	MMatrix max_row() const;
 	MMatrix sum_row() const;
 	void softmax();
+	MMatrix ln() const;
 
   // Application-specific methods
   void back_prop_1(MMatrix const &ds_cur, State const &temp, float precision);
   void back_prop_3(MMatrix const &dsr, State const &temp, float precision = 0.0f);
   void back_prop_4(MMatrix const &ds_cur_bk, State const &temp, float precision);
   void divide_matrix(MMatrix const &gradient, MMatrix const &in_cache);
-  void update_E(int index, MatrixXf const &Y, State const &state);
+  void update_E(int index, MMatrix const &Y, MMatrix const &O);
 
   void set_decay(float decay, MMatrix const &rhs);
 
