@@ -1,6 +1,7 @@
 #include "mmatrix.h"
 #include "./kernel.h"
 #include "global.h"
+#include "Support/Helpers.h"  // bit_diff()
 
 MMatrix::MMatrix(int rows, int columns, float val, bool set_Xf) {
   assert(rows > 0);
@@ -586,12 +587,23 @@ MMatrix MMatrix::max_row() const {
 
 
 /**
+ * @brief Calculate sums per row
+ *
  * TODO: convert to QPU, currently scalar
  */
 MMatrix MMatrix::sum_row() const {
-  need_fields(false, true);
+  need_fields(true, true);
+	//warn << "sum_row: " << dump_dim();
 
 	MMatrix ret(rows(), 1);
+  ret.need_fields(true, true);
+
+  timers.start("sum_row Xf");
+	for (int r = 0; r < rows(); r++) {
+		ret.m_Xf(r, 0)  = m_Xf.row(r).sum();
+	}
+  timers.stop("sum_row Xf");
+  timers.start("sum_row qpu");
 
 	for (int r = 0; r < rows(); r++) {
 		float val = 0.0f;
@@ -602,10 +614,13 @@ MMatrix MMatrix::sum_row() const {
 			val += in_val;
 		}
 
+		//warn << "r, val: " << r << ", " << val;
 		ret.m_qpu.at(r, 0) = val;
 	}
 
-	ret.used_fields(false, true);
+  timers.stop("sum_row qpu");
+
+	//warn << "sum_row ret: " << ret.dump();
 	return ret;
 }
 
@@ -751,20 +766,63 @@ void MMatrix::divide_matrix(MMatrix const &gradient, MMatrix const &in_cache) {
 }
 
 
-void MMatrix::update_E(int index, MatrixXf const &Y, State const &state) {
-  need_fields(true, false);
+MMatrix MMatrix::ln() const {
+  need_fields(true, true);
+
+	MMatrix ret(rows(), cols());
+
+  timers.start("ln Xf");
+ 	ret.m_Xf	= m_Xf.unaryExpr(&log_matrix);
+  timers.stop("ln Xf");
+  timers.start("ln qpu");
+	ret.m_qpu = m_qpu.ln();
+  timers.stop("ln qpu");
+
+  ret.used_fields(true, true);
+	return ret;
+}
+
+
+void MMatrix::update_E(int index, MMatrix const &Y, MMatrix const &O) {
+  Y.need_fields(true, true);
+	O.need_fields(true, true);
+  need_fields(true, true);
+	assert(m_qpu.is_vector());
+	warn << "this: " << dump();
+
+	MMatrix temp_ln = O.ln();
+	assert(temp_ln.same(5*Precision));
+
+	MMatrix temp = -1.0f * Y.mul_e(temp_ln).sum_row();
+	warn << "temp: " << temp.dump();
+	m_qpu.resize(temp.rows(), temp.cols());
+	*this += temp;
 
   timers.start("update_E Xf");
 
-  auto temp_output = state.O.row(index).Xf();
-  temp_output.eval();
-
-  m_Xf(0, index) += -1 * Y.row(index).cwiseProduct(temp_output.unaryExpr(&log_matrix)).sum();
+	//float val = -1 * Y.Xf().cwiseProduct(temp_ln.m_Xf).sum();
+  //m_Xf(0, index) += val;
+	m_Xf = temp.m_Xf;
   m_Xf.eval();
 
   timers.stop("update_E Xf");
+  timers.start("update_E qpu");
 
-  used_fields(true, false);
+	float val2 = -1 * Y.qpu().mul_e(temp_ln.m_qpu).sum();
+
+  //m_qpu.arr()[index] += val2;
+
+  timers.stop("update_E qpu");
+
+	warn << "val2: " << val2;
+	assert(bit_diff(temp.m_Xf(0,0), val2, -1) == -1);
+	int diff2 = bit_diff(temp.m_qpu.at(0,0), val2, -1);
+	warn << "diff2: " << diff2;
+	assert(diff2 == -1);
+	warn << "this: " << dump();
+	assert(same());
+
+  used_fields(true, true);
 }
 
 

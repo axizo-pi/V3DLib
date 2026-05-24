@@ -68,6 +68,7 @@ struct matrix {
   matrix mul_e(matrix const &rhs) const;
   matrix tanh() const;
   matrix dtanh() const;
+  matrix ln() const;
   matrix sigmoid();
   matrix sigmoid(matrix const &bias);
   matrix dsigmoid() const;
@@ -77,6 +78,7 @@ struct matrix {
   void   outer_add(matrix const &lhs, matrix const &rhs);
   void   outer_add_rows(matrix const &lhs, matrix const &rhs);
 	void   softmax(float max);
+	float  sum() const;
 
   std::string dump_dim() const;
   std::string dump(bool output_int = false) const;

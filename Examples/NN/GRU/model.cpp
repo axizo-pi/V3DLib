@@ -307,6 +307,8 @@ void forward_propagation(
   MMatrix x_ones(time_steps, hidden_dim, 1.0f);
   MMatrix x_X;
   x_X.set(X);
+  MMatrix x_Y;
+  x_Y.set(Y);
   MMatrix x_z_in;
   x_z_in.set(state.z);
 
@@ -432,7 +434,8 @@ void forward_propagation(
     //==================================
 
     if (!do_test) {
-      state.E.update_E(i, Y, state);
+			//warn << "state.E: " << state.E.dump_dim();
+      state.E.update_E(i, x_Y.row(i), state.O.row(i));
     }
   }
 
