@@ -822,7 +822,7 @@ Instr::List varAssign(Var v, Expr::Ptr expr) {
  */
 void encode_source(Instr::List &target, Stmt::Array const &source) {
   assert(target.empty());
-	encode_target(target, source);
+  encode_target(target, source);
   assert(!target.empty());
 
   insertInitBlock(target);
