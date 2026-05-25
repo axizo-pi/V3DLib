@@ -3,6 +3,8 @@
 #include "global.h"
 #include "Support/Helpers.h"  // bit_diff()
 
+MMatrix::MMatrix() : m_qpu(true) {}
+
 MMatrix::MMatrix(int rows, int columns, float val, bool set_Xf) {
   assert(rows > 0);
   assert(columns > 0);
@@ -20,6 +22,11 @@ MMatrix::MMatrix(int rows, int columns, float val, bool set_Xf) {
     m_qpu.set(val);
     used_fields(false, true);
   }
+}
+
+
+void MMatrix::resize(int rows, int columns, float val) {
+  *this = MMatrix(rows, columns, val);
 }
 
 
@@ -83,6 +90,19 @@ int MMatrix::cols() const {
 }
 
 
+MMatrix MMatrix::transpose() const {
+	need_fields(true, false);
+	assert(rows() == 1 || cols() == 1);  // Simple case, vectors only
+
+	MMatrix ret(cols(), rows());
+
+	ret.m_Xf = m_Xf.transpose();
+
+	ret.used_fields(true, false);
+	return ret;
+}
+
+
 void MMatrix::row(int index, MatrixXf const &val) {
   timers.start("row(index, val)");
 
@@ -133,10 +153,14 @@ void MMatrix::copy_block(MMatrix const &rhs, int from_offset, int to_offset, int
 
 
 void MMatrix::row(int index, MMatrix const &val) {
+  assert(val.rows() == 1);
   assert(cols() == val.cols());
   assert(index >=0 && index < rows());
 
   val.need_fields(false, true);
+
+	// Not working
+	//m_Xf.row(index) = val.Xf().row(0);
 
   for (int i = 0; i < val.cols(); ++i) {
     m_qpu.arr()[index*cols() + i] = val.m_qpu.arr()[i];
@@ -270,6 +294,8 @@ MMatrix MMatrix::operator+(MMatrix const &rhs) const {
 MMatrix MMatrix::operator-(MMatrix const &rhs) const {
   rhs.need_fields(true, true);
   need_fields(true, true);
+	//assert(rhs.same());
+	//assert(same());
 	//warn <<"this -: " << dump();
 
   MMatrix ret;
@@ -288,14 +314,15 @@ MMatrix MMatrix::operator-(MMatrix const &rhs) const {
 	// The following should be EXACT.
 	// I investigated this but can not find a reason
 	// TODO: examine further
-  assert(ret.same(4*Precision));
+  assert(ret.same()); //4*Precision));
   return ret;
 }
 
 
 void MMatrix::operator+=(MMatrix const &rhs) {
-  rhs.need_fields(true, false);
-  need_fields(true, false);
+  rhs.need_fields(false, true);
+  need_fields(false, true);
+
 /*
   timers.start("MMatrix += Xf");
   m_Xf = m_Xf + rhs.m_Xf;
@@ -305,7 +332,7 @@ void MMatrix::operator+=(MMatrix const &rhs) {
   m_qpu += rhs.m_qpu;
   timers.stop("MMatrix += qpu");
 
-  used_fields(true, false);
+  used_fields(false, true);
 }
 
 
@@ -783,46 +810,38 @@ MMatrix MMatrix::ln() const {
 }
 
 
-void MMatrix::update_E(int index, MMatrix const &Y, MMatrix const &O) {
+MMatrix MMatrix::calc_E(MMatrix const &Y, MMatrix const &O) const {
+	warn << "calc_E O: " << O.dump();
   Y.need_fields(true, true);
 	O.need_fields(true, true);
   need_fields(true, true);
 	assert(m_qpu.is_vector());
-	warn << "this: " << dump();
+
+  timers.start("calc_E");
 
 	MMatrix temp_ln = O.ln();
+	//warn << "temp_ln: " << temp_ln.dump();
 	assert(temp_ln.same(5*Precision));
 
-	MMatrix temp = -1.0f * Y.mul_e(temp_ln).sum_row();
-	warn << "temp: " << temp.dump();
-	m_qpu.resize(temp.rows(), temp.cols());
-	*this += temp;
+	MMatrix ret = -1.0f * Y.mul_e(temp_ln).sum_row();
 
-  timers.start("update_E Xf");
+  timers.stop("calc_E");
 
-	//float val = -1 * Y.Xf().cwiseProduct(temp_ln.m_Xf).sum();
-  //m_Xf(0, index) += val;
-	m_Xf = temp.m_Xf;
-  m_Xf.eval();
+	assert(ret.same());
+  ret.used_fields(true, true);
+	return ret;
+}
 
-  timers.stop("update_E Xf");
-  timers.start("update_E qpu");
 
-	float val2 = -1 * Y.qpu().mul_e(temp_ln.m_qpu).sum();
+void MMatrix::col_E(int index, MMatrix const &rhs) {
+  rhs.need_fields(true, true);
+	assert(rhs.size() == 1);
+	assert(rows() == 1);
+	assert(0 <= index && index < cols());
 
-  //m_qpu.arr()[index] += val2;
+	m_Xf(0, index) += rhs.m_Xf(0,0);
 
-  timers.stop("update_E qpu");
-
-	warn << "val2: " << val2;
-	assert(bit_diff(temp.m_Xf(0,0), val2, -1) == -1);
-	int diff2 = bit_diff(temp.m_qpu.at(0,0), val2, -1);
-	warn << "diff2: " << diff2;
-	assert(diff2 == -1);
-	warn << "this: " << dump();
-	assert(same());
-
-  used_fields(true, true);
+  used_fields(true, false);
 }
 
 
