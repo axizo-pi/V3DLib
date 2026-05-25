@@ -210,6 +210,7 @@ void mult_matrix(Float::Ptr in_ret, Float::Ptr lhs, Float::Ptr rhs, Int lhs_rows
   Float::Ptr rhs_base = rhs;
   rhs_base -= index();
   Int rhs_offset = index()*rhs_cols;
+	Int block_size = inner >> 4;
 
   Float ret_acc = 0.0f;
   Float::Ptr ret;
@@ -228,7 +229,7 @@ void mult_matrix(Float::Ptr in_ret, Float::Ptr lhs, Float::Ptr rhs, Int lhs_rows
       Float::Ptr rhs_col = rhs_base + col + rhs_offset;
       Float acc = 0.0f;
 
-      For (Int block = 0, block < (inner >> 4), block++)
+      For (Int block = 0, block < block_size, block++)
         acc += *lhs_row * *rhs_col;
 
         lhs_row.inc();

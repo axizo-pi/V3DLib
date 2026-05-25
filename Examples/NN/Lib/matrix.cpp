@@ -267,13 +267,15 @@ matrix matrix::operator+(matrix const &rhs) const {
 
 matrix &matrix::operator+=(matrix const &rhs) {
   assert(check_dimensions(*this, rhs));
-  s_matrix_add_self->load(&arr(), &rhs.arr(), size()/16).run();
 
-/*  
-  for (int i = 0; i < (int) m_arr->size(); ++i) {
-    arr()[i] += rhs.arr()[i];
-  }
-*/  
+	// Some juggling to take into account non-16 block sizes
+	if (size() % 16 == 0) {
+	  s_matrix_add_self->load(&arr(), &rhs.arr(), size()/16).run();
+	} else {
+  	for (int i = 0; i < (int) m_arr->size(); ++i) {
+    	arr()[i] += rhs.arr()[i];
+  	}
+ 	}
 
   return *this;
 }
@@ -283,11 +285,13 @@ matrix matrix::operator*(float rhs) const {
 	//warn << "matrix * val: " << rhs;
   matrix ret(m_rows, m_columns);
 
-	// Need to take tiny matrices into account.
-	// There is no point in calling the kernel in this case.
 	//
-	// Currently restricting to [1,1] matrices, this might change.
-	if (size() == 1) {
+	// Taking non-conformant matrices into account, not passed to kernel.
+	// These happen in train GRU.
+	//
+	// Also checking handles [1,1] matrices.
+	//
+	if (size() % 16 != 0) {
   	for (int i = 0; i < (int) m_arr->size(); ++i) {
 	    ret.arr()[i] = arr()[i]*rhs;
 	  }

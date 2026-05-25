@@ -1,4 +1,5 @@
 #include "global.h"
+#include "forward.h"
 
 using namespace Log;
 

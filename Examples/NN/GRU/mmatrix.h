@@ -11,9 +11,10 @@ class State;
 
 class MMatrix {
 public:
-  MMatrix() = default;
+  MMatrix();
   MMatrix(int rows, int columns, float val = 0.0f, bool set_Xf = false);
   MMatrix(MMatrix const &rhs);
+	void resize(int rows, int columns, float val = 0.0f);
 
   void set(MatrixXf const &rhs, bool set_qpu = false);
   void set(MMatrix const &rhs);
@@ -25,6 +26,7 @@ public:
   void row(int index, MatrixXf const &val);
   void row(int index, MMatrix const &val);
 	void move_rows(int step, MMatrix const &rhs);
+	MMatrix transpose() const;
 
   MMatrix row(int index) const;
 
@@ -68,7 +70,8 @@ public:
   void back_prop_3(MMatrix const &dsr, State const &temp, float precision = 0.0f);
   void back_prop_4(MMatrix const &ds_cur_bk, State const &temp, float precision);
   void divide_matrix(MMatrix const &gradient, MMatrix const &in_cache);
-  void update_E(int index, MMatrix const &Y, MMatrix const &O);
+  MMatrix calc_E(MMatrix const &Y, MMatrix const &O) const;
+	void col_E(int index, MMatrix const &rhs);
 
   void set_decay(float decay, MMatrix const &rhs);
 
