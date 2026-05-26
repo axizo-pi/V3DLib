@@ -21,24 +21,24 @@ MMatrix  x_z_in;
 
 
 void init(
-	State &state,
+  State &state,
   int time_steps,
   int input_dim,
   int hidden_dim,
   int output_dim
 ) {
-	x_ones.resize(time_steps, hidden_dim, 1.0f);
+  x_ones.resize(time_steps, hidden_dim, 1.0f);
   ones = MatrixXf::Ones(1, hidden_dim);
-	//warn << "init x_ones: " << x_ones.dump_dim();
-	//warn << "init ones: " << dump(ones);
+  //warn << "init x_ones: " << x_ones.dump_dim();
+  //warn << "init ones: " << dump(ones);
 
   x_z_in.set(state.z);
 
   x_state   = state;
   x_state.S = remove_last_rows(1, x_state.S);
   x_S_extra.resize(1, hidden_dim);
-	//warn << "init x_state.S: " << x_state.S.dump_dim();
-	//warn << "init x_S_extra: " << x_S_extra.dump();
+  //warn << "init x_state.S: " << x_state.S.dump_dim();
+  //warn << "init x_S_extra: " << x_S_extra.dump();
 }
 
 
@@ -64,10 +64,10 @@ void check_sum(int i, float temp_sum) {
   //warn << "bit_diff: " << bit_diff(temp_sum, x_temp_sum, -1);
 
   int diff = bit_diff(temp_sum, x_temp_sum, 3);  // bit index kind of high, usually lower
-	if (diff != -1) {
-		warn << "bit_diff: " << diff;
-		assert(false);
-	}
+  if (diff != -1) {
+    warn << "bit_diff: " << diff;
+    assert(false);
+  }
 }
 
 } // anon namespace
@@ -87,6 +87,10 @@ void check_sum(int i, float temp_sum) {
  *     E   = - 1/N sum(Y o log(O))
  *
  * where * is matrix multiplication and o is componentwise multiplication
+ *
+ * - steps z_t, r_t do NOT use ReLU, but sigmoid()
+ * - Step h_t uses tanh(), not ReLU
+ * - Step S_t tanh() missing entirely
  */
 void forward_propagation(
   Model &m,
@@ -100,9 +104,9 @@ void forward_propagation(
   bool do_test
 ) {
   timers.start("forward_propagation");
-	init(state, time_steps, input_dim, hidden_dim, output_dim);
+  init(state, time_steps, input_dim, hidden_dim, output_dim);
 
-  MatrixXf temp        = MatrixXf::Zero(1, hidden_dim);
+  MMatrix temp(1, hidden_dim);
   MatrixXf temp_output = MatrixXf::Zero(1, output_dim);
   MatrixXf temp_hidden = MatrixXf::Zero(1, hidden_dim);
 
@@ -112,28 +116,25 @@ void forward_propagation(
   x_X.set(X);
   MMatrix x_Y;
   x_Y.set(Y);
-  timers.start("forward temp2");
 
-  MMatrix temp2 = (x_X * m.U_z) + (x_state.S*m.W_z);
+	MMatrix temp2 = x_X.forward_1(m, x_state.S);
   x_state.z = temp2.sigmoid();
 
-  MMatrix temp3 = (x_X * m.U_r) + (x_state.S * m.W_r);
+	MMatrix temp3 = x_X.forward_2(m, x_state.S);
   x_state.r = temp3.sigmoid();
 
   MMatrix temp4 = (x_X * m.U_h) + (x_state.S.mul_e(x_state.r) * m.W_h);
   x_state.h = temp4.tanh();
 
-	update_S_O(time_steps, m);
+  update_S_O(time_steps, m);
 
-	if (!do_test) {
-	  MMatrix E_ret = x_state.E.calc_E(x_Y, x_state.O).transpose();
-		x_state.E += E_ret;
-		//warn << "E_ret: " << E_ret.dump();
-		warn << "x_state.E: " << x_state.E.dump();
-		assert(x_state.E.same());
-	}
-
-  timers.stop("forward temp2");
+  if (!do_test) {
+    MMatrix E_ret = x_state.E.calc_E(x_Y, x_state.O).transpose();
+    x_state.E += E_ret;
+    //warn << "E_ret: " << E_ret.dump();
+    //warn << "x_state.E: " << x_state.E.dump_dim();
+    assert(x_state.E.same());
+  }
 
   ////// End QPU /////
 
@@ -145,38 +146,40 @@ void forward_propagation(
     X_row.set(X.row(i));
     auto z_row = state.z.row(i);
 
-    timers.start("forward temp");
-    temp = (X_row.Xf() * (m.U_z.Xf())) + (S_row.Xf() * (m.W_z.Xf()));
-    temp.eval();
-  	warn << "temp: " << dump(temp);
-  	warn << "temp2(" << i << "): " << temp2.row(i).dump();
-    timers.stop("forward temp");
-    assert(::same(temp2.row(i).qpu(), temp));
+		temp = X_row.forward_1(m, S_row);
+    assert(temp2.row(i).same(temp));
 
-    state.z.row(i, temp.unaryExpr(&sigmoid));
-    assert(x_state.z.row(i).same(state.z.row(i), 4*Precision));  // TODO check precision when forward prop done
+    state.z.row(i, temp.sigmoid());
+    assert(x_state.z.row(i).same_b(state.z.row(i), -1));
 
-    timers.start("forward temp");
-    temp = (X_row.Xf() * (m.U_r.Xf())) + (S_row.Xf() * (m.W_r.Xf()));
-    temp.eval();
-    timers.stop("forward temp");
-    assert(::same(temp3.row(i).qpu(), temp));
+		temp = X_row.forward_2(m, S_row);
+    assert(temp3.row(i).same(temp));
+/*
+		warn << "Here1";
+    MatrixXf sig1 = temp.Xf().unaryExpr(&sigmoid);
+    auto sig2 = temp.sigmoid();
+    assert(sig2.same_b(sig1, 1));  // Usually bit <= 1, sometimes bit == 3
+*/
+    state.r.row(i, temp.sigmoid());
+    assert(x_state.r.row(i).same_b(state.r.row(i), -1));
 
-    state.r.row(i, temp.unaryExpr(&sigmoid));
-    assert(x_state.r.row(i).same(state.r.row(i), 4*Precision));  // TODO check precision when forward prop done
+    MatrixXf tempb = (X_row.Xf() * (m.U_h.Xf())) + (S_row.Xf().cwiseProduct(state.r.row(i).Xf())) * (m.W_h.Xf());
+    tempb.eval();
 
-    timers.start("forward temp");
-    temp = (X_row.Xf() * (m.U_h.Xf())) + (S_row.Xf().cwiseProduct(state.r.row(i).Xf())) * (m.W_h.Xf());
-    temp.eval();
+		MMatrix temp_b1 = X_row.forward_3(m, S_row, state.r.row(i));
+    assert(temp_b1.same_b(tempb, -1));
 
-    state.h.row(i, temp.unaryExpr(&tanh_activation));
+		auto tanh_1 = tempb.unaryExpr(&tanh_activation);
+		auto tanh_2 = temp_b1.tanh();
+    assert(tanh_2.same_b(tanh_1, -1));
+
+    state.h.row(i, tempb.unaryExpr(&tanh_activation));
 
     temp_hidden     = (ones - z_row.Xf()).cwiseProduct(state.h.row(i).Xf() + z_row.Xf()).cwiseProduct(S_row.Xf());
     temp_hidden.eval();
 
-    timers.stop("forward temp");
 
-    assert(::same(temp4.row(i).qpu(), temp, Precision));
+    assert(::same(temp4.row(i).qpu(), tempb, Precision));
     assert(x_state.h.row(i).same(state.h.row(i), Precision));
     assert(x_temp_hidden.row(i).same(temp_hidden, Precision));
 
@@ -207,7 +210,7 @@ void forward_propagation(
     assert(x_temp_output.row(i).same(temp_output, Precision));
 
     float temp_sum = temp_output.sum();
-		check_sum(i, temp_sum);
+    check_sum(i, temp_sum);
 
     state.O.row(i, temp_output/temp_sum);
     state.O.eval();
@@ -215,14 +218,14 @@ void forward_propagation(
 
     if (!do_test) {
       MMatrix ret = state.E.calc_E(x_Y.row(i), state.O.row(i));
-			//warn << "E ret: " << ret.dump();
-			//warn << "state.E pre: " << state.E.dump();
+      //warn << "E ret: " << ret.dump();
+      //warn << "state.E pre: " << state.E.dump();
 
-			state.E.col_E(i, ret);
-			warn << "state.E: " << state.E.dump();
-			float diff = abs(x_state.E.Xf()(0, i) - state.E.Xf()(0, i));
-			warn << "diff: " << diff;
-			assert(diff < Precision);
+      state.E.col_E(i, ret);
+      //warn << "state.E: " << state.E.dump();
+      float diff = abs(x_state.E.Xf()(0, i) - state.E.Xf()(0, i));
+      //warn << "diff: " << diff;
+      assert(diff < Precision);
     }
   }
 

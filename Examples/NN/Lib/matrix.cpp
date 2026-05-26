@@ -20,22 +20,22 @@ void frand_array(Float::Array &rhs) {
 bool check_dimensions(matrix const &lhs, matrix const &rhs, bool size_only = false) {
   // Allow transposed vectors
   if (lhs.is_vector() && rhs.is_vector()) {
-		size_only = true;
+    size_only = true;
   }
 
-	bool check = size_only?
+  bool check = size_only?
     (lhs.size() == rhs.size()):
     (lhs.columns() == rhs.columns() && lhs.rows() == rhs.rows())
-	;
+  ;
 
-	if (!check) {
+  if (!check) {
     cerr << "check_dimensions() dimensions don't match: "
          << "this: " << lhs.dump_dim() << ", "
          << "rhs:"   << rhs.dump_dim();
-	}
-	//assert(check);
+  }
+  //assert(check);
 
-	return check;
+  return check;
 }
 
 
@@ -268,39 +268,39 @@ matrix matrix::operator+(matrix const &rhs) const {
 matrix &matrix::operator+=(matrix const &rhs) {
   assert(check_dimensions(*this, rhs));
 
-	// Some juggling to take into account non-16 block sizes
-	if (size() % 16 == 0) {
-	  s_matrix_add_self->load(&arr(), &rhs.arr(), size()/16).run();
-	} else {
-  	for (int i = 0; i < (int) m_arr->size(); ++i) {
-    	arr()[i] += rhs.arr()[i];
-  	}
- 	}
+  // Some juggling to take into account non-16 block sizes
+  if (size() % 16 == 0) {
+    s_matrix_add_self->load(&arr(), &rhs.arr(), size()/16).run();
+  } else {
+    for (int i = 0; i < (int) m_arr->size(); ++i) {
+      arr()[i] += rhs.arr()[i];
+    }
+   }
 
   return *this;
 }
 
 
 matrix matrix::operator*(float rhs) const {
-	//warn << "matrix * val: " << rhs;
+  //warn << "matrix * val: " << rhs;
   matrix ret(m_rows, m_columns);
 
-	//
-	// Taking non-conformant matrices into account, not passed to kernel.
-	// These happen in train GRU.
-	//
-	// Also checking handles [1,1] matrices.
-	//
-	if (size() % 16 != 0) {
-  	for (int i = 0; i < (int) m_arr->size(); ++i) {
-	    ret.arr()[i] = arr()[i]*rhs;
-	  }
-	} else {
-		assert(size() % 16 == 0);
-  	s_mul_float->load(&ret.arr(), &arr(), rhs, size()/16).run();
-	}
+  //
+  // Taking non-conformant matrices into account, not passed to kernel.
+  // These happen in train GRU.
+  //
+  // Also checking handles [1,1] matrices.
+  //
+  if (size() % 16 != 0) {
+    for (int i = 0; i < (int) m_arr->size(); ++i) {
+      ret.arr()[i] = arr()[i]*rhs;
+    }
+  } else {
+    assert(size() % 16 == 0);
+    s_mul_float->load(&ret.arr(), &arr(), rhs, size()/16).run();
+  }
 
-	//warn << "matrix * ret: " << ret.dump();
+  //warn << "matrix * ret: " << ret.dump();
   return ret;
 }
 
@@ -399,7 +399,7 @@ matrix matrix::mul_e(matrix const &rhs) const {
   assert(m_columns > 0);
   assert(m_rows > 0);
   assert((size() % 16) == 0);                 // Total dimension must be multiple of 16
-	assert(check_dimensions(*this, rhs, true)); // Keep the calc flexible, just check size
+  assert(check_dimensions(*this, rhs, true)); // Keep the calc flexible, just check size
   assert(s_mul_element != nullptr);
 
   matrix ret(m_rows, m_columns);
@@ -501,13 +501,13 @@ void matrix::softmax(float max) {
  */
 float matrix::sum() const {
   auto &arr = *m_arr;
-	float ret = 0.0f;
+  float ret = 0.0f;
 
   for (int i = 0; i < size(); i++) {
     ret += arr[i];
   }
 
-	return ret;
+  return ret;
 }
 
 
@@ -821,7 +821,7 @@ BaseKernel &vector::op_kernel() {
   return *s_op;
 }
 
-
+/*
 vector operator*(matrix const &lhs, matrix const &rhs) {
   //warn << "rhs: " << rhs.dump_dim();
   assert(rhs.is_vector());
@@ -830,17 +830,31 @@ vector operator*(matrix const &lhs, matrix const &rhs) {
   ret = lhs.mul(rhs);
   return vector(ret);
 }
+*/
 
 
-bool check_precision(float lhs, float rhs, float precision, float *max_diff, bool do_show) {
+bool check_precision(float lhs, float rhs, float precision, int bit_diff, float *max_diff, bool do_show) {
   bool ret = true;
   float diff = abs(lhs - rhs);
 
+	// Precision takes precedence over bit_diff, for now
+
   if (precision == 0.0f) {
-    if (lhs != rhs) {
+		bool failed = false;
+		int bit = V3DLib::bit_diff(lhs, rhs, bit_diff);
+
+		if (bit_diff > -1) {
+			warn << "check_precision bit precision";
+			failed = (bit > -1);
+		} else {
+			//warn << "check_precision full precision";
+			failed = (lhs != rhs);
+		}
+		
+    if (failed) {
       if (do_show) {
         warn << "check_precision fail, diff: " << diff << ", "
-					   <<"bit: " << bit_diff(lhs, rhs, -1);
+             <<"bit: " << bit;
       }
       ret = false;
     }
@@ -849,7 +863,7 @@ bool check_precision(float lhs, float rhs, float precision, float *max_diff, boo
       if (do_show) {
         warn << "check_precision fails with "
              << "diff: " << diff << " for precision: " << precision << ", "
-					   <<"bit: " << bit_diff(lhs, rhs, -1);
+             <<"bit: " << V3DLib::bit_diff(lhs, rhs, -1);
       }
       ret = false;
     }
@@ -865,7 +879,7 @@ bool check_precision(float lhs, float rhs, float precision, float *max_diff, boo
 
 bool same(qpu::vector const &lhs, qpu::vector const &rhs, float precision) {
   for (int i = 0; i < (int) rhs.size(); ++i) {
-    if (!check_precision(lhs[i], rhs[i], precision)) {
+    if (!check_precision(lhs[i], rhs[i], precision, -1)) {
       warn << "Fail same(qpu::vector, qpu::vector), index: " << i;
       return false;
     }

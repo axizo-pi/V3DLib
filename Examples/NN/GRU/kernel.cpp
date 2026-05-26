@@ -14,11 +14,11 @@ namespace {
  * Multi-QPU is disappointing; only 20% improvement.
  */
 void back_prop_1_kernel(Float::Ptr ret, Float::Ptr ds_cur, Float::Ptr q_z, Float::Ptr q_h, Int N) {
-	Int s_16 = 16;
-	Int s_64 = 4*16;
+  Int s_16 = 16;
+  Int s_64 = 4*16;
 
-	Int offset      = s_16*numQPUs();    comment("Start back_prop_1_kernel");
-	Int init_offset = s_64*me();
+  Int offset      = s_16*numQPUs();    comment("Start back_prop_1_kernel");
+  Int init_offset = s_64*me();
 
   q_h    = q_h.offset(init_offset);    comment("Init pointers for multi-QPU");
   q_z    = q_z.offset(init_offset);
@@ -30,7 +30,7 @@ void back_prop_1_kernel(Float::Ptr ret, Float::Ptr ds_cur, Float::Ptr q_z, Float
     Float x2 = *q_z;
     x = 1.0f - x*x;     // dtanh
 
-		Float x3 = *ds_cur;
+    Float x3 = *ds_cur;
     x2 = (1.0f - x2);
     *ret = x3 * x * x2;
 
@@ -48,8 +48,8 @@ void back_prop_1_kernel(Float::Ptr ret, Float::Ptr ds_cur, Float::Ptr q_z, Float
  *      m_qpu = dsr.m_qpu.mul_e(temp.S.qpu()).mul_e(qpu::vector(temp.r.qpu()).dsigmoid());
  */
 void back_prop_3_kernel(Float::Ptr ret, Float::Ptr dsr, Float::Ptr S, Float::Ptr r, Int N) {
-	Int offset = 16*numQPUs();
-	Int init_offset = 4*16*me();
+  Int offset = 16*numQPUs();
+  Int init_offset = 4*16*me();
 
   r   = r.offset(init_offset);
   S   = S.offset(init_offset);
@@ -80,8 +80,8 @@ void back_prop_3_kernel(Float::Ptr ret, Float::Ptr dsr, Float::Ptr S, Float::Ptr
  *      m_qpu = q_dz.mul_e(qpu::vector(temp.z.qpu()).dsigmoid());
  */
 void back_prop_4_kernel(Float::Ptr ret, Float::Ptr ds_cur_bk, Float::Ptr z, Float::Ptr S, Float::Ptr h, Int N) {
-	Int offset = 16*numQPUs();
-	Int init_offset = 4*16*me();
+  Int offset = 16*numQPUs();
+  Int init_offset = 4*16*me();
 
   h   = h.offset(init_offset);
   S   = S.offset(init_offset);
@@ -108,14 +108,14 @@ void back_prop_4_kernel(Float::Ptr ret, Float::Ptr ds_cur_bk, Float::Ptr z, Floa
 
 void set_decay_kernel(Float::Ptr lhs, Float::Ptr rhs, Float decay, Int N) {
   For (Int n = 0, n < N, n++)
-		Float x1 = *rhs;
-		Float x2 = (1.0f - decay) * x1 * x1;
-  	Float x3 = decay * *lhs + x2;
-		*lhs = x3;
+    Float x1 = *rhs;
+    Float x2 = (1.0f - decay) * x1 * x1;
+    Float x3 = decay * *lhs + x2;
+    *lhs = x3;
 
-		lhs.inc();
-		rhs.inc();
-	End
+    lhs.inc();
+    rhs.inc();
+  End
 }
 
 
@@ -123,12 +123,12 @@ void divide_matrix_kernel(Float::Ptr ret, Float::Ptr lhs, Float::Ptr rhs, Int N)
   Float err = 0.00000001f;
 
   For (Int n = 0, n < N, n++)
-		*ret = *lhs / (sqrt_f(*rhs) + err);
+    *ret = *lhs / (sqrt_f(*rhs) + err);
 
-		lhs.inc();
-		rhs.inc();
-		ret.inc();
-	End
+    lhs.inc();
+    rhs.inc();
+    ret.inc();
+  End
 }
 
 
@@ -136,24 +136,24 @@ void divide_matrix_kernel(Float::Ptr ret, Float::Ptr lhs, Float::Ptr rhs, Int N)
  * @brief Do a **per-row division** of lhs values with elements of rhs.
  */
 void div_vector_kernel(Float::Ptr in_ret, Float::Ptr in_lhs, Float::Ptr in_rhs, Int rows, Int cols) {
-	Float::Ptr rhs = in_rhs;
-	rhs -= index();
-	Int col_count = cols >> 4;
+  Float::Ptr rhs = in_rhs;
+  rhs -= index();
+  Int col_count = cols >> 4;
 
-	For (Int r = 0, r < rows, r++)
-		Float val = *rhs;
-		Float::Ptr lhs = in_lhs + r*cols;  // Prob not necessary; TODO check
-		Float::Ptr ret = in_ret + r*cols;  // idem
+  For (Int r = 0, r < rows, r++)
+    Float val = *rhs;
+    Float::Ptr lhs = in_lhs + r*cols;  // Prob not necessary; TODO check
+    Float::Ptr ret = in_ret + r*cols;  // idem
 
-		For (Int c = 0, c < col_count, c++)
-			*ret = *lhs / val;
+    For (Int c = 0, c < col_count, c++)
+      *ret = *lhs / val;
 
-			lhs.inc();
-			ret.inc();
-		End
+      lhs.inc();
+      ret.inc();
+    End
 
-		rhs += 1;
-	End
+    rhs += 1;
+  End
 }
 
 
@@ -170,7 +170,7 @@ void init_local() {
   if (done_init) return;
 
   s_back_prop_1.reset(new BaseKernel(compile(back_prop_1_kernel, settings())));
-	//to_file("s_back_prop_1.txt", s_back_prop_1->dump());
+  //to_file("s_back_prop_1.txt", s_back_prop_1->dump());
 
   s_back_prop_3  .reset(new BaseKernel(compile(back_prop_3_kernel  , settings())));
   s_back_prop_4  .reset(new BaseKernel(compile(back_prop_4_kernel  , settings())));
@@ -194,7 +194,7 @@ void back_prop_1(matrix &ret, matrix const &ds_cur, matrix const &q_z, matrix co
 
   int size = ds_cur.rows()*ds_cur.columns();
 
-	s_back_prop_1->setMaxQPUs();
+  s_back_prop_1->setMaxQPUs();
   s_back_prop_1->load(&ret.arr(), &ds_cur.arr(), &q_z.arr(), &q_h.arr(),  size/16).run();
 }
 
@@ -204,7 +204,7 @@ void back_prop_3(matrix &ret, matrix const &dsr, matrix const &S, matrix const &
 
   int size = dsr.rows()*dsr.columns();
 
-	s_back_prop_3->setMaxQPUs();
+  s_back_prop_3->setMaxQPUs();
   s_back_prop_3->load(&ret.arr(), &dsr.arr(), &S.arr(), &r.arr(),  size/16).run();
 }
 
@@ -214,7 +214,7 @@ void back_prop_4(matrix &ret, matrix const &ds_cur_bk, matrix const &z, matrix c
 
   int size = ds_cur_bk.rows()*ds_cur_bk.columns();
 
-	s_back_prop_4->setMaxQPUs();
+  s_back_prop_4->setMaxQPUs();
   s_back_prop_4->load(&ret.arr(), &ds_cur_bk.arr(), &z.arr(), &S.arr(), &h.arr(), size/16).run();
 }
 
@@ -239,8 +239,8 @@ void divide_matrix(matrix &ret, matrix &lhs, matrix const &rhs) {
 
 void divide_vector(matrix &ret, matrix &lhs, matrix const &rhs) {
   init_local();
-	assert(lhs.rows() == rhs.rows());
-	assert(rhs.is_vector());
+  assert(lhs.rows() == rhs.rows());
+  assert(rhs.is_vector());
 
   s_div_vector->load(&ret.arr(), &lhs.arr(), &rhs.arr(), lhs.rows(), lhs.columns()).run();
 }
