@@ -9,7 +9,7 @@ MAYBE_UNUSED bool same(qpu::vector const &lhs, MatrixXf const &rhs, float precis
   assert(rhs.rows() == 1);
 
   for (int i = 0; i < (int) rhs.cols(); ++i) {
-    if (!qpu::check_precision(lhs[i], rhs(0, i), precision)) {
+    if (!qpu::check_precision(lhs[i], rhs(0, i), precision, -1)) {
       warn << "Fail same(qpu::vector, MatrixXf), index: " << i;
       return false;
     }      

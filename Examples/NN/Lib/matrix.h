@@ -63,7 +63,10 @@ struct matrix {
   matrix operator*(float rhs) const;
   matrix mul(matrix const &rhs) const;
   matrix mul_t(matrix const &rhs) const;
+
   matrix mul_matrix(matrix const &rhs) const;
+  matrix operator*(matrix const &rhs) const { return mul_matrix(rhs); }
+
   matrix mul_matrix_t(matrix const &rhs) const;
   matrix mul_e(matrix const &rhs) const;
   matrix tanh() const;
@@ -138,9 +141,9 @@ private:
 };
 
 
-vector operator*(matrix const &lhs, matrix const &rhs);
+//vector operator*(matrix const &lhs, matrix const &rhs);
 
-bool check_precision(float lhs, float rhs, float precision, float *max_diff = nullptr, bool do_show = true);
+bool check_precision(float lhs, float rhs, float precision, int bit_diff, float *max_diff = nullptr, bool do_show = true);
 bool same(qpu::vector const &lhs, qpu::vector const &rhs, float precision = 0.0f);
 
 } // namespace qpu
