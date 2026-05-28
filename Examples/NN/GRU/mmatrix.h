@@ -39,6 +39,7 @@ public:
   void qpu(qpu::matrix const &val) { m_qpu = val; }
 
   bool same(float precision = 0.0f) const;
+  bool same_b(int bit_diff = 0) const;
   bool same(MatrixXf const &rhs, float precision = 0.0f, bool show_max_diff = false) const;
   bool same(MMatrix const &rhs, float precision = 0.0f, bool show_max_diff = false) const;
   bool same_b(MMatrix const &rhs, int bit_diff = -1, bool show_max_diff = false) const;
@@ -53,6 +54,7 @@ public:
   void operator+=(MMatrix const &rhs);
   void operator-=(MMatrix const &rhs);
   void operator/=(float steps);
+	MMatrix operator/(float steps);
   MMatrix operator*(MMatrix const &rhs) const;
   MMatrix mul_t(MMatrix const &rhs) const;
   MMatrix operator*(float val) const;
@@ -79,6 +81,7 @@ public:
 	MMatrix forward_1(Model &m, MMatrix &S);
 	MMatrix forward_2(Model &m, MMatrix &S);
 	MMatrix forward_3(Model &m, MMatrix &S, MMatrix const &r_row);
+	MMatrix forward_4(MMatrix &S, MMatrix const &h_row);
 
   void set_decay(float decay, MMatrix const &rhs);
 

@@ -844,7 +844,7 @@ bool check_precision(float lhs, float rhs, float precision, int bit_diff, float 
 		int bit = V3DLib::bit_diff(lhs, rhs, bit_diff);
 
 		if (bit_diff > -1) {
-			warn << "check_precision bit precision";
+			//warn << "check_precision bit precision";
 			failed = (bit > -1);
 		} else {
 			//warn << "check_precision full precision";

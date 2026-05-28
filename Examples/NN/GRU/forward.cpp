@@ -4,12 +4,6 @@
 
 namespace {
 
-float s_max = 0;
-
-float softmax(float x) {
-  return (float) exp(x - s_max);
-}
-
 MatrixXf ones;
 MMatrix  x_ones;
 
@@ -46,7 +40,8 @@ void init(
  * NOTE: dependency on x_state.h
  */
 void update_S_O(int time_steps, Model &m) {
-  x_temp_hidden = (x_ones - x_z_in).mul_e(x_state.h + x_z_in).mul_e(x_state.S);
+	x_temp_hidden = x_z_in.forward_4(x_state.S, x_state.h);
+
   x_S_extra = x_temp_hidden.row(time_steps - 1);
 
   x_state.S.move_rows(1, x_temp_hidden);
@@ -107,7 +102,6 @@ void forward_propagation(
   init(state, time_steps, input_dim, hidden_dim, output_dim);
 
   MMatrix temp(1, hidden_dim);
-  MatrixXf temp_output = MatrixXf::Zero(1, output_dim);
   MatrixXf temp_hidden = MatrixXf::Zero(1, hidden_dim);
 
   ////// QPU /////
@@ -123,7 +117,7 @@ void forward_propagation(
 	MMatrix temp3 = x_X.forward_2(m, x_state.S);
   x_state.r = temp3.sigmoid();
 
-  MMatrix temp4 = (x_X * m.U_h) + (x_state.S.mul_e(x_state.r) * m.W_h);
+	MMatrix temp4 = x_X.forward_3(m, x_state.S, x_state.r);
   x_state.h = temp4.tanh();
 
   update_S_O(time_steps, m);
@@ -163,23 +157,12 @@ void forward_propagation(
     state.r.row(i, temp.sigmoid());
     assert(x_state.r.row(i).same_b(state.r.row(i), -1));
 
-    MatrixXf tempb = (X_row.Xf() * (m.U_h.Xf())) + (S_row.Xf().cwiseProduct(state.r.row(i).Xf())) * (m.W_h.Xf());
-    tempb.eval();
+		MMatrix tempb = X_row.forward_3(m, S_row, state.r.row(i));
+    state.h.row(i, tempb.tanh());
 
-		MMatrix temp_b1 = X_row.forward_3(m, S_row, state.r.row(i));
-    assert(temp_b1.same_b(tempb, -1));
+		MMatrix temp_hidden = z_row.forward_4(S_row, state.h.row(i));
 
-		auto tanh_1 = tempb.unaryExpr(&tanh_activation);
-		auto tanh_2 = temp_b1.tanh();
-    assert(tanh_2.same_b(tanh_1, -1));
-
-    state.h.row(i, tempb.unaryExpr(&tanh_activation));
-
-    temp_hidden     = (ones - z_row.Xf()).cwiseProduct(state.h.row(i).Xf() + z_row.Xf()).cwiseProduct(S_row.Xf());
-    temp_hidden.eval();
-
-
-    assert(::same(temp4.row(i).qpu(), tempb, Precision));
+    assert(temp4.row(i).same(tempb, Precision));
     assert(x_state.h.row(i).same(state.h.row(i), Precision));
     assert(x_temp_hidden.row(i).same(temp_hidden, Precision));
 
@@ -196,25 +179,18 @@ void forward_propagation(
     /// Should be able to use temp_hidden directly, instead of row(i+1)
     assert(state.S.row(i + 1).same(temp_hidden));
 
-    temp_output   = state.S.row(i + 1).Xf() * (m.V.Xf());
-    temp_output.eval();
-    //assert(x_temp_output.row(i).same(temp_output, Precision));
+		auto temp_output = state.S.row(i + 1) * m.V;
 
-    // s_max is a global used in softmax()
-    s_max          = temp_output.maxCoeff();
+    temp_output.softmax();
+    assert(x_temp_output.row(i).same(temp_output));
 
-    temp_output    = temp_output.unaryExpr(&softmax);
-    temp_output.eval();
-    //warn << "temp_output: " << dump(temp_output);
-    //warn << "x_temp_output.row(i): " << x_temp_output.row(i).dump();
-    assert(x_temp_output.row(i).same(temp_output, Precision));
-
-    float temp_sum = temp_output.sum();
+    float temp_sum = temp_output.Xf().sum();
     check_sum(i, temp_sum);
 
     state.O.row(i, temp_output/temp_sum);
     state.O.eval();
     assert(x_state.O.row(i).same(state.O.row(i), Precision));
+		warn << "Here done";
 
     if (!do_test) {
       MMatrix ret = state.E.calc_E(x_Y.row(i), state.O.row(i));
