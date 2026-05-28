@@ -91,16 +91,16 @@ void LoopState::update(MMatrix &ds_cur, Model const &m) const {
 
 
 MAYBE_UNUSED void LoopState::update_gradient_rows(Model &grad) const {
-  grad.U_h.outer_add_rows(temp_X, dreluInput_h, Precision);
+  grad.U_h.outer_add_rows(temp_X, dreluInput_h);
 
   MMatrix tmp = m_temp.S.mul_e(m_temp.r);
-  grad.W_h.outer_add_rows(tmp, dreluInput_h, Precision);
+  grad.W_h.outer_add_rows(tmp, dreluInput_h);
 
-  grad.U_r.outer_add_rows(temp_X, dreluInput_r, Precision);
-  grad.W_r.outer_add_rows(m_temp.S, dreluInput_r, Precision);
+  grad.U_r.outer_add_rows(temp_X, dreluInput_r);
+  grad.W_r.outer_add_rows(m_temp.S, dreluInput_r);
 
-  grad.U_z.outer_add_rows(temp_X, dreluInput_z, Precision);                 //OK assert(grad.U_z.same());
-  grad.W_z.outer_add_rows(m_temp.S, dreluInput_z, Precision);
+  grad.U_z.outer_add_rows(temp_X, dreluInput_z);
+  grad.W_z.outer_add_rows(m_temp.S, dreluInput_z);
 }
 
 } // anon namespace

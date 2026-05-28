@@ -157,6 +157,25 @@ void div_vector_kernel(Float::Ptr in_ret, Float::Ptr in_lhs, Float::Ptr in_rhs, 
 }
 
 
+/**
+ *  ret.m_qpu = (q_ones.qpu() - qpu()).mul_e(h_row.qpu() + qpu()).mul_e(S.qpu());
+ */
+void forward_4_kernel(Float::Ptr ret, Float::Ptr x, Float::Ptr h, Float::Ptr S, Int N) {
+	Float one = 1.0f;
+
+  For (Int n = 0, n < N, n++)
+		Float x_val = *x;
+		Float val = (one - x_val) * (*h - x_val) * *S;
+		*ret = val;
+
+		S.inc();
+		h.inc();
+		x.inc();
+		ret.inc();
+	End
+}
+
+
 bool done_init = false;
 std::unique_ptr<BaseKernel> s_back_prop_1;
 std::unique_ptr<BaseKernel> s_back_prop_3;
@@ -164,6 +183,7 @@ std::unique_ptr<BaseKernel> s_back_prop_4;
 std::unique_ptr<BaseKernel> s_set_decay;
 std::unique_ptr<BaseKernel> s_divide_matrix;
 std::unique_ptr<BaseKernel> s_div_vector;
+std::unique_ptr<BaseKernel> s_forward_4;
 
 
 void init_local() {
@@ -177,6 +197,7 @@ void init_local() {
   s_set_decay    .reset(new BaseKernel(compile(set_decay_kernel    , settings())));
   s_divide_matrix.reset(new BaseKernel(compile(divide_matrix_kernel, settings())));
   s_div_vector   .reset(new BaseKernel(compile(div_vector_kernel   , settings())));
+  s_forward_4    .reset(new BaseKernel(compile(forward_4_kernel    , settings())));
 
   done_init = true;
 }  
@@ -245,5 +266,29 @@ void divide_vector(matrix &ret, matrix &lhs, matrix const &rhs) {
   s_div_vector->load(&ret.arr(), &lhs.arr(), &rhs.arr(), lhs.rows(), lhs.columns()).run();
 }
 
+
+void forward_4(matrix &ret, matrix &X, matrix &h, matrix &S) {
+  init_local();
+	assert(X.size() == ret.size());
+	assert(X.size() == h.size());
+	assert(X.size() == S.size());
+
+  s_forward_4->load(&ret.arr(), &X.arr(), &h.arr(), &S.arr(), X.size()/16).run();
+}
+
+
+/**
+ * @brief Explicitly initialize the GRU kernels
+ *
+ * `init_local()` takes about 1ms on Pi5 (vc7), which kills the performance
+ * of a kernel when called implicitly - typically, runtime for a kernel is 0.05 ms.
+ * This is of course, a single call overall, but it screws up the profile timinig.
+ *
+ * The overhead should be even worse on the other Pi's.  
+ * Better to do the init explicitly.
+ */
+void init() {
+	init_local();
+}
 
 } // namespace gru_kernel
