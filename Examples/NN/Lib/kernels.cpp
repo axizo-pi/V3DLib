@@ -211,13 +211,19 @@ void mult_matrix(Float::Ptr in_ret, Float::Ptr lhs, Float::Ptr rhs, Int lhs_rows
   Float::Ptr rhs_base = rhs;
   rhs_base -= index();
   Int rhs_offset = index()*rhs_cols;
+	rhs_base += rhs_offset;
+
   Int block_size = inner >> 4;
+  Int rhs_inc    = 16*rhs_cols;
+  Int ret_cols   = ((rhs_cols + 15) & ~0xf);   // Output width must be a multiple of 16
 
   Float ret_acc = 0.0f;
   Float::Ptr ret;
 
+	// Very often lhs_rows == 1; doing multi-qpu on this variable
+	// is useless; TODO: fix, do cols/inner instead (think hard).
   For (Int row = me(), row < lhs_rows, row += numQPUs())
-    ret = in_ret + row*((rhs_cols + 15) & ~0xf);  // Output width must be a multiple of 16
+    ret = in_ret + row*ret_cols;
 
     For (Int col = 0, col < rhs_cols, col++)
       If (col > 0 && (col & 0xf) == 0)
@@ -227,14 +233,14 @@ void mult_matrix(Float::Ptr in_ret, Float::Ptr lhs, Float::Ptr rhs, Int lhs_rows
       End
 
       Float::Ptr lhs_row = lhs + row*inner;
-      Float::Ptr rhs_col = rhs_base + col + rhs_offset;
+      Float::Ptr rhs_col = rhs_base + col;
       Float acc = 0.0f;
 
       For (Int block = 0, block < block_size, block++)
         acc += *lhs_row * *rhs_col;
 
         lhs_row.inc();
-        rhs_col += 16*rhs_cols;
+        rhs_col += rhs_inc;
       End
 
       rotate_sum(acc, acc);

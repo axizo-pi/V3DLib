@@ -11,6 +11,8 @@ void back_prop_4(qpu::matrix &ret, qpu::matrix const &ds_cur_bk, qpu::matrix con
 void set_decay(qpu::matrix &lhs, qpu::matrix const &rhs, float decay);
 void divide_matrix(qpu::matrix &ret, qpu::matrix &lhs, qpu::matrix const &rhs);
 void divide_vector(qpu::matrix &ret, qpu::matrix &lhs, qpu::matrix const &rhs);
+void forward_4(qpu::matrix &ret, qpu::matrix &X, qpu::matrix &h, qpu::matrix &S);
+void init();
 
 } // namespace gru_kernel
 

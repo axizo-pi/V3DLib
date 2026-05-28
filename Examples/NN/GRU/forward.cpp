@@ -1,5 +1,6 @@
 #include "forward.h"
 #include "global.h"
+#include "kernel.h"           // gru_kernel::init()
 #include "Support/Helpers.h"  // bit_diff()
 
 
@@ -34,49 +35,39 @@ void forward_propagation(
   int output_dim,
   bool do_test
 ) {
-	MatrixXf ones = MatrixXf::Ones(1, hidden_dim);
-
+	gru_kernel::init();
   timers.start("forward_propagation");
 
   MMatrix temp(1, hidden_dim);
-  MatrixXf temp_hidden = MatrixXf::Zero(1, hidden_dim);
+	MMatrix temp_hidden;
+  MMatrix X_row;
+  MMatrix Y_row;
+  MMatrix Z_row;
 
   for(int i = 0; i < time_steps; i++) {
-    warn << "Forward i: " << i;
+    //warn << "Forward i: " << i;
 
+		// Timing init inconsequential
     auto S_row = state.S.row(i);
-    MMatrix X_row;
     X_row.set(X.row(i));
-    MMatrix Y_row;
     Y_row.set(Y.row(i));
-    auto z_row = state.z.row(i);
+    Z_row = state.z.row(i);
 
 		temp = X_row.forward_1(m, S_row);
-
     state.z.row(i, temp.sigmoid());
 
 		temp = X_row.forward_2(m, S_row);
-
     state.r.row(i, temp.sigmoid());
 
 		MMatrix tempb = X_row.forward_3(m, S_row, state.r.row(i));
     state.h.row(i, tempb.tanh());
 
-		MMatrix temp_hidden = z_row.forward_4(S_row, state.h.row(i));
+		temp_hidden = Z_row.forward_4(S_row, state.h.row(i));
+    state.S.row(i + 1, temp_hidden);   // Assumption: value at i == 0 should be retained
 
-    // Assumption: value at i == 0 should be retained
-    state.S.row(i + 1, temp_hidden);
-
-    /// Should be able to use temp_hidden directly, instead of row(i+1)
-    assert(state.S.row(i + 1).same(temp_hidden));
-
-		auto temp_output = state.S.row(i + 1) * m.V;
-    temp_output.softmax();
-
-    float temp_sum = temp_output.Xf().sum();
-
-    state.O.row(i, temp_output/temp_sum);
-    state.O.eval();
+		auto temp_output = temp_hidden * m.V;
+    auto temp2 = temp_output.forward_5();
+    state.O.row(i, temp2);
 
     if (!do_test) {
       MMatrix ret = state.E.calc_E(Y_row, state.O.row(i));

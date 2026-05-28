@@ -64,10 +64,11 @@ public:
   MMatrix sigmoid() const;
   MMatrix outer(MMatrix const &rhs) const;
   void outer_add(MMatrix const &lhs, MMatrix const &rhs);
-  void outer_add_rows(MMatrix const &lhs, MMatrix const &rhs, float precision);
+  void outer_add_rows(MMatrix const &lhs, MMatrix const &rhs);
   void outer_rows(MMatrix const &lhs, MMatrix const &rhs);
   MMatrix max_row() const;
   MMatrix sum_row() const;
+	float sum() const;
   void softmax();
   MMatrix ln() const;
 
@@ -82,6 +83,7 @@ public:
 	MMatrix forward_2(Model &m, MMatrix &S);
 	MMatrix forward_3(Model &m, MMatrix &S, MMatrix const &r_row);
 	MMatrix forward_4(MMatrix &S, MMatrix const &h_row);
+	MMatrix forward_5() const;
 
   void set_decay(float decay, MMatrix const &rhs);
 

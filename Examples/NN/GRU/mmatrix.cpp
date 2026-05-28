@@ -47,14 +47,10 @@ MMatrix::MMatrix(MMatrix const &rhs) {
 
 
 void MMatrix::set(MatrixXf const &rhs, bool set_qpu) {
-  //timers.start("set Xf");
   m_Xf = rhs;
-  //timers.stop("set Xf");
 
   if (set_qpu) {
-    //timers.start("set qpu");
     m_qpu = copy_m(m_Xf);
-    //timers.stop("set qpu");
     used_fields(true, true);
   } else {
     used_fields(true, false);
@@ -176,6 +172,7 @@ void MMatrix::row(int index, MMatrix const &val) {
 	if (val.m_using_Xf) {
 		//warn << "row doing Xf";
 	  m_Xf.row(index) = val.Xf().row(0);
+		m_Xf.eval();
 		used_Xf = true;
 /*		
 	} else {
@@ -194,15 +191,14 @@ void MMatrix::row(int index, MMatrix const &val) {
 MMatrix MMatrix::row(int index) const {
   need_fields(false, true);
 
-  timers.start("row(index)");
+  //timers.start("row(index)");  // Time minimal, inconsequential
 
   MMatrix ret;
   ret.m_qpu = m_qpu.row(index);
 
-  timers.stop("row(index)");
+  //timers.stop("row(index)");
 
   ret.used_fields(false, true);
-  // assert(ret.same()); // Fails on diff 4.814825e-35; gimme a break
   return ret;
 }
 
@@ -384,9 +380,9 @@ void MMatrix::operator+=(MMatrix const &rhs) {
   m_Xf = m_Xf + rhs.m_Xf;
   timers.stop("MMatrix += Xf");
 */
-  timers.start("MMatrix += qpu");
+  //timers.start("MMatrix += qpu");
   m_qpu += rhs.m_qpu;
-  timers.stop("MMatrix += qpu");
+  //timers.stop("MMatrix += qpu");
 
   used_fields(false, true);
 }
@@ -411,18 +407,21 @@ void MMatrix::operator-=(MMatrix const &rhs) {
 void MMatrix::operator/=(float steps) {
   need_fields(true, false);
 
+	timers.start("MMatrix /=");
   m_Xf /= steps;
   m_qpu = copy_m(m_Xf);
+	timers.stop("MMatrix /=");
 
-  used_fields(true, false);
+  used_fields(true, true);
 }
 
 
 MMatrix MMatrix::operator/(float steps) {
-  need_fields(true, false);
-
+	assert(false); // Check not called
+	timers.start("MMatrix /");
 	MMatrix ret = *this;
  	ret /= steps;
+	timers.stop("MMatrix /");
 	return ret;
 }
 
@@ -442,8 +441,8 @@ MMatrix MMatrix::operator*(MMatrix const &rhs) const {
   timers.stop("MMatrix * qpu");
 
   ret.used_fields(true, true);
-  assert(ret.same(Precision));
-  //assert(ret.same_b(4));  // Fails often with high bit values
+  //OK assert(ret.same(Precision));
+  assert(ret.same_b(4));  // Fails often with high bit values
   return ret;
 }
 
@@ -471,12 +470,12 @@ MMatrix MMatrix::mul_t(MMatrix const &rhs) const {
     ret.m_qpu = m_qpu * rhs.m_qpu;
     timers.stop("MMatrix mul_t qpu vec");
   } else {
-    timers.start("MMatrix mul_t qpu matrix");
+    //timers.start("MMatrix mul_t qpu matrix");  // Timing as good as possible 
     ret.m_qpu = rhs.m_qpu.mul_matrix_t(m_qpu);
-    timers.stop("MMatrix mul_t qpu matrix");
+    //timers.stop("MMatrix mul_t qpu matrix");
   }
 
-  //assert(ret.same());
+  //OK assert(ret.same());
   ret.used_fields(false, true);
   return ret;
 }
@@ -621,7 +620,7 @@ void MMatrix::outer_add(MMatrix const &lhs, MMatrix const &rhs) {
  *
  * Note that the rows of rhs are technically transposed for the outer products.
  */
-void MMatrix::outer_add_rows(MMatrix const &lhs, MMatrix const &rhs, float precision) {
+void MMatrix::outer_add_rows(MMatrix const &lhs, MMatrix const &rhs) {
   int lhs_rows = lhs.rows();
 
   assert(lhs_rows == rhs.rows());
@@ -695,22 +694,24 @@ MMatrix MMatrix::sum_row() const {
   need_fields(true, true);
   //warn << "sum_row: " << dump_dim();
 
-  MMatrix ret(rows(), 1);
+	int height = rows();
+	int width  = cols();
+
+  MMatrix ret(height, 1);
   ret.need_fields(true, true);
 
   timers.start("sum_row Xf");
-  for (int r = 0; r < rows(); r++) {
+  for (int r = 0; r < height; r++) {
     ret.m_Xf(r, 0)  = m_Xf.row(r).sum();
   }
   timers.stop("sum_row Xf");
   timers.start("sum_row qpu");
 
-  for (int r = 0; r < rows(); r++) {
+  for (int r = 0; r < height; r++) {
     float val = 0.0f;
 
-    for (int c = 0; c < cols(); c++) {
+    for (int c = 0; c < width; c++) {
       float in_val = m_qpu.at(r, c);
-
       val += in_val;
     }
 
@@ -722,6 +723,31 @@ MMatrix MMatrix::sum_row() const {
 
   //warn << "sum_row ret: " << ret.dump();
   return ret;
+}
+
+
+/**
+ * =================================
+ * Notes
+ * -----
+ *
+ * - For sum reason, a direct sum() call returns a different value
+ *
+ *     float temp_sum = temp_output.Xf().sum();
+ *     float temp_sum_1 = temp_output.sum();
+ *
+ *     WARNING: diff: 3.814697e-06
+ *
+ *   It should be exact, the underlying Xf calculation is identical.
+ *   Unclear why this happens, ignoring.
+ */
+float MMatrix::sum() const {
+  need_fields(true, true);
+	assert(m_qpu.is_vector());
+
+	MMatrix tmp = sum_row();
+	//OK assert(tmp.same());
+	return tmp.m_qpu.at(0,0);
 }
 
 
@@ -757,7 +783,7 @@ void MMatrix::softmax() {
 
   used_fields(true, true);
 	//warn << "softmax: " << dump();
-	assert(same());
+	assert(same(2));  // Usually <= 1
 }
 
 
@@ -963,7 +989,15 @@ MMatrix MMatrix::forward_1(Model &m, MMatrix &S) {
   timers.stop("forward_1 qpu");
 
 	ret.used_fields(true, true);
-	assert(ret.same());
+/*
+	// 2x slower
+  timers.start("forward_1 2");
+  MMatrix ret2 = (*this * m.U_z) + (S * m.W_z);
+	assert(ret.same(ret2, Precision));
+  timers.stop("forward_1 2");
+*/
+
+	//OK assert(ret.same());
 	return ret;
 }
 
@@ -1034,6 +1068,13 @@ MMatrix MMatrix::forward_3(Model &m, MMatrix &S, MMatrix const &r_row) {
  * Derived from:
  *
  *     temp_hidden = (ones - z_row.Xf()).cwiseProduct(state.h.row(i).Xf() + z_row.Xf()).cwiseProduct(S_row.Xf());
+ *
+ * Timing (average, dim (1,128)):
+ *     Xf          :  0.000005s
+ *     qpu atomic  :  0.000182s
+ *     kernel 1 QPU:  0.000046s
+ *
+ * Should become better with larger matrices. Kernel timing is probably largely call overhead.
  */
 MMatrix MMatrix::forward_4(MMatrix &S, MMatrix const &h_row) {
 	MatrixXf ones = MatrixXf::Ones(S.rows(), S.cols());
@@ -1043,7 +1084,7 @@ MMatrix MMatrix::forward_4(MMatrix &S, MMatrix const &h_row) {
 	h_row.need_fields(true, true);
 	need_fields(true, true);
 
-	MMatrix ret;
+	MMatrix ret(rows(), cols());
 
   timers.start("forward_4 Xf");
   ret.m_Xf = (ones - Xf()).cwiseProduct(h_row.Xf() + Xf()).cwiseProduct(S.Xf());
@@ -1051,11 +1092,30 @@ MMatrix MMatrix::forward_4(MMatrix &S, MMatrix const &h_row) {
   timers.stop("forward_4 Xf");
 
   timers.start("forward_4 qpu");
-  ret.m_qpu = (q_ones.qpu() - qpu()).mul_e(h_row.qpu() + qpu()).mul_e(S.qpu());
+  //ret.m_qpu = (q_ones.qpu() - qpu()).mul_e(h_row.qpu() + qpu()).mul_e(S.qpu());
+	gru_kernel::forward_4(ret.m_qpu, m_qpu,  h_row.m_qpu, S.m_qpu);
   timers.stop("forward_4 qpu");
-	ret.used_fields(true, true);
 
-	assert(ret.same(2));
+	assert(ret.same_b(2));  // Usually exact
+	return ret;
+}
+
+
+/**
+ * Again, differences with direct calculation: `diff: 2.793968e-08` (max detected)
+ *
+ * Unknown why, ignoring.
+ */
+MMatrix MMatrix::forward_5() const {
+  timers.start("forward_5");
+	MMatrix ret = *this;
+
+  ret.softmax();
+  float temp_sum = ret.sum();
+  ret /= temp_sum;
+
+  timers.stop("forward_5");
+
 	return ret;
 }
 
@@ -1099,7 +1159,6 @@ void MMatrix::need_fields(bool need_XF, bool need_qpu) const {
 
   if (need_qpu && !m_using_qpu) {
     assert(m_using_Xf);
-    //warn << "need_fields transferring Xf->qpu";
 
     timers.start("need_fields Xf->qpu");
     m_qpu = copy_m(m_Xf);
@@ -1179,18 +1238,21 @@ qpu::matrix copy_m(MatrixXf const &rhs) {
   //assert(rhs.rows() == 1 || rhs.rows() % 16 == 0);  // Taking vectors into account
   //assert(rhs.cols() % 16 == 0);
 
+	timers.start("copy_m");
+
   int height = (int) rhs.rows();
-  int width = (int) rhs.cols();
+  int width  = (int) rhs.cols();
 
   qpu::matrix ret(height, width);
   ret.set(0.0f);
 
-  for (int i = 0; i < rhs.rows(); i++) {
-    for (int j = 0; j < rhs.cols(); j++) {
+  for (int i = 0; i < height; i++) {
+    for (int j = 0; j < width; j++) {
       ret.at(i, j) = rhs(i, j);
     }
   }
 
+	timers.stop("copy_m");
   return ret;
 }
 

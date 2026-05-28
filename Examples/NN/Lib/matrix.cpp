@@ -338,6 +338,8 @@ matrix matrix::mul(matrix const &rhs) const {
  * Multi-QPU does not increase performance
  */
 matrix matrix::mul_matrix(matrix const &rhs) const {
+	//warn << "mul_matrix: " << dump_dim();
+	//warn << "mul_matrix rhs: " << rhs.dump_dim();
   assert((m_columns % 16) == 0);      // Inner dimension must be multiple of 16
   assert(m_columns == rhs.m_rows);
 
@@ -345,6 +347,7 @@ matrix matrix::mul_matrix(matrix const &rhs) const {
   ret.set(0.0f);
 
   //s_mult_matrix->setMaxQPUs();
+  //s_mult_matrix->setNumQPUs(2);
   s_mult_matrix->load(&ret.arr(), &arr(), &rhs.arr(), m_rows, m_columns, rhs.m_columns).run();
 
   return ret;
@@ -352,13 +355,14 @@ matrix matrix::mul_matrix(matrix const &rhs) const {
 
 
 matrix matrix::mul_matrix_t(matrix const &rhs) const {
+  //warn << "matrix mul_matrix_t: " << dump_dim() << "rhs: " << rhs.dump_dim();
   assert((m_columns % 16) == 0);      // Inner dimension must be multiple of 16
   assert(m_columns == rhs.m_columns);
 
   matrix ret(m_rows, resize_16(rhs.m_rows));
   ret.set(0.0f);
 
-  s_mult_matrix_t->setNumQPUs(16);
+  s_mult_matrix_t->setMaxQPUs();
   s_mult_matrix_t->load(&ret.arr(), &arr(), &rhs.arr(), m_rows, m_columns, rhs.m_rows).run();
 
   return ret;
@@ -370,8 +374,7 @@ matrix matrix::mul_matrix_t(matrix const &rhs) const {
  *        where the matrix is transposed in the calculation
  */
 matrix matrix::mul_t(matrix const &rhs) const {
-  //warn << "Called matrix matrix::mul_t()";
-  //warn << "matrix: " << dump_dim() << "rhs: " << rhs.dump_dim();
+  //warn << "matrix mul_t: " << dump_dim() << "rhs: " << rhs.dump_dim();
   assert(m_columns > 0);
   assert(m_rows > 0);
 
@@ -589,7 +592,7 @@ void matrix::outer_add_rows(matrix const &lhs, matrix const &rhs) {
   timers.start("matrix::outer_add_rows");
     
   //to_file("s_op_add_rows.txt", s_op_add_rows->dump());  
-  s_op_add_rows->setNumQPUs(4);
+  s_op_add_rows->setMaxQPUs();
   s_op_add_rows->load(&arr(), &lhs.arr(), &rhs.arr(), lhs.rows(), lhs.columns(), rhs.columns()).run();
 
   timers.stop("matrix::outer_add_rows");
