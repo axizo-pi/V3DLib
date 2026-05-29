@@ -209,9 +209,9 @@ void mult_vec(Float::Ptr input, Float::Ptr mat, Float::Ptr result, Int M, Int N)
  */
 void mult_matrix(Float::Ptr in_ret, Float::Ptr lhs, Float::Ptr rhs, Int lhs_rows, Int inner, Int rhs_cols) {
   Float::Ptr rhs_base = rhs;
-  rhs_base -= index();
-  Int rhs_offset = index()*rhs_cols;
-	rhs_base += rhs_offset;
+  rhs_base           -= index();
+  Int rhs_offset      = index()*rhs_cols;
+	rhs_base           += rhs_offset;
 
   Int block_size = inner >> 4;
   Int rhs_inc    = 16*rhs_cols;
@@ -253,6 +253,52 @@ void mult_matrix(Float::Ptr in_ret, Float::Ptr lhs, Float::Ptr rhs, Int lhs_rows
     *ret = ret_acc;
     ret_acc = 0;
   End
+}
+
+
+/**
+ * @brief Column-first matrix Multiplication.
+ *
+ * The outer loop goes over the width of the rhs.
+ *
+ * This is less efficient than row-first, but can better utilize multi-QPU's.
+ */
+void mult_matrix_col(Float::Ptr ret, Float::Ptr lhs, Float::Ptr rhs, Int lhs_rows, Int inner, Int rhs_cols) {
+  Float::Ptr ret_base = ret;
+  ret_base           -= index();
+
+  Float::Ptr rhs_base = rhs;
+  rhs_base           -= index();
+  Int rhs_offset      = index()*rhs_cols;
+	rhs_base           += rhs_offset;
+
+  Int block_size = inner >> 4;
+  Int rhs_inc    = 16*rhs_cols;
+	Float::Ptr lhs_row = lhs;  comment("lhs_row");
+  Float acc = 0.0f;
+
+	For (Int col = 0, col < rhs_cols, col++)
+		Float::Ptr rhs_col = rhs_base + col;
+
+		For (Int r = 0, r < lhs_rows, r++)
+			//Float::Ptr lhs_row = lhs;  comment("lhs_row");
+			//lhs_row = (lhs + (r*inner));  comment("Init lhs row");
+      acc = 0.0f;
+
+      For (Int b = 0, b < block_size, b++)
+				Float tmp = *lhs_row;
+				tmp *= *rhs_col;
+        acc += tmp;
+
+        lhs_row.inc();
+        rhs_col += rhs_inc;
+			End
+
+			//*(ret_base + r*rhs_cols + col) = acc;
+			*ret_base = acc;
+			ret_base++;
+		End
+	End
 }
 
 

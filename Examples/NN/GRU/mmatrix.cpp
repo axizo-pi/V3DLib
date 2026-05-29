@@ -59,11 +59,16 @@ void MMatrix::set(MatrixXf const &rhs, bool set_qpu) {
 
 
 void MMatrix::set(MMatrix const &rhs) {
-  rhs.need_fields(false, true);
+  if (rhs.m_using_Xf) {
+		m_Xf = rhs.m_Xf;
+	}
 
-  m_qpu = rhs.m_qpu;
+  if (rhs.m_using_qpu) {
+  	m_qpu = rhs.m_qpu;
+	}
 
-  used_fields(false, true);
+  used_fields(rhs.m_using_Xf, rhs.m_using_qpu);
+	//warn << "set(): " << m_qpu.dump();
 }
 
 
@@ -310,7 +315,7 @@ std::string MMatrix::dump_dim() const {
 
 
 std::string MMatrix::dump() const {
-  need_fields(true, true);
+  //need_fields(true, true);
 
   std::string ret;
   ret << dump_dim() << ": \n"
@@ -427,6 +432,8 @@ MMatrix MMatrix::operator/(float steps) {
 
 
 MMatrix MMatrix::operator*(MMatrix const &rhs) const {
+	warn << "operator *";
+
   rhs.need_fields(true, true);
   need_fields(true, true);
 
@@ -441,6 +448,7 @@ MMatrix MMatrix::operator*(MMatrix const &rhs) const {
   timers.stop("MMatrix * qpu");
 
   ret.used_fields(true, true);
+	warn << "* ret: " << ret.dump();
   //OK assert(ret.same(Precision));
   assert(ret.same_b(4));  // Fails often with high bit values
   return ret;
@@ -984,20 +992,22 @@ MMatrix MMatrix::forward_1(Model &m, MMatrix &S) {
 	ret.m_Xf.eval();
   timers.stop("forward_1 Xf");
 
+
   timers.start("forward_1 qpu");
   ret.m_qpu = (qpu() * (m.U_z.qpu())) + (S.qpu() * (m.W_z.qpu()));
   timers.stop("forward_1 qpu");
 
 	ret.used_fields(true, true);
+
 /*
 	// 2x slower
   timers.start("forward_1 2");
-  MMatrix ret2 = (*this * m.U_z) + (S * m.W_z);
+  MMatrix ret2 = ((*this) * m.U_z) + (S * m.W_z);
+	warn << "MMatrix ret2: " << ret2.dump();
 	assert(ret.same(ret2, Precision));
   timers.stop("forward_1 2");
 */
-
-	//OK assert(ret.same());
+	assert(ret.same());
 	return ret;
 }
 
@@ -1244,13 +1254,16 @@ qpu::matrix copy_m(MatrixXf const &rhs) {
   int width  = (int) rhs.cols();
 
   qpu::matrix ret(height, width);
-  ret.set(0.0f);
 
-  for (int i = 0; i < height; i++) {
-    for (int j = 0; j < width; j++) {
-      ret.at(i, j) = rhs(i, j);
-    }
-  }
+	if (height*width > 0) {
+  	ret.set(0.0f);
+
+	  for (int i = 0; i < height; i++) {
+	    for (int j = 0; j < width; j++) {
+	      ret.at(i, j) = rhs(i, j);
+	    }
+		}
+	}
 
 	timers.stop("copy_m");
   return ret;
@@ -1259,7 +1272,14 @@ qpu::matrix copy_m(MatrixXf const &rhs) {
 
 std::string dump(MatrixXf const &m) {
   std::string buf;
-  buf << dump_dim(m) << " [\n";
+  buf << dump_dim(m) << " ";
+
+	if (m.rows() * m.cols() == 0) {
+		buf = "[]";
+		return buf;
+	}
+ 
+	buf	<< "[\n";
 
   for (int i = 0; i < m.rows(); ++i) {
     buf << "  " << i << ": [";

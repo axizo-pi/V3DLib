@@ -44,6 +44,7 @@ std::unique_ptr<BaseKernel> s_mul_element;
 std::unique_ptr<BaseKernel> s_mult_vec_transposed;
 std::unique_ptr<BaseKernel> s_mult_vec;
 std::unique_ptr<BaseKernel> s_mult_matrix;
+std::unique_ptr<BaseKernel> s_mult_matrix_col;
 std::unique_ptr<BaseKernel> s_mult_matrix_t;
 std::unique_ptr<BaseKernel> s_matrix_add;
 std::unique_ptr<BaseKernel> s_matrix_sub;
@@ -70,6 +71,10 @@ void init_local() {
   s_mult_vec_transposed.reset(new BaseKernel(compile(kernel::mult_vec_transposed, settings())));
   s_mult_vec           .reset(new BaseKernel(compile(kernel::mult_vec       , settings())));
   s_mult_matrix        .reset(new BaseKernel(compile(kernel::mult_matrix    , settings())));
+
+  s_mult_matrix_col    .reset(new BaseKernel(compile(kernel::mult_matrix_col, settings())));
+	to_file("s_mult_matrix_col.txt", s_mult_matrix_col->dump());
+
   s_mult_matrix_t      .reset(new BaseKernel(compile(kernel::mult_matrix_t  , settings())));
   s_matrix_add         .reset(new BaseKernel(compile(kernel::matrix_add     , settings())));
   s_matrix_sub         .reset(new BaseKernel(compile(kernel::matrix_sub     , settings())));
@@ -343,14 +348,22 @@ matrix matrix::mul_matrix(matrix const &rhs) const {
   assert((m_columns % 16) == 0);      // Inner dimension must be multiple of 16
   assert(m_columns == rhs.m_rows);
 
-  matrix ret(m_rows, resize_16(rhs.m_columns));
+  matrix ret;
+  ret.resize(m_rows, resize_16(rhs.m_columns));
   ret.set(0.0f);
-
   //s_mult_matrix->setMaxQPUs();
   //s_mult_matrix->setNumQPUs(2);
   s_mult_matrix->load(&ret.arr(), &arr(), &rhs.arr(), m_rows, m_columns, rhs.m_columns).run();
 
-  return ret;
+  matrix ret2;
+  ret2.resize(m_rows, rhs.m_columns);
+  ret2.set(0.0f);
+  s_mult_matrix_col->load(&ret2.arr(), &arr(), &rhs.arr(), m_rows, m_columns, rhs.m_columns).run();
+
+	warn << "ret: " << ret.dump();
+	warn << "ret2: " << ret2.dump();
+
+  return ret2;
 }
 
 
@@ -601,7 +614,7 @@ void matrix::outer_add_rows(matrix const &lhs, matrix const &rhs) {
 
 std::string matrix::dump_dim() const {
   std::string ret;
-  ret << "(" << m_rows << ", " << m_columns << ") ";
+  ret << "(" << m_rows << ", " << m_columns << ")";
   return ret;
 }
 
@@ -610,7 +623,12 @@ std::string matrix::dump(bool output_int) const {
   assert(m_arr != nullptr);
   std::string ret;
 
-  ret << dump_dim();
+  ret << dump_dim() << " ";
+
+  if (m_rows*m_columns == 0) {
+		ret << "[]";
+		return ret;
+	}
 
   if (m_rows > 1 && m_columns == 1) {
     ret << "(tr) ";  // Signal transposed
