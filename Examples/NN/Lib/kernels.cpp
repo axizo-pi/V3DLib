@@ -125,6 +125,16 @@ void mul_float(Float::Ptr ret, Float::Ptr lhs, Float val, Int N) {
 }
 
 
+void mul_float_self(Float::Ptr lhs, Float val, Int N) {
+  For (Int h = 0, h < N, h++)
+    Float x = (*lhs) * val;
+    *lhs = x;
+
+    lhs.inc();
+  End
+}
+
+
 void matrix_add_self(Float::Ptr lhs, Float::Ptr rhs, Int N) {
   For (Int h = 0, h < N, h++)
     Float x = (*lhs) + (*rhs);
@@ -205,13 +215,13 @@ void mult_vec(Float::Ptr input, Float::Ptr mat, Float::Ptr result, Int M, Int N)
 
 
 /**
- * Multi-QPU does not increase performance
+ * In GRU test mostly lhs_rows == 1; doing multi-QPU over rows is useless
  */
 void mult_matrix(Float::Ptr in_ret, Float::Ptr lhs, Float::Ptr rhs, Int lhs_rows, Int inner, Int rhs_cols) {
   Float::Ptr rhs_base = rhs;
-  rhs_base -= index();
-  Int rhs_offset = index()*rhs_cols;
-	rhs_base += rhs_offset;
+  rhs_base           -= index();
+  Int rhs_offset      = index()*rhs_cols;
+	rhs_base           += rhs_offset;
 
   Int block_size = inner >> 4;
   Int rhs_inc    = 16*rhs_cols;
@@ -220,8 +230,6 @@ void mult_matrix(Float::Ptr in_ret, Float::Ptr lhs, Float::Ptr rhs, Int lhs_rows
   Float ret_acc = 0.0f;
   Float::Ptr ret;
 
-	// Very often lhs_rows == 1; doing multi-qpu on this variable
-	// is useless; TODO: fix, do cols/inner instead (think hard).
   For (Int row = me(), row < lhs_rows, row += numQPUs())
     ret = in_ret + row*ret_cols;
 
@@ -253,6 +261,46 @@ void mult_matrix(Float::Ptr in_ret, Float::Ptr lhs, Float::Ptr rhs, Int lhs_rows
     *ret = ret_acc;
     ret_acc = 0;
   End
+}
+
+
+/**
+ * @brief Column-first matrix multiplication.
+ *
+ * The outer loop goes over the width of the rhs.
+ *
+ * This is less efficient than row-first, but can better utilize multi-QPU's.
+ */
+void mult_matrix_col(Float::Ptr ret, Float::Ptr lhs, Float::Ptr rhs, Int lhs_rows, Int inner, Int rhs_cols) {
+  Float::Ptr ret_base = ret;
+  ret_base           -= index();
+
+  Float::Ptr rhs_base = rhs;
+  rhs_base           -= index();
+  Int rhs_offset      = index()*rhs_cols;
+	rhs_base           += rhs_offset;
+
+  Int block_size = inner >> 4;
+  Int rhs_inc    = 16*rhs_cols;
+
+  For (Int col = me(), col < rhs_cols, col += numQPUs())
+		Float::Ptr rhs_col = rhs_base + col;
+
+		For (Int row = 0, row < lhs_rows, row++)
+			Float::Ptr lhs_row = (lhs + (row*inner));  comment("Init lhs row");
+      Float acc = 0.0f;
+
+      For (Int block = 0, block < block_size, block++)
+				acc += *lhs_row * *rhs_col;  comment("increment acc");
+
+        lhs_row.inc();
+        rhs_col += rhs_inc;
+			End
+
+      rotate_sum(acc, acc);
+			*(ret_base + row*rhs_cols + col) = acc;
+		End
+	End
 }
 
 
