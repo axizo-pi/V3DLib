@@ -410,19 +410,30 @@ void MMatrix::operator-=(MMatrix const &rhs) {
 
 
 void MMatrix::operator/=(float steps) {
-  need_fields(true, false);
-
-	timers.start("MMatrix /=");
-  m_Xf /= steps;
-  m_qpu = copy_m(m_Xf);
-	timers.stop("MMatrix /=");
-
-  used_fields(true, true);
+	assert(steps > 0);
+	*this *= (1.0f/steps);
 }
 
 
-MMatrix MMatrix::operator/(float steps) {
+void MMatrix::operator*=(float val) {
+  need_fields(true, true);
+
+	timers.start("MMatrix float *= Xf");
+  m_Xf *= val;
+	timers.stop("MMatrix float *= Xf");
+
+	timers.start("MMatrix float *= qpu");
+	m_qpu = m_qpu * val;
+	timers.stop("MMatrix float *= qpu");
+
+  used_fields(true, true);
+	assert(same_b());
+}
+
+
+MMatrix MMatrix::operator/(float steps) const {
 	assert(false); // Check not called
+
 	timers.start("MMatrix /");
 	MMatrix ret = *this;
  	ret /= steps;
@@ -432,8 +443,6 @@ MMatrix MMatrix::operator/(float steps) {
 
 
 MMatrix MMatrix::operator*(MMatrix const &rhs) const {
-	warn << "operator *";
-
   rhs.need_fields(true, true);
   need_fields(true, true);
 
@@ -443,14 +452,13 @@ MMatrix MMatrix::operator*(MMatrix const &rhs) const {
   ret.m_Xf = m_Xf * rhs.m_Xf;
   timers.stop("MMatrix * Xf");
 
+	// Timing approximately equal to Xf
   timers.start("MMatrix * qpu");
   ret.m_qpu = m_qpu.mul_matrix(rhs.m_qpu);
   timers.stop("MMatrix * qpu");
 
   ret.used_fields(true, true);
-	warn << "* ret: " << ret.dump();
-  //OK assert(ret.same(Precision));
-  assert(ret.same_b(4));  // Fails often with high bit values
+  assert(ret.same_b());
   return ret;
 }
 
@@ -494,13 +502,13 @@ MMatrix MMatrix::operator*(float val) const {
 
   MMatrix ret;
 
-  //timers.start("MMatrix float * Xf");
+  timers.start("MMatrix float * Xf");
   ret.m_Xf = val * m_Xf;
-  //timers.stop("MMatrix float * Xf");
+  timers.stop("MMatrix float * Xf");
 
-  //timers.start("MMatrix float * qpu");
+  timers.start("MMatrix float * qpu");
   ret.m_qpu = m_qpu * val;
-  //timers.stop("MMatrix float * qpu");
+  timers.stop("MMatrix float * qpu");
 
   ret.used_fields(true, true);
   return ret;
@@ -629,6 +637,10 @@ void MMatrix::outer_add(MMatrix const &lhs, MMatrix const &rhs) {
  * Note that the rows of rhs are technically transposed for the outer products.
  */
 void MMatrix::outer_add_rows(MMatrix const &lhs, MMatrix const &rhs) {
+  lhs.need_fields(false, true);
+  rhs.need_fields(false, true);
+  need_fields(false, true);
+
   int lhs_rows = lhs.rows();
 
   assert(lhs_rows == rhs.rows());
@@ -637,6 +649,8 @@ void MMatrix::outer_add_rows(MMatrix const &lhs, MMatrix const &rhs) {
   //timers.start("outer_add_rows");
   m_qpu.outer_add_rows(lhs.m_qpu, rhs.m_qpu);
   //timers.stop("outer_add_rows");
+
+	used_fields(false, true);
 }
 
 
@@ -980,34 +994,26 @@ void MMatrix::col_E(int index, MMatrix const &rhs) {
  *     MMatrix temp2 = (x_X * m.U_z) + (x_state.S*m.W_z);
  */
 MMatrix MMatrix::forward_1(Model &m, MMatrix &S) {
-	S.need_fields(true, true);
-	m.U_z.need_fields(true, true);
-	m.W_z.need_fields(true, true);
-	need_fields(true, true);
+	S.need_fields(false, true);
+	m.U_z.need_fields(false, true);
+	m.W_z.need_fields(false, true);
+	need_fields(false, true);
 
 	MMatrix ret;
-
+/*
   timers.start("forward_1 Xf");
   ret.m_Xf = (Xf() * (m.U_z.Xf())) + (S.Xf() * (m.W_z.Xf()));
 	ret.m_Xf.eval();
   timers.stop("forward_1 Xf");
+*/
 
-
+	// Timing approximately equal to Xf
   timers.start("forward_1 qpu");
   ret.m_qpu = (qpu() * (m.U_z.qpu())) + (S.qpu() * (m.W_z.qpu()));
   timers.stop("forward_1 qpu");
 
-	ret.used_fields(true, true);
-
-/*
-	// 2x slower
-  timers.start("forward_1 2");
-  MMatrix ret2 = ((*this) * m.U_z) + (S * m.W_z);
-	warn << "MMatrix ret2: " << ret2.dump();
-	assert(ret.same(ret2, Precision));
-  timers.stop("forward_1 2");
-*/
-	assert(ret.same());
+	ret.used_fields(false, true);
+	//OK assert(ret.same());
 	return ret;
 }
 
@@ -1020,24 +1026,26 @@ MMatrix MMatrix::forward_1(Model &m, MMatrix &S) {
  *     temp = (X_row.Xf() * (m.U_r.Xf())) + (S_row.Xf() * (m.W_r.Xf()));
  */
 MMatrix MMatrix::forward_2(Model &m, MMatrix &S) {
-	S.need_fields(true, true);
-	m.U_r.need_fields(true, true);
-	m.W_r.need_fields(true, true);
-	need_fields(true, true);
+	S.need_fields(false, true);
+	m.U_r.need_fields(false, true);
+	m.W_r.need_fields(false, true);
+	need_fields(false, true);
 
 	MMatrix ret;
-
+/*
   timers.start("forward_2 Xf");
   ret.m_Xf = (Xf() * (m.U_r.Xf())) + (S.Xf() * (m.W_r.Xf()));
 	ret.m_Xf.eval();
   timers.stop("forward_2 Xf");
+*/	
 
+	// Timing approximately equal to Xf
   timers.start("forward_2 qpu");
   ret.m_qpu = (qpu() * (m.U_r.qpu())) + (S.qpu() * (m.W_r.qpu()));
   timers.stop("forward_2 qpu");
 
-	ret.used_fields(true, true);
-	assert(ret.same());
+	ret.used_fields(false, true);
+	//OK assert(ret.same());
 	return ret;
 }
 
@@ -1050,24 +1058,25 @@ MMatrix MMatrix::forward_2(Model &m, MMatrix &S) {
  *     MatrixXf tempb = (X_row.Xf() * (m.U_h.Xf())) + (S_row.Xf().cwiseProduct(state.r.row(i).Xf())) * (m.W_h.Xf());
  */
 MMatrix MMatrix::forward_3(Model &m, MMatrix &S, MMatrix const &r_row) {
-	S.need_fields(true, true);
-	m.U_r.need_fields(true, true);
-	m.W_r.need_fields(true, true);
-	need_fields(true, true);
+	S.need_fields(false, true);
+	m.U_r.need_fields(false, true);
+	m.W_r.need_fields(false, true);
+	need_fields(false, true);
 
 	MMatrix ret;
-
+/*
   timers.start("forward_3 Xf");
  	ret.m_Xf = (Xf() * (m.U_h.Xf())) + (S.Xf().cwiseProduct(r_row.Xf())) * (m.W_h.Xf());
 	ret.m_Xf.eval();
   timers.stop("forward_3 Xf");
-
+*/
+	// Timing slightly larger than Xf ~20%
   timers.start("forward_3 qpu");
  	ret.m_qpu = (qpu() * (m.U_h.qpu())) + (S.qpu().mul_e(r_row.qpu())) * (m.W_h.qpu());
   timers.stop("forward_3 qpu");
 
-	ret.used_fields(true, true);
-	assert(ret.same_b(2));
+	ret.used_fields(false, true);
+	//OK assert(ret.same_b(2));
 	return ret;
 }
 

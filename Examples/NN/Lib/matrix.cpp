@@ -49,6 +49,7 @@ std::unique_ptr<BaseKernel> s_mult_matrix_t;
 std::unique_ptr<BaseKernel> s_matrix_add;
 std::unique_ptr<BaseKernel> s_matrix_sub;
 std::unique_ptr<BaseKernel> s_mul_float;
+std::unique_ptr<BaseKernel> s_mul_float_self;
 std::unique_ptr<BaseKernel> s_matrix_add_self;
 std::unique_ptr<BaseKernel> s_matrix_sub_self;
 std::unique_ptr<BaseKernel> s_sub;
@@ -79,6 +80,7 @@ void init_local() {
   s_matrix_add         .reset(new BaseKernel(compile(kernel::matrix_add     , settings())));
   s_matrix_sub         .reset(new BaseKernel(compile(kernel::matrix_sub     , settings())));
   s_mul_float          .reset(new BaseKernel(compile(kernel::mul_float      , settings())));
+  s_mul_float_self     .reset(new BaseKernel(compile(kernel::mul_float_self , settings())));
   s_matrix_add_self    .reset(new BaseKernel(compile(kernel::matrix_add_self, settings())));
   s_matrix_sub_self    .reset(new BaseKernel(compile(kernel::matrix_sub_self, settings())));
   s_sub                .reset(new BaseKernel(compile(kernel::vector_sub     , settings())));
@@ -114,10 +116,7 @@ matrix::matrix(matrix const &rhs) :
   m_rows(rhs.m_rows),
   m_columns(rhs.m_columns),
   m_size(rhs.m_size)
-{
-  //warn << "Called ctor matrix(matrix &)";
-  //// *this = rhs;
-}
+{}
 
 
 void matrix::resize(int rows, int columns) {
@@ -234,11 +233,6 @@ matrix matrix::operator-(matrix const &rhs) const {
   matrix ret(m_rows, m_columns);
 
   s_matrix_sub->load(&ret.arr(), &arr(), &rhs.arr(), size()/16).run();
-/*
-  for (int i = 0; i < (int) m_arr->size(); ++i) {
-    ret.arr()[i] = arr()[i] - rhs.arr()[i];
-  }
-*/
   return ret;
 }
 
@@ -246,11 +240,6 @@ matrix matrix::operator-(matrix const &rhs) const {
 matrix &matrix::operator-=(matrix const &rhs) {
   assert(check_dimensions(*this, rhs));
   s_matrix_sub_self->load(&arr(), &rhs.arr(), size()/16).run();
-/*
-  for (int i = 0; i < (int) m_arr->size(); ++i) {
-    arr()[i] -= rhs.arr()[i];
-  }
-*/
   return *this;
 }
 
@@ -261,11 +250,6 @@ matrix matrix::operator+(matrix const &rhs) const {
   matrix ret(m_rows, m_columns);
 
   s_matrix_add->load(&ret.arr(), &arr(), &rhs.arr(), size()/16).run();
-/*
-  for (int i = 0; i < (int) m_arr->size(); ++i) {
-    ret.arr()[i] = arr()[i] + rhs.arr()[i];
-  }
-*/
   return ret;
 }
 
@@ -280,7 +264,7 @@ matrix &matrix::operator+=(matrix const &rhs) {
     for (int i = 0; i < (int) m_arr->size(); ++i) {
       arr()[i] += rhs.arr()[i];
     }
-   }
+  }
 
   return *this;
 }
@@ -294,14 +278,19 @@ matrix matrix::operator*(float rhs) const {
   // Taking non-conformant matrices into account, not passed to kernel.
   // These happen in train GRU.
   //
-  // Also checking handles [1,1] matrices.
+  // Mainly handles [1,1] matrices.
   //
   if (size() % 16 != 0) {
+		if (size() != 1) {  // Warn me if anything else than (1,1) matrix handled
+			warn << "matrix float * not 16-matrix: " << dump_dim();
+		}
+
     for (int i = 0; i < (int) m_arr->size(); ++i) {
       ret.arr()[i] = arr()[i]*rhs;
     }
   } else {
     assert(size() % 16 == 0);
+		//warn << "matrix float * 16-matrix:" << dump_dim();
     s_mul_float->load(&ret.arr(), &arr(), rhs, size()/16).run();
   }
 
@@ -349,21 +338,28 @@ matrix matrix::mul_matrix(matrix const &rhs) const {
   assert(m_columns == rhs.m_rows);
 
   matrix ret;
-  ret.resize(m_rows, resize_16(rhs.m_columns));
-  ret.set(0.0f);
-  //s_mult_matrix->setMaxQPUs();
-  //s_mult_matrix->setNumQPUs(2);
-  s_mult_matrix->load(&ret.arr(), &arr(), &rhs.arr(), m_rows, m_columns, rhs.m_columns).run();
 
-  matrix ret2;
-  ret2.resize(m_rows, rhs.m_columns);
-  ret2.set(0.0f);
-  s_mult_matrix_col->load(&ret2.arr(), &arr(), &rhs.arr(), m_rows, m_columns, rhs.m_columns).run();
+	if (m_rows >= 16) {
+	  timers.start("matrix * row");
+	  ret.resize(m_rows, resize_16(rhs.m_columns));
+	  ret.set(0.0f);
 
-	warn << "ret: " << ret.dump();
-	warn << "ret2: " << ret2.dump();
+	  s_mult_matrix->setMaxQPUs();
+	  s_mult_matrix->load(&ret.arr(), &arr(), &rhs.arr(), m_rows, m_columns, rhs.m_columns).run();
+	  timers.stop("matrix * row");
+	} else {
+	  timers.start("matrix * col");
+	  ret.resize(m_rows, rhs.m_columns);
+	  ret.set(0.0f);
 
-  return ret2;
+	  s_mult_matrix_col->setMaxQPUs();
+	  //s_mult_matrix_col->setNumQPUs(8);
+	  s_mult_matrix_col->load(&ret.arr(), &arr(), &rhs.arr(), m_rows, m_columns, rhs.m_columns).run();
+	  timers.stop("matrix * col");
+	}
+
+	//warn << "ret: " << ret.dump();
+  return ret;
 }
 
 
@@ -595,9 +591,9 @@ void matrix::outer_add(matrix const &lhs, matrix const &rhs) {
 
 
 void matrix::outer_add_rows(matrix const &lhs, matrix const &rhs) {
+  //warn << "this: " << dump_dim();
   //warn << "lhs: " << lhs.dump_dim();
   //warn << "rhs: " << rhs.dump_dim();
-  //warn << "row: " << row;
 
   outer_check(lhs, rhs);  // TODO necessary? Does it work as expected?
   assert(rows() == lhs.columns() && columns() == rhs.columns());

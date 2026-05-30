@@ -125,6 +125,16 @@ void mul_float(Float::Ptr ret, Float::Ptr lhs, Float val, Int N) {
 }
 
 
+void mul_float_self(Float::Ptr lhs, Float val, Int N) {
+  For (Int h = 0, h < N, h++)
+    Float x = (*lhs) * val;
+    *lhs = x;
+
+    lhs.inc();
+  End
+}
+
+
 void matrix_add_self(Float::Ptr lhs, Float::Ptr rhs, Int N) {
   For (Int h = 0, h < N, h++)
     Float x = (*lhs) + (*rhs);
@@ -205,7 +215,7 @@ void mult_vec(Float::Ptr input, Float::Ptr mat, Float::Ptr result, Int M, Int N)
 
 
 /**
- * Multi-QPU does not increase performance
+ * In GRU test mostly lhs_rows == 1; doing multi-QPU over rows is useless
  */
 void mult_matrix(Float::Ptr in_ret, Float::Ptr lhs, Float::Ptr rhs, Int lhs_rows, Int inner, Int rhs_cols) {
   Float::Ptr rhs_base = rhs;
@@ -220,8 +230,6 @@ void mult_matrix(Float::Ptr in_ret, Float::Ptr lhs, Float::Ptr rhs, Int lhs_rows
   Float ret_acc = 0.0f;
   Float::Ptr ret;
 
-	// Very often lhs_rows == 1; doing multi-qpu on this variable
-	// is useless; TODO: fix, do cols/inner instead (think hard).
   For (Int row = me(), row < lhs_rows, row += numQPUs())
     ret = in_ret + row*ret_cols;
 
@@ -257,7 +265,7 @@ void mult_matrix(Float::Ptr in_ret, Float::Ptr lhs, Float::Ptr rhs, Int lhs_rows
 
 
 /**
- * @brief Column-first matrix Multiplication.
+ * @brief Column-first matrix multiplication.
  *
  * The outer loop goes over the width of the rhs.
  *
@@ -274,29 +282,23 @@ void mult_matrix_col(Float::Ptr ret, Float::Ptr lhs, Float::Ptr rhs, Int lhs_row
 
   Int block_size = inner >> 4;
   Int rhs_inc    = 16*rhs_cols;
-	Float::Ptr lhs_row = lhs;  comment("lhs_row");
-  Float acc = 0.0f;
 
-	For (Int col = 0, col < rhs_cols, col++)
+  For (Int col = me(), col < rhs_cols, col += numQPUs())
 		Float::Ptr rhs_col = rhs_base + col;
 
-		For (Int r = 0, r < lhs_rows, r++)
-			//Float::Ptr lhs_row = lhs;  comment("lhs_row");
-			//lhs_row = (lhs + (r*inner));  comment("Init lhs row");
-      acc = 0.0f;
+		For (Int row = 0, row < lhs_rows, row++)
+			Float::Ptr lhs_row = (lhs + (row*inner));  comment("Init lhs row");
+      Float acc = 0.0f;
 
-      For (Int b = 0, b < block_size, b++)
-				Float tmp = *lhs_row;
-				tmp *= *rhs_col;
-        acc += tmp;
+      For (Int block = 0, block < block_size, block++)
+				acc += *lhs_row * *rhs_col;  comment("increment acc");
 
         lhs_row.inc();
         rhs_col += rhs_inc;
 			End
 
-			//*(ret_base + r*rhs_cols + col) = acc;
-			*ret_base = acc;
-			ret_base++;
+      rotate_sum(acc, acc);
+			*(ret_base + row*rhs_cols + col) = acc;
 		End
 	End
 }

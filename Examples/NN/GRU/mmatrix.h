@@ -53,11 +53,14 @@ public:
   MMatrix operator-(MMatrix const &rhs) const;
   void operator+=(MMatrix const &rhs);
   void operator-=(MMatrix const &rhs);
-  void operator/=(float steps);
-	MMatrix operator/(float steps);
+
+  MMatrix operator* (float val) const;
+  void    operator*=(float val);
+	MMatrix operator/ (float steps) const;
+  void    operator/=(float steps);
+
   MMatrix operator*(MMatrix const &rhs) const;
   MMatrix mul_t(MMatrix const &rhs) const;
-  MMatrix operator*(float val) const;
   MMatrix mul_e(MMatrix const &rhs) const;
   MMatrix div_e(MMatrix const &rhs) const;
   MMatrix tanh() const;

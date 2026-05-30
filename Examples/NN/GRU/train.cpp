@@ -90,7 +90,8 @@ void LoopState::update(MMatrix &ds_cur, Model const &m) const {
 }
 
 
-MAYBE_UNUSED void LoopState::update_gradient_rows(Model &grad) const {
+void LoopState::update_gradient_rows(Model &grad) const {
+  //warn << "grad.U_h: " << grad.U_h.dump_dim();
   grad.U_h.outer_add_rows(temp_X, dreluInput_h);
 
   MMatrix tmp = m_temp.S.mul_e(m_temp.r);
