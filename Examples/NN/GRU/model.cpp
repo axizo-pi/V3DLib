@@ -65,6 +65,7 @@ std::string Model::dump_dim() const {
 void Model::init(int input_dim, int hidden_dim, int output_dim) {
   MatrixXf tmp;
 
+	// Adding true makes copy_m() worse
   init_matrix(tmp, input_dim, hidden_dim); U_z.set(tmp);
   init_matrix(tmp, input_dim, hidden_dim); U_r.set(tmp);
   init_matrix(tmp, input_dim, hidden_dim); U_h.set(tmp);

@@ -49,8 +49,8 @@ void forward_propagation(
 
 		// Timing init inconsequential
     auto S_row = state.S.row(i);
-    X_row.set(X.row(i));
-    Y_row.set(Y.row(i));
+    X_row.set(X.row(i), true);
+    Y_row.set(Y.row(i), true);
     Z_row = state.z.row(i);
 
 		temp = X_row.forward_1(m, S_row);

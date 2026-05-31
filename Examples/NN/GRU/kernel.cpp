@@ -1,7 +1,6 @@
 #include "./kernel.h"
-#include "Source/Lang.h"
+#include "V3DLib.h"
 #include "helpers.h"
-#include "Support/Helpers.h"
 
 namespace gru_kernel {
 
@@ -158,20 +157,104 @@ void div_vector_kernel(Float::Ptr in_ret, Float::Ptr in_lhs, Float::Ptr in_rhs, 
 
 
 /**
- *  ret.m_qpu = (q_ones.qpu() - qpu()).mul_e(h_row.qpu() + qpu()).mul_e(S.qpu());
+ * Derived from:
+ *
+ *     ret.m_qpu = (q_ones.qpu() - qpu()).mul_e(h_row.qpu() + qpu()).mul_e(S.qpu());
+ *
+ * Multi-QPU does not improve performance at all.
  */
 void forward_4_kernel(Float::Ptr ret, Float::Ptr x, Float::Ptr h, Float::Ptr S, Int N) {
 	Float one = 1.0f;
 
+	//Float::Ptr ret = in_ret + me();
+	//Float::Ptr   x = in_x   + me();
+	//Float::Ptr   h = in_h   + me();
+	//Float::Ptr   S = in_S   + me();
+
+	Int offset = 16*numQPUs();
+
+  //For (Int n = me(), n < N, n += numQPUs())
   For (Int n = 0, n < N, n++)
 		Float x_val = *x;
 		Float val = (one - x_val) * (*h - x_val) * *S;
 		*ret = val;
 
-		S.inc();
-		h.inc();
-		x.inc();
 		ret.inc();
+		x.inc();
+		h.inc();
+		S.inc();
+		//ret += offset;
+		//x   += offset;
+		//h   += offset;
+		//S   += offset;
+	End
+}
+
+
+/**
+ * Combined kernel derived from:
+ *
+ *     ret.m_qpu = (qpu() * (m.U_z.qpu())) + (S.qpu() * (m.W_z.qpu()));
+ *
+ * This is used several times in GRU test.
+ *
+ * Derived from `mult_matrix_col()`.
+ */
+void mult_matrix_col_add_kernel(
+	Float::Ptr ret,
+	Float::Ptr lhs1, Float::Ptr rhs1,
+	Float::Ptr lhs2, Float::Ptr rhs2,
+ 	Int lhs_rows,
+	Int inner1, Int inner2,
+ 	Int rhs_cols
+) {
+  Float::Ptr ret_base = ret;
+  ret_base           -= index();
+
+  Int rhs_offset      = index()*rhs_cols;
+  Int rhs_inc         = 16*rhs_cols;
+
+  Float::Ptr rhs1_base = rhs1;
+  rhs1_base           -= index();
+	rhs1_base           += rhs_offset;
+
+  Float::Ptr rhs2_base = rhs2;
+  rhs2_base           -= index();
+	rhs2_base           += rhs_offset;
+
+  Int block_size1 = inner1 >> 4;
+  Int block_size2 = inner2 >> 4;
+
+  For (Int col = me(), col < rhs_cols, col += numQPUs())
+		Float::Ptr rhs1_col = rhs1_base + col;
+		Float::Ptr rhs2_col = rhs2_base + col;
+
+		For (Int row = 0, row < lhs_rows, row++)
+			Float::Ptr lhs1_row = (lhs1 + (row*inner1));  comment("Init lhs row");
+			Float::Ptr lhs2_row = (lhs2 + (row*inner2));
+
+      Float acc1 = 0.0f;
+      Float acc2 = 0.0f;
+
+      For (Int block = 0, block < block_size1, block++)
+				acc1 += *lhs1_row * *rhs1_col;  comment("increment acc1");
+
+        lhs1_row.inc();
+        rhs1_col += rhs_inc;
+			End
+
+      For (Int block = 0, block < block_size2, block++)
+				acc1 += *lhs2_row * *rhs2_col;  comment("increment acc2");
+
+        lhs2_row.inc();
+        rhs2_col += rhs_inc;
+			End
+
+			acc1 += acc2;
+      rotate_sum(acc1, acc1);
+
+			*(ret_base + row*rhs_cols + col) = acc1;
+		End
 	End
 }
 
@@ -184,6 +267,7 @@ std::unique_ptr<BaseKernel> s_set_decay;
 std::unique_ptr<BaseKernel> s_divide_matrix;
 std::unique_ptr<BaseKernel> s_div_vector;
 std::unique_ptr<BaseKernel> s_forward_4;
+std::unique_ptr<BaseKernel> s_mult_matrix_col_add;
 
 
 void init_local() {
@@ -198,6 +282,8 @@ void init_local() {
   s_divide_matrix.reset(new BaseKernel(compile(divide_matrix_kernel, settings())));
   s_div_vector   .reset(new BaseKernel(compile(div_vector_kernel   , settings())));
   s_forward_4    .reset(new BaseKernel(compile(forward_4_kernel    , settings())));
+
+  s_mult_matrix_col_add.reset(new BaseKernel(compile(mult_matrix_col_add_kernel, settings())));
 
   done_init = true;
 }  
@@ -276,6 +362,21 @@ void forward_4(matrix &ret, matrix &X, matrix &h, matrix &S) {
   s_forward_4->load(&ret.arr(), &X.arr(), &h.arr(), &S.arr(), X.size()/16).run();
 }
 
+
+void mult_matrix_col_add(matrix ret, matrix lhs1, matrix rhs1, matrix lhs2, matrix rhs2) {
+	assert(lhs1.rows() == lhs2.rows());
+	assert(rhs1.columns() == rhs2.columns());
+
+	s_mult_matrix_col_add->setMaxQPUs();  // After #QPU = 8 not much improvement
+  s_mult_matrix_col_add->load(
+		&ret.arr(),
+		&lhs1.arr(), &rhs1.arr(),
+		&lhs2.arr(), &rhs2.arr(),
+	 	lhs1.rows(),
+		lhs1.columns(), lhs2.columns(),
+	 	rhs1.columns()
+	).run();
+}
 
 /**
  * @brief Explicitly initialize the GRU kernels

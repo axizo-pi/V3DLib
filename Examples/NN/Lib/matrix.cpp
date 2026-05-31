@@ -74,7 +74,7 @@ void init_local() {
   s_mult_matrix        .reset(new BaseKernel(compile(kernel::mult_matrix    , settings())));
 
   s_mult_matrix_col    .reset(new BaseKernel(compile(kernel::mult_matrix_col, settings())));
-	to_file("s_mult_matrix_col.txt", s_mult_matrix_col->dump());
+	//to_file("s_mult_matrix_col.txt", s_mult_matrix_col->dump());
 
   s_mult_matrix_t      .reset(new BaseKernel(compile(kernel::mult_matrix_t  , settings())));
   s_matrix_add         .reset(new BaseKernel(compile(kernel::matrix_add     , settings())));
@@ -329,7 +329,9 @@ matrix matrix::mul(matrix const &rhs) const {
 
 
 /**
- * Multi-QPU does not increase performance
+ * @brief Perform row-first matrix multiplication
+ *
+ * If there are few rows, multi-QPU is not effective.
  */
 matrix matrix::mul_matrix(matrix const &rhs) const {
 	//warn << "mul_matrix: " << dump_dim();
@@ -339,6 +341,7 @@ matrix matrix::mul_matrix(matrix const &rhs) const {
 
   matrix ret;
 
+	// Select row-first if there are enough rows to do multi-QPU
 	if (m_rows >= 16) {
 	  timers.start("matrix * row");
 	  ret.resize(m_rows, resize_16(rhs.m_columns));
@@ -353,7 +356,6 @@ matrix matrix::mul_matrix(matrix const &rhs) const {
 	  ret.set(0.0f);
 
 	  s_mult_matrix_col->setMaxQPUs();
-	  //s_mult_matrix_col->setNumQPUs(8);
 	  s_mult_matrix_col->load(&ret.arr(), &arr(), &rhs.arr(), m_rows, m_columns, rhs.m_columns).run();
 	  timers.stop("matrix * col");
 	}
@@ -363,6 +365,9 @@ matrix matrix::mul_matrix(matrix const &rhs) const {
 }
 
 
+/**
+ * @brief Perform matrix multiplication, in which the matrices are assumed to be transposed.
+ */
 matrix matrix::mul_matrix_t(matrix const &rhs) const {
   //warn << "matrix mul_matrix_t: " << dump_dim() << "rhs: " << rhs.dump_dim();
   assert((m_columns % 16) == 0);      // Inner dimension must be multiple of 16

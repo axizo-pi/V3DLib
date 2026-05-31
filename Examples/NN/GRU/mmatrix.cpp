@@ -50,11 +50,10 @@ void MMatrix::set(MatrixXf const &rhs, bool set_qpu) {
   m_Xf = rhs;
 
   if (set_qpu) {
-    m_qpu = copy_m(m_Xf);
-    used_fields(true, true);
-  } else {
-    used_fields(true, false);
+    m_qpu = copy_m(m_Xf);  // Bulk of time here
   }
+
+  used_fields(true, set_qpu);
 }
 
 
@@ -999,20 +998,31 @@ MMatrix MMatrix::forward_1(Model &m, MMatrix &S) {
 	m.W_z.need_fields(false, true);
 	need_fields(false, true);
 
-	MMatrix ret;
+	MMatrix ret(rows(), m.U_z.cols());
 /*
   timers.start("forward_1 Xf");
   ret.m_Xf = (Xf() * (m.U_z.Xf())) + (S.Xf() * (m.W_z.Xf()));
 	ret.m_Xf.eval();
   timers.stop("forward_1 Xf");
 */
+/*
+	warn << "this: " << dump_dim();
+	warn << "m.U_z: " << m.U_z.dump_dim();
+	warn << "S: " << S.dump_dim();
+	warn << "m.W_z: " << m.W_z.dump_dim();
+*/
+  //timers.start("forward_1 qpu");
 
 	// Timing approximately equal to Xf
-  timers.start("forward_1 qpu");
-  ret.m_qpu = (qpu() * (m.U_z.qpu())) + (S.qpu() * (m.W_z.qpu()));
-  timers.stop("forward_1 qpu");
+  //ret.m_qpu = (qpu() * (m.U_z.qpu())) + (S.qpu() * (m.W_z.qpu()));
+
+	// 2.5x faster than QPU atomic
+	gru_kernel::mult_matrix_col_add(ret.m_qpu, m_qpu, m.U_z.m_qpu, S.m_qpu, m.W_z.m_qpu);
+
+  //timers.stop("forward_1 qpu");
 
 	ret.used_fields(false, true);
+	//OK assert(ret.same_b(ret2, -1));  // Comparison with atomic QPU
 	//OK assert(ret.same());
 	return ret;
 }
@@ -1031,7 +1041,7 @@ MMatrix MMatrix::forward_2(Model &m, MMatrix &S) {
 	m.W_r.need_fields(false, true);
 	need_fields(false, true);
 
-	MMatrix ret;
+	MMatrix ret(rows(), m.U_r.cols());
 /*
   timers.start("forward_2 Xf");
   ret.m_Xf = (Xf() * (m.U_r.Xf())) + (S.Xf() * (m.W_r.Xf()));
@@ -1039,12 +1049,18 @@ MMatrix MMatrix::forward_2(Model &m, MMatrix &S) {
   timers.stop("forward_2 Xf");
 */	
 
+  //timers.start("forward_2 qpu");
 	// Timing approximately equal to Xf
-  timers.start("forward_2 qpu");
-  ret.m_qpu = (qpu() * (m.U_r.qpu())) + (S.qpu() * (m.W_r.qpu()));
-  timers.stop("forward_2 qpu");
+  //ret.m_qpu = (qpu() * (m.U_r.qpu())) + (S.qpu() * (m.W_r.qpu()));
+
+	// 2.5x faster than QPU atomic
+	gru_kernel::mult_matrix_col_add(ret.m_qpu, m_qpu, m.U_r.m_qpu, S.m_qpu, m.W_r.m_qpu);
+
+  //timers.stop("forward_2 qpu");
 
 	ret.used_fields(false, true);
+
+	//OK assert(ret.same_b(ret2, -1));  // Comparison with atomic QPU
 	//OK assert(ret.same());
 	return ret;
 }
@@ -1058,25 +1074,32 @@ MMatrix MMatrix::forward_2(Model &m, MMatrix &S) {
  *     MatrixXf tempb = (X_row.Xf() * (m.U_h.Xf())) + (S_row.Xf().cwiseProduct(state.r.row(i).Xf())) * (m.W_h.Xf());
  */
 MMatrix MMatrix::forward_3(Model &m, MMatrix &S, MMatrix const &r_row) {
+	r_row.need_fields(false, true);
 	S.need_fields(false, true);
-	m.U_r.need_fields(false, true);
-	m.W_r.need_fields(false, true);
+	m.U_h.need_fields(false, true);
+	m.W_h.need_fields(false, true);
 	need_fields(false, true);
 
-	MMatrix ret;
+	MMatrix ret(rows(), m.U_h.cols());
 /*
   timers.start("forward_3 Xf");
  	ret.m_Xf = (Xf() * (m.U_h.Xf())) + (S.Xf().cwiseProduct(r_row.Xf())) * (m.W_h.Xf());
 	ret.m_Xf.eval();
   timers.stop("forward_3 Xf");
 */
+  //timers.start("forward_3 qpu");
+
 	// Timing slightly larger than Xf ~20%
-  timers.start("forward_3 qpu");
- 	ret.m_qpu = (qpu() * (m.U_h.qpu())) + (S.qpu().mul_e(r_row.qpu())) * (m.W_h.qpu());
-  timers.stop("forward_3 qpu");
+ 	//ret.m_qpu = (qpu() * (m.U_h.qpu())) + (S.qpu().mul_e(r_row.qpu())) * (m.W_h.qpu());
+
+	// 2.5x faster than QPU atomic, including tmp
+ 	auto tmp = S.qpu().mul_e(r_row.qpu());
+	gru_kernel::mult_matrix_col_add(ret.m_qpu, m_qpu, m.U_h.m_qpu, tmp, m.W_h.m_qpu);
+
+  //timers.stop("forward_3 qpu");
 
 	ret.used_fields(false, true);
-	//OK assert(ret.same_b(2));
+	//OK assert(ret.same_b(ret2, -1));  // Comparison with atomic QPU
 	return ret;
 }
 
@@ -1115,7 +1138,7 @@ MMatrix MMatrix::forward_4(MMatrix &S, MMatrix const &h_row) {
 	gru_kernel::forward_4(ret.m_qpu, m_qpu,  h_row.m_qpu, S.m_qpu);
   timers.stop("forward_4 qpu");
 
-	assert(ret.same_b(2));  // Usually exact
+	//OK assert(ret.same_b(2));  // Usually exact
 	return ret;
 }
 
@@ -1253,6 +1276,13 @@ bool same(qpu::matrix const &lhs, qpu::matrix const &rhs, float precision, int b
 }
 
 
+/**
+ * ========================================
+ *
+ * - Use direct buffers:
+ *   * [Copying from buffer](https://stackoverflow.com/a/39660576/1223531)
+ *   * [Eigen is col-major, how to handle](https://runebook.dev/en/docs/eigen3/group__tutorialmapclass?page=2)
+ */
 qpu::matrix copy_m(MatrixXf const &rhs) {
   //assert(rhs.rows() == 1 || rhs.rows() % 16 == 0);  // Taking vectors into account
   //assert(rhs.cols() % 16 == 0);

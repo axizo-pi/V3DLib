@@ -275,13 +275,14 @@ void mult_matrix_col(Float::Ptr ret, Float::Ptr lhs, Float::Ptr rhs, Int lhs_row
   Float::Ptr ret_base = ret;
   ret_base           -= index();
 
+  Int rhs_offset      = index()*rhs_cols;
+  Int rhs_inc         = 16*rhs_cols;
+
   Float::Ptr rhs_base = rhs;
   rhs_base           -= index();
-  Int rhs_offset      = index()*rhs_cols;
 	rhs_base           += rhs_offset;
 
   Int block_size = inner >> 4;
-  Int rhs_inc    = 16*rhs_cols;
 
   For (Int col = me(), col < rhs_cols, col += numQPUs())
 		Float::Ptr rhs_col = rhs_base + col;
