@@ -50,7 +50,10 @@ void MMatrix::set(MatrixXf const &rhs, bool set_qpu) {
   m_Xf = rhs;
 
   if (set_qpu) {
-    m_qpu = copy_m(m_Xf);  // Bulk of time here
+		timers.start("set qpu");
+    m_qpu = copy_m(m_Xf);    // Bulk of time here
+    //copy_m(m_qpu, m_Xf);   // Does not improve; if anything it is a bit worse
+		timers.stop("set qpu");
   }
 
   used_fields(true, set_qpu);
@@ -68,6 +71,52 @@ void MMatrix::set(MMatrix const &rhs) {
 
   used_fields(rhs.m_using_Xf, rhs.m_using_qpu);
 	//warn << "set(): " << m_qpu.dump();
+}
+
+
+bool MMatrix::is_zero() const {
+  assert(m_using_Xf || m_using_qpu);
+
+	bool Xf_zero = true;
+  if (m_using_Xf) {
+		timers.start("is_zero Xf");
+		for (int i = 0; i < m_Xf.rows(); i++) {
+			for (int j = 0; j < m_Xf.cols(); j++) {
+				if (m_Xf(i, j)) {
+					Xf_zero = false;
+					break;
+				}
+			}
+
+			if (Xf_zero) break;
+		}
+		timers.stop("is_zero Xf");
+	}
+
+	bool qpu_zero = true;
+  if (m_using_qpu) {
+		timers.start("is_zero qpu");
+		auto &arr = m_qpu.arr();
+
+		for (int i = 0; i < m_qpu.size(); i++) {
+			if (arr[i]) {
+				qpu_zero = false;
+				break;
+			}
+		}
+		timers.stop("is_zero qpu");
+	}
+
+  if (m_using_Xf && m_using_qpu) {
+		assert(Xf_zero == qpu_zero);
+	}
+
+  if (m_using_qpu) {
+		return qpu_zero;
+	} else {
+	  assert(m_using_Xf);
+		return Xf_zero;
+	}
 }
 
 
@@ -98,6 +147,13 @@ int MMatrix::cols() const {
   } else {
     return m_qpu.columns();
   }
+}
+
+
+bool MMatrix::empty() const {
+  if (!m_using_Xf && !m_using_qpu) return true;
+
+	return size() == 0;
 }
 
 
@@ -214,7 +270,8 @@ MatrixXf const &MMatrix::Xf() const {
 
 
 qpu::matrix const &MMatrix::qpu() const {
-  need_fields(false, true);
+  //need_fields(false, true);
+	assert(m_using_qpu);
   return m_qpu;
 }
 
@@ -291,7 +348,7 @@ bool MMatrix::same_intern(MMatrix const &rhs, float precision, int bit_diff, boo
 
 
 std::string MMatrix::dump_dim() const {
-  assert(m_using_Xf || m_using_qpu);
+  //assert(m_using_Xf || m_using_qpu);
 
   std::string ret;
 
@@ -314,8 +371,6 @@ std::string MMatrix::dump_dim() const {
 
 
 std::string MMatrix::dump() const {
-  //need_fields(true, true);
-
   std::string ret;
   ret << dump_dim() << ": \n"
       << "  m_Xf : " << ::dump(m_Xf) << "\n"
@@ -325,6 +380,8 @@ std::string MMatrix::dump() const {
 
 
 MMatrix MMatrix::operator+(MMatrix const &rhs) const {
+	assert(false); // Check not used
+
   rhs.need_fields(true, true);
   need_fields(true, true);
 
@@ -348,6 +405,8 @@ MMatrix MMatrix::operator+(MMatrix const &rhs) const {
 
 
 MMatrix MMatrix::operator-(MMatrix const &rhs) const {
+	assert(false); // Check not used
+
   rhs.need_fields(true, true);
   need_fields(true, true);
   //assert(rhs.same());
@@ -396,13 +455,13 @@ void MMatrix::operator-=(MMatrix const &rhs) {
   rhs.need_fields(true, true);
   need_fields(true, true);
 
-  //timers.start("MMatrix -= Xf");
+  timers.start("MMatrix -= Xf");
   m_Xf = m_Xf - rhs.m_Xf;
-  //timers.stop("MMatrix -= Xf");
+  timers.stop("MMatrix -= Xf");
 
-  //timers.start("MMatrix -= qpu");
+  timers.start("MMatrix -= qpu");
   m_qpu -= rhs.m_qpu;
-  //timers.stop("MMatrix -= qpu");
+  timers.stop("MMatrix -= qpu");
 
   used_fields(true, true);
 }
@@ -423,6 +482,7 @@ void MMatrix::operator*=(float val) {
 
 	timers.start("MMatrix float *= qpu");
 	m_qpu = m_qpu * val;
+	//m_qpu *= val;  // TODO
 	timers.stop("MMatrix float *= qpu");
 
   used_fields(true, true);
@@ -442,22 +502,23 @@ MMatrix MMatrix::operator/(float steps) const {
 
 
 MMatrix MMatrix::operator*(MMatrix const &rhs) const {
-  rhs.need_fields(true, true);
-  need_fields(true, true);
+  rhs.need_fields(false, true);
+  need_fields(false, true);
 
   MMatrix ret;
-
+/*
   timers.start("MMatrix * Xf");
   ret.m_Xf = m_Xf * rhs.m_Xf;
   timers.stop("MMatrix * Xf");
+*/
 
-	// Timing approximately equal to Xf
-  timers.start("MMatrix * qpu");
+	// Timing approximately equal to Xf, slightly better
+  //timers.start("MMatrix * qpu");
   ret.m_qpu = m_qpu.mul_matrix(rhs.m_qpu);
-  timers.stop("MMatrix * qpu");
+  //timers.stop("MMatrix * qpu");
 
-  ret.used_fields(true, true);
-  assert(ret.same_b());
+  ret.used_fields(false, true);
+  //OK assert(ret.same_b());
   return ret;
 }
 
@@ -1180,6 +1241,15 @@ void MMatrix::set_decay(float decay, MMatrix const &rhs) {
 
 
 void MMatrix::need_fields(bool need_XF, bool need_qpu) const {
+	static int call_count = 0;  // Recursion check
+	//bool copied = false;
+
+	call_count++;
+	if (call_count > 1) {
+		warn << "need_fields " << call_count;
+		breakpoint;
+	}
+
   if (need_XF && !m_using_Xf) {
     assert(m_using_qpu);
     //warn << "need_fields transferring qpu->Xf";
@@ -1194,20 +1264,29 @@ void MMatrix::need_fields(bool need_XF, bool need_qpu) const {
       }
     }
 
-    timers.stop("need_fields qpu->Xf");
-
     m_using_Xf = true;
+		//copied = true;
+    timers.stop("need_fields qpu->Xf");
   }
 
   if (need_qpu && !m_using_qpu) {
     assert(m_using_Xf);
 
     timers.start("need_fields Xf->qpu");
-    m_qpu = copy_m(m_Xf);
-    m_using_qpu = true;
-
+    //m_qpu = copy_m(m_Xf);
+    copy_m(m_qpu, m_Xf);
     timers.stop("need_fields Xf->qpu");
+
+    m_using_qpu = true;
+		//copied = true;
   }
+/*
+  if (copied && m_using_Xf && m_using_qpu) {
+		//warn << "need_fields both";
+		// OK assert(same());
+	}
+*/
+	call_count--;
 }
 
 
@@ -1283,27 +1362,56 @@ bool same(qpu::matrix const &lhs, qpu::matrix const &rhs, float precision, int b
  *   * [Copying from buffer](https://stackoverflow.com/a/39660576/1223531)
  *   * [Eigen is col-major, how to handle](https://runebook.dev/en/docs/eigen3/group__tutorialmapclass?page=2)
  */
+void copy_m(qpu::matrix &dst, MatrixXf const &rhs) {
+  int height = (int) rhs.rows();
+  int width  = (int) rhs.cols();
+
+  dst.resize(height, width);
+
+	if (height*width == 0) return;
+
+	//breakpoint;
+	timers.start("copy_m dst");
+
+	for (int i = 0; i < height; i++) {
+	  for (int j = 0; j < width; j++) {
+	    dst.at(i, j) = rhs(i, j);
+	  }
+	}
+
+	timers.stop("copy_m dst");
+}
+
+
 qpu::matrix copy_m(MatrixXf const &rhs) {
-  //assert(rhs.rows() == 1 || rhs.rows() % 16 == 0);  // Taking vectors into account
-  //assert(rhs.cols() % 16 == 0);
-
-	timers.start("copy_m");
-
+/*	
   int height = (int) rhs.rows();
   int width  = (int) rhs.cols();
 
   qpu::matrix ret(height, width);
-
-	if (height*width > 0) {
-  	ret.set(0.0f);
-
-	  for (int i = 0; i < height; i++) {
-	    for (int j = 0; j < width; j++) {
-	      ret.at(i, j) = rhs(i, j);
-	    }
-		}
+	if (height*width == 0) {
+		return ret;
 	}
 
+
+	//breakpoint;
+	timers.start("copy_m");
+
+  ret.set(0.0f);
+
+	for (int i = 0; i < height; i++) {
+	  for (int j = 0; j < width; j++) {
+	    ret.at(i, j) = rhs(i, j);
+	  }
+	}
+
+	timers.stop("copy_m");
+  return ret;
+*/
+
+	timers.start("copy_m");
+  qpu::matrix ret;
+	copy_m(ret, rhs);
 	timers.stop("copy_m");
   return ret;
 }

@@ -137,8 +137,8 @@ void matrix::resize(int rows, int columns) {
 
   int size      = rows*columns;
 
-  if (size > m_size) {
-    if (m_size > 0) {
+  if (size > 0 && (size > m_size || m_arr == nullptr)) {
+    if (m_size > 0 && size != m_size) {
       warn << "matrix resizing from " << m_size << " to " << size;
     }
     m_arr.reset(new Float::Array(size));
@@ -351,13 +351,13 @@ matrix matrix::mul_matrix(matrix const &rhs) const {
 	  s_mult_matrix->load(&ret.arr(), &arr(), &rhs.arr(), m_rows, m_columns, rhs.m_columns).run();
 	  timers.stop("matrix * row");
 	} else {
-	  timers.start("matrix * col");
+	  //timers.start("matrix * col");
 	  ret.resize(m_rows, rhs.m_columns);
 	  ret.set(0.0f);
 
 	  s_mult_matrix_col->setMaxQPUs();
 	  s_mult_matrix_col->load(&ret.arr(), &arr(), &rhs.arr(), m_rows, m_columns, rhs.m_columns).run();
-	  timers.stop("matrix * col");
+	  //timers.stop("matrix * col");
 	}
 
 	//warn << "ret: " << ret.dump();

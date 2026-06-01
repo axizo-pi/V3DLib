@@ -48,10 +48,12 @@ void forward_propagation(
     //warn << "Forward i: " << i;
 
 		// Timing init inconsequential
-    auto S_row = state.S.row(i);
+    auto S_row = state.S.row(i); // Only S_row[0] set
     X_row.set(X.row(i), true);
     Y_row.set(Y.row(i), true);
+
     Z_row = state.z.row(i);
+		assert(Z_row.is_zero());  // Apparently always zero
 
 		temp = X_row.forward_1(m, S_row);
     state.z.row(i, temp.sigmoid());
