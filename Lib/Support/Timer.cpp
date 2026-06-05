@@ -17,8 +17,9 @@
 #include "Timer.h"
 #include "Support/basics.h"
 #include "Support/Helpers.h"
-#include <cstddef>  // NULL
-#include <cstdio>   // printf
+#include <algorithm> // sort
+#include <cstddef>   // NULL
+#include <cstdio>    // printf
 
 using namespace Log;
 
@@ -94,6 +95,12 @@ timeval Timer::diff_time() {
 }
 
 
+long Timer::time_long(timeval const &val) const {
+  auto tmp = (val.tv_sec*1000000l + val.tv_usec);  // type long int
+	return tmp;
+}
+
+
 std::string Timer::time_to_str(timeval const &val, int count) {
 
 #define format "%2ld.%06lds"
@@ -101,7 +108,7 @@ std::string Timer::time_to_str(timeval const &val, int count) {
   assert(count > 0);
   char buf[128]; 
 
-  auto tmp = (val.tv_sec*1000000l + val.tv_usec)/count;  // type long int
+  auto tmp = time_long(val);
   auto avg_sec = tmp/1000000l;
   auto avg_usec = tmp % 1000000l;
 
@@ -204,11 +211,9 @@ void Timers::stop(std::string const &label) {
 }
 
 
-void Timers::end(bool show_extended) {
-  assert(!m_list.empty());
-
-  // Determine label width
+int Timers::max_label_width() const {
   int width = -1;
+
   for (int i = 0; i < (int) m_list.size(); ++i) {
     int tmp = (int) m_list[i].label().length();
     if (width < tmp) {
@@ -216,9 +221,86 @@ void Timers::end(bool show_extended) {
     }
   }
 
+	return width;
+}
+
+
+void Timers::end(bool show_extended) {
+  assert(!m_list.empty());
+
+	auto to_lower = [] (std::string data) -> std::string {
+		std::transform(data.begin(), data.end(), data.begin(),
+	    [](unsigned char c){ return std::tolower(c); });
+
+		return data;
+	};
+
+	auto vec_dump = [](std::vector<int> const &indexes) -> std::string {
+  	std::string buf;
+
+	  for (int i = 0; i < (int) indexes.size(); ++i) {
+			buf << indexes[i] << ", ";
+		}
+		return buf;
+	};
+
+	enum SortColumn {
+		None,
+		Label,
+		Total
+	};
+	SortColumn sort_column = Label;
+
+	bool desc = true;
+	bool ignore_case = true;
+
+	auto &list = m_list;
+	auto comp = [&list, desc, sort_column, ignore_case, &to_lower](int lhs_index, int rhs_index) -> bool {
+		if (sort_column == Label) {
+	    auto lhs = list[lhs_index].label();
+  	  auto rhs = list[rhs_index].label();
+
+			if (ignore_case) {
+				lhs = to_lower(lhs);
+				rhs = to_lower(rhs);
+			}
+
+			if (desc) {
+		    return lhs > rhs;
+			} else {
+		    return lhs < rhs;
+			}
+		} else {
+			assert(sort_column == Total);
+
+	    auto lhs = list[lhs_index].total();
+  	  auto rhs = list[rhs_index].total();
+
+			if (desc) {
+		    return lhs > rhs;
+			} else {
+		    return lhs < rhs;
+			}
+		}
+	};
+
+
+	int width = max_label_width();
+
+	std::vector<int> indexes(m_list.size());
+  for (int i = 0; i < (int) indexes.size(); ++i) {
+		indexes[i] = i;
+	}
+	warn << "indexes: " << vec_dump(indexes);
+
+	if (sort_column != None) {
+		sort(indexes.begin(), indexes.end(), comp);
+		warn << "indexes: " << vec_dump(indexes);
+	}
+
   std::string buf;
-  for (int i = 0; i < (int) m_list.size(); ++i) {
-    buf << "  " << m_list[i].dump(width, show_extended) << "\n";
+  for (int i = 0; i < (int) indexes.size(); ++i) {
+    buf << "  " << m_list[indexes[i]].dump(width, show_extended) << "\n";
   }
 
   warn << "Timers end:\n" << buf;

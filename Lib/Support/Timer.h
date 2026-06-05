@@ -19,6 +19,8 @@ public:
   void stop();
 
   std::string const &label() const { return m_label; }
+	long total() const { return time_long(tvTotal); }
+
   std::string dump(int width = -1, bool show_extended = false);
   std::string end(bool show_output = true);
 
@@ -38,6 +40,7 @@ private:
   timeval tvMax = {0,0};
 
   timeval diff_time();
+	long time_long(timeval const &val) const;
   std::string time_to_str(timeval const &val, int count = 1);
 
   std::vector<timeval> m_history;
@@ -67,6 +70,7 @@ private:
   std::vector<Timer> m_list;
 
   int find(std::string const &label);
+	int max_label_width() const;
 };
 
 extern V3DLib::Timers timers;
