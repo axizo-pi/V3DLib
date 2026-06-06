@@ -95,8 +95,8 @@ timeval Timer::diff_time() {
 }
 
 
-long Timer::time_long(timeval const &val) const {
-  auto tmp = (val.tv_sec*1000000l + val.tv_usec);  // type long int
+long Timer::time_long(timeval const &val, int count) const {
+  auto tmp = (val.tv_sec*1000000l + val.tv_usec)/count;  // type long int
 	return tmp;
 }
 
@@ -108,7 +108,7 @@ std::string Timer::time_to_str(timeval const &val, int count) {
   assert(count > 0);
   char buf[128]; 
 
-  auto tmp = time_long(val);
+  auto tmp = time_long(val, count);
   auto avg_sec = tmp/1000000l;
   auto avg_usec = tmp % 1000000l;
 
@@ -153,6 +153,7 @@ std::string Timer::dump(int width, bool show_extended) {
     }
   }
 
+  assert(!m_label.empty());
   std::string ret = m_label;
 
   ret << indentBy(width - (int) m_label.size());
@@ -225,7 +226,7 @@ int Timers::max_label_width() const {
 }
 
 
-void Timers::end(bool show_extended) {
+std::vector<int> Timers::sort_indexes() {
   assert(!m_list.empty());
 
 	auto to_lower = [] (std::string data) -> std::string {
@@ -244,48 +245,42 @@ void Timers::end(bool show_extended) {
 		return buf;
 	};
 
-	enum SortColumn {
-		None,
-		Label,
-		Total
-	};
-	SortColumn sort_column = Label;
 
-	bool desc = true;
-	bool ignore_case = true;
+	auto &list      = m_list;
+	auto &sort_data = m_sort_data;
 
-	auto &list = m_list;
-	auto comp = [&list, desc, sort_column, ignore_case, &to_lower](int lhs_index, int rhs_index) -> bool {
-		if (sort_column == Label) {
-	    auto lhs = list[lhs_index].label();
-  	  auto rhs = list[rhs_index].label();
+	auto comp = [&list, &sort_data, &to_lower](int lhs_index, int rhs_index) -> bool {
+		switch (sort_data.sort_column) {
+			case None: assert(false); break;  // Should not be reached here
+			case Label: {
+		    auto lhs = list[lhs_index].label();
+	  	  auto rhs = list[rhs_index].label();
 
-			if (ignore_case) {
-				lhs = to_lower(lhs);
-				rhs = to_lower(rhs);
+				if (sort_data.ignore_case) {
+					lhs = to_lower(lhs);
+					rhs = to_lower(rhs);
+				}
+
+				return (sort_data.desc)? lhs > rhs: lhs < rhs;
+			} 
+			case Total: {
+		    auto lhs = list[lhs_index].total();
+	  	  auto rhs = list[rhs_index].total();
+
+				return (sort_data.desc)? lhs > rhs: lhs < rhs;
 			}
+			case Average: {
+		    auto lhs = list[lhs_index].average();
+	  	  auto rhs = list[rhs_index].average();
 
-			if (desc) {
-		    return lhs > rhs;
-			} else {
-		    return lhs < rhs;
+				return (sort_data.desc)? lhs > rhs: lhs < rhs;
 			}
-		} else {
-			assert(sort_column == Total);
+		};
 
-	    auto lhs = list[lhs_index].total();
-  	  auto rhs = list[rhs_index].total();
-
-			if (desc) {
-		    return lhs > rhs;
-			} else {
-		    return lhs < rhs;
-			}
-		}
+		assert(false);	// Should never be reached
+		return false;
 	};
 
-
-	int width = max_label_width();
 
 	std::vector<int> indexes(m_list.size());
   for (int i = 0; i < (int) indexes.size(); ++i) {
@@ -293,14 +288,22 @@ void Timers::end(bool show_extended) {
 	}
 	warn << "indexes: " << vec_dump(indexes);
 
-	if (sort_column != None) {
-		sort(indexes.begin(), indexes.end(), comp);
-		warn << "indexes: " << vec_dump(indexes);
+	if (m_sort_data.sort_column != None) {
+		std::sort(indexes.begin(), indexes.end(), comp);
+		warn << "indexes sorted: " << vec_dump(indexes);
 	}
+
+	return indexes;
+}	
+
+
+void Timers::end(bool show_minmax) {
+	auto indexes = sort_indexes();
+	int width    = max_label_width();
 
   std::string buf;
   for (int i = 0; i < (int) indexes.size(); ++i) {
-    buf << "  " << m_list[indexes[i]].dump(width, show_extended) << "\n";
+    buf << "  " << m_list[indexes[i]].dump(width, show_minmax) << "\n";
   }
 
   warn << "Timers end:\n" << buf;
@@ -326,4 +329,13 @@ int Timers::find(std::string const &label) {
   return index;
 }
 
-}  // namespace
+
+Timers &Timers::sort(SortColumn sort_column, bool desc) {
+	m_sort_data.sort_column = sort_column;
+	m_sort_data.desc        = desc;
+
+	return *this;
+}
+
+
+}  // namespace V3DLib
