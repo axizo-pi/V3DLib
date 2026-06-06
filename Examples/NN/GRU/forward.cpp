@@ -56,7 +56,7 @@ void forward_propagation(
 		assert(Z_row.is_zero());  // Apparently always zero
 
 		temp = X_row.forward_1(m, S_row);
-    state.z.row(i, temp.sigmoid());
+    state.z.row(i, temp.sigmoid());  // Profile timing minimal
 
 		temp = X_row.forward_2(m, S_row);
     state.r.row(i, temp.sigmoid());
@@ -64,6 +64,7 @@ void forward_propagation(
 		MMatrix tempb = X_row.forward_3(m, S_row, state.r.row(i));
     state.h.row(i, tempb.tanh());
 
+		// forward_4/5 timing small
 		temp_hidden = Z_row.forward_4(S_row, state.h.row(i));
     state.S.row(i + 1, temp_hidden);   // Assumption: value at i == 0 should be retained
 

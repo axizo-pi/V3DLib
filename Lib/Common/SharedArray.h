@@ -126,17 +126,22 @@ public:
     }
   }
 
-  void copyFrom(SharedArray<T> const &src) {
+  void copyFrom(SharedArray<T> const &src, int in_size = -1) {
     assert(!src.empty());
-    assert(src.size() <= size());
 
-    for (uint32_t offset = 0; offset < src.size(); ++offset) {
+		uint32_t copy_size = (in_size == -1)? src.size(): (uint32_t) in_size;
+    assert(copy_size <= size());
+
+    for (uint32_t offset = 0; offset < copy_size; ++offset) {
       (*this)[offset] = src[offset];
     }
 
+		// Only copy src items, don't assume there is more
+		/*
     for (uint32_t offset = src.size(); offset < size(); ++offset) {
       (*this)[offset] = src[offset];
     }
+		*/
   }
 
 

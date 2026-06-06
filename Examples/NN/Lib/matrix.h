@@ -30,9 +30,10 @@ using namespace V3DLib;
  * - are dimension which I consider to efficiently use the QPU
  */
 struct matrix {
-  matrix(bool init_static) : m_rows(0), m_columns(0) {}
-  matrix(int rows = 0, int columns = 0);
+  matrix() : m_rows(0), m_columns(0) {}
+  matrix(int rows, int columns);
   matrix(matrix const &rhs);
+  matrix(matrix const &&rhs);
 
   void resize(int rows, int columns);
   matrix row(int index) const;
@@ -40,6 +41,7 @@ struct matrix {
   int columns() const  { return m_columns; }
   int rows() const     { return m_rows; }
   int size() const     { return m_columns*m_rows; }
+	bool empty() const   { return size() == 0; }
 
   bool is_vector() const {
     return
@@ -56,6 +58,7 @@ struct matrix {
   void frand();
 
   matrix &operator=(matrix const &rhs);
+  matrix &operator=(matrix const &&rhs);
   matrix operator-(matrix const &rhs) const;
   matrix &operator-=(matrix const &rhs);
   matrix operator+(matrix const &rhs) const;
@@ -80,8 +83,10 @@ struct matrix {
   matrix outer(matrix const &rhs) const;
   void   outer_add(matrix const &lhs, matrix const &rhs);
   void   outer_add_rows(matrix const &lhs, matrix const &rhs);
-  void   softmax(float max);
+  //void   softmax(float max);
   float  sum() const;
+	void   max_row(matrix &ret) const;
+	void   softmax(matrix &max_row);
 
   std::string dump_dim() const;
   std::string dump(bool output_int = false) const;

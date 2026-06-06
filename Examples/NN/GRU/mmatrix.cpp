@@ -8,13 +8,13 @@ namespace {
 
 float s_max = 0;
 
-float softmax(float x) {
+float s_softmax(float x) {
   return (float) exp(x - s_max);
 }
 
 }
 
-MMatrix::MMatrix() : m_qpu(true) {}
+MMatrix::MMatrix() {}
 
 MMatrix::MMatrix(int rows, int columns, float val, bool set_Xf) {
   assert(rows > 0);
@@ -29,7 +29,7 @@ MMatrix::MMatrix(int rows, int columns, float val, bool set_Xf) {
     }
     used_fields(true, false);
   } else {
-    m_qpu.resize(rows,columns);
+    m_qpu.resize(rows, columns);
     m_qpu.set(val);
     used_fields(false, true);
   }
@@ -42,7 +42,31 @@ void MMatrix::resize(int rows, int columns, float val) {
 
 
 MMatrix::MMatrix(MMatrix const &rhs) {
+	timers.start("MMatrix ctor &");
   set(rhs);
+	timers.stop("MMatrix ctor &");
+}
+
+
+/**
+ * Currently same as `ctor &`. It doesn't make a dent in the profiling.
+ */
+MMatrix::MMatrix(MMatrix const &&rhs) {
+	timers.start("MMatrix ctor &&");
+  set(rhs);
+	timers.stop("MMatrix ctor &&");
+}
+
+
+/**
+ * Required because `ctor &&` added.
+ */
+MMatrix &MMatrix::operator=(const MMatrix &rhs) {
+	timers.start("MMatrix = &");
+  set(rhs);
+	timers.stop("MMatrix = &");
+
+	return *this;
 }
 
 
@@ -219,6 +243,9 @@ void MMatrix::copy_block(MMatrix const &rhs, int from_offset, int to_offset, int
 }
 
 
+/**
+ * Profile timing insignificant.
+ */
 void MMatrix::row(int index, MMatrix const &val) {
   assert(val.rows() == 1);
   assert(cols() == val.cols());
@@ -230,14 +257,9 @@ void MMatrix::row(int index, MMatrix const &val) {
 	bool used_Xf = false;
 
 	if (val.m_using_Xf) {
-		//warn << "row doing Xf";
 	  m_Xf.row(index) = val.Xf().row(0);
 		m_Xf.eval();
 		used_Xf = true;
-/*		
-	} else {
-		warn << "row skipping Xf";
-*/		
 	}
 
   for (int i = 0; i < val.cols(); ++i) {
@@ -248,15 +270,14 @@ void MMatrix::row(int index, MMatrix const &val) {
 }
 
 
+/**
+ * Profile timing minimal, inconsequential
+ */
 MMatrix MMatrix::row(int index) const {
   need_fields(false, true);
 
-  //timers.start("row(index)");  // Time minimal, inconsequential
-
   MMatrix ret;
   ret.m_qpu = m_qpu.row(index);
-
-  //timers.stop("row(index)");
 
   ret.used_fields(false, true);
   return ret;
@@ -348,8 +369,6 @@ bool MMatrix::same_intern(MMatrix const &rhs, float precision, int bit_diff, boo
 
 
 std::string MMatrix::dump_dim() const {
-  //assert(m_using_Xf || m_using_qpu);
-
   std::string ret;
 
   if (m_using_Xf) {
@@ -469,6 +488,7 @@ void MMatrix::operator-=(MMatrix const &rhs) {
 
 void MMatrix::operator/=(float steps) {
 	assert(steps > 0);
+	//warn << "/=: " << dump();
 	*this *= (1.0f/steps);
 }
 
@@ -737,7 +757,7 @@ MMatrix MMatrix::max_row() const {
 
   MMatrix ret(rows(), 1);
 
-	timers.start("max_row qpu");
+	timers.start("max_row scalar");
 
   for (int r = 0; r < rows(); r++) {
     bool did_first = false;
@@ -760,9 +780,23 @@ MMatrix MMatrix::max_row() const {
     ret.m_qpu.at(r, 0) = val;
   }
 
+  ret.used_fields(false, true);
+
+	timers.stop("max_row scalar");
+
+	// 2.5x slower for (1,64) src matrix
+	timers.start("max_row qpu");
+
+  MMatrix ret2(rows(), 1);
+ 	m_qpu.max_row(ret2.m_qpu);
+  ret2.used_fields(false, true);
+
 	timers.stop("max_row qpu");
 
-  ret.used_fields(false, true);
+	//warn << "ret: " << ret.dump();
+	//warn << "ret2: " << ret2.dump();
+	assert(ret.same(ret2));
+
   return ret;
 }
 
@@ -838,6 +872,8 @@ float MMatrix::sum() const {
  */
 void MMatrix::softmax() {
   need_fields(true, true);
+	//warn << "softmax rows: " << rows();  // always 1 in current implementation
+	//warn << "softmax pre: " << dump();
 
 	MMatrix max = max_row();
 
@@ -849,23 +885,26 @@ void MMatrix::softmax() {
 
   	// s_max is a global used in softmax()
   	s_max    = tmp.m_Xf.maxCoeff();
-  	tmp.m_Xf = tmp.m_Xf.unaryExpr(&::softmax);
+  	tmp.m_Xf = tmp.m_Xf.unaryExpr(&::s_softmax);
   	tmp.m_Xf.eval();
 
+		//warn << "softmax Xf post: " << tmp.dump();
+
   	timers.stop("softmax Xf");
+
+		//warn << "s_max: " << s_max;
+
 	  timers.start("softmax qpu");
-
-    tmp.m_qpu.softmax(max.m_qpu.at(r, 0));  // TODO: scalar operation, fix
-
+    tmp.m_qpu.softmax(max.m_qpu);
   	timers.stop("softmax qpu");
 
 		//warn << "softmax tmp: " << tmp.dump();
-    row(r, tmp);
+  	row(r, tmp);
   }
 
   used_fields(true, true);
 	//warn << "softmax: " << dump();
-	assert(same(2));  // Usually <= 1
+	assert(same_b());
 }
 
 
@@ -1066,12 +1105,6 @@ MMatrix MMatrix::forward_1(Model &m, MMatrix &S) {
 	ret.m_Xf.eval();
   timers.stop("forward_1 Xf");
 */
-/*
-	warn << "this: " << dump_dim();
-	warn << "m.U_z: " << m.U_z.dump_dim();
-	warn << "S: " << S.dump_dim();
-	warn << "m.W_z: " << m.W_z.dump_dim();
-*/
   //timers.start("forward_1 qpu");
 
 	// Timing approximately equal to Xf
@@ -1210,15 +1243,29 @@ MMatrix MMatrix::forward_4(MMatrix &S, MMatrix const &h_row) {
  * Unknown why, ignoring.
  */
 MMatrix MMatrix::forward_5() const {
+	warn << "forward_5 this pre: " << dump();
+
   timers.start("forward_5");
 	MMatrix ret = *this;
-
+	warn << "forward_5 ret pre: " << ret.dump();
   ret.softmax();
   float temp_sum = ret.sum();
   ret /= temp_sum;
-
+	warn << "forward_5 ret: " << ret.dump();
   timers.stop("forward_5");
 
+	warn << "forward_5 this inter: " << dump();
+
+  timers.start("forward_5 qpu");
+
+	MMatrix ret2 = *this;
+  ret2.softmax();
+	warn << "forward_5 ret2: " << ret2.dump();
+
+  timers.stop("forward_5 qpu");
+
+	warn << "forward_5 this post: " << dump();
+	ret.used_fields(true, true);
 	return ret;
 }
 

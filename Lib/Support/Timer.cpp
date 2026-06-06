@@ -43,15 +43,15 @@ Timer::~Timer() {
 
 
 void Timer::start() {
-  assert(!started);
+  assert(!m_started);
   gettimeofday(&tvStart, NULL);  // This ignores timer start in ctor
   count++;
-  started = true;
+  m_started = true;
 }
 
 
 void Timer::stop() {
-  assert(started);
+  assert(m_started);
   assert(count > 0);
 
   // Update total
@@ -73,7 +73,7 @@ void Timer::stop() {
     m_history.push_back(tvDiff);
   }
 
-  started = false;
+  m_started = false;
 }
 
 
@@ -129,7 +129,7 @@ std::string Timer::dump(int width, bool show_extended) {
     timeval time = diff_time();
     buf2 << time_to_str(time);
   } else {
-    if (started) stop();
+    if (m_started) stop();
 
     char buf[64]; 
     sprintf(buf, " in %5d steps", count);
@@ -194,9 +194,14 @@ Timer &Timers::start(std::string const &label) {
   int index = find(label);
 
   if (index == -1) {
-    //warn << "Adding timer '" << label << "'";
+    warn << "Adding timer '" << label << "'";
     m_list << Timer(label);
     index = (int) m_list.size() - 1;
+	} else {
+  	if (m_list[index].started()) {
+			cerr << "Profile timer '" << label << "' already started."; // << thrw;
+			breakpoint;
+		}
   }
 
   m_list[index].start();
@@ -336,6 +341,5 @@ Timers &Timers::sort(SortColumn sort_column, bool desc) {
 
 	return *this;
 }
-
 
 }  // namespace V3DLib

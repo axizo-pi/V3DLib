@@ -17,6 +17,7 @@ public:
   float diff() const { return m_diff; }
   void start();
   void stop();
+	bool started() const { return m_started; }
 
   std::string const &label() const { return m_label; }
 	long total()   const { return time_long(tvTotal); }
@@ -32,10 +33,10 @@ private:
   std::string m_label;
 
   timeval tvStart;
-  timeval tvTotal = {0,0};
-  int count = 0;
-  bool started = false;
-  float m_diff;
+  timeval tvTotal   = {0,0};
+  int     count     = 0;
+  bool    m_started = false;
+  float   m_diff;
 
   timeval tvMin;
   timeval tvMax = {0,0};

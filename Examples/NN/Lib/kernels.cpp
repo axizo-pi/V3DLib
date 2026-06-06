@@ -500,6 +500,73 @@ void vector_add(Float::Ptr left, Float::Ptr right, Float::Ptr out, Int N) {
 
 
 /**
+ * @brief Calculate max per row
+ */
+void max_row(Float::Ptr ret, Float::Ptr in_rhs, Int rows, Int cols) {
+	ret -= index();
+	Int col_size = cols >> 4;
+
+  For (Int r = 0, r < rows, r++)
+		Float::Ptr rhs = in_rhs + r*cols;
+		Float acc = -1024.0f;
+
+  	For (Int c = 0, c < col_size, c++)
+			Float tmp = *rhs;
+			acc = V3DLib::max(acc, tmp);
+
+			rhs.inc();
+		End
+
+		Float tmp2 = 2.0f;
+		rotate_max(acc, tmp2);
+		*ret = tmp2;
+		ret++;
+	End
+}
+
+
+namespace {
+
+void softmax_partial(Float::Ptr &lhs, Float &max, Int col_size) {
+	For (Int c = 0, c < col_size, c++)
+		Float tmp = *lhs;
+		Float tmp2 = V3DLib::exp_e(tmp - max);
+
+		*lhs = tmp2;
+		lhs.inc();
+	End
+}	
+
+}  // anon namespace
+
+
+void softmax(Float::Ptr lhs, Float max, Int cols) {
+	Int col_size = cols >> 4;
+	softmax_partial(lhs, max, col_size);
+}
+
+
+/**
+ * @brief Calculate softmax per row
+ *
+ * Changes are stored inline in lhs
+ */
+void softmax_rows(Float::Ptr in_lhs, Float::Ptr in_max, Int rows, Int cols) {
+	in_max -= index();
+	Int col_size = cols >> 4;
+
+  For (Int r = 0, r < rows, r++)
+		Float::Ptr lhs = in_lhs + r*cols;
+		Float max = *in_max;
+
+		softmax_partial(lhs, max, col_size);
+
+		in_max++;
+	End
+}
+
+
+/**
  * Exposed for combined kernels
  */
 void clip_partial(Float &val, Float &clip_min, Float &clip_max) {

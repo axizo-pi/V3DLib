@@ -17,6 +17,10 @@ public:
   MMatrix();
   MMatrix(int rows, int columns, float val = 0.0f, bool set_Xf = false);
   MMatrix(MMatrix const &rhs);
+  MMatrix(MMatrix const &&rhs);
+
+	MMatrix &operator=(const MMatrix &rhs);
+
   void resize(int rows, int columns, float val = 0.0f);
 
   void set(MatrixXf const &rhs, bool set_qpu = false);
