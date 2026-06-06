@@ -64,16 +64,23 @@ std::string Model::dump_dim() const {
 
 void Model::init(int input_dim, int hidden_dim, int output_dim) {
   MatrixXf tmp;
+  init_matrix(tmp, input_dim, hidden_dim);
 
-  init_matrix(tmp, input_dim, hidden_dim); U_z.set(tmp);
-  init_matrix(tmp, input_dim, hidden_dim); U_r.set(tmp);
-  init_matrix(tmp, input_dim, hidden_dim); U_h.set(tmp);
+	//warn << "Here1";
+	// Adding true to set() makes copy_m() worse
+  U_z.set(tmp);
+	//warn << "U_z: " << U_z.dump_dim();
 
-  init_matrix(tmp, hidden_dim, hidden_dim); W_z.set(tmp);
-  init_matrix(tmp, hidden_dim, hidden_dim); W_r.set(tmp);
-  init_matrix(tmp, hidden_dim, hidden_dim); W_h.set(tmp);
+  U_r.set(tmp);
+  U_h.set(tmp);
+
+  init_matrix(tmp, hidden_dim, hidden_dim);
+	W_z.set(tmp);
+  W_r.set(tmp);
+  W_h.set(tmp);
   
-  init_matrix(tmp, hidden_dim, output_dim);   V.set(tmp);
+  init_matrix(tmp, hidden_dim, output_dim);
+	V.set(tmp);
 
   eval();
 }
@@ -84,6 +91,12 @@ void Model::init_zeroes(int input_dim, int hidden_dim, int output_dim, bool do_e
   auto zero_h = MatrixXf::Zero(hidden_dim, hidden_dim);
   auto zero_o = MatrixXf::Zero(hidden_dim, output_dim);
 
+	//warn << "Here";
+	//warn << "U_z: " << U_z.dump_dim();
+	if (!U_z.empty()) {
+		assert(U_z.rows() == input_dim);
+		assert(U_z.cols() == hidden_dim);
+	}
   U_z.set(zero);
   U_r.set(zero);
   U_h.set(zero);
@@ -193,7 +206,7 @@ void Model::eval() {
 
 
 void State::init(int time_steps, int hidden_dim, int output_dim) {
-  //warn << "State::init()";
+  //timers.start("State::init()");  // Timing minimal, inconsequential
 
   if (m_do_temp) {
     auto zero = MatrixXf::Zero(time_steps, hidden_dim);
@@ -223,6 +236,8 @@ void State::init(int time_steps, int hidden_dim, int output_dim) {
     S.set(tmp_S);
     // OK warn << "State::init S: " << S.dump();
   }
+
+  //timers.stop("State::init()");
 }
 
 

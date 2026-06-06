@@ -275,13 +275,14 @@ void mult_matrix_col(Float::Ptr ret, Float::Ptr lhs, Float::Ptr rhs, Int lhs_row
   Float::Ptr ret_base = ret;
   ret_base           -= index();
 
+  Int rhs_offset      = index()*rhs_cols;
+  Int rhs_inc         = 16*rhs_cols;
+
   Float::Ptr rhs_base = rhs;
   rhs_base           -= index();
-  Int rhs_offset      = index()*rhs_cols;
 	rhs_base           += rhs_offset;
 
   Int block_size = inner >> 4;
-  Int rhs_inc    = 16*rhs_cols;
 
   For (Int col = me(), col < rhs_cols, col += numQPUs())
 		Float::Ptr rhs_col = rhs_base + col;
@@ -495,6 +496,73 @@ void vector_add(Float::Ptr left, Float::Ptr right, Float::Ptr out, Int N) {
     right.inc();
     out.inc();
   End
+}
+
+
+/**
+ * @brief Calculate max per row
+ */
+void max_row(Float::Ptr ret, Float::Ptr in_rhs, Int rows, Int cols) {
+	ret -= index();
+	Int col_size = cols >> 4;
+
+  For (Int r = 0, r < rows, r++)
+		Float::Ptr rhs = in_rhs + r*cols;
+		Float acc = -1024.0f;
+
+  	For (Int c = 0, c < col_size, c++)
+			Float tmp = *rhs;
+			acc = V3DLib::max(acc, tmp);
+
+			rhs.inc();
+		End
+
+		Float tmp2 = 2.0f;
+		rotate_max(acc, tmp2);
+		*ret = tmp2;
+		ret++;
+	End
+}
+
+
+namespace {
+
+void softmax_partial(Float::Ptr &lhs, Float &max, Int col_size) {
+	For (Int c = 0, c < col_size, c++)
+		Float tmp = *lhs;
+		Float tmp2 = V3DLib::exp_e(tmp - max);
+
+		*lhs = tmp2;
+		lhs.inc();
+	End
+}	
+
+}  // anon namespace
+
+
+void softmax(Float::Ptr lhs, Float max, Int cols) {
+	Int col_size = cols >> 4;
+	softmax_partial(lhs, max, col_size);
+}
+
+
+/**
+ * @brief Calculate softmax per row
+ *
+ * Changes are stored inline in lhs
+ */
+void softmax_rows(Float::Ptr in_lhs, Float::Ptr in_max, Int rows, Int cols) {
+	in_max -= index();
+	Int col_size = cols >> 4;
+
+  For (Int r = 0, r < rows, r++)
+		Float::Ptr lhs = in_lhs + r*cols;
+		Float max = *in_max;
+
+		softmax_partial(lhs, max, col_size);
+
+		in_max++;
+	End
 }
 
 

@@ -184,6 +184,7 @@ void rms_prop(Model &m, Model &grad, Model &cache, float learning_rate, int inpu
     float decay = 0.9f;
 
     Model grad_total;
+    //No effect grad_total.init(m.input_dim(), m.hidden_dim(), m.output_dim());
     grad_total.init_zeroes(m.input_dim(), m.hidden_dim(), m.output_dim());
 
     cache.cache_decay(decay, grad);

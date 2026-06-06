@@ -32,6 +32,9 @@ void outer_add(Float::Ptr ret, Float::Ptr left, Float::Ptr right, Int N, Int M);
 void outer_add_rows(Float::Ptr ret, Float::Ptr lhs, Float::Ptr rhs, Int lhs_rows, Int lhs_cols, Int rhs_cols);
 void vector_sub(Float::Ptr left, Float::Ptr right, Float::Ptr out, Int N);
 void vector_add(Float::Ptr left, Float::Ptr right, Float::Ptr out, Int N);
+void max_row(Float::Ptr ret, Float::Ptr in_rhs, Int rows, Int cols);
+void softmax(Float::Ptr lhs, Float max, Int cols);
+void softmax_rows(Float::Ptr in_lhs, Float::Ptr in_max, Int rows, Int cols);
 void clip(Float::Ptr in, Float::Ptr out, Int N, Float clip_value);
 
 } // namespace kernel

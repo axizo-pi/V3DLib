@@ -17,8 +17,9 @@
 #include "Timer.h"
 #include "Support/basics.h"
 #include "Support/Helpers.h"
-#include <cstddef>  // NULL
-#include <cstdio>   // printf
+#include <algorithm> // sort
+#include <cstddef>   // NULL
+#include <cstdio>    // printf
 
 using namespace Log;
 
@@ -42,15 +43,15 @@ Timer::~Timer() {
 
 
 void Timer::start() {
-  assert(!started);
+  assert(!m_started);
   gettimeofday(&tvStart, NULL);  // This ignores timer start in ctor
   count++;
-  started = true;
+  m_started = true;
 }
 
 
 void Timer::stop() {
-  assert(started);
+  assert(m_started);
   assert(count > 0);
 
   // Update total
@@ -72,7 +73,7 @@ void Timer::stop() {
     m_history.push_back(tvDiff);
   }
 
-  started = false;
+  m_started = false;
 }
 
 
@@ -94,6 +95,12 @@ timeval Timer::diff_time() {
 }
 
 
+long Timer::time_long(timeval const &val, int count) const {
+  auto tmp = (val.tv_sec*1000000l + val.tv_usec)/count;  // type long int
+	return tmp;
+}
+
+
 std::string Timer::time_to_str(timeval const &val, int count) {
 
 #define format "%2ld.%06lds"
@@ -101,7 +108,7 @@ std::string Timer::time_to_str(timeval const &val, int count) {
   assert(count > 0);
   char buf[128]; 
 
-  auto tmp = (val.tv_sec*1000000l + val.tv_usec)/count;  // type long int
+  auto tmp = time_long(val, count);
   auto avg_sec = tmp/1000000l;
   auto avg_usec = tmp % 1000000l;
 
@@ -122,7 +129,7 @@ std::string Timer::dump(int width, bool show_extended) {
     timeval time = diff_time();
     buf2 << time_to_str(time);
   } else {
-    if (started) stop();
+    if (m_started) stop();
 
     char buf[64]; 
     sprintf(buf, " in %5d steps", count);
@@ -146,6 +153,7 @@ std::string Timer::dump(int width, bool show_extended) {
     }
   }
 
+  assert(!m_label.empty());
   std::string ret = m_label;
 
   ret << indentBy(width - (int) m_label.size());
@@ -186,9 +194,14 @@ Timer &Timers::start(std::string const &label) {
   int index = find(label);
 
   if (index == -1) {
-    //warn << "Adding timer '" << label << "'";
+    warn << "Adding timer '" << label << "'";
     m_list << Timer(label);
     index = (int) m_list.size() - 1;
+	} else {
+  	if (m_list[index].started()) {
+			cerr << "Profile timer '" << label << "' already started."; // << thrw;
+			breakpoint;
+		}
   }
 
   m_list[index].start();
@@ -204,11 +217,9 @@ void Timers::stop(std::string const &label) {
 }
 
 
-void Timers::end(bool show_extended) {
-  assert(!m_list.empty());
-
-  // Determine label width
+int Timers::max_label_width() const {
   int width = -1;
+
   for (int i = 0; i < (int) m_list.size(); ++i) {
     int tmp = (int) m_list[i].label().length();
     if (width < tmp) {
@@ -216,9 +227,88 @@ void Timers::end(bool show_extended) {
     }
   }
 
+	return width;
+}
+
+
+std::vector<int> Timers::sort_indexes() {
+  assert(!m_list.empty());
+
+	auto to_lower = [] (std::string data) -> std::string {
+		std::transform(data.begin(), data.end(), data.begin(),
+	    [](unsigned char c){ return std::tolower(c); });
+
+		return data;
+	};
+
+	auto vec_dump = [](std::vector<int> const &indexes) -> std::string {
+  	std::string buf;
+
+	  for (int i = 0; i < (int) indexes.size(); ++i) {
+			buf << indexes[i] << ", ";
+		}
+		return buf;
+	};
+
+
+	auto &list      = m_list;
+	auto &sort_data = m_sort_data;
+
+	auto comp = [&list, &sort_data, &to_lower](int lhs_index, int rhs_index) -> bool {
+		switch (sort_data.sort_column) {
+			case None: assert(false); break;  // Should not be reached here
+			case Label: {
+		    auto lhs = list[lhs_index].label();
+	  	  auto rhs = list[rhs_index].label();
+
+				if (sort_data.ignore_case) {
+					lhs = to_lower(lhs);
+					rhs = to_lower(rhs);
+				}
+
+				return (sort_data.desc)? lhs > rhs: lhs < rhs;
+			} 
+			case Total: {
+		    auto lhs = list[lhs_index].total();
+	  	  auto rhs = list[rhs_index].total();
+
+				return (sort_data.desc)? lhs > rhs: lhs < rhs;
+			}
+			case Average: {
+		    auto lhs = list[lhs_index].average();
+	  	  auto rhs = list[rhs_index].average();
+
+				return (sort_data.desc)? lhs > rhs: lhs < rhs;
+			}
+		};
+
+		assert(false);	// Should never be reached
+		return false;
+	};
+
+
+	std::vector<int> indexes(m_list.size());
+  for (int i = 0; i < (int) indexes.size(); ++i) {
+		indexes[i] = i;
+	}
+	warn << "indexes: " << vec_dump(indexes);
+
+	if (m_sort_data.sort_column != None) {
+		std::sort(indexes.begin(), indexes.end(), comp);
+		warn << "indexes sorted: " << vec_dump(indexes);
+	}
+
+	return indexes;
+}	
+
+
+void Timers::end(bool show_minmax) {
+	auto indexes = sort_indexes();
+	int width    = max_label_width();
+
   std::string buf;
-  for (int i = 0; i < (int) m_list.size(); ++i) {
-    buf << "  " << m_list[i].dump(width, show_extended) << "\n";
+  for (int i = 0; i < (int) indexes.size(); ++i) {
+    buf << "  " << m_list[indexes[i]].dump(width, show_minmax) << "\n";
   }
 
   warn << "Timers end:\n" << buf;
@@ -244,4 +334,12 @@ int Timers::find(std::string const &label) {
   return index;
 }
 
-}  // namespace
+
+Timers &Timers::sort(SortColumn sort_column, bool desc) {
+	m_sort_data.sort_column = sort_column;
+	m_sort_data.desc        = desc;
+
+	return *this;
+}
+
+}  // namespace V3DLib

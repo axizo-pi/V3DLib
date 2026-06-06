@@ -6,6 +6,7 @@ class Model;
 
 bool same(qpu::matrix const &lhs, MatrixXf const &rhs, float precision = 0.0f, int bit_diff = -1, bool show_max_diff = false);
 bool same(qpu::matrix const &lhs, qpu::matrix const &rhs, float precision = 0.0f, int bit_diff = -1, bool show_max_diff = false);
+void copy_m(qpu::matrix &dst, MatrixXf const &rhs);
 qpu::matrix copy_m(MatrixXf const &rhs);
 std::string dump(MatrixXf const &m);
 
@@ -16,14 +17,21 @@ public:
   MMatrix();
   MMatrix(int rows, int columns, float val = 0.0f, bool set_Xf = false);
   MMatrix(MMatrix const &rhs);
+  MMatrix(MMatrix const &&rhs);
+
+	MMatrix &operator=(const MMatrix &rhs);
+
   void resize(int rows, int columns, float val = 0.0f);
 
   void set(MatrixXf const &rhs, bool set_qpu = false);
   void set(MMatrix const &rhs);
 
-  int rows() const;
-  int cols() const;
-  int size() const { return rows()*cols(); }
+	bool is_zero() const;
+
+  int  rows()  const;
+  int  cols()  const;
+  int  size()  const { return rows()*cols(); }
+	bool empty() const;
 
   void row(int index, MatrixXf const &val);
   void row(int index, MMatrix const &val);

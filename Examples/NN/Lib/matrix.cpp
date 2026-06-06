@@ -62,6 +62,9 @@ std::unique_ptr<BaseKernel> s_dsigmoid;
 std::unique_ptr<BaseKernel> s_tanh;
 std::unique_ptr<BaseKernel> s_dtanh;
 std::unique_ptr<BaseKernel> s_ln;
+std::unique_ptr<BaseKernel> s_max_row;
+std::unique_ptr<BaseKernel> s_softmax;
+std::unique_ptr<BaseKernel> s_softmax_rows;
 std::unique_ptr<BaseKernel> s_clip;
 
 
@@ -74,7 +77,7 @@ void init_local() {
   s_mult_matrix        .reset(new BaseKernel(compile(kernel::mult_matrix    , settings())));
 
   s_mult_matrix_col    .reset(new BaseKernel(compile(kernel::mult_matrix_col, settings())));
-	to_file("s_mult_matrix_col.txt", s_mult_matrix_col->dump());
+	//to_file("s_mult_matrix_col.txt", s_mult_matrix_col->dump());
 
   s_mult_matrix_t      .reset(new BaseKernel(compile(kernel::mult_matrix_t  , settings())));
   s_matrix_add         .reset(new BaseKernel(compile(kernel::matrix_add     , settings())));
@@ -93,6 +96,9 @@ void init_local() {
   s_tanh               .reset(new BaseKernel(compile(kernel::tanh           , settings())));
   s_dtanh              .reset(new BaseKernel(compile(kernel::dtanh          , settings())));
   s_ln                 .reset(new BaseKernel(compile(kernel::ln             , settings())));
+  s_max_row            .reset(new BaseKernel(compile(kernel::max_row        , settings())));
+  s_softmax            .reset(new BaseKernel(compile(kernel::softmax        , settings())));
+  s_softmax_rows       .reset(new BaseKernel(compile(kernel::softmax_rows   , settings())));
   s_clip               .reset(new BaseKernel(compile(kernel::clip           , settings())));
 
   done_init = true;
@@ -111,14 +117,24 @@ matrix::matrix(int rows, int columns) {
 }
 
 
-matrix::matrix(matrix const &rhs) :
-  m_arr(rhs.m_arr),
-  m_rows(rhs.m_rows),
-  m_columns(rhs.m_columns),
-  m_size(rhs.m_size)
-{}
+matrix::matrix(matrix const &rhs) {
+	assert(rhs.m_arr != nullptr);
+	resize(rhs.m_rows, rhs.m_columns);
+	set(*rhs.m_arr);                   // All profile timing here
+}
 
 
+/**
+ * Profile timing minimal
+ */
+matrix::matrix(matrix const &&rhs) {
+  transfer(rhs);
+}
+
+
+/**
+ * Profile timing insignificant; average effectively 0.
+ */
 void matrix::resize(int rows, int columns) {
   // Allow initialization of empty matrix.
   if (rows == 0) {
@@ -129,16 +145,16 @@ void matrix::resize(int rows, int columns) {
   }
 
   if (rows <= 0) { 
-    cerr << "matrix ctor: rows must be positive"    << thrw;
+    cerr << "matrix resize: rows must be positive"    << thrw;
   }
   if (columns <= 0) {
-    cerr << "matrix ctor: columns must be positive" << thrw;
+    cerr << "matrix resize: columns must be positive" << thrw;
   }
 
   int size      = rows*columns;
 
-  if (size > m_size) {
-    if (m_size > 0) {
+  if (size > 0 && (size > m_size || m_arr == nullptr)) {
+    if (m_size > 0 && size != m_size) {
       warn << "matrix resizing from " << m_size << " to " << size;
     }
     m_arr.reset(new Float::Array(size));
@@ -203,12 +219,26 @@ void matrix::set(float init_val) {
 }
 
 
+/**
+ * rhs array can be larger than this, larger than required for elements
+ * Only the element memory is copied. 
+ *
+ * Pre: rows/columns assigned correctly rhs->this.
+ */
 void matrix::set(Float::Array const &rhs) {
-  assert(arr().size() == rhs.size());
+  assert(!empty()); 
+  assert(!rhs.empty()); 
 
-  for (int i = 0; i < (int) arr().size(); ++i) {
-    arr()[i] = rhs[i];
-  }
+	int copy_size = rows()*columns();
+	assert(copy_size > 0);
+	assert(copy_size <= (int) rhs.size());
+	assert(copy_size <= (int) arr().size());
+
+	timers.start("matrix set"); 
+
+	arr().copyFrom(rhs, copy_size);
+
+	timers.stop("matrix set"); 
 }
 
 
@@ -222,7 +252,20 @@ void matrix::frand() {
 
 
 matrix &matrix::operator=(matrix const &rhs) {
+	timers.start("matrix = &");
+	resize(rhs.m_rows, rhs.m_columns);
+	if (rhs.m_arr != nullptr) {
+		set(*rhs.m_arr);
+	}
+	timers.stop("matrix = &");
+  return *this;
+}
+
+
+matrix &matrix::operator=(matrix const &&rhs) {
+	timers.start("matrix = &&");
   transfer(rhs);
+	timers.stop("matrix = &&");
   return *this;
 }
 
@@ -329,7 +372,9 @@ matrix matrix::mul(matrix const &rhs) const {
 
 
 /**
- * Multi-QPU does not increase performance
+ * @brief Perform row-first matrix multiplication
+ *
+ * If there are few rows, multi-QPU is not effective.
  */
 matrix matrix::mul_matrix(matrix const &rhs) const {
 	//warn << "mul_matrix: " << dump_dim();
@@ -339,6 +384,7 @@ matrix matrix::mul_matrix(matrix const &rhs) const {
 
   matrix ret;
 
+	// Select row-first if there are enough rows to do multi-QPU
 	if (m_rows >= 16) {
 	  timers.start("matrix * row");
 	  ret.resize(m_rows, resize_16(rhs.m_columns));
@@ -348,14 +394,13 @@ matrix matrix::mul_matrix(matrix const &rhs) const {
 	  s_mult_matrix->load(&ret.arr(), &arr(), &rhs.arr(), m_rows, m_columns, rhs.m_columns).run();
 	  timers.stop("matrix * row");
 	} else {
-	  timers.start("matrix * col");
+	  //timers.start("matrix * col");
 	  ret.resize(m_rows, rhs.m_columns);
 	  ret.set(0.0f);
 
 	  s_mult_matrix_col->setMaxQPUs();
-	  //s_mult_matrix_col->setNumQPUs(8);
 	  s_mult_matrix_col->load(&ret.arr(), &arr(), &rhs.arr(), m_rows, m_columns, rhs.m_columns).run();
-	  timers.stop("matrix * col");
+	  //timers.stop("matrix * col");
 	}
 
 	//warn << "ret: " << ret.dump();
@@ -363,6 +408,9 @@ matrix matrix::mul_matrix(matrix const &rhs) const {
 }
 
 
+/**
+ * @brief Perform matrix multiplication, in which the matrices are assumed to be transposed.
+ */
 matrix matrix::mul_matrix_t(matrix const &rhs) const {
   //warn << "matrix mul_matrix_t: " << dump_dim() << "rhs: " << rhs.dump_dim();
   assert((m_columns % 16) == 0);      // Inner dimension must be multiple of 16
@@ -497,14 +545,36 @@ matrix matrix::sigmoid_derivative(matrix const &rhs) {
 
 
 /**
- * TODO: currently scalar, convert to QPU kernel
+ * @brief Calculate softmax per row
  */
-void matrix::softmax(float max) {
-  auto &arr = *m_arr;
+void matrix::softmax(matrix &max_row) {
+	assert(columns() % 16 == 0);
+	assert(rows() == 1);               // Expand when required
+	assert(max_row.rows() == rows());
+	assert(max_row.columns() == 1);
+  float max = max_row.at(0, 0);
+
+/*
+ 	timers.start("matrix softmax scalar");
+	// TODO: scalar operation, fix
+
+  //auto &arr = *m_arr;
 
   for (int i = 0; i < columns(); i++) {
-    arr[i] = std::exp(arr[i] - max);
+    //arr[i] = std::exp(arr[i] - max);
+    //(*m_arr)[i] = std::exp((*m_arr)[i] - max);
+    at(0, i) = std::exp(at(0, i) - max);
   }
+
+ 	timers.stop("matrix softmax scalar");
+*/	
+
+ 	//timers.start("matrix softmax qpu");
+	s_softmax->load(&arr(), max, columns()).run();
+	//s_softmax_rows->load(&arr(), &max_row.arr(), rows(), columns()).run();
+ 	//timers.stop("matrix softmax qpu");
+
+	//warn << "softmax this: " << dump();
 }
 
 
@@ -540,7 +610,7 @@ matrix matrix::transpose() const {
 
 namespace {
 
-matrix outer_ret(true);  
+matrix outer_ret;  
 
 void outer_check(matrix const &lhs, matrix const &rhs) {
   //assert(lhs.is_vector());
@@ -645,6 +715,20 @@ void matrix::transfer(matrix const &rhs) {
   m_columns  = rhs.m_columns;
   m_rows     = rhs.m_rows;
   m_arr      = rhs.m_arr;  // nullptr allowed
+}
+
+
+/**
+ * @brief Calculate max per row
+ *
+ * Output is a row-vector.
+ */
+void matrix::max_row(matrix &ret) const {
+	assert(columns() % 16 == 0);
+	assert(ret.rows() == rows());
+	assert(ret.columns() == 1);
+
+	s_max_row->load(&ret.arr(), &arr(), rows(), columns()).run();
 }
 
 
