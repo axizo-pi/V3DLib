@@ -194,7 +194,7 @@ Timer &Timers::start(std::string const &label) {
   int index = find(label);
 
   if (index == -1) {
-    warn << "Adding timer '" << label << "'";
+    //warn << "Adding timer '" << label << "'";
     m_list << Timer(label);
     index = (int) m_list.size() - 1;
 	} else {

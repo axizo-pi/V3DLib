@@ -60,12 +60,11 @@ MMatrix::MMatrix(MMatrix const &&rhs) {
 
 /**
  * Required because `ctor &&` added.
+ *
+ * Timing insignificant.
  */
 MMatrix &MMatrix::operator=(const MMatrix &rhs) {
-	timers.start("MMatrix = &");
   set(rhs);
-	timers.stop("MMatrix = &");
-
 	return *this;
 }
 
@@ -74,10 +73,8 @@ void MMatrix::set(MatrixXf const &rhs, bool set_qpu) {
   m_Xf = rhs;
 
   if (set_qpu) {
-		timers.start("set qpu");
-    m_qpu = copy_m(m_Xf);    // Bulk of time here
+    m_qpu = copy_m(m_Xf);    // All of time here
     //copy_m(m_qpu, m_Xf);   // Does not improve; if anything it is a bit worse
-		timers.stop("set qpu");
   }
 
   used_fields(true, set_qpu);
@@ -94,7 +91,6 @@ void MMatrix::set(MMatrix const &rhs) {
 	}
 
   used_fields(rhs.m_using_Xf, rhs.m_using_qpu);
-	//warn << "set(): " << m_qpu.dump();
 }
 
 
@@ -195,6 +191,7 @@ MMatrix MMatrix::transpose() const {
 
 
 void MMatrix::row(int index, MatrixXf const &val) {
+  assert(false);  // Check unused
   timers.start("row(index, val)");
 
   m_Xf.row(index) = val;
@@ -247,6 +244,8 @@ void MMatrix::copy_block(MMatrix const &rhs, int from_offset, int to_offset, int
  * Profile timing insignificant.
  */
 void MMatrix::row(int index, MMatrix const &val) {
+  timers.start("row(index, MMatrix)");
+
   assert(val.rows() == 1);
   assert(cols() == val.cols());
   assert(index >=0 && index < rows());
@@ -267,6 +266,7 @@ void MMatrix::row(int index, MMatrix const &val) {
   }
 
   used_fields(used_Xf, true);
+  timers.stop("row(index, MMatrix)");
 }
 
 

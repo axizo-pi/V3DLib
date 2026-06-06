@@ -364,7 +364,7 @@ void forward_4(matrix &ret, matrix &X, matrix &h, matrix &S) {
 
 
 void mult_matrix_col_add(matrix &ret, matrix &lhs1, matrix &rhs1, matrix &lhs2, matrix &rhs2) {
- 	timers.start("mult_matrix_col_add");
+ 	//timers.start("mult_matrix_col_add");
 	assert(lhs1.rows() == lhs2.rows());
 	assert(rhs1.columns() == rhs2.columns());
 
@@ -378,7 +378,7 @@ void mult_matrix_col_add(matrix &ret, matrix &lhs1, matrix &rhs1, matrix &lhs2, 
 	 	rhs1.columns()
 	).run();
 
- 	timers.stop("mult_matrix_col_add");
+ 	//timers.stop("mult_matrix_col_add");
 }
 
 /**

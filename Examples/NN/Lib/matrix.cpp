@@ -14,6 +14,15 @@ void frand_array(Float::Array &rhs) {
 }
 
 
+MAYBE_UNUSED bool same(Float::Array const &lhs, Float::Array const &rhs, int size) {
+  for (int i = 0; i < (int) size; ++i) {
+    if (lhs[i] != rhs[i]) return false;
+  }
+
+	return true;
+}
+
+
 /**
  * 
  */
@@ -167,7 +176,7 @@ void matrix::resize(int rows, int columns) {
 
 
 matrix matrix::row(int index) const {
-  //timers.start("matrix::row(index)");
+  timers.start("matrix::row(index)");
 
   assert(index >= 0 && index < rows());
   int width = columns();
@@ -182,7 +191,7 @@ matrix matrix::row(int index) const {
   // Not working
   //memcpy((void *) &ret.arr(), (&arr() + offset), width);
 
-  //timers.stop("matrix::row(index)");
+  timers.stop("matrix::row(index)");
   return ret;
 }
 
@@ -223,7 +232,9 @@ void matrix::set(float init_val) {
  * rhs array can be larger than this, larger than required for elements
  * Only the element memory is copied. 
  *
- * Pre: rows/columns assigned correctly rhs->this.
+ * Pre: rows/columns assigned correctly rhs -> this.
+ *
+ * Profile timing inconsequential now that `copyFrom()` uses `mempcy()`.
  */
 void matrix::set(Float::Array const &rhs) {
   assert(!empty()); 
@@ -234,11 +245,8 @@ void matrix::set(Float::Array const &rhs) {
 	assert(copy_size <= (int) rhs.size());
 	assert(copy_size <= (int) arr().size());
 
-	timers.start("matrix set"); 
-
 	arr().copyFrom(rhs, copy_size);
-
-	timers.stop("matrix set"); 
+	//OK assert(same(arr(), rhs, copy_size));
 }
 
 
@@ -252,20 +260,21 @@ void matrix::frand() {
 
 
 matrix &matrix::operator=(matrix const &rhs) {
-	timers.start("matrix = &");
 	resize(rhs.m_rows, rhs.m_columns);
+
 	if (rhs.m_arr != nullptr) {
-		set(*rhs.m_arr);
+		set(*rhs.m_arr);                 // All profile timing here
 	}
-	timers.stop("matrix = &");
+
   return *this;
 }
 
 
+/**
+ * Profile timing inconsequential, average basically 0.
+ */
 matrix &matrix::operator=(matrix const &&rhs) {
-	timers.start("matrix = &&");
   transfer(rhs);
-	timers.stop("matrix = &&");
   return *this;
 }
 

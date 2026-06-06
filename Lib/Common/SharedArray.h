@@ -3,7 +3,9 @@
 #include <vector>
 #include "BufferObject.h"
 #include "Support/basics.h"
+#include "Support/Timer.h"
 #include "Support/Platform.h"  // has_vc4
+#include <cstring>             // memcpy
 
 namespace V3DLib {
 
@@ -126,22 +128,25 @@ public:
     }
   }
 
+
+	/**
+	 *
+	 * Only copy src items, don't assume there is more.  
+	 * I realize this sounds glaringly obvious, but I _did_ manage to use dst size (`*this`)
+	 * to copy.
+	 * The reserved size of the array need not be the same as the number of elements contained;
+	 * it occurs that the array is actually larger. This applies to both `src` and `dst`.
+	 *
+	 * Important to register stupidities.
+	 */
   void copyFrom(SharedArray<T> const &src, int in_size = -1) {
     assert(!src.empty());
 
 		uint32_t copy_size = (in_size == -1)? src.size(): (uint32_t) in_size;
     assert(copy_size <= size());
 
-    for (uint32_t offset = 0; offset < copy_size; ++offset) {
-      (*this)[offset] = src[offset];
-    }
-
-		// Only copy src items, don't assume there is more
-		/*
-    for (uint32_t offset = src.size(); offset < size(); ++offset) {
-      (*this)[offset] = src[offset];
-    }
-		*/
+		// 150x faster than loop copy
+		memcpy(ptr(), src.ptr(), copy_size*sizeof(T));
   }
 
 
