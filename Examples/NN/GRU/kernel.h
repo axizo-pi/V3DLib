@@ -12,6 +12,7 @@ void set_decay(qpu::matrix &lhs, qpu::matrix const &rhs, float decay);
 void divide_matrix(qpu::matrix &ret, qpu::matrix &lhs, qpu::matrix const &rhs);
 void divide_vector(qpu::matrix &ret, qpu::matrix &lhs, qpu::matrix const &rhs);
 void forward_4(qpu::matrix &ret, qpu::matrix &X, qpu::matrix &h, qpu::matrix &S);
+void forward_5(qpu::matrix &rhs);
 
 void mult_matrix_col_add(
 	qpu::matrix &ret,

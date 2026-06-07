@@ -150,6 +150,7 @@ private:
 
 bool check_precision(float lhs, float rhs, float precision, int bit_diff, float *max_diff = nullptr, bool do_show = true);
 bool same(qpu::vector const &lhs, qpu::vector const &rhs, float precision = 0.0f);
+void init();
 
 } // namespace qpu
 

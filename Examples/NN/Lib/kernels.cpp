@@ -3,6 +3,31 @@
 
 namespace kernel {
 
+void max_partial(Float::Ptr &rhs, Float &result, Int &col_size) {
+	Float acc = -1024.0f;  // Dummy init value, chosen very low
+
+ 	For (Int c = 0, c < col_size, c++)
+		Float tmp = *rhs;
+		acc = V3DLib::max(acc, tmp);
+
+		rhs.inc();
+	End
+
+	rotate_max(acc, result);
+}
+
+
+void softmax_partial(Float::Ptr &lhs, Float &max, Int &col_size) {
+	For (Int c = 0, c < col_size, c++)
+		Float tmp = *lhs;
+		Float tmp2 = V3DLib::exp_e(tmp - max);
+
+		*lhs = tmp2;
+		lhs.inc();
+	End
+}	
+
+
 /**
  * @brief calculate `sigmoid(in + bias)`.
  */
@@ -508,36 +533,14 @@ void max_row(Float::Ptr ret, Float::Ptr in_rhs, Int rows, Int cols) {
 
   For (Int r = 0, r < rows, r++)
 		Float::Ptr rhs = in_rhs + r*cols;
-		Float acc = -1024.0f;
+		Float tmp2;
 
-  	For (Int c = 0, c < col_size, c++)
-			Float tmp = *rhs;
-			acc = V3DLib::max(acc, tmp);
+		max_partial(rhs, tmp2, col_size);
 
-			rhs.inc();
-		End
-
-		Float tmp2 = 2.0f;
-		rotate_max(acc, tmp2);
 		*ret = tmp2;
 		ret++;
 	End
 }
-
-
-namespace {
-
-void softmax_partial(Float::Ptr &lhs, Float &max, Int col_size) {
-	For (Int c = 0, c < col_size, c++)
-		Float tmp = *lhs;
-		Float tmp2 = V3DLib::exp_e(tmp - max);
-
-		*lhs = tmp2;
-		lhs.inc();
-	End
-}	
-
-}  // anon namespace
 
 
 void softmax(Float::Ptr lhs, Float max, Int cols) {

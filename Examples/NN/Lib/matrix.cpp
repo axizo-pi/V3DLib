@@ -23,6 +23,20 @@ MAYBE_UNUSED bool same(Float::Array const &lhs, Float::Array const &rhs, int siz
 }
 
 
+MAYBE_UNUSED bool same(matrix const &lhs, matrix const &rhs) {
+	assert(lhs.rows() == rhs.rows());
+	assert(lhs.columns() == rhs.columns());
+
+  for (int r = 0; r < lhs.rows(); ++r) {
+  	for (int c = 0; c < lhs.columns(); ++c) {
+	    if (lhs.at(r, c) != rhs.at(r, c)) return false;
+  	}
+  }
+
+	return true;
+}
+
+
 /**
  * 
  */
@@ -116,6 +130,15 @@ void init_local() {
 } // anon namespace
 
 
+/**
+ * @brief Explicitly initialize the QPU kernels
+ *
+ * Just as with `gru_kernel::init()`, there is a significant overhead on
+ * initializing the kernels. Explicit call prevents skewed profile timing.
+ */
+void init() { init_local(); }
+
+
 ////////////////////////////////////////////////
 // Class matrix
 ////////////////////////////////////////////////
@@ -176,22 +199,15 @@ void matrix::resize(int rows, int columns) {
 
 
 matrix matrix::row(int index) const {
-  timers.start("matrix::row(index)");
-
   assert(index >= 0 && index < rows());
+
   int width = columns();
+  int offset = index * width;
   matrix ret(1, width);
 
-  int offset = index * width;
+	// 50x faster than basic loop
+  memcpy(ret.arr().ptr(), arr().ptr() + offset, sizeof(float)*width);
 
-  for (int i = 0; i < width; ++i) {
-    ret.arr()[i] = arr()[offset + i];
-  }
-
-  // Not working
-  //memcpy((void *) &ret.arr(), (&arr() + offset), width);
-
-  timers.stop("matrix::row(index)");
   return ret;
 }
 
@@ -670,16 +686,11 @@ void matrix::outer_add(matrix const &lhs, matrix const &rhs) {
 
 
 void matrix::outer_add_rows(matrix const &lhs, matrix const &rhs) {
-  //warn << "this: " << dump_dim();
-  //warn << "lhs: " << lhs.dump_dim();
-  //warn << "rhs: " << rhs.dump_dim();
-
   outer_check(lhs, rhs);  // TODO necessary? Does it work as expected?
   assert(rows() == lhs.columns() && columns() == rhs.columns());
 
   timers.start("matrix::outer_add_rows");
     
-  //to_file("s_op_add_rows.txt", s_op_add_rows->dump());  
   s_op_add_rows->setMaxQPUs();
   s_op_add_rows->load(&arr(), &lhs.arr(), &rhs.arr(), lhs.rows(), lhs.columns(), rhs.columns()).run();
 
@@ -954,8 +965,10 @@ bool check_precision(float lhs, float rhs, float precision, int bit_diff, float 
 		int bit = V3DLib::bit_diff(lhs, rhs, bit_diff);
 
 		if (bit_diff > -1) {
-			//warn << "check_precision bit precision";
 			failed = (bit > -1);
+			if (failed) {
+				warn << "check_precision bit precision fail, bit: " << bit;
+			}
 		} else {
 			//warn << "check_precision full precision";
 			failed = (lhs != rhs);

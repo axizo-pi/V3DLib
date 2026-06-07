@@ -9,6 +9,8 @@ using namespace V3DLib;
 
 void mult_vec_partial(Float::Ptr &input, Float::Ptr &mat, Float::Ptr &result, Int &M, Int &N);
 void clip_partial(Float &val, Float &clip_min, Float &clip_max);
+void max_partial(Float::Ptr &rhs, Float &result, Int &col_size);
+void softmax_partial(Float::Ptr &lhs, Float &max, Int &col_size);
 
 void sigmoid(Float::Ptr in, Float::Ptr bias, Float::Ptr out, Int N);
 void dsigmoid(Float::Ptr in, Float::Ptr out, Int N);

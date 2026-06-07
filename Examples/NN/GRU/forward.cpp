@@ -36,6 +36,7 @@ void forward_propagation(
   bool do_test
 ) {
 	gru_kernel::init();
+	qpu::init();
   timers.start("forward_propagation");
 
   MMatrix temp(1, hidden_dim);

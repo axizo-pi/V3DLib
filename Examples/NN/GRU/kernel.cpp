@@ -166,14 +166,6 @@ void div_vector_kernel(Float::Ptr in_ret, Float::Ptr in_lhs, Float::Ptr in_rhs, 
 void forward_4_kernel(Float::Ptr ret, Float::Ptr x, Float::Ptr h, Float::Ptr S, Int N) {
 	Float one = 1.0f;
 
-	//Float::Ptr ret = in_ret + me();
-	//Float::Ptr   x = in_x   + me();
-	//Float::Ptr   h = in_h   + me();
-	//Float::Ptr   S = in_S   + me();
-
-	Int offset = 16*numQPUs();
-
-  //For (Int n = me(), n < N, n += numQPUs())
   For (Int n = 0, n < N, n++)
 		Float x_val = *x;
 		Float val = (one - x_val) * (*h - x_val) * *S;
@@ -183,10 +175,45 @@ void forward_4_kernel(Float::Ptr ret, Float::Ptr x, Float::Ptr h, Float::Ptr S, 
 		x.inc();
 		h.inc();
 		S.inc();
-		//ret += offset;
-		//x   += offset;
-		//h   += offset;
-		//S   += offset;
+	End
+}
+
+
+/**
+ * Result stored in rhs
+ */
+void forward_5_kernel(Float::Ptr in_rhs, Int cols) {
+	Int col_size = cols >> 4;
+	Float max;
+	Float::Ptr rhs = in_rhs;
+
+	kernel::max_partial(rhs, max, col_size);
+
+	rhs = in_rhs;
+	kernel::softmax_partial(rhs, max, col_size);
+
+	//
+	// Calculate sum
+	//
+	rhs = in_rhs;
+	Float sum = 0.0f;
+
+  For (Int c = 0, c < col_size, c++)
+		sum += *rhs;
+		rhs.inc();
+	End
+
+  rotate_sum(sum, sum);
+
+	//
+	// Divide values by sum
+	//
+	rhs = in_rhs;
+
+  For (Int c = 0, c < col_size, c++)
+		Float tmp = *rhs;
+		*rhs = tmp/sum;
+		rhs.inc();
 	End
 }
 
@@ -267,6 +294,7 @@ std::unique_ptr<BaseKernel> s_set_decay;
 std::unique_ptr<BaseKernel> s_divide_matrix;
 std::unique_ptr<BaseKernel> s_div_vector;
 std::unique_ptr<BaseKernel> s_forward_4;
+std::unique_ptr<BaseKernel> s_forward_5;
 std::unique_ptr<BaseKernel> s_mult_matrix_col_add;
 
 
@@ -282,6 +310,7 @@ void init_local() {
   s_divide_matrix.reset(new BaseKernel(compile(divide_matrix_kernel, settings())));
   s_div_vector   .reset(new BaseKernel(compile(div_vector_kernel   , settings())));
   s_forward_4    .reset(new BaseKernel(compile(forward_4_kernel    , settings())));
+  s_forward_5    .reset(new BaseKernel(compile(forward_5_kernel    , settings())));
 
   s_mult_matrix_col_add.reset(new BaseKernel(compile(mult_matrix_col_add_kernel, settings())));
 
@@ -363,6 +392,14 @@ void forward_4(matrix &ret, matrix &X, matrix &h, matrix &S) {
 }
 
 
+void forward_5(matrix &rhs) {
+	assert(rhs.rows() == 1);
+	assert(!rhs.empty());
+
+  s_forward_5->load(&rhs.arr(), rhs.columns()).run();  // size() should work as well
+}
+
+
 void mult_matrix_col_add(matrix &ret, matrix &lhs1, matrix &rhs1, matrix &lhs2, matrix &rhs2) {
  	//timers.start("mult_matrix_col_add");
 	assert(lhs1.rows() == lhs2.rows());
@@ -380,6 +417,7 @@ void mult_matrix_col_add(matrix &ret, matrix &lhs1, matrix &rhs1, matrix &lhs2, 
 
  	//timers.stop("mult_matrix_col_add");
 }
+
 
 /**
  * @brief Explicitly initialize the GRU kernels
