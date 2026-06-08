@@ -720,11 +720,13 @@ std::string matrix::dump(bool output_int) const {
     ret << "(tr) ";  // Signal transposed
     ret << "[" << vector_dump(*m_arr, m_rows, 0, output_int) << "]";
   } else {
-    ret << "\n";
+    ret << "[\n";
 
     for (int h = 0; h < m_rows; ++h) {
        ret << "  " << h << ": [" << vector_dump(*m_arr, m_columns, h*m_columns, output_int) << "]\n";
     }
+
+    ret << "]";
   }
 
   return ret;

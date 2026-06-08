@@ -26,8 +26,8 @@
  */
 void forward_propagation(
   Model &m,
-  MatrixXf& X,
-  MatrixXf& Y,  // Not used in test
+  MMatrix const &X,
+  MMatrix const &Y,  // Not used in test
   State &state,
   int time_steps,
   int input_dim,
@@ -50,8 +50,10 @@ void forward_propagation(
 
 		// Timing init inconsequential
     auto S_row = state.S.row(i); // Only S_row[0] set
-    X_row.set(X.row(i), true);
-    Y_row.set(Y.row(i), true);
+    X_row.set(X.row(i));
+    Y_row.set(Y.row(i));
+		//warn << "X_row: " << X_row.dump();
+		//warn << "Y_row: " << Y_row.dump();
 
     Z_row = state.z.row(i);
 		assert(Z_row.is_zero());  // Apparently always zero

@@ -4,8 +4,8 @@
 
 void forward_propagation(
   Model &m,
-  MatrixXf& X,
-  MatrixXf& Y,  // Not used in test
+  MMatrix const &X,
+  MMatrix const &Y,  // Not used in test
   State &state,
   int time_steps,
   int input_dim,

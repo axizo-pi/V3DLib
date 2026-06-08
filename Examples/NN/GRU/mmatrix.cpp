@@ -94,6 +94,29 @@ void MMatrix::set(MMatrix const &rhs) {
 }
 
 
+/**
+ * Application-specific load from vector.
+ */
+void MMatrix::set(std::vector<int> const &rhs, int pos) {
+	assert(!empty());
+
+	int count = 0;
+
+  while ((pos + count) < (int) rhs.size() && count < rows()) {
+    int index = pos + count;
+
+    //m_Xf(count, rhs[index]) = 1;
+		m_qpu.at(count, rhs[index]) = 1;
+
+    count++;
+  }
+  //m_Xf.eval();
+
+	used_fields(false, true);
+	assert(same());
+}
+
+
 bool MMatrix::is_zero() const {
   assert(m_using_Xf || m_using_qpu);
 
@@ -399,8 +422,22 @@ std::string MMatrix::dump_dim() const {
 std::string MMatrix::dump() const {
   std::string ret;
   ret << dump_dim() << ": \n"
-      << "  m_Xf : " << ::dump(m_Xf) << "\n"
-      << "  m_qpu: " << m_qpu.dump();
+      << "  m_Xf : ";
+
+  if (m_using_Xf) {
+		ret << ::dump(m_Xf);
+  } else {
+    ret << "[]";
+  }
+
+  ret << "\n  m_qpu: ";
+
+  if (m_using_qpu) {
+		ret << m_qpu.dump();
+  } else {
+    ret << "[]";
+  }
+
   return ret;
 }
 

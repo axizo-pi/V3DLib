@@ -25,6 +25,7 @@ public:
 
   void set(MatrixXf const &rhs, bool set_qpu = false);
   void set(MMatrix const &rhs);
+	void set(std::vector<int> const &rhs, int pos);
 
 	bool is_zero() const;
 
