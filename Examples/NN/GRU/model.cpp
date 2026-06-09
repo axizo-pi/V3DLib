@@ -135,24 +135,24 @@ void Model::init_val(int input_dim, int hidden_dim, int output_dim, float val, b
  * This method specifically to test if gradient changed
  */
 bool Model::is_zero() const {
-	timers.start("Model::is_zero()");
+  timers.start("Model::is_zero()");
 
-	bool ret =
-		U_z.is_zero() &&
-	  U_r.is_zero() &&
-	  U_h.is_zero() &&
-		W_z.is_zero() &&
-	  W_r.is_zero() &&
-	  W_h.is_zero() &&
-	  V.is_zero();
+  bool ret =
+    U_z.is_zero() &&
+    U_r.is_zero() &&
+    U_h.is_zero() &&
+    W_z.is_zero() &&
+    W_r.is_zero() &&
+    W_h.is_zero() &&
+    V.is_zero();
 
-	timers.stop("Model::is_zero()");
-	return ret;
+  timers.stop("Model::is_zero()");
+  return ret;
 }
 
 
 void Model::grad_div_steps(float steps) {
-	if (is_zero()) return;
+  if (is_zero()) return;
 
   U_z /= steps;
   U_r /= steps;

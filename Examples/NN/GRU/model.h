@@ -21,7 +21,7 @@ public:
   int hidden_dim() const { return (int) U_z.cols(); }
   int output_dim() const { return (int) V.cols(); }
 
-	bool is_zero() const;
+  bool is_zero() const;
   void grad_div_steps(float steps);
   void cache_decay(float decay, Model &grad);
   void divide(Model &grad, Model &cache);

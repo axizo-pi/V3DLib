@@ -299,7 +299,7 @@ matrix matrix::operator-(matrix const &rhs) const {
   assert(m_columns == rhs.columns() && m_rows == rhs.rows());
   matrix ret(m_rows, m_columns);
 
-	//TODO s_matrix_sub->setNumQPUs(2);
+  //TODO s_matrix_sub->setNumQPUs(2);
   s_matrix_sub->load(&ret.arr(), &arr(), &rhs.arr(), size()/16).run();
   return ret;
 }
@@ -986,13 +986,13 @@ vector operator*(matrix const &lhs, matrix const &rhs) {
 
 
 bool check_precision(
-	float lhs,
-	float rhs,
-	float precision,
-	int bit_diff,
-	float *max_diff,
-	int *max_bit,
-	bool do_show
+  float lhs,
+  float rhs,
+  float precision,
+  int bit_diff,
+  float *max_diff,
+  int *max_bit,
+  bool do_show
 ) {
   bool ret = true;
   float diff = abs(lhs - rhs);

@@ -15,9 +15,9 @@ void forward_4(qpu::matrix &ret, qpu::matrix &X, qpu::matrix &h, qpu::matrix &S)
 void forward_5(qpu::matrix &rhs);
 
 void mult_matrix_col_add(
-	qpu::matrix &ret,
-	qpu::matrix &lhs1, qpu::matrix &rhs1,
-	qpu::matrix &lhs2, qpu::matrix &rhs2
+  qpu::matrix &ret,
+  qpu::matrix &lhs1, qpu::matrix &rhs1,
+  qpu::matrix &lhs2, qpu::matrix &rhs2
 );
 
 void init();

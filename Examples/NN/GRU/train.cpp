@@ -102,10 +102,10 @@ void LoopState::update_gradient_rows(Model &grad) const {
 
 
 void gradient_delta(LoopState &ls, Model &grad, MMatrix &delta_y_x, int time_steps) {
-	// Currently, relevant inputs are zero, with the calculation resulting in zero.
-	// Skip this function until the inputs are non-zero.
-	if (grad.V.is_zero() && ls.temp().S.is_zero()) return;
-	warn << "gradient_delta() inputs non-zero! Yay! We can continue." << thrw;			
+  // Currently, relevant inputs are zero, with the calculation resulting in zero.
+  // Skip this function until the inputs are non-zero.
+  if (grad.V.is_zero() && ls.temp().S.is_zero()) return;
+  warn << "gradient_delta() inputs non-zero! Yay! We can continue." << thrw;      
 
   MMatrix grad_V_x = grad.V;
   //warn << "delta grad_V_x: " << grad_V_x.dump();
@@ -118,12 +118,12 @@ void gradient_delta(LoopState &ls, Model &grad, MMatrix &delta_y_x, int time_ste
     grad.V.set(grad.V.Xf() + ls.temp().S.Xf().transpose().eval() * delta_y_x.Xf().row(time_step));
   }
 
-	assert(grad.V.is_zero());
+  assert(grad.V.is_zero());
   timers.stop("delta set");
 
-	//
-	// TODO: continue with this if values become non-zero
-	//
+  //
+  // TODO: continue with this if values become non-zero
+  //
   timers.start("delta set qpu");
 
   for(int time_step = time_steps - 1; time_step >= 0; time_step--) {

@@ -35,12 +35,12 @@ void forward_propagation(
   int output_dim,
   bool do_test
 ) {
-	gru_kernel::init();
-	qpu::init();
+  gru_kernel::init();
+  qpu::init();
   timers.start("forward_propagation");
 
   MMatrix temp(1, hidden_dim);
-	MMatrix temp_hidden;
+  MMatrix temp_hidden;
   MMatrix X_row;
   MMatrix Y_row;
   MMatrix Z_row;
@@ -48,30 +48,30 @@ void forward_propagation(
   for(int i = 0; i < time_steps; i++) {
     //warn << "Forward i: " << i;
 
-		// Timing init inconsequential
+    // Timing init inconsequential
     auto S_row = state.S.row(i); // Only S_row[0] set
     X_row.set(X.row(i));
     Y_row.set(Y.row(i));
-		//warn << "X_row: " << X_row.dump();
-		//warn << "Y_row: " << Y_row.dump();
+    //warn << "X_row: " << X_row.dump();
+    //warn << "Y_row: " << Y_row.dump();
 
     Z_row = state.z.row(i);
-		assert(Z_row.is_zero());  // Apparently always zero
+    assert(Z_row.is_zero());  // Apparently always zero
 
-		temp = X_row.forward_1(m, S_row);
+    temp = X_row.forward_1(m, S_row);
     state.z.row(i, temp.sigmoid());  // Profile timing minimal
 
-		temp = X_row.forward_2(m, S_row);
+    temp = X_row.forward_2(m, S_row);
     state.r.row(i, temp.sigmoid());
 
-		MMatrix tempb = X_row.forward_3(m, S_row, state.r.row(i));
+    MMatrix tempb = X_row.forward_3(m, S_row, state.r.row(i));
     state.h.row(i, tempb.tanh());
 
-		// forward_4/5 timing small
-		temp_hidden = Z_row.forward_4(S_row, state.h.row(i));
+    // forward_4/5 timing small
+    temp_hidden = Z_row.forward_4(S_row, state.h.row(i));
     state.S.row(i + 1, temp_hidden);   // Assumption: value at i == 0 should be retained
 
-		auto temp_output = temp_hidden * m.V;
+    auto temp_output = temp_hidden * m.V;
     auto temp2 = temp_output.forward_5();
     state.O.row(i, temp2);
 

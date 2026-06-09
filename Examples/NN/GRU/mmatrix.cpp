@@ -157,18 +157,18 @@ bool MMatrix::is_zero() const {
   if (m_using_qpu) {
     timers.start("is_zero qpu");
     auto &arr = m_qpu.arr();
-		auto ptr  = arr.ptr();
-		auto size = m_qpu.size();
+    auto ptr  = arr.ptr();
+    auto size = m_qpu.size();
 
-		// Using ptr 11x faster than using arr[i]
-		// Still 7x slower than Xf
+    // Using ptr 11x faster than using arr[i]
+    // Still 7x slower than Xf
     for (int i = 0; i < size; i++) {
       if (*ptr != 0.0f) {
         qpu_zero = false;
         break;
       }
 
-			ptr++;
+      ptr++;
     }
     timers.stop("is_zero qpu");
   }
@@ -379,20 +379,20 @@ bool MMatrix::same_intern(MMatrix const &rhs, float precision, int bit_diff, boo
   assert((m_using_Xf == rhs.m_using_Xf) || (m_using_qpu == rhs.m_using_qpu));
 
   bool ret = true;
-	// Internal checks
+  // Internal checks
   if (m_using_Xf && m_using_qpu)         ret = ret && ::same(m_qpu, m_Xf, precision, bit_diff);
   if (rhs.m_using_Xf && rhs.m_using_qpu) ret = ret && ::same(rhs.m_qpu, rhs.m_Xf, precision, bit_diff);
 
-	// Cross checks
+  // Cross checks
   if (m_using_qpu && rhs.m_using_Xf)     ret = ret && ::same(m_qpu, rhs.m_Xf, precision, bit_diff, show_max_diff);
   if (m_using_qpu && rhs.m_using_qpu)    ret = ret && ::same(m_qpu, rhs.m_qpu, precision, bit_diff, show_max_diff);
 
   if (m_using_Xf && !m_using_qpu) {
-	  if (m_using_Xf  && rhs.m_using_Xf)     assert(false); // Deal with it when it happens
-  	if (m_using_Xf  && rhs.m_using_qpu)    assert(false); // Deal with it when it happens
-	}
+    if (m_using_Xf  && rhs.m_using_Xf)     assert(false); // Deal with it when it happens
+    if (m_using_Xf  && rhs.m_using_qpu)    assert(false); // Deal with it when it happens
+  }
 
-	return ret;
+  return ret;
 }
 
 
@@ -466,7 +466,7 @@ MMatrix MMatrix::operator+(MMatrix const &rhs) const {
 MMatrix MMatrix::operator-(MMatrix const &rhs) const {
   rhs.need_fields(true, true);
   need_fields(true, true);
-	//warn << "MMatrix - dim: " << dump_dim();
+  //warn << "MMatrix - dim: " << dump_dim();
 
   MMatrix ret;
 
@@ -1377,7 +1377,7 @@ bool same(qpu::matrix const &lhs, qpu::matrix const &rhs, float precision, int b
   //warn << "Called same(qpu::matrix, qpu::matrix)";
   bool ret       = true;
   float max_diff = 0.0f;
-	int max_bit    = -1;
+  int max_bit    = -1;
 
   // Special case for 2 input vectors: accept transposed vectors
   if(lhs.columns() == 1 && lhs.columns() == rhs.rows() && lhs.rows() == rhs.columns() ) {
@@ -1392,8 +1392,8 @@ bool same(qpu::matrix const &lhs, qpu::matrix const &rhs, float precision, int b
 
     if (show_max_diff) {
       warn << "same(qpu::matrix, qpu::matrix) vector, "
-				   << "max_diff: " << max_diff << ", "
-				   << "max_bit: "  << max_bit;
+           << "max_diff: " << max_diff << ", "
+           << "max_bit: "  << max_bit;
     }
     return ret;
   }
@@ -1410,7 +1410,7 @@ bool same(qpu::matrix const &lhs, qpu::matrix const &rhs, float precision, int b
      return false;
   }
 
-	std::string buf;
+  std::string buf;
 
   for (int i = 0; i < (int) rhs.rows(); ++i) {
     if (!show_max_diff && !ret) break;
@@ -1429,13 +1429,13 @@ bool same(qpu::matrix const &lhs, qpu::matrix const &rhs, float precision, int b
 
   if (show_max_diff) {
     buf << ", "
-			  << "max_diff: " << max_diff << ", "
-				<< "max_bit: "  << max_bit;
+        << "max_diff: " << max_diff << ", "
+        << "max_bit: "  << max_bit;
   }
 
-	if (!buf.empty()) {
-		warn << "Fail same(qpu::matrix, qpu::matrix)" << buf ;
-	}
+  if (!buf.empty()) {
+    warn << "Fail same(qpu::matrix, qpu::matrix)" << buf ;
+  }
 
   return ret;
 }

@@ -64,8 +64,8 @@ void predict(Model &m, int input_dim, int output_dim, int hidden_dim, int time_s
 
   X.eval();
 
-	MMatrix X_2;
-	X_2.set(X, true);
+  MMatrix X_2;
+  X_2.set(X, true);
   MMatrix unused(time_steps, hidden_dim);
 
   while (count --) {
