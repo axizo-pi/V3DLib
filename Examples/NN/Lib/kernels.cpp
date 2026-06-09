@@ -128,6 +128,7 @@ void matrix_add(Float::Ptr ret, Float::Ptr lhs, Float::Ptr rhs, Int N) {
 
 
 void matrix_sub(Float::Ptr ret, Float::Ptr lhs, Float::Ptr rhs, Int N) {
+  //TODO: For (Int h = me(), h < N, h += numQPUs()) - init Ptr's
   For (Int h = 0, h < N, h++)
     Float x = (*lhs) - (*rhs);
     *ret = x;
@@ -149,9 +150,10 @@ void mul_float(Float::Ptr ret, Float::Ptr lhs, Float val, Int N) {
   End
 }
 
-
 void mul_float_self(Float::Ptr lhs, Float val, Int N) {
-  For (Int h = 0, h < N, h++)
+	// TODO: check if correct. Expecting Ptr to be initialized for multi-QPU
+  For (Int h = me(), h < N, h += numQPUs())
+  //For (Int h = 0, h < N, h++)
     Float x = (*lhs) * val;
     *lhs = x;
 

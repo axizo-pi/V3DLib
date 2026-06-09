@@ -19,21 +19,21 @@ MAYBE_UNUSED bool same(Float::Array const &lhs, Float::Array const &rhs, int siz
     if (lhs[i] != rhs[i]) return false;
   }
 
-	return true;
+  return true;
 }
 
 
 MAYBE_UNUSED bool same(matrix const &lhs, matrix const &rhs) {
-	assert(lhs.rows() == rhs.rows());
-	assert(lhs.columns() == rhs.columns());
+  assert(lhs.rows() == rhs.rows());
+  assert(lhs.columns() == rhs.columns());
 
   for (int r = 0; r < lhs.rows(); ++r) {
-  	for (int c = 0; c < lhs.columns(); ++c) {
-	    if (lhs.at(r, c) != rhs.at(r, c)) return false;
-  	}
+    for (int c = 0; c < lhs.columns(); ++c) {
+      if (lhs.at(r, c) != rhs.at(r, c)) return false;
+    }
   }
 
-	return true;
+  return true;
 }
 
 
@@ -100,7 +100,7 @@ void init_local() {
   s_mult_matrix        .reset(new BaseKernel(compile(kernel::mult_matrix    , settings())));
 
   s_mult_matrix_col    .reset(new BaseKernel(compile(kernel::mult_matrix_col, settings())));
-	//to_file("s_mult_matrix_col.txt", s_mult_matrix_col->dump());
+  //to_file("s_mult_matrix_col.txt", s_mult_matrix_col->dump());
 
   s_mult_matrix_t      .reset(new BaseKernel(compile(kernel::mult_matrix_t  , settings())));
   s_matrix_add         .reset(new BaseKernel(compile(kernel::matrix_add     , settings())));
@@ -150,9 +150,9 @@ matrix::matrix(int rows, int columns) {
 
 
 matrix::matrix(matrix const &rhs) {
-	assert(rhs.m_arr != nullptr);
-	resize(rhs.m_rows, rhs.m_columns);
-	set(*rhs.m_arr);                   // All profile timing here
+  assert(rhs.m_arr != nullptr);
+  resize(rhs.m_rows, rhs.m_columns);
+  set(*rhs.m_arr);                   // All profile timing here
 }
 
 
@@ -205,7 +205,7 @@ matrix matrix::row(int index) const {
   int offset = index * width;
   matrix ret(1, width);
 
-	// 50x faster than basic loop
+  // 50x faster than basic loop
   memcpy(ret.arr().ptr(), arr().ptr() + offset, sizeof(float)*width);
 
   return ret;
@@ -238,9 +238,8 @@ void matrix::rand() {
 void matrix::set(float init_val) {
   auto &r = arr();
 
-  for (int i = 0; i < m_rows*m_columns; ++i) {
-    r[i] = init_val;
-  }
+  // 30x faster than basic loop
+  std::fill(r.ptr(), r.ptr() + size(), init_val);
 }
 
 
@@ -256,13 +255,13 @@ void matrix::set(Float::Array const &rhs) {
   assert(!empty()); 
   assert(!rhs.empty()); 
 
-	int copy_size = rows()*columns();
-	assert(copy_size > 0);
-	assert(copy_size <= (int) rhs.size());
-	assert(copy_size <= (int) arr().size());
+  int copy_size = rows()*columns();
+  assert(copy_size > 0);
+  assert(copy_size <= (int) rhs.size());
+  assert(copy_size <= (int) arr().size());
 
-	arr().copyFrom(rhs, copy_size);
-	//OK assert(same(arr(), rhs, copy_size));
+  arr().copyFrom(rhs, copy_size);
+  //OK assert(same(arr(), rhs, copy_size));
 }
 
 
@@ -276,11 +275,11 @@ void matrix::frand() {
 
 
 matrix &matrix::operator=(matrix const &rhs) {
-	resize(rhs.m_rows, rhs.m_columns);
+  resize(rhs.m_rows, rhs.m_columns);
 
-	if (rhs.m_arr != nullptr) {
-		set(*rhs.m_arr);                 // All profile timing here
-	}
+  if (rhs.m_arr != nullptr) {
+    set(*rhs.m_arr);                 // All profile timing here
+  }
 
   return *this;
 }
@@ -300,6 +299,7 @@ matrix matrix::operator-(matrix const &rhs) const {
   assert(m_columns == rhs.columns() && m_rows == rhs.rows());
   matrix ret(m_rows, m_columns);
 
+	//TODO s_matrix_sub->setNumQPUs(2);
   s_matrix_sub->load(&ret.arr(), &arr(), &rhs.arr(), size()/16).run();
   return ret;
 }
@@ -349,21 +349,50 @@ matrix matrix::operator*(float rhs) const {
   // Mainly handles [1,1] matrices.
   //
   if (size() % 16 != 0) {
-		if (size() != 1) {  // Warn me if anything else than (1,1) matrix handled
-			warn << "matrix float * not 16-matrix: " << dump_dim();
-		}
+    if (size() != 1) {  // Warn me if anything else than (1,1) matrix handled
+      warn << "matrix float * not 16-matrix: " << dump_dim();
+    }
 
     for (int i = 0; i < (int) m_arr->size(); ++i) {
       ret.arr()[i] = arr()[i]*rhs;
     }
   } else {
     assert(size() % 16 == 0);
-		//warn << "matrix float * 16-matrix:" << dump_dim();
+    //warn << "matrix float * 16-matrix:" << dump_dim();
     s_mul_float->load(&ret.arr(), &arr(), rhs, size()/16).run();
   }
 
   //warn << "matrix * ret: " << ret.dump();
   return ret;
+}
+
+
+matrix &matrix::operator*=(float rhs) {
+  //warn << "matrix * val: " << rhs;
+
+  //
+  // Taking non-conformant matrices into account, not passed to kernel.
+  // These happen in train GRU.
+  //
+  // Mainly handles [1,1] matrices.
+  //
+  if (size() % 16 != 0) {
+    if (size() != 1) {  // Warn me if anything else than (1,1) matrix handled
+      warn << "matrix float *= not 16-matrix: " << dump_dim();
+    }
+
+    for (int i = 0; i < (int) m_arr->size(); ++i) {
+      arr()[i] = arr()[i] * rhs;
+    }
+  } else {
+    assert(size() % 16 == 0);
+    //warn << "matrix float * 16-matrix:" << dump_dim();
+    s_mul_float_self->setMaxQPUs();
+    s_mul_float_self->load(&arr(), rhs, size()/16).run();
+  }
+
+  //warn << "matrix * ret: " << ret.dump();
+  return *this;
 }
 
 
@@ -402,33 +431,33 @@ matrix matrix::mul(matrix const &rhs) const {
  * If there are few rows, multi-QPU is not effective.
  */
 matrix matrix::mul_matrix(matrix const &rhs) const {
-	//warn << "mul_matrix: " << dump_dim();
-	//warn << "mul_matrix rhs: " << rhs.dump_dim();
+  //warn << "mul_matrix: " << dump_dim();
+  //warn << "mul_matrix rhs: " << rhs.dump_dim();
   assert((m_columns % 16) == 0);      // Inner dimension must be multiple of 16
   assert(m_columns == rhs.m_rows);
 
   matrix ret;
 
-	// Select row-first if there are enough rows to do multi-QPU
-	if (m_rows >= 16) {
-	  timers.start("matrix * row");
-	  ret.resize(m_rows, resize_16(rhs.m_columns));
-	  ret.set(0.0f);
+  // Select row-first if there are enough rows to do multi-QPU
+  if (m_rows >= 16) {
+    timers.start("matrix * row");
+    ret.resize(m_rows, resize_16(rhs.m_columns));
+    ret.set(0.0f);
 
-	  s_mult_matrix->setMaxQPUs();
-	  s_mult_matrix->load(&ret.arr(), &arr(), &rhs.arr(), m_rows, m_columns, rhs.m_columns).run();
-	  timers.stop("matrix * row");
-	} else {
-	  //timers.start("matrix * col");
-	  ret.resize(m_rows, rhs.m_columns);
-	  ret.set(0.0f);
+    //s_mult_matrix->setMaxQPUs();
+    s_mult_matrix->load(&ret.arr(), &arr(), &rhs.arr(), m_rows, m_columns, rhs.m_columns).run();
+    timers.stop("matrix * row");
+  } else {
+    //timers.start("matrix * col");
+    ret.resize(m_rows, rhs.m_columns);
+    ret.set(0.0f);
 
-	  s_mult_matrix_col->setMaxQPUs();
-	  s_mult_matrix_col->load(&ret.arr(), &arr(), &rhs.arr(), m_rows, m_columns, rhs.m_columns).run();
-	  //timers.stop("matrix * col");
-	}
+    //s_mult_matrix_col->setMaxQPUs();
+    s_mult_matrix_col->load(&ret.arr(), &arr(), &rhs.arr(), m_rows, m_columns, rhs.m_columns).run();
+    //timers.stop("matrix * col");
+  }
 
-	//warn << "ret: " << ret.dump();
+  //warn << "ret: " << ret.dump();
   return ret;
 }
 
@@ -573,15 +602,15 @@ matrix matrix::sigmoid_derivative(matrix const &rhs) {
  * @brief Calculate softmax per row
  */
 void matrix::softmax(matrix &max_row) {
-	assert(columns() % 16 == 0);
-	assert(rows() == 1);               // Expand when required
-	assert(max_row.rows() == rows());
-	assert(max_row.columns() == 1);
+  assert(columns() % 16 == 0);
+  assert(rows() == 1);               // Expand when required
+  assert(max_row.rows() == rows());
+  assert(max_row.columns() == 1);
   float max = max_row.at(0, 0);
 
 /*
- 	timers.start("matrix softmax scalar");
-	// TODO: scalar operation, fix
+   timers.start("matrix softmax scalar");
+  // TODO: scalar operation, fix
 
   //auto &arr = *m_arr;
 
@@ -591,15 +620,15 @@ void matrix::softmax(matrix &max_row) {
     at(0, i) = std::exp(at(0, i) - max);
   }
 
- 	timers.stop("matrix softmax scalar");
-*/	
+   timers.stop("matrix softmax scalar");
+*/  
 
- 	//timers.start("matrix softmax qpu");
-	s_softmax->load(&arr(), max, columns()).run();
-	//s_softmax_rows->load(&arr(), &max_row.arr(), rows(), columns()).run();
- 	//timers.stop("matrix softmax qpu");
+   //timers.start("matrix softmax qpu");
+  s_softmax->load(&arr(), max, columns()).run();
+  //s_softmax_rows->load(&arr(), &max_row.arr(), rows(), columns()).run();
+   //timers.stop("matrix softmax qpu");
 
-	//warn << "softmax this: " << dump();
+  //warn << "softmax this: " << dump();
 }
 
 
@@ -712,9 +741,9 @@ std::string matrix::dump(bool output_int) const {
   ret << dump_dim() << " ";
 
   if (m_rows*m_columns == 0) {
-		ret << "[]";
-		return ret;
-	}
+    ret << "[]";
+    return ret;
+  }
 
   if (m_rows > 1 && m_columns == 1) {
     ret << "(tr) ";  // Signal transposed
@@ -746,11 +775,11 @@ void matrix::transfer(matrix const &rhs) {
  * Output is a row-vector.
  */
 void matrix::max_row(matrix &ret) const {
-	assert(columns() % 16 == 0);
-	assert(ret.rows() == rows());
-	assert(ret.columns() == 1);
+  assert(columns() % 16 == 0);
+  assert(ret.rows() == rows());
+  assert(ret.columns() == 1);
 
-	s_max_row->load(&ret.arr(), &arr(), rows(), columns()).run();
+  s_max_row->load(&ret.arr(), &arr(), rows(), columns()).run();
 }
 
 
@@ -956,30 +985,34 @@ vector operator*(matrix const &lhs, matrix const &rhs) {
 */
 
 
-bool check_precision(float lhs, float rhs, float precision, int bit_diff, float *max_diff, bool do_show) {
+bool check_precision(
+	float lhs,
+	float rhs,
+	float precision,
+	int bit_diff,
+	float *max_diff,
+	int *max_bit,
+	bool do_show
+) {
   bool ret = true;
   float diff = abs(lhs - rhs);
+  int bit = V3DLib::bit_diff(lhs, rhs, bit_diff);
 
-	// Precision takes precedence over bit_diff, for now
+  // Precision takes precedence over bit_diff, for now
 
   if (precision == 0.0f) {
-		bool failed = false;
-		int bit = V3DLib::bit_diff(lhs, rhs, bit_diff);
+    bool failed = false;
 
-		if (bit_diff > -1) {
-			failed = (bit > -1);
-			if (failed) {
-				warn << "check_precision bit precision fail, bit: " << bit;
-			}
-		} else {
-			//warn << "check_precision full precision";
-			failed = (lhs != rhs);
-		}
-		
+    if (bit_diff > -1) {
+      failed = (bit > -1);
+    } else {
+      //warn << "check_precision full precision";
+      failed = (lhs != rhs);
+    }
+    
     if (failed) {
       if (do_show) {
-        warn << "check_precision fail, diff: " << diff << ", "
-             <<"bit: " << bit;
+        warn << "check_precision fail, diff: " << diff << ", " << "bit: " << bit;
       }
       ret = false;
     }
@@ -988,7 +1021,7 @@ bool check_precision(float lhs, float rhs, float precision, int bit_diff, float 
       if (do_show) {
         warn << "check_precision fails with "
              << "diff: " << diff << " for precision: " << precision << ", "
-             <<"bit: " << V3DLib::bit_diff(lhs, rhs, -1);
+             << "bit: " << V3DLib::bit_diff(lhs, rhs, -1);
       }
       ret = false;
     }
@@ -998,13 +1031,17 @@ bool check_precision(float lhs, float rhs, float precision, int bit_diff, float 
     if (diff > *max_diff) *max_diff = diff;
   }
 
+  if (max_bit != nullptr) {
+    if (bit > *max_bit) *max_bit = bit;
+  }
+
   return ret;
 }
 
 
 bool same(qpu::vector const &lhs, qpu::vector const &rhs, float precision) {
   for (int i = 0; i < (int) rhs.size(); ++i) {
-    if (!check_precision(lhs[i], rhs[i], precision, -1)) {
+    if (!check_precision(lhs[i], rhs[i], precision)) {
       warn << "Fail same(qpu::vector, qpu::vector), index: " << i;
       return false;
     }

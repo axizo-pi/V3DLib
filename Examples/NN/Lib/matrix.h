@@ -64,6 +64,7 @@ struct matrix {
   matrix operator+(matrix const &rhs) const;
   matrix &operator+=(matrix const &rhs);
   matrix operator*(float rhs) const;
+  matrix &operator*=(float rhs);
   matrix mul(matrix const &rhs) const;
   matrix mul_t(matrix const &rhs) const;
 
@@ -148,7 +149,16 @@ private:
 
 //vector operator*(matrix const &lhs, matrix const &rhs);
 
-bool check_precision(float lhs, float rhs, float precision, int bit_diff, float *max_diff = nullptr, bool do_show = true);
+bool check_precision(
+	float lhs,
+	float rhs,
+	float precision,
+	int bit_diff     = -1,
+	float *max_diff  = nullptr,
+	int *max_bit     = nullptr,
+	bool do_show     = true
+);
+
 bool same(qpu::vector const &lhs, qpu::vector const &rhs, float precision = 0.0f);
 void init();
 

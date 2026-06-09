@@ -19,20 +19,21 @@ public:
   MMatrix(MMatrix const &rhs);
   MMatrix(MMatrix const &&rhs);
 
-	MMatrix &operator=(const MMatrix &rhs);
+  MMatrix &operator=(const MMatrix &rhs);
 
   void resize(int rows, int columns, float val = 0.0f);
 
   void set(MatrixXf const &rhs, bool set_qpu = false);
   void set(MMatrix const &rhs);
-	void set(std::vector<int> const &rhs, int pos);
+  void set(float val);
+  void set(std::vector<int> const &rhs, int pos);
 
-	bool is_zero() const;
+  bool is_zero() const;
 
   int  rows()  const;
   int  cols()  const;
   int  size()  const { return rows()*cols(); }
-	bool empty() const;
+  bool empty() const;
 
   void row(int index, MatrixXf const &val);
   void row(int index, MMatrix const &val);
@@ -65,7 +66,7 @@ public:
 
   MMatrix operator* (float val) const;
   void    operator*=(float val);
-	MMatrix operator/ (float steps) const;
+  MMatrix operator/ (float steps) const;
   void    operator/=(float steps);
 
   MMatrix operator*(MMatrix const &rhs) const;
@@ -80,7 +81,7 @@ public:
   void outer_rows(MMatrix const &lhs, MMatrix const &rhs);
   MMatrix max_row() const;
   MMatrix sum_row() const;
-	float sum() const;
+  float sum() const;
   void softmax();
   MMatrix ln() const;
 
@@ -91,11 +92,11 @@ public:
   void divide_matrix(MMatrix const &gradient, MMatrix const &in_cache);
   MMatrix calc_E(MMatrix const &Y, MMatrix const &O) const;
   void col_E(int index, MMatrix const &rhs);
-	MMatrix forward_1(Model &m, MMatrix &S);
-	MMatrix forward_2(Model &m, MMatrix &S);
-	MMatrix forward_3(Model &m, MMatrix &S, MMatrix const &r_row);
-	MMatrix forward_4(MMatrix &S, MMatrix const &h_row);
-	MMatrix forward_5() const;
+  MMatrix forward_1(Model &m, MMatrix &S);
+  MMatrix forward_2(Model &m, MMatrix &S);
+  MMatrix forward_3(Model &m, MMatrix &S, MMatrix const &r_row);
+  MMatrix forward_4(MMatrix &S, MMatrix const &h_row);
+  MMatrix forward_5() const;
 
   void set_decay(float decay, MMatrix const &rhs);
 
