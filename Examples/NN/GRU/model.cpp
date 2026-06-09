@@ -66,46 +66,64 @@ void Model::init(int input_dim, int hidden_dim, int output_dim) {
   MatrixXf tmp;
   init_matrix(tmp, input_dim, hidden_dim);
 
-	//warn << "Here1";
-	// Adding true to set() makes copy_m() worse
+  //warn << "Here1";
+  // Adding true to set() makes copy_m() worse
   U_z.set(tmp);
-	//warn << "U_z: " << U_z.dump_dim();
+  //warn << "U_z: " << U_z.dump_dim();
 
   U_r.set(tmp);
   U_h.set(tmp);
 
   init_matrix(tmp, hidden_dim, hidden_dim);
-	W_z.set(tmp);
+  W_z.set(tmp);
   W_r.set(tmp);
   W_h.set(tmp);
   
   init_matrix(tmp, hidden_dim, output_dim);
-	V.set(tmp);
+  V.set(tmp);
 
   eval();
 }
 
 
-void Model::init_zeroes(int input_dim, int hidden_dim, int output_dim, bool do_eval) {
-  auto zero   = MatrixXf::Zero(input_dim, hidden_dim);
-  auto zero_h = MatrixXf::Zero(hidden_dim, hidden_dim);
-  auto zero_o = MatrixXf::Zero(hidden_dim, output_dim);
+void Model::init_val(int input_dim, int hidden_dim, int output_dim, float val, bool do_eval) {
+  assert(val == 0.0f || val == 1.0f);
 
-	//warn << "Here";
-	//warn << "U_z: " << U_z.dump_dim();
-	if (!U_z.empty()) {
-		assert(U_z.rows() == input_dim);
-		assert(U_z.cols() == hidden_dim);
-	}
-  U_z.set(zero);
-  U_r.set(zero);
-  U_h.set(zero);
+  //warn << "U_z: " << U_z.dump_dim();
+  if (!U_z.empty()) {
+    assert(U_z.rows() == input_dim);
+    assert(U_z.cols() == hidden_dim);
+    // Assuming all other matrices are okay 
 
-  W_z.set(zero_h);
-  W_r.set(zero_h);
-  W_h.set(zero_h);
+    // 2x faster than full resize
+    timers.start("init_val set");
 
-  V.set(zero_o);
+    U_z.set(val);
+    U_r.set(val);
+    U_h.set(val);
+
+    W_z.set(val);
+    W_r.set(val);
+    W_h.set(val);
+
+    V.set(val);
+
+    timers.stop("init_val set");
+  } else {
+    timers.start("init_val resize");
+
+    U_z.resize(input_dim, hidden_dim, val);
+    U_r.resize(input_dim, hidden_dim, val);
+    U_h.resize(input_dim, hidden_dim, val);
+
+    W_z.resize(hidden_dim, hidden_dim, val);
+    W_r.resize(hidden_dim, hidden_dim, val);
+    W_h.resize(hidden_dim, hidden_dim, val);
+
+    V.resize(hidden_dim, output_dim, val);
+
+    timers.stop("init_val resize");
+  }
 
   if (do_eval) {
     eval();
@@ -113,26 +131,29 @@ void Model::init_zeroes(int input_dim, int hidden_dim, int output_dim, bool do_e
 }
 
 
-void Model::init_ones(int input_dim, int hidden_dim, int output_dim) {
-  auto ones   = MatrixXf::Ones(input_dim, hidden_dim);
-  auto ones_h = MatrixXf::Ones(hidden_dim, hidden_dim);
-  auto ones_o = MatrixXf::Ones(hidden_dim, output_dim);
+/**
+ * This method specifically to test if gradient changed
+ */
+bool Model::is_zero() const {
+  timers.start("Model::is_zero()");
 
-  U_z.set(ones);
-  U_r.set(ones);
-  U_h.set(ones);
+  bool ret =
+    U_z.is_zero() &&
+    U_r.is_zero() &&
+    U_h.is_zero() &&
+    W_z.is_zero() &&
+    W_r.is_zero() &&
+    W_h.is_zero() &&
+    V.is_zero();
 
-  W_z.set(ones_h);
-  W_r.set(ones_h);
-  W_h.set(ones_h);
-
-  V.set(ones_o);
-
-  eval();
+  timers.stop("Model::is_zero()");
+  return ret;
 }
 
 
 void Model::grad_div_steps(float steps) {
+  if (is_zero()) return;
+
   U_z /= steps;
   U_r /= steps;
   U_h /= steps;

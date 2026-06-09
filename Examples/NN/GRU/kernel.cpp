@@ -164,30 +164,57 @@ void div_vector_kernel(Float::Ptr in_ret, Float::Ptr in_lhs, Float::Ptr in_rhs, 
  * Multi-QPU does not improve performance at all.
  */
 void forward_4_kernel(Float::Ptr ret, Float::Ptr x, Float::Ptr h, Float::Ptr S, Int N) {
-	Float one = 1.0f;
+  Float one = 1.0f;
 
-	//Float::Ptr ret = in_ret + me();
-	//Float::Ptr   x = in_x   + me();
-	//Float::Ptr   h = in_h   + me();
-	//Float::Ptr   S = in_S   + me();
-
-	Int offset = 16*numQPUs();
-
-  //For (Int n = me(), n < N, n += numQPUs())
   For (Int n = 0, n < N, n++)
-		Float x_val = *x;
-		Float val = (one - x_val) * (*h - x_val) * *S;
-		*ret = val;
+    Float x_val = *x;
+    Float val = (one - x_val) * (*h - x_val) * *S;
+    *ret = val;
 
-		ret.inc();
-		x.inc();
-		h.inc();
-		S.inc();
-		//ret += offset;
-		//x   += offset;
-		//h   += offset;
-		//S   += offset;
-	End
+    ret.inc();
+    x.inc();
+    h.inc();
+    S.inc();
+  End
+}
+
+
+/**
+ * Result stored in rhs
+ */
+void forward_5_kernel(Float::Ptr in_rhs, Int cols) {
+  Int col_size = cols >> 4;
+  Float max;
+  Float::Ptr rhs = in_rhs;
+
+  kernel::max_partial(rhs, max, col_size);
+
+  rhs = in_rhs;
+  kernel::softmax_partial(rhs, max, col_size);
+
+  //
+  // Calculate sum
+  //
+  rhs = in_rhs;
+  Float sum = 0.0f;
+
+  For (Int c = 0, c < col_size, c++)
+    sum += *rhs;
+    rhs.inc();
+  End
+
+  rotate_sum(sum, sum);
+
+  //
+  // Divide values by sum
+  //
+  rhs = in_rhs;
+
+  For (Int c = 0, c < col_size, c++)
+    Float tmp = *rhs;
+    *rhs = tmp/sum;
+    rhs.inc();
+  End
 }
 
 
@@ -201,12 +228,12 @@ void forward_4_kernel(Float::Ptr ret, Float::Ptr x, Float::Ptr h, Float::Ptr S, 
  * Derived from `mult_matrix_col()`.
  */
 void mult_matrix_col_add_kernel(
-	Float::Ptr ret,
-	Float::Ptr lhs1, Float::Ptr rhs1,
-	Float::Ptr lhs2, Float::Ptr rhs2,
- 	Int lhs_rows,
-	Int inner1, Int inner2,
- 	Int rhs_cols
+  Float::Ptr ret,
+  Float::Ptr lhs1, Float::Ptr rhs1,
+  Float::Ptr lhs2, Float::Ptr rhs2,
+   Int lhs_rows,
+  Int inner1, Int inner2,
+   Int rhs_cols
 ) {
   Float::Ptr ret_base = ret;
   ret_base           -= index();
@@ -216,46 +243,46 @@ void mult_matrix_col_add_kernel(
 
   Float::Ptr rhs1_base = rhs1;
   rhs1_base           -= index();
-	rhs1_base           += rhs_offset;
+  rhs1_base           += rhs_offset;
 
   Float::Ptr rhs2_base = rhs2;
   rhs2_base           -= index();
-	rhs2_base           += rhs_offset;
+  rhs2_base           += rhs_offset;
 
   Int block_size1 = inner1 >> 4;
   Int block_size2 = inner2 >> 4;
 
   For (Int col = me(), col < rhs_cols, col += numQPUs())
-		Float::Ptr rhs1_col = rhs1_base + col;
-		Float::Ptr rhs2_col = rhs2_base + col;
+    Float::Ptr rhs1_col = rhs1_base + col;
+    Float::Ptr rhs2_col = rhs2_base + col;
 
-		For (Int row = 0, row < lhs_rows, row++)
-			Float::Ptr lhs1_row = (lhs1 + (row*inner1));  comment("Init lhs row");
-			Float::Ptr lhs2_row = (lhs2 + (row*inner2));
+    For (Int row = 0, row < lhs_rows, row++)
+      Float::Ptr lhs1_row = (lhs1 + (row*inner1));  comment("Init lhs row");
+      Float::Ptr lhs2_row = (lhs2 + (row*inner2));
 
       Float acc1 = 0.0f;
       Float acc2 = 0.0f;
 
       For (Int block = 0, block < block_size1, block++)
-				acc1 += *lhs1_row * *rhs1_col;  comment("increment acc1");
+        acc1 += *lhs1_row * *rhs1_col;  comment("increment acc1");
 
         lhs1_row.inc();
         rhs1_col += rhs_inc;
-			End
+      End
 
       For (Int block = 0, block < block_size2, block++)
-				acc1 += *lhs2_row * *rhs2_col;  comment("increment acc2");
+        acc1 += *lhs2_row * *rhs2_col;  comment("increment acc2");
 
         lhs2_row.inc();
         rhs2_col += rhs_inc;
-			End
+      End
 
-			acc1 += acc2;
+      acc1 += acc2;
       rotate_sum(acc1, acc1);
 
-			*(ret_base + row*rhs_cols + col) = acc1;
-		End
-	End
+      *(ret_base + row*rhs_cols + col) = acc1;
+    End
+  End
 }
 
 
@@ -267,6 +294,7 @@ std::unique_ptr<BaseKernel> s_set_decay;
 std::unique_ptr<BaseKernel> s_divide_matrix;
 std::unique_ptr<BaseKernel> s_div_vector;
 std::unique_ptr<BaseKernel> s_forward_4;
+std::unique_ptr<BaseKernel> s_forward_5;
 std::unique_ptr<BaseKernel> s_mult_matrix_col_add;
 
 
@@ -282,6 +310,7 @@ void init_local() {
   s_divide_matrix.reset(new BaseKernel(compile(divide_matrix_kernel, settings())));
   s_div_vector   .reset(new BaseKernel(compile(div_vector_kernel   , settings())));
   s_forward_4    .reset(new BaseKernel(compile(forward_4_kernel    , settings())));
+  s_forward_5    .reset(new BaseKernel(compile(forward_5_kernel    , settings())));
 
   s_mult_matrix_col_add.reset(new BaseKernel(compile(mult_matrix_col_add_kernel, settings())));
 
@@ -355,31 +384,40 @@ void divide_vector(matrix &ret, matrix &lhs, matrix const &rhs) {
 
 void forward_4(matrix &ret, matrix &X, matrix &h, matrix &S) {
   init_local();
-	assert(X.size() == ret.size());
-	assert(X.size() == h.size());
-	assert(X.size() == S.size());
+  assert(X.size() == ret.size());
+  assert(X.size() == h.size());
+  assert(X.size() == S.size());
 
   s_forward_4->load(&ret.arr(), &X.arr(), &h.arr(), &S.arr(), X.size()/16).run();
 }
 
 
-void mult_matrix_col_add(matrix &ret, matrix &lhs1, matrix &rhs1, matrix &lhs2, matrix &rhs2) {
- 	//timers.start("mult_matrix_col_add");
-	assert(lhs1.rows() == lhs2.rows());
-	assert(rhs1.columns() == rhs2.columns());
+void forward_5(matrix &rhs) {
+  assert(rhs.rows() == 1);
+  assert(!rhs.empty());
 
-	s_mult_matrix_col_add->setMaxQPUs();  // After #QPU = 8 not much improvement
-  s_mult_matrix_col_add->load(
-		&ret.arr(),
-		&lhs1.arr(), &rhs1.arr(),
-		&lhs2.arr(), &rhs2.arr(),
-	 	lhs1.rows(),
-		lhs1.columns(), lhs2.columns(),
-	 	rhs1.columns()
-	).run();
-
- 	//timers.stop("mult_matrix_col_add");
+  s_forward_5->load(&rhs.arr(), rhs.columns()).run();  // size() should work as well
 }
+
+
+void mult_matrix_col_add(matrix &ret, matrix &lhs1, matrix &rhs1, matrix &lhs2, matrix &rhs2) {
+   //timers.start("mult_matrix_col_add");
+  assert(lhs1.rows() == lhs2.rows());
+  assert(rhs1.columns() == rhs2.columns());
+
+  s_mult_matrix_col_add->setMaxQPUs();  // After #QPU = 8 not much improvement
+  s_mult_matrix_col_add->load(
+    &ret.arr(),
+    &lhs1.arr(), &rhs1.arr(),
+    &lhs2.arr(), &rhs2.arr(),
+     lhs1.rows(),
+    lhs1.columns(), lhs2.columns(),
+     rhs1.columns()
+  ).run();
+
+   //timers.stop("mult_matrix_col_add");
+}
+
 
 /**
  * @brief Explicitly initialize the GRU kernels
@@ -392,7 +430,7 @@ void mult_matrix_col_add(matrix &ret, matrix &lhs1, matrix &rhs1, matrix &lhs2, 
  * Better to do the init explicitly.
  */
 void init() {
-	init_local();
+  init_local();
 }
 
 } // namespace gru_kernel

@@ -241,7 +241,7 @@ std::vector<int> Timers::sort_indexes() {
 		return data;
 	};
 
-	auto vec_dump = [](std::vector<int> const &indexes) -> std::string {
+	MAYBE_UNUSED auto vec_dump = [](std::vector<int> const &indexes) -> std::string {
   	std::string buf;
 
 	  for (int i = 0; i < (int) indexes.size(); ++i) {
@@ -291,11 +291,11 @@ std::vector<int> Timers::sort_indexes() {
   for (int i = 0; i < (int) indexes.size(); ++i) {
 		indexes[i] = i;
 	}
-	warn << "indexes: " << vec_dump(indexes);
+	//warn << "indexes: " << vec_dump(indexes);
 
 	if (m_sort_data.sort_column != None) {
 		std::sort(indexes.begin(), indexes.end(), comp);
-		warn << "indexes sorted: " << vec_dump(indexes);
+		//warn << "indexes sorted: " << vec_dump(indexes);
 	}
 
 	return indexes;

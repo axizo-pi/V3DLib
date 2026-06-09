@@ -9,7 +9,7 @@ MAYBE_UNUSED bool same(qpu::vector const &lhs, MatrixXf const &rhs, float precis
   assert(rhs.rows() == 1);
 
   for (int i = 0; i < (int) rhs.cols(); ++i) {
-    if (!qpu::check_precision(lhs[i], rhs(0, i), precision, -1)) {
+    if (!qpu::check_precision(lhs[i], rhs(0, i), precision)) {
       warn << "Fail same(qpu::vector, MatrixXf), index: " << i;
       return false;
     }      
@@ -25,10 +25,6 @@ MAYBE_UNUSED bool same(qpu::vector const &lhs, MatrixXf const &rhs, float precis
 float calculate_cost(MMatrix const &E, int time_steps) {
   return (E.Xf().sum() / (float) time_steps);
 }
-
-
-std::vector<int> x_input;
-std::vector<int> x_output;
 
 
 class LoopState {
@@ -104,6 +100,50 @@ void LoopState::update_gradient_rows(Model &grad) const {
   grad.W_z.outer_add_rows(m_temp.S, dreluInput_z);
 }
 
+
+void gradient_delta(LoopState &ls, Model &grad, MMatrix &delta_y_x, int time_steps) {
+  // Currently, relevant inputs are zero, with the calculation resulting in zero.
+  // Skip this function until the inputs are non-zero.
+  if (grad.V.is_zero() && ls.temp().S.is_zero()) return;
+  warn << "gradient_delta() inputs non-zero! Yay! We can continue." << thrw;      
+
+  MMatrix grad_V_x = grad.V;
+  //warn << "delta grad_V_x: " << grad_V_x.dump();
+  assert(grad_V_x.same(grad.V));
+
+  timers.start("delta set");
+  warn << "ls.temp().S: " << ls.temp().S.dump();
+
+  for(int time_step = time_steps - 1; time_step >= 0; time_step--) {
+    grad.V.set(grad.V.Xf() + ls.temp().S.Xf().transpose().eval() * delta_y_x.Xf().row(time_step));
+  }
+
+  assert(grad.V.is_zero());
+  timers.stop("delta set");
+
+  //
+  // TODO: continue with this if values become non-zero
+  //
+  timers.start("delta set qpu");
+
+  for(int time_step = time_steps - 1; time_step >= 0; time_step--) {
+    //MMatrix lhs = ls.temp().S.transpose();
+    //MMatrix rhs = delta_y_x.row(time_step);
+    //warn << "delta lhs: " << lhs.dump_dim();
+    //warn << "delta rhs: " << rhs.dump_dim();
+
+    //grad.V.set(grad.V + ls.temp().S.outer(delta_y_x.row(time_step)));
+    grad_V_x.set(grad_V_x * 1.001f + ls.temp().S.outer(delta_y_x.row(time_step)));
+  }
+  warn << "delta grad.V: " << grad.V.dump_dim();
+  warn << "delta grad_V_x: " << grad_V_x.dump_dim();
+
+  //assert(delta_y_x.same(delta_y));
+  warn << "Hey!";
+  assert(grad_V_x.same(grad.V));
+  timers.stop("delta set qpu");
+}
+
 } // anon namespace
 
 
@@ -119,29 +159,45 @@ void LoopState::update_gradient_rows(Model &grad) const {
  *
  *      train limit loop          : 45.632033s in    10 steps, average:  4.563203s
  */
-void back_propagation(Model &m, Model &grad, State &state, MatrixXf& X, MatrixXf& Y, int input_dim, int hidden_dim, int output_dim, int time_steps) {
+void back_propagation(
+  Model &m,
+  Model &grad,
+  State &state,
+  MMatrix const &X,
+  MMatrix const &Y,
+  int input_dim,
+  int hidden_dim,
+  int output_dim,
+  int time_steps
+) {
   timers.start("back_propagation");
 
-  MMatrix x_X;
-  x_X.set(X);
-
   /* gradients = dLdV, dLdU0, dLdU1, dLdU2, dLdW0, dLdW1, dLdW2 */
-  grad.init_zeroes(m.input_dim(), m.hidden_dim(), m.output_dim());
+  grad.init_val(m.input_dim(), m.hidden_dim(), m.output_dim(), 0.0f, false);
 
   LoopState ls(1, input_dim, hidden_dim);
 
-  MatrixXf delta_y = state.O.Xf() - Y;
+  MMatrix delta_y_x = state.O - Y;
+  //warn << "delta_y_x: " << delta_y_x.dump();
 
-  for(int time_step = time_steps - 1; time_step >= 0; time_step--) {
-    grad.V.set(grad.V.Xf() + ls.temp().S.Xf().transpose().eval() * delta_y.row(time_step));
-  }
+  gradient_delta(ls, grad, delta_y_x, time_steps);
 
-  MatrixXf ds_single = delta_y * m.V.Xf().transpose().eval();
-  MMatrix  ds_cur;
+  MatrixXf ds_single = delta_y_x.Xf() * m.V.Xf().transpose().eval();
+
+  //
+  // Difference in calculations between Xf and MMatrix larger than expected
+  // TODO: examine further later
+  //
+  // MMatrix  ds_single_x = delta_y_x * m.V.transpose();
+  // warn << "ds_single: " << dump_dim(ds_single);
+  // warn << "ds_single_x: " << ds_single_x.dump_dim();
+  // assert(ds_single_x.same_b(ds_single, 2, true));
+  //
 
   LoopState x_ls(time_steps, input_dim, hidden_dim);
 
   MMatrix x_ds_cur; x_ds_cur.set(ds_single);
+
   Model x_grad = grad;
 
   State x_state = state;
@@ -154,7 +210,7 @@ void back_propagation(Model &m, Model &grad, State &state, MatrixXf& X, MatrixXf
     //warn << "x_step x: " << x;
 
     timers.start("x_step x_set_step");
-    x_ls.x_set_step(x, x_state, x_X);
+    x_ls.x_set_step(x, x_state, X);
     timers.stop("x_step x_set_step");
 
     timers.start("x_step init_drelu");
@@ -173,11 +229,10 @@ void back_propagation(Model &m, Model &grad, State &state, MatrixXf& X, MatrixXf
   timers.stop("x_step");
 
   grad.grad_div_steps((float) time_steps);
+  //warn << "delta grad.V: " << grad.V.dump();
 
   timers.stop("back_propagation");
 }
-
-
 
 
 void rms_prop(Model &m, Model &grad, Model &cache, float learning_rate, int input_dim, int hidden_dim, int output_dim) {
@@ -185,12 +240,12 @@ void rms_prop(Model &m, Model &grad, Model &cache, float learning_rate, int inpu
 
     Model grad_total;
     //No effect grad_total.init(m.input_dim(), m.hidden_dim(), m.output_dim());
-    grad_total.init_zeroes(m.input_dim(), m.hidden_dim(), m.output_dim());
+    grad_total.init_val(m.input_dim(), m.hidden_dim(), m.output_dim(), 0.0f, false);
 
     cache.cache_decay(decay, grad);
     grad_total.divide(grad, cache);
     m.adjust_learning_rate(learning_rate, grad_total);
-    grad.init_zeroes(m.input_dim(), m.hidden_dim(), m.output_dim(), true);
+    grad.init_val(m.input_dim(), m.hidden_dim(), m.output_dim(), 0.0f, true);
 
     m.eval();
 }
@@ -199,7 +254,7 @@ void rms_prop(Model &m, Model &grad, Model &cache, float learning_rate, int inpu
 void gradient_descent(Model &m, Model &grad, float learning_rate) {
   m.adjust_learning_rate(learning_rate, grad);
   m.eval();
-  grad.init_zeroes(m.input_dim(), m.hidden_dim(), m.output_dim(), true);
+  grad.init_val(m.input_dim(), m.hidden_dim(), m.output_dim(), 0.0f, true);
 }
 
 
@@ -217,73 +272,50 @@ int get_input_size(std::string filename) {
     return inputSize;
 }
 
-void read_x_y(MatrixXf& x, MatrixXf& y, std::string filename_input, std::string filename_output, int time_steps, int pos) {
+
+namespace {
+
+std::vector<int> x_input;
+std::vector<int> x_output;
+
+std::vector<int> load_file(std::string filename) {
+  std::vector<int> ret;
+
+  filename.replace(filename.end() - 3, filename.end(), "bin");
+  //warn << "filename: " << filename;
+
+  std::ifstream file_input(filename, std::ios::binary);
+  assert(!file_input.fail());
+
+  file_input.seekg(0, std::ios::beg);
+  uint32_t a = 0;
+
+  while(!file_input.eof()) {
+    file_input.read((char*)&a, sizeof(uint32_t));
+    ret.push_back((int) a);
+  }
+
+  file_input.close();
+
+  return ret;
+}
+
+}  // anon namespace
+
+
+void read_x_y(MMatrix &x, MMatrix &y, std::string filename_input, std::string filename_output, int time_steps, int pos) {
   //timers.start("read_x_y");
-/*
-  warn << "Doing read_x_y() input\n"
-       << "  time_steps: " << time_steps << "\n"
-       << "  pos       : " << pos
-  ;
-*/
-  int count = 0;
 
   if (x_input.empty()) {
-    //warn << "read_x_y() read input file";
-
-    filename_input.replace(filename_input.end() - 3, filename_input.end(), "bin");
-    std::ifstream file_input(filename_input, std::ios::binary);
-    assert(!file_input.fail());
-
-    file_input.seekg(pos * sizeof(int), std::ios::beg);
-    uint32_t a = 0;
-
-    while(!file_input.eof()) {
-        file_input.read((char*)&a, sizeof(uint32_t));
-        x_input.push_back((int) a);
-    }
-
-    x.eval();
-
-    file_input.close();
+    x_input = load_file(filename_input);
   }
-
-    while((pos + count) < (int) x_input.size() && count < time_steps) {
-      int index = pos + count;
-        x(count, x_input[index]) = 1;
-        count++;
-    }
-
-    x.eval();
 
   if (x_output.empty()) {
-    //warn << "read_x_y() read output file";
-
-    filename_output.replace(filename_output.end() - 3, filename_output.end(), "bin");
-    std::ifstream file_output(filename_output, std::ios::binary);
-
-    uint32_t a = 0;
-
-    file_output.seekg(pos * sizeof(int), std::ios::beg);
-    a = 0;
-
-    while(!file_output.eof()) {
-        count++;
-        file_output.read((char*)&a, sizeof(uint32_t));
-        x_output.push_back((int) a);
-    }
-
-    y.eval();
-
-    file_output.close();
+    x_output = load_file(filename_output);
   }
 
-  count = 0;
-
-  while((pos + count) < (int) x_input.size() && count < time_steps) {
-    int index = pos + count;
-    y(count, x_output[index]) = 1;
-    count++;
-  }
+  x.set(x_input, pos);
+  y.set(x_output, pos);
 
   //timers.stop("read_x_y");
 }
@@ -316,8 +348,8 @@ void train(std::string filename_input, std::string filename_output, float learni
   Model cache;
 
   m.init(input_dim, hidden_dim, output_dim);
-  grad.init_zeroes(m.input_dim(), m.hidden_dim(), m.output_dim(), true);
-  cache.init_ones(m.input_dim(), m.hidden_dim(), m.output_dim());
+  grad.init_val(m.input_dim(), m.hidden_dim(), m.output_dim(), 0.0f, true);
+  cache.init_val(m.input_dim(), m.hidden_dim(), m.output_dim(), 1.0f, false);
 
   for(int epoch = 0; epoch < nepoch; epoch++) {
     warn << "train loop epoch: " << epoch << ", limit: " << limit;
@@ -332,14 +364,12 @@ void train(std::string filename_input, std::string filename_output, float learni
       State state;
       state.init(time_steps, hidden_dim, output_dim);
 
-      MatrixXf currX  = MatrixXf::Zero(time_steps, input_dim);
-      MatrixXf currY  = MatrixXf::Zero(time_steps, output_dim);
+      MMatrix currX(time_steps, input_dim);
+      MMatrix currY(time_steps, output_dim);
 
       read_x_y(currX, currY, filename_input, filename_output, time_steps, i);
-
+  
       state.eval();
-      currX.eval();
-      currY.eval();
 
       forward_propagation(m, currX, currY, state, time_steps, input_dim, hidden_dim, output_dim);
       loss += (calculate_cost(state.E, time_steps) / (float) limit);

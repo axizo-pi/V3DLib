@@ -3,6 +3,31 @@
 
 namespace kernel {
 
+void max_partial(Float::Ptr &rhs, Float &result, Int &col_size) {
+  Float acc = -1024.0f;  // Dummy init value, chosen very low
+
+   For (Int c = 0, c < col_size, c++)
+    Float tmp = *rhs;
+    acc = V3DLib::max(acc, tmp);
+
+    rhs.inc();
+  End
+
+  rotate_max(acc, result);
+}
+
+
+void softmax_partial(Float::Ptr &lhs, Float &max, Int &col_size) {
+  For (Int c = 0, c < col_size, c++)
+    Float tmp = *lhs;
+    Float tmp2 = V3DLib::exp_e(tmp - max);
+
+    *lhs = tmp2;
+    lhs.inc();
+  End
+}  
+
+
 /**
  * @brief calculate `sigmoid(in + bias)`.
  */
@@ -103,6 +128,7 @@ void matrix_add(Float::Ptr ret, Float::Ptr lhs, Float::Ptr rhs, Int N) {
 
 
 void matrix_sub(Float::Ptr ret, Float::Ptr lhs, Float::Ptr rhs, Int N) {
+  //TODO: For (Int h = me(), h < N, h += numQPUs()) - init Ptr's
   For (Int h = 0, h < N, h++)
     Float x = (*lhs) - (*rhs);
     *ret = x;
@@ -124,9 +150,10 @@ void mul_float(Float::Ptr ret, Float::Ptr lhs, Float val, Int N) {
   End
 }
 
-
 void mul_float_self(Float::Ptr lhs, Float val, Int N) {
-  For (Int h = 0, h < N, h++)
+  // TODO: check if correct. Expecting Ptr to be initialized for multi-QPU
+  For (Int h = me(), h < N, h += numQPUs())
+  //For (Int h = 0, h < N, h++)
     Float x = (*lhs) * val;
     *lhs = x;
 
@@ -221,7 +248,7 @@ void mult_matrix(Float::Ptr in_ret, Float::Ptr lhs, Float::Ptr rhs, Int lhs_rows
   Float::Ptr rhs_base = rhs;
   rhs_base           -= index();
   Int rhs_offset      = index()*rhs_cols;
-	rhs_base           += rhs_offset;
+  rhs_base           += rhs_offset;
 
   Int block_size = inner >> 4;
   Int rhs_inc    = 16*rhs_cols;
@@ -280,28 +307,28 @@ void mult_matrix_col(Float::Ptr ret, Float::Ptr lhs, Float::Ptr rhs, Int lhs_row
 
   Float::Ptr rhs_base = rhs;
   rhs_base           -= index();
-	rhs_base           += rhs_offset;
+  rhs_base           += rhs_offset;
 
   Int block_size = inner >> 4;
 
   For (Int col = me(), col < rhs_cols, col += numQPUs())
-		Float::Ptr rhs_col = rhs_base + col;
+    Float::Ptr rhs_col = rhs_base + col;
 
-		For (Int row = 0, row < lhs_rows, row++)
-			Float::Ptr lhs_row = (lhs + (row*inner));  comment("Init lhs row");
+    For (Int row = 0, row < lhs_rows, row++)
+      Float::Ptr lhs_row = (lhs + (row*inner));  comment("Init lhs row");
       Float acc = 0.0f;
 
       For (Int block = 0, block < block_size, block++)
-				acc += *lhs_row * *rhs_col;  comment("increment acc");
+        acc += *lhs_row * *rhs_col;  comment("increment acc");
 
         lhs_row.inc();
         rhs_col += rhs_inc;
-			End
+      End
 
       rotate_sum(acc, acc);
-			*(ret_base + row*rhs_cols + col) = acc;
-		End
-	End
+      *(ret_base + row*rhs_cols + col) = acc;
+    End
+  End
 }
 
 
@@ -503,46 +530,24 @@ void vector_add(Float::Ptr left, Float::Ptr right, Float::Ptr out, Int N) {
  * @brief Calculate max per row
  */
 void max_row(Float::Ptr ret, Float::Ptr in_rhs, Int rows, Int cols) {
-	ret -= index();
-	Int col_size = cols >> 4;
+  ret -= index();
+  Int col_size = cols >> 4;
 
   For (Int r = 0, r < rows, r++)
-		Float::Ptr rhs = in_rhs + r*cols;
-		Float acc = -1024.0f;
+    Float::Ptr rhs = in_rhs + r*cols;
+    Float tmp2;
 
-  	For (Int c = 0, c < col_size, c++)
-			Float tmp = *rhs;
-			acc = V3DLib::max(acc, tmp);
+    max_partial(rhs, tmp2, col_size);
 
-			rhs.inc();
-		End
-
-		Float tmp2 = 2.0f;
-		rotate_max(acc, tmp2);
-		*ret = tmp2;
-		ret++;
-	End
+    *ret = tmp2;
+    ret++;
+  End
 }
 
 
-namespace {
-
-void softmax_partial(Float::Ptr &lhs, Float &max, Int col_size) {
-	For (Int c = 0, c < col_size, c++)
-		Float tmp = *lhs;
-		Float tmp2 = V3DLib::exp_e(tmp - max);
-
-		*lhs = tmp2;
-		lhs.inc();
-	End
-}	
-
-}  // anon namespace
-
-
 void softmax(Float::Ptr lhs, Float max, Int cols) {
-	Int col_size = cols >> 4;
-	softmax_partial(lhs, max, col_size);
+  Int col_size = cols >> 4;
+  softmax_partial(lhs, max, col_size);
 }
 
 
@@ -552,17 +557,17 @@ void softmax(Float::Ptr lhs, Float max, Int cols) {
  * Changes are stored inline in lhs
  */
 void softmax_rows(Float::Ptr in_lhs, Float::Ptr in_max, Int rows, Int cols) {
-	in_max -= index();
-	Int col_size = cols >> 4;
+  in_max -= index();
+  Int col_size = cols >> 4;
 
   For (Int r = 0, r < rows, r++)
-		Float::Ptr lhs = in_lhs + r*cols;
-		Float max = *in_max;
+    Float::Ptr lhs = in_lhs + r*cols;
+    Float max = *in_max;
 
-		softmax_partial(lhs, max, col_size);
+    softmax_partial(lhs, max, col_size);
 
-		in_max++;
-	End
+    in_max++;
+  End
 }
 
 

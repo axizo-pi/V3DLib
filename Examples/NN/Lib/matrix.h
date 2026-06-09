@@ -41,7 +41,7 @@ struct matrix {
   int columns() const  { return m_columns; }
   int rows() const     { return m_rows; }
   int size() const     { return m_columns*m_rows; }
-	bool empty() const   { return size() == 0; }
+  bool empty() const   { return size() == 0; }
 
   bool is_vector() const {
     return
@@ -64,6 +64,7 @@ struct matrix {
   matrix operator+(matrix const &rhs) const;
   matrix &operator+=(matrix const &rhs);
   matrix operator*(float rhs) const;
+  matrix &operator*=(float rhs);
   matrix mul(matrix const &rhs) const;
   matrix mul_t(matrix const &rhs) const;
 
@@ -85,8 +86,8 @@ struct matrix {
   void   outer_add_rows(matrix const &lhs, matrix const &rhs);
   //void   softmax(float max);
   float  sum() const;
-	void   max_row(matrix &ret) const;
-	void   softmax(matrix &max_row);
+  void   max_row(matrix &ret) const;
+  void   softmax(matrix &max_row);
 
   std::string dump_dim() const;
   std::string dump(bool output_int = false) const;
@@ -148,8 +149,18 @@ private:
 
 //vector operator*(matrix const &lhs, matrix const &rhs);
 
-bool check_precision(float lhs, float rhs, float precision, int bit_diff, float *max_diff = nullptr, bool do_show = true);
+bool check_precision(
+  float lhs,
+  float rhs,
+  float precision,
+  int bit_diff     = -1,
+  float *max_diff  = nullptr,
+  int *max_bit     = nullptr,
+  bool do_show     = true
+);
+
 bool same(qpu::vector const &lhs, qpu::vector const &rhs, float precision = 0.0f);
+void init();
 
 } // namespace qpu
 

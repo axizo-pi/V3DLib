@@ -15,13 +15,13 @@ public:
   void read(std::string const &epoch, std::string const &loss);
   void write(int epoch, float loss);
   void init(int input_dim, int hidden_dim, int output_dim);
-  void init_zeroes(int input_dim, int hidden_dim, int output_dim, bool do_eval = false);
-  void init_ones(int input_dim, int hidden_dim, int output_dim);
+  void init_val(int input_dim, int hidden_dim, int output_dim, float val, bool do_eval = false);
 
   int input_dim()  const { return (int) U_z.rows(); }
   int hidden_dim() const { return (int) U_z.cols(); }
   int output_dim() const { return (int) V.cols(); }
 
+  bool is_zero() const;
   void grad_div_steps(float steps);
   void cache_decay(float decay, Model &grad);
   void divide(Model &grad, Model &cache);

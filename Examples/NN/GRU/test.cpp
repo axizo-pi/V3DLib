@@ -64,10 +64,12 @@ void predict(Model &m, int input_dim, int output_dim, int hidden_dim, int time_s
 
   X.eval();
 
-  MatrixXf unused = MatrixXf::Zero(time_steps, hidden_dim);
+  MMatrix X_2;
+  X_2.set(X, true);
+  MMatrix unused(time_steps, hidden_dim);
 
   while (count --) {
-    forward_propagation(m, X, unused, state, time_steps, input_dim, hidden_dim, output_dim, true);
+    forward_propagation(m, X_2, unused, state, time_steps, input_dim, hidden_dim, output_dim, true);
     max_index = get_max_index(state.O.Xf(), time_steps);
     predictions.push_back(max_index);
     X  = MatrixXf::Zero(time_steps, input_dim);
