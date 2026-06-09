@@ -38,7 +38,7 @@ int main(int argc, char *argv[]) {
     std::cout << "Can't perform action '" << action << "'" << std::endl;
   }
 
-  timers.sort(Timers::Total, true).end(false);
+  timers.sort(Timers::Label).end(false);
   std::cout << "QPU Call Count: " << V3DLib::BaseKernel::qpu_call_count() << std::endl;
   return 0;
 }
