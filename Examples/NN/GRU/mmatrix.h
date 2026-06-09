@@ -110,7 +110,6 @@ private:
   void need_fields(bool need_XF, bool need_qpu) const;
   void used_fields(bool in_XF, bool in_qpu) { m_using_Xf = in_XF; m_using_qpu = in_qpu; }
 
-  void copy_row(int from_index, int to_index, MMatrix const &val);
   void copy_block(MMatrix const &rhs, int from_offset, int to_offset, int in_size);
   bool same_intern(MMatrix const &rhs, float precision, int bit_diff, bool show_max_diff) const;
 

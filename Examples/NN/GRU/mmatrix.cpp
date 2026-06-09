@@ -137,7 +137,7 @@ bool MMatrix::is_zero() const {
 
   bool Xf_zero = true;
   if (m_using_Xf) {
-    //timers.start("is_zero Xf");
+    timers.start("is_zero Xf");
 
     for (int i = 0; i < m_Xf.rows(); i++) {
       for (int j = 0; j < m_Xf.cols(); j++) {
@@ -150,21 +150,27 @@ bool MMatrix::is_zero() const {
       if (Xf_zero) break;
     }
 
-    //timers.stop("is_zero Xf");
+    timers.stop("is_zero Xf");
   }
 
   bool qpu_zero = true;
   if (m_using_qpu) {
-    //timers.start("is_zero qpu");
+    timers.start("is_zero qpu");
     auto &arr = m_qpu.arr();
+		auto ptr  = arr.ptr();
+		auto size = m_qpu.size();
 
-    for (int i = 0; i < m_qpu.size(); i++) {
-      if (arr[i]) {
+		// Using ptr 11x faster than using arr[i]
+		// Still 7x slower than Xf
+    for (int i = 0; i < size; i++) {
+      if (*ptr != 0.0f) {
         qpu_zero = false;
         break;
       }
+
+			ptr++;
     }
-    //timers.stop("is_zero qpu");
+    timers.stop("is_zero qpu");
   }
 
   if (m_using_Xf && m_using_qpu) {
@@ -240,31 +246,6 @@ void MMatrix::row(int index, MatrixXf const &val) {
 
   timers.stop("row(index, val)");
   used_fields(true, false);
-}
-
-
-void MMatrix::copy_row(int from_index, int to_index, MMatrix const &val) {
-  assert(false);  // Check unused
-  assert(cols() == val.cols());
-  assert(from_index >= 0 && from_index < val.rows());
-  assert(to_index >= 0 && to_index < rows());
-
-  val.need_fields(false, true);
-
-  timers.start("copy_row");
-
-  auto &lhs_arr  = m_qpu.arr();
-  int lhs_offset = to_index*cols();
-
-  auto &rhs_arr  = val.m_qpu.arr();
-  int rhs_offset = from_index*val.cols();
-
-  for (int i = 0; i < val.cols(); ++i) {
-    lhs_arr[lhs_offset++] = rhs_arr[rhs_offset++];
-  }
-
-  timers.stop("copy_row");
-  used_fields(false, true);
 }
 
 
