@@ -1006,7 +1006,6 @@ bool check_precision(
     if (bit_diff > -1) {
       failed = (bit > -1);
     } else {
-      //warn << "check_precision full precision";
       failed = (lhs != rhs);
     }
     

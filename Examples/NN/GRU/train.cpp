@@ -1,5 +1,6 @@
 #include "global.h"
 #include "forward.h"
+#include "kernel.h"           // gru_kernel::init()
 
 using namespace Log;
 
@@ -23,7 +24,7 @@ MAYBE_UNUSED bool same(qpu::vector const &lhs, MatrixXf const &rhs, float precis
  * Possibly - Move to forward propagation or Train
  */
 float calculate_cost(MMatrix const &E, int time_steps) {
-  return (E.Xf().sum() / (float) time_steps);
+  return (E.sum() / (float) time_steps);
 }
 
 
@@ -178,11 +179,11 @@ void back_propagation(
   LoopState ls(1, input_dim, hidden_dim);
 
   MMatrix delta_y_x = state.O - Y;
-  //warn << "delta_y_x: " << delta_y_x.dump();
 
   gradient_delta(ls, grad, delta_y_x, time_steps);
 
   MatrixXf ds_single = delta_y_x.Xf() * m.V.Xf().transpose().eval();
+	MMatrix ds_single_2 = m.V.mul_t(delta_y_x);
 
   //
   // Difference in calculations between Xf and MMatrix larger than expected
@@ -300,25 +301,28 @@ std::vector<int> load_file(std::string filename) {
   return ret;
 }
 
-}  // anon namespace
+
+void load_x_y(std::string filename_input, std::string filename_output) {
+  assert(x_input.empty());
+  assert(x_output.empty());
+
+  x_input  = load_file(filename_input);
+  x_output = load_file(filename_output);
+}
 
 
-void read_x_y(MMatrix &x, MMatrix &y, std::string filename_input, std::string filename_output, int time_steps, int pos) {
+void read_x_y(MMatrix &x, MMatrix &y, int pos) {
   //timers.start("read_x_y");
-
-  if (x_input.empty()) {
-    x_input = load_file(filename_input);
-  }
-
-  if (x_output.empty()) {
-    x_output = load_file(filename_output);
-  }
+  assert(!x_input.empty());
+  assert(!x_output.empty());
 
   x.set(x_input, pos);
   y.set(x_output, pos);
 
   //timers.stop("read_x_y");
 }
+
+}  // anon namespace
 
 
 void train(std::string filename_input, std::string filename_output, float learning_rate, int nepoch, int input_dim, int hidden_dim, int output_dim, int time_steps, float decay) {
@@ -351,6 +355,10 @@ void train(std::string filename_input, std::string filename_output, float learni
   grad.init_val(m.input_dim(), m.hidden_dim(), m.output_dim(), 0.0f, true);
   cache.init_val(m.input_dim(), m.hidden_dim(), m.output_dim(), 1.0f, false);
 
+  load_x_y(filename_input, filename_output);
+  gru_kernel::init();
+  qpu::init();
+
   for(int epoch = 0; epoch < nepoch; epoch++) {
     warn << "train loop epoch: " << epoch << ", limit: " << limit;
 
@@ -367,7 +375,7 @@ void train(std::string filename_input, std::string filename_output, float learni
       MMatrix currX(time_steps, input_dim);
       MMatrix currY(time_steps, output_dim);
 
-      read_x_y(currX, currY, filename_input, filename_output, time_steps, i);
+      read_x_y(currX, currY, i);
   
       state.eval();
 

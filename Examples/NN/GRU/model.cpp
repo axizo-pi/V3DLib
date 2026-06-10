@@ -135,7 +135,7 @@ void Model::init_val(int input_dim, int hidden_dim, int output_dim, float val, b
  * This method specifically to test if gradient changed
  */
 bool Model::is_zero() const {
-  timers.start("Model::is_zero()");
+  //timers.start("Model::is_zero()");
 
   bool ret =
     U_z.is_zero() &&
@@ -146,7 +146,7 @@ bool Model::is_zero() const {
     W_h.is_zero() &&
     V.is_zero();
 
-  timers.stop("Model::is_zero()");
+  //timers.stop("Model::is_zero()");
   return ret;
 }
 
@@ -227,38 +227,31 @@ void Model::eval() {
 
 
 void State::init(int time_steps, int hidden_dim, int output_dim) {
-  //timers.start("State::init()");  // Timing minimal, inconsequential
+	assert(S.empty());  // Call only once
+
+  timers.start("State::init()");  // Timing minimal, inconsequential
 
   if (m_do_temp) {
-    auto zero = MatrixXf::Zero(time_steps, hidden_dim);
-
-    S.set(zero);
-    z.set(zero);
-    r.set(zero);
-    h.set(zero);
-
+    S.resize(time_steps, hidden_dim);
+    z.resize(time_steps, hidden_dim);
+    r.resize(time_steps, hidden_dim);
+    h.resize(time_steps, hidden_dim);
   } else {
-    //auto zero   = MatrixXf::Zero(resize_16(time_steps), hidden_dim);
-    auto zero   = MatrixXf::Zero(time_steps, hidden_dim);
-    auto zero_1 = MatrixXf::Zero(1, time_steps);
-    auto zero_o = MatrixXf::Zero(time_steps, output_dim);
+    E.resize(1, time_steps);
+    z.resize(time_steps, hidden_dim);
+    r.resize(time_steps, hidden_dim);
+    h.resize(time_steps, hidden_dim);
+    O.resize(time_steps, output_dim);
 
-    E.set(zero_1);
-    z.set(zero);
-    r.set(zero);
-    h.set(zero);
-    O.set(zero_o);
-
-    //MatrixXf tmp_S = MatrixXf::Zero(resize_16(time_steps + 1), hidden_dim);
     MatrixXf tmp_S = MatrixXf::Zero(time_steps + 1, hidden_dim);
     tmp_S(0, 0) = static_cast <float> (((float) rand()) / (static_cast <float> (RAND_MAX / 2)) - 1);
     //tmp_S.eval();
 
-    S.set(tmp_S);
-    // OK warn << "State::init S: " << S.dump();
+    S.set(tmp_S, true);
+    //warn << "State::init S: " << S.dump();
   }
 
-  //timers.stop("State::init()");
+  timers.stop("State::init()");
 }
 
 
