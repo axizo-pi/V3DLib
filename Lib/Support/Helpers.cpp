@@ -376,7 +376,7 @@ int bit_diff(float in_val1, float in_val2, int ignore_bit) {
   }
 
   uint32_t abs_diff = (val1 > val2)? (val1 - val2): (val2 - val1);
-/*  
+/* 
   if (abs_diff > 0) {
     warn << "abs_diff: " << abs_diff;
     warn << "bit_margin: " << bit_margin;
@@ -394,6 +394,8 @@ int bit_diff(float in_val1, float in_val2, int ignore_bit) {
       break;
     }
   }
+
+	if (offset <= ignore_bit) offset = -1;
 /*
   if (offset != -1) {
     warn << "val1: " << hex << val1;

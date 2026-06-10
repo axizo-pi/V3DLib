@@ -1,7 +1,5 @@
 #include "forward.h"
 #include "global.h"
-#include "kernel.h"           // gru_kernel::init()
-#include "Support/Helpers.h"  // bit_diff()
 
 
 /**
@@ -35,8 +33,6 @@ void forward_propagation(
   int output_dim,
   bool do_test
 ) {
-  gru_kernel::init();
-  qpu::init();
   timers.start("forward_propagation");
 
   MMatrix temp(1, hidden_dim);
