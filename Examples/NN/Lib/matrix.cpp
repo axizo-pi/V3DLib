@@ -404,7 +404,7 @@ matrix &matrix::operator*=(float rhs) {
  */
 matrix matrix::mul(matrix const &rhs) const {
   //warn << "Called matrix matrix::operator*()";
-  //warn << "matrix: " << dump_dim() << "rhs: " << rhs.dump_dim();
+  //warn << "matrix: " << dump_dim() << ", rhs: " << rhs.dump_dim();
   assert(rhs.is_vector());
   assert(m_columns > 0);
   assert(m_rows > 0);
@@ -439,9 +439,10 @@ matrix matrix::mul_matrix(matrix const &rhs) const {
   matrix ret;
 
   // Select row-first if there are enough rows to do multi-QPU
-  if (m_rows >= 16) {
+	// resize_16() screws up some calculation!
+  if (m_rows >= 16 && rhs.m_columns % 16 == 0) {
     timers.start("matrix * row");
-    ret.resize(m_rows, resize_16(rhs.m_columns));
+    ret.resize(m_rows, resize_16(rhs.m_columns));  // resize_16() screws up some calculations!
     ret.set(0.0f);
 
     //s_mult_matrix->setMaxQPUs();
@@ -499,9 +500,7 @@ matrix matrix::mul_t(matrix const &rhs) const {
   assert((m_rows % 16) == 0);
 
   matrix ret(m_columns, 1);
-
   s_mult_vec_transposed->load(&rhs.arr(), &arr(), &ret.arr(), m_columns, m_rows/16).run();
-
   return ret;
 }
 
@@ -766,6 +765,7 @@ void matrix::transfer(matrix const &rhs) {
   m_columns  = rhs.m_columns;
   m_rows     = rhs.m_rows;
   m_arr      = rhs.m_arr;  // nullptr allowed
+	m_size     = rhs.m_size;
 }
 
 
@@ -935,6 +935,7 @@ vector vector::mul(vector const &rhs) {
 
 
 vector &vector::operator=(matrix const &rhs) {
+	//warn << "= rhs:" << rhs.dump_dim();
   assert(rhs.is_vector());
   transfer(rhs);
   return *this;

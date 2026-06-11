@@ -98,9 +98,9 @@ qpu::vector qpu_concat(lstm::vector const &x, lstm::vector const &y) {
  * Compares only elements in lstm vector;
  * qpu vector is aligned to 16-bits, so might have more elements
  */
-bool same(qpu::vector const &lhs, lstm::vector const &rhs, float precision) {
+bool same(qpu::vector const &lhs, lstm::vector const &rhs, int bit_diff) {
   for (int i = 0; i < (int) rhs.size(); ++i) {
-    if (!check_precision(lhs[i], rhs[i], precision)) {
+    if (!check_precision(lhs[i], rhs[i], bit_diff)) {
       warn << "Fail same(qpu::vector, lstm::vector), index: " << i;
       return false;
     }      
@@ -110,14 +110,14 @@ bool same(qpu::vector const &lhs, lstm::vector const &rhs, float precision) {
 }
 
 
-bool same(lstm::vector const &lhs, lstm::vector const &rhs, float precision) {
+bool same(lstm::vector const &lhs, lstm::vector const &rhs, int bit_diff) {
   if (lhs.size() != rhs.size()) {
     warn << "Fail same(lstm::vector, lstm::vector), sizes differ";
     return false;
   }
 
   for (int i = 0; i < (int) rhs.size(); ++i) {
-    if (!check_precision(lhs[i], rhs[i], precision)) {
+    if (!check_precision(lhs[i], rhs[i], bit_diff)) {
       warn << "Fail same(lstm::vector, lstm::vector), index: " << i;
       return false;
     }      
@@ -131,7 +131,7 @@ bool same(lstm::vector const &lhs, lstm::vector const &rhs, float precision) {
  * This checks takes almost half the total runtime.
  * However, I don't see what else could be optimized here.
  */
-bool same(qpu::matrix const &lhs, lstm::matrix const &rhs, float precision) {
+bool same(qpu::matrix const &lhs, lstm::matrix const &rhs, int bit_diff) {
   //V3DLib::timers.start("same(matrix,matrix)");
 
   int height = (int) rhs.size();
@@ -142,7 +142,7 @@ bool same(qpu::matrix const &lhs, lstm::matrix const &rhs, float precision) {
     auto const &row = rhs[i];
 
     for (int j = 0; j < width; j++) {
-      if (!check_precision(lhs.at(i, j), row[j], precision)) {
+      if (!check_precision(lhs.at(i, j), row[j], bit_diff)) {
         warn << "Fail same(qpu::matrix, qpu::matrix), (i,j): (" << i << ", " << j << ")";
         return false;
       }
