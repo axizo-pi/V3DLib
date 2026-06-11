@@ -67,7 +67,7 @@ public:
   void    operator/=(float steps);
 
   MMatrix operator*(MMatrix const &rhs) const;
-  MMatrix mul_t(MMatrix const &rhs) const;
+  MMatrix mul_t(MMatrix const &rhs, bool Xf_only = false) const;
   MMatrix mul_e(MMatrix const &rhs) const;
   MMatrix div_e(MMatrix const &rhs) const;
   MMatrix tanh() const;

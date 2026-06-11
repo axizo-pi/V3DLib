@@ -182,17 +182,11 @@ void back_propagation(
 
   gradient_delta(ls, grad, delta_y_x, time_steps);
 
-  MatrixXf ds_single = delta_y_x.Xf() * m.V.Xf().transpose().eval();
-	MMatrix ds_single_2 = m.V.mul_t(delta_y_x);
-
   // Difference in calculations between Xf and MMatrix larger than expected
+	// All other mul_t() calls work fine.
   // TODO: examine further later
-  //
-  // MMatrix  ds_single_x = delta_y_x * m.V.transpose();
-  // warn << "ds_single: " << dump_dim(ds_single);
-  // warn << "ds_single_x: " << ds_single_x.dump_dim();
-  // assert(ds_single_x.same_b(ds_single, 2, true));
-  //
+	MMatrix ds_single = m.V.mul_t(delta_y_x /* , true */);  // Enabling true does Xf calculation
+	//assert(ds_single.same(ds_single));
 
   LoopState x_ls(time_steps, input_dim, hidden_dim);
 

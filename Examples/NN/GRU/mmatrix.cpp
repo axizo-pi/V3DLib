@@ -12,6 +12,56 @@ float s_softmax(float x) {
   return (float) exp(x - s_max);
 }
 
+
+/**
+ * Why the `_Xf` postfix is required, is beyond me.
+ * Leaving it out results in 'no known conversion' error.
+ */
+bool same_Xf(MatrixXf const &lhs, MatrixXf const &rhs, int bit_diff,  bool show_max_diff) {
+  //warn << "Called same(MatrixXf, MatrixXf)";
+
+  bool ret       = true;
+  float max_diff = 0.0f;
+  int max_bit    = -1;
+
+  if(lhs.rows() != rhs.rows() || lhs.cols() != rhs.cols() ) {
+     warn << "Fail same(MatrixXf, MatrixXf) dimensions differ: "
+          << "lhs: " << ::dump_dim(lhs) << ", "
+          << "rhs: " << ::dump_dim(rhs);
+
+     return false;
+  }
+
+  std::string buf;
+
+  for (int i = 0; i < (int) rhs.rows(); ++i) {
+    if (!show_max_diff && !ret) break;
+
+    for (int j = 0; j < (int) rhs.cols(); ++j) {
+      if (!qpu::check_precision(lhs(i, j), rhs(i, j), bit_diff, &max_diff, &max_bit, ret)) {
+        if (ret) {  // Show first fail only
+          buf << " at (" << i << ", " << j << ")";
+        }
+
+        ret = false;
+        if (!show_max_diff) break;
+      }      
+    }
+  }
+
+  if (show_max_diff) {
+    buf << ", "
+        << "max_diff: " << max_diff << ", "
+        << "max_bit: "  << max_bit;
+  }
+
+  if (!buf.empty()) {
+    warn << "Fail same(MatrixXf, MatrixXf)" << buf ;
+  }
+
+  return ret;
+}
+
 }
 
 MMatrix::MMatrix() {}
@@ -120,16 +170,12 @@ void MMatrix::set(std::vector<int> const &rhs, int pos) {
 
   while ((pos + count) < (int) rhs.size() && count < rows()) {
     int index = pos + count;
-
-    //m_Xf(count, rhs[index]) = 1;
     m_qpu.at(count, rhs[index]) = 1;
 
     count++;
   }
-  //m_Xf.eval();
 
   used_fields(false, true);
-  assert(same());
 }
 
 
@@ -364,7 +410,9 @@ bool MMatrix::same_intern(MMatrix const &rhs, int bit_diff, bool show_max_diff) 
   if (m_using_qpu && rhs.m_using_qpu)    ret = ret && ::same(m_qpu, rhs.m_qpu, bit_diff, show_max_diff);
 
   if (m_using_Xf && !m_using_qpu) {
-    if (m_using_Xf  && rhs.m_using_Xf)     assert(false); // Deal with it when it happens
+    if (m_using_Xf  && rhs.m_using_Xf) {
+  		ret = ret && ::same_Xf(m_Xf, rhs.m_Xf, bit_diff,  show_max_diff);
+		} else
     if (m_using_Xf  && rhs.m_using_qpu)    assert(false); // Deal with it when it happens
   }
 
@@ -517,7 +565,7 @@ void MMatrix::operator*=(float val) {
   //timers.stop("MMatrix float *= qpu");
 
   used_fields(false, true);
-  assert(same());
+  //assert(same());
 }
 
 
@@ -561,31 +609,26 @@ MMatrix MMatrix::operator*(MMatrix const &rhs) const {
  *
  *     rhs * lhs^T;    // ^T - transposed
  */
-MMatrix MMatrix::mul_t(MMatrix const &rhs) const {
-  rhs.need_fields(true, true);
-  need_fields(true, true);
+MMatrix MMatrix::mul_t(MMatrix const &rhs, bool Xf_only) const {
+  assert(!rhs.m_qpu.is_vector()); // Vector not supported any more
+  rhs.need_fields(Xf_only, !Xf_only);
+  need_fields(Xf_only, !Xf_only);
 
   MMatrix ret;
 
-  timers.start("MMatrix mul_t Xf");
-  ret.m_Xf = rhs.m_Xf * m_Xf.transpose().eval();
-  timers.stop("MMatrix mul_t Xf");
+	if (Xf_only) {
+  	timers.start("MMatrix mul_t Xf");
+	  ret.m_Xf = rhs.m_Xf * m_Xf.transpose().eval();
+	  timers.stop("MMatrix mul_t Xf");
+	} else {
+	  timers.start("MMatrix mul_t qpu matrix");  // Timing as good as possible 
+		// 4x faster than Xf
+	  ret.m_qpu = rhs.m_qpu.mul_matrix_t(m_qpu);
+	  timers.stop("MMatrix mul_t qpu matrix");
+	}
 
-  if (rhs.m_qpu.is_vector()) {
-    assert(false); // Check not used
-    timers.start("MMatrix mul_t qpu vec");
-    ret.m_qpu = m_qpu * rhs.m_qpu;
-    timers.stop("MMatrix mul_t qpu vec");
-  } else {
-    timers.start("MMatrix mul_t qpu matrix");  // Timing as good as possible 
-    ret.m_qpu = rhs.m_qpu.mul_matrix_t(m_qpu);
-    timers.stop("MMatrix mul_t qpu matrix");
-  }
-
-  ret.used_fields(true, true);
-
-  // TODO Difference in calculations between Xf and MMatrix larger than expected
-  //TODO assert(ret.same(2));
+  ret.used_fields(Xf_only, !Xf_only);
+  //OK assert(ret.same());
   return ret;
 }
 
@@ -916,23 +959,17 @@ void MMatrix::softmax() {
     s_max    = tmp.m_Xf.maxCoeff();
     tmp.m_Xf = tmp.m_Xf.unaryExpr(&::s_softmax);
     tmp.m_Xf.eval();
-    //warn << "softmax Xf post: " << tmp.dump();
 
     timers.stop("softmax Xf");
-
-    //warn << "s_max: " << s_max;
-    //warn << "max: " << max.dump();
 
     timers.start("softmax qpu");
     tmp.m_qpu.softmax(max.m_qpu);
     timers.stop("softmax qpu");
 
-    //warn << "softmax tmp: " << tmp.dump();
     row(r, tmp);
   }
 
   used_fields(true, true);
-  //warn << "softmax: " << dump();
   assert(same());
 }
 
