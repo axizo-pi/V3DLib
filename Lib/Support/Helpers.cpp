@@ -395,7 +395,7 @@ int bit_diff(float in_val1, float in_val2, int ignore_bit) {
     }
   }
 
-	if (offset <= ignore_bit) offset = -1;
+  if (offset <= ignore_bit) offset = -1;
 /*
   if (offset != -1) {
     warn << "val1: " << hex << val1;

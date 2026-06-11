@@ -439,7 +439,7 @@ matrix matrix::mul_matrix(matrix const &rhs) const {
   matrix ret;
 
   // Select row-first if there are enough rows to do multi-QPU
-	// resize_16() screws up some calculation!
+  // resize_16() screws up some calculation!
   if (m_rows >= 16 && rhs.m_columns % 16 == 0) {
     timers.start("matrix * row");
     ret.resize(m_rows, resize_16(rhs.m_columns));  // resize_16() screws up some calculations!
@@ -765,7 +765,7 @@ void matrix::transfer(matrix const &rhs) {
   m_columns  = rhs.m_columns;
   m_rows     = rhs.m_rows;
   m_arr      = rhs.m_arr;  // nullptr allowed
-	m_size     = rhs.m_size;
+  m_size     = rhs.m_size;
 }
 
 
@@ -935,7 +935,6 @@ vector vector::mul(vector const &rhs) {
 
 
 vector &vector::operator=(matrix const &rhs) {
-	//warn << "= rhs:" << rhs.dump_dim();
   assert(rhs.is_vector());
   transfer(rhs);
   return *this;

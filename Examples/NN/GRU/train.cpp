@@ -183,10 +183,10 @@ void back_propagation(
   gradient_delta(ls, grad, delta_y_x, time_steps);
 
   // Difference in calculations between Xf and MMatrix larger than expected
-	// All other mul_t() calls work fine.
+  // All other mul_t() calls work fine.
   // TODO: examine further later
-	MMatrix ds_single = m.V.mul_t(delta_y_x /* , true */);  // Enabling true does Xf calculation
-	//assert(ds_single.same(ds_single));
+  MMatrix ds_single = m.V.mul_t(delta_y_x /* , true */);  // Enabling true does Xf calculation
+  //assert(ds_single.same(ds_single));
 
   LoopState x_ls(time_steps, input_dim, hidden_dim);
 
