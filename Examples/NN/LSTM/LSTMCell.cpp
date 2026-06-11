@@ -28,7 +28,6 @@
 
 namespace {
 
-const float Precision_vc7 = 5.0e-7f;  // Basic precision for vc7
 const float clip_value = 5.0;
     
 // Random number generator for weight initialization
@@ -57,16 +56,16 @@ Gate::Gate(int height, int width, float default_bias) :
 void Gate::init_forward(vector const &x_h) {
   auto q_x_h = copy(x_h);  assert(same(q_x_h, x_h));
   q_b = copy(m_b);         assert(same(q_b, m_b));
+  q_W = copy(W);           assert(same(q_W, W));
 
 #ifndef SKIP_LSTM_CALCULATIONS
-  q_W = copy(W);           assert(same(q_W, W));
   activation = (W*x_h).sigmoid(m_b);
 #endif // SKIP_LSTM_CALCULATIONS
 
   q_activation = (q_W*q_x_h).sigmoid(q_b);
 
 #ifndef SKIP_LSTM_CALCULATIONS
-  assert(same(q_activation, activation, Precision_vc7));
+  assert(same(q_activation, activation));
 #endif // SKIP_LSTM_CALCULATIONS
 }
 
@@ -80,7 +79,7 @@ void Gate::clip(float clip_value, bool do_qpu) {
   if (do_qpu) {
     q_d_t.clip(clip_value);
   }
-  assert(same(q_d_t, d_t, Precision_vc7));
+  assert(same(q_d_t, d_t));
 }
 
 
@@ -90,8 +89,8 @@ void Gate::clip(float clip_value, bool do_qpu) {
  * This call is irrelevant if either LSTM calc or QPU calc is absent.
  */
 void Gate::check_same() {
-  assert(same(q_W, W, Precision_vc7));
-  assert(same(q_b, m_b, Precision_vc7));
+  assert(same(q_W, W));
+  assert(same(q_b, m_b));
 }
 
 
@@ -123,7 +122,7 @@ void Gate::update_gate(vector const &x_h, qpu::vector const &q_x_h, float learni
 
   V3DLib::timers.start("update_gate QPU");
 
-  assert(same(q_d_t, d_t, Precision_vc7));
+  assert(same(q_d_t, d_t));
   assert(same(q_x_h, x_h));
 
 
@@ -143,8 +142,8 @@ void Gate::update_gate(vector const &x_h, qpu::vector const &q_x_h, float learni
 #ifndef SKIP_LSTM_CALCULATIONS  
   V3DLib::timers.start("update_gate overhead2");
 
-  assert(same(q_W, W, Precision_vc7));
-  assert(same(q_b, m_b, Precision_vc7));
+  assert(same(q_W, W));
+  assert(same(q_b, m_b));
 
   V3DLib::timers.stop("update_gate overhead2");
 #endif // SKIP_LSTM_CALCULATIONS  
@@ -222,9 +221,9 @@ std::pair<vector, vector> LSTMCell::forward(vector const &x, vector const &h_pre
   auto q_h_t = res3;
 
 #ifndef SKIP_LSTM_CALCULATIONS
-  assert(same(res , c_tilde, 2*Precision_vc7));
-  assert(same(res2, c_t    , 2*Precision_vc7));
-  assert(same(res3, h_t    , 2*Precision_vc7));
+  assert(same(res , c_tilde));
+  assert(same(res2, c_t));
+  assert(same(res3, h_t));
 
   forget.check_same();
   input.check_same();
@@ -270,10 +269,10 @@ void LSTMCell::gradient_input_gate() {
   ).run();
   //warn << "q_d_t: " << input.q_d_t.dump();
   //warn << "ret  : " << ret.dump();
-  //assert(same(input.q_d_t, ret, Precision_vc7));
+  //assert(same(input.q_d_t, ret));
   input.q_d_t = ret;
 
-  assert(same(input.q_d_t, input.d_t, Precision_vc7));
+  assert(same(input.q_d_t, input.d_t));
 
   // Gradient clipping to prevent exploding gradients
   input.clip(clip_value);
@@ -306,7 +305,7 @@ void LSTMCell::gradient_output_gate(vector const &dh_next, qpu::vector /* const 
   output.q_d_t = ret;
 
   output.clip(clip_value, false);
-  assert(same(output.q_d_t, output.d_t, Precision_vc7));
+  assert(same(output.q_d_t, output.d_t));
 }
 
 
@@ -340,7 +339,7 @@ void LSTMCell::gradient_cell_state(
   candidate.q_d_t = ret;
 
 #ifndef SKIP_LSTM_CALCULATIONS
-  assert(same(candidate.q_d_t, candidate.d_t, 2*Precision_vc7));
+  assert(same(candidate.q_d_t, candidate.d_t));
 #endif // SKIP_LSTM_CALCULATIONS
 }
 
@@ -367,7 +366,7 @@ void LSTMCell::gradient_candidate() {
   candidate.q_d_t = ret;
 
   candidate.clip(clip_value, false);
-  assert(same(candidate.q_d_t, candidate.d_t, Precision_vc7));
+  assert(same(candidate.q_d_t, candidate.d_t));
 }
 
 
@@ -393,7 +392,7 @@ void LSTMCell::gradient_forget_gate() {
   forget.q_d_t = ret;
 
   forget.clip(clip_value, false);
-  assert(same(forget.q_d_t, forget.d_t, Precision_vc7));
+  assert(same(forget.q_d_t, forget.d_t));
 }
 
 
@@ -413,7 +412,7 @@ std::tuple<vector, vector, vector> LSTMCell::backward(
 
 #ifndef SKIP_LSTM_CALCULATIONS
   // Interim copies to circumvent accumulating errors
-  q_c_t = copy(c_t);  assert(same(q_c_t, c_t, Precision_vc7));
+  q_c_t = copy(c_t);  assert(same(q_c_t, c_t));
 #endif // SKIP_LSTM_CALCULATIONS
 
   V3DLib::timers.start("backward gradient gates");
@@ -444,7 +443,7 @@ std::tuple<vector, vector, vector> LSTMCell::backward(
   // I suspect that there is some subtle bug in the update_gate kernel.
   //
   assert(same(input.q_W, input.W, 1.0e-2f));
-  assert(same(input.q_b, input.m_b, Precision_vc7));
+  assert(same(input.q_b, input.m_b));
 #endif // SKIP_LSTM_CALCULATIONS
 
   input.update_gate(x_h, q_x_h, learning_rate);
@@ -525,8 +524,8 @@ std::tuple<vector, vector, vector> LSTMCell::backward(
 */
 
 #ifndef SKIP_LSTM_CALCULATIONS  
-  assert(same(dx_t, q_dx_t, Precision_vc7));
-  assert(same(dh_prev, q_dh_prev, Precision_vc7));
+  assert(same(dx_t, q_dx_t));
+  assert(same(dh_prev, q_dh_prev));
 #endif // SKIP_LSTM_CALCULATIONS  
 
   return {q_dx_t, q_dh_prev, dc_prev};

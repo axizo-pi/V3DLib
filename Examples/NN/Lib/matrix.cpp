@@ -404,7 +404,7 @@ matrix &matrix::operator*=(float rhs) {
  */
 matrix matrix::mul(matrix const &rhs) const {
   //warn << "Called matrix matrix::operator*()";
-  //warn << "matrix: " << dump_dim() << "rhs: " << rhs.dump_dim();
+  //warn << "matrix: " << dump_dim() << ", rhs: " << rhs.dump_dim();
   assert(rhs.is_vector());
   assert(m_columns > 0);
   assert(m_rows > 0);
@@ -439,9 +439,10 @@ matrix matrix::mul_matrix(matrix const &rhs) const {
   matrix ret;
 
   // Select row-first if there are enough rows to do multi-QPU
-  if (m_rows >= 16) {
+  // resize_16() screws up some calculation!
+  if (m_rows >= 16 && rhs.m_columns % 16 == 0) {
     timers.start("matrix * row");
-    ret.resize(m_rows, resize_16(rhs.m_columns));
+    ret.resize(m_rows, resize_16(rhs.m_columns));  // resize_16() screws up some calculations!
     ret.set(0.0f);
 
     //s_mult_matrix->setMaxQPUs();
@@ -499,9 +500,7 @@ matrix matrix::mul_t(matrix const &rhs) const {
   assert((m_rows % 16) == 0);
 
   matrix ret(m_columns, 1);
-
   s_mult_vec_transposed->load(&rhs.arr(), &arr(), &ret.arr(), m_columns, m_rows/16).run();
-
   return ret;
 }
 
@@ -766,6 +765,7 @@ void matrix::transfer(matrix const &rhs) {
   m_columns  = rhs.m_columns;
   m_rows     = rhs.m_rows;
   m_arr      = rhs.m_arr;  // nullptr allowed
+  m_size     = rhs.m_size;
 }
 
 
@@ -988,7 +988,6 @@ vector operator*(matrix const &lhs, matrix const &rhs) {
 bool check_precision(
   float lhs,
   float rhs,
-  float precision,
   int bit_diff,
   float *max_diff,
   int *max_bit,
@@ -998,32 +997,19 @@ bool check_precision(
   float diff = abs(lhs - rhs);
   int bit = V3DLib::bit_diff(lhs, rhs, bit_diff);
 
-  // Precision takes precedence over bit_diff, for now
+  bool failed = false;
 
-  if (precision == 0.0f) {
-    bool failed = false;
-
-    if (bit_diff > -1) {
-      failed = (bit > -1);
-    } else {
-      failed = (lhs != rhs);
-    }
-    
-    if (failed) {
-      if (do_show) {
-        warn << "check_precision fail, diff: " << diff << ", " << "bit: " << bit;
-      }
-      ret = false;
-    }
+  if (bit_diff > -1) {
+    failed = (bit > -1);
   } else {
-    if (diff > precision) {
-      if (do_show) {
-        warn << "check_precision fails with "
-             << "diff: " << diff << " for precision: " << precision << ", "
-             << "bit: " << V3DLib::bit_diff(lhs, rhs, -1);
-      }
-      ret = false;
+    failed = (lhs != rhs);
+  }
+    
+  if (failed) {
+    if (do_show) {
+      warn << "check_precision fail, diff: " << diff << ", " << "bit: " << bit;
     }
+    ret = false;
   }
 
   if (max_diff != nullptr) {
@@ -1038,9 +1024,9 @@ bool check_precision(
 }
 
 
-bool same(qpu::vector const &lhs, qpu::vector const &rhs, float precision) {
+bool same(qpu::vector const &lhs, qpu::vector const &rhs) {
   for (int i = 0; i < (int) rhs.size(); ++i) {
-    if (!check_precision(lhs[i], rhs[i], precision)) {
+    if (!check_precision(lhs[i], rhs[i])) {
       warn << "Fail same(qpu::vector, qpu::vector), index: " << i;
       return false;
     }

@@ -7,6 +7,9 @@ using namespace Log;
 
 namespace {
 
+/**
+ * TODO: Perhaps convert to MMatrix
+ */
 void init_matrix(MatrixXf& X, int dimension_row, int dimension_col) {
   float upperlimit =  1.0f * (float) sqrt(1.0f / (float) dimension_row);
   float lowerlimit = -1.0f * (float) sqrt(1.0f / (float) dimension_row);
@@ -66,11 +69,7 @@ void Model::init(int input_dim, int hidden_dim, int output_dim) {
   MatrixXf tmp;
   init_matrix(tmp, input_dim, hidden_dim);
 
-  //warn << "Here1";
-  // Adding true to set() makes copy_m() worse
   U_z.set(tmp);
-  //warn << "U_z: " << U_z.dump_dim();
-
   U_r.set(tmp);
   U_h.set(tmp);
 
@@ -227,7 +226,7 @@ void Model::eval() {
 
 
 void State::init(int time_steps, int hidden_dim, int output_dim) {
-	assert(S.empty());  // Call only once
+  assert(S.empty());  // Call only once
 
   timers.start("State::init()");  // Timing minimal, inconsequential
 

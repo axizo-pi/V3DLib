@@ -4,8 +4,8 @@
 
 class Model;
 
-bool same(qpu::matrix const &lhs, MatrixXf const &rhs, float precision = 0.0f, int bit_diff = -1, bool show_max_diff = false);
-bool same(qpu::matrix const &lhs, qpu::matrix const &rhs, float precision = 0.0f, int bit_diff = -1, bool show_max_diff = false);
+bool same(qpu::matrix const &lhs, MatrixXf const &rhs, int bit_diff = -1, bool show_max_diff = false);
+bool same(qpu::matrix const &lhs, qpu::matrix const &rhs, int bit_diff = -1, bool show_max_diff = false);
 void copy_m(qpu::matrix &dst, MatrixXf const &rhs);
 qpu::matrix copy_m(MatrixXf const &rhs);
 std::string dump(MatrixXf const &m);
@@ -48,12 +48,9 @@ public:
   void Xf(MatrixXf const &val)     { m_Xf  = val; }
   void qpu(qpu::matrix const &val) { m_qpu = val; }
 
-  bool same(float precision = 0.0f) const;
-  bool same_b(int bit_diff = 0) const;
-  bool same(MatrixXf const &rhs, float precision = 0.0f, bool show_max_diff = false) const;
-  bool same(MMatrix const &rhs, float precision = 0.0f, bool show_max_diff = false) const;
-  bool same_b(MMatrix const &rhs, int bit_diff = -1, bool show_max_diff = false) const;
-  bool same_b(MatrixXf const &rhs, int bit_diff = -1, bool show_max_diff = false) const;
+  bool same(int bit_diff = 0) const;
+  bool same(MMatrix const &rhs, int bit_diff = -1, bool show_max_diff = false) const;
+  bool same(MatrixXf const &rhs, int bit_diff = -1, bool show_max_diff = false) const;
 
   std::string dump_dim() const;
   std::string dump() const;
@@ -70,7 +67,7 @@ public:
   void    operator/=(float steps);
 
   MMatrix operator*(MMatrix const &rhs) const;
-  MMatrix mul_t(MMatrix const &rhs) const;
+  MMatrix mul_t(MMatrix const &rhs, bool Xf_only = false) const;
   MMatrix mul_e(MMatrix const &rhs) const;
   MMatrix div_e(MMatrix const &rhs) const;
   MMatrix tanh() const;
@@ -86,9 +83,9 @@ public:
   MMatrix ln() const;
 
   // Application-specific methods
-  void back_prop_1(MMatrix const &ds_cur, State const &temp, float precision);
-  void back_prop_3(MMatrix const &dsr, State const &temp, float precision = 0.0f);
-  void back_prop_4(MMatrix const &ds_cur_bk, State const &temp, float precision);
+  void back_prop_1(MMatrix const &ds_cur, State const &temp);
+  void back_prop_3(MMatrix const &dsr, State const &temp);
+  void back_prop_4(MMatrix const &ds_cur_bk, State const &temp);
   void divide_matrix(MMatrix const &gradient, MMatrix const &in_cache);
   MMatrix calc_E(MMatrix const &Y, MMatrix const &O) const;
   void col_E(int index, MMatrix const &rhs);
@@ -111,7 +108,7 @@ private:
   void used_fields(bool in_XF, bool in_qpu) { m_using_Xf = in_XF; m_using_qpu = in_qpu; }
 
   void copy_block(MMatrix const &rhs, int from_offset, int to_offset, int in_size);
-  bool same_intern(MMatrix const &rhs, float precision, int bit_diff, bool show_max_diff) const;
+  bool same_intern(MMatrix const &rhs, int bit_diff, bool show_max_diff) const;
 
   void reset();
 

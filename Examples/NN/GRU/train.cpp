@@ -6,11 +6,11 @@ using namespace Log;
 
 namespace {
 
-MAYBE_UNUSED bool same(qpu::vector const &lhs, MatrixXf const &rhs, float precision = 0.0f) {
+MAYBE_UNUSED bool same(qpu::vector const &lhs, MatrixXf const &rhs) {
   assert(rhs.rows() == 1);
 
   for (int i = 0; i < (int) rhs.cols(); ++i) {
-    if (!qpu::check_precision(lhs[i], rhs(0, i), precision)) {
+    if (!qpu::check_precision(lhs[i], rhs(0, i))) {
       warn << "Fail same(qpu::vector, MatrixXf), index: " << i;
       return false;
     }      
@@ -70,12 +70,12 @@ void LoopState::x_set_step(int step, State x_state, MMatrix const &X) {
 void LoopState::init_drelu(MMatrix const &ds_cur, Model const &m) {
   ds_cur_bk = ds_cur;
 
-  dreluInput_h.back_prop_1(ds_cur, m_temp, Precision);
+  dreluInput_h.back_prop_1(ds_cur, m_temp);
 
   dsr = m.W_h.mul_t(dreluInput_h);
-  dreluInput_r.back_prop_3(dsr, m_temp, Precision);
+  dreluInput_r.back_prop_3(dsr, m_temp);
 
-  dreluInput_z.back_prop_4(ds_cur_bk, m_temp, 3*Precision);   // convergence Xf/qpu gets progressively worse
+  dreluInput_z.back_prop_4(ds_cur_bk, m_temp);
 }
 
 
@@ -182,18 +182,11 @@ void back_propagation(
 
   gradient_delta(ls, grad, delta_y_x, time_steps);
 
-  MatrixXf ds_single = delta_y_x.Xf() * m.V.Xf().transpose().eval();
-	MMatrix ds_single_2 = m.V.mul_t(delta_y_x);
-
-  //
   // Difference in calculations between Xf and MMatrix larger than expected
+  // All other mul_t() calls work fine.
   // TODO: examine further later
-  //
-  // MMatrix  ds_single_x = delta_y_x * m.V.transpose();
-  // warn << "ds_single: " << dump_dim(ds_single);
-  // warn << "ds_single_x: " << ds_single_x.dump_dim();
-  // assert(ds_single_x.same_b(ds_single, 2, true));
-  //
+  MMatrix ds_single = m.V.mul_t(delta_y_x /* , true */);  // Enabling true does Xf calculation
+  //assert(ds_single.same(ds_single));
 
   LoopState x_ls(time_steps, input_dim, hidden_dim);
 
