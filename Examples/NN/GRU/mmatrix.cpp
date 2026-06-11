@@ -323,17 +323,7 @@ qpu::matrix const &MMatrix::qpu() const {
 }
 
 
-bool MMatrix::same(float precision) const {
-  // Only do this if both arrays present
-  if (m_using_Xf && m_using_qpu) {
-    return ::same(m_qpu, m_Xf, precision, -1);
-  }
-
-  return true;
-}
-
-
-bool MMatrix::same_b(int bit_diff) const {
+bool MMatrix::same(int bit_diff) const {
   // Only do this if both arrays present
   if (m_using_Xf && m_using_qpu) {
     return ::same(m_qpu, m_Xf, 0.0f, bit_diff);
@@ -343,50 +333,35 @@ bool MMatrix::same_b(int bit_diff) const {
 }
 
 
-bool MMatrix::same(MatrixXf const &rhs, float precision, bool show_max_diff) const {
+bool MMatrix::same(MMatrix const &rhs, int bit_diff, bool show_max_diff) const {
+  return same_intern(rhs, bit_diff, show_max_diff);
+}
+
+
+bool MMatrix::same(MatrixXf const &rhs, int bit_diff, bool show_max_diff) const {
   MMatrix tmp;
   tmp.set(rhs, true);
 
-  return same_intern(tmp, precision, -1, show_max_diff);
-}
-
-
-bool MMatrix::same_b(MMatrix const &rhs, int bit_diff, bool show_max_diff) const {
-  return same_intern(rhs, 0.0f, bit_diff, show_max_diff);
-}
-
-
-bool MMatrix::same_b(MatrixXf const &rhs, int bit_diff, bool show_max_diff) const {
-  MMatrix tmp;
-  tmp.set(rhs, true);
-
-  return same_intern(tmp, 0.0f, bit_diff, show_max_diff);
-}
-
-/**
- * Profiling: time negligible
- */
-bool MMatrix::same(MMatrix const &rhs, float precision, bool show_max_diff) const {
-  return same_intern(rhs, precision, -1, show_max_diff);
+  return same_intern(tmp, bit_diff, show_max_diff);
 }
 
 
 /**
  * Profiling: time negligible
  */
-bool MMatrix::same_intern(MMatrix const &rhs, float precision, int bit_diff, bool show_max_diff) const {
+bool MMatrix::same_intern(MMatrix const &rhs, int bit_diff, bool show_max_diff) const {
   assert(m_using_Xf || m_using_qpu);
   assert(rhs.m_using_Xf || rhs.m_using_qpu);
   assert((m_using_Xf == rhs.m_using_Xf) || (m_using_qpu == rhs.m_using_qpu));
 
   bool ret = true;
   // Internal checks
-  if (m_using_Xf && m_using_qpu)         ret = ret && ::same(m_qpu, m_Xf, precision, bit_diff);
-  if (rhs.m_using_Xf && rhs.m_using_qpu) ret = ret && ::same(rhs.m_qpu, rhs.m_Xf, precision, bit_diff);
+  if (m_using_Xf && m_using_qpu)         ret = ret && ::same(m_qpu, m_Xf, bit_diff);
+  if (rhs.m_using_Xf && rhs.m_using_qpu) ret = ret && ::same(rhs.m_qpu, rhs.m_Xf, bit_diff);
 
   // Cross checks
-  if (m_using_qpu && rhs.m_using_Xf)     ret = ret && ::same(m_qpu, rhs.m_Xf, precision, bit_diff, show_max_diff);
-  if (m_using_qpu && rhs.m_using_qpu)    ret = ret && ::same(m_qpu, rhs.m_qpu, precision, bit_diff, show_max_diff);
+  if (m_using_qpu && rhs.m_using_Xf)     ret = ret && ::same(m_qpu, rhs.m_Xf, bit_diff, show_max_diff);
+  if (m_using_qpu && rhs.m_using_qpu)    ret = ret && ::same(m_qpu, rhs.m_qpu, bit_diff, show_max_diff);
 
   if (m_using_Xf && !m_using_qpu) {
     if (m_using_Xf  && rhs.m_using_Xf)     assert(false); // Deal with it when it happens
@@ -460,8 +435,7 @@ MMatrix MMatrix::operator+(MMatrix const &rhs) const {
 
   ret.used_fields(true, true);
 
-  // See TODO operator -
-  assert(ret.same(4*Precision));
+  assert(ret.same());
   return ret;
 }
 
@@ -483,11 +457,7 @@ MMatrix MMatrix::operator-(MMatrix const &rhs) const {
   //timers.stop("MMatrix - qpu");
 
   ret.used_fields(false, true);
-
-  // The following should be EXACT.
-  // I investigated this but can not find a reason
-  // TODO: examine further
-  assert(ret.same()); //4*Precision));
+  assert(ret.same());
   return ret;
 }
 
@@ -547,7 +517,7 @@ void MMatrix::operator*=(float val) {
   //timers.stop("MMatrix float *= qpu");
 
   used_fields(false, true);
-  //assert(same_b());
+  assert(same());
 }
 
 
@@ -579,7 +549,7 @@ MMatrix MMatrix::operator*(MMatrix const &rhs) const {
 //  timers.stop("MMatrix * qpu");
 
   ret.used_fields(false, true);
-  //OK assert(ret.same_b());
+  //OK assert(ret.same());
   return ret;
 }
 
@@ -613,7 +583,9 @@ MMatrix MMatrix::mul_t(MMatrix const &rhs) const {
   }
 
   ret.used_fields(true, true);
-  assert(ret.same_b(2));
+
+  // TODO Difference in calculations between Xf and MMatrix larger than expected
+  //TODO assert(ret.same(2));
   return ret;
 }
 
@@ -693,8 +665,7 @@ MMatrix MMatrix::tanh() const {
 
   //ret.used_fields(true, true);
   ret.used_fields(m_using_Xf, m_using_qpu);
-  //assert(ret.same(Precision));  // -1 < tanh < 1, this basically always succeeds
-  //assert(ret.same_b(11));       // Very bad convergence, 11 often not enough
+  //assert(ret.same(11));       // Very bad convergence, 11 often not enough
   return ret;
 }
 
@@ -714,7 +685,7 @@ MMatrix MMatrix::sigmoid() const {
   //timers.stop("MMatrix sigmoid qpu");
 
   ret.used_fields(false, true);
-  assert(ret.same(4*Precision));  // TODO check precision when forward prop done
+  assert(ret.same());
   return ret;
 }
 
@@ -962,7 +933,7 @@ void MMatrix::softmax() {
 
   used_fields(true, true);
   //warn << "softmax: " << dump();
-  assert(same_b());
+  assert(same());
 }
 
 
@@ -987,7 +958,7 @@ MMatrix MMatrix::invert() const {
 }
 
 
-void MMatrix::back_prop_1(MMatrix const &ds_cur, State const &temp, float precision) {
+void MMatrix::back_prop_1(MMatrix const &ds_cur, State const &temp) {
   ds_cur.need_fields(false, true);
   temp.h.need_fields(false, true);
   temp.z.need_fields(false, true);
@@ -1006,11 +977,10 @@ void MMatrix::back_prop_1(MMatrix const &ds_cur, State const &temp, float precis
   //timers.stop("back_prop_1 qpu");
 
   used_fields(false, true);
-  //assert(same(precision)); 
 }
 
 
-void MMatrix::back_prop_3(MMatrix const &dsr, State const &temp, float precision) {
+void MMatrix::back_prop_3(MMatrix const &dsr, State const &temp) {
   dsr.need_fields(false, true);
   temp.S.need_fields(false, true);
   temp.r.need_fields(false, true);
@@ -1029,14 +999,13 @@ void MMatrix::back_prop_3(MMatrix const &dsr, State const &temp, float precision
   //timers.stop("back_prop_3 qpu");
 
   used_fields(false, true);
-  //assert(same(precision));
 }
 
 
 /**
  * Xf/qpu slowly diverge upon sequential loops.
  */
-void MMatrix::back_prop_4(MMatrix const &ds_cur_bk, State const &temp, float precision) {
+void MMatrix::back_prop_4(MMatrix const &ds_cur_bk, State const &temp) {
   ds_cur_bk.need_fields(false, true);
   temp.S.need_fields(false, true);
 
@@ -1053,10 +1022,10 @@ void MMatrix::back_prop_4(MMatrix const &ds_cur_bk, State const &temp, float pre
 
   //timers.start("back_prop_4 qpu");
   gru_kernel::back_prop_4(m_qpu, ds_cur_bk.qpu(), temp.z.qpu(), temp.S.qpu(), temp.h.qpu());
+  used_fields(false, true);
   //timers.stop("back_prop_4 qpu");
 
-  //Good enough assert(same(precision));
-  used_fields(false, true);
+  //assert(same());  // convergence Xf/qpu gets progressively worse
 }
 
 
@@ -1116,7 +1085,7 @@ MMatrix MMatrix::calc_E(MMatrix const &Y, MMatrix const &O) const {
   timers.start("calc_E");
 
   MMatrix temp_ln = O.ln();
-  assert(temp_ln.same(5*Precision));
+  assert(temp_ln.same());
 
   MMatrix ret = -1.0f * Y.mul_e(temp_ln).sum_row();
   // DON'T DO THIS, done in calc: ret.used_fields(true, true);
@@ -1180,7 +1149,6 @@ MMatrix MMatrix::forward_1(Model &m, MMatrix &S) {
   //timers.stop("forward_1 qpu");
 
   ret.used_fields(false, true);
-  //OK assert(ret.same_b(ret2, -1));  // Comparison with atomic QPU
   //OK assert(ret.same());
   return ret;
 }
@@ -1217,8 +1185,6 @@ MMatrix MMatrix::forward_2(Model &m, MMatrix &S) {
   //timers.stop("forward_2 qpu");
 
   ret.used_fields(false, true);
-
-  //OK assert(ret.same_b(ret2, -1));  // Comparison with atomic QPU
   //OK assert(ret.same());
   return ret;
 }
@@ -1257,7 +1223,6 @@ MMatrix MMatrix::forward_3(Model &m, MMatrix &S, MMatrix const &r_row) {
   //timers.stop("forward_3 qpu");
 
   ret.used_fields(false, true);
-  //OK assert(ret.same_b(ret2, -1));  // Comparison with atomic QPU
   return ret;
 }
 
@@ -1288,7 +1253,7 @@ MMatrix MMatrix::forward_4(MMatrix &S, MMatrix const &h_row) {
   //timers.stop("forward_4 qpu");
 
   ret.used_fields(false, true);
-  //OK assert(ret.same_b(2));  // Usually exact
+  //OK assert(ret.same(2));  // Usually exact
   return ret;
 }
 
@@ -1381,15 +1346,15 @@ void MMatrix::need_fields(bool need_XF, bool need_qpu) const {
 }
 
 
-bool same(qpu::matrix const &lhs, MatrixXf const &rhs, float precision, int bit_diff, bool show_max_diff) {
+bool same(qpu::matrix const &lhs, MatrixXf const &rhs, int bit_diff, bool show_max_diff) {
   MMatrix rhs_temp;
   rhs_temp.set(rhs, true);
 
-  return same(lhs, rhs_temp.qpu(), precision, bit_diff, show_max_diff);
+  return same(lhs, rhs_temp.qpu(), bit_diff, show_max_diff);
 }
 
 
-bool same(qpu::matrix const &lhs, qpu::matrix const &rhs, float precision, int bit_diff,  bool show_max_diff) {
+bool same(qpu::matrix const &lhs, qpu::matrix const &rhs, int bit_diff,  bool show_max_diff) {
   //warn << "Called same(qpu::matrix, qpu::matrix)";
   bool ret       = true;
   float max_diff = 0.0f;
@@ -1399,7 +1364,7 @@ bool same(qpu::matrix const &lhs, qpu::matrix const &rhs, float precision, int b
   if(lhs.columns() == 1 && lhs.columns() == rhs.rows() && lhs.rows() == rhs.columns() ) {
     int size = lhs.rows();
     for (int i = 0; i < size; ++i) {
-      if (!qpu::check_precision(lhs.at(i, 0), rhs.at(0, i), precision, bit_diff, &max_diff, &max_bit)) {
+      if (!qpu::check_precision(lhs.at(i, 0), rhs.at(0, i), bit_diff, &max_diff, &max_bit)) {
         warn << "Fail same(vector, vector), (i,j): " << i << ", 0)";
         ret = false;
         if (!show_max_diff) break;
@@ -1432,7 +1397,7 @@ bool same(qpu::matrix const &lhs, qpu::matrix const &rhs, float precision, int b
     if (!show_max_diff && !ret) break;
 
     for (int j = 0; j < (int) rhs.columns(); ++j) {
-      if (!qpu::check_precision(lhs.at(i, j), rhs.at(i, j), precision, bit_diff, &max_diff, &max_bit, ret)) {
+      if (!qpu::check_precision(lhs.at(i, j), rhs.at(i, j), bit_diff, &max_diff, &max_bit, ret)) {
         if (ret) {  // Show first fail only
           buf << " at (" << i << ", " << j << ")";
         }

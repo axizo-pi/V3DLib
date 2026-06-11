@@ -988,7 +988,6 @@ vector operator*(matrix const &lhs, matrix const &rhs) {
 bool check_precision(
   float lhs,
   float rhs,
-  float precision,
   int bit_diff,
   float *max_diff,
   int *max_bit,
@@ -998,32 +997,19 @@ bool check_precision(
   float diff = abs(lhs - rhs);
   int bit = V3DLib::bit_diff(lhs, rhs, bit_diff);
 
-  // Precision takes precedence over bit_diff, for now
+  bool failed = false;
 
-  if (precision == 0.0f) {
-    bool failed = false;
-
-    if (bit_diff > -1) {
-      failed = (bit > -1);
-    } else {
-      failed = (lhs != rhs);
-    }
-    
-    if (failed) {
-      if (do_show) {
-        warn << "check_precision fail, diff: " << diff << ", " << "bit: " << bit;
-      }
-      ret = false;
-    }
+  if (bit_diff > -1) {
+    failed = (bit > -1);
   } else {
-    if (diff > precision) {
-      if (do_show) {
-        warn << "check_precision fails with "
-             << "diff: " << diff << " for precision: " << precision << ", "
-             << "bit: " << V3DLib::bit_diff(lhs, rhs, -1);
-      }
-      ret = false;
+    failed = (lhs != rhs);
+  }
+    
+  if (failed) {
+    if (do_show) {
+      warn << "check_precision fail, diff: " << diff << ", " << "bit: " << bit;
     }
+    ret = false;
   }
 
   if (max_diff != nullptr) {
@@ -1038,9 +1024,9 @@ bool check_precision(
 }
 
 
-bool same(qpu::vector const &lhs, qpu::vector const &rhs, float precision) {
+bool same(qpu::vector const &lhs, qpu::vector const &rhs) {
   for (int i = 0; i < (int) rhs.size(); ++i) {
-    if (!check_precision(lhs[i], rhs[i], precision)) {
+    if (!check_precision(lhs[i], rhs[i])) {
       warn << "Fail same(qpu::vector, qpu::vector), index: " << i;
       return false;
     }
