@@ -10,9 +10,7 @@
 // You should have received a copy (see file COPYING.txt) of the CC0 Public Domain Dedication
 // along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 //==============================================================================================
-
 #include "hittable.h"
-
 
 class sphere : public hittable {
   public:

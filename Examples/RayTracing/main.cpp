@@ -17,6 +17,8 @@
 #include "material.h"
 #include "sphere.h"
 
+#include "qpu.h"
+
 
 int main() {
     hittable_list world;
@@ -76,5 +78,8 @@ int main() {
     cam.defocus_angle = 0.6;
     cam.focus_dist    = 10.0;
 
+		cam.initialize();
+		qpu::init_arrays(cam.image_width, cam.image_height, cam.samples_per_pixel);
+    cam.init_rays();
     cam.render(world);
 }
