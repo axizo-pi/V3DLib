@@ -3,6 +3,8 @@
 #include "hittable.h"
 #include "material.h"
 #include "qpu.h"
+#include "Support/Helpers.h"
+#include "Support/basics.h"
 #include <cassert>
 
 
@@ -50,10 +52,11 @@ void camera::init_rays() {
       for (int sample = 0; sample < samples_per_pixel; sample++) {
         ray r = get_ray(i, j);
 
-				// DEBUG check
-				int index = qpu::set_ray(r, j, i, sample);
-				ray r2 = qpu::get_ray(index);
-				assert(same(r, r2));
+        int index = qpu::set_ray(r, j, i, sample);
+
+        // DEBUG check
+        ray r2 = qpu::get_ray(index);
+        assert(same(r, r2));
       }
     }
   }
@@ -61,22 +64,24 @@ void camera::init_rays() {
 
 
 void camera::render(const hittable& world) {
-  std::cout << "P3\n" << image_width << ' ' << image_height << "\n255\n";
+  std::string ret;
+  ret << "P3\n" << image_width << " " << image_height << "\n255\n";
 
-	int num_indexes = qpu::num_rays();
+  int num_indexes = qpu::num_rays();
   for (int index = 0; index < num_indexes; index += samples_per_pixel) {
-		if (index % 10000 == 0)
-	    std::clog << "\rRays remaining: " << (num_indexes - index) << ' ' << std::flush;
+    if (index % 10000 == 0)
+      std::clog << "\rRays remaining: " << (num_indexes - index) << ' ' << std::flush;
 
     color pixel_color(0,0,0);
     for (int sample = 0; sample < samples_per_pixel; sample++) {
-			ray r2 = qpu::get_ray(index + sample);
+      ray r2 = qpu::get_ray(index + sample);
       pixel_color += ray_color(r2, max_depth, world);
     }
-    write_color(std::cout, pixel_samples_scale * pixel_color);
+    ret << write_color(pixel_samples_scale * pixel_color);
   }
 
   std::clog << "\rDone.                 \n";
+  V3DLib::to_file("out.ppm", ret);
 }
 
 

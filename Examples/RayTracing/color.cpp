@@ -1,5 +1,6 @@
 #include "color.h"
 #include "rtweekend.h"
+#include "Support/basics.h"
 
 
 double linear_to_gamma(double linear_component) {
@@ -10,7 +11,7 @@ double linear_to_gamma(double linear_component) {
 }
 
 
-void write_color(std::ostream& out, const color& pixel_color) {
+std::string write_color(const color& pixel_color) {
     auto r = pixel_color.x();
     auto g = pixel_color.y();
     auto b = pixel_color.z();
@@ -27,5 +28,7 @@ void write_color(std::ostream& out, const color& pixel_color) {
     int bbyte = int(256 * intensity.clamp(b));
 
     // Write out the pixel color components.
-    out << rbyte << ' ' << gbyte << ' ' << bbyte << '\n';
+    std::string out;
+    out << rbyte << " " << gbyte << " " << bbyte << "\n";
+    return out;
 }

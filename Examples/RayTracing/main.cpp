@@ -18,9 +18,28 @@
 #include "sphere.h"
 
 #include "qpu.h"
+#include "global/log.h"
+#include "Support/Timer.h"
+
+using namespace V3DLib;
+using namespace Log;
+
+void init_spheres(hittable_list const &world) {
+	warn << "init_spheres() size: " << world.objects.size();
+
+	for (int i = 0; i < (int) world.objects.size(); ++i) {
+		sphere const &s = (sphere const &) *world.objects[i];
+		qpu::add_sphere(i, s);
+
+		// DEBUG check values
+		assert(qpu::same_sphere(i, s));
+	}
+}
 
 
 int main() {
+  timers.start("Init");
+
     hittable_list world;
 
     auto ground_material = make_shared<lambertian>(color(0.5, 0.5, 0.5));
@@ -63,6 +82,7 @@ int main() {
     auto material3 = make_shared<metal>(color(0.7, 0.6, 0.5), 0.0);
     world.add(make_shared<sphere>(point3(4, 1, 0), 1.0, material3));
 
+
     camera cam;
 
     cam.aspect_ratio      = 16.0 / 9.0;
@@ -78,8 +98,18 @@ int main() {
     cam.defocus_angle = 0.6;
     cam.focus_dist    = 10.0;
 
-		cam.initialize();
-		qpu::init_arrays(cam.image_width, cam.image_height, cam.samples_per_pixel);
+    cam.initialize();
+
+    int num_spheres = (int) world.objects.size();
+    qpu::init_arrays(cam.image_width, cam.image_height, cam.samples_per_pixel, num_spheres);
     cam.init_rays();
+		init_spheres(world);
+
+  timers.stop("Init");
+  timers.start("Run");
+
     cam.render(world);
+
+  timers.stop("Run");
+  timers.end();
 }

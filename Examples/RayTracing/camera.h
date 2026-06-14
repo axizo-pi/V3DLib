@@ -32,7 +32,7 @@ class camera {
     double focus_dist = 10;    // Distance from camera lookfrom point to plane of perfect focus
 
     void initialize();
-		void init_rays();
+    void init_rays();
     void render(const hittable& world); 
 
   private:
@@ -45,7 +45,7 @@ class camera {
     vec3   defocus_disk_u;       // Defocus disk horizontal radius
     vec3   defocus_disk_v;       // Defocus disk vertical radius
 
-		ray get_ray(int i, int j) const;
+    ray get_ray(int i, int j) const;
     vec3 sample_square() const;
 
     vec3 sample_disk(double radius) const {

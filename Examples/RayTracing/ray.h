@@ -26,8 +26,8 @@ class ray {
 
     point3 at(double t) const { return orig + t*dir; }
 
-		std::string dump() const;
-		ray abs_diff(ray const &rhs) const;
+    std::string dump() const;
+    ray abs_diff(ray const &rhs) const;
 
   private:
     point3 orig;
