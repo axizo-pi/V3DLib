@@ -26,7 +26,7 @@ class hittable_list : public hittable {
         objects.push_back(object);
     }
 
-    bool hit(const ray& r, interval ray_t, hit_record& rec) const override;
+    bool hit(const ray& r, interval ray_t, hit_record& rec, int sphere_index) const override;
 };
 
 

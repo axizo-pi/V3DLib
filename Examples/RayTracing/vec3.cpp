@@ -1,5 +1,6 @@
 #include "vec3.h"
 #include "rtweekend.h"
+#include "Support/basics.h"
 
 double vec3::length() const {
   return std::sqrt(length_squared());
@@ -21,6 +22,18 @@ vec3 vec3::random() {
 
 vec3 vec3::random(double min, double max) {
   return vec3(random_double(min,max), random_double(min,max), random_double(min,max));
+}
+
+
+std::string vec3::dump(bool as_float) const {
+	std::string ret;
+
+	if (as_float) 
+		ret << "ret3 (" << (float) x() << ", " << (float) y() << ", " << (float) z() << ")";
+	else
+		ret << "ret3 (" << x() << ", " << y() << ", " << z() << ")";
+
+	return ret;
 }
 
 

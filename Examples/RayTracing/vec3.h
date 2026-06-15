@@ -10,6 +10,7 @@
 // You should have received a copy (see file COPYING.txt) of the CC0 Public Domain Dedication
 // along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 //==============================================================================================
+#include <string>
 
 class vec3 {
   public:
@@ -51,6 +52,8 @@ class vec3 {
     }
 
     bool near_zero(double precision = 1e-8) const;
+
+		std::string dump(bool as_float = false) const;
 
     static vec3 random();
     static vec3 random(double min, double max);

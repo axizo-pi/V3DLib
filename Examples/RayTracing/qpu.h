@@ -5,6 +5,7 @@
 
 namespace qpu {
 
+void kernels_init();
 void init_arrays(int image_width, int image_height, int samples_per_pixel, int num_spheres);
 
 int num_rays();
@@ -15,6 +16,11 @@ int  num_spheres();
 void add_sphere(int index, sphere const &in_sphere);
 sphere get_sphere(int index);
 bool same_sphere(int index, sphere const &s);
+
+void hittable_list_hit(const ray &r);
+bool check_ret(int sphere_index, vec3 const &v);
+bool check_f(int sphere_index, float val);
+void end();
 
 }  // namespace qpu
 

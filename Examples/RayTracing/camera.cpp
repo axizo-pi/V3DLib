@@ -68,9 +68,15 @@ void camera::render(const hittable& world) {
   ret << "P3\n" << image_width << " " << image_height << "\n255\n";
 
   int num_indexes = qpu::num_rays();
+	int index_limit = (num_indexes < 10000)? 100: 10000;
+	int cur_limit = 0;
+
   for (int index = 0; index < num_indexes; index += samples_per_pixel) {
-    if (index % 10000 == 0)
+		warn << "index: " << index;
+    if (index >= cur_limit) {
       std::clog << "\rRays remaining: " << (num_indexes - index) << ' ' << std::flush;
+    	cur_limit += index_limit;
+		}
 
     color pixel_color(0,0,0);
     for (int sample = 0; sample < samples_per_pixel; sample++) {
@@ -114,11 +120,13 @@ color camera::ray_color(const ray& r, int depth, const hittable& world) const {
 
   hit_record rec;
 
-  if (world.hit(r, interval(0.001, infinity), rec)) {
+  if (world.hit(r, interval(0.001, infinity), rec, -1)) {
     ray scattered;
     color attenuation;
-    if (rec.mat->scatter(r, rec, attenuation, scattered))
+    if (rec.mat->scatter(r, rec, attenuation, scattered)) {
+			warn << "Doing scatter";
       return attenuation * ray_color(scattered, depth-1, world);
+		}
     return color(0,0,0);
   }
 

@@ -8,7 +8,6 @@
 // You should have received a copy (see file COPYING.txt) of the CC0 Public Domain Dedication
 // along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 //==============================================================================================
-
 #include "rtweekend.h"
 
 #include "camera.h"
@@ -17,6 +16,7 @@
 #include "material.h"
 #include "sphere.h"
 
+#include "qpu.h"
 #include "qpu.h"
 #include "global/log.h"
 #include "Support/Timer.h"
@@ -39,6 +39,7 @@ void init_spheres(hittable_list const &world) {
 
 int main() {
   timers.start("Init");
+		qpu::kernels_init();
 
     hittable_list world;
 
@@ -86,7 +87,7 @@ int main() {
     camera cam;
 
     cam.aspect_ratio      = 16.0 / 9.0;
-    cam.image_width       = 120; //1200;
+    cam.image_width       = 30; //1200;
     cam.samples_per_pixel = 10;
     cam.max_depth         = 20;
 
@@ -112,4 +113,5 @@ int main() {
 
   timers.stop("Run");
   timers.end();
+	qpu::end();
 }

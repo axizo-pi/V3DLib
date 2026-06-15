@@ -1,4 +1,5 @@
 #include "qpu.h"
+#include "kernel.h"
 #include "V3DLib.h"
 #include "Support/Helpers.h"  // resize_16()
 #include <cmath>
@@ -8,6 +9,9 @@ using namespace V3DLib;
 
 namespace qpu {
 namespace {
+
+int s_exact_match   = 0;;
+int	s_total_matches = 0;
 
 int image_width       = 0;
 int image_height      = 0;
@@ -45,6 +49,17 @@ struct points {
   }
 
 
+	std::string dump_vecs(int num_elems) const {
+		std::string ret;
+
+		for (int i = 0; i < num_elems; ++i) {
+			ret << "\n  " << dump_vec(i);
+		}
+
+		return ret;
+  }
+
+
   vec3 to_vec(int index) {
     vec3 ret((double) x[index], (double) y[index], (double) z[index]);
     return ret;
@@ -64,8 +79,105 @@ points direction;
 points       center;
 Float::Array radius;
 
+// DEBUG
+points       ret;
+Float::Array ret_f;
+
+
+bool same_vec(int index, vec3 const &v, points const &pts, float precision = 0.0f) {
+	const int bit_min = 2; //5;
+
+	int bits_x = bit_diff(pts.x[index], (float) v.x(), bit_min);
+	int bits_y = bit_diff(pts.y[index], (float) v.y(), bit_min);
+	int bits_z = bit_diff(pts.z[index], (float) v.z(), bit_min);
+
+	bool ret_x = (bits_x == -1);
+	bool ret_y = (bits_y == -1);
+	bool ret_z = (bits_z == -1);
+
+	bool ret = ret_x && ret_y && ret_z;
+
+	if (ret) return true;  // Assume all is well
+
+	//warn << "same_vec failed for index: " << index << "\n"
+	//	   << "bits: (" << bits_x << ", " << bits_y << ", " << bits_z << ")";
+
+	//
+	// There is a major discrepancy between bit check and range check.
+	// When eyeballing it, I see no difference.
+	//
+	// My hypothesis is that fabs() is not consistent, which I can hardly believe.
+	// For the time being, doing both checks (bits and range).
+	//
+
+	//float length = (float) v.length();
+
+	float diff_x = fabs(pts.x[index] - ((float) v.x())); ///length;
+	float diff_y = fabs(pts.y[index] - ((float) v.y())); ///length;
+	float diff_z = fabs(pts.z[index] - ((float) v.z())); ///length;
+
+	if (diff_x == 0) s_exact_match++;
+	if (diff_y == 0) s_exact_match++;
+	if (diff_z == 0) s_exact_match++;
+	s_total_matches += 3;
+
+	ret_x  = ret_x || (diff_x <= precision);
+	ret_y  = ret_y || (diff_y <= precision);
+	ret_z  = ret_z || (diff_z <= precision);
+
+	ret =  ret_x && ret_y && ret_z;
+
+	if (!ret) {
+		//breakpoint; 
+
+		warn << "same_vec failed for index: " << index << "\n"
+			   << "bits: (" << bits_x << ", " << bits_y << ", " << bits_z << ")\n"
+			   << "ret : (" << ret_x << ", " << ret_y << ", " << ret_z << ")\n"
+			   << "   v:    " << v.dump(true) << "\n"
+			   << " pts: "    << pts.dump_vec(index) << "\n"
+				 << "diff:         (" << diff_x << ", " << diff_y << ", " << diff_z << ")";
+	}
+
+	return ret;
+}
+
+
+bool same_float(int index, float val, Float::Array &ret_f, float precision = 0.0f) {
+	const int bit_min = 6;
+
+	int bits = bit_diff(ret_f[index], val, bit_min);
+
+	bool ret = (bits == -1);
+
+	if (ret) return true;  // Assume all is well
+
+	//warn << "same_float failed for index: " << index << "\n"
+	//	   << "bits: (" << bits<< ")";
+
+	float diff = fabs(ret_f[index] - val);
+
+	if (diff == 0) s_exact_match++;
+	s_total_matches += 1;
+
+	ret  = ret || (diff <= precision);
+
+	if (!ret) {
+		warn << "same_float failed for index: " << index << "\n"
+			   << "bits : (" << bits << ")\n"
+			   << "ret  : (" << ret << ")\n"
+			   << "val  : " << val << "\n"
+			   << "ret_f: " << ret_f[index] << "\n"
+				 << "diff:  " << diff;
+	}
+
+	return ret;
+}
+
 }  // anon namespace
 
+void kernels_init() {
+	kernel::init();
+}
 
 void init_arrays(int image_width, int image_height, int samples_per_pixel, int num_spheres) {
   qpu::image_width       = image_width;
@@ -85,6 +197,8 @@ void init_arrays(int image_width, int image_height, int samples_per_pixel, int n
   center.alloc(num_spheres);
   radius.alloc(num_spheres);
 
+  ret.alloc(num_spheres);
+  ret_f.alloc(num_spheres);
 }
 
 
@@ -138,7 +252,7 @@ void add_sphere(int index, sphere const &in_sphere) {
 
 
 /**
- * Disgustingly inefficient, like 20x worse.
+ * Disgustingly inefficient, like 20x worse than original access.
  * TODO: set up things to avoid having to use it.
  *
  * Material not added here
@@ -174,6 +288,61 @@ bool same_sphere(int index, sphere const &s) {
 		diff_z <= Precision &&
 		diff_r <= Precision
 	;
+}
+
+
+void hittable_list_hit(const ray &r) {
+	static bool did_first = false;
+	timers.start("hittable_list_hit");
+  assert(s_num_spheres > 0);
+  int N_spheres = resize_16(s_num_spheres);
+
+	if (!did_first) {
+		warn << "Pre:"
+	  	   //<< "  " << ret.dump_vecs(2)
+			   << "\n  "
+				 << r.direction().dump()
+			   << "\n  "
+			   << ret_f[0] << ", " << ret_f[1];
+		;
+	}
+
+	kernel::sphere_hit(r, N_spheres, center.x, center.y, center.z, radius, ret.x, ret.y, ret.z, ret_f);
+
+	timers.stop("hittable_list_hit");
+
+	if (!did_first) {
+		warn << "Post:"
+			   //<< "  " << ret.dump_vecs(2)
+			   << "\n  "
+			   << ret_f[0] << ", " << ret_f[1];
+		;
+	}
+	did_first = true;
+}
+
+
+bool check_ret(int sphere_index, vec3 const &v) {
+	timers.start("check_ret");
+
+	// Most comparisons are exact
+  bool ret = same_vec(sphere_index, v, qpu::ret, 1.0e-6f);
+
+	timers.stop("check_ret");
+	return ret;
+}
+
+
+bool check_f(int sphere_index, float val) {
+	timers.start("check_f");
+  bool ret = same_float(sphere_index, val, qpu::ret_f, 1.0e-5f);
+	timers.stop("check_f");
+	return ret;
+}
+
+void end() {
+	warn << "exact matches: " << s_exact_match << " out of " << s_total_matches
+		   << ", " << (int) (100.0*s_exact_match/s_total_matches) << "%";
 }
 
 }  // namespace qpu
