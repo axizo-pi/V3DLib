@@ -1,7 +1,7 @@
 #
 # This file is generated!  Editing it directly is a bad idea.
 #
-# Generated on: Mon May  4 06:49:45 PM CEST 2026
+# Generated on: Sat Jun 13 06:12:14 AM CEST 2026
 #
 ###############################################################################
 
@@ -182,6 +182,7 @@ SUB_PROJECTS := \
   LSTM \
   RNN \
   Lib \
+  RayTracing \
 
 
 Mandelbrot: $(V3DLIB)
@@ -207,5 +208,8 @@ RNN: $(V3DLIB)
 	
 Lib: $(V3DLIB)
 	@cd Examples/NN/Lib && make DEBUG=${DEBUG}
+	
+RayTracing: $(V3DLIB)
+	@cd Examples/RayTracing && make DEBUG=${DEBUG}
 	
 

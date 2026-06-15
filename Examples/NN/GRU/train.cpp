@@ -42,7 +42,7 @@ public:
 
   LoopState(int time_steps, int input_dim, int hidden_dim);
 
-  State const &temp() const { return  m_temp; }
+  State const &temp() const { return m_temp; }
 
   void x_set_step(int step, State state, MMatrix const &X);
 
@@ -171,6 +171,8 @@ void back_propagation(
   int output_dim,
   int time_steps
 ) {
+  warn << "state.S: " << state.S.dump_dim();
+
   timers.start("back_propagation");
 
   /* gradients = dLdV, dLdU0, dLdU1, dLdU2, dLdW0, dLdW1, dLdW2 */
@@ -179,6 +181,9 @@ void back_propagation(
   LoopState ls(1, input_dim, hidden_dim);
 
   MMatrix delta_y_x = state.O - Y;
+
+  State x_state = state;
+  x_state.S = remove_last_rows(1, x_state.S);
 
   gradient_delta(ls, grad, delta_y_x, time_steps);
 
@@ -193,9 +198,6 @@ void back_propagation(
   MMatrix x_ds_cur; x_ds_cur.set(ds_single);
 
   Model x_grad = grad;
-
-  State x_state = state;
-  x_state.S = remove_last_rows(1, x_state.S);
 
   timers.start("x_step");
 
@@ -345,6 +347,7 @@ void train(std::string filename_input, std::string filename_output, float learni
   Model cache;
 
   m.init(input_dim, hidden_dim, output_dim);
+
   grad.init_val(m.input_dim(), m.hidden_dim(), m.output_dim(), 0.0f, true);
   cache.init_val(m.input_dim(), m.hidden_dim(), m.output_dim(), 1.0f, false);
 
@@ -354,11 +357,14 @@ void train(std::string filename_input, std::string filename_output, float learni
 
   for(int epoch = 0; epoch < nepoch; epoch++) {
     warn << "train loop epoch: " << epoch << ", limit: " << limit;
+    if (epoch >= 1) break; // DEBUG
 
     float loss = 0;
     for(int i = 0; i < limit; i++) {
       if (i >= 10) break; // DEBUG
-      warn << "train loop i: " << i;
+			//if (i % 200 == 0) {
+	      warn << "train loop i: " << i;
+			//}
 
       timers.start("train limit loop");
 

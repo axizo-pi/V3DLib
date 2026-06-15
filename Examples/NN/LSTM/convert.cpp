@@ -1,5 +1,5 @@
 #include "convert.h"
-#include "../Lib/helpers.h"  // resize_16()
+#include "Support/Helpers.h"  // resize_16()
 
 /**
  * /file
@@ -40,7 +40,7 @@ lstm::vector copy(qpu::vector const &rhs, int offset, int length) {
  * The underlying type for `lstm::vector` is `std::vector`.
  */
 qpu::vector copy(lstm::vector const &rhs) {
-  int size = resize_16((int) rhs.size());
+  int size = V3DLib::resize_16((int) rhs.size());
   qpu::vector ret(size);
   ret.set(0.0f);
 
@@ -58,9 +58,9 @@ qpu::vector copy(lstm::vector const &rhs) {
  * The underlying type for `lstm::matrix` is `std::vector<std::vector<float>>`.
  */
 qpu::matrix copy(lstm::matrix const &rhs) {
-  int height = resize_16((int)  rhs.size());
+  int height = V3DLib::resize_16((int)  rhs.size());
   assert(rhs.size() >= 1);
-  auto width = resize_16((int)rhs[0].size());
+  auto width = V3DLib::resize_16((int)rhs[0].size());
 
   qpu::matrix ret(height, (int) width);
   ret.set(0.0f);
@@ -76,7 +76,7 @@ qpu::matrix copy(lstm::matrix const &rhs) {
 
 
 qpu::vector qpu_concat(lstm::vector const &x, lstm::vector const &y) {
-  int size = resize_16((int) (x.size() + y.size()));
+  int size = V3DLib::resize_16((int) (x.size() + y.size()));
   qpu::vector ret(size);
   ret.set(0.0f);
 

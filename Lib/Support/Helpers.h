@@ -16,6 +16,7 @@ std::string sudo_prefix();
 bool ensure_path_exists(std::string const &path);
 float random_float();
 void sleep(int sec);
+int resize_16(int in_val, bool do_dump = false);
 
 //
 // String functions

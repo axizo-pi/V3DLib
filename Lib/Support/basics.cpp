@@ -62,3 +62,13 @@ std::string &operator<<(std::string &a, float val) {
   a += out.str();
   return a;
 }
+
+
+std::string &operator<<(std::string &a, double val) {
+  // Output in scientific notation
+  std::stringstream out;
+  out << std::scientific;
+  out << val;
+  a += out.str();
+  return a;
+}

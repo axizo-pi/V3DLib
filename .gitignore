@@ -14,11 +14,13 @@ obj*
 /*.txt
 github
 generated
-# Definitions for userland
+# Definitions for CMake
 CMakeCache.txt
+CMakeLists.txt
 *.pc
 CMakeFiles
 *.cmake
+# Definitions for userland
 extern/userland/**/Makefile
 extern/userland/build
 extern/userland/vmcs_config.h
