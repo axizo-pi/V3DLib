@@ -40,7 +40,7 @@ class hittable {
   public:
     virtual ~hittable() = default;
 
-    virtual bool hit(const ray& r, interval ray_t, hit_record& rec, int sphere_index) const = 0;
+    virtual bool hit(const ray& r, interval ray_t, hit_record& rec, int sphere_index, bool qpu_check = false) const = 0;
 };
 
 

@@ -142,32 +142,34 @@ bool same_vec(int index, vec3 const &v, points const &pts, float precision = 0.0
 }
 
 
-bool same_float(int index, float val, Float::Array &ret_f, float precision = 0.0f) {
-	const int bit_min = 6;
+bool same_float(int index, float val, Float::Array &ret_f, float precision = 0.0f, int bit_min = 0) {
+	assert(bit_min >= -1);
 
 	int bits = bit_diff(ret_f[index], val, bit_min);
 
 	bool ret = (bits == -1);
+
+
+	//float diff = fabs(ret_f[index] - val);
+	float diff = abs(val - ret_f[index])/val;
+
+	if (diff == 0) s_exact_match++;
+	s_total_matches += 1;
 
 	if (ret) return true;  // Assume all is well
 
 	//warn << "same_float failed for index: " << index << "\n"
 	//	   << "bits: (" << bits<< ")";
 
-	float diff = fabs(ret_f[index] - val);
-
-	if (diff == 0) s_exact_match++;
-	s_total_matches += 1;
-
 	ret  = ret || (diff <= precision);
 
 	if (!ret) {
 		warn << "same_float failed for index: " << index << "\n"
-			   << "bits : (" << bits << ")\n"
-			   << "ret  : (" << ret << ")\n"
-			   << "val  : " << val << "\n"
-			   << "ret_f: " << ret_f[index] << "\n"
-				 << "diff:  " << diff;
+			   << "bits    : (" << bits << ")\n"
+			   << "ret     : (" << ret << ")\n"
+			   << "val     : " << val << "\n"
+			   << "ret_f[" << index << "]: " << ret_f[index] << "\n"
+				 << "diff    : " << diff;
 	}
 
 	return ret;
@@ -278,6 +280,12 @@ bool same_sphere(int index, sphere const &s) {
 	float diff_z = fabs(center.z[index] - (float) rhs.z())/length;
 	float diff_r = fabs(radius[index]   - (float) s.radius())/((float) s.radius());
 
+	if (diff_x == 0) s_exact_match++;
+	if (diff_y == 0) s_exact_match++;
+	if (diff_z == 0) s_exact_match++;
+	if (diff_r == 0) s_exact_match++;
+	s_total_matches += 4;
+
 	//warn << "same_sphere diff_x: " << diff_x;
 	//warn << "same_sphere diff_y: " << diff_y;
 	//warn << "same_sphere diff_z: " << diff_z;
@@ -292,11 +300,11 @@ bool same_sphere(int index, sphere const &s) {
 
 
 void hittable_list_hit(const ray &r) {
-	static bool did_first = false;
+	//static bool did_first = false;
 	timers.start("hittable_list_hit");
   assert(s_num_spheres > 0);
   int N_spheres = resize_16(s_num_spheres);
-
+/*
 	if (!did_first) {
 		warn << "Pre:"
 	  	   //<< "  " << ret.dump_vecs(2)
@@ -306,11 +314,11 @@ void hittable_list_hit(const ray &r) {
 			   << ret_f[0] << ", " << ret_f[1];
 		;
 	}
-
+*/
 	kernel::sphere_hit(r, N_spheres, center.x, center.y, center.z, radius, ret.x, ret.y, ret.z, ret_f);
 
 	timers.stop("hittable_list_hit");
-
+/*
 	if (!did_first) {
 		warn << "Post:"
 			   //<< "  " << ret.dump_vecs(2)
@@ -319,6 +327,7 @@ void hittable_list_hit(const ray &r) {
 		;
 	}
 	did_first = true;
+*/	
 }
 
 
@@ -333,12 +342,25 @@ bool check_ret(int sphere_index, vec3 const &v) {
 }
 
 
-bool check_f(int sphere_index, float val) {
+bool check_f(int sphere_index, float val, float precision, int bit_min) {
 	timers.start("check_f");
-  bool ret = same_float(sphere_index, val, qpu::ret_f, 1.0e-5f);
+  bool ret = same_float(sphere_index, val, qpu::ret_f, precision, bit_min);
 	timers.stop("check_f");
 	return ret;
 }
+
+
+bool check_sign(int sphere_index, double val) {
+	int sign_s = (ret_f[sphere_index] < 0)?-1:1;
+	int sign_v = (val < 0)?-1:1;
+	bool ret = (sign_s == sign_v);
+
+	if (!ret)
+		warn << "check_sign fail, sphere: " << ret_f[sphere_index] << ", val: " << val;
+
+	return ret;
+}
+
 
 void end() {
 	warn << "exact matches: " << s_exact_match << " out of " << s_total_matches

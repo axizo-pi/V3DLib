@@ -35,12 +35,25 @@ void sphere_hit_kernel(
 
   	//auto h = dot(r.direction(), oc);
 		Float h = dir_x*oc_x + dir_y*oc_y + dir_z*oc_z;
-		// *ret_f = h;
+		//*ret_f = h;
 
   	//auto c = oc.length_squared() - m_radius*m_radius;
 		Float rad = *radius;
-		Float c = (oc_x*oc_x + oc_y*oc_y + oc_z*oc_z) - (rad*rad);
+		Float c = (oc_x*oc_x + oc_y*oc_y + oc_z*oc_z) - rad*rad;
 		*ret_f = c;
+
+  	//auto discriminant = h*h - a*c;
+  	Float discriminant = h*h - a*c;
+		//*ret_f = discriminant;
+
+  	// if (discriminant < 0) return false;
+  	// auto sqrtd = std::sqrt(discriminant);
+		Float disc_sqrt = 0.0f;
+		Where (discriminant >= 0.0f)
+			disc_sqrt = sqrt_f(discriminant);
+		End
+		*ret_f = disc_sqrt;
+
 
 		center_x.inc();
 		center_y.inc();
@@ -72,8 +85,10 @@ void sphere_hit(
 	Float::Array &ret_x, Float::Array &ret_y, Float::Array &ret_z,
 	Float::Array &ret_f
 ) {
+	//warn << "sphere_hit N_spheres: " << N_spheres;
+
 	s_sphere_hit->load(
-		(float) r.origin().x(), (float) r.origin().y(), (float) r.origin().z(),
+		(float) r.origin().x()   , (float) r.origin().y()   , (float) r.origin().z(),
 		(float) r.direction().x(), (float) r.direction().y(), (float) r.direction().z(),
 		(N_spheres >> 4),
 		&center_x, &center_y, &center_z,
