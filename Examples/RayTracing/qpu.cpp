@@ -342,9 +342,9 @@ bool check_ret(int sphere_index, vec3 const &v) {
 }
 
 
-bool check_f(int sphere_index, float val, float precision, int bit_min) {
+bool check_f(int sphere_index, double val, float precision, int bit_min) {
 	timers.start("check_f");
-  bool ret = same_float(sphere_index, val, qpu::ret_f, precision, bit_min);
+  bool ret = same_float(sphere_index, (float) val, qpu::ret_f, precision, bit_min);
 	timers.stop("check_f");
 	return ret;
 }
@@ -355,8 +355,9 @@ bool check_sign(int sphere_index, double val) {
 	int sign_v = (val < 0)?-1:1;
 	bool ret = (sign_s == sign_v);
 
-	if (!ret)
+	if (!ret) {
 		warn << "check_sign fail, sphere: " << ret_f[sphere_index] << ", val: " << val;
+	}
 
 	return ret;
 }

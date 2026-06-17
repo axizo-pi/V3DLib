@@ -17,10 +17,13 @@ bool hittable_list::hit(const ray& r, interval ray_t, hit_record& rec, int spher
 	timers.start("hittable_list::hit");
 
 	for (int i = 0; i < (int) objects.size(); ++i) {
-    sphere const &s1 = (sphere const &) *objects[i];
+    //sphere const &s1 = (sphere const &) *objects[i];
 		//OK assert(qpu::same_sphere(i, s1));
-    //sphere s1 = qpu::get_sphere(i);  // No material, seq fault later on
-		//warn << "s1: " << s1.dump();
+    sphere s1 = qpu::get_sphere(i);  // No material, seq fault later on
+
+		if (i == 0) {
+			warn << "s1 index 0: " << s1.dump();
+		}
 
     if (s1.hit(r, interval(ray_t.min, closest_so_far), temp_rec, i, qpu_check)) {
 			//warn << "hittable_list Hit!";

@@ -83,9 +83,9 @@ void camera::render(const hittable& world) {
     color pixel_color(0,0,0);
     for (int sample = 0; sample < samples_per_pixel; sample++) {
 			int index2 = (index + sample);
-			//warn << "index2: " << index2;
+			warn << "index2: " << index2;
       ray r2 = qpu::get_ray(index2);
-			//warn << "r2: " << r2.dump();
+			warn << "r2: " << r2.dump();
       pixel_color += ray_color(r2, max_depth, world, true);
     }
     ret << write_color(pixel_samples_scale * pixel_color);
