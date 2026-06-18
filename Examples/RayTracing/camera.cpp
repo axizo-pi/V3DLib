@@ -70,7 +70,7 @@ void camera::render(const hittable& world) {
   int num_indexes = qpu::num_rays();
 	warn << "num_indexes: " << num_indexes;
 
-	int index_limit = (num_indexes < 10000)?(num_indexes < 1000? 10: 100): 10000;
+	int index_limit = (num_indexes < 10000)?(num_indexes < 1000? 10: 100): 1000;
 	int cur_limit = 0;
 
   for (int index = 0; index < num_indexes; index += samples_per_pixel) {
@@ -83,9 +83,9 @@ void camera::render(const hittable& world) {
     color pixel_color(0,0,0);
     for (int sample = 0; sample < samples_per_pixel; sample++) {
 			int index2 = (index + sample);
-			warn << "index2: " << index2;
+			//warn << "index2: " << index2;
       ray r2 = qpu::get_ray(index2);
-			warn << "r2: " << r2.dump();
+			//warn << "r2: " << r2.dump();
       pixel_color += ray_color(r2, max_depth, world, true);
     }
     ret << write_color(pixel_samples_scale * pixel_color);

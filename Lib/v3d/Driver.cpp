@@ -185,6 +185,7 @@ bool Driver::execute(Code &code, Data *uniforms, uint32_t thread, bool wait_comp
  * @return true if all waits succeeded, false otherwise
  */
 bool Driver::wait_bo() {
+	//warn << "Called wait_bo";
   assert(m_bo_handles.size() > 0);
 
   uint64_t timeout_ns = 1000000000llu * LibSettings::qpu_timeout();

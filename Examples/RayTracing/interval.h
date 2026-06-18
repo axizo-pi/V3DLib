@@ -8,6 +8,7 @@
 // You should have received a copy (see file COPYING.txt) of the CC0 Public Domain Dedication
 // along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 //==============================================================================================
+#include "Support/basics.h"
 
 class interval {
   public:
@@ -34,6 +35,13 @@ class interval {
         if (x > max) return max;
         return x;
     }
+
+
+		std::string dump() const {
+			std::string ret;
+			ret << "interval (min, max): (" << min << ", " << max << ")";
+			return ret;
+		}
 
     static const interval empty, universe;
 };

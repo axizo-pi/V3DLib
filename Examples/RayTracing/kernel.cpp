@@ -36,7 +36,7 @@ void sphere_hit_kernel(
 
   	//auto h = dot(r.direction(), oc);
 		Float h = dir_x*oc_x + dir_y*oc_y + dir_z*oc_z;          comment("Float h");
-		*ret_f = h;
+		//*ret_f = h;
 
   	//auto c = oc.length_squared() - m_radius*m_radius;
 		Float rad = *radius;                                     comment("Float rad");
@@ -49,11 +49,17 @@ void sphere_hit_kernel(
 
   	// if (discriminant < 0) return false;
   	// auto sqrtd = std::sqrt(discriminant);
-		Float disc_sqrt = 0.0f;
+		Float d_sqrt = 0.0f;
+		Float root   = 0.0f;;
 		Where (discriminant >= 0.0f)
-			disc_sqrt = sqrt_f(discriminant);
+			d_sqrt = sqrt_f(discriminant);
+
+  		// Find the nearest root that lies in the acceptable range.
+	  	// auto root = (h - sqrtd) / a;
+	  	root = (h - d_sqrt) / a;
 		End
-		//*ret_f = disc_sqrt;
+		//*ret_f = d_sqrt;
+		*ret_f = root;
 
 
 		center_x.inc();
@@ -76,7 +82,7 @@ void init() {
 	if (s_sphere_hit != nullptr) return;
 
 	s_sphere_hit.reset(new BaseKernel(compile(sphere_hit_kernel))); //, settings())));
-	to_file("sphere_hit_kernel.txt", s_sphere_hit->dump());
+	//to_file("sphere_hit_kernel.txt", s_sphere_hit->dump());
 }
 
 

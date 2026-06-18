@@ -149,7 +149,6 @@ bool same_float(int index, float val, Float::Array &ret_f, float precision = 0.0
 
 	bool ret = (bits == -1);
 
-
 	//float diff = fabs(ret_f[index] - val);
 	float diff = abs(val - ret_f[index])/val;
 

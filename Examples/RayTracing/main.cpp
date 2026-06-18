@@ -87,7 +87,7 @@ int main() {
     camera cam;
 
     cam.aspect_ratio      = 16.0 / 9.0;
-    cam.image_width       = 30; //1200;
+    cam.image_width       = 64; //1200;
     cam.samples_per_pixel = 10;
     cam.max_depth         = 20;
 

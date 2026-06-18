@@ -51,6 +51,13 @@ class vec3 {
         return e[0]*e[0] + e[1]*e[1] + e[2]*e[2];
     }
 
+    float f_length_squared() const {
+			float e_0 = (float) e[0];
+			float e_1 = (float) e[1];
+			float e_2 = (float) e[2];
+      return e_0*e_0 + e_1*e_1 + e_2*e_2;
+    }
+
     bool near_zero(double precision = 1e-8) const;
 
 		std::string dump(bool as_float = false) const;
@@ -94,6 +101,14 @@ inline double dot(const vec3& u, const vec3& v) {
          + u.e[1] * v.e[1]
          + u.e[2] * v.e[2];
 }
+
+
+inline float f_dot(const vec3& u, const vec3& v) {
+    return (float) u.e[0] * (float) v.e[0]
+         + (float) u.e[1] * (float) v.e[1]
+         + (float) u.e[2] * (float) v.e[2];
+}
+
 
 inline vec3 cross(const vec3& u, const vec3& v) {
     return vec3(u.e[1] * v.e[2] - u.e[2] * v.e[1],

@@ -21,12 +21,15 @@ class sphere : public hittable {
 		point3 const &center() const { return m_center; }
 		double radius() const { return m_radius; }
 
+    void mat(shared_ptr<material> in_mat) { m_mat = in_mat; }
+    shared_ptr<material> mat() const { return m_mat; }
+
 		std::string dump() const;
 
   private:
     point3 m_center;
     double m_radius;
-    shared_ptr<material> mat;
+    shared_ptr<material> m_mat;
 };
 
 
