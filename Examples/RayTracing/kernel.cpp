@@ -48,17 +48,41 @@ void sphere_hit_kernel(
 		//*ret_f = discriminant;
 
   	// if (discriminant < 0) return false;
+		Int valid = 1;
+		Where (discriminant < 0.0f)  // <= leads to differences
+			valid = 0;
+		End
+
   	// auto sqrtd = std::sqrt(discriminant);
-		Float d_sqrt = 0.0f;
-		Float root   = 0.0f;;
-		Where (discriminant >= 0.0f)
-			d_sqrt = sqrt_f(discriminant);
+		Float sqrtd  = 0.0f;
+		Float root   = 0.0f;
+		Float root_2 = 0.0f;
+
+		Float ray_t_min = 0.01f;
+		Float ray_t_max = toFloat(0x7f800000); // Value for infinity; is a parameter in reference app
+
+		Where (valid == 1)
+			sqrtd = sqrt_f(discriminant);
 
   		// Find the nearest root that lies in the acceptable range.
 	  	// auto root = (h - sqrtd) / a;
-	  	root = (h - d_sqrt) / a;
+	  	root = (h - sqrtd) / a;
+
+	  	// auto root = (h + sqrtd) / a;
+	  	root_2 = (h + sqrtd) / a;
+
+  		// if (!ray_t.surrounds(root)) {
+			Where (!(ray_t_min < root && root < ray_t_max))
+				root = root_2;
+
+    		//if (!ray_t.surrounds(root)) return false;
+				Where (!(ray_t_min < root && root < ray_t_max))
+					valid = 0;
+				End
+			End
 		End
-		//*ret_f = d_sqrt;
+
+		//*ret_f = sqrtd;
 		*ret_f = root;
 
 

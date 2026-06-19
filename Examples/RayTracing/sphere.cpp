@@ -11,6 +11,9 @@ sphere::sphere(const point3& center, double radius, shared_ptr<material> mat)
   : m_center(center), m_radius(std::fmax(0,radius)), m_mat(mat) {}
 
 
+/**
+ * **NOTE**: ray_t.min always 0.001 (verified)
+ */
 bool sphere::hit(const ray& r, interval ray_t, hit_record& rec, int sphere_index, bool qpu_check) const {
 	// warn << "sphere_index: " << sphere_index;
 
@@ -42,16 +45,18 @@ bool sphere::hit(const ray& r, interval ray_t, hit_record& rec, int sphere_index
 
   // Find the nearest root that lies in the acceptable range.
   auto root = (h - sqrtd) / a;
-	if (qpu_check) {
-		//OK, good enough assert(qpu::check_f(sphere_index, root, 2.6e-6f, 6));
-	}
+	//OK, good enough assert(qpu::check_f(sphere_index, root, 2.6e-6f, 6));
 
-	warn << "ray_t: " << ray_t.dump();
   if (!ray_t.surrounds(root)) {
     root = (h + sqrtd) / a;
     if (!ray_t.surrounds(root))
       return false;
   }
+
+	if (qpu_check) {
+		// OK, good enough
+		assert(qpu::check_f(sphere_index, root, 2.6e-6f , 6));
+	}
 
   rec.t = root;
   rec.p = r.at(rec.t);
@@ -62,10 +67,9 @@ bool sphere::hit(const ray& r, interval ray_t, hit_record& rec, int sphere_index
   return true;
 }
 
+
 std::string sphere::dump() const {
 	std::string ret;
-
 	ret << "sphere center: " <<  m_center.dump() << ", radius: " << m_radius;
-
 	return ret;
 }
