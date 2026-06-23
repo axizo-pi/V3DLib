@@ -449,7 +449,10 @@ Instr::List whereStmt(
   Instr::List ret;
 
   for (int i = 0; i < (int) src.size(); i++) {
-    ret << whereStmt(src[i], condVar, cond, (i == 0 && first_true)?true:saveRestore);
+		Instr::List tmp = whereStmt(src[i], condVar, cond, (i == 0 && first_true)?true:saveRestore);
+		tmp.back().transfer_comments(*src[i]);
+
+		ret << tmp;
   }
 
   return ret;
@@ -732,7 +735,7 @@ Instr::List encode(Stmt::Ptr s) {
       break;
   }
 
-  //assert(!ret.empty());
+  //assert(!ret.empty());  // By the looks of it always true
   if (!ret.empty()) {
     ret.back().transfer_comments(*s);
   } else {

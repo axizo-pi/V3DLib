@@ -16,7 +16,7 @@ class sphere : public hittable {
   public:
     sphere(const point3& center, double radius, shared_ptr<material> mat);
 
-    bool hit(const ray& r, interval ray_t, hit_record& rec, int sphere_index, bool qpu_check = false) const override;
+    bool hit(const ray& r, interval ray_t, hit_record& rec, int ray_index, int sphere_index, bool qpu_check = false) const override;
 
 		point3 const &center() const { return m_center; }
 		double radius() const { return m_radius; }

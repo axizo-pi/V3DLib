@@ -25,6 +25,7 @@ class ray {
     const vec3& direction() const { return dir; }
 
     point3 at(double t) const { return orig + t*dir; }
+    point3 f_at(double t) const { return orig + f_mul(t, dir); }
 
     std::string dump() const;
     ray abs_diff(ray const &rhs) const;

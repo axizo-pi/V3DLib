@@ -88,6 +88,11 @@ inline vec3 operator*(double t, const vec3& v) {
     return vec3(t*v.e[0], t*v.e[1], t*v.e[2]);
 }
 
+inline vec3 f_mul(double in_t, const vec3& v) {
+	float t = (float) in_t;
+  return vec3(t*((float) v.e[0]), t*((float) v.e[1]), t*((float) v.e[2]));
+}
+
 inline vec3 operator*(const vec3& v, double t) {
     return t * v;
 }

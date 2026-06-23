@@ -84,9 +84,7 @@ points       ret;
 Float::Array ret_f;
 
 
-bool same_vec(int index, vec3 const &v, points const &pts, float precision = 0.0f) {
-	const int bit_min = 2; //5;
-
+bool same_vec(int index, vec3 const &v, points const &pts, float precision = 0.0f, int bit_min = 0, bool show_log = true) {
 	int bits_x = bit_diff(pts.x[index], (float) v.x(), bit_min);
 	int bits_y = bit_diff(pts.y[index], (float) v.y(), bit_min);
 	int bits_z = bit_diff(pts.z[index], (float) v.z(), bit_min);
@@ -110,11 +108,11 @@ bool same_vec(int index, vec3 const &v, points const &pts, float precision = 0.0
 	// For the time being, doing both checks (bits and range).
 	//
 
-	//float length = (float) v.length();
+	float length = (float) v.length();
 
-	float diff_x = fabs(pts.x[index] - ((float) v.x())); ///length;
-	float diff_y = fabs(pts.y[index] - ((float) v.y())); ///length;
-	float diff_z = fabs(pts.z[index] - ((float) v.z())); ///length;
+	float diff_x = fabs(pts.x[index] - ((float) v.x()))/length;
+	float diff_y = fabs(pts.y[index] - ((float) v.y()))/length;
+	float diff_z = fabs(pts.z[index] - ((float) v.z()))/length;
 
 	if (diff_x == 0) s_exact_match++;
 	if (diff_y == 0) s_exact_match++;
@@ -127,13 +125,11 @@ bool same_vec(int index, vec3 const &v, points const &pts, float precision = 0.0
 
 	ret =  ret_x && ret_y && ret_z;
 
-	if (!ret) {
-		//breakpoint; 
-
+	if (!ret && show_log) {
 		warn << "same_vec failed for index: " << index << "\n"
 			   << "bits: (" << bits_x << ", " << bits_y << ", " << bits_z << ")\n"
 			   << "ret : (" << ret_x << ", " << ret_y << ", " << ret_z << ")\n"
-			   << "   v:    " << v.dump(true) << "\n"
+			   << "   v:     " << v.dump(true) << "\n"
 			   << " pts: "    << pts.dump_vec(index) << "\n"
 				 << "diff:         (" << diff_x << ", " << diff_y << ", " << diff_z << ")";
 	}
@@ -299,43 +295,19 @@ bool same_sphere(int index, sphere const &s) {
 
 
 void hittable_list_hit(const ray &r) {
-	//static bool did_first = false;
 	timers.start("hittable_list_hit");
   assert(s_num_spheres > 0);
   int N_spheres = resize_16(s_num_spheres);
-/*
-	if (!did_first) {
-		warn << "Pre:"
-	  	   //<< "  " << ret.dump_vecs(2)
-			   << "\n  "
-				 << r.direction().dump()
-			   << "\n  "
-			   << ret_f[0] << ", " << ret_f[1];
-		;
-	}
-*/
+
 	kernel::sphere_hit(r, N_spheres, center.x, center.y, center.z, radius, ret.x, ret.y, ret.z, ret_f);
 
 	timers.stop("hittable_list_hit");
-/*
-	if (!did_first) {
-		warn << "Post:"
-			   //<< "  " << ret.dump_vecs(2)
-			   << "\n  "
-			   << ret_f[0] << ", " << ret_f[1];
-		;
-	}
-	did_first = true;
-*/	
 }
 
 
-bool check_ret(int sphere_index, vec3 const &v) {
+bool check_ret(int sphere_index, vec3 const &v, float precision, int bit_min, bool show_log) {
 	timers.start("check_ret");
-
-	// Most comparisons are exact
-  bool ret = same_vec(sphere_index, v, qpu::ret, 1.0e-6f);
-
+  bool ret = same_vec(sphere_index, v, qpu::ret, precision, bit_min, show_log);
 	timers.stop("check_ret");
 	return ret;
 }

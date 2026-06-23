@@ -9,7 +9,7 @@ using namespace Log;
 /**
  * Param sphere_index not used, there for the override
  */
-bool hittable_list::hit(const ray& r, interval ray_t, hit_record& rec, int sphere_index, bool qpu_check) const {
+bool hittable_list::hit(const ray& r, interval ray_t, hit_record& rec, int ray_index,  int sphere_index, bool qpu_check) const {
   hit_record temp_rec;
   bool hit_anything = false;
   auto closest_so_far = ray_t.max;
@@ -28,7 +28,7 @@ bool hittable_list::hit(const ray& r, interval ray_t, hit_record& rec, int spher
 		//	warn << "s1 index 0: " << s1.dump();
 		//}
 
-    if (s1.hit(r, interval(ray_t.min, closest_so_far), temp_rec, i, qpu_check)) {
+    if (s1.hit(r, interval(ray_t.min, closest_so_far), temp_rec, ray_index, i, qpu_check)) {
 			//warn << "hittable_list Hit!";
       hit_anything = true;
       closest_so_far = temp_rec.t;

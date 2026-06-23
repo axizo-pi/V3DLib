@@ -19,7 +19,7 @@ sphere get_sphere(int index);
 bool same_sphere(int index, sphere const &s);
 
 void hittable_list_hit(const ray &r);
-bool check_ret(int sphere_index, vec3 const &v);
+bool check_ret(int sphere_index, vec3 const &v, float precision = 0, int bit_min = 0, bool show_log = true);
 bool check_f(int sphere_index, double val, float precision = 0, int bit_min = 0);
 bool check_sign(int sphere_index, double val);
 void end();

@@ -86,7 +86,7 @@ void camera::render(const hittable& world) {
 			//warn << "index2: " << index2;
       ray r2 = qpu::get_ray(index2);
 			//warn << "r2: " << r2.dump();
-      pixel_color += ray_color(r2, max_depth, world, true);
+      pixel_color += ray_color(r2, max_depth, world, index2, true);
     }
     ret << write_color(pixel_samples_scale * pixel_color);
   }
@@ -118,7 +118,7 @@ vec3 camera::sample_square() const {
 }
 
 
-color camera::ray_color(const ray& r, int depth, const hittable& world, bool do_qpu) const {
+color camera::ray_color(const ray& r, int depth, const hittable& world, int ray_index, bool do_qpu) const {
   // If we've exceeded the ray bounce limit, no more light is gathered.
   if (depth <= 0)
     return color(0,0,0);
@@ -129,7 +129,7 @@ color camera::ray_color(const ray& r, int depth, const hittable& world, bool do_
 		qpu::hittable_list_hit(r);
 	}
 
-  if (world.hit(r, interval(0.001, infinity), rec, -1, do_qpu)) {
+  if (world.hit(r, interval(0.001, infinity), rec, ray_index, -1, do_qpu)) {
 		//warn << "Hit!";
 
 		// Scatter is skipped for qpu (for now, I hope)
