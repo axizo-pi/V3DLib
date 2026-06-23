@@ -16,15 +16,20 @@ class sphere : public hittable {
   public:
     sphere(const point3& center, double radius, shared_ptr<material> mat);
 
-    bool hit(const ray& r, interval ray_t, hit_record& rec, int sphere_index) const override;
+    bool hit(const ray& r, interval ray_t, hit_record& rec, int ray_index, int sphere_index, bool qpu_check = false) const override;
 
 		point3 const &center() const { return m_center; }
 		double radius() const { return m_radius; }
 
+    void mat(shared_ptr<material> in_mat) { m_mat = in_mat; }
+    shared_ptr<material> mat() const { return m_mat; }
+
+		std::string dump() const;
+
   private:
     point3 m_center;
     double m_radius;
-    shared_ptr<material> mat;
+    shared_ptr<material> m_mat;
 };
 
 

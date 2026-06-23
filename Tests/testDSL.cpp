@@ -1,6 +1,7 @@
 #include <V3DLib.h>
 #include "support/support.h"
 #include "Support/pgm.h"
+#include "Support/Helpers.h"  // to_file()
 #include "v3d/v3d.h"
 #include "LibSettings.h"
 
@@ -1353,6 +1354,7 @@ void int_div_kernel(Int::Ptr quotient, Int::Ptr remainder, Int a, Int b) {
   *remainder = a % b;
 }
 
+
 TEST_CASE("Test integer division and remainder [dsl][intdiv]") {
   int const MAX_INT = 2147483647;  // inicates infinity
 
@@ -1378,4 +1380,49 @@ TEST_CASE("Test integer division and remainder [dsl][intdiv]") {
   test( 33,  33,   1, 0);
   test(  0,   1,   0, 0);
   test( 32,   0,   MAX_INT, 0);
+}
+
+
+namespace {
+
+void nested_where_kernel(Int::Ptr ret) {
+	Int tmp = 0;                comment("Before Where 1");
+
+	// Doing `Where (index() % 2 == 0)` both both blocks
+	// will use long integer division internally.
+  // This is extremely heavy (resulting in a lot of generated code) and leads to wrong result;
+	// it appears that first condition will then also be used for second block.
+	Where ((index() & 1) == 0)
+		tmp = 1;                  comment("Start Where 1, before Where 2");
+
+		Where ((index() & 0x3) == 0)
+			tmp = 2;                comment("Start Where 2");
+
+			Where ((index() & 0xf) == 0)
+				tmp = 3;                comment("Start Where 2");
+			End
+		End
+	End
+
+	*ret = tmp;
+}	
+
+} // anon namespace
+
+
+/**
+ * Conclusion: Where-blocks can be nested, with some thought.
+ *
+ * The conditions of the encompassing Where-block also apply to the inner blocks.
+ * This is as you want it.
+ */
+TEST_CASE("Test nested Where blocks [dsl][where]") {
+  Int::Array result(16);
+  std::vector<int> expected = {3, 0, 1, 0, 2, 0, 1, 0, 2, 0, 1, 0, 2, 0, 1, 0};
+
+  auto k = compile(nested_where_kernel);
+	//to_file("nested_where_kernel.txt", k.dump());
+	k.load(&result).run();
+	//warn << result.dump();
+  check_vector(result, 0, expected);
 }

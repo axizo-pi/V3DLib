@@ -84,9 +84,7 @@ points       ret;
 Float::Array ret_f;
 
 
-bool same_vec(int index, vec3 const &v, points const &pts, float precision = 0.0f) {
-	const int bit_min = 2; //5;
-
+bool same_vec(int index, vec3 const &v, points const &pts, float precision = 0.0f, int bit_min = 0, bool show_log = true) {
 	int bits_x = bit_diff(pts.x[index], (float) v.x(), bit_min);
 	int bits_y = bit_diff(pts.y[index], (float) v.y(), bit_min);
 	int bits_z = bit_diff(pts.z[index], (float) v.z(), bit_min);
@@ -110,11 +108,11 @@ bool same_vec(int index, vec3 const &v, points const &pts, float precision = 0.0
 	// For the time being, doing both checks (bits and range).
 	//
 
-	//float length = (float) v.length();
+	float length = (float) v.length();
 
-	float diff_x = fabs(pts.x[index] - ((float) v.x())); ///length;
-	float diff_y = fabs(pts.y[index] - ((float) v.y())); ///length;
-	float diff_z = fabs(pts.z[index] - ((float) v.z())); ///length;
+	float diff_x = fabs(pts.x[index] - ((float) v.x()))/length;
+	float diff_y = fabs(pts.y[index] - ((float) v.y()))/length;
+	float diff_z = fabs(pts.z[index] - ((float) v.z()))/length;
 
 	if (diff_x == 0) s_exact_match++;
 	if (diff_y == 0) s_exact_match++;
@@ -127,13 +125,11 @@ bool same_vec(int index, vec3 const &v, points const &pts, float precision = 0.0
 
 	ret =  ret_x && ret_y && ret_z;
 
-	if (!ret) {
-		//breakpoint; 
-
+	if (!ret && show_log) {
 		warn << "same_vec failed for index: " << index << "\n"
 			   << "bits: (" << bits_x << ", " << bits_y << ", " << bits_z << ")\n"
 			   << "ret : (" << ret_x << ", " << ret_y << ", " << ret_z << ")\n"
-			   << "   v:    " << v.dump(true) << "\n"
+			   << "   v:     " << v.dump(true) << "\n"
 			   << " pts: "    << pts.dump_vec(index) << "\n"
 				 << "diff:         (" << diff_x << ", " << diff_y << ", " << diff_z << ")";
 	}
@@ -142,32 +138,33 @@ bool same_vec(int index, vec3 const &v, points const &pts, float precision = 0.0
 }
 
 
-bool same_float(int index, float val, Float::Array &ret_f, float precision = 0.0f) {
-	const int bit_min = 6;
+bool same_float(int index, float val, Float::Array &ret_f, float precision = 0.0f, int bit_min = 0) {
+	assert(bit_min >= -1);
 
 	int bits = bit_diff(ret_f[index], val, bit_min);
 
 	bool ret = (bits == -1);
+
+	//float diff = fabs(ret_f[index] - val);
+	float diff = abs(val - ret_f[index])/val;
+
+	if (diff == 0) s_exact_match++;
+	s_total_matches += 1;
 
 	if (ret) return true;  // Assume all is well
 
 	//warn << "same_float failed for index: " << index << "\n"
 	//	   << "bits: (" << bits<< ")";
 
-	float diff = fabs(ret_f[index] - val);
-
-	if (diff == 0) s_exact_match++;
-	s_total_matches += 1;
-
 	ret  = ret || (diff <= precision);
 
 	if (!ret) {
 		warn << "same_float failed for index: " << index << "\n"
-			   << "bits : (" << bits << ")\n"
-			   << "ret  : (" << ret << ")\n"
-			   << "val  : " << val << "\n"
-			   << "ret_f: " << ret_f[index] << "\n"
-				 << "diff:  " << diff;
+			   << "bits    : (" << bits << ")\n"
+			   << "ret     : (" << ret << ")\n"
+			   << "val     : " << val << "\n"
+			   << "ret_f[" << index << "]: " << ret_f[index] << "\n"
+				 << "diff    : " << diff;
 	}
 
 	return ret;
@@ -278,6 +275,12 @@ bool same_sphere(int index, sphere const &s) {
 	float diff_z = fabs(center.z[index] - (float) rhs.z())/length;
 	float diff_r = fabs(radius[index]   - (float) s.radius())/((float) s.radius());
 
+	if (diff_x == 0) s_exact_match++;
+	if (diff_y == 0) s_exact_match++;
+	if (diff_z == 0) s_exact_match++;
+	if (diff_r == 0) s_exact_match++;
+	s_total_matches += 4;
+
 	//warn << "same_sphere diff_x: " << diff_x;
 	//warn << "same_sphere diff_y: " << diff_y;
 	//warn << "same_sphere diff_z: " << diff_z;
@@ -292,53 +295,44 @@ bool same_sphere(int index, sphere const &s) {
 
 
 void hittable_list_hit(const ray &r) {
-	static bool did_first = false;
 	timers.start("hittable_list_hit");
   assert(s_num_spheres > 0);
   int N_spheres = resize_16(s_num_spheres);
 
-	if (!did_first) {
-		warn << "Pre:"
-	  	   //<< "  " << ret.dump_vecs(2)
-			   << "\n  "
-				 << r.direction().dump()
-			   << "\n  "
-			   << ret_f[0] << ", " << ret_f[1];
-		;
-	}
-
 	kernel::sphere_hit(r, N_spheres, center.x, center.y, center.z, radius, ret.x, ret.y, ret.z, ret_f);
 
 	timers.stop("hittable_list_hit");
-
-	if (!did_first) {
-		warn << "Post:"
-			   //<< "  " << ret.dump_vecs(2)
-			   << "\n  "
-			   << ret_f[0] << ", " << ret_f[1];
-		;
-	}
-	did_first = true;
 }
 
 
-bool check_ret(int sphere_index, vec3 const &v) {
+bool check_ret(int sphere_index, vec3 const &v, float precision, int bit_min, bool show_log) {
 	timers.start("check_ret");
-
-	// Most comparisons are exact
-  bool ret = same_vec(sphere_index, v, qpu::ret, 1.0e-6f);
-
+  bool ret = same_vec(sphere_index, v, qpu::ret, precision, bit_min, show_log);
 	timers.stop("check_ret");
 	return ret;
 }
 
 
-bool check_f(int sphere_index, float val) {
+bool check_f(int sphere_index, double val, float precision, int bit_min) {
 	timers.start("check_f");
-  bool ret = same_float(sphere_index, val, qpu::ret_f, 1.0e-5f);
+  bool ret = same_float(sphere_index, (float) val, qpu::ret_f, precision, bit_min);
 	timers.stop("check_f");
 	return ret;
 }
+
+
+bool check_sign(int sphere_index, double val) {
+	int sign_s = (ret_f[sphere_index] < 0)?-1:1;
+	int sign_v = (val < 0)?-1:1;
+	bool ret = (sign_s == sign_v);
+
+	if (!ret) {
+		warn << "check_sign fail, sphere: " << ret_f[sphere_index] << ", val: " << val;
+	}
+
+	return ret;
+}
+
 
 void end() {
 	warn << "exact matches: " << s_exact_match << " out of " << s_total_matches

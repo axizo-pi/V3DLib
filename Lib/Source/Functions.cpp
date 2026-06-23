@@ -104,17 +104,24 @@ IntExpr two_complement(IntExpr a) {
 
 
 /**
- * Return the biggest possible integer. This is 0x7fffff.
+ * @param Return the integer value for infinity.
+ *
+ * For floats:
+ * Infinity is defined as the largest possible exponent and a mantissa of zero.
+ * This is 0x7f800000.
+ * A non-zero mantissa with the largest exponent indicates NaN.
+ *
+ * However, this infinity value is used in integer calculations.
+ * When INFINITY (C++ constant) is converted to integer, it becomes MAX_INT.
  */
 IntExpr _INF() {
   return create_function_snippet([] {
+   Int tmp = 4;      comment("Load integer INF");
+   tmp = tmp << 15;
+   tmp = tmp << 14;
+   tmp = (tmp ^ -1);  // -1 = 0xffffffff
 
-    Int tmp = 4;      comment("Load INF");  // Important that comment is AFTER first statement
-    tmp = tmp << 15;
-    tmp = tmp << 14;
-    tmp = (tmp ^ -1);  // -1 = 0xffffffff
-
-    Return(tmp);
+   Return(tmp);
   });
 }
 
@@ -185,7 +192,6 @@ void integer_division(Int &Q, Int &R, IntExpr in_a, IntExpr in_b) {
 
   For (Int i = 30, i >= 0, i--)
     Where (D == 0)
-      //Q = MAX_INT;                   // Indicates infinity
       Q = _INF();
     Else
       Where (top_bit >= i)

@@ -29,9 +29,9 @@ std::string vec3::dump(bool as_float) const {
 	std::string ret;
 
 	if (as_float) 
-		ret << "ret3 (" << (float) x() << ", " << (float) y() << ", " << (float) z() << ")";
+		ret << "vec3(" << (float) x() << ", " << (float) y() << ", " << (float) z() << ") float";
 	else
-		ret << "ret3 (" << x() << ", " << y() << ", " << z() << ")";
+		ret << "vec3(" << x() << ", " << y() << ", " << z() << ")";
 
 	return ret;
 }

@@ -59,7 +59,7 @@ class camera {
         return center + (p[0] * defocus_disk_u) + (p[1] * defocus_disk_v);
     }
 
-    color ray_color(const ray& r, int depth, const hittable& world) const;
+    color ray_color(const ray& r, int depth, const hittable& world, int ray_index = -1, bool do_qpu = false) const;
 };
 
 
