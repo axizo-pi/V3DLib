@@ -2,10 +2,39 @@
 #include "qpu.h"
 #include "Support/basics.h"
 #include <cmath>
-//#include <cassert>
 
 using namespace V3DLib;
 using namespace Log;
+
+namespace {
+
+void qpu_check_ret(vec3 const &v, int ray_index, int sphere_index) {
+	timers.start("qpu_check ret");
+
+	std::string buf;
+	buf  << "check_ret failed at "
+	     << "ray_index: " << ray_index << ", "
+		   << "sphere_index: " << sphere_index;
+
+	vec3 zero(0,0,0);
+	vec3 negative = -1.0f*v;
+
+ 	if (qpu::check_ret(sphere_index, zero, 0, 0, false)) {
+		//warn << buf << ": qpu is zero";
+		qpu::add_zero();
+	} else if (qpu::check_ret(sphere_index, negative, 1.0e-5f, 14, false)) {
+		//warn << buf << ": qpu is negative";
+		qpu::add_negative();
+	} else if (!qpu::check_ret(sphere_index, v)) { //, 1.7e-5f, 10)) {
+		warn << buf << "\n";
+		assert(false);
+	}
+
+	timers.stop("qpu_check ret");
+}
+
+} // anon namespace
+
 
 sphere::sphere(const point3& center, double radius, shared_ptr<material> mat)
   : m_center(center), m_radius(std::fmax(0,radius)), m_mat(mat) {}
@@ -63,27 +92,12 @@ bool sphere::hit(const ray& r, interval ray_t, hit_record& rec, int ray_index, i
 
   vec3 outward_normal = (rec.p - m_center) / m_radius;
 
+  rec.set_face_normal(r, outward_normal);
+
 	if (qpu_check) {
-		std::string buf;
-		buf  << "check_ret failed at "
-		     << "ray_index: " << ray_index << ", "
-			   << "sphere_index: " << sphere_index;
-
-		vec3 zero(0,0,0);
-
-  	if (qpu::check_ret(sphere_index, zero, 0, 0, false)) {
-			//warn << buf << ": qpu is zero";
-		} else if (!qpu::check_ret(sphere_index, outward_normal, 1.7e-5f, 10)) {
-			warn << buf << "\n"
-			     << "rec.p   : " << rec.p.dump() << "\n"	
-					 << "m_center: " << m_center.dump() << "\n"
-					 << "m_radius: " << m_radius;
-
-				assert(false);
-		}
+		qpu_check_ret(rec.normal, ray_index, sphere_index);
 	}
 
-  rec.set_face_normal(r, outward_normal);
   rec.mat = m_mat;
 
   return true;

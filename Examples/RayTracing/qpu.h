@@ -2,6 +2,7 @@
 #define _RAYTRACING_QPU_H
 #include "ray.h"
 #include "sphere.h"
+#include "Support/Timer.h"
 #include "global/log.h"
 
 namespace qpu {
@@ -23,6 +24,9 @@ bool check_ret(int sphere_index, vec3 const &v, float precision = 0, int bit_min
 bool check_f(int sphere_index, double val, float precision = 0, int bit_min = 0);
 bool check_sign(int sphere_index, double val);
 void end();
+
+void add_zero();
+void add_negative();
 
 }  // namespace qpu
 

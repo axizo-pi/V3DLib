@@ -10,8 +10,10 @@ using namespace V3DLib;
 namespace qpu {
 namespace {
 
-int s_exact_match   = 0;;
+int s_exact_match   = 0;
 int	s_total_matches = 0;
+int s_zeroes        = 0;
+int s_negatives     = 0;
 
 int image_width       = 0;
 int image_height      = 0;
@@ -335,9 +337,22 @@ bool check_sign(int sphere_index, double val) {
 
 
 void end() {
-	warn << "exact matches: " << s_exact_match << " out of " << s_total_matches
-		   << ", " << (int) (100.0*s_exact_match/s_total_matches) << "%";
+	auto percent = [] (int val) -> std::string {
+		std::string ret;
+		ret << (int) (100.0*val/s_total_matches) << "%";
+		return ret;
+	};
+
+	warn << "Total: " << s_total_matches << "\n"
+	     << "  exact matches: " << s_exact_match << ", " << percent(s_exact_match) << "\n"
+	     << "  zeroes       : " << s_zeroes      << ", " << percent(s_zeroes)      << "\n"
+	     << "  negatives    : " << s_negatives   << ", " << percent(s_negatives)
+	;
 }
+
+
+void add_zero() { s_zeroes++; }
+void add_negative() { s_negatives++; }
 
 }  // namespace qpu
 
