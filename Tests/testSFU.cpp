@@ -93,80 +93,62 @@ void check(float val, Float::Array &results, double precision) {
 /**
  * @brief Test non-SFU library functions
  */
-void lib_kernel(Float::Ptr in_ptr, Float::Ptr res_ptr) {
+void lib_kernel(Float::Ptr in_ptr, Float::Ptr res_ptr, Int N_input) {
   Float::Ptr in = in_ptr;
   Float input;
   Float result;
 
+  // Do vectors separately
+	auto per_vector = [&] (void (*f)(Float &in, Float &out)) {
+  	in = in_ptr;
+
+		For (Int i = 0, i < N_input, i++)
+	  	input = *in;
+	  	f(input, result);
+	  	*res_ptr = result;
+
+	  	in.inc();
+			res_ptr.inc();
+		End
+	};
+
+  // Combine vectors
+	auto combined_vectors = [&] (
+		void (*f)(Float &in, Float &out),
+		void (*f_final)(Float &in, Float &out)
+	) {
+  	in = in_ptr;
+	  input = 0;
+
+		For (Int i = 0, i < N_input, i++)
+			Float in_val = *in;
+	  	f(in_val, input);
+	    in.inc();
+		End
+
+		f_final(input, result);
+  	*res_ptr = result;
+  	res_ptr.inc();
+	};
+
+
   //
   // Test rotate_sum
   //
-
-  // Do vectors separately
-  input = *in;
-  rotate_sum(input, result);
-  *res_ptr = result;
-  in.inc(); res_ptr.inc();
-
-  input = *in;
-  rotate_sum(input, result);
-  *res_ptr = result;
-  in.inc(); res_ptr.inc();
-
-  input = *in;
-  rotate_sum(input, result);
-  *res_ptr = result;
-  in.inc(); res_ptr.inc();
-
-  // Combine vectors
-  in = in_ptr;
-  input = *in;
-
-  for (int i = 1; i < 3; ++i) {
-    in.inc();
-    input += *in;
-  }
-
-  rotate_sum(input, result);
-  *res_ptr = result;
-  res_ptr.inc();
+	per_vector(rotate_sum);
+	combined_vectors(
+		[] (Float &in, Float &out) { out += in; },
+		rotate_sum
+	);
 
   //
   // Test rotate_max
   //
-  in = in_ptr;
-
-  // Do vectors separately
-  input = *in;
-  rotate_max(input, result);
-  *res_ptr = result;
-  in.inc();
-  res_ptr.inc();
-
-  input = *in;
-  rotate_max(input, result);
-  *res_ptr = result;
-  in.inc();
-  res_ptr.inc();
-
-  input = *in;
-  rotate_max(input, result);
-  *res_ptr = result;
-  in.inc();
-  res_ptr.inc();
-
-  // Combine vectors
-  in = in_ptr;
-  input = *in;
-
-  for (int i = 1; i < 3; ++i) {
-    in.inc();
-    input = max(input,*in);
-  }
-
-  rotate_max(input, result);
-  *res_ptr = result;
-  //res_ptr.inc();
+	per_vector(rotate_max);
+	combined_vectors(
+		[] (Float &in, Float &out) { out = max(out, in); },
+		rotate_max
+	);
 }
 
 }  // anon namespace
@@ -219,49 +201,65 @@ TEST_CASE("Test SFU functions [sfu]") {
 }
 
 
-TEST_CASE("Test library functions [sfu]") {
+TEST_CASE("Test library functions [sfu][rotate]") {
 
   auto k = compile(lib_kernel);
 
-  Float::Array input(16*3);
+	const int N_input = 3;
+
+  Float::Array input(16*N_input);
   input.copyFrom({
       0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
    836, 397, 130, 574, 688, 964, 218, 432, 84, 820, 611, 108, 729, 15, 187, 266,
-
-   250.48, 223.44,  716.1, 386.98, 436.13,    486, 336.65, 200.62,
-   144.04, 616.72, 575.89, 567.03, 371.21, 914.81, 148.14, 839.69
+   250.48, 223.44,  716.1, 386.98, 436.13, 486, 336.65, 200.62, 144.04, 616.72, 575.89, 567.03, 371.21, 914.81, 148.14, 839.69
   });
 
-  const int N = 8;
+  const int N = 2*(N_input + 1);  // Per operation result for separate vectors and 1 for combined vectors
   Float::Array result(16*N);
 
-  k.load(&input, &result).run();
+  k.load(&input, &result, N_input).run();
 
   //warn << dump_array(input, 16, false);
   //warn << dump_array(result, 16, false);
 
+	//
+	// Check that all elements of the result vectors are the same
+	//
   auto r_ptr = result.ptr();
-  REQUIRE(same(r_ptr,    0, 16));
-  REQUIRE(same(r_ptr,   16, 16));
-  REQUIRE(same(r_ptr, 2*16, 16));
-  REQUIRE(same(r_ptr, 3*16, 16));
-  REQUIRE(same(r_ptr, 4*16, 16));
+	for (int i = 0; i < N; ++i) {
+	  REQUIRE(same(r_ptr, i*16, 16));
+	}
 
-  REQUIRE(result[  0] ==   120.0f);
-  REQUIRE(result[ 16] ==  7059.0f);
+	//
+	// Check results - just checking the first element suffices
+	//
+	auto check_expected = [] (
+		int N,
+		int start_index,
+		Float::Array &result,
+		std::vector<float> const &expected,
+		std::vector<int> const &vc4_bit_diff = {}
+	) {
+		for (int i = 0; i < N+ 1; i++) {
+			int tmp_bit_diff = -1;
 
-  if (Platform::run_vc4()) {
-    // Tiny differences occur here
-    REQUIRE(bit_diff(result[32],  7213.93f, 1) == -1);
-    REQUIRE(bit_diff(result[48], 14392.93f, 0) == -1);
-  } else {
-    // No problem for v3d.
-    REQUIRE(result[ 32] ==  7213.93f);
-    REQUIRE(result[ 48] == 14392.93f);
-  }
+	    // Tiny differences can occur for vc4 (notably for rotate_sum)
+	  	if (!vc4_bit_diff.empty() && Platform::run_vc4()) {
+				tmp_bit_diff = vc4_bit_diff[i];
+			}
 
-  REQUIRE(result[ 64] ==   15.0f);
-  REQUIRE(result[ 80] ==  964.0f);
-  REQUIRE(result[ 96] ==  914.81f);
-  REQUIRE(result[112] ==  964.00f);
+	    REQUIRE(bit_diff(result[start_index + 16*i],  expected[i], tmp_bit_diff) == -1);
+		}
+	};
+
+	// First four result vectors are sums
+	std::vector<float> sum_expected = { 120.0f, 7059.0f, 7213.93f, 14392.93f};
+	std::vector<int> vc4_bit_diff = { -1, -1, 1, 0};
+
+	check_expected(N_input, 0, result, sum_expected, vc4_bit_diff);
+
+	// Next 4 vectors are max values
+	std::vector<float> max_expected = { 15.0f, 964.0f, 914.81f, 964.00f};
+
+	check_expected(N_input, 64, result, max_expected);
 }

@@ -114,6 +114,8 @@ $(EXAMPLES) :% : $(OBJDIR)/bin/%
 #
 # Targets for Unit Tests
 #
+init_test:
+	@mkdir -p obj/test 
 
 UNIT_TESTS := $(OBJDIR)/bin/runTests
 
@@ -123,7 +125,7 @@ $(UNIT_TESTS): $(TESTS_OBJ) $(V3DLIB) $(LIB_DEPEND)
 	@$(LINK) $^ -o $@ $(LIBS)
 
 
-runTests: $(UNIT_TESTS)
+runTests: $(UNIT_TESTS) init_test
 
 
 make_test: runTests ID Hello Rot3D ReqRecv GCD Tri detectPlatform OET 

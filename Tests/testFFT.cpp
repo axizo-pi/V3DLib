@@ -93,7 +93,6 @@ bool verify_step(std::vector<int> const &src, int step, int width) {
 #endif  // DEBUG
 
 
-
 /**
  * Load values into a 16-register
  */
@@ -186,6 +185,9 @@ void fft(cx *a, cx *b, int log2n) {
 }
 
 
+//
+// TODO: See if this is more generally useful for floats
+//
 class Vec16 : private std::vector<int> {
   using Parent = std::vector<int>;
 
@@ -1234,9 +1236,8 @@ TEST_CASE("FFT test with DFT [fft][test2][pass2]") {
         real_result[c] = result_fft[c].to_complex().magnitude();
       }
 
-      char const *file_prefix = "fft";
       std::string filename = "obj/test/";
-      filename << file_prefix << "_result.pgm";
+      filename << "fft_result.pgm";
 
       PGM pgm(Dim, 100);
       pgm.plot(real_result, Dim)
