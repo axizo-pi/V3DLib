@@ -584,6 +584,77 @@ void rotate_max(Float &input, Float &result) {
 
 
 /**
+ * @brief Determine min value in the input vector.
+ *
+ * Result is put in all the elements of the output vector.
+ */
+void rotate_min(Float &input, Float &result) {
+	Float tmp;
+
+  result = input;              comment("rotate_min");
+  tmp = rotate(result, 1);
+	result = min(tmp, result);
+
+  tmp = rotate(result, 2);
+	result = min(tmp, result);
+
+  tmp = rotate(result, 4);
+	result = min(tmp, result);
+
+  tmp = rotate(result, 8);
+	result = min(tmp, result);
+}
+
+
+/**
+ * @brief Same as `rotate_min(Float, Float)`, but also returns index of smallest element.
+ *
+ * In the case of ties, the smallest index is returned.  
+ * If min can not be determined (can't exclude), -1 is returned for index.
+ */
+void rotate_min(Float &input, Float &result, Int &index) {
+	rotate_min(input, result);
+
+	Float tmp     = input;
+	Float minInf  = toFloat(0xff800000);  comment("Bit-value for minus infinity");
+
+	Where (tmp > result)
+		// Previously used 0 here, which was kind of stupid. 0 is a perfectly legal value.
+		tmp = minInf;
+	End
+
+	Int start_elems    = 15;
+	Int smallest_index = -1;
+	Float tmp2;
+
+	For (Int n = start_elems, n >= 0, n--)
+		element_at(tmp, n, tmp2);
+		If (tmp2 != minInf)
+			smallest_index = n;
+		End
+	End
+
+	index = smallest_index;
+}
+
+
+/**
+ * @brief Return value in element `n` of `input`.
+ *
+ * Result is put in all the elements of the output vector.
+ */
+void element_at(Float const &input, Int &n, Float &result) {
+	Float tmp = 0;
+
+	Where (n == index())
+		tmp = input;
+	End
+
+	rotate_sum(tmp, result);
+}
+
+
+/**
  * Set value of src to vector element 'n' of dst
  *
  * All other values in dst are untouched.
