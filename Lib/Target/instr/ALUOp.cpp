@@ -10,6 +10,7 @@ namespace {
 std::vector<op_item> op_items = {
   { Enum::A_FADD,   V3D_QPU_A_FADD },  // NOTE: ADD on mul alu is int only
   { Enum::A_FSUB,   V3D_QPU_A_FSUB },  //     SUB on mul alu is int only
+  { Enum::A_FMIN,   V3D_QPU_A_FMIN   },
   { Enum::A_FMAX,   V3D_QPU_A_FMAX   },
   { Enum::A_FtoI,   V3D_QPU_A_FTOIN  },
   { Enum::A_ItoF,   V3D_QPU_A_ITOF   },

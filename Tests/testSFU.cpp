@@ -90,6 +90,19 @@ void check(float val, Float::Array &results, double precision) {
 }
 
 
+//
+// @brief Check that all elements of the result vectors are the same.
+//
+// Result Vector consists of N blocks of 16 with same values.
+//
+void elements_same(Float::Array &vec, int N) {
+  auto vec_ptr = vec.ptr();
+	for (int i = 0; i < N; ++i) {
+	  REQUIRE(same(vec_ptr, i*16, 16));
+	}
+}
+
+
 /**
  * @brief Test non-SFU library functions
  */
@@ -149,6 +162,55 @@ void lib_kernel(Float::Ptr in_ptr, Float::Ptr res_ptr, Int N_input) {
 		[] (Float &in, Float &out) { out = max(out, in); },
 		rotate_max
 	);
+
+  //
+  // Test rotate_min
+  //
+	per_vector(rotate_min);
+	combined_vectors(
+		[] (Float &in, Float &out) { out = min(out, in); },
+		rotate_min
+	);
+
+  //
+  // Test rotate_min returning index
+	//
+	// Index is Int, need to convert to Float,
+	// so that it fits in the unit test.
+  //
+	auto rotate_min_index = [] (Float &in, Float &out) {
+		Float result;
+		Int index;
+		rotate_min(in, result, index);
+		out = toFloat(index);
+	};
+
+	per_vector(rotate_min_index);
+
+	//
+	// Determining the index of a combined vector is senseless, because
+	// due to rotate_min the min value going to be in all elements anyway, including index 0.
+	// Thus, the returned index will always be 0.
+	//
+	// Leaving test in regardless.
+	//
+	combined_vectors(
+		[] (Float &in, Float &out) { out = min(out, in); },
+		rotate_min_index
+	);
+}
+
+
+void element_at_kernel(Float::Ptr in_ptr, Float::Ptr result) {
+	Int N = 16;
+	Float in = *in_ptr;
+
+	For (Int n = 0, n < N, n++)
+		Float res;
+		element_at(in, n, res);
+		*result = res;
+		result.inc();
+	End	
 }
 
 }  // anon namespace
@@ -204,31 +266,28 @@ TEST_CASE("Test SFU functions [sfu]") {
 TEST_CASE("Test library functions [sfu][rotate]") {
 
   auto k = compile(lib_kernel);
+	//to_file("lib_kernel.txt", k.dump());
 
-	const int N_input = 3;
+	const int N_ops   = 4;  // Number of operations tested
+	const int N_input = 4;  // Number of test vectors
 
   Float::Array input(16*N_input);
   input.copyFrom({
-      0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+     1, 2, 0, 3, 4,  5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+		15, 14, 13, 12, 11, 10, 9, 8, 7, 6,  5,  4,  0,  3, 2, 1,
    836, 397, 130, 574, 688, 964, 218, 432, 84, 820, 611, 108, 729, 15, 187, 266,
-   250.48, 223.44,  716.1, 386.98, 436.13, 486, 336.65, 200.62, 144.04, 616.72, 575.89, 567.03, 371.21, 914.81, 148.14, 839.69
+   250.48, 223.44, 716.1, 386.98, 436.13, 486, 336.65, 200.62, 144.04, 616.72, 575.89, 567.03, 371.21, 914.81, 148.14, 839.69
   });
 
-  const int N = 2*(N_input + 1);  // Per operation result for separate vectors and 1 for combined vectors
+	// Number of results returned
+	// Per operation result for separate vectors and 1 for combined vectors
+  const int N = N_ops*(N_input + 1);
+
   Float::Array result(16*N);
 
   k.load(&input, &result, N_input).run();
 
-  //warn << dump_array(input, 16, false);
-  //warn << dump_array(result, 16, false);
-
-	//
-	// Check that all elements of the result vectors are the same
-	//
-  auto r_ptr = result.ptr();
-	for (int i = 0; i < N; ++i) {
-	  REQUIRE(same(r_ptr, i*16, 16));
-	}
+	elements_same(result, N);
 
 	//
 	// Check results - just checking the first element suffices
@@ -240,7 +299,7 @@ TEST_CASE("Test library functions [sfu][rotate]") {
 		std::vector<float> const &expected,
 		std::vector<int> const &vc4_bit_diff = {}
 	) {
-		for (int i = 0; i < N+ 1; i++) {
+		for (int i = 0; i < N + 1; i++) {
 			int tmp_bit_diff = -1;
 
 	    // Tiny differences can occur for vc4 (notably for rotate_sum)
@@ -248,18 +307,59 @@ TEST_CASE("Test library functions [sfu][rotate]") {
 				tmp_bit_diff = vc4_bit_diff[i];
 			}
 
-	    REQUIRE(bit_diff(result[start_index + 16*i],  expected[i], tmp_bit_diff) == -1);
+			float res = result[start_index + 16*i];
+
+	    if (bit_diff(res,  expected[i], tmp_bit_diff) != -1) {
+  			warn << dump_array(result  , 16, false);
+
+				cerr << "check_expected failed for "
+					   << "start_index: " << start_index << ", "
+					   << "index: " << i << ", "
+						 << "result: " << res << ", "
+						 << "expected: " << expected[i] << ", "
+				;
+
+				REQUIRE(false);
+			}
 		}
 	};
 
-	// First four result vectors are sums
-	std::vector<float> sum_expected = { 120.0f, 7059.0f, 7213.93f, 14392.93f};
-	std::vector<int> vc4_bit_diff = { -1, -1, 1, 0};
+	//
+	// The actual tests
+	//
+	std::vector<float> sum_expected   = { 120.0f, 120.0f, 7059.0f, 7213.93f, 14512.93f};
+	std::vector<int> vc4_bit_diff     = { -1, -1, -1, 1, 0};
+	std::vector<float> max_expected   = { 15.0f, 15.0f, 964.0f, 914.81f, 964.00f};
+	std::vector<float> min_expected   = { 0, 0, 15, 144.04f, 0};
+	std::vector<float> index_expected = { 2, 12, 13, 8, 2};
 
-	check_expected(N_input, 0, result, sum_expected, vc4_bit_diff);
+	const int Start = 16*(N_input + 1);
 
-	// Next 4 vectors are max values
-	std::vector<float> max_expected = { 15.0f, 964.0f, 914.81f, 964.00f};
+	check_expected(N_input,       0, result, sum_expected, vc4_bit_diff);
+	check_expected(N_input,   Start, result, max_expected);
+	check_expected(N_input, 2*Start, result, min_expected);
+	check_expected(N_input, 3*Start, result, index_expected);
+}
 
-	check_expected(N_input, 64, result, max_expected);
+
+
+TEST_CASE("Test element_at [sfu][elem]") {
+  auto k = compile(element_at_kernel);
+
+  Float::Array input(16);
+  input.copyFrom({
+   250.48, 223.44,  716.1, 386.98, 436.13, 486, 336.65, 200.62, 144.04, 616.72, 575.89, 567.03, 371.21, 914.81, 148.14, 839.69
+	});
+
+  Float::Array result(16*16);
+
+  k.load(&input, &result).run();
+
+	elements_same(result, 16);
+
+	for (int i = 0; i < 16; i++) {
+		// Sufficient to test first element only
+		float res = result[16*i];
+		REQUIRE(res == input[i]);
+	}
 }
