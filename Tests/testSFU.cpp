@@ -125,21 +125,31 @@ void lib_kernel(Float::Ptr in_ptr, Float::Ptr res_ptr, Int N_input) {
 		End
 	};
 
+
   // Combine vectors
 	auto combined_vectors = [&] (
 		void (*f)(Float &in, Float &out),
 		void (*f_final)(Float &in, Float &out)
 	) {
   	in = in_ptr;
-	  input = 0;
+		Float in_val;
+		input = 0;  // Required because otherwise first assignment is in block
+		            // and thus live before first assignment
 
 		For (Int i = 0, i < N_input, i++)
-			Float in_val = *in;
-	  	f(in_val, input);
+			in_val = *in;
+
+			If (i == 0)
+				input = in_val;
+			Else
+	  		f(in_val, input);
+			End
+
 	    in.inc();
 		End
 
 		f_final(input, result);
+		
   	*res_ptr = result;
   	res_ptr.inc();
 	};
@@ -169,6 +179,7 @@ void lib_kernel(Float::Ptr in_ptr, Float::Ptr res_ptr, Int N_input) {
 	per_vector(rotate_min);
 	combined_vectors(
 		[] (Float &in, Float &out) { out = min(out, in); },
+		//[] (Float &in, Float &out) { out = in; comment("Dummy transfer"); }
 		rotate_min
 	);
 
@@ -266,16 +277,16 @@ TEST_CASE("Test SFU functions [sfu]") {
 TEST_CASE("Test library functions [sfu][rotate]") {
 
   auto k = compile(lib_kernel);
-	//to_file("lib_kernel.txt", k.dump());
+	to_file("lib_kernel.txt", k.dump());
 
 	const int N_ops   = 4;  // Number of operations tested
 	const int N_input = 4;  // Number of test vectors
 
   Float::Array input(16*N_input);
   input.copyFrom({
-     1, 2, 0, 3, 4,  5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
-		15, 14, 13, 12, 11, 10, 9, 8, 7, 6,  5,  4,  0,  3, 2, 1,
-   836, 397, 130, 574, 688, 964, 218, 432, 84, 820, 611, 108, 729, 15, 187, 266,
+        1,      2,     3,      0,      4,  5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+		   15,     14,    13,     12,     11, 10, 9, 8, 7, 6,  5,  4,  0,  3, 2, 1,
+      836,    397,   130,    574,    688, 964, 218, 432, 84, 820, 611, 108, 729, 15, 187, 266,
    250.48, 223.44, 716.1, 386.98, 436.13, 486, 336.65, 200.62, 144.04, 616.72, 575.89, 567.03, 371.21, 914.81, 148.14, 839.69
   });
 
@@ -287,6 +298,7 @@ TEST_CASE("Test library functions [sfu][rotate]") {
 
   k.load(&input, &result, N_input).run();
 
+	//warn << dump_array(result  , 16, false);
 	elements_same(result, N);
 
 	//
@@ -299,6 +311,7 @@ TEST_CASE("Test library functions [sfu][rotate]") {
 		std::vector<float> const &expected,
 		std::vector<int> const &vc4_bit_diff = {}
 	) {
+
 		for (int i = 0; i < N + 1; i++) {
 			int tmp_bit_diff = -1;
 
@@ -310,7 +323,6 @@ TEST_CASE("Test library functions [sfu][rotate]") {
 			float res = result[start_index + 16*i];
 
 	    if (bit_diff(res,  expected[i], tmp_bit_diff) != -1) {
-  			warn << dump_array(result  , 16, false);
 
 				cerr << "check_expected failed for "
 					   << "start_index: " << start_index << ", "
@@ -331,7 +343,7 @@ TEST_CASE("Test library functions [sfu][rotate]") {
 	std::vector<int> vc4_bit_diff     = { -1, -1, -1, 1, 0};
 	std::vector<float> max_expected   = { 15.0f, 15.0f, 964.0f, 914.81f, 964.00f};
 	std::vector<float> min_expected   = { 0, 0, 15, 144.04f, 0};
-	std::vector<float> index_expected = { 2, 12, 13, 8, 2};
+	std::vector<float> index_expected = { 3, 12, 13, 8, 3};
 
 	const int Start = 16*(N_input + 1);
 
