@@ -1,6 +1,7 @@
 #include "sphere.h"
 #include "qpu.h"
 #include "Support/basics.h"
+#include "Support/Platform.h" // compiling_for_vc4()
 #include <cmath>
 
 using namespace V3DLib;
@@ -19,10 +20,18 @@ void qpu_check_ret(vec3 const &v, int ray_index, int sphere_index) {
 	vec3 zero(0,0,0);
 	vec3 negative = -1.0f*v;
 
+  float zero_precision = 1.0e-5f;
+  int zero_bit_diff    = 14;
+
+  if (Platform::compiling_for_vc4()) {
+    zero_precision = 1.8e-3f;
+    zero_bit_diff  = 18;
+  }
+
  	if (qpu::check_ret(sphere_index, zero, 0, 0, false)) {
 		//warn << buf << ": qpu is zero";
 		qpu::add_zero();
-	} else if (qpu::check_ret(sphere_index, negative, 1.0e-5f, 14, false)) {
+	} else if (qpu::check_ret(sphere_index, negative, zero_precision, zero_bit_diff, false)) {
 		//warn << buf << ": qpu is negative";
 		qpu::add_negative();
 	} else if (!qpu::check_ret(sphere_index, v)) { //, 1.7e-5f, 10)) {
