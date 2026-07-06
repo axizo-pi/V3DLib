@@ -21,8 +21,7 @@ bool same_Xf(MatrixXf const &lhs, MatrixXf const &rhs, int bit_diff,  bool show_
   //warn << "Called same(MatrixXf, MatrixXf)";
 
   bool ret       = true;
-  float max_diff = 0.0f;
-  int max_bit    = -1;
+	qpu::CompareStats stats;
 
   if(lhs.rows() != rhs.rows() || lhs.cols() != rhs.cols() ) {
      warn << "Fail same(MatrixXf, MatrixXf) dimensions differ: "
@@ -38,7 +37,7 @@ bool same_Xf(MatrixXf const &lhs, MatrixXf const &rhs, int bit_diff,  bool show_
     if (!show_max_diff && !ret) break;
 
     for (int j = 0; j < (int) rhs.cols(); ++j) {
-      if (!qpu::check_precision(lhs(i, j), rhs(i, j), bit_diff, &max_diff, &max_bit, ret)) {
+      if (!qpu::check_precision(lhs(i, j), rhs(i, j), bit_diff, &stats, ret)) {
         if (ret) {  // Show first fail only
           buf << " at (" << i << ", " << j << ")";
         }
@@ -50,9 +49,7 @@ bool same_Xf(MatrixXf const &lhs, MatrixXf const &rhs, int bit_diff,  bool show_
   }
 
   if (show_max_diff) {
-    buf << ", "
-        << "max_diff: " << max_diff << ", "
-        << "max_bit: "  << max_bit;
+    buf << ", " << stats.dump();
   }
 
   if (!buf.empty()) {
@@ -379,7 +376,20 @@ bool MMatrix::same(MMatrix const &rhs, int bit_diff, bool show_max_diff) const {
 }
 
 
+void MMatrix::diff(MMatrix const &rhs, int bit_diff) const {
+  if (!(m_using_qpu && rhs.m_using_qpu)) {
+		warn << "MMatrix::diff(): at least one qpu matrix missing";
+		return;
+	}
+
+	qpu::diff(m_qpu, rhs.m_qpu, bit_diff);
+}
+
+
 bool MMatrix::same(MatrixXf const &rhs, int bit_diff, bool show_max_diff) const {
+	warn << "Called same(MatrixXf)";
+	assert(false);  // Warn me when called, want to refactor
+
   MMatrix tmp;
   tmp.set(rhs, true);
 
@@ -391,24 +401,27 @@ bool MMatrix::same(MatrixXf const &rhs, int bit_diff, bool show_max_diff) const 
  * Profiling: time negligible
  */
 bool MMatrix::same_intern(MMatrix const &rhs, int bit_diff, bool show_max_diff) const {
+	warn << "Called same_intern()";
   assert(m_using_Xf || m_using_qpu);
   assert(rhs.m_using_Xf || rhs.m_using_qpu);
   assert((m_using_Xf == rhs.m_using_Xf) || (m_using_qpu == rhs.m_using_qpu));
 
   bool ret = true;
+
   // Internal checks
   if (m_using_Xf && m_using_qpu)         ret = ret && ::same(m_qpu, m_Xf, bit_diff);
   if (rhs.m_using_Xf && rhs.m_using_qpu) ret = ret && ::same(rhs.m_qpu, rhs.m_Xf, bit_diff);
 
   // Cross checks
   if (m_using_qpu && rhs.m_using_Xf)     ret = ret && ::same(m_qpu, rhs.m_Xf, bit_diff, show_max_diff);
-  if (m_using_qpu && rhs.m_using_qpu)    ret = ret && ::same(m_qpu, rhs.m_qpu, bit_diff, show_max_diff);
+  if (m_using_qpu && rhs.m_using_qpu)    ret = ret && qpu::same(m_qpu, rhs.m_qpu, bit_diff, show_max_diff);
 
   if (m_using_Xf && !m_using_qpu) {
     if (m_using_Xf  && rhs.m_using_Xf) {
       ret = ret && ::same_Xf(m_Xf, rhs.m_Xf, bit_diff,  show_max_diff);
-    } else
-    if (m_using_Xf  && rhs.m_using_qpu)    assert(false); // Deal with it when it happens
+    } else {
+    	if (m_using_Xf  && rhs.m_using_qpu)    assert(false); // Deal with it when it happens
+		}
   }
 
   return ret;
@@ -460,7 +473,7 @@ std::string MMatrix::dump() const {
 
 
 MMatrix MMatrix::operator+(MMatrix const &rhs) const {
-  assert(false); // Warn me if called
+  //assert(false); // Warn me if called
 
   rhs.need_fields(true, true);
   need_fields(true, true);
@@ -732,7 +745,7 @@ MMatrix MMatrix::sigmoid() const {
  * Currently unused
  */
 MMatrix MMatrix::outer(MMatrix const &rhs) const {
-  assert(false);  // Warn me when called
+  //assert(false);  // Warn me when called
 
   rhs.need_fields(true, true);
   need_fields(true, true);
@@ -1381,74 +1394,6 @@ bool same(qpu::matrix const &lhs, MatrixXf const &rhs, int bit_diff, bool show_m
   rhs_temp.set(rhs, true);
 
   return same(lhs, rhs_temp.qpu(), bit_diff, show_max_diff);
-}
-
-
-bool same(qpu::matrix const &lhs, qpu::matrix const &rhs, int bit_diff,  bool show_max_diff) {
-  //warn << "Called same(qpu::matrix, qpu::matrix)";
-  bool ret       = true;
-  float max_diff = 0.0f;
-  int max_bit    = -1;
-
-  // Special case for 2 input vectors: accept transposed vectors
-  if(lhs.columns() == 1 && lhs.columns() == rhs.rows() && lhs.rows() == rhs.columns() ) {
-    int size = lhs.rows();
-    for (int i = 0; i < size; ++i) {
-      if (!qpu::check_precision(lhs.at(i, 0), rhs.at(0, i), bit_diff, &max_diff, &max_bit)) {
-        warn << "Fail same(vector, vector), (i,j): " << i << ", 0)";
-        ret = false;
-        if (!show_max_diff) break;
-      }      
-    }
-
-    if (show_max_diff) {
-      warn << "same(qpu::matrix, qpu::matrix) vector, "
-           << "max_diff: " << max_diff << ", "
-           << "max_bit: "  << max_bit;
-    }
-    return ret;
-  }
-
-  //
-  // Do full matrices
-  //
-
-  if(lhs.rows() != rhs.rows() || lhs.columns() != rhs.columns() ) {
-     warn << "Fail same(qpu::matrix, qpu::matrix) dimensions differ: "
-          << "lhs: " << lhs.dump_dim() << ", "
-          << "rhs: " << rhs.dump_dim();
-
-     return false;
-  }
-
-  std::string buf;
-
-  for (int i = 0; i < (int) rhs.rows(); ++i) {
-    if (!show_max_diff && !ret) break;
-
-    for (int j = 0; j < (int) rhs.columns(); ++j) {
-      if (!qpu::check_precision(lhs.at(i, j), rhs.at(i, j), bit_diff, &max_diff, &max_bit, ret)) {
-        if (ret) {  // Show first fail only
-          buf << " at (" << i << ", " << j << ")";
-        }
-
-        ret = false;
-        if (!show_max_diff) break;
-      }      
-    }
-  }
-
-  if (show_max_diff) {
-    buf << ", "
-        << "max_diff: " << max_diff << ", "
-        << "max_bit: "  << max_bit;
-  }
-
-  if (!buf.empty()) {
-    warn << "Fail same(qpu::matrix, qpu::matrix)" << buf ;
-  }
-
-  return ret;
 }
 
 

@@ -87,33 +87,42 @@ void LoopState::update(MMatrix &ds_cur, Model const &m) const {
 }
 
 
+/**
+ * Verified that values change here.
+ */
 void LoopState::update_gradient_rows(Model &grad) const {
-  //warn << "grad.U_h: " << grad.U_h.dump_dim();
-  grad.U_h.outer_add_rows(temp_X, dreluInput_h);
+  grad.U_h.outer_add_rows(temp_X, dreluInput_h);   // Changes val
 
   MMatrix tmp = m_temp.S.mul_e(m_temp.r);
-  grad.W_h.outer_add_rows(tmp, dreluInput_h);
+  grad.W_h.outer_add_rows(tmp, dreluInput_h);      // Changes val, > 99% same
 
-  grad.U_r.outer_add_rows(temp_X, dreluInput_r);
-  grad.W_r.outer_add_rows(m_temp.S, dreluInput_r);
 
-  grad.U_z.outer_add_rows(temp_X, dreluInput_z);
-  grad.W_z.outer_add_rows(m_temp.S, dreluInput_z);
+  grad.U_r.outer_add_rows(temp_X, dreluInput_r);   // Changes val, > 99% same
+  grad.W_r.outer_add_rows(m_temp.S, dreluInput_r); // Changes 1 of 16384 values
+  grad.U_z.outer_add_rows(temp_X, dreluInput_z);   // changes val, > 83% same
+  grad.W_z.outer_add_rows(m_temp.S, dreluInput_z); // Changes val, > 99% same
+
+	//auto prev = grad.W_z;
+	//grad.W_z.diff(prev);
 }
 
 
 void gradient_delta(LoopState &ls, Model &grad, MMatrix &delta_y_x, int time_steps) {
   // Currently, relevant inputs are zero, with the calculation resulting in zero.
   // Skip this function until the inputs are non-zero.
+
   if (grad.V.is_zero() && ls.temp().S.is_zero()) return;
-  warn << "gradient_delta() inputs non-zero! Yay! We can continue." << thrw;      
+  warn << "gradient_delta() inputs non-zero! Yay! We can continue."; // << thrw;
 
   MMatrix grad_V_x = grad.V;
+
   //warn << "delta grad_V_x: " << grad_V_x.dump();
   assert(grad_V_x.same(grad.V));
 
+
   timers.start("delta set");
-  warn << "ls.temp().S: " << ls.temp().S.dump();
+  //warn << "ls.temp().S: " << ls.temp().S.dump();
+  warn << "ls.temp().S zero: " << ls.temp().S.is_zero();
 
   for(int time_step = time_steps - 1; time_step >= 0; time_step--) {
     grad.V.set(grad.V.Xf() + ls.temp().S.Xf().transpose().eval() * delta_y_x.Xf().row(time_step));
@@ -128,6 +137,8 @@ void gradient_delta(LoopState &ls, Model &grad, MMatrix &delta_y_x, int time_ste
   timers.start("delta set qpu");
 
   for(int time_step = time_steps - 1; time_step >= 0; time_step--) {
+  	//warn << "Here " << time_step;
+
     //MMatrix lhs = ls.temp().S.transpose();
     //MMatrix rhs = delta_y_x.row(time_step);
     //warn << "delta lhs: " << lhs.dump_dim();
@@ -137,11 +148,12 @@ void gradient_delta(LoopState &ls, Model &grad, MMatrix &delta_y_x, int time_ste
     grad_V_x.set(grad_V_x * 1.001f + ls.temp().S.outer(delta_y_x.row(time_step)));
   }
   warn << "delta grad.V: " << grad.V.dump_dim();
-  warn << "delta grad_V_x: " << grad_V_x.dump_dim();
+  //warn << "delta grad_V_x: " << grad_V_x.dump(); //.dump_dim();
+  warn << "delta grad_V_x zero: " << grad_V_x.is_zero(); //.dump_dim();
 
   //assert(delta_y_x.same(delta_y));
-  warn << "Hey!";
   assert(grad_V_x.same(grad.V));
+
   timers.stop("delta set qpu");
 }
 
@@ -161,9 +173,9 @@ void gradient_delta(LoopState &ls, Model &grad, MMatrix &delta_y_x, int time_ste
  *      train limit loop          : 45.632033s in    10 steps, average:  4.563203s
  */
 void back_propagation(
-  Model &m,
+  Model const &m,
   Model &grad,
-  State &state,
+  State const &state,
   MMatrix const &X,
   MMatrix const &Y,
   int input_dim,
@@ -171,7 +183,7 @@ void back_propagation(
   int output_dim,
   int time_steps
 ) {
-  warn << "state.S: " << state.S.dump_dim();
+  //warn << "state.S: " << state.S.dump_dim();
 
   timers.start("back_propagation");
 
@@ -197,7 +209,7 @@ void back_propagation(
 
   MMatrix x_ds_cur; x_ds_cur.set(ds_single);
 
-  Model x_grad = grad;
+  //Model x_grad = grad;
 
   timers.start("x_step");
 
@@ -218,13 +230,14 @@ void back_propagation(
     timers.stop("x_step update");
 
     timers.start("x_step update_gradient_rows");
-    x_ls.update_gradient_rows(x_grad);  // Bulk of the time here
+    x_ls.update_gradient_rows(/*x_ */ grad);  // Bulk of the time here
     timers.stop("x_step update_gradient_rows");
   }
 
   timers.stop("x_step");
 
   grad.grad_div_steps((float) time_steps);
+	assert(grad.V.is_zero());
   //warn << "delta grad.V: " << grad.V.dump();
 
   timers.stop("back_propagation");
@@ -362,8 +375,9 @@ void train(std::string filename_input, std::string filename_output, float learni
     float loss = 0;
     for(int i = 0; i < limit; i++) {
       if (i >= 10) break; // DEBUG
-			//if (i % 200 == 0) {
-	      warn << "train loop i: " << i;
+
+		  //if (i % 200 == 0) {
+      	warn << "train loop i: " << i;
 			//}
 
       timers.start("train limit loop");
@@ -375,11 +389,14 @@ void train(std::string filename_input, std::string filename_output, float learni
       MMatrix currY(time_steps, output_dim);
 
       read_x_y(currX, currY, i);
+			//warn << "currX: " << currX.dump();
+			//warn << "currY: " << currY.dump();
   
       state.eval();
 
       forward_propagation(m, currX, currY, state, time_steps, input_dim, hidden_dim, output_dim);
       loss += (calculate_cost(state.E, time_steps) / (float) limit);
+			//warn << "loss: " << loss;
 
       back_propagation(m, grad, state, currX, currY, input_dim, hidden_dim, output_dim, time_steps);
 
