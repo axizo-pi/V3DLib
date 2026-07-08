@@ -303,6 +303,11 @@ std::vector<int> Timers::sort_indexes() {
 
 
 void Timers::end(bool show_minmax) {
+  if (m_list.empty()) {
+  	warn << "Timers end: No global timers, nothing to show";
+		return;
+	}
+
 	auto indexes = sort_indexes();
 	int width    = max_label_width();
 

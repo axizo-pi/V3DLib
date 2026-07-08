@@ -111,7 +111,7 @@ MMatrix::MMatrix(MMatrix const &&rhs) {
  *
  * Timing insignificant.
  */
-MMatrix &MMatrix::operator=(const MMatrix &rhs) {
+MMatrix &MMatrix::operator=(MMatrix const &rhs) {
   set(rhs);
   return *this;
 }
@@ -552,15 +552,7 @@ void MMatrix::operator-=(MMatrix const &rhs) {
 }
 
 
-void MMatrix::operator/=(float steps) {
-  assert(steps > 0);
-  //warn << "/=: " << dump();
-  *this *= (1.0f/steps);
-}
-
-
 void MMatrix::operator*=(float val) {
-  //warn << "MMatrix float *= : " << dump_dim();
   need_fields(false, true);
 /*
   timers.start("MMatrix float *= Xf");
@@ -577,12 +569,19 @@ void MMatrix::operator*=(float val) {
 }
 
 
-MMatrix MMatrix::operator/(float steps) const {
+void MMatrix::operator/=(float val) {
+  assert(val > 0);
+  //warn << "/=: " << dump();
+  *this *= (1.0f/val);
+}
+
+
+MMatrix MMatrix::operator/(float val) const {
   assert(false); // Check not called
 
   timers.start("MMatrix /");
   MMatrix ret = *this;
-   ret /= steps;
+  ret /= val;
   timers.stop("MMatrix /");
   return ret;
 }

@@ -150,10 +150,16 @@ bool Model::is_zero() const {
 }
 
 
-void Model::grad_div_steps(float steps) {
+void Model::grad_div_steps(int in_steps) {
   if (is_zero()) return;
+	warn << "Doing grad_div_steps, steps: " << in_steps;
 
+	float steps = (float) in_steps;
+
+	auto prev = U_z;
   U_z /= steps;
+	U_z.diff(prev);
+
   U_r /= steps;
   U_h /= steps;
   W_z /= steps;
@@ -227,8 +233,7 @@ void Model::eval() {
 
 void State::init(int time_steps, int hidden_dim, int output_dim) {
   assert(S.empty());  // Call only once
-
-  timers.start("State::init()");  // Timing minimal, inconsequential
+  //timers.start("State::init()");  // Timing minimal, inconsequential
 
   if (m_do_temp) {
     S.resize(time_steps, hidden_dim);
@@ -245,12 +250,10 @@ void State::init(int time_steps, int hidden_dim, int output_dim) {
     MatrixXf tmp_S = MatrixXf::Zero(time_steps + 1, hidden_dim);
     tmp_S(0, 0) = static_cast <float> (((float) rand()) / (static_cast <float> (RAND_MAX / 2)) - 1);
     //tmp_S.eval();
-
     S.set(tmp_S, true);
-    //warn << "State::init S: " << S.dump();
   }
 
-  timers.stop("State::init()");
+  //timers.stop("State::init()");
 }
 
 

@@ -18,7 +18,7 @@ public:
   MMatrix(MMatrix const &rhs);
   MMatrix(MMatrix const &&rhs);
 
-  MMatrix &operator=(const MMatrix &rhs);
+  MMatrix &operator=(MMatrix const &rhs);
 
   void resize(int rows, int columns, float val = 0.0f);
 
@@ -62,9 +62,9 @@ public:
   void operator-=(MMatrix const &rhs);
 
   MMatrix operator* (float val) const;
+  MMatrix operator/ (float val) const;
   void    operator*=(float val);
-  MMatrix operator/ (float steps) const;
-  void    operator/=(float steps);
+  void    operator/=(float val);
 
   MMatrix operator*(MMatrix const &rhs) const;
   MMatrix mul_t(MMatrix const &rhs, bool Xf_only = false) const;

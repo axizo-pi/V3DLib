@@ -101,9 +101,6 @@ void LoopState::update_gradient_rows(Model &grad) const {
   grad.W_r.outer_add_rows(m_temp.S, dreluInput_r); // Changes 1 of 16384 values
   grad.U_z.outer_add_rows(temp_X, dreluInput_z);   // changes val, > 83% same
   grad.W_z.outer_add_rows(m_temp.S, dreluInput_z); // Changes val, > 99% same
-
-	//auto prev = grad.W_z;
-	//grad.W_z.diff(prev);
 }
 
 
@@ -236,9 +233,8 @@ void back_propagation(
 
   timers.stop("x_step");
 
-  grad.grad_div_steps((float) time_steps);
+  grad.grad_div_steps(time_steps);
 	assert(grad.V.is_zero());
-  //warn << "delta grad.V: " << grad.V.dump();
 
   timers.stop("back_propagation");
 }
@@ -365,8 +361,6 @@ void train(std::string filename_input, std::string filename_output, float learni
   cache.init_val(m.input_dim(), m.hidden_dim(), m.output_dim(), 1.0f, false);
 
   load_x_y(filename_input, filename_output);
-  gru_kernel::init();
-  qpu::init();
 
   for(int epoch = 0; epoch < nepoch; epoch++) {
     warn << "train loop epoch: " << epoch << ", limit: " << limit;
@@ -422,8 +416,34 @@ void train(std::string filename_input, std::string filename_output, float learni
   }
 }
 
+namespace {
+
+MAYBE_UNUSED void unit_test() {
+  MMatrix m(10, 16, 1.0f);
+  warn << "unit_test *= pre: " << m.dump();
+
+/*
+	// Work as expected
+
+	auto m2 = m * 20.0f;
+  warn << "unit_test * m2 post: " << m2.dump();
+
+	m /= 20.0f;
+  warn << "unit_test *= post: " << m.dump();
+*/
+}
+
+} // anon namespace
+
 
 void train_main() {
+  gru_kernel::init();
+  qpu::init();
+/*
+	unit_test();
+	return;
+*/	
+
   //warn << "Called train_main()";
   std::string base = "Examples/NN/GRU/Tools/GRU/Inputs";
 

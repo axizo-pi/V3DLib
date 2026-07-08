@@ -22,7 +22,7 @@ public:
   int output_dim() const { return (int) V.cols(); }
 
   bool is_zero() const;
-  void grad_div_steps(float steps);
+  void grad_div_steps(int in_steps);
   void cache_decay(float decay, Model &grad);
   void divide(Model &grad, Model &cache);
   void adjust_learning_rate(float learning_rate, Model &rhs);

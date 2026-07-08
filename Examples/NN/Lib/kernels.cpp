@@ -150,15 +150,30 @@ void mul_float(Float::Ptr ret, Float::Ptr lhs, Float val, Int N) {
   End
 }
 
+/**
+ * Tested for 0 < num QPU's <= 8 and max QPU's
+ */
 void mul_float_self(Float::Ptr lhs, Float val, Int N) {
   // TODO: check if correct. Expecting Ptr to be initialized for multi-QPU
+	Int offset = 16*numQPUs();
+	lhs += 16*me();
+
   For (Int h = me(), h < N, h += numQPUs())
-  //For (Int h = 0, h < N, h++)
+    Float x = (*lhs) * val;
+    *lhs = x;
+
+		lhs += offset;
+  End
+
+/*
+	// Works as expected
+  For (Int h = 0, h < N, h++)
     Float x = (*lhs) * val;
     *lhs = x;
 
     lhs.inc();
   End
+*/	
 }
 
 
