@@ -59,26 +59,37 @@ bool same_Xf(MatrixXf const &lhs, MatrixXf const &rhs, int bit_diff,  bool show_
   return ret;
 }
 
+
+void set_Xf(MatrixXf &m, float val) {
+	assert(m.rows() > 0 && m.cols() > 0);
+
+  for (int i = 0; i < m.rows(); i++) {
+    for (int j = 0; j < m.cols(); j++) {
+      m(i, j) = val;
+    }
+	}
 }
+
+} // anon namespace
 
 MMatrix::MMatrix() {}
 
 MMatrix::MMatrix(int rows, int columns, float val, bool set_Xf) {
   assert(rows > 0);
   assert(columns > 0);
-  assert(val == 0.0f || val == 1.0f);
 
   if (set_Xf) {
     warn << "This!";
-    if (val == 0.0f) {
-      m_Xf = MatrixXf::Zero(rows, columns);
-    } else {
-      m_Xf = MatrixXf::Ones(rows, columns);
-    }
+    m_Xf = MatrixXf::Zero(rows, columns);
+		if (val != 0) {
+			::set_Xf(m_Xf, val);
+		}
     used_fields(true, false);
   } else {
     m_qpu.resize(rows, columns);
-    m_qpu.set(val);
+		if (val != 0) {
+    	m_qpu.set(val);
+		}
     used_fields(false, true);
   }
 }
@@ -90,6 +101,7 @@ void MMatrix::resize(int rows, int columns, float val) {
 
 
 MMatrix::MMatrix(MMatrix const &rhs) {
+	//warn << "Called MMatrix ctor";
   timers.start("MMatrix ctor &");
   set(rhs);
   timers.stop("MMatrix ctor &");
@@ -111,7 +123,8 @@ MMatrix::MMatrix(MMatrix const &&rhs) {
  *
  * Timing insignificant.
  */
-MMatrix &MMatrix::operator=(const MMatrix &rhs) {
+MMatrix &MMatrix::operator=(MMatrix const &rhs) {
+	//warn << "Called MMatrix =";
   set(rhs);
   return *this;
 }
@@ -261,7 +274,7 @@ bool MMatrix::empty() const {
 
 
 MMatrix MMatrix::transpose() const {
-  assert(false); // Warn me if called
+  //assert(false); // Warn me if called
 
   need_fields(true, false);
   //assert(rows() == 1 || cols() == 1);  // Simple case, vectors only
@@ -376,13 +389,27 @@ bool MMatrix::same(MMatrix const &rhs, int bit_diff, bool show_max_diff) const {
 }
 
 
-void MMatrix::diff(MMatrix const &rhs, int bit_diff) const {
-  if (!(m_using_qpu && rhs.m_using_qpu)) {
-		warn << "MMatrix::diff(): at least one qpu matrix missing";
-		return;
+/**
+ * @return true if diff can be performed, false otherwise
+ */
+bool MMatrix::diff(MMatrix const &rhs, int bit_diff) const {
+  if (m_using_qpu && rhs.m_using_qpu) {
+		qpu::diff(m_qpu, rhs.m_qpu, bit_diff);
+		return true;
 	}
 
-	qpu::diff(m_qpu, rhs.m_qpu, bit_diff);
+  if (m_using_qpu && rhs.m_using_Xf) {
+		MMatrix tmp;
+		tmp.set(rhs.m_Xf, true);
+  	assert(tmp.m_using_qpu);
+
+		qpu::diff(m_qpu, tmp.m_qpu, bit_diff);
+		return true;
+	}
+
+	warn << "MMatrix::diff(): can not do diff, at least one required matrix missing: "
+		    << "lhs: " << dump_dim() << ", rhs: " << rhs.dump_dim();
+	return false;
 }
 
 
@@ -401,7 +428,7 @@ bool MMatrix::same(MatrixXf const &rhs, int bit_diff, bool show_max_diff) const 
  * Profiling: time negligible
  */
 bool MMatrix::same_intern(MMatrix const &rhs, int bit_diff, bool show_max_diff) const {
-	warn << "Called same_intern()";
+	//warn << "Called MMatrix::same_intern()";
   assert(m_using_Xf || m_using_qpu);
   assert(rhs.m_using_Xf || rhs.m_using_qpu);
   assert((m_using_Xf == rhs.m_using_Xf) || (m_using_qpu == rhs.m_using_qpu));
@@ -431,6 +458,7 @@ bool MMatrix::same_intern(MMatrix const &rhs, int bit_diff, bool show_max_diff) 
 std::string MMatrix::dump_dim() const {
   std::string ret;
 
+	ret << "Xf";
   if (m_using_Xf) {
     ret << ::dump_dim(m_Xf);
   } else {
@@ -439,6 +467,7 @@ std::string MMatrix::dump_dim() const {
 
   ret << ", ";
 
+	ret << "qpu";
   if (m_using_qpu) {
     ret << m_qpu.dump_dim();
   } else {
@@ -552,15 +581,7 @@ void MMatrix::operator-=(MMatrix const &rhs) {
 }
 
 
-void MMatrix::operator/=(float steps) {
-  assert(steps > 0);
-  //warn << "/=: " << dump();
-  *this *= (1.0f/steps);
-}
-
-
 void MMatrix::operator*=(float val) {
-  //warn << "MMatrix float *= : " << dump_dim();
   need_fields(false, true);
 /*
   timers.start("MMatrix float *= Xf");
@@ -577,12 +598,19 @@ void MMatrix::operator*=(float val) {
 }
 
 
-MMatrix MMatrix::operator/(float steps) const {
+void MMatrix::operator/=(float val) {
+  assert(val > 0);
+  //warn << "/=: " << dump();
+  *this *= (1.0f/val);
+}
+
+
+MMatrix MMatrix::operator/(float val) const {
   assert(false); // Check not called
 
   timers.start("MMatrix /");
   MMatrix ret = *this;
-   ret /= steps;
+  ret /= val;
   timers.stop("MMatrix /");
   return ret;
 }
@@ -742,17 +770,37 @@ MMatrix MMatrix::sigmoid() const {
 
 
 /**
- * Currently unused
+ * @brief Perform outer product.
+ *
+ * The calculation is `column-vector * row-vector`.
+ *
+ * `this` and `rhs` needs to be vectors (i.e. one dimension == 1).
+ *
+ * The orientation of the vectors are relaxed somewhat.
+ *
+ * - As long as the two inputs are vectors, the qpu calc will treat `this` as a column-vector
+ *   and `rhs` as a row-vector.
+ * - For Xf, `this` _or_ `rhs` will be transposed to make the calculation work.
  */
 MMatrix MMatrix::outer(MMatrix const &rhs) const {
-  //assert(false);  // Warn me when called
-
   rhs.need_fields(true, true);
   need_fields(true, true);
 
   MMatrix ret;
+
   timers.start("MMatrix outer Xf");
-  ret.m_Xf  = m_Xf.transpose().eval() * rhs.m_Xf;
+	assert(m_Xf.rows() == 1 || m_Xf.cols() == 1);
+
+	if (m_Xf.rows() == 1) {
+  	ret.m_Xf  = m_Xf.transpose().eval() * rhs.m_Xf;
+	} else {
+		if (rhs.cols() == 1) {
+  		ret.m_Xf  = m_Xf * rhs.m_Xf.transpose().eval();
+		} else {
+  		ret.m_Xf  = m_Xf * rhs.m_Xf;
+		}
+
+	}
   timers.stop("MMatrix outer Xf");
 
   timers.start("MMatrix outer qpu");
@@ -1027,7 +1075,7 @@ void MMatrix::back_prop_1(MMatrix const &ds_cur, State const &temp) {
 
 void MMatrix::back_prop_3(MMatrix const &dsr, State const &temp) {
   dsr.need_fields(false, true);
-  temp.S.need_fields(false, true);
+  temp.S().need_fields(false, true);
   temp.r.need_fields(false, true);
 /*
   timers.start("back_prop_3 Xf");
@@ -1040,7 +1088,7 @@ void MMatrix::back_prop_3(MMatrix const &dsr, State const &temp) {
   m_qpu.resize(dsr.rows(), dsr.cols());
 
   //timers.start("back_prop_3 qpu");
-  gru_kernel::back_prop_3(m_qpu, dsr.m_qpu, temp.S.m_qpu, temp.r.m_qpu);
+  gru_kernel::back_prop_3(m_qpu, dsr.m_qpu, temp.S().m_qpu, temp.r.m_qpu);
   //timers.stop("back_prop_3 qpu");
 
   used_fields(false, true);
@@ -1052,7 +1100,7 @@ void MMatrix::back_prop_3(MMatrix const &dsr, State const &temp) {
  */
 void MMatrix::back_prop_4(MMatrix const &ds_cur_bk, State const &temp) {
   ds_cur_bk.need_fields(false, true);
-  temp.S.need_fields(false, true);
+  temp.S().need_fields(false, true);
 
 /*
   // Xf actually performs slightly better than qpu
@@ -1066,7 +1114,7 @@ void MMatrix::back_prop_4(MMatrix const &ds_cur_bk, State const &temp) {
   m_qpu.resize(ds_cur_bk.rows(), ds_cur_bk.cols());
 
   //timers.start("back_prop_4 qpu");
-  gru_kernel::back_prop_4(m_qpu, ds_cur_bk.qpu(), temp.z.qpu(), temp.S.qpu(), temp.h.qpu());
+  gru_kernel::back_prop_4(m_qpu, ds_cur_bk.qpu(), temp.z.qpu(), temp.S().qpu(), temp.h.qpu());
   used_fields(false, true);
   //timers.stop("back_prop_4 qpu");
 

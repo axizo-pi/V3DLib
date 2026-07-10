@@ -150,16 +150,28 @@ bool Model::is_zero() const {
 }
 
 
-void Model::grad_div_steps(float steps) {
+void Model::grad_div_steps(int in_steps) {
+  assert(!is_zero());
   if (is_zero()) return;
+	//warn << "Doing grad_div_steps, steps: " << in_steps;
 
-  U_z /= steps;
-  U_r /= steps;
+	float steps = (float) in_steps;
+
+  U_z /= steps;     // OK
+
+  U_r /= steps;     // OK
+
   U_h /= steps;
   W_z /= steps;
   W_r /= steps;
-  W_h /= steps;
+
+	//auto prev = W_h;
+  W_h /= steps;     // OK
+	//W_h.diff(prev);
+
+	//warn << "grad_div_steps V pre: " << V.dump();
   V   /= steps;
+	assert(V.is_zero());  // Zero on init, warn me if it changes
 
   eval();
 }
@@ -225,32 +237,31 @@ void Model::eval() {
 }
 
 
-void State::init(int time_steps, int hidden_dim, int output_dim) {
-  assert(S.empty());  // Call only once
+MMatrix &State::S()             { assert(!m_S.empty()); return m_S; }
+MMatrix const &State::S() const { assert(!m_S.empty()); return m_S; }
 
-  timers.start("State::init()");  // Timing minimal, inconsequential
+
+/**
+ * Timing inconsequential
+ */
+void State::init(int time_steps, int hidden_dim, int output_dim) {
+  assert(z.empty());  // Call only once
+
+  z.resize(time_steps, hidden_dim);
+  r.resize(time_steps, hidden_dim);
+  h.resize(time_steps, hidden_dim);
 
   if (m_do_temp) {
-    S.resize(time_steps, hidden_dim);
-    z.resize(time_steps, hidden_dim);
-    r.resize(time_steps, hidden_dim);
-    h.resize(time_steps, hidden_dim);
+    m_S.resize(time_steps, hidden_dim);
   } else {
     E.resize(1, time_steps);
-    z.resize(time_steps, hidden_dim);
-    r.resize(time_steps, hidden_dim);
-    h.resize(time_steps, hidden_dim);
     O.resize(time_steps, output_dim);
 
     MatrixXf tmp_S = MatrixXf::Zero(time_steps + 1, hidden_dim);
     tmp_S(0, 0) = static_cast <float> (((float) rand()) / (static_cast <float> (RAND_MAX / 2)) - 1);
     //tmp_S.eval();
-
-    S.set(tmp_S, true);
-    //warn << "State::init S: " << S.dump();
+    m_S.set(tmp_S, true);
   }
-
-  timers.stop("State::init()");
 }
 
 
@@ -260,14 +271,14 @@ void State::eval() {
   r.eval();
   h.eval();
   O.eval();
-  S.eval();
+  m_S.eval();
 }
 
 
 void State::set_step(int time_step, State const &state) {
   assert(m_do_temp);
 
-  S.set(state.S.row(time_step));
+  m_S.set(state.m_S.row(time_step));
   r.set(state.r.row(time_step));
   z.set(state.z.row(time_step));
   h.set(state.h.row(time_step));
@@ -277,7 +288,7 @@ void State::set_step(int time_step, State const &state) {
 void State::move_rows(int step, State const &state) {
   assert(m_do_temp);
 
-  S.move_rows(step, state.S);
+  m_S.move_rows(step, state.m_S);
   r.move_rows(step, state.r);
   z.move_rows(step, state.z);
   h.move_rows(step, state.h);

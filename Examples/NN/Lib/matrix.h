@@ -163,6 +163,7 @@ struct CompareStats {
 	int   total;
 	int   exact;
 	int   same;
+	int   zeroes;
   float max_diff;
   int   max_bit;
 

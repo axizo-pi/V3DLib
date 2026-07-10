@@ -386,8 +386,8 @@ matrix &matrix::operator*=(float rhs) {
     }
   } else {
     assert(size() % 16 == 0);
-    //warn << "matrix float * 16-matrix:" << dump_dim();
     s_mul_float_self->setMaxQPUs();
+    //s_mul_float_self->setNumQPUs(8);
     s_mul_float_self->load(&arr(), rhs, size()/16).run();
   }
 
@@ -995,6 +995,7 @@ void CompareStats::reset() {
 	total    = 0;
 	exact    = 0;
 	same     = 0;
+	zeroes   = 0;
  	max_diff = 0.0f;
  	max_bit  = -1;
 }
@@ -1066,6 +1067,7 @@ std::string CompareStats::dump(bool show_first_fail) const {
 	ret << "  total     : " << total << "\n"
       << "  exact     : " << exact                  << ", " << as_percent(exact, total)        << "\n"
       << "  same      : " << format(x_width, same)  << ", " << as_percent(exact + same, total) << "\n"
+      << "  zeroes    : " << zeroes   << "\n"
       << "  max_diff  : " << max_diff << "\n"
       << "  max_bit   : " << max_bit;
 
@@ -1108,6 +1110,12 @@ bool check_precision(
 
 		if (lhs == rhs) {
 			stats->exact++;
+
+			if (lhs == 0.0f) {
+				stats->zeroes++;
+			} //else {
+			//	warn << "Exact but not zero: " << lhs << ", " << rhs;
+			//}
 		} else {
 			if (ret) stats->same++;
 		}
@@ -1181,7 +1189,7 @@ bool same_intern(
 
 
 bool same(qpu::matrix const &lhs, qpu::matrix const &rhs, int bit_diff,  bool show_stats) {
-  warn << "Called same(qpu::matrix, qpu::matrix)";
+  //warn << "Called same(qpu::matrix, qpu::matrix)";
 
 	CompareStats stats(true);
 

@@ -18,7 +18,7 @@ public:
   MMatrix(MMatrix const &rhs);
   MMatrix(MMatrix const &&rhs);
 
-  MMatrix &operator=(const MMatrix &rhs);
+  MMatrix &operator=(MMatrix const &rhs);
 
   void resize(int rows, int columns, float val = 0.0f);
 
@@ -49,7 +49,7 @@ public:
 
   bool same(int bit_diff = 0) const;
   bool same(MMatrix const &rhs, int bit_diff = -1, bool show_stats = false) const;
-  void diff(MMatrix const &rhs, int bit_diff = -1) const;
+  bool diff(MMatrix const &rhs, int bit_diff = -1) const;
   bool same(MatrixXf const &rhs, int bit_diff = -1, bool show_max_diff = false) const;
 
   std::string dump_dim() const;
@@ -62,9 +62,9 @@ public:
   void operator-=(MMatrix const &rhs);
 
   MMatrix operator* (float val) const;
+  MMatrix operator/ (float val) const;
   void    operator*=(float val);
-  MMatrix operator/ (float steps) const;
-  void    operator/=(float steps);
+  void    operator/=(float val);
 
   MMatrix operator*(MMatrix const &rhs) const;
   MMatrix mul_t(MMatrix const &rhs, bool Xf_only = false) const;

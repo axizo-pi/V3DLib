@@ -45,7 +45,7 @@ void forward_propagation(
     //warn << "Forward i: " << i;
 
     // Timing init inconsequential
-    auto S_row = state.S.row(i); // Only S_row[0] set
+    auto S_row = state.S().row(i); // Only S_row[0] set
     X_row.set(X.row(i));
     Y_row.set(Y.row(i));
 
@@ -63,7 +63,7 @@ void forward_propagation(
 
     // forward_4/5 timing small
     temp_hidden = Z_row.forward_4(S_row, state.h.row(i));
-    state.S.row(i + 1, temp_hidden);   // Assumption: value at i == 0 should be retained
+    state.S().row(i + 1, temp_hidden);   // Assumption: value at i == 0 should be retained
 
     auto temp_output = temp_hidden * m.V;
     auto temp2 = temp_output.forward_5();

@@ -22,7 +22,7 @@ public:
   int output_dim() const { return (int) V.cols(); }
 
   bool is_zero() const;
-  void grad_div_steps(float steps);
+  void grad_div_steps(int in_steps);
   void cache_decay(float decay, Model &grad);
   void divide(Model &grad, Model &cache);
   void adjust_learning_rate(float learning_rate, Model &rhs);
@@ -37,10 +37,12 @@ public:
   MMatrix z;
   MMatrix r;
   MMatrix h;
-  MMatrix O;
-  MMatrix S;
+  MMatrix O;  // Used in test, train, forward, but not initialized for do_temp = true
 
   State(bool do_temp = false) : m_do_temp(do_temp) {}
+
+  MMatrix &S();
+  MMatrix const &S() const;
 
   void init(int time_steps, int hidden_dim, int output_dim);
   void eval();
@@ -48,7 +50,9 @@ public:
   void move_rows(int step, State const &state);
 
 private:
-  bool m_do_temp;  
+  bool m_do_temp;
+
+  MMatrix m_S;
 };
 
 #endif //  _GRU_MODEL_H

@@ -98,7 +98,7 @@ void read_output(MatrixXf& Y, std::ifstream& outputFile, int time_steps) {
 
 std::string dump_dim(MatrixXf const &m) {
   std::string buf;
-  buf << "(rows,cols) = (" << m.rows() << ", " << m.cols() << ")";
+  buf << "(" << m.rows() << ", " << m.cols() << ")";
   return buf;
 }
 
