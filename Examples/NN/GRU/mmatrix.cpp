@@ -87,9 +87,7 @@ MMatrix::MMatrix(int rows, int columns, float val, bool set_Xf) {
     used_fields(true, false);
   } else {
     m_qpu.resize(rows, columns);
-		if (val != 0) {
-    	m_qpu.set(val);
-		}
+    m_qpu.set(val);              // Always initialize!
     used_fields(false, true);
   }
 }

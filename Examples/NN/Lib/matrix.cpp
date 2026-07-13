@@ -166,6 +166,8 @@ matrix::matrix(matrix const &&rhs) {
 
 /**
  * Profile timing insignificant; average effectively 0.
+ *
+ * Note that the cells are not initialized here.
  */
 void matrix::resize(int rows, int columns) {
   // Allow initialization of empty matrix.
@@ -183,7 +185,7 @@ void matrix::resize(int rows, int columns) {
     cerr << "matrix resize: columns must be positive" << thrw;
   }
 
-  int size      = rows*columns;
+  int size = rows*columns;
 
   if (size > 0 && (size > m_size || m_arr == nullptr)) {
     if (m_size > 0 && size != m_size) {
@@ -714,12 +716,13 @@ void matrix::outer_add(matrix const &lhs, matrix const &rhs) {
 
 
 void matrix::outer_add_rows(matrix const &lhs, matrix const &rhs) {
-  outer_check(lhs, rhs);  // TODO necessary? Does it work as expected?
   assert(rows() == lhs.columns() && columns() == rhs.columns());
+	assert(rhs.columns() % 16 == 0);
 
   timers.start("matrix::outer_add_rows");
     
-  s_op_add_rows->setMaxQPUs();
+  //s_op_add_rows->setMaxQPUs();
+  s_op_add_rows->setNumQPUs(1);
   s_op_add_rows->load(&arr(), &lhs.arr(), &rhs.arr(), lhs.rows(), lhs.columns(), rhs.columns()).run();
 
   timers.stop("matrix::outer_add_rows");
@@ -748,12 +751,72 @@ std::string matrix::dump(bool output_int) const {
     ret << "(tr) ";  // Signal transposed
     ret << "[" << vector_dump(*m_arr, m_rows, 0, output_int) << "]";
   } else {
+		int int_width;
+		int prefix_width;
+
+		{
+			std::string buf;
+			buf << m_rows;
+			int_width = (int) buf.size();
+
+			// width of 'xxx-xxx'
+			prefix_width = 2*int_width + 1;
+		}
+
+		auto pad = [] (int val, int width) -> std::string {
+			std::string buf;
+			buf << val;
+
+			std::string padding;
+
+			for (int i = 0; i < (width - (int) buf.size()); ++i) {
+				padding << " ";
+			}
+
+			std::string ret;
+			ret << padding << buf;
+			return ret;
+		};
+
+
+		int first_h = 0;
+		int last_h  = 0;
+		std::string same_buf = vector_dump(*m_arr, m_columns, 0, output_int);
+
+		auto dump_row = [&first_h, &last_h, &same_buf, &pad, int_width, prefix_width] () -> std::string {
+			std::string ret;
+
+			ret << "  ";
+
+			if (first_h < last_h) {
+				ret << pad(first_h, int_width) << "-"  << pad(last_h, int_width);
+			} else {
+				ret << pad(first_h, prefix_width);
+			}
+
+     	ret << ": [" << same_buf<< "]\n";
+
+			return ret;
+		};
+
     ret << "[\n";
 
+
     for (int h = 0; h < m_rows; ++h) {
-       ret << "  " << h << ": [" << vector_dump(*m_arr, m_columns, h*m_columns, output_int) << "]\n";
+			std::string buf = vector_dump(*m_arr, m_columns, h*m_columns, output_int);
+
+			if (buf == same_buf) {
+				last_h = h;
+			} else {
+				ret << dump_row();
+
+				first_h    = h;
+				last_h     = h;
+				same_buf   = buf;
+			}
     }
 
+		ret << dump_row();
     ret << "]";
   }
 
