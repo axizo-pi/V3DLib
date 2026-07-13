@@ -467,19 +467,23 @@ namespace {
  * - 12   : Fails train loop 0
  * - 16   : Fails train loop 1
  *
- * TODO: examine this, expectation is that it should always work
+ * TODO: Research this again, expectation is that it should always work
  */
 void outer_add_partial(Float::Ptr &ret, Float::Ptr &lhs, Float::Ptr &rhs, Int &N, Int &M) {
   lhs -= index();  comment("Start outer_add_partial");
 
-  For (Int i = me(), i < N, i += numQPUs())
-    Float lhs_val = *(lhs + i);
-    Float::Ptr ret_start = ret + i*M*4;
+	Int Start  = me();
+	Int Inc    = numQPUs();
+	Int Offset = M << 4;
+
+  For (Int i = Start, i < N, i += Inc)
+    Float lhs_val        = *(lhs + i);
+    Float::Ptr ret_start = ret + i*Offset;
     Float::Ptr rhs_start = rhs;
 
     For (Int j = 0, j < M, j++)
       // The only logical difference with outer_product() is `*res_start += ...`
-      Float val = *ret_start + lhs_val * *rhs_start;
+      Float val = *ret_start + (*rhs_start * lhs_val);
       *ret_start = val;
 
       ret_start.inc();

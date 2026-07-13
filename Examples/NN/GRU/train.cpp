@@ -440,7 +440,6 @@ MAYBE_UNUSED void unit_test() {
 
 	m /= 20.0f;
   warn << "unit_test *= post: " << m.dump();
-*/
 
 	//
 	// Test outer()
@@ -452,9 +451,31 @@ MAYBE_UNUSED void unit_test() {
   //warn << "unit_test res: " << res.dump();
 	assert(res.same(expected));
 
-  //MMatrix res(16, 16, 0.0f);
-	//res.outer_add_rows(r1, r2);
-  //warn << "unit_test res: " << res.dump();
+  MMatrix expected2(16, 16, 4.0f);
+  MMatrix res2(16, 16, 1.0f);
+	res2.outer_add(r1, r2);
+  //warn << "unit_test res2: " << res2.dump();
+	assert(res2.same(expected2));
+
+  MMatrix r3(16, 16, 1.0f);
+  MMatrix r4(16, 16, 2.0f);
+  MMatrix expected3(16, 16, 35.0f);
+  MMatrix res3(16, 16, 3.0f);
+	res3.outer_add_rows(r3, r4);
+  //warn << "unit_test res3: " << res3.dump();
+	assert(res3.same(expected3));
+*/
+
+	// Test big matrices
+	const int Rows = 16*32;
+	const int Mul = 20;
+  MMatrix r5(Rows, 16*Mul, 1.0f);
+  MMatrix r6(Rows, 16*Mul, 2.0f);
+  MMatrix expected4(16*Mul, 16*Mul, Rows*2.0f + 3.0f);
+  MMatrix res4(16*Mul, 16*Mul, 3.0f);
+	res4.outer_add_rows(r5, r6);
+  warn << "unit_test res4: " << res4.dump(); //_dim();
+	assert(res4.same(expected4));
 }
 
 } // anon namespace
