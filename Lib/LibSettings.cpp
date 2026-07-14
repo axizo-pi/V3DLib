@@ -1,6 +1,7 @@
 #include "LibSettings.h"
 #include "Support/basics.h"
 #include "Support/Platform.h"
+#include "Common/BufferObject.h"
 #include "vc4/RegisterMap.h"
 
 namespace V3DLib {
@@ -51,13 +52,28 @@ int heap_size() {
 
 
 /**
- * Set heap size
+ * @brief Set heap size
+ *
+ * Calling this only has effect if the heap is not initialzed.
+ * The logical place to set it is in Settings.
+ *
+ * In theory, if the heap has been cleared, the size can be reset.
+ * This is not the regular flow.
  *
  * @param size_in_bytes  size of heap in bytes
  */
 void heap_size(int val) {
   assert(val > 0);                  // also to guard against overflow
-  _heap_size = val;
+
+	BufferObject &bo = getBufferObject();
+
+	if (bo.empty()) {
+	  _heap_size = val;
+	} else {
+		// _heap_size can be potentially != -1, if heap has been cleared.
+		// In that case, the heap size can be changed
+		cerr << "LibSettings::heap_size(): heap is initialized, can not change heap size.";
+	}
 }
 
 
