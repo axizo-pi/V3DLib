@@ -65,15 +65,15 @@ int heap_size() {
 void heap_size(int val) {
   assert(val > 0);                  // also to guard against overflow
 
-	BufferObject &bo = getBufferObject();
+  BufferObject &bo = getBufferObject();
 
-	if (bo.empty()) {
-	  _heap_size = val;
-	} else {
-		// _heap_size can be potentially != -1, if heap has been cleared.
-		// In that case, the heap size can be changed
-		cerr << "LibSettings::heap_size(): heap is initialized, can not change heap size.";
-	}
+  if (bo.empty()) {
+    _heap_size = val;
+  } else {
+    // _heap_size can be potentially != -1, if heap has been cleared.
+    // In that case, the heap size can be changed
+    cerr << "LibSettings::heap_size(): heap is initialized, can not change heap size.";
+  }
 }
 
 
