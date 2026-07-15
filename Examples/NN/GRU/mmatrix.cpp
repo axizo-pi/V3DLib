@@ -21,7 +21,7 @@ bool same_Xf(MatrixXf const &lhs, MatrixXf const &rhs, int bit_diff,  bool show_
   //warn << "Called same(MatrixXf, MatrixXf)";
 
   bool ret       = true;
-	qpu::CompareStats stats;
+  qpu::CompareStats stats;
 
   if(lhs.rows() != rhs.rows() || lhs.cols() != rhs.cols() ) {
      warn << "Fail same(MatrixXf, MatrixXf) dimensions differ: "
@@ -61,13 +61,13 @@ bool same_Xf(MatrixXf const &lhs, MatrixXf const &rhs, int bit_diff,  bool show_
 
 
 void set_Xf(MatrixXf &m, float val) {
-	assert(m.rows() > 0 && m.cols() > 0);
+  assert(m.rows() > 0 && m.cols() > 0);
 
   for (int i = 0; i < m.rows(); i++) {
     for (int j = 0; j < m.cols(); j++) {
       m(i, j) = val;
     }
-	}
+  }
 }
 
 } // anon namespace
@@ -81,9 +81,9 @@ MMatrix::MMatrix(int rows, int columns, float val, bool set_Xf) {
   if (set_Xf) {
     warn << "This!";
     m_Xf = MatrixXf::Zero(rows, columns);
-		if (val != 0) {
-			::set_Xf(m_Xf, val);
-		}
+    if (val != 0) {
+      ::set_Xf(m_Xf, val);
+    }
     used_fields(true, false);
   } else {
     m_qpu.resize(rows, columns);
@@ -99,7 +99,7 @@ void MMatrix::resize(int rows, int columns, float val) {
 
 
 MMatrix::MMatrix(MMatrix const &rhs) {
-	//warn << "Called MMatrix ctor";
+  //warn << "Called MMatrix ctor";
   timers.start("MMatrix ctor &");
   set(rhs);
   timers.stop("MMatrix ctor &");
@@ -122,7 +122,7 @@ MMatrix::MMatrix(MMatrix const &&rhs) {
  * Timing insignificant.
  */
 MMatrix &MMatrix::operator=(MMatrix const &rhs) {
-	//warn << "Called MMatrix =";
+  //warn << "Called MMatrix =";
   set(rhs);
   return *this;
 }
@@ -392,28 +392,28 @@ bool MMatrix::same(MMatrix const &rhs, int bit_diff, bool show_max_diff) const {
  */
 bool MMatrix::diff(MMatrix const &rhs, int bit_diff) const {
   if (m_using_qpu && rhs.m_using_qpu) {
-		qpu::diff(m_qpu, rhs.m_qpu, bit_diff);
-		return true;
-	}
+    qpu::diff(m_qpu, rhs.m_qpu, bit_diff);
+    return true;
+  }
 
   if (m_using_qpu && rhs.m_using_Xf) {
-		MMatrix tmp;
-		tmp.set(rhs.m_Xf, true);
-  	assert(tmp.m_using_qpu);
+    MMatrix tmp;
+    tmp.set(rhs.m_Xf, true);
+    assert(tmp.m_using_qpu);
 
-		qpu::diff(m_qpu, tmp.m_qpu, bit_diff);
-		return true;
-	}
+    qpu::diff(m_qpu, tmp.m_qpu, bit_diff);
+    return true;
+  }
 
-	warn << "MMatrix::diff(): can not do diff, at least one required matrix missing: "
-		    << "lhs: " << dump_dim() << ", rhs: " << rhs.dump_dim();
-	return false;
+  warn << "MMatrix::diff(): can not do diff, at least one required matrix missing: "
+        << "lhs: " << dump_dim() << ", rhs: " << rhs.dump_dim();
+  return false;
 }
 
 
 bool MMatrix::same(MatrixXf const &rhs, int bit_diff, bool show_max_diff) const {
-	warn << "Called same(MatrixXf)";
-	assert(false);  // Warn me when called, want to refactor
+  warn << "Called same(MatrixXf)";
+  assert(false);  // Warn me when called, want to refactor
 
   MMatrix tmp;
   tmp.set(rhs, true);
@@ -426,7 +426,7 @@ bool MMatrix::same(MatrixXf const &rhs, int bit_diff, bool show_max_diff) const 
  * Profiling: time negligible
  */
 bool MMatrix::same_intern(MMatrix const &rhs, int bit_diff, bool show_max_diff) const {
-	//warn << "Called MMatrix::same_intern()";
+  //warn << "Called MMatrix::same_intern()";
   assert(m_using_Xf || m_using_qpu);
   assert(rhs.m_using_Xf || rhs.m_using_qpu);
   assert((m_using_Xf == rhs.m_using_Xf) || (m_using_qpu == rhs.m_using_qpu));
@@ -445,8 +445,8 @@ bool MMatrix::same_intern(MMatrix const &rhs, int bit_diff, bool show_max_diff) 
     if (m_using_Xf  && rhs.m_using_Xf) {
       ret = ret && ::same_Xf(m_Xf, rhs.m_Xf, bit_diff,  show_max_diff);
     } else {
-    	if (m_using_Xf  && rhs.m_using_qpu)    assert(false); // Deal with it when it happens
-		}
+      if (m_using_Xf  && rhs.m_using_qpu)    assert(false); // Deal with it when it happens
+    }
   }
 
   return ret;
@@ -456,7 +456,7 @@ bool MMatrix::same_intern(MMatrix const &rhs, int bit_diff, bool show_max_diff) 
 std::string MMatrix::dump_dim() const {
   std::string ret;
 
-	ret << "Xf";
+  ret << "Xf";
   if (m_using_Xf) {
     ret << ::dump_dim(m_Xf);
   } else {
@@ -465,7 +465,7 @@ std::string MMatrix::dump_dim() const {
 
   ret << ", ";
 
-	ret << "qpu";
+  ret << "qpu";
   if (m_using_qpu) {
     ret << m_qpu.dump_dim();
   } else {
@@ -787,18 +787,18 @@ MMatrix MMatrix::outer(MMatrix const &rhs) const {
   MMatrix ret;
 
   timers.start("MMatrix outer Xf");
-	assert(m_Xf.rows() == 1 || m_Xf.cols() == 1);
+  assert(m_Xf.rows() == 1 || m_Xf.cols() == 1);
 
-	if (m_Xf.rows() == 1) {
-  	ret.m_Xf  = m_Xf.transpose().eval() * rhs.m_Xf;
-	} else {
-		if (rhs.cols() == 1) {
-  		ret.m_Xf  = m_Xf * rhs.m_Xf.transpose().eval();
-		} else {
-  		ret.m_Xf  = m_Xf * rhs.m_Xf;
-		}
+  if (m_Xf.rows() == 1) {
+    ret.m_Xf  = m_Xf.transpose().eval() * rhs.m_Xf;
+  } else {
+    if (rhs.cols() == 1) {
+      ret.m_Xf  = m_Xf * rhs.m_Xf.transpose().eval();
+    } else {
+      ret.m_Xf  = m_Xf * rhs.m_Xf;
+    }
 
-	}
+  }
   timers.stop("MMatrix outer Xf");
 
   timers.start("MMatrix outer qpu");

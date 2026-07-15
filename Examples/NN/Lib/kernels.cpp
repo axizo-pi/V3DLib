@@ -155,25 +155,25 @@ void mul_float(Float::Ptr ret, Float::Ptr lhs, Float val, Int N) {
  */
 void mul_float_self(Float::Ptr lhs, Float val, Int N) {
   // TODO: check if correct. Expecting Ptr to be initialized for multi-QPU
-	Int offset = 16*numQPUs();
-	lhs += 16*me();
+  Int offset = 16*numQPUs();
+  lhs += 16*me();
 
   For (Int h = me(), h < N, h += numQPUs())
     Float x = (*lhs) * val;
     *lhs = x;
 
-		lhs += offset;
+    lhs += offset;
   End
 
 /*
-	// Works as expected
+  // Works as expected
   For (Int h = 0, h < N, h++)
     Float x = (*lhs) * val;
     *lhs = x;
 
     lhs.inc();
   End
-*/	
+*/  
 }
 
 
@@ -458,23 +458,16 @@ void outer_product(Float::Ptr ret, Float::Ptr left, Float::Ptr right, Int N, Int
 namespace {
 
 /**
- * NumQPU's:
+ * **NOTE:** Succesful execution depends on size of matrices and num QPU's.
  *
- * - 1,2,4: Works perfectly
- * - 6    : Fails train loop 1
- * - 8    : Works sometimes within precision OR fails train loop 1,3
- * - 10   : Fails train loop 0
- * - 12   : Fails train loop 0
- * - 16   : Fails train loop 1
- *
- * TODO: Research this again, expectation is that it should always work
+ * TODO: Research this
  */
 void outer_add_partial(Float::Ptr &ret, Float::Ptr &lhs, Float::Ptr &rhs, Int &N, Int &M) {
-  lhs -= index();  comment("Start outer_add_partial");
+  lhs -= index();          comment("Start outer_add_partial");
 
-	Int Start  = me();
-	Int Inc    = numQPUs();
-	Int Offset = M << 4;
+  Int Start  = me();
+  Int Inc    = numQPUs();
+  Int Offset = M << 4;
 
   For (Int i = Start, i < N, i += Inc)
     Float lhs_val        = *(lhs + i);
@@ -483,7 +476,7 @@ void outer_add_partial(Float::Ptr &ret, Float::Ptr &lhs, Float::Ptr &rhs, Int &N
 
     For (Int j = 0, j < M, j++)
       // The only logical difference with outer_product() is `*res_start += ...`
-      Float val = *ret_start + (*rhs_start * lhs_val);
+      Float val  = *ret_start + *rhs_start * lhs_val;
       *ret_start = val;
 
       ret_start.inc();

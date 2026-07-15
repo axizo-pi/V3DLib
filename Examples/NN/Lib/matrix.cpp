@@ -389,7 +389,6 @@ matrix &matrix::operator*=(float rhs) {
   } else {
     assert(size() % 16 == 0);
     s_mul_float_self->setMaxQPUs();
-    //s_mul_float_self->setNumQPUs(8);
     s_mul_float_self->load(&arr(), rhs, size()/16).run();
   }
 
@@ -711,18 +710,19 @@ void matrix::outer_add(matrix const &lhs, matrix const &rhs) {
   assert(rows() == lhs.size() && columns() == rhs.size());
 
   s_op_add->setMaxQPUs();
+  //s_op_add_rows->setNumQPUs(2);
   s_op_add->load(&arr(), &lhs.arr(), &rhs.arr(), lhs.size(), rhs.size()/16).run();
 }
 
 
 void matrix::outer_add_rows(matrix const &lhs, matrix const &rhs) {
   assert(rows() == lhs.columns() && columns() == rhs.columns());
-	assert(rhs.columns() % 16 == 0);
+  assert(rhs.columns() % 16 == 0);
 
   timers.start("matrix::outer_add_rows");
     
-  //s_op_add_rows->setMaxQPUs();
-  s_op_add_rows->setNumQPUs(1);
+  s_op_add_rows->setMaxQPUs();
+  //s_op_add_rows->setNumQPUs(1);
   s_op_add_rows->load(&arr(), &lhs.arr(), &rhs.arr(), lhs.rows(), lhs.columns(), rhs.columns()).run();
 
   timers.stop("matrix::outer_add_rows");
@@ -751,72 +751,72 @@ std::string matrix::dump(bool output_int) const {
     ret << "(tr) ";  // Signal transposed
     ret << "[" << vector_dump(*m_arr, m_rows, 0, output_int) << "]";
   } else {
-		int int_width;
-		int prefix_width;
+    int int_width;
+    int prefix_width;
 
-		{
-			std::string buf;
-			buf << m_rows;
-			int_width = (int) buf.size();
+    {
+      std::string buf;
+      buf << m_rows;
+      int_width = (int) buf.size();
 
-			// width of 'xxx-xxx'
-			prefix_width = 2*int_width + 1;
-		}
+      // width of 'xxx-xxx'
+      prefix_width = 2*int_width + 1;
+    }
 
-		auto pad = [] (int val, int width) -> std::string {
-			std::string buf;
-			buf << val;
+    auto pad = [] (int val, int width) -> std::string {
+      std::string buf;
+      buf << val;
 
-			std::string padding;
+      std::string padding;
 
-			for (int i = 0; i < (width - (int) buf.size()); ++i) {
-				padding << " ";
-			}
+      for (int i = 0; i < (width - (int) buf.size()); ++i) {
+        padding << " ";
+      }
 
-			std::string ret;
-			ret << padding << buf;
-			return ret;
-		};
+      std::string ret;
+      ret << padding << buf;
+      return ret;
+    };
 
 
-		int first_h = 0;
-		int last_h  = 0;
-		std::string same_buf = vector_dump(*m_arr, m_columns, 0, output_int);
+    int first_h = 0;
+    int last_h  = 0;
+    std::string same_buf = vector_dump(*m_arr, m_columns, 0, output_int);
 
-		auto dump_row = [&first_h, &last_h, &same_buf, &pad, int_width, prefix_width] () -> std::string {
-			std::string ret;
+    auto dump_row = [&first_h, &last_h, &same_buf, &pad, int_width, prefix_width] () -> std::string {
+      std::string ret;
 
-			ret << "  ";
+      ret << "  ";
 
-			if (first_h < last_h) {
-				ret << pad(first_h, int_width) << "-"  << pad(last_h, int_width);
-			} else {
-				ret << pad(first_h, prefix_width);
-			}
+      if (first_h < last_h) {
+        ret << pad(first_h, int_width) << "-"  << pad(last_h, int_width);
+      } else {
+        ret << pad(first_h, prefix_width);
+      }
 
-     	ret << ": [" << same_buf<< "]\n";
+       ret << ": [" << same_buf<< "]\n";
 
-			return ret;
-		};
+      return ret;
+    };
 
     ret << "[\n";
 
 
     for (int h = 0; h < m_rows; ++h) {
-			std::string buf = vector_dump(*m_arr, m_columns, h*m_columns, output_int);
+      std::string buf = vector_dump(*m_arr, m_columns, h*m_columns, output_int);
 
-			if (buf == same_buf) {
-				last_h = h;
-			} else {
-				ret << dump_row();
+      if (buf == same_buf) {
+        last_h = h;
+      } else {
+        ret << dump_row();
 
-				first_h    = h;
-				last_h     = h;
-				same_buf   = buf;
-			}
+        first_h    = h;
+        last_h     = h;
+        same_buf   = buf;
+      }
     }
 
-		ret << dump_row();
+    ret << dump_row();
     ret << "]";
   }
 
@@ -1053,88 +1053,88 @@ vector operator*(matrix const &lhs, matrix const &rhs) {
 ////////////////////////////////////////
 
 void CompareStats::reset() {
-	first_i  = -1;
-	first_j  = -1;
-	total    = 0;
-	exact    = 0;
-	same     = 0;
-	zeroes   = 0;
- 	max_diff = 0.0f;
- 	max_bit  = -1;
+  first_i  = -1;
+  first_j  = -1;
+  total    = 0;
+  exact    = 0;
+  same     = 0;
+  zeroes   = 0;
+   max_diff = 0.0f;
+   max_bit  = -1;
 }
 
 
 bool CompareStats::failed() const {
-	assert((first_i == -1 && first_j == -1) || (first_i != -1 && first_j != -1));
-	return (first_i != -1);
+  assert((first_i == -1 && first_j == -1) || (first_i != -1 && first_j != -1));
+  return (first_i != -1);
 }
 
 
 std::string CompareStats::dump(bool show_first_fail) const {
-	std::string ret;
+  std::string ret;
 
-	auto as_percent = [] (int denom, int div) -> std::string {
-		std::string ret;
+  auto as_percent = [] (int denom, int div) -> std::string {
+    std::string ret;
 
-		float val = (float) denom/ (float) div*100.0f;
+    float val = (float) denom/ (float) div*100.0f;
 
-		ret << (int) floor(val) << "." << (int) floor((val - (long) val)*100.0f) << "%";
-		return ret;
-	};
+    ret << (int) floor(val) << "." << (int) floor((val - (long) val)*100.0f) << "%";
+    return ret;
+  };
 
-	auto width = [] (int val) -> int {
-		std::string buf;
-		buf << val;
-		return (int) buf.size();
-	};
+  auto width = [] (int val) -> int {
+    std::string buf;
+    buf << val;
+    return (int) buf.size();
+  };
 
-	auto format = [&width] (int in_width, int val) -> std::string {
-		int spaces = in_width - width(val);
+  auto format = [&width] (int in_width, int val) -> std::string {
+    int spaces = in_width - width(val);
 
-		std::string ret;
+    std::string ret;
 
-		for (int i = 0; i < spaces; ++i) {
-			ret << " ";
-		}
+    for (int i = 0; i < spaces; ++i) {
+      ret << " ";
+    }
 
-		ret << val;
+    ret << val;
 
-		return ret;
-	};
+    return ret;
+  };
 
   ret << "Compare Stats:";
 
-	if (fail_on_first() && failed()) {
-   	ret << " failed on first, stats incomplete";
-		return ret;
-	}
+  if (fail_on_first() && failed()) {
+     ret << " failed on first, stats incomplete";
+    return ret;
+  }
 
-	if (exact == total) {
-   	ret << " exact";
-		return ret;
-	}
+  if (exact == total) {
+     ret << " exact";
+    return ret;
+  }
 
-	if ((exact + same) == total) {
-   	ret << " same";
-		return ret;
-	}
+  if ((exact + same) == total) {
+     ret << " same";
+    return ret;
+  }
 
-	ret << "\n";
+  ret << "\n";
 
-	if (show_first_fail) {
-		ret << "  first fail: (" << first_i << ", " << first_j  << ")\n";
-	}
+  if (show_first_fail) {
+    ret << "  first fail: (" << first_i << ", " << first_j  << ")\n";
+  }
 
-	int x_width = width(exact);
+  int x_width = width(exact);
 
-	ret << "  total     : " << total << "\n"
+  ret << "  total     : " << total << "\n"
       << "  exact     : " << exact                  << ", " << as_percent(exact, total)        << "\n"
       << "  same      : " << format(x_width, same)  << ", " << as_percent(exact + same, total) << "\n"
       << "  zeroes    : " << zeroes   << "\n"
       << "  max_diff  : " << max_diff << "\n"
       << "  max_bit   : " << max_bit;
 
-	return ret;
+  return ret;
 }
 
 // End class CompareStats
@@ -1144,7 +1144,7 @@ bool check_precision(
   float lhs,
   float rhs,
   int bit_diff,
-	CompareStats *stats,
+  CompareStats *stats,
   bool do_show
 ) {
   bool ret = true;
@@ -1167,21 +1167,21 @@ bool check_precision(
   }
 
   if (stats != nullptr) {
-		stats->total++;
+    stats->total++;
     if (diff > stats->max_diff) stats->max_diff = diff;
     if (bit  > stats->max_bit)  stats->max_bit = bit;
 
-		if (lhs == rhs) {
-			stats->exact++;
+    if (lhs == rhs) {
+      stats->exact++;
 
-			if (lhs == 0.0f) {
-				stats->zeroes++;
-			} //else {
-			//	warn << "Exact but not zero: " << lhs << ", " << rhs;
-			//}
-		} else {
-			if (ret) stats->same++;
-		}
+      if (lhs == 0.0f) {
+        stats->zeroes++;
+      } //else {
+      //  warn << "Exact but not zero: " << lhs << ", " << rhs;
+      //}
+    } else {
+      if (ret) stats->same++;
+    }
   }
 
   return ret;
@@ -1191,10 +1191,10 @@ bool check_precision(
 namespace {
 
 bool same_intern(
-	qpu::matrix const &lhs,
-	qpu::matrix const &rhs,
-	int bit_diff,
-	CompareStats &stats
+  qpu::matrix const &lhs,
+  qpu::matrix const &rhs,
+  int bit_diff,
+  CompareStats &stats
 ) {
   //warn << "Called same_intern(qpu::matrix, qpu::matrix)";
   bool ret = true;
@@ -1204,10 +1204,10 @@ bool same_intern(
     int size = lhs.rows();
     for (int i = 0; i < size; ++i) {
       if (!qpu::check_precision(lhs.at(i, 0), rhs.at(0, i), bit_diff, &stats)) {
-       	if (ret) {
-					stats.first_i = i;
-					stats.first_j = 0;
-				}
+         if (ret) {
+          stats.first_i = i;
+          stats.first_j = 0;
+        }
 
         ret = false;
         if (stats.fail_on_first()) break;
@@ -1235,8 +1235,8 @@ bool same_intern(
     for (int j = 0; j < (int) rhs.columns(); ++j) {
       if (!qpu::check_precision(lhs.at(i, j), rhs.at(i, j), bit_diff, &stats, ret)) {
         if (ret) {  // Register first fail only
-					stats.first_i = i;
-					stats.first_j = j;
+          stats.first_i = i;
+          stats.first_j = j;
         }
 
         ret = false;
@@ -1254,31 +1254,31 @@ bool same_intern(
 bool same(qpu::matrix const &lhs, qpu::matrix const &rhs, int bit_diff,  bool show_stats) {
   //warn << "Called same(qpu::matrix, qpu::matrix)";
 
-	CompareStats stats(true);
+  CompareStats stats(true);
 
-	bool ret = same_intern(lhs, rhs, bit_diff, stats);
+  bool ret = same_intern(lhs, rhs, bit_diff, stats);
 
-	if (stats.failed()) {
-		warn << "Fail same() at (i,j): (" << stats.first_i << ", " << stats.first_j  << ")";
-	}
+  if (stats.failed()) {
+    warn << "Fail same() at (i,j): (" << stats.first_i << ", " << stats.first_j  << ")";
+  }
 
   if (show_stats) {
-   	warn << stats.dump();
+     warn << stats.dump();
   }
-	return ret;
+  return ret;
 }
 
 
 void diff(qpu::matrix const &lhs, qpu::matrix const &rhs, int bit_diff) {
   //warn << "Called diff(qpu::matrix, qpu::matrix)";
-	CompareStats stats(false);
-	same_intern(lhs, rhs, bit_diff, stats);
- 	warn << stats.dump(true);
+  CompareStats stats(false);
+  same_intern(lhs, rhs, bit_diff, stats);
+   warn << stats.dump(true);
 }
 
 
 bool same(qpu::vector const &lhs, qpu::vector const &rhs) {
-	assert(false); // Warn me when called
+  assert(false); // Warn me when called
 
   for (int i = 0; i < (int) rhs.size(); ++i) {
     if (!check_precision(lhs[i], rhs[i])) {

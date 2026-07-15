@@ -75,11 +75,11 @@ unsigned frrand_count() {
 std::string vector_dump(Float::Array const &src, int size, int start_index, bool output_int) {
   assert(size <= (int) src.size());
 
-	std::vector<std::string> ret;
-	const int min_count = 5;
+  std::vector<std::string> ret;
+  const int min_count = 5;
 
-	auto out_val = [output_int] (float val) -> std::string {
-		std::string buf;
+  auto out_val = [output_int] (float val) -> std::string {
+    std::string buf;
 
     if (output_int) {
       buf << (int) val;
@@ -91,50 +91,50 @@ std::string vector_dump(Float::Array const &src, int size, int start_index, bool
       }
     }
 
-		return buf;
-	};
+    return buf;
+  };
 
 
-	auto out_buf = [min_count, &out_val] (float same_val, int same_count) -> std::string {
-		std::string buf;
+  auto out_buf = [min_count, &out_val] (float same_val, int same_count) -> std::string {
+    std::string buf;
 
-		if (same_count >= min_count) {
-			buf << out_val(same_val) << " x " << same_count;
-		} else {
-			for (int i = 0; i < same_count; ++i) {
-    		buf << out_val(same_val);
-			}
-		}
-		return buf;
-	};
+    if (same_count >= min_count) {
+      buf << out_val(same_val) << " x " << same_count;
+    } else {
+      for (int i = 0; i < same_count; ++i) {
+        buf << out_val(same_val);
+      }
+    }
+    return buf;
+  };
 
-	auto vectorToString = [] (const std::vector<std::string>& vec, const std::string& delimiter) -> std::string {
+  auto vectorToString = [] (const std::vector<std::string>& vec, const std::string& delimiter) -> std::string {
     std::string result;
     for (const auto& str : vec) {
         if (!result.empty()) result += delimiter;
         result += str;
     }
     return result;
-	};
+  };
 
 
-	int   same_count = 0;
-	float same_val   = src[start_index];
+  int   same_count = 0;
+  float same_val   = src[start_index];
 
   for (int h = 0; h < size; ++h) {
-  	float val = src[start_index + h];
+    float val = src[start_index + h];
 
-		if (val == same_val) {
-			same_count++;
-		} else {
-			ret.push_back(out_buf(same_val, same_count));
+    if (val == same_val) {
+      same_count++;
+    } else {
+      ret.push_back(out_buf(same_val, same_count));
 
-			same_count = 1;
-			same_val   = val;
-		}
+      same_count = 1;
+      same_val   = val;
+    }
   }
 
-	ret.push_back(out_buf(same_val, same_count));
+  ret.push_back(out_buf(same_val, same_count));
 
   return vectorToString(ret, ", ");
 }

@@ -153,9 +153,9 @@ bool Model::is_zero() const {
 void Model::grad_div_steps(int in_steps) {
   assert(!is_zero());
   if (is_zero()) return;
-	//warn << "Doing grad_div_steps, steps: " << in_steps;
+  //warn << "Doing grad_div_steps, steps: " << in_steps;
 
-	float steps = (float) in_steps;
+  float steps = (float) in_steps;
 
   U_z /= steps;     // OK
 
@@ -165,13 +165,13 @@ void Model::grad_div_steps(int in_steps) {
   W_z /= steps;
   W_r /= steps;
 
-	//auto prev = W_h;
+  //auto prev = W_h;
   W_h /= steps;     // OK
-	//W_h.diff(prev);
+  //W_h.diff(prev);
 
-	//warn << "grad_div_steps V pre: " << V.dump();
+  //warn << "grad_div_steps V pre: " << V.dump();
   V   /= steps;
-	assert(V.is_zero());  // Zero on init, warn me if it changes
+  assert(V.is_zero());  // Zero on init, warn me if it changes
 
   eval();
 }

@@ -151,33 +151,33 @@ private:
 
 struct CompareStats {
 
-	CompareStats(bool fail_on_first = false) : m_fail_on_first(fail_on_first) { reset(); }
+  CompareStats(bool fail_on_first = false) : m_fail_on_first(fail_on_first) { reset(); }
 
-	void reset();
-	bool failed() const;
-	bool fail_on_first() const { return m_fail_on_first; }
-	std::string dump(bool show_first_fail = false) const;
+  void reset();
+  bool failed() const;
+  bool fail_on_first() const { return m_fail_on_first; }
+  std::string dump(bool show_first_fail = false) const;
 
-	int   first_i;
-	int   first_j;
-	int   total;
-	int   exact;
-	int   same;
-	int   zeroes;
+  int   first_i;
+  int   first_j;
+  int   total;
+  int   exact;
+  int   same;
+  int   zeroes;
   float max_diff;
   int   max_bit;
 
 private:
-	const bool m_fail_on_first;
+  const bool m_fail_on_first;
 
-};	
+};  
 
 
 bool check_precision(
   float lhs,
   float rhs,
   int bit_diff        = -1,
-	CompareStats *stats = nullptr,
+  CompareStats *stats = nullptr,
   bool do_show        = true
 );
 

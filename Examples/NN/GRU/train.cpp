@@ -1,6 +1,7 @@
 #include "global.h"
 #include "forward.h"
 #include "kernel.h"           // gru_kernel::init()
+#include "LibSettings.h"
 
 using namespace Log;
 
@@ -105,34 +106,34 @@ void LoopState::update_gradient_rows(Model &grad) const {
 
 
 void gradient_delta(LoopState &ls, Model &grad, MMatrix &delta_y_x, int time_steps) {
-	// First calls pass zeroes
+  // First calls pass zeroes
   warn << "Called gradient_delta()"
        << ", Zero ls.temp().S(), " "grad.V: "
-		   << ls.temp().S().is_zero() << ", " << grad.V.is_zero();
+       << ls.temp().S().is_zero() << ", " << grad.V.is_zero();
 
   MMatrix grad_V_x = grad.V;
   assert(grad_V_x.same(grad.V)); // Pre check
 
   timers.start("delta set");
 
-	auto V_pre = grad.V;
+  auto V_pre = grad.V;
   //warn << "ls.temp().S(): " << ls.temp().S().dump();
 
   for(int time_step = time_steps - 1; time_step >= 0; time_step--) {
-		//
-		// **NOTE:** Final eval() important. Otherwise, non-zero values are returned.
-		// Expecting tmp to be zeroes when all inputs are zero.
-		//
-		// Can't do afterward, e.g.  `tmp.eval()`; apparently, needs to be in calculation.
-		//
+    //
+    // **NOTE:** Final eval() important. Otherwise, non-zero values are returned.
+    // Expecting tmp to be zeroes when all inputs are zero.
+    //
+    // Can't do afterward, e.g.  `tmp.eval()`; apparently, needs to be in calculation.
+    //
     auto tmp = (ls.temp().S().Xf().transpose() * delta_y_x.Xf().row(time_step)).eval();
-		//warn << "tmp: " << dump(tmp);
+    //warn << "tmp: " << dump(tmp);
 
     grad.V.set(grad.V.Xf() + tmp);
   }
 
   //warn << "grad.V post: " << grad.V.dump();
-	assert(V_pre.diff(grad.V));
+  assert(V_pre.diff(grad.V));
 
   timers.stop("delta set");
 
@@ -141,21 +142,21 @@ void gradient_delta(LoopState &ls, Model &grad, MMatrix &delta_y_x, int time_ste
   //
   timers.start("delta set qpu");
 
-	auto V_x_pre = grad_V_x;
+  auto V_x_pre = grad_V_x;
   //warn << "ls.temp().S(): " << ls.temp().S().dump();
 
   for(int time_step = time_steps - 1; time_step >= 0; time_step--) {
-		// Following always non-zero
+    // Following always non-zero
     //warn << "delta_y_x(" << time_step << "): " << delta_y_x.row(time_step).dump();
 
-		// delta_y_x is non-zero for every time_step
+    // delta_y_x is non-zero for every time_step
     auto tmp = ls.temp().S().outer(delta_y_x.row(time_step));
     grad_V_x.set(grad_V_x + tmp);
   }
   //warn << "delta grad.V: " << grad.V.dump_dim();
   //warn << "delta grad_V_x: " << grad_V_x.dump_dim();
   //assert(grad_V_x.is_zero());  // Want this to change
-	assert(V_x_pre.diff(grad_V_x));
+  assert(V_x_pre.diff(grad_V_x));
 
   //assert(delta_y_x.same(delta_y));
   assert(grad_V_x.same(grad.V)); // Post check
@@ -189,7 +190,7 @@ void back_propagation(
   int output_dim,
   int time_steps
 ) {
-	//warn << "Called back_propagation";
+  //warn << "Called back_propagation";
 
   timers.start("back_propagation");
 
@@ -372,14 +373,14 @@ void train(std::string filename_input, std::string filename_output, float learni
 
     float loss = 0;
     for(int i = 0; i < limit; i++) {
-			if (true) {
-      	if (i >= 10) break; // DEBUG
-      	warn << "train loop i: " << i;
-			} else {
-		  	if (i % 400 == 0) {
-      		warn << "train loop i: " << i;
-				}
-			}
+      if (true) {
+        if (i >= 10) break; // DEBUG
+        warn << "train loop i: " << i;
+      } else {
+        if (i % 400 == 0) {
+          warn << "train loop i: " << i;
+        }
+      }
 
       timers.start("train limit loop");
 
@@ -390,14 +391,14 @@ void train(std::string filename_input, std::string filename_output, float learni
       MMatrix currY(time_steps, output_dim);
 
       read_x_y(currX, currY, i);
-			//warn << "currX: " << currX.dump();
-			//warn << "currY: " << currY.dump();
+      //warn << "currX: " << currX.dump();
+      //warn << "currY: " << currY.dump();
   
       state.eval();
 
       forward_propagation(m, currX, currY, state, time_steps, input_dim, hidden_dim, output_dim);
       loss += (calculate_cost(state.E, time_steps) / (float) limit);
-			//warn << "loss: " << loss;
+      //warn << "loss: " << loss;
 
       back_propagation(m, grad, state, currX, currY, input_dim, hidden_dim, output_dim, time_steps);
 
@@ -427,55 +428,75 @@ namespace {
 
 MAYBE_UNUSED void unit_test() {
 /*
-	// Work as expected
+  // Work as expected
 
-	//
-	// Test matrix multiplication
-	//
+  //
+  // Test matrix multiplication
+  //
   MMatrix m(10, 16, 1.0f);
   warn << "unit_test *= pre: " << m.dump();
 
-	auto m2 = m * 20.0f;
+  auto m2 = m * 20.0f;
   warn << "unit_test * m2 post: " << m2.dump();
 
-	m /= 20.0f;
+  m /= 20.0f;
   warn << "unit_test *= post: " << m.dump();
-
-	//
-	// Test outer()
-	//
+*/
+  //
+  // Test outer()
+  //
   MMatrix r1(16,  1, 1.5f);
   MMatrix r2(16,  1, 2.0f);  // Will be transposed in outer()
+/*  
   MMatrix expected(16, 16, 3.0f);
-	auto res = r1.outer(r2);
+  auto res = r1.outer(r2);
   //warn << "unit_test res: " << res.dump();
-	assert(res.same(expected));
+  assert(res.same(expected));
+*/  
 
   MMatrix expected2(16, 16, 4.0f);
   MMatrix res2(16, 16, 1.0f);
-	res2.outer_add(r1, r2);
-  //warn << "unit_test res2: " << res2.dump();
-	assert(res2.same(expected2));
+  res2.outer_add(r1, r2);
+  warn << "unit_test outer_add: " << res2.dump();
+  assert(res2.same(expected2));
 
   MMatrix r3(16, 16, 1.0f);
   MMatrix r4(16, 16, 2.0f);
   MMatrix expected3(16, 16, 35.0f);
   MMatrix res3(16, 16, 3.0f);
-	res3.outer_add_rows(r3, r4);
-  //warn << "unit_test res3: " << res3.dump();
-	assert(res3.same(expected3));
-*/
+  res3.outer_add_rows(r3, r4);
+  warn << "unit_test outer_add_rows: " << res3.dump();
+  assert(res3.same(expected3));
 
-	// Test big matrices
-	const int Rows = 16*32;
-	const int Mul = 20;
+  //
+  // Test big matrices
+  //
+
+  // Results for v3d
+  //
+  // Default heap size: 8MB
+  //
+  // QPU  Rows   Good Mul  Mul Overflow Comment
+  // ===  =====  ========  ============ =======
+  //  1   16* 1  <= 63     64
+  //  1   16*16  <= 23
+  //  1   16*32  <= 16
+  //  2   16*16  <= 32
+  //  2   16*32  <= 22
+  //  4   16*32  <= 30
+  // !!! 16   16* 1  <= 64     72           heap size 16MB
+  // 16   "      <= 48                  heap size 16MB
+  //
+  const int Rows = 16*1;
+  const int Mul  = 96;
+
   MMatrix r5(Rows, 16*Mul, 1.0f);
   MMatrix r6(Rows, 16*Mul, 2.0f);
   MMatrix expected4(16*Mul, 16*Mul, Rows*2.0f + 3.0f);
   MMatrix res4(16*Mul, 16*Mul, 3.0f);
-	res4.outer_add_rows(r5, r6);
-  warn << "unit_test res4: " << res4.dump(); //_dim();
-	assert(res4.same(expected4));
+  res4.outer_add_rows(r5, r6);
+  warn << "unit_test big outer_add_rows: " << res4.dump();
+  assert(res4.same(expected4));
 }
 
 } // anon namespace
@@ -485,9 +506,8 @@ void train_main() {
   gru_kernel::init();
   qpu::init();
 
-	unit_test();
-	return;
-	
+  unit_test();
+  return;
 
   //warn << "Called train_main()";
   std::string base = "Examples/NN/GRU/Tools/GRU/Inputs";
