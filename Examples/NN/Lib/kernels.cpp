@@ -467,11 +467,11 @@ void outer_add_partial(Float::Ptr &ret, Float::Ptr &lhs, Float::Ptr &rhs, Int &N
 
   Int Start  = me();
   Int Inc    = numQPUs();
-  Int Offset = M << 4;
+  Int Offset = M << 4;                     // 16*24
 
-  For (Int i = Start, i < N, i += Inc)
+  For (Int i = Start, i < N, i += Inc)     // N max: 16*24 = 2^7*3
     Float lhs_val        = *(lhs + i);
-    Float::Ptr ret_start = ret + i*Offset;
+    Float::Ptr ret_start = ret + i*Offset; // offset: 2^14*3*3
     Float::Ptr rhs_start = rhs;
 
     For (Int j = 0, j < M, j++)
@@ -499,7 +499,7 @@ void outer_add_rows(Float::Ptr ret, Float::Ptr lhs, Float::Ptr rhs, Int lhs_rows
   For (Int row = 0, row < lhs_rows, row++)
     Float::Ptr start_ret = ret;
 
-    Int lhs_row = row*lhs_cols;
+    Int lhs_row = row*lhs_cols; // 2^15*3
     Int rhs_row = row*rhs_cols;
 
     Float::Ptr lhs_offset = lhs + lhs_row;  comment("Set lhs_offset");

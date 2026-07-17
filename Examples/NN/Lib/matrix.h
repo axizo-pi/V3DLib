@@ -4,6 +4,8 @@
 #include "Support/basics.h"
 #include "Support/Settings.h"
 
+class FloatArrayAdapter;
+
 namespace qpu {
 
 using namespace Log;
@@ -93,6 +95,8 @@ struct matrix {
   std::string dump(bool output_int = false) const;
   inline float &at(int i, int j)       { return (*m_arr)[i*m_columns + j]; }
   inline float  at(int i, int j) const { return (*m_arr)[i*m_columns + j]; }
+
+  FloatArrayAdapter src() const;
 
 protected:
   void transfer(matrix const &rhs);

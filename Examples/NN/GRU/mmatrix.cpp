@@ -18,7 +18,7 @@ float s_softmax(float x) {
  * Leaving it out results in 'no known conversion' error.
  */
 bool same_Xf(MatrixXf const &lhs, MatrixXf const &rhs, int bit_diff,  bool show_max_diff) {
-  //warn << "Called same(MatrixXf, MatrixXf)";
+  warn << "Called same(MatrixXf, MatrixXf)";
 
   bool ret       = true;
   qpu::CompareStats stats;
@@ -185,43 +185,28 @@ void MMatrix::set(std::vector<int> const &rhs, int pos) {
 bool MMatrix::is_zero() const {
   assert(m_using_Xf || m_using_qpu);
 
-  bool Xf_zero = true;
-  if (m_using_Xf) {
-    //timers.start("is_zero Xf");
-    for (int i = 0; i < m_Xf.rows(); i++) {
-      for (int j = 0; j < m_Xf.cols(); j++) {
-        if (m_Xf(i, j)) {
-          Xf_zero = false;
-          break;
-        }
-      }
+  bool Xf_zero  = true;
+  bool qpu_zero = true;
 
-      if (Xf_zero) break;
-    }
+  if (m_using_Xf) {
+    //warn << "here Xf ";
+    //timers.start("is_zero Xf");
+    Xf_zero  = ::is_zero(m_Xf);
     //timers.stop("is_zero Xf");
   }
 
-  bool qpu_zero = true;
   if (m_using_qpu) {
+    //warn << "here qpu";
     //timers.start("is_zero qpu");
-    auto &arr = m_qpu.arr();
-    auto ptr  = arr.ptr();
-    auto size = m_qpu.size();
-
-    // Using ptr 11x faster than using arr[i]
-    // Still 7x slower than Xf
-    for (int i = 0; i < size; i++) {
-      if (*ptr != 0.0f) {
-        qpu_zero = false;
-        break;
-      }
-
-      ptr++;
-    }
+    qpu_zero = m_qpu.src().is_zero();
     //timers.stop("is_zero qpu");
   }
 
   if (m_using_Xf && m_using_qpu) {
+    if (Xf_zero != qpu_zero) {
+      warn << "mmatrix::is_zero failed, (Xf_zero, qpu_zero): "
+           << "(" << Xf_zero << ", " << qpu_zero << ")";
+    }
     assert(Xf_zero == qpu_zero);
   }
 
@@ -1475,37 +1460,6 @@ qpu::matrix copy_m(MatrixXf const &rhs) {
   copy_m(ret, rhs);
   timers.stop("copy_m");
   return ret;
-}
-
-
-std::string dump(MatrixXf const &m) {
-  std::string buf;
-  buf << dump_dim(m) << " ";
-
-  if (m.rows() * m.cols() == 0) {
-    buf = "[]";
-    return buf;
-  }
- 
-  buf  << "[\n";
-
-  for (int i = 0; i < m.rows(); ++i) {
-    buf << "  " << i << ": [";
-
-    for (int j = 0; j < m.cols(); ++j) {
-      if (m(i,j) == 0.0f) {
-        buf << "0";
-      } else {
-        buf  << m(i,j);
-      }
-
-      buf << ", ";
-    }
-    buf << "]\n";
-  }
-  buf << "]";
-
-  return buf;
 }
 
 
