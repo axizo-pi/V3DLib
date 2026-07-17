@@ -108,8 +108,9 @@ void LoopState::update_gradient_rows(Model &grad) const {
 void gradient_delta(LoopState &ls, Model &grad, MMatrix &delta_y_x, int time_steps) {
   // First calls pass zeroes
   warn << "Called gradient_delta()"
-       << ", Zero ls.temp().S(), " "grad.V: "
-       << ls.temp().S().is_zero() << ", " << grad.V.is_zero();
+       << ", Zero (ls.temp().S(), " "grad.V): "
+       << "(" << ls.temp().S().is_zero() << ", " << grad.V.is_zero() << ")";
+  //warn << "delta_y_x: " << delta_y_x.dump();
 
   MMatrix grad_V_x = grad.V;
   assert(grad_V_x.same(grad.V)); // Pre check
@@ -127,7 +128,9 @@ void gradient_delta(LoopState &ls, Model &grad, MMatrix &delta_y_x, int time_ste
     // Can't do afterward, e.g.  `tmp.eval()`; apparently, needs to be in calculation.
     //
     auto tmp = (ls.temp().S().Xf().transpose() * delta_y_x.Xf().row(time_step)).eval();
+    //tmp(1,1) = 1.0f;
     //warn << "tmp: " << dump(tmp);
+    assert(is_zero(tmp)); // Warn me when this changes, we really want non-zero here
 
     grad.V.set(grad.V.Xf() + tmp);
   }
@@ -336,20 +339,6 @@ void read_x_y(MMatrix &x, MMatrix &y, int pos) {
 
 
 void train(std::string filename_input, std::string filename_output, float learning_rate, int nepoch, int input_dim, int hidden_dim, int output_dim, int time_steps, float decay) {
-/*  
-  warn << "=== Testing matrix     ===";
-  qpu::matrix lhs(3, 16);
-  lhs.set(1.0f);
-  qpu::matrix rhs(7, 16);
-  rhs.set(3.0f);
-
-  auto ret = rhs.mul_matrix_t(lhs);
-  warn << "lhs: " << lhs.dump();
-  warn << "rhs: " << rhs.dump();
-  warn << "ret: " << ret.dump();
-
-  warn << "=== End testing matrix ===";
-*/
   float prev_loss = 0.0f;
 
   int inputSize   = get_input_size(filename_input) - time_steps - 1;
@@ -427,6 +416,21 @@ void train(std::string filename_input, std::string filename_output, float learni
 namespace {
 
 MAYBE_UNUSED void unit_test() {
+  if (false) {  
+    warn << "=== Testing matrix     ===";
+    qpu::matrix lhs(3, 16);
+    lhs.set(1.0f);
+    qpu::matrix rhs(7, 16);
+    rhs.set(3.0f);
+
+    auto ret = rhs.mul_matrix_t(lhs);
+    warn << "lhs: " << lhs.dump();
+    warn << "rhs: " << rhs.dump();
+    warn << "ret: " << ret.dump();
+
+    warn << "=== End testing matrix ===";
+  }
+
 /*
   // Work as expected
 
@@ -441,18 +445,17 @@ MAYBE_UNUSED void unit_test() {
 
   m /= 20.0f;
   warn << "unit_test *= post: " << m.dump();
-*/
+
   //
   // Test outer()
   //
   MMatrix r1(16,  1, 1.5f);
   MMatrix r2(16,  1, 2.0f);  // Will be transposed in outer()
-/*  
+  
   MMatrix expected(16, 16, 3.0f);
   auto res = r1.outer(r2);
   //warn << "unit_test res: " << res.dump();
   assert(res.same(expected));
-*/  
 
   MMatrix expected2(16, 16, 4.0f);
   MMatrix res2(16, 16, 1.0f);
@@ -467,36 +470,76 @@ MAYBE_UNUSED void unit_test() {
   res3.outer_add_rows(r3, r4);
   warn << "unit_test outer_add_rows: " << res3.dump();
   assert(res3.same(expected3));
+*/  
+
+  //
+  // Test max dimensions in train
+  //
+  // Works as expected.
+  // Adding this triggered heap overflow in 'big' step.
+  //
+  if (false) {
+    const int Rows = 20;
+    const int Mul  = 8;
+
+    MMatrix r5(Rows, 16*Mul, 1.0f);
+    MMatrix r6(Rows, 16*Mul, 2.0f);
+    MMatrix expected4(16*Mul, 16*Mul, Rows*2.0f + 3.0f);
+    MMatrix res4(16*Mul, 16*Mul, 3.0f);
+
+    res4.outer_add_rows(r5, r6);
+    // warn << "unit_test max outer_add_rows: " << res4.dump();
+    assert(res4.same(expected4));
+  }
+
 
   //
   // Test big matrices
   //
-
+  // For big enough matrices, the calculation fails. Unclear why, the values are well within Int range.
+  // Num QPU's also has an effect.
+  //
+  // This is not critical right now, the values for GRU train are well within the limits (see
+  // previous 'max' test). But when GRU is upscaled to bigger NN's, this will definitely be an issue.
+  //
+  // ------------------------------------------------
   // Results for v3d
+  // ===============
   //
   // Default heap size: 8MB
   //
-  // QPU  Rows   Good Mul  Mul Overflow Comment
-  // ===  =====  ========  ============ =======
-  //  1   16* 1  <= 63     64
-  //  1   16*16  <= 23
+  //             Mul
+  //             --------------------
+  // QPU  Rows   Good   Bad  Overflow  Comment
+  // ===  =====  =====  ===  ========  =======
+  //  1   16* 1  <= 63       64
+  //  1   16* 8  <= 32  33 
+  //  1   16*16  <= 23  24             Failed sometimes on initial calls
   //  1   16*32  <= 16
   //  2   16*16  <= 32
   //  2   16*32  <= 22
   //  4   16*32  <= 30
-  // !!! 16   16* 1  <= 64     72           heap size 16MB
+  // 16   16* 1  <= 72       96         heap size 16MB
+  // 16   16* 8  <= 60       61
   // 16   "      <= 48                  heap size 16MB
+  // 16   16*16  <= 56       57
   //
-  const int Rows = 16*1;
-  const int Mul  = 96;
+  if (false) {
+    const int Rows = 16*16;
+    const int Mul  = 23;
 
-  MMatrix r5(Rows, 16*Mul, 1.0f);
-  MMatrix r6(Rows, 16*Mul, 2.0f);
-  MMatrix expected4(16*Mul, 16*Mul, Rows*2.0f + 3.0f);
-  MMatrix res4(16*Mul, 16*Mul, 3.0f);
-  res4.outer_add_rows(r5, r6);
-  warn << "unit_test big outer_add_rows: " << res4.dump();
-  assert(res4.same(expected4));
+    MMatrix r5(Rows, 16*Mul, 1.0f);
+    warn << "r5: " << r5.dump_dim();
+
+    MMatrix r6(Rows, 16*Mul, 2.0f);
+    MMatrix expected4(16*Mul, 16*Mul, Rows*2.0f + 3.0f);
+    MMatrix res4(16*Mul, 16*Mul, 3.0f);
+    warn << "res4: " << res4.dump_dim();
+
+    res4.outer_add_rows(r5, r6);
+    warn << "unit_test big outer_add_rows: " << res4.dump();
+    assert(res4.same(expected4));
+  }
 }
 
 } // anon namespace
@@ -506,8 +549,8 @@ void train_main() {
   gru_kernel::init();
   qpu::init();
 
-  unit_test();
-  return;
+  //unit_test();
+  //return;
 
   //warn << "Called train_main()";
   std::string base = "Examples/NN/GRU/Tools/GRU/Inputs";

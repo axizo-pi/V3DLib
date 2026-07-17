@@ -96,13 +96,6 @@ void read_output(MatrixXf& Y, std::ifstream& outputFile, int time_steps) {
 }
 
 
-std::string dump_dim(MatrixXf const &m) {
-  std::string buf;
-  buf << "(" << m.rows() << ", " << m.cols() << ")";
-  return buf;
-}
-
-
 qpu::vector copy(MatrixXf const &rhs) {
   if (rhs.rows() != 1) {
     breakpoint;
@@ -123,3 +116,8 @@ qpu::vector copy(MatrixXf const &rhs) {
 
   return ret;
 }
+
+
+std::string dump_dim(MatrixXf const &m) { return MatrixXfAdapter(m).dump_dim(); }
+std::string dump(MatrixXf const &m)     { return matrix_dump(MatrixXfAdapter(m), false); }
+bool        is_zero(MatrixXf const &m)  { return MatrixXfAdapter(m).is_zero(); }
