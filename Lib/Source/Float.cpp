@@ -195,10 +195,21 @@ IntExpr toInt(FloatExpr a) {
 
 
 /**
- * Conversion to Float
+ * @brief Conversion to Float
  */
 FloatExpr toFloat(IntExpr a) {
   Expr::Ptr e = mkApply(a.expr(), Op(ItoF, FLOAT));
+  return FloatExpr(e);
+}
+
+
+/**
+ * @brief Conversion unsigned to Float
+ *
+ * Int is usually a signed value, here it is regarded as unsigned.
+ */
+FloatExpr UnsignedtoFloat(IntExpr a) {
+  Expr::Ptr e = mkApply(a.expr(), Op(UtoF, FLOAT));
   return FloatExpr(e);
 }
 

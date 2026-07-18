@@ -12,7 +12,6 @@ std::vector<op_item> op_items = {
   { Enum::A_FSUB,   V3D_QPU_A_FSUB },  //     SUB on mul alu is int only
   { Enum::A_FMIN,   V3D_QPU_A_FMIN   },
   { Enum::A_FMAX,   V3D_QPU_A_FMAX   },
-  { Enum::A_FtoI,   V3D_QPU_A_FTOIN  },
   { Enum::A_ItoF,   V3D_QPU_A_ITOF   },
   { Enum::A_ADD,    V3D_QPU_A_ADD,   V3D_QPU_M_ADD },
   { Enum::A_SUB,    V3D_QPU_A_SUB,   V3D_QPU_M_SUB },
@@ -25,6 +24,8 @@ std::vector<op_item> op_items = {
   { Enum::A_BOR,    V3D_QPU_A_OR     },
   { Enum::A_BXOR,   V3D_QPU_A_XOR    },
   { Enum::A_BNOT,   V3D_QPU_A_NOT    },
+  { Enum::A_UtoF,   V3D_QPU_A_UTOF   },               // v3d
+
   { Enum::M_FMUL,   false,           V3D_QPU_M_FMUL },
   { Enum::M_MUL24,  false,           V3D_QPU_M_SMUL24 },
   { Enum::M_ROTATE, false,           V3D_QPU_M_MOV },     // < vc7:Special case: it's a mul alu mov with sig.rotate set
@@ -304,6 +305,7 @@ std::string dump_add_op(uint32_t val, bool &found_it) {
     case A_FMAXABS: return "maxabsf";
     case A_FtoI:    return "ftoi";
     case A_ItoF:    return "itof";
+    case A_UtoF:    return "utof";
     case A_ADD:     return "add";
     case A_SUB:     return "sub";
     case A_SHR:     return "shr";

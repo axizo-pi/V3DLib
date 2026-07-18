@@ -34,7 +34,11 @@ bool OpItems::uses_mul_alu(Instr const &instr) {
 bool OpItems::get_add_op(ALUInstruction const &add_alu, v3d_qpu_add_op &dst, bool strict) {
   auto op = add_alu.op.value();
   op_item const *item = op_items_find_by_op(op, strict);
-  assert(item != nullptr);
+
+  if (item == nullptr) {
+		cerr << "OpItems::get_add_op(): could not find op item for op '" << add_alu.op.dump() << "'";
+	  assert(false);
+	}
 
   if (!item->has_add_op) return false;
   dst = item->add_op;

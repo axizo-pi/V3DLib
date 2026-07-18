@@ -23,7 +23,7 @@ enum OpId {
   SHL, SHR, USHR, BOR, BAND, BXOR, BNOT, ROR,
 
   // Conversion operators:
-  ItoF, FtoI,
+  ItoF, UtoF, FtoI,
 
   // SFU functions
   RECIP,

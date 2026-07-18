@@ -13,6 +13,7 @@ std::vector<OpItem> m_list = {
   {MIN,    " min ",    false, Enum::A_FMIN,   Enum::A_MIN},
   {MAX,    " max ",    false, Enum::A_FMAX,   Enum::A_MAX},
   {ItoF,   "(Float) ", false, Enum::A_ItoF,   Enum::OP_UNDEFINED,    false, 1},
+  {UtoF,   "(Float) ", false, Enum::A_UtoF,   Enum::OP_UNDEFINED,    true,  1},
   {FtoI,   "(Int) ",   false, Enum::OP_UNDEFINED,     Enum::A_FtoI,  false, 1},
   {ROTATE, " rotate ", false, Enum::M_ROTATE, Enum::M_ROTATE},
   {SHL,    " << ",     false, Enum::OP_UNDEFINED,     Enum::A_SHL},
@@ -137,7 +138,12 @@ namespace OpItems {
 
 OpItem const &get(OpId id) {
   OpItem const *item = find(id);
-  assert(item != nullptr);
+
+  if (item == nullptr) {
+		cerr << "OpItem get(): Can not find OpItem for OpId " << id;
+		assert(false);
+	}
+
   return *item;
 }
 

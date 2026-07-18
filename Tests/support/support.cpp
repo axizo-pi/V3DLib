@@ -118,9 +118,10 @@ std::string dump_array_template(
     std::string ret;
 
     if (as_int) {
+			// Force output to integer
       ret << (int) a[i] << ", " ;
     } else {
-      ret << a[i] << ", " ;
+     	ret << a[i] << ", " ;
     }
 
     return ret;
@@ -155,6 +156,11 @@ std::string dump_array_template(
  */
 std::string dump_array(float *a, int size,  int linesize) {
   return dump_array_template(a, size, linesize);
+}
+
+
+std::string dump_array(std::vector<unsigned> const &a,  int linesize) {
+  return dump_array_template(&a[0], (int) a.size(), linesize);
 }
 
 
