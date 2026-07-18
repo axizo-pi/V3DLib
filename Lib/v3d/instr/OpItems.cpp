@@ -36,9 +36,9 @@ bool OpItems::get_add_op(ALUInstruction const &add_alu, v3d_qpu_add_op &dst, boo
   op_item const *item = op_items_find_by_op(op, strict);
 
   if (item == nullptr) {
-		cerr << "OpItems::get_add_op(): could not find op item for op '" << add_alu.op.dump() << "'";
-	  assert(false);
-	}
+    cerr << "OpItems::get_add_op(): could not find op item for op '" << add_alu.op.dump() << "'";
+    assert(false);
+  }
 
   if (!item->has_add_op) return false;
   dst = item->add_op;

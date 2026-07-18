@@ -4,7 +4,7 @@
 template<typename Array>
 std::string showResult(Array &result, int index, int size = 16) {
   REQUIRE(size % 16 == 0);
-	std::ostringstream buf;
+  std::ostringstream buf;
 
   buf << "result  : ";
   for (int j = 0; j < size; j++) {
@@ -17,7 +17,7 @@ std::string showResult(Array &result, int index, int size = 16) {
 
 template<typename T>
 std::string showExpected(const std::vector<T> &expected) {
-	std::ostringstream buf;
+  std::ostringstream buf;
 
   buf << "expected: ";
   for (int j = 0; j < (int) expected.size(); j++) {
@@ -33,10 +33,10 @@ std::string showExpected(const std::vector<T> &expected) {
  */
 template<typename T1, typename T2>
 void check_vector(
-	V3DLib::SharedArray<T2> &result,
-	int index,
-	std::vector<T1> const &expected,
-	float precision = 0.0f
+  V3DLib::SharedArray<T2> &result,
+  int index,
+  std::vector<T1> const &expected,
+  float precision = 0.0f
 ) {
   bool passed = true;
   int j = 0;

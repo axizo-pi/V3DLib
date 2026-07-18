@@ -141,9 +141,9 @@ OpItem const &get(OpId id) {
   OpItem const *item = find(id);
 
   if (item == nullptr) {
-		cerr << "OpItem get(): Can not find OpItem for OpId " << id;
-		assert(false);
-	}
+    cerr << "OpItem get(): Can not find OpItem for OpId " << id;
+    assert(false);
+  }
 
   return *item;
 }

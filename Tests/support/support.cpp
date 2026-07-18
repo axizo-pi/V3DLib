@@ -118,10 +118,10 @@ std::string dump_array_template(
     std::string ret;
 
     if (as_int) {
-			// Force output to integer
+      // Force output to integer
       ret << (int) a[i] << ", " ;
     } else {
-     	ret << a[i] << ", " ;
+       ret << a[i] << ", " ;
     }
 
     return ret;
