@@ -1,7 +1,7 @@
 #
 # This file is generated!  Editing it directly is a bad idea.
 #
-# Generated on: Sat Jul 18 05:10:47 AM CEST 2026
+# Generated on: Sat Jul 18 05:51:18 PM CEST 2026
 #
 ###############################################################################
 
@@ -144,6 +144,7 @@ EXAMPLES := \
 TESTS_FILES := \
   Tests/testRegMap.o  \
   Tests/testLog.o  \
+  Tests/testCLZ.o  \
   Tests/testCmdLine.o  \
   Tests/testRot3D.o  \
   Tests/testPrefetch.o  \
