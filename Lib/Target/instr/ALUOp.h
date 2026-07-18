@@ -39,6 +39,8 @@ namespace V3DLib {
     A_BXOR,         // Bitwise xor
     A_BNOT,         // Bitwise not
     A_CLZ,          // Count leading zeros
+    A_UtoF,         // Unsigned integer to float
+
     // 25-29 reserved
     A_V8ADDS = 30,  // Add with saturation per 8-bit element; vc4 only
     A_V8SUBS,       // Subtract with saturation per 8-bit element; vc4 only

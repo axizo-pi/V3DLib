@@ -1,7 +1,7 @@
 #
 # This file is generated!  Editing it directly is a bad idea.
 #
-# Generated on: Sat Jun 13 06:12:14 AM CEST 2026
+# Generated on: Sat Jul 18 05:10:47 AM CEST 2026
 #
 ###############################################################################
 
@@ -163,6 +163,7 @@ TESTS_FILES := \
   Tests/testMatrix.o  \
   Tests/testBO.o  \
   Tests/testFFT.o  \
+  Tests/testConversions.o  \
   Tests/testVPM.o  \
   Tests/testLoop.o  \
   Tests/testSFU.o  \
