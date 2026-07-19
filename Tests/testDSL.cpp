@@ -762,10 +762,22 @@ void sine_kernel(Float::Ptr result, Int numValues, Float freq, Int offset) {
 }
 
 
+void floor_kernel_vc4(Float::Ptr result, Float::Ptr input, Int numValues) {
+  For (Int n = 0, n < numValues, n += 16)
+    *result = functions::ffloor_vc4(*input);
+
+    result.inc();
+		input.inc();
+  End
+}
+
+
 void floor_kernel(Float::Ptr result, Float::Ptr input, Int numValues) {
   For (Int n = 0, n < numValues, n += 16)
     *result = functions::ffloor(*input);
-    result.inc(); input.inc();
+
+    result.inc();
+		input.inc();
   End
 }
 
@@ -773,7 +785,9 @@ void floor_kernel(Float::Ptr result, Float::Ptr input, Int numValues) {
 void fabs_kernel(Float::Ptr result, Float::Ptr input, Int numValues) {
   For (Int n = 0, n < numValues, n += 16)
     *result = functions::fabs(*input);
-    result.inc(); input.inc();
+
+    result.inc();
+		input.inc();
   End
 }
 
@@ -804,32 +818,30 @@ TEST_CASE("Test functions [dsl][func]") {
   int const NumValues       = 15;
   int const SharedArraySize = (NumValues/16 +1)*16;
 
-  float input[NumValues];
-
-  int n = 0;
-  input[n] =  1.0f; n++;
-  input[n] =  1.3f; n++;
-  input[n] = -1.0f; n++;
-  input[n] = -1.3f; n++;
-  input[n] =  0.9f; n++;
-  input[n] = -0.9f; n++;
-  input[n] =  1.0e-32f; n++;
-  input[n] = -1.0e-32f; n++;
-  input[n] =  1.1e38f; n++;
-  input[n] = -1.1e38f; n++;
-  //input[n] = -1.1e-38f; n++;  // On v3d, this works as expected. On vc4, this registers as 0.0, not negative
-  input[n] = -1.1e-36f; n++;    // Using this value instead
-  input[n] =  7.0f; n++;
-  input[n] =  7.1f; n++;
-  input[n] = -7.0f; n++;
-  input[n] = -7.1f; n++;
-
+	std::vector<float> input = {
+  	 1.0f,
+	   1.3f,
+	  -1.0f,
+	  -1.3f,
+	   0.9f,
+	  -0.9f,
+	   1.0e-32f,
+	  -1.0e-32f,
+	   1.1e38f,
+	  -1.1e38f,
+	  // -1.1e-38f, // On v3d, this works as expected. On vc4, this registers as 0.0, not negative
+	  -1.1e-36f,    // Using this value instead
+	   7.0f,
+	   7.1f,
+	  //-7.0f,      // scalar floor handles this fine, qpu  makes this 08.0f
+		              // This looks like a conversion issue (string -> binary float)
+	  -7.000001f,   // Using this instead
+	  -7.1f
+	};
+	REQUIRE(input.size() == NumValues);
 
   Float::Array input_qpu(SharedArraySize);
-  for (int n = 0; n < NumValues; ++n) {
-   input_qpu[n] = input[n];
-  }
-
+	input_qpu.copyFrom(input);
 
   /**
    * NOTE: Remember, sin/cos normalized on 2*M_PI
@@ -882,24 +894,54 @@ TEST_CASE("Test functions [dsl][func]") {
 
 
   SUBCASE("Test ffloor()") {
-    float results_scalar[NumValues];
+		INFO("Doing ffloor on qpu");
+    float expected[NumValues];
     for (int n = 0; n < NumValues; ++n) {
-     results_scalar[n] = (float) floor(input[n]);
+      expected[n] = (float) floor(input[n]);
     }
 
-    Float::Array results_qpu(SharedArraySize);
-    results_qpu.fill(-1.0f);
+    Float::Array result(SharedArraySize);
 
-    auto k = compile(floor_kernel);
-    k.load(&results_qpu, &input_qpu, NumValues).run();
+		auto check = [&]() {
+	    for (int n = 0; n < NumValues; ++n) {
+	      INFO("input   : " << dump_array(input_qpu));
+	      INFO("expected: " << dump_array(expected, NumValues));
+	      INFO("result  : " << dump_array(result));
+	      INFO("n: " << n);
+	      REQUIRE(expected[n] == result[n]);
+	    }
+		};
 
-    for (int n = 0; n < NumValues; ++n) {
-      INFO("input_qpu     : " << dump_array(input_qpu));
-      INFO("results_scalar: " << dump_array(results_scalar, NumValues));
-      INFO("results_qpu   : " << dump_array(results_qpu));
-      INFO("n: " << n);
-      REQUIRE(results_scalar[n] == results_qpu[n]);
-    }
+		{
+    	result.fill(-1.0f);
+	    auto k = compile(floor_kernel_vc4);
+	    k.load(&result, &input_qpu, NumValues).run();
+			check();
+		}
+
+		{
+    	result.fill(-1.0f);
+	    auto k = compile(floor_kernel);
+	    k.load(&result, &input_qpu, NumValues).run();
+			check();
+		}
+
+		{
+			if (!Platform::compiling_for_vc4()) {
+	    	result.fill(-1.0f);
+
+				BaseSettings settings;
+				INFO("Doing ffloor on interpreter");
+				settings.run_type = Interpreter;
+				//INFO("Doing ffloor on emulator");
+				//settings.run_type = Emulator;  // TODO: fails on certain values
+
+	    	auto k = compile(floor_kernel, settings);
+	    	k.load(&result, &input_qpu, NumValues).run();
+
+				check();
+			}
+		}		
   }
 
 

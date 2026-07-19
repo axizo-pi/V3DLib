@@ -453,6 +453,7 @@ FloatExpr sin_v3d(FloatExpr x_in) {
  *
  * This is defined as a partial.
  *
+ * - sign == 1 when value is negative.
  * - The exponent is returned as the intended value.
  * - The significand needs to have the implied leading '1' to be proper.
  */
@@ -471,59 +472,79 @@ void float_fields(Float &x_f, Int &sign, Int &exponent, Int &significand) {
 
 
 /**
- * Implementation of ffloor() in source language.
+ * Implementation of ffloor() in source language for vc4.
  *
- * `v3d` has an ffloor operation, and is a one-liner.
+ * Made visible for unit tests on v3d.
  *
  * Relies on IEEE 754 specs for 32-bit floats.
  * Special values (Nan's, Inf's) are ignored
  */
-FloatExpr ffloor(FloatExpr x) {
-	warn << "ffloor()";
+FloatExpr ffloor_vc4(FloatExpr x) {
+	//warn << "Handling ffloor_vc4()";
 
-  return create_float_function_snippet([x] {
+  Float ret;
+
+	Float x_val = x;
+	Int sign;
+	Int exp;
+	Int significand;
+	float_fields(x_val, sign, exp, significand);
+
+  Int frac = (significand >> exp);
+
+  //
+  // Clear the fractional part of the mantissa
+  //
+  // Helper for better readability.
+	//
+	// TODO: freaking ugly and prob not necessary; see if can be cleaned up
+  //
+  auto zap_mantissa  = [&exp] (FloatExpr x) -> FloatExpr {
+    int const SIZE_MANTISSA = 23;
+    Int fraction_mask = (1 << (SIZE_MANTISSA - exp)) - 1;
+
     Float ret;
+    ret.as_float(x.as_int() & ~(fraction_mask + 0));
+    return ret;
+  };
 
-    if (Platform::compiling_for_vc4()) {
-			warn << "ffloor() compiling_for_vc4";
-      int const SIZE_MANTISSA = 23;
+  ret = x;  // result same as input for exp > 23 bits and whole-integer negative values
+  comment("Start ffloor()");
 
-      Int exp = ((x.as_int() >> SIZE_MANTISSA) & ((1 << 8) - 1)) - 127;  comment("Calc exponent"); 
-      Int fraction_mask = (1 << (SIZE_MANTISSA - exp)) - 1;
-      Int frac = x.as_int() & fraction_mask;                             comment("Calc fraction"); 
+  Where (exp <= 23)
+    Where (x >= 1)
+      ret = zap_mantissa(x);
+    Else Where (x >= 0)
+      ret = 0.0f;
+    Else Where (x >= -1.0f)
+      ret = -1.0f;
+    Else Where (x < -1.0f && (frac != 0))
+      ret = zap_mantissa(x) - 1;
+    End End End End
+  End
 
-      //
-      // Clear the fractional part of the mantissa
-      //
-      // Helper for better readability
-      //
-      auto zap_mantissa  = [&fraction_mask] (FloatExpr x) -> FloatExpr {
-        Float ret;
-        ret.as_float(x.as_int() & ~(fraction_mask + 0));
-        return ret;
-      };
+	return ret;
+}
 
-      ret = x;  // result same as input for exp > 23 bits and whole-integer negative values
-      comment("Start ffloor()");
 
-      Where (exp <= 23)
-        Where (x >= 1)
-          ret = zap_mantissa(x);
-        Else Where (x >= 0)
-          ret = 0.0f;
-        Else Where (x >= -1.0f)
-          ret = -1.0f;
-        Else Where (x < -1.0f && (frac != 0))
-          ret = zap_mantissa(x) - 1;
-        End End End End
-      End
-    } else {
-      // v3d
-      ret = V3DLib::ffloor(x);  comment("ffloor() v3d");
-    }
+/**
+ * Implementation of ffloor() in source language.
+ *
+ * `v3d` has an ffloor operation, and is a one-liner.
+ */
+FloatExpr ffloor(FloatExpr x) {
+	//warn << "Handling ffloor()";
 
-    return Return(ret);
-  });
+  Float ret;
+
+  if (Platform::compiling_for_vc4()) {
+		ret = ffloor_vc4(x);
+  } else {
+    // v3d
+    ret = V3DLib::ffloor(x);  comment("ffloor() v3d");
+  }
+
+	return ret;
 }
 
 
