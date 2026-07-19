@@ -39,7 +39,7 @@ V3DLib::KernelDriver const &BaseKernel::driver() const {
 
 
 void BaseKernel::compile_init() {
-	//warn << "Called compile_init()";
+  //warn << "Called compile_init()";
   assert(m_driver.get() == nullptr);
 
   enum SelectKernel {
@@ -71,7 +71,7 @@ void BaseKernel::compile_init() {
   assert(select_kernel != None);  
 
   if (select_kernel == vc4) {
-		//warn << "BaseKernel compiling for vc4";
+    //warn << "BaseKernel compiling for vc4";
     Platform::compiling_for_vc4(true);
     m_driver.reset(new vc4::KernelDriver);
   } else {
