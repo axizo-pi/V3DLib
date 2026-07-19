@@ -449,18 +449,43 @@ FloatExpr sin_v3d(FloatExpr x_in) {
 
 
 /**
+ * @brief Dissect a float value into the constituent fields
+ *
+ * This is defined as a partial.
+ *
+ * - The exponent is returned as the intended value.
+ * - The significand needs to have the implied leading '1' to be proper.
+ */
+void float_fields(Float &x_f, Int &sign, Int &exponent, Int &significand) {
+  int const SIZE_MANTISSA = 23;
+
+	Int x = x_f.as_int();
+
+	sign = (x >> 31) & 1;
+
+  exponent = ((x >> SIZE_MANTISSA) & ((1 << 8) - 1)) - 127;
+
+  Int fraction_mask = (1 << (SIZE_MANTISSA /*- exponent */)) - 1;
+  significand = x & fraction_mask;
+}
+
+
+/**
  * Implementation of ffloor() in source language.
  *
- * This is meant specifically for vc4; v3d actually has an ffloor operation.
+ * `v3d` has an ffloor operation, and is a one-liner.
  *
  * Relies on IEEE 754 specs for 32-bit floats.
  * Special values (Nan's, Inf's) are ignored
  */
 FloatExpr ffloor(FloatExpr x) {
+	warn << "ffloor()";
+
   return create_float_function_snippet([x] {
     Float ret;
 
     if (Platform::compiling_for_vc4()) {
+			warn << "ffloor() compiling_for_vc4";
       int const SIZE_MANTISSA = 23;
 
       Int exp = ((x.as_int() >> SIZE_MANTISSA) & ((1 << 8) - 1)) - 127;  comment("Calc exponent"); 
@@ -481,7 +506,7 @@ FloatExpr ffloor(FloatExpr x) {
       ret = x;  // result same as input for exp > 23 bits and whole-integer negative values
       comment("Start ffloor()");
 
-      Where (exp <= 23)                      // Doesn't work, expecting SEQ: comment("Start ffloor()");
+      Where (exp <= 23)
         Where (x >= 1)
           ret = zap_mantissa(x);
         Else Where (x >= 0)
@@ -497,7 +522,6 @@ FloatExpr ffloor(FloatExpr x) {
       ret = V3DLib::ffloor(x);  comment("ffloor() v3d");
     }
 
-    //return ret;
     return Return(ret);
   });
 }

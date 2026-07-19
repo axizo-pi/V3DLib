@@ -39,6 +39,7 @@ V3DLib::KernelDriver const &BaseKernel::driver() const {
 
 
 void BaseKernel::compile_init() {
+	//warn << "Called compile_init()";
   assert(m_driver.get() == nullptr);
 
   enum SelectKernel {
@@ -54,8 +55,10 @@ void BaseKernel::compile_init() {
   }
 
   if (!m_settings.compile_only) {
+		warn << "Compiling: " << Platform::use_main_memory();
+
     if (Platform::use_main_memory() && m_settings.run_type == QPU) {
-      Log::info << "Main memory selected in QPU mode, running on emulator instead of QPU.";
+      warn << "Main memory selected in QPU mode, running on emulator instead of QPU.";
       m_settings.run_type = Emulator;
       select_kernel = vc4;
     }

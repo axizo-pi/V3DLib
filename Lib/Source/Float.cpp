@@ -82,6 +82,14 @@ void Float::as_float(IntExpr rhs) {
 
 
 /**
+ * @briefReinterpret the float expression as an int expression
+ */
+IntExpr Float::as_int() const {
+	return IntExpr(m_expr);
+}
+
+
+/**
  * Cast to a FloatExpr
  */
 Float::operator FloatExpr() const { return FloatExpr(m_expr); }
