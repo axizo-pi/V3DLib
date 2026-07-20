@@ -67,6 +67,114 @@ std::vector<int> values = {
   -22951, -82873, -83242, -90738, -91688, -23135, -45929, -54547, -28837, -74328, -80697, -48614, -82437, -49339, -3386, -70684
 };
 
+
+/**
+ * @partial to make 4 consecutive copies of the first 4 elements of a vector
+ *
+ * E.g.:
+ *
+ * input : <a,b,c,d,e,f,g,h,i,j,k,l,m,n,o,p>
+ * result: <a,a,a,a,b,b,b,b,c,c,c,c,d,d,d,d>
+ */
+void duplicate_first_4_elements_partial(Int &res, Int &val) {
+	Int tmp;
+	Int tmp2;
+
+	tmp = val;
+	Where (index() != 0)
+		tmp = 0;
+	End
+	rotate_sum(tmp, tmp2);
+		
+	Where (index() < 4)
+		res = tmp2;
+	End
+
+	tmp = val;
+	Where (index() != 1)
+		tmp = 0;
+	End
+	rotate_sum(tmp, tmp2);
+		
+	Where (index() >= 4 && index() < 8)
+		res = tmp2;
+	End
+
+	tmp = val;
+	Where (index() != 2)
+		tmp = 0;
+	End
+	rotate_sum(tmp, tmp2);
+		
+	Where (index() >= 8 && index() < 12)
+		res = tmp2;
+	End
+
+	tmp = val;
+	Where (index() != 3)
+		tmp = 0;
+	End
+	rotate_sum(tmp, tmp2);
+		
+	Where (index() >= 12)
+		res = tmp2;
+	End
+}
+
+/**
+ * @brief Convert incoming uint8 values to Int.
+ *
+ * Only first 4 words are handled, to fill up a 16-vector.
+ * Pointer increment should be adjusted accordingly.
+ */
+void uint8_to_Int_partial(Int &res, Int &val) {
+	duplicate_first_4_elements_partial(res, val);
+
+	Where (index() % 4 == 0)
+		res = (res >> 24) & 0xff;
+	End
+
+	Where (index() % 4 == 1)
+		res = (res >> 16) & 0xff;
+	End
+
+	Where (index() % 4 == 2)
+		res = (res >> 8) & 0xff;
+	End
+
+	Where (index() % 4 == 3)
+		res = res & 0xff;
+	End
+
+}
+
+
+/**
+ * @brief Kernel to test conversion uint8 <-> Int (both ways)
+ *
+ * @param res_int Array to store internal Int values, to check them
+ * @param N       Number of incoming 4-byte values
+ */
+void uint8_to_Int_kernel(Int::Ptr res_int, Int::Ptr values, Int N) {
+	For (Int n = 0, n < N, n += 4)
+		Int val = *values;
+		Int res = 0;
+
+		uint8_to_Int_partial(res, val);
+
+		// At this point, res contains the next 16 uint8 values
+
+		*res_int = res;
+
+		//
+		// TODO: Some kind of operation here
+		//
+
+		values += 4;
+		res_int.inc();
+	End
+}	
+
 } // anon namespace
 
 
@@ -163,4 +271,90 @@ TEST_CASE("Test working of float_fields [convert]") {
     unsigned val = (sign[i] << 31) + ((exponent[i] + 127) << 23) + significand[i];
     REQUIRE(values_u[i] == val);
   }
+}
+
+
+TEST_CASE("Test conversion uint8 -> float [convert]") {
+
+	auto uint8_to_int = [] (std::vector<uint8_t> const &values, int index) -> int {
+		int ret = 0;
+		int n = index;
+
+		unsigned val0 = values[n];
+		unsigned val1 = values[n + 1];
+		unsigned val2 = values[n + 2];
+		unsigned val3 = values[n + 3];
+		unsigned tmp = (val0 << 24) + (val1 << 16) + (val2 << 8) + val3;
+
+		// Bitwise conversion to avoid issues with signs
+		ret  = *((int *) & tmp);
+		//warn << "ret: " << hex << ret;
+
+		return ret;
+	};
+
+
+	auto dump_uint8 = [] (int val) -> std::string {
+		std::string ret;
+
+		// Bitwise conversion to avoid issues with signs
+		unsigned tmp = *((uint32_t *) &val);
+
+		ret << (tmp >> 24)          << ", "
+			  << ((tmp >> 16) & 0xff) << ", "
+			  << ((tmp >>  8) & 0xff) << ", "
+			  << (tmp & 0xff);
+
+		return ret;
+	};
+
+
+	std::vector<uint8_t> values_8 = {
+    0, 1, 2, 3,
+		4, 5, 6, 7,
+		8, 9, 10, 11,
+		12, 13, 14, 15,
+
+		// Arbitrary values
+		0,   124,   1,   0,
+		1,     1, 124, 124,
+		2,   100,   4, 100,
+		6,   100,   8, 100,
+		16,  100,  32, 100,
+		64,  100, 128, 100,
+	  255, 100,  96, 100,
+	
+		// End marker	
+		0xff, 0xff, 0xff, 0xff
+	};
+
+	REQUIRE(values_8.size() % 4 == 0);
+
+	// Default values for qpu are 4 byte words.
+	// There are 4 uint8's in an Int
+	Int::Array values(16);
+	values.fill(0);
+
+	for (int i = 0; i < (int) values_8.size()/4; ++i) {
+		values[i] = uint8_to_int(values_8, 4*i);
+	}
+
+	// Display uint8 values
+	std::string buf;
+	for (int i = 0; i < 16; i++) {
+		buf << dump_uint8(values[i]) << ", ";
+	}
+	warn << "values: <" << buf << ">";
+
+	Int::Array result(4*16);
+	result.fill(-1);
+
+  auto k = compile(uint8_to_Int_kernel);
+  k.load(&result, &values, (int) values.size()).run();
+
+  warn << "result: " << dump_array(result);
+
+	for (int i = 0; i < (int) values_8.size(); ++i) {
+		REQUIRE(values_8[i] == result[i]);
+	}
 }
