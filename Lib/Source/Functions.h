@@ -26,6 +26,9 @@ FloatExpr cos(FloatExpr x_in);
 FloatExpr sin(FloatExpr x_in);
 FloatExpr sin_v3d(FloatExpr x_in);
 
+void float_fields(Float &x_f, Int &sign, Int &exponent, Int &significand);
+
+FloatExpr ffloor_vc4(FloatExpr x);
 FloatExpr ffloor(FloatExpr x);
 FloatExpr fabs(FloatExpr x);
 

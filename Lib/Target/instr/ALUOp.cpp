@@ -24,6 +24,7 @@ std::vector<op_item> op_items = {
   { Enum::A_BOR,    V3D_QPU_A_OR     },
   { Enum::A_BXOR,   V3D_QPU_A_XOR    },
   { Enum::A_BNOT,   V3D_QPU_A_NOT    },
+  { Enum::A_CLZ,    V3D_QPU_A_CLZ    },
   { Enum::A_UtoF,   V3D_QPU_A_UTOF   },               // v3d
 
   { Enum::M_FMUL,   false,           V3D_QPU_M_FMUL },

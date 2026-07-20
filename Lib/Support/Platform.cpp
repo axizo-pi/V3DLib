@@ -181,14 +181,14 @@ PlatformInfo::PlatformInfo() {
     is_pi_platform = true;
   }
 
-	auto platform_contains = [&] (std::string str) -> bool {
-   	return (platform_id.find(str) != platform_id.npos);
-	};
+  auto platform_contains = [&] (std::string str) -> bool {
+    return (platform_id.find(str) != platform_id.npos);
+  };
 
   if (!platform_id.empty() && is_pi_platform) {
    vc_type =
-		 platform_contains("Pi 4")? vc6:
-		 platform_contains("Pi Compute Module 4")? vc6:
+     platform_contains("Pi 4")? vc6:
+     platform_contains("Pi Compute Module 4")? vc6:
      platform_contains("Pi 5")? vc7:
     vc4;
   }

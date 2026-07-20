@@ -7,15 +7,15 @@ namespace V3DLib {
 namespace {
 
 std::vector<OpItem> m_list = {
-  {ADD,    "+",        false, Enum::A_FADD,   Enum::A_ADD},
-  {SUB,    "-",        false, Enum::A_FSUB,   Enum::A_SUB},
-  {MUL,    "*",        false, Enum::M_FMUL,   Enum::M_MUL24},
-  {MIN,    " min ",    false, Enum::A_FMIN,   Enum::A_MIN},
-  {MAX,    " max ",    false, Enum::A_FMAX,   Enum::A_MAX},
-  {ItoF,   "(Float) ", false, Enum::A_ItoF,   Enum::OP_UNDEFINED,    false, 1},
-  {UtoF,   "(Float) ", false, Enum::A_UtoF,   Enum::OP_UNDEFINED,    true,  1},
+  {ADD,    "+",        false, Enum::A_FADD,           Enum::A_ADD},
+  {SUB,    "-",        false, Enum::A_FSUB,           Enum::A_SUB},
+  {MUL,    "*",        false, Enum::M_FMUL,           Enum::M_MUL24},
+  {MIN,    " min ",    false, Enum::A_FMIN,           Enum::A_MIN},
+  {MAX,    " max ",    false, Enum::A_FMAX,           Enum::A_MAX},
+  {ItoF,   "(Float) ", false, Enum::A_ItoF,           Enum::OP_UNDEFINED,    false, 1},
+  {UtoF,   "(Float) ", false, Enum::A_UtoF,           Enum::OP_UNDEFINED,    true,  1},
   {FtoI,   "(Int) ",   false, Enum::OP_UNDEFINED,     Enum::A_FtoI,  false, 1},
-  {ROTATE, " rotate ", false, Enum::M_ROTATE, Enum::M_ROTATE},
+  {ROTATE, " rotate ", false, Enum::M_ROTATE,         Enum::M_ROTATE},
   {SHL,    " << ",     false, Enum::OP_UNDEFINED,     Enum::A_SHL},
   {SHR,    " >> ",     false, Enum::OP_UNDEFINED,     Enum::A_ASR},
   {USHR,   " _>> ",    false, Enum::OP_UNDEFINED,     Enum::A_SHR},
@@ -24,6 +24,7 @@ std::vector<OpItem> m_list = {
   {BOR,    " | ",      false, Enum::OP_UNDEFINED,     Enum::A_BOR},
   {BXOR,   " ^ ",      false, Enum::OP_UNDEFINED,     Enum::A_BXOR},
   {BNOT,   "~",        false, Enum::OP_UNDEFINED,     Enum::A_BNOT, false, 1},
+  {CLZ,    "clz",      false, Enum::OP_UNDEFINED,     Enum::A_CLZ,  false, 1},
 
   // v3d-specific
   {FFLOOR, "ffloor",    true, Enum::A_FFLOOR, Enum::OP_UNDEFINED,   true, 1},
@@ -140,9 +141,9 @@ OpItem const &get(OpId id) {
   OpItem const *item = find(id);
 
   if (item == nullptr) {
-		cerr << "OpItem get(): Can not find OpItem for OpId " << id;
-		assert(false);
-	}
+    cerr << "OpItem get(): Can not find OpItem for OpId " << id;
+    assert(false);
+  }
 
   return *item;
 }

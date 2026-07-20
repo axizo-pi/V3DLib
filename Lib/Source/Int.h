@@ -69,6 +69,7 @@ IntExpr numQPUs();
 IntExpr vpmGetInt();
 
 IntExpr rotate(IntExpr a, IntExpr b);
+IntExpr clz(IntExpr a);
 
 IntExpr operator+(IntExpr a, IntExpr b);
 IntExpr operator-(IntExpr a, IntExpr b);

@@ -51,6 +51,7 @@ struct Float : public BaseExpr {
   static uint32_t param_value(float val);
 
   void as_float(IntExpr rhs);
+  IntExpr as_int() const;
   operator FloatExpr() const;
 
   // Assignment

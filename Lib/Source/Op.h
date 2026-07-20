@@ -20,7 +20,7 @@ enum OpId {
   ROTATE, ADD, SUB, MUL, MIN, MAX,
 
   // Int only operators:
-  SHL, SHR, USHR, BOR, BAND, BXOR, BNOT, ROR,
+  SHL, SHR, USHR, BOR, BAND, BXOR, BNOT, ROR, CLZ,
 
   // Conversion operators:
   ItoF, UtoF, FtoI,

@@ -168,6 +168,14 @@ IntExpr rotate(IntExpr a, IntExpr b) {
 }
 
 
+/**
+ * Count Leading Zeroes
+ */
+IntExpr clz(IntExpr a) {
+  return mkIntApply(a, Op(CLZ, INT32), a);
+}
+
+
 IntExpr operator+(IntExpr a, IntExpr b)  { return mkIntApply(a, Op(ADD,  INT32), b); }
 IntExpr operator-(IntExpr a, IntExpr b)  { return mkIntApply(a, Op(SUB,  INT32), b); }
 IntExpr operator*(IntExpr a, IntExpr b)  { return mkIntApply(a, Op(MUL,  INT32), b); }
