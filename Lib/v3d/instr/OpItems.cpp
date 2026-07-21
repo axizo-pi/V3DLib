@@ -36,14 +36,14 @@ bool OpItems::get_add_op(ALUInstruction const &add_alu, v3d_qpu_add_op &dst, boo
   op_item const *item = op_items_find_by_op(op, strict);
 
 /*
-	  Not necessary to do test here, op_items_find_by_op() does this already.
-		In any case, strict should be checked as well.
+    Not necessary to do test here, op_items_find_by_op() does this already.
+    In any case, strict should be checked as well.
 
   if (item == nullptr) {
     cerr << "OpItems::get_add_op(): could not find op item for op '" << add_alu.op.dump() << "'";
     assert(false);
   }
-*/	
+*/  
 
   if (item == nullptr || !item->has_add_op) return false;
   dst = item->add_op;
