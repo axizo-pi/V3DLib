@@ -1,7 +1,7 @@
 #
 # This file is generated!  Editing it directly is a bad idea.
 #
-# Generated on: Sat Jul 18 05:51:18 PM CEST 2026
+# Generated on: Tue Jul 21 06:16:54 AM CEST 2026
 #
 ###############################################################################
 
@@ -150,6 +150,7 @@ TESTS_FILES := \
   Tests/testPrefetch.o  \
   Tests/testDFT.o  \
   Tests/testMain.o  \
+  Tests/testTrig.o  \
   Tests/support/rotate_kernel.o  \
   Tests/support/dft_support.o  \
   Tests/support/summation_kernel.o  \
