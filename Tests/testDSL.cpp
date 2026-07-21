@@ -1,10 +1,10 @@
 #include <V3DLib.h>
 #include "support/support.h"
 #include "support/check.h"
-#include "Support/pgm.h"
 #include "Support/Helpers.h"  // to_file()
 #include "v3d/v3d.h"
 #include "LibSettings.h"
+#include <cmath>
 
 using namespace V3DLib;
 using namespace std;
@@ -12,100 +12,32 @@ using namespace std;
 namespace {
 
 //=============================================================================
-// Helper methods
+// Helper Functions
 //=============================================================================
 
-/**
- * Generate cos values to compare with
- */
-std::vector<float> lib_cos_values(int size, float freq = -1.0f, float offset = 0.0f) {
-  if (freq == -1.0f) {
-    freq = 1.0f/((float) size);
-  }
-
-  std::vector<float> ret;
-  ret.resize(size);
+template< typename T1, typename T2>
+float calc_max_diff(T1 &arr1, T2 &arr2, int size) { 
+  float max_diff = 0.0f;
 
   for (int x = 0; x < size; ++x) {
-    ret[x] = cos((float) (freq*(2*M_PI)*(((float) x) - offset)));
+    float tmp = std::abs(arr1[x] - arr2[x]);
+    if (tmp > max_diff) max_diff = tmp;
   }
 
-  return ret;
+  return max_diff;
 }
 
 
-std::vector<float> lib_sin_values(int size, float freq = -1.0f, float offset = 0.0f) {
-  if (freq == -1.0f) {
-    freq = 1.0f/((float) size);
-  }
-
-  std::vector<float> ret;
-  ret.resize(size);
-
-  for (int x = 0; x < size; ++x) {
-    ret[x] = sin((float) (freq*(2*M_PI)*(((float) x) - offset)));
-  }
-
-  return ret;
-}
-
-
-std::vector<float> lib_neg_sin_values(int size, float freq = -1.0f, float offset = 0.0f) {
-  if (freq == -1.0f) {
-    freq = 1.0f/((float) size);
-  }
-
-  std::vector<float> ret;
-  ret.resize(size);
-
-  for (int x = 0; x < size; ++x) {
-    ret[x] = sin( -((float) (freq*(2*M_PI)*(((float) x) - offset))));
-  }
-
-  return ret;
-}
-
-
-std::vector<float> lib_tanh_values(int size, float min_x = -2.0f, float max_x = 2.0f) {
-  assert(max_x > min_x);
-
-  std::vector<float> ret;
-  ret.resize(size);
-
-  float step = (max_x - min_x)/((float) size);
-
-  for (int n = 0; n < size; ++n) {
-    float x = min_x + ((float) n)*step; //((float) (freq*(((float) n) - offset)));
-    ret[n] = tanh(x);
-  }
-
-  return ret;
-}
-
-
-/**
- * Calculate max abs difference for arrays
- */
-float max_abs_value(std::vector<float> const &a, float const *b) {
-  REQUIRE(b != nullptr);
-
-  float ret = -1.0f;
-
-  for (int i = 0; i < (int) a.size(); ++i) {
-    float diff = abs(a[i] - b[i]);
-    if (ret == -1.0f || ret < diff) {
-      ret = diff;
+void check(Int::Array const &result, std::vector<int> const &expected, std::string const &label) {
+    for (int i = 0; i < (int) expected.size(); i++) {
+      INFO("label: " << label << ", row: " << (i/16) << ", index: " << (i % 16));
+      REQUIRE(result[i] == expected[i]);
     }
-  }
-
-  return ret;
-} 
-
-}  // namespace
+  };
 
 
 //=============================================================================
-// Kernel definition(s)
+// Kernel definitions
 //=============================================================================
 
 void out(Int &res, Int::Ptr &result) {
@@ -293,6 +225,75 @@ void complex_kernel(Complex::Ptr input, Complex::Ptr result) {
 }
 
 
+void floor_kernel_vc4(Float::Ptr result, Float::Ptr input, Int numValues) {
+  For (Int n = 0, n < numValues, n += 16)
+    *result = functions::ffloor_vc4(*input);
+
+    result.inc();
+    input.inc();
+  End
+}
+
+
+void floor_kernel(Float::Ptr result, Float::Ptr input, Int numValues) {
+  For (Int n = 0, n < numValues, n += 16)
+    *result = functions::ffloor(*input);
+
+    result.inc();
+    input.inc();
+  End
+}
+
+
+void fabs_kernel(Float::Ptr result, Float::Ptr input, Int numValues) {
+  For (Int n = 0, n < numValues, n += 16)
+    *result = functions::fabs(*input);
+
+    result.inc();
+    input.inc();
+  End
+}
+
+
+/**
+ * This should try out all the possible ways of reading and writing
+ * main memory.
+ */
+template<typename T, typename Ptr>
+void offsets_kernel(Ptr result, Ptr src) {
+  Int a = index();
+  *result = a;
+  result.inc();           comment("Kernel inc 0");
+
+  T val = *src;
+  *result = val;          comment("Kernel inc 1");
+
+
+  T val2 = *(src + 32);
+  *(result + 16) = val2;  comment("Kernel inc 3");
+
+  val2 = src[32];
+  result[32] = val2;      comment("Kernel inc 4");
+
+  src.inc();
+  result.inc();
+  result.inc();
+  result.inc();
+
+
+  val = *src;
+  *result = val;
+
+  result.inc();
+
+  gather(src);  comment("Start gather test");
+  receive(a);
+  *result = a;
+}
+
+}  // namespace
+
+
 //=============================================================================
 // Unit tests
 //=============================================================================
@@ -398,8 +399,10 @@ TEST_CASE("Test construction of composed types in DSL [dsl][complex]") {
 
 
 //-----------------------------------------------------------------------------
-// Test for specific DSL operations.
+// Tests for specific DSL operations.
 //-----------------------------------------------------------------------------
+
+namespace {
 
 void int_ops_kernel(Int::Ptr result) {
   using namespace V3DLib::functions;
@@ -486,6 +489,52 @@ void float_ops_kernel(Float::Ptr result) {
 }
 
 
+void nested_for_kernel(Int::Ptr result) {
+  int const COUNT = 3;
+  Int x = 0;
+
+  For (Int n = 0, n < COUNT, n++)
+    For (Int m = 0, m < COUNT, m++)
+      x += 1;
+
+      Where ((index() & 0x1) == 1)
+        x += 1;
+      End
+
+      If ((m & 0x1) == 1)
+        x += 1;
+      End
+    End
+
+    x += 2;
+  End
+
+  *result = x;
+}
+
+
+template<typename T, typename Ptr>
+void rot_kernel(Ptr result, Ptr a) {
+  T val = *a;
+  T val2 = *a;
+
+  val2 = rotate(val, 1);
+  *result = val2; result.inc();
+
+  val2 += rotate(val, 1);
+  *result = val2; result.inc();
+
+  rotate_sum(val, val2);
+  *result = val2; result.inc();
+
+  T val3 = val;
+  set_at(val3, 0, val2);
+  *result = val3;
+}
+
+} // anon namespace
+
+
 TEST_CASE("Test specific operations in DSL [dsl][ops]") {
   SUBCASE("Test integer operations") {
     int const N = 12;  // Number of expected results
@@ -550,30 +599,6 @@ TEST_CASE("Test specific operations in DSL [dsl][ops]") {
 }
 
 
-void nested_for_kernel(Int::Ptr result) {
-  int const COUNT = 3;
-  Int x = 0;
-
-  For (Int n = 0, n < COUNT, n++)
-    For (Int m = 0, m < COUNT, m++)
-      x += 1;
-
-      Where ((index() & 0x1) == 1)
-        x += 1;
-      End
-
-      If ((m & 0x1) == 1)
-        x += 1;
-      End
-    End
-
-    x += 2;
-  End
-
-  *result = x;
-}
-
-
 TEST_CASE("Test For-loops [dsl][for]") {
   Platform::use_main_memory(true);
 
@@ -591,27 +616,9 @@ TEST_CASE("Test For-loops [dsl][for]") {
 } 
 
 
-template<typename T, typename Ptr>
-void rot_kernel(Ptr result, Ptr a) {
-  T val = *a;
-  T val2 = *a;
-
-  val2 = rotate(val, 1);
-  *result = val2; result.inc();
-
-  val2 += rotate(val, 1);
-  *result = val2; result.inc();
-
-  rotate_sum(val, val2);
-  *result = val2; result.inc();
-
-  T val3 = val;
-  set_at(val3, 0, val2);
-  *result = val3;
-}
-
-
-// This went wrong at some point
+/**
+ * This tests stuff that went wrong at some point.
+ */
 TEST_CASE("Test rotate on emulator [emu][rotate]") {
   Platform::use_main_memory(true);
   int const N = 4;
@@ -649,43 +656,6 @@ TEST_CASE("Test rotate on emulator [emu][rotate]") {
 
 
 /**
- * This should try out all the possible ways of reading and writing
- * main memory.
- */
-template<typename T, typename Ptr>
-void offsets_kernel(Ptr result, Ptr src) {
-  Int a = index();
-  *result = a;
-  result.inc();           comment("Kernel inc 0");
-
-  T val = *src;
-  *result = val;          comment("Kernel inc 1");
-
-
-  T val2 = *(src + 32);
-  *(result + 16) = val2;  comment("Kernel inc 3");
-
-  val2 = src[32];
-  result[32] = val2;      comment("Kernel inc 4");
-
-  src.inc();
-  result.inc();
-  result.inc();
-  result.inc();
-
-
-  val = *src;
-  *result = val;
-
-  result.inc();
-
-  gather(src);  comment("Start gather test");
-  receive(a);
-  *result = a;
-}
-
-
-/**
  * Created in order to test init uniforms pointers with index() for vc4
  */
 TEST_CASE("Initialization with index() on uniform pointers should work as expected [dsl][offsets]") {
@@ -714,21 +684,12 @@ TEST_CASE("Initialization with index() on uniform pointers should work as expect
     result.fill(-1);
   };
 
-  auto check = [&result, &expected] (char const *label) {
-    for (int i = 0; i < (int) result.size(); i++) {
-      INFO("label: " << label << ", row: " << (i/16) << ", index: " << (i % 16));
-      REQUIRE(result[i] == expected[i]);
-    }
-  };
-
 
   SUBCASE("Test with TMU") {
     auto k = compile(offsets_kernel<Int, Int::Ptr>);
-    //to_file("offsets_kernel.txt", k.dump());
-    //k.dump_compile_data(false, "offsets_kernel_compile_data.txt");
     reset();
     k.load(&result, &a).run();
-    check("tmu qpu");
+    check(result, expected, "tmu qpu");
   }
 
 
@@ -737,81 +698,13 @@ TEST_CASE("Initialization with index() on uniform pointers should work as expect
 
     auto k = compile(offsets_kernel<Int, Int::Ptr>);
     k.load(&result, &a).run();
-    check("dma qpu");
+    check(result, expected, "dma qpu");
 
-    LibSettings::use_tmu_for_load(false);
+    LibSettings::use_tmu_for_load(true);
   }
 }
 
 
-void cosine_kernel(Float::Ptr result, Int numValues, Float freq, Int offset) {
-  For (Int n = 0, n < numValues, n += 16)
-    Float x = freq*toFloat(n + index() - offset);
-    *result = functions::cos(x);
-    result.inc();
-  End
-}
-
-
-void sine_kernel(Float::Ptr result, Int numValues, Float freq, Int offset) {
-  For (Int n = 0, n < numValues, n += 16)
-    Float x = freq*toFloat(n + index() - offset);
-    *result = functions::sin(x);
-    result.inc();
-  End
-}
-
-
-void floor_kernel_vc4(Float::Ptr result, Float::Ptr input, Int numValues) {
-  For (Int n = 0, n < numValues, n += 16)
-    *result = functions::ffloor_vc4(*input);
-
-    result.inc();
-    input.inc();
-  End
-}
-
-
-void floor_kernel(Float::Ptr result, Float::Ptr input, Int numValues) {
-  For (Int n = 0, n < numValues, n += 16)
-    *result = functions::ffloor(*input);
-
-    result.inc();
-    input.inc();
-  End
-}
-
-
-void fabs_kernel(Float::Ptr result, Float::Ptr input, Int numValues) {
-  For (Int n = 0, n < numValues, n += 16)
-    *result = functions::fabs(*input);
-
-    result.inc();
-    input.inc();
-  End
-}
-
-
-template< typename T1, typename T2>
-float calc_max_diff(T1 &arr1, T2 &arr2, int size) { 
-  float max_diff = 0.0f;
-
-  for (int x = 0; x < size; ++x) {
-    float tmp = std::abs(arr1[x] - arr2[x]);
-    if (tmp > max_diff) max_diff = tmp;
-  }
-
-  return max_diff;
-}
-
-
-/**
- * This test works fine when run separately, but 
- * not when run in the full unit test.
- *
- * No clue why; adjusted Makefile to run this test
- * separately
- */
 TEST_CASE("Test functions [dsl][func]") {
   REQUIRE(::v3d::open());
 
@@ -842,56 +735,6 @@ TEST_CASE("Test functions [dsl][func]") {
 
   Float::Array input_qpu(SharedArraySize);
   input_qpu.copyFrom(input);
-
-  /**
-   * NOTE: Remember, sin/cos normalized on 2*M_PI
-   */
-  SUBCASE("Test trigonometric functions") {
-    float const MAX_DIFF = 0.57f;  // Test value for extra_precision == false
-
-    const int size   = 1000;
-    const int offset = size/2;
-    const float freq = (float) (1.0f/((double) size));
-
-    auto lib_cos = lib_cos_values(size, freq, offset);  // cos lib values, to compare with
-
-    //
-    // Calc with scalar kernel
-    //
-    float scalar_cos[size];
-
-    {
-      for (int x = 0; x < size; ++x) {
-        scalar_cos[x] = functions::scalar::cos(freq*((float) (x - offset)));
-      };
-
-      float max_diff = calc_max_diff(scalar_cos, lib_cos, size); 
-      INFO("Max diff: " << max_diff);
-      REQUIRE(max_diff < MAX_DIFF);
-    }
-
-    //
-    // Calc with QPU kernel
-    //
-    Float::Array qpu_cos(size);
-    Float::Array qpu_sin(size);
-
-    {
-      auto k = compile(cosine_kernel);
-      k.load(&qpu_cos, size, freq, offset).run();
-
-      float max_diff = calc_max_diff(lib_cos, qpu_cos, size); 
-      INFO("Max diff: " << max_diff);
-      REQUIRE(max_diff < MAX_DIFF);
-    }
-
-    PGM pgm(size, 400);
-    pgm.plot(lib_cos, 64)
-       .plot(qpu_cos.ptr(), size, 32)
-       .plot(qpu_sin.ptr(), size, 32)
-       .save((test_path() + "/cos_plot.pgm").c_str());
-  }
-
 
   SUBCASE("Test ffloor()") {
     INFO("Doing ffloor on qpu");
@@ -1093,6 +936,8 @@ TEST_CASE("Test issues [dsl][issues]") {
 // Notably, missing End's for If/Where/etc.
 //=============================================================================
 
+namespace {
+
 void if_noend_kernel(Int::Ptr result) {
   Int i = 1;
   Int cond = 1;
@@ -1140,6 +985,40 @@ void for_noend_kernel(Int::Ptr result) {
 }
 
 
+/**
+ * Actually not part of `Test Block Syntax`.
+ */
+void int_div_kernel(Int::Ptr quotient, Int::Ptr remainder, Int a, Int b) {
+  *quotient  = a / b;
+  *remainder = a % b;
+}
+
+
+void nested_where_kernel(Int::Ptr ret) {
+  Int tmp = 0;                comment("Before Where 1");
+
+  // Doing `Where (index() % 2 == 0)` both both blocks
+  // will use long integer division internally.
+  // This is extremely heavy (resulting in a lot of generated code) and leads to wrong result;
+  // it appears that first condition will then also be used for second block.
+  Where ((index() & 1) == 0)
+    tmp = 1;                  comment("Start Where 1, before Where 2");
+
+    Where ((index() & 0x3) == 0)
+      tmp = 2;                comment("Start Where 2");
+
+      Where ((index() & 0xf) == 0)
+        tmp = 3;                comment("Start Where 2");
+      End
+    End
+  End
+
+  *ret = tmp;
+}  
+
+} // anon namespace
+
+
 TEST_CASE("Test issues [dsl][block]") {
   int const N = 1;
 
@@ -1180,149 +1059,6 @@ TEST_CASE("Test issues [dsl][block]") {
 }
 
 
-//=============================================================================
-// Test Trigonometric Functions
-//=============================================================================
-
-
-void sincos_kernel(Float::Ptr result, Int size) {
-  Int count = size >> 4;
-
-  For (Int n = 0, n < count, n++)
-    Float param = toFloat((n << 4) + index())/toFloat(size);
-
-    Float val  = functions::sin(param);
-    *result = val;  result.inc();
-  End
-
-  For (Int n = 0, n < count, n++)
-    Float param = toFloat((n << 4) + index())/toFloat(size);
-
-    Float val  = functions::sin(param);
-    *result = val;  result.inc();
-  End
-
-  For (Int n = 0, n < count, n++)
-    Float param = toFloat((n << 4) + index())/toFloat(size);
-
-    Float instr_val = sin(param);
-    *result = instr_val;  result.inc();
-  End
-
-  For (Int n = 0, n < count, n++)
-    Float param = toFloat((n << 4) + index())/toFloat(size);
-
-    Float instr_val = sin(-1*param);
-    *result = instr_val;  result.inc();
-  End
-
-  For (Int n = 0, n < count, n++)
-    Float param = toFloat((n << 4) + index())/toFloat(size);
-
-    Float instr_val = cos(param);
-    *result = instr_val;  result.inc();
-  End
-}
-
-
-TEST_CASE("Test sin/cos instructions [dsl][sincos]") {
-  int const N = 5*16;
-
-  Float::Array result(5*N);
-  auto lib_sin     = lib_sin_values(N);  // lib values, to compare with
-  auto lib_cos     = lib_cos_values(N);  // lib values, to compare with
-  auto lib_neg_sin = lib_neg_sin_values(N);
-
-  auto k = compile(sincos_kernel);
-  //to_file("sincos_kernel.txt", k.dump());
-  k.load(&result, N).run();
-
-  float const hi_precision = 1.2e-3f;
-  float const lo_precision = 5.7e-2f;
-
-  // vc4 will use the lo-res sin function,
-  // v3d the will use hardware, which is precise
-  float const qpu_precision = (Platform::run_vc4())?lo_precision:1.0e-6f;
-
-  {
-    float diff = max_abs_value(lib_sin, result.ptr());
-    INFO("max abs diff hi-prec sin: " << diff);
-    REQUIRE(diff <= hi_precision);
-  }
-
-  {
-    float diff = max_abs_value(lib_sin, result.ptr() + N);
-    INFO("max abs diff lo-prec sin: " << diff);
-    REQUIRE(diff <= lo_precision);
-  }
-
-  {
-    float diff = max_abs_value(lib_sin, result.ptr() + 2*N);
-    INFO("max abs diff v3d sin: " << diff);
-    REQUIRE(diff <= qpu_precision);
-  }
-
-  // There were issues here, check all vc's: working pi5
-  //
-  //Log::warn << showResult(lib_neg_sin, 0, N);
-  //Log::warn << showResult(result, 3, N);
-  {
-    float diff = max_abs_value(lib_neg_sin, result.ptr() + 3*N);
-    INFO("max abs diff v3d sin: " << diff);
-    REQUIRE(diff <= qpu_precision);
-  }
-
-  {
-    float diff = max_abs_value(lib_cos, result.ptr() + 4*N);
-    INFO("max abs diff v3d sin: " << diff);
-    REQUIRE(diff <= qpu_precision);
-  }
-}
-
-
-void tanh_kernel(Float::Ptr result, Int size, Float min_x, Float max_x) {
-  Int count = size >> 4;
-  Float step = (max_x - min_x)/toFloat(size);
-
-  For (Int n = 0, n < count, n++)
-    Float param = min_x + toFloat((n << 4) + index())*step;
-
-    Float val  = tanh(param);
-    *result = val;  result.inc();
-  End
-}
-
-
-TEST_CASE("Test tanh [dsl][tanh]") {
-  int const N = 48;          // 128;
-  float const min_x = -2.0f; //-6.0f;
-  float const max_x =  2.0f; // 6.0f;
-
-  Float::Array result(N);
-  result.fill(2.0f);
-  auto lib_tanh = lib_tanh_values(N, min_x, max_x);
-
-  auto k = compile(tanh_kernel);
-  //to_file("tanh_kernel.txt", k.dump());
-  k.load(&result, N, min_x, max_x).run();
-
-  //Log::warn << "\n  " << showExpected(lib_tanh)
-  //          << "\n  " << showResult(result, 0, N);
-  //Log::warn << "Max diff: " << calc_max_diff(lib_tanh, result, N);
-
-  const float PRECISION = Platform::compiling_for_vc4()?1.0e-4f:5.0e-7f;
-
-  float max_diff = calc_max_diff(lib_tanh, result, N);
-  REQUIRE(max_diff < PRECISION);
-}
-
-
-void int_div_kernel(Int::Ptr quotient, Int::Ptr remainder, Int a, Int b) {
-  *quotient  = a / b;
-  *remainder = a % b;
-}
-
-
 TEST_CASE("Test integer division and remainder [dsl][intdiv]") {
   int const MAX_INT = 2147483647;  // inicates infinity
 
@@ -1351,33 +1087,6 @@ TEST_CASE("Test integer division and remainder [dsl][intdiv]") {
 }
 
 
-namespace {
-
-void nested_where_kernel(Int::Ptr ret) {
-  Int tmp = 0;                comment("Before Where 1");
-
-  // Doing `Where (index() % 2 == 0)` both both blocks
-  // will use long integer division internally.
-  // This is extremely heavy (resulting in a lot of generated code) and leads to wrong result;
-  // it appears that first condition will then also be used for second block.
-  Where ((index() & 1) == 0)
-    tmp = 1;                  comment("Start Where 1, before Where 2");
-
-    Where ((index() & 0x3) == 0)
-      tmp = 2;                comment("Start Where 2");
-
-      Where ((index() & 0xf) == 0)
-        tmp = 3;                comment("Start Where 2");
-      End
-    End
-  End
-
-  *ret = tmp;
-}  
-
-} // anon namespace
-
-
 /**
  * Conclusion: Where-blocks can be nested, with some thought.
  *
@@ -1389,8 +1098,80 @@ TEST_CASE("Test nested Where blocks [dsl][where]") {
   std::vector<int> expected = {3, 0, 1, 0, 2, 0, 1, 0, 2, 0, 1, 0, 2, 0, 1, 0};
 
   auto k = compile(nested_where_kernel);
-  //to_file("nested_where_kernel.txt", k.dump());
   k.load(&result).run();
-  //warn << result.dump();
   check_vector(result, 0, expected);
+}
+
+
+//=============================================================================
+// DSL examinations
+//
+// Answer some burning questions on operations
+//=============================================================================
+
+namespace {
+
+void tmu_kernel(Int::Ptr result) {
+	result -= index();
+
+	Int val = numQPUs()*index();
+
+	*result = val;
+	result.inc();
+
+	// Write *some* values to same address
+	result += index()/4;
+
+	*result = val;
+}
+
+} // anon namespace
+
+
+/**
+ * Which vector element gets written on TMU write,
+ * When multiple elements get written to same address?
+ *
+ * Answer:
+ *   1. For single QPU, the highest index element written.
+ *   2. For multi QPU's, the highest QPU index writing.
+ *
+ * The latter might only be applicable to QPU's running in perfect unison.
+ * It might be that the longest running QPU gets to write last.
+ */
+TEST_CASE("Test edge cases of TMU [dsl][tmu]") {
+	if (Platform::compiling_for_vc4()) {
+		warn << "Skipping TMU write for vc4";
+	} else {
+		Int::Array result(2*16);
+		result.fill(0);
+
+		std::vector<int> expected = {
+			15, 0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+			 3, 7, 11, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+		};
+
+    auto k = compile(tmu_kernel);
+
+		//
+		// Test single QPU
+		//
+    k.load(&result).run();
+    //warn << result.dump();
+		check(result, expected, "TMU 1 QPU  write same address");
+
+		//
+		// Test multiple QPU's
+		//
+		const int NumQPUs = 7;  // All values appear to work fine
+
+		for (int i = 0; i < (int) expected.size(); ++i) {
+			expected[i] *= NumQPUs;
+		}
+
+		k.setNumQPUs(NumQPUs);
+    k.load(&result).run();
+    //warn << result.dump();
+		check(result, expected, "TMU multi QPU's  write same address");
+	}
 }
