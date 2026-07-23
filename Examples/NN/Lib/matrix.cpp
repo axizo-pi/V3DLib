@@ -956,7 +956,7 @@ std::string vector::dump(bool output_int) const {
   std::string ret;
   //ret << tmp_src.dump_dim()
   //    << " [" << vector_dump(tmp_src, 0, output_int) << "]";
-	ret << matrix_dump(tmp_src, output_int);
+  ret << matrix_dump(tmp_src, output_int);
 
   return ret;
 }
@@ -988,7 +988,7 @@ bool same_intern(
   int bit_diff,
   CompareStats &stats
 ) {
-	return same_intern(lhs.src(), rhs.src(), bit_diff, stats);
+  return same_intern(lhs.src(), rhs.src(), bit_diff, stats);
 }
 
 } // anon namespace

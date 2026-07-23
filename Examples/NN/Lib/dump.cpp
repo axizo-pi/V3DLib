@@ -201,7 +201,7 @@ std::string vector_dump(MatrixAdapter const &src, int start_index, bool output_i
   int   same_count = 0;
   float same_val   = src.at(start_index, 0);
 
-	auto handle_loop = [&same_count, &same_val, &ret, &out_buf] (float val) {
+  auto handle_loop = [&same_count, &same_val, &ret, &out_buf] (float val) {
     if (val == same_val) {
       same_count++;
     } else {
@@ -210,22 +210,22 @@ std::string vector_dump(MatrixAdapter const &src, int start_index, bool output_i
       same_count = 1;
       same_val   = val;
     }
-	};
+  };
 
 
-	if (transpose) {
-		assert(start_index == 0);
+  if (transpose) {
+    assert(start_index == 0);
 
-	  for (int h = 0; h < src.height(); ++h) {
-  	  float val = src.at(h, 0);
-			handle_loop(val);
-  	}
-	} else {
-	  for (int w = 0; w < src.width(); ++w) {
-  	  float val = src.at(start_index, w);
-			handle_loop(val);
-  	}
-	}
+    for (int h = 0; h < src.height(); ++h) {
+      float val = src.at(h, 0);
+      handle_loop(val);
+    }
+  } else {
+    for (int w = 0; w < src.width(); ++w) {
+      float val = src.at(start_index, w);
+      handle_loop(val);
+    }
+  }
 
   ret.push_back(out_buf(same_val, same_count));
   return vectorToString(ret, ", ");

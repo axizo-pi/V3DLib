@@ -313,7 +313,7 @@ qpu::matrix const &MMatrix::qpu() const {
 bool MMatrix::same(int bit_diff) const {
   // Only do this if both arrays present
   if (m_using_Xf && m_using_qpu) {
-		return ::same(m_qpu.src(), MatrixXfAdapter(m_Xf), bit_diff);
+    return ::same(m_qpu.src(), MatrixXfAdapter(m_Xf), bit_diff);
   }
 
   return true;
@@ -351,7 +351,7 @@ bool MMatrix::diff(MMatrix const &rhs, int bit_diff) const {
 bool MMatrix::same(MatrixXf const &rhs, int bit_diff, bool show_max_diff) const {
   warn << "Called same(MatrixXf)";
   assert(false);  // Warn me when called, want to refactor
-	
+  
   MMatrix tmp;
   tmp.set(rhs, true);
   return same_intern(tmp, bit_diff, show_max_diff);
@@ -379,8 +379,8 @@ bool MMatrix::same_intern(MMatrix const &rhs, int bit_diff, bool show_max_diff) 
 
   if (m_using_Xf && !m_using_qpu) {
     if (m_using_Xf  && rhs.m_using_Xf) {
-			warn << "Here Xf";
-			assert(false);  // Warn me when get here, to test
+      warn << "Here Xf";
+      assert(false);  // Warn me when get here, to test
 
       ret = ret && ::same(MatrixXfAdapter(m_Xf), MatrixXfAdapter(rhs.m_Xf), bit_diff,  show_max_diff);
     } else {
