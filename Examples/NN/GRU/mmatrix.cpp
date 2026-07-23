@@ -13,53 +13,6 @@ float s_softmax(float x) {
 }
 
 
-/**
- * Why the `_Xf` postfix is required, is beyond me.
- * Leaving it out results in 'no known conversion' error.
- */
-bool same_Xf(MatrixXf const &lhs, MatrixXf const &rhs, int bit_diff,  bool show_max_diff) {
-  warn << "Called same(MatrixXf, MatrixXf)";
-
-  bool ret       = true;
-  qpu::CompareStats stats;
-
-  if(lhs.rows() != rhs.rows() || lhs.cols() != rhs.cols() ) {
-     warn << "Fail same(MatrixXf, MatrixXf) dimensions differ: "
-          << "lhs: " << ::dump_dim(lhs) << ", "
-          << "rhs: " << ::dump_dim(rhs);
-
-     return false;
-  }
-
-  std::string buf;
-
-  for (int i = 0; i < (int) rhs.rows(); ++i) {
-    if (!show_max_diff && !ret) break;
-
-    for (int j = 0; j < (int) rhs.cols(); ++j) {
-      if (!qpu::check_precision(lhs(i, j), rhs(i, j), bit_diff, &stats, ret)) {
-        if (ret) {  // Show first fail only
-          buf << " at (" << i << ", " << j << ")";
-        }
-
-        ret = false;
-        if (!show_max_diff) break;
-      }      
-    }
-  }
-
-  if (show_max_diff) {
-    buf << ", " << stats.dump();
-  }
-
-  if (!buf.empty()) {
-    warn << "Fail same(MatrixXf, MatrixXf)" << buf ;
-  }
-
-  return ret;
-}
-
-
 void set_Xf(MatrixXf &m, float val) {
   assert(m.rows() > 0 && m.cols() > 0);
 
@@ -360,7 +313,7 @@ qpu::matrix const &MMatrix::qpu() const {
 bool MMatrix::same(int bit_diff) const {
   // Only do this if both arrays present
   if (m_using_Xf && m_using_qpu) {
-    return ::same(m_qpu, m_Xf, 0.0f, bit_diff);
+		return ::same(m_qpu.src(), MatrixXfAdapter(m_Xf), bit_diff);
   }
 
   return true;
@@ -395,14 +348,12 @@ bool MMatrix::diff(MMatrix const &rhs, int bit_diff) const {
   return false;
 }
 
-
 bool MMatrix::same(MatrixXf const &rhs, int bit_diff, bool show_max_diff) const {
   warn << "Called same(MatrixXf)";
   assert(false);  // Warn me when called, want to refactor
-
+	
   MMatrix tmp;
   tmp.set(rhs, true);
-
   return same_intern(tmp, bit_diff, show_max_diff);
 }
 
@@ -411,7 +362,7 @@ bool MMatrix::same(MatrixXf const &rhs, int bit_diff, bool show_max_diff) const 
  * Profiling: time negligible
  */
 bool MMatrix::same_intern(MMatrix const &rhs, int bit_diff, bool show_max_diff) const {
-  //warn << "Called MMatrix::same_intern()";
+  warn << "Called MMatrix::same_intern(Adapter)";
   assert(m_using_Xf || m_using_qpu);
   assert(rhs.m_using_Xf || rhs.m_using_qpu);
   assert((m_using_Xf == rhs.m_using_Xf) || (m_using_qpu == rhs.m_using_qpu));
@@ -419,16 +370,19 @@ bool MMatrix::same_intern(MMatrix const &rhs, int bit_diff, bool show_max_diff) 
   bool ret = true;
 
   // Internal checks
-  if (m_using_Xf && m_using_qpu)         ret = ret && ::same(m_qpu, m_Xf, bit_diff);
-  if (rhs.m_using_Xf && rhs.m_using_qpu) ret = ret && ::same(rhs.m_qpu, rhs.m_Xf, bit_diff);
+  if (m_using_Xf && m_using_qpu)         ret = ret && ::same(m_qpu.src(), MatrixXfAdapter(m_Xf), bit_diff);
+  if (rhs.m_using_Xf && rhs.m_using_qpu) ret = ret && ::same(rhs.m_qpu.src(), MatrixXfAdapter(rhs.m_Xf), bit_diff);
 
   // Cross checks
-  if (m_using_qpu && rhs.m_using_Xf)     ret = ret && ::same(m_qpu, rhs.m_Xf, bit_diff, show_max_diff);
-  if (m_using_qpu && rhs.m_using_qpu)    ret = ret && qpu::same(m_qpu, rhs.m_qpu, bit_diff, show_max_diff);
+  if (m_using_qpu && rhs.m_using_Xf)     ret = ret && ::same(m_qpu.src(), MatrixXfAdapter(rhs.m_Xf), bit_diff, show_max_diff);
+  if (m_using_qpu && rhs.m_using_qpu)    ret = ret && ::same(m_qpu.src(), rhs.m_qpu.src(), bit_diff, show_max_diff);
 
   if (m_using_Xf && !m_using_qpu) {
     if (m_using_Xf  && rhs.m_using_Xf) {
-      ret = ret && ::same_Xf(m_Xf, rhs.m_Xf, bit_diff,  show_max_diff);
+			warn << "Here Xf";
+			assert(false);  // Warn me when get here, to test
+
+      ret = ret && ::same(MatrixXfAdapter(m_Xf), MatrixXfAdapter(rhs.m_Xf), bit_diff,  show_max_diff);
     } else {
       if (m_using_Xf  && rhs.m_using_qpu)    assert(false); // Deal with it when it happens
     }
@@ -1417,14 +1371,6 @@ void MMatrix::need_fields(bool need_XF, bool need_qpu) const {
   }
 
   call_count--;
-}
-
-
-bool same(qpu::matrix const &lhs, MatrixXf const &rhs, int bit_diff, bool show_max_diff) {
-  MMatrix rhs_temp;
-  rhs_temp.set(rhs, true);
-
-  return same(lhs, rhs_temp.qpu(), bit_diff, show_max_diff);
 }
 
 

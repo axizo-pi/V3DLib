@@ -2,6 +2,7 @@
 #include "model.h"
 #include "Source/Functions.h"  // rotate_sum
 #include "helpers.h"
+#include "dump.h"
 
 using namespace V3DLib;
 
@@ -50,7 +51,9 @@ void test_outer_product(BaseKernel &op, bool do_kernel) {
 		std::string buf;
 		buf << "outer product:\n";
 		for (int i = 0; i < vec_size; ++i) {
-		  buf << i << ": " << vector_dump(result_outer, vec_size, vec_size*i, true) << "\n";
+			FloatArrayAdapter src(result_outer, vec_size, vec_size);
+		  //buf << i << ": " << vector_dump(src, vec_size, vec_size*i, true) << "\n";
+		  buf << i << ": " << vector_dump(src, i, true) << "\n";
 		}
 		warn << buf;
 	} else {
@@ -75,7 +78,7 @@ void test_outer_product(BaseKernel &op, bool do_kernel) {
 
 void test_back_propagation(V3DLib::BaseKernel &op) {
 	warn << "test_back_propagation";
-	//test_outer_product(op, false);
+	test_outer_product(op, false);
 
 	//
 	// Output layer to hidden layer

@@ -5,6 +5,7 @@
 #include "Support/Settings.h"
 
 class FloatArrayAdapter;
+class CompareStats;
 
 namespace qpu {
 
@@ -153,40 +154,6 @@ private:
 
 //vector operator*(matrix const &lhs, matrix const &rhs);
 
-struct CompareStats {
-
-  CompareStats(bool fail_on_first = false) : m_fail_on_first(fail_on_first) { reset(); }
-
-  void reset();
-  bool failed() const;
-  bool fail_on_first() const { return m_fail_on_first; }
-  std::string dump(bool show_first_fail = false) const;
-
-  int   first_i;
-  int   first_j;
-  int   total;
-  int   exact;
-  int   same;
-  int   zeroes;
-  float max_diff;
-  int   max_bit;
-
-private:
-  const bool m_fail_on_first;
-
-};  
-
-
-bool check_precision(
-  float lhs,
-  float rhs,
-  int bit_diff        = -1,
-  CompareStats *stats = nullptr,
-  bool do_show        = true
-);
-
-
-bool same(qpu::matrix const &lhs, qpu::matrix const &rhs, int bit_diff = -1, bool show_stats = false);
 void diff(qpu::matrix const &lhs, qpu::matrix const &rhs, int bit_diff = -1);
 bool same(qpu::vector const &lhs, qpu::vector const &rhs);
 void init();

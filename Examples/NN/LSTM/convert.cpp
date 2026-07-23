@@ -1,5 +1,6 @@
 #include "convert.h"
 #include "Support/Helpers.h"  // resize_16()
+#include "dump.h"
 
 /**
  * /file

@@ -1,4 +1,6 @@
 #include "dump.h"
+#include "Support/Helpers.h"  // bit_diff();
+#include <cmath>              // floor()
 
 using namespace V3DLib;
 using namespace qpu;
@@ -54,11 +56,101 @@ float FloatArrayAdapter::at(int r, int c) const {
 }
 
 
+////////////////////////////////////////
+// Class CompareStats
+////////////////////////////////////////
+
+void CompareStats::reset() {
+  first_i  = -1;
+  first_j  = -1;
+  total    = 0;
+  exact    = 0;
+  same     = 0;
+  zeroes   = 0;
+   max_diff = 0.0f;
+   max_bit  = -1;
+}
+
+
+bool CompareStats::failed() const {
+  assert((first_i == -1 && first_j == -1) || (first_i != -1 && first_j != -1));
+  return (first_i != -1);
+}
+
+
+std::string CompareStats::dump(bool show_first_fail) const {
+  std::string ret;
+
+  auto as_percent = [] (int denom, int div) -> std::string {
+    std::string ret;
+
+    float val = (float) denom/ (float) div*100.0f;
+
+    ret << (int) floor(val) << "." << (int) floor((val - (long) val)*100.0f) << "%";
+    return ret;
+  };
+
+  auto width = [] (int val) -> int {
+    std::string buf;
+    buf << val;
+    return (int) buf.size();
+  };
+
+  auto format = [&width] (int in_width, int val) -> std::string {
+    int spaces = in_width - width(val);
+
+    std::string ret;
+
+    for (int i = 0; i < spaces; ++i) {
+      ret << " ";
+    }
+
+    ret << val;
+
+    return ret;
+  };
+
+  ret << "Compare Stats:";
+
+  if (fail_on_first() && failed()) {
+     ret << " failed on first, stats incomplete";
+    return ret;
+  }
+
+  if (exact == total) {
+     ret << " exact";
+    return ret;
+  }
+
+  if ((exact + same) == total) {
+     ret << " same";
+    return ret;
+  }
+
+  ret << "\n";
+
+  if (show_first_fail) {
+    ret << "  first fail: (" << first_i << ", " << first_j  << ")\n";
+  }
+
+  int x_width = width(exact);
+
+  ret << "  total     : " << total << "\n"
+      << "  exact     : " << exact                  << ", " << as_percent(exact, total)        << "\n"
+      << "  same      : " << format(x_width, same)  << ", " << as_percent(exact + same, total) << "\n"
+      << "  zeroes    : " << zeroes   << "\n"
+      << "  max_diff  : " << max_diff << "\n"
+      << "  max_bit   : " << max_bit;
+
+  return ret;
+}
+
+
 ////////////////////////////////////////////////////////
 // Global Functions 
 ////////////////////////////////////////////////////////
 
-std::string vector_dump(MatrixAdapter const &src, int start_index, bool output_int) {
+std::string vector_dump(MatrixAdapter const &src, int start_index, bool output_int, bool transpose) {
   std::vector<std::string> ret;
   const int min_count = 5;
 
@@ -109,9 +201,7 @@ std::string vector_dump(MatrixAdapter const &src, int start_index, bool output_i
   int   same_count = 0;
   float same_val   = src.at(start_index, 0);
 
-  for (int h = 0; h < src.width(); ++h) {
-    float val = src.at(start_index, h);
-
+	auto handle_loop = [&same_count, &same_val, &ret, &out_buf] (float val) {
     if (val == same_val) {
       same_count++;
     } else {
@@ -120,7 +210,22 @@ std::string vector_dump(MatrixAdapter const &src, int start_index, bool output_i
       same_count = 1;
       same_val   = val;
     }
-  }
+	};
+
+
+	if (transpose) {
+		assert(start_index == 0);
+
+	  for (int h = 0; h < src.height(); ++h) {
+  	  float val = src.at(h, 0);
+			handle_loop(val);
+  	}
+	} else {
+	  for (int w = 0; w < src.width(); ++w) {
+  	  float val = src.at(start_index, w);
+			handle_loop(val);
+  	}
+	}
 
   ret.push_back(out_buf(same_val, same_count));
   return vectorToString(ret, ", ");
@@ -140,7 +245,7 @@ std::string matrix_dump(MatrixAdapter const &src, bool output_int) {
 
   if (src.rows() > 1 && src.columns() == 1) {
     ret << "(tr) ";  // Signal transposed
-    ret << "[" << vector_dump(src, 0, output_int) << "]";
+    ret << "[" << vector_dump(src, 0, output_int, true) << "]";
   } else {
     int int_width;
     int prefix_width;
@@ -248,4 +353,118 @@ std::string matrix_dump_simple(MatrixAdapter const &src) {
   buf << "]";
 
   return buf;
+}
+
+
+bool check_precision(float lhs, float rhs, int bit_diff, CompareStats *stats, bool do_show) {
+  bool ret = true;
+  float diff = abs(lhs - rhs);
+  int bit = V3DLib::bit_diff(lhs, rhs, bit_diff);
+
+  bool failed = false;
+
+  if (bit_diff > -1) {
+    failed = (bit > -1);
+  } else {
+    failed = (lhs != rhs);
+  }
+    
+  if (failed) {
+    if (do_show) {
+      warn << "check_precision fail, diff: " << diff << ", " << "bit: " << bit;
+    }
+    ret = false;
+  }
+
+  if (stats != nullptr) {
+    stats->total++;
+    if (diff > stats->max_diff) stats->max_diff = diff;
+    if (bit  > stats->max_bit)  stats->max_bit = bit;
+
+    if (lhs == rhs) {
+      stats->exact++;
+
+      if (lhs == 0.0f) {
+        stats->zeroes++;
+      } //else {
+      //  warn << "Exact but not zero: " << lhs << ", " << rhs;
+      //}
+    } else {
+      if (ret) stats->same++;
+    }
+  }
+
+  return ret;
+}
+
+
+bool same_intern(MatrixAdapter const &lhs, MatrixAdapter const &rhs, int bit_diff, CompareStats &stats) {
+  //warn << "Called same_intern(Adapter, Adapter)";
+  bool ret = true;
+
+  // Special case for 2 input vectors: accept transposed vectors
+  if (lhs.columns() == 1 && lhs.columns() == rhs.rows() && lhs.rows() == rhs.columns() ) {
+    int size = lhs.rows();
+    for (int i = 0; i < size; ++i) {
+      if (!check_precision(lhs.at(i, 0), rhs.at(0, i), bit_diff, &stats)) {
+         if (ret) {
+          stats.first_i = i;
+          stats.first_j = 0;
+        }
+
+        ret = false;
+        if (stats.fail_on_first()) break;
+      }      
+    }
+
+    return ret;
+  }
+
+  //
+  // Do full matrices
+  //
+
+  if (lhs.rows() != rhs.rows() || lhs.columns() != rhs.columns() ) {
+     warn << "Fail same_intern(Adapter, Adapter) dimensions differ: "
+          << "lhs: " << lhs.dump_dim() << ", "
+          << "rhs: " << rhs.dump_dim();
+
+     return false;
+  }
+
+  for (int i = 0; i < (int) rhs.rows(); ++i) {
+    if (stats.fail_on_first() && !ret) break;
+
+    for (int j = 0; j < (int) rhs.columns(); ++j) {
+      if (!check_precision(lhs.at(i, j), rhs.at(i, j), bit_diff, &stats, ret)) {
+        if (ret) {  // Register first fail only
+          stats.first_i = i;
+          stats.first_j = j;
+        }
+
+        ret = false;
+        if (stats.fail_on_first()) break;
+      }      
+    }
+  }
+
+  return ret;
+}
+
+
+bool same(MatrixAdapter const &lhs, MatrixAdapter const &rhs, int bit_diff, bool show_stats) {
+  //warn << "Called same(Adapter, Adapter)";
+
+  CompareStats stats(true);
+
+  bool ret = same_intern(lhs, rhs, bit_diff, stats);
+
+  if (stats.failed()) {
+    warn << "Fail same() at (i,j): (" << stats.first_i << ", " << stats.first_j  << ")";
+  }
+
+  if (show_stats) {
+     warn << stats.dump();
+  }
+  return ret;
 }
