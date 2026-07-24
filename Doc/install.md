@@ -60,9 +60,9 @@ Fill in `user` and `pi` for your situation.
 
 From `main`:
 
-  ssh-copy-id user@pi
-  scp .vimrc user@pi:~    # Personal configuration, YMMV
-  ssh pi                  # Test login
+    ssh-copy-id user@pi
+    scp .vimrc user@pi:~    # Personal configuration, YMMV
+    ssh pi                  # Test login
 
 
 ### Set memory split for `VideoCore IV`
@@ -204,7 +204,7 @@ And in the list select option `en_US.UTF-8 UTF-8`. And again.
       This option has been removed in more recent `Raspbian` versions.
 
 
-This is for `Pi1`, `Pi2`, `Pi3` and `Zero`.
+This is for `Pi1`, `Pi2`, `Pi3`, `Pi3b` and `Zero`.
 
 `dtoverlay` should *not* be specified for Pi1.
 In addition, this sets the memory split with `gpu_mem`.

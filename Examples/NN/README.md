@@ -19,9 +19,18 @@
 
 Took an earlier commit, because the latest doesn't work (missing input file).
 
-The convergence is dismal:
+Way too late into the conversion, I discoved that the gradient calculation
+always results in a zero matrix.
+This might be due to not using the latest commit of this project.
 
-With default settings:
+Letting this project rest until I find a solution, or I find a better GRU project
+to use as reference. I'll do a throw at integrating latest commit first.
+
+### Timing:
+
+The convergence is dismal.
+
+Default settings:
 
     input_dim     = 64;
     hidden_dim    = 128;
@@ -31,8 +40,5 @@ With default settings:
     time_steps    = 20;
     decay         = 0.000f;
 
-- **276 epochs in 12 hours 33 minutes.**
-- **369 epochs in 17 hours 46 minutes.**
-- **768 epochs in 35 hours 22 minutes.**
-- **857 epochs in 41 hours 03 minutes.**
-- **958 epochs in 45 hours 56 minutes.**
+- Original, reference app:  **958 epochs in 45 hours 56 minutes.**. That's **2.88 minutes per epoch**.
+- This app: **10 epochs in 133 minutes**. That's over **13 minutes** per epoch. Severely disappointed.....
