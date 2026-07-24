@@ -33,7 +33,7 @@ FloatExpr FloatExpr::operator-() { return (*this)*-1.0f; }
 /**
  * Default ctor
  *
- * This is required for the creating of temp variables in expressions.
+ * This is required for the creation of temp variables in expressions.
  *
  * There is an issue with initialization of variables without a value in the code, e.g.:
  *
@@ -43,13 +43,12 @@ FloatExpr FloatExpr::operator-() { return (*this)*-1.0f; }
  * This is slightly bothersome when using it in templates where the var type is a template parameter,
  * e.g. type could also be Complex.
  *
- * I have not found a resolution for this yet, but would love to fix it eventually.
+ * I have not found a resolution for this yet, hoping to fix it eventually.
  */
 Float::Float() { assign_intern(); }
 
 
 Float::Float(float x) {
-  //Log::warn << "Float ctor val: " << x;
   auto a = std::make_shared<Expr>(x);
   assign_intern(a);
 }
@@ -74,7 +73,7 @@ uint32_t Float::param_value(float val) {
 
 
 /**
- * Reinterpret the incoming integer expression as a float
+ * @brief Reinterpret the incoming integer expression as a float
  */
 void Float::as_float(IntExpr rhs) {
   (*this) = FloatExpr(rhs.expr());
@@ -82,7 +81,7 @@ void Float::as_float(IntExpr rhs) {
 
 
 /**
- * @briefReinterpret the float expression as an int expression
+ * @brief Reinterpret the float expression as an int expression
  */
 IntExpr Float::as_int() const {
   return IntExpr(m_expr);

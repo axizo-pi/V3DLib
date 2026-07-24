@@ -36,7 +36,7 @@ Int::Int(Int const &x) {
 
 
 /**
- * Cast to an IntExpr
+ * @brief Cast to an IntExpr.
  */
 Int::operator IntExpr() const {
   return IntExpr(m_expr);
