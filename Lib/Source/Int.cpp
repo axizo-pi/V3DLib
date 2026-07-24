@@ -117,7 +117,7 @@ uint32_t Int::param_value(int val) {
 
 
 /**
- * A vector containing integers 0..15
+ * @brief Return a vector containing integers 0..15
  *
  * On `vc4` this is a special register, on `v3d` this is an instruction.
  */
