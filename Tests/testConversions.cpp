@@ -22,7 +22,7 @@ std::string dump_uint8_val(int val) {
       << ((tmp >>  8) & 0xff) << ", "
       << ((tmp >> 16) & 0xff) << ", "
       << ((tmp >> 24) & 0xff)
-	;
+  ;
 
   return ret;
 };
@@ -33,15 +33,15 @@ std::string dump_uint8_val(int val) {
 */
 MAYBE_UNUSED std::string dump_uint8(Int::Array const &values) {
   std::string ret;
-	//ret << "size: " << values.size() << " <";
+  //ret << "size: " << values.size() << " <";
 
   for (int i = 0; i < (int) values.size(); i++) {
     ret << dump_uint8_val(values[i]) << ", ";
   }
 
-	//ret << ">";
-	return ret;
-}	
+  //ret << ">";
+  return ret;
+}  
 
 
 ///////////////////////////////////////////////////
@@ -203,48 +203,48 @@ void Int_to_uint8_partial(Int &res, Int &val) {
   Int tmp = val;
   tmp = tmp & 0xff;   // Mask to avoid issues with overflow and sign
 
-	Int tmp1;
-	Int tmp2;
-	Int tmp3;
-	tmp1 = rotate(tmp, 15);
-	tmp2 = rotate(tmp, 14);
-	tmp3 = rotate(tmp, 13);
+  Int tmp1;
+  Int tmp2;
+  Int tmp3;
+  tmp1 = rotate(tmp, 15);
+  tmp2 = rotate(tmp, 14);
+  tmp3 = rotate(tmp, 13);
 
-	// Move bytes to correct position
-	// tmp as is
+  // Move bytes to correct position
+  // tmp as is
   tmp1 = (tmp1 <<  8);
   tmp2 = (tmp2 << 16);
   tmp3 = (tmp3 << 24);
 
-	tmp = tmp | tmp1 | tmp2 | tmp3;
+  tmp = tmp | tmp1 | tmp2 | tmp3;
 
-	//
-	// At this point, vector elements 0,4,8,12 are correct. The rest is junk.
-	// Move these to first four elements.
-	//
-	tmp1 = tmp;
-	tmp1 = rotate(tmp1, 13);
-	Where (index() == 1)
-		tmp = tmp1;
-	End
+  //
+  // At this point, vector elements 0,4,8,12 are correct. The rest is junk.
+  // Move these to first four elements.
+  //
+  tmp1 = tmp;
+  tmp1 = rotate(tmp1, 13);
+  Where (index() == 1)
+    tmp = tmp1;
+  End
 
-	tmp1 = rotate(tmp1, 13);
-	Where (index() == 2)
-		tmp = tmp1;
-	End
+  tmp1 = rotate(tmp1, 13);
+  Where (index() == 2)
+    tmp = tmp1;
+  End
 
-	tmp1 = rotate(tmp1, 13);
-	Where (index() == 3)
-		tmp = tmp1;
-	End
+  tmp1 = rotate(tmp1, 13);
+  Where (index() == 3)
+    tmp = tmp1;
+  End
 
-/*		
-	// Zap the trailing elements - doesn't do much
-	Where (index() > 3)
-		tmp = 0;
-	End
+/*    
+  // Zap the trailing elements - doesn't do much
+  Where (index() > 3)
+    tmp = 0;
+  End
 */
-	res = tmp;
+  res = tmp;
 }
 
 
@@ -258,20 +258,20 @@ void Int_to_uint8_partial(Int &res, Int &val) {
  * @param N       Number of incoming 4-byte values
  */
 void uint8_to_Int_kernel(Int::Ptr res_int, Int::Ptr res, Int::Ptr values, Int N) {
-/*	
-	res -= index();
-	Where (index() < 4)
-		res += index();
-	Else
-		res += 4;
-	End
-*/	
-/*	
-	Where (index() >4)
-		res -= index();
-		res += 4;
-	End
-*/	
+/*  
+  res -= index();
+  Where (index() < 4)
+    res += index();
+  Else
+    res += 4;
+  End
+*/  
+/*  
+  Where (index() >4)
+    res -= index();
+    res += 4;
+  End
+*/  
 
   For (Int n = 0, n < N, n += 4)
     Int val = *values;
@@ -284,12 +284,12 @@ void uint8_to_Int_kernel(Int::Ptr res_int, Int::Ptr res, Int::Ptr values, Int N)
     *res_int = internal;  // Store internal Int values, for testing
 
     // Do some kind of operation here on internal
-		internal *= 2;
+    internal *= 2;
 
-		// Store results as uint8
-		Int result;
-		Int_to_uint8_partial(result, internal);
-		*res = result;
+    // Store results as uint8
+    Int result;
+    Int_to_uint8_partial(result, internal);
+    *res = result;
 
     values += 4;   comment("Do pointer increments");
     res    += 4;
@@ -421,7 +421,7 @@ TEST_CASE("Test conversion uint8 -> float [convert]") {
     8, 9, 10, 11,
     12, 13, 14, 15,
 
-		// Test limits for overflow
+    // Test limits for overflow
     0,   127,   1,  64,
     0,   128,   1, 255,
 
@@ -459,24 +459,24 @@ TEST_CASE("Test conversion uint8 -> float [convert]") {
   result.fill(-2);
 
   auto k = compile(uint8_to_Int_kernel);
-	//to_file("uint8_to_Int_kernel.txt", k.dump());
+  //to_file("uint8_to_Int_kernel.txt", k.dump());
   k.load(&result_internal, &result, &values, (int) values.size()).run();
 
   //warn << "result_internal: " << dump_array(result_internal);
   //warn << "result         : " << dump_uint8(result);
 
-	// Check internal values
+  // Check internal values
   for (int i = 0; i < (int) values_8.size(); ++i) {
-		INFO("Check internal i = " << i);
+    INFO("Check internal i = " << i);
     REQUIRE(values_8[i] == result_internal[i]);
   }
 
-	// Check result
-	uint8_t *result_ptr = (uint8_t *) result.ptr();
+  // Check result
+  uint8_t *result_ptr = (uint8_t *) result.ptr();
 
   for (int i = 0; i < (int) values_8.size(); ++i) {
-		INFO("Check result i = " << i);
-		uint8_t val = 2* values_8[i];   // too big values will overflow
+    INFO("Check result i = " << i);
+    uint8_t val = 2* values_8[i];   // too big values will overflow
     REQUIRE(val == result_ptr[i]);
-	}
+  }
 }

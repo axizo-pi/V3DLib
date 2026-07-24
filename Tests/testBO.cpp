@@ -11,10 +11,10 @@ using namespace V3DLib;
 namespace {
 
 void multi_bo_kernel(Int::Ptr result, Int::Ptr arr1, Int::Ptr arr2) {
-	Int val1 = *arr1;
-	Int val2 = *arr2;
+  Int val1 = *arr1;
+  Int val2 = *arr2;
 
-	*result = val1 + val2;
+  *result = val1 + val2;
 }
 
 } // anon namespace
@@ -149,55 +149,55 @@ TEST_CASE("Test Buffer Objects [bo]") {
       REQUIRE(heap.num_free_ranges() == 0);
     }
   }
-}	
+}  
 
 
 TEST_CASE("Multiple BO's should work [bo][multi]") {
-	if (Platform::compiling_for_vc4()) {
-		warn << "Skipping v3d multi BO for vc4";
-		return;
-	}
+  if (Platform::compiling_for_vc4()) {
+    warn << "Skipping v3d multi BO for vc4";
+    return;
+  }
 
   SUBCASE("Test with v3d BO") {
-		const int SIZE = 1024*1024;
+    const int SIZE = 1024*1024;
 
-		v3d::BufferObject bo2;
-		REQUIRE(bo2.size() == 0);
-		REQUIRE(bo2.getHandle() == 0);
+    v3d::BufferObject bo2;
+    REQUIRE(bo2.size() == 0);
+    REQUIRE(bo2.getHandle() == 0);
 
-		bo2.alloc_bo(SIZE);
-		REQUIRE(bo2.size() == SIZE);
-		REQUIRE(bo2.getHandle() != 0);
-		//warn << "Main bo offset " << getBufferObject().offset();
+    bo2.alloc_bo(SIZE);
+    REQUIRE(bo2.size() == SIZE);
+    REQUIRE(bo2.getHandle() != 0);
+    //warn << "Main bo offset " << getBufferObject().offset();
 
-		{
-			const int ARR_SIZE = 16;
+    {
+      const int ARR_SIZE = 16;
 
-			std::vector<int> expected = {
-				5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5 
-			};
+      std::vector<int> expected = {
+        5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5 
+      };
 
-			Int::Array arr1(ARR_SIZE, bo2);
-			arr1.fill(3);
+      Int::Array arr1(ARR_SIZE, bo2);
+      arr1.fill(3);
 
-			Int::Array arr2(ARR_SIZE);
-			arr2.fill(2);
+      Int::Array arr2(ARR_SIZE);
+      arr2.fill(2);
 
-			Int::Array result(ARR_SIZE);
-			result.fill(-1);
+      Int::Array result(ARR_SIZE);
+      result.fill(-1);
 
-			REQUIRE(bo2.offset() == 4*ARR_SIZE);
-			REQUIRE(getBufferObject().offset() == 2*4*ARR_SIZE);
-			//warn << "bo2 offset " << bo2.offset();
-			//warn << "Main bo offset " << getBufferObject().offset();
+      REQUIRE(bo2.offset() == 4*ARR_SIZE);
+      REQUIRE(getBufferObject().offset() == 2*4*ARR_SIZE);
+      //warn << "bo2 offset " << bo2.offset();
+      //warn << "Main bo offset " << getBufferObject().offset();
 
-			auto k = compile(multi_bo_kernel);
-			k.load(&result, &arr1, &arr2).run();
-			//warn << "result: " << dump_array(result);
-			check_vector(result, 0, expected);
-		}
+      auto k = compile(multi_bo_kernel);
+      k.load(&result, &arr1, &arr2).run();
+      //warn << "result: " << dump_array(result);
+      check_vector(result, 0, expected);
+    }
 
-		REQUIRE(bo2.offset() == 0);
-		REQUIRE(getBufferObject().offset() == 0);
-	}
+    REQUIRE(bo2.offset() == 0);
+    REQUIRE(getBufferObject().offset() == 0);
+  }
 }
