@@ -245,7 +245,7 @@ op_item const *op_items_find_by_op(Enum op, bool strict) {
 
   if (index == -1) {
     if (strict) {
-			breakpoint;
+      breakpoint;
       cerr << "Could not find item for op: " << op << thrw;
     }
     return nullptr;

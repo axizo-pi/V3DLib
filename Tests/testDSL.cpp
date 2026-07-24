@@ -1112,17 +1112,17 @@ TEST_CASE("Test nested Where blocks [dsl][where]") {
 namespace {
 
 void tmu_kernel(Int::Ptr result) {
-	result -= index();
+  result -= index();
 
-	Int val = numQPUs()*index();
+  Int val = numQPUs()*index();
 
-	*result = val;
-	result.inc();
+  *result = val;
+  result.inc();
 
-	// Write *some* values to same address
-	result += index()/4;
+  // Write *some* values to same address
+  result += index()/4;
 
-	*result = val;
+  *result = val;
 }
 
 } // anon namespace
@@ -1140,38 +1140,38 @@ void tmu_kernel(Int::Ptr result) {
  * It might be that the longest running QPU gets to write last.
  */
 TEST_CASE("Test edge cases of TMU [dsl][tmu]") {
-	if (Platform::compiling_for_vc4()) {
-		warn << "Skipping TMU write for vc4";
-	} else {
-		Int::Array result(2*16);
-		result.fill(0);
+  if (Platform::compiling_for_vc4()) {
+    warn << "Skipping TMU write for vc4";
+  } else {
+    Int::Array result(2*16);
+    result.fill(0);
 
-		std::vector<int> expected = {
-			15, 0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-			 3, 7, 11, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
-		};
+    std::vector<int> expected = {
+      15, 0,  0,  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+       3, 7, 11, 15, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+    };
 
     auto k = compile(tmu_kernel);
 
-		//
-		// Test single QPU
-		//
+    //
+    // Test single QPU
+    //
     k.load(&result).run();
     //warn << result.dump();
-		check(result, expected, "TMU 1 QPU  write same address");
+    check(result, expected, "TMU 1 QPU  write same address");
 
-		//
-		// Test multiple QPU's
-		//
-		const int NumQPUs = 7;  // All values appear to work fine
+    //
+    // Test multiple QPU's
+    //
+    const int NumQPUs = 7;  // All values appear to work fine
 
-		for (int i = 0; i < (int) expected.size(); ++i) {
-			expected[i] *= NumQPUs;
-		}
+    for (int i = 0; i < (int) expected.size(); ++i) {
+      expected[i] *= NumQPUs;
+    }
 
-		k.setNumQPUs(NumQPUs);
+    k.setNumQPUs(NumQPUs);
     k.load(&result).run();
     //warn << result.dump();
-		check(result, expected, "TMU multi QPU's  write same address");
-	}
+    check(result, expected, "TMU multi QPU's  write same address");
+  }
 }

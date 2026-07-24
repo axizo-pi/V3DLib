@@ -38,8 +38,34 @@ private:
 };
 
 
-std::string vector_dump(MatrixAdapter const &src, int start_index, bool output_int);
+struct CompareStats {
+  CompareStats(bool fail_on_first = false) : m_fail_on_first(fail_on_first) { reset(); }
+
+  void reset();
+  bool failed() const;
+  bool fail_on_first() const { return m_fail_on_first; }
+  std::string dump(bool show_first_fail = false) const;
+
+  int   first_i;
+  int   first_j;
+  int   total;
+  int   exact;
+  int   same;
+  int   zeroes;
+  float max_diff;
+  int   max_bit;
+
+private:
+  const bool m_fail_on_first;
+
+};  
+
+
+std::string vector_dump(MatrixAdapter const &src, int start_index, bool output_int, bool transpose = false);
 std::string matrix_dump(MatrixAdapter const &src, bool output_int);
 std::string matrix_dump_simple(MatrixAdapter const &src);
+bool check_precision(float lhs, float rhs, int bit_diff = -1, CompareStats *stats = nullptr, bool do_show = true);
+bool same_intern(MatrixAdapter const &lhs, MatrixAdapter const &rhs, int bit_diff, CompareStats &stats);
+bool same(MatrixAdapter const &lhs, MatrixAdapter const &rhs, int bit_diff = -1, bool show_stats = false); 
 
 #endif // _INCLUDE_RNNSUPPORT_DUMP_H

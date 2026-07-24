@@ -4,7 +4,6 @@
 
 class Model;
 
-bool same(qpu::matrix const &lhs, MatrixXf const &rhs, int bit_diff = -1, bool show_max_diff = false);
 void copy_m(qpu::matrix &dst, MatrixXf const &rhs);
 qpu::matrix copy_m(MatrixXf const &rhs);
 
@@ -47,7 +46,7 @@ public:
   void qpu(qpu::matrix const &val) { m_qpu = val; }
 
   bool same(int bit_diff = 0) const;
-  bool same(MMatrix const &rhs, int bit_diff = -1, bool show_stats = false) const;
+  bool same(MMatrix const &rhs, int bit_diff = -1, bool show_max_diff = false) const;
   bool diff(MMatrix const &rhs, int bit_diff = -1) const;
   bool same(MatrixXf const &rhs, int bit_diff = -1, bool show_max_diff = false) const;
 

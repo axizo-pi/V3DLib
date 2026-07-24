@@ -130,7 +130,7 @@ void cosine_kernel(Float::Ptr result, Int numValues, Float freq, Int offset) {
 
 
 /*
-	Currently not used
+  Currently not used
 
 void sine_kernel(Float::Ptr result, Int numValues, Float freq, Int offset) {
   For (Int n = 0, n < numValues, n += 16)
@@ -193,7 +193,7 @@ void tanh_kernel(Float::Ptr result, Int size, Float min_x, Float max_x) {
     *result = val;  result.inc();
   End
 }
-	
+  
 }  // namespace
 
 

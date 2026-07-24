@@ -19,6 +19,7 @@ public:
 
   void alloc_bo(uint32_t size_in_bytes);
   uint32_t size() const { return m_size; }
+  uint32_t offset() const { return m_offset; }
   bool empty() const { return m_offset == 0; }
   std::string dump() const;
   bool is_active() const;
