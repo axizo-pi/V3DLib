@@ -44,7 +44,7 @@ struct Int : public BaseExpr {
 
   operator IntExpr() const;
 
-  Int& operator=(int x);           //!< Assign a constant value to an Int variable.
+  Int& operator=(int x);
   Int& operator=(Int const &rhs);
   IntExpr operator=(IntExpr rhs);
 

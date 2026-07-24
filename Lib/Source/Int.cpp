@@ -4,6 +4,15 @@
 #include "Support/debug.h"
 #include "Functions.h"  // operator/
 
+/** @defgroup SourceLanguage Source Language Operations.
+ *
+ * This page will document all operations which can be used in a kernel
+ * at Source-level. Ie., the operations that can be used when defining
+ * a kernel at the top level.
+ *
+ * **NOTE:** Ongoing work, far from complete.
+ */
+
 namespace V3DLib {
 
 using ::operator<<;  // C++ weirdness
@@ -43,11 +52,24 @@ Int::operator IntExpr() const {
 }
 
 
+/** @addtogroup SourceLanguage
+ *  @{
+ */
+
+/**
+ * @brief Assign an integer constant to an Int variable.
+ *
+ * Usage example:
+ *
+ *     Int val = 123;
+ */
 Int &Int::operator=(int x) {
   Int tmp(x);
   (*this) = tmp;
-  return *this; //rhs;
+  return *this;
 }
+
+/** @} */ // end of group SourceLanguage
 
 Int &Int::operator=(Int const &rhs) {
   assign(m_expr, rhs.expr());
@@ -115,6 +137,9 @@ uint32_t Int::param_value(int val) {
   return (int32_t) val;
 }
 
+/** @addtogroup SourceLanguage
+ *  @{
+ */
 
 /**
  * @brief Return a vector containing integers 0..15
@@ -133,8 +158,11 @@ IntExpr index() {
 }
 
 
+
 /**
- * Reserved var. A vector containing the QPU id
+ * @brief Return a vector containing the QPU id.
+ *
+ * Implemented as a reserved variable.
  */
 IntExpr me() {
   Expr::Ptr e = std::make_shared<Expr>(Var(STANDARD, RSV_QPU_ID));
@@ -143,12 +171,16 @@ IntExpr me() {
 
 
 /**
- * Reserved var. A vector containing the QPU count
+ * @brief Return a vector containing the QPU count.
+ *
+ * Implemented as a reserved variable.
  */
 IntExpr numQPUs() {
   Expr::Ptr e = std::make_shared<Expr>(Var(STANDARD, RSV_NUM_QPUS));
   return IntExpr(e);
 }
+
+/** @} */ // end of group SourceLanguage
 
 
 /**
