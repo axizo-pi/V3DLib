@@ -9,6 +9,12 @@
 
 namespace V3DLib {
 
+/**
+ * @brief base class for buffer objects.
+ *
+ * This class is **virtual**; when using BO's directly, you need to
+ * use one of the derived concrete classes.
+ */
 class BufferObject : public HeapManager {
 public:
   BufferObject() {}
