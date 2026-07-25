@@ -144,6 +144,11 @@ uint32_t Int::param_value(int val) {
 /**
  * @brief Return a vector containing integers 0..15
  *
+ * Example:
+ *
+ *     Int a = index();
+ *     // Variable a now contains: <0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15>
+ *
  * On `vc4` this is a special register, on `v3d` this is an instruction.
  */
 IntExpr index() {
@@ -184,7 +189,9 @@ IntExpr numQPUs() {
 
 
 /**
- * Read vector from VPM
+ * @brief Read vector from VPM
+ *
+ * VPM is used in conjunction with  DMA and is therefore intended for `vc4` only.
  */
 IntExpr vpmGetInt() {
   Expr::Ptr e = std::make_shared<Expr>(Var(VPM_READ));
@@ -238,6 +245,8 @@ IntExpr operator/(IntExpr a, IntExpr b) {
   integer_division(quotient, remainder, a, b);
   return quotient;
 }
+
+
 /**
  * Return remainder of values
  *

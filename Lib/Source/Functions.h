@@ -17,7 +17,7 @@ IntExpr two_complement(IntExpr a);
 IntExpr _INF();
 IntExpr abs(IntExpr a);
 IntExpr topmost_bit(IntExpr in_a);
-void integer_division(Int &quotient, Int &remainder, IntExpr in_a, IntExpr in_b);
+void integer_division(Int &Q, Int &R, IntExpr num, IntExpr denom);
 IntExpr integer_division_f(IntExpr in_a, IntExpr in_b);
 
 inline IntExpr operator-(IntExpr a) { return two_complement(a); }

@@ -11,7 +11,7 @@ namespace V3DLib {
 /**
  * @brief Variable type
  *
- * This also explicitly defines specific speacial registers
+ * This also explicitly defines specific special registers
  */
 enum VarTag {
     STANDARD,      ///> A standard variable that can be stored

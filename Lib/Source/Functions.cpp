@@ -11,6 +11,12 @@
 #include "LibSettings.h"
 #include <cmath>
 
+/**
+ * /file
+ *
+ * Source-level functions.
+ */
+
 namespace V3DLib {
 namespace functions {
 namespace {
@@ -140,10 +146,13 @@ IntExpr abs(IntExpr a) {
 
 
 /**
- * Determine index of topmost bit set.
+ * @brief Determine index of topmost bit set.
  *
  * Incoming values are assumed to be unsigned.
  * a == 0 will return -1.
+ *
+ * **TODO:** This is basically the function of `clz`, which is a hardware operation.
+ *           Consider replacing with `clz`.
  */
 IntExpr topmost_bit(IntExpr in_a) {
   return create_function_snippet([in_a] {
@@ -163,17 +172,36 @@ IntExpr topmost_bit(IntExpr in_a) {
 }
 
 
+/** @addtogroup SourceLanguage
+ *  @{
+ */
+
 /**
- * Long integer division, returning quotient and remainder
+ * @brief Long integer division, returning quotient and remainder.
  *
  * There is no support for hardware integer division on the VideoCores, this is an implementation for
- * when you really need it (costly).
+ * when you really need it.
+ *
+ * The calculation is **exact**, however it is costly in terms of number of operations.  
+ * If you are willing to trade precision for performance, consider using
+ * `integer_division_f()` instead.
+ *
+ * Only call this directly is you need both quotient and remainder.
+ * Usually, use the following source operations:
+ *
+ * - quotient only:  `IntExpr operator/(IntExpr a, IntExpr b)`
+ * - remainder only: `IntExpr operator%(IntExpr a, IntExpr b)`
  *
  * Source: https://en.wikipedia.org/wiki/Division_algorithm#Integer_division_(unsigned)_with_remainder
+ *
+ * @param Q     Output variable; quotient result of the division
+ * @param R     Output variable; remainder result of the division
+ * @param num   Numerator of the division
+ * @param denom Denominator of the division
  */
-void integer_division(Int &Q, Int &R, IntExpr in_a, IntExpr in_b) {
-  Int N = in_a;  comment("Start long integer division");
-  Int D = in_b;
+void integer_division(Int &Q, Int &R, IntExpr num, IntExpr denom) {
+  Int N = num;    comment("Start long integer division");
+  Int D = denom;
 
   Int sign = 1;
 
@@ -197,7 +225,7 @@ void integer_division(Int &Q, Int &R, IntExpr in_a, IntExpr in_b) {
       Where (top_bit >= i)
         R = R << 1;                  // Left-shift R by 1 bit (lsb == 0)
         R |= (N >> i) & 1;           // Set the least-significant bit of R equal to bit i of the numerator
-        Where (R >= D)
+        Where (rem >= D)
           R -= D;
           Q |= (1 << i);
         End
@@ -214,7 +242,7 @@ void integer_division(Int &Q, Int &R, IntExpr in_a, IntExpr in_b) {
 
 
 /**
- * Do integer division by converting to and from float.
+ * @brief Do integer division by converting to and from float.
  *
  * This is not always precise (confirmed) but more concise than the full integer calculation
  */
@@ -243,6 +271,8 @@ IntExpr integer_division_f(IntExpr in_a, IntExpr in_b) {
     return Return(res);
   });
 }
+
+/** @} */ // end of group SourceLanguage
 
 
 ///////////////////////////////////////////////////////////////////////////////

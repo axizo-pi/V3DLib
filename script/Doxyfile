@@ -956,7 +956,9 @@ INPUT                  =            \
   ../Lib/Support/HeapManager.cpp    \
   ../Lib/Source/Stmt.h              \
   ../Lib/Source/Stmt.cpp            \
+  ../Lib/Source/Var.h               \
   ../Lib/Source/Var.cpp             \
+  ../Lib/Source/Functions.cpp       \
   ../Lib/v3d/Combine.cpp            \
   ../Lib/vc4/Functions.cpp          \
   ../Lib/vc4/RegisterMap.h          \
