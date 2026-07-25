@@ -225,7 +225,7 @@ void integer_division(Int &Q, Int &R, IntExpr num, IntExpr denom) {
       Where (top_bit >= i)
         R = R << 1;                  // Left-shift R by 1 bit (lsb == 0)
         R |= (N >> i) & 1;           // Set the least-significant bit of R equal to bit i of the numerator
-        Where (rem >= D)
+        Where (R >= D)
           R -= D;
           Q |= (1 << i);
         End
