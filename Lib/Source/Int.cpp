@@ -62,6 +62,7 @@ Int::operator IntExpr() const {
  * Usage example:
  *
  *     Int val = 123;
+ *     // Variable a now contains: <123,123,123,123,123,123,123,123,123,123,123,123,123,123,123,123>
  */
 Int &Int::operator=(int x) {
   Int tmp(x);
@@ -69,12 +70,22 @@ Int &Int::operator=(int x) {
   return *this;
 }
 
-/** @} */ // end of group SourceLanguage
 
+/**
+ * @brief Assign The contents of variable `rhs` Int variable.
+
+ * Usage example:
+ *
+ *     Int a = 123;
+ *     Int b = a;
+ */
 Int &Int::operator=(Int const &rhs) {
   assign(m_expr, rhs.expr());
-  return *this; //rhs;
+  return *this;
 }
+
+/** @} */ // end of group SourceLanguage
+
 
 IntExpr Int::operator=(IntExpr rhs) {
   assign(m_expr, rhs.expr());
@@ -165,7 +176,13 @@ IntExpr index() {
 
 
 /**
- * @brief Return a vector containing the QPU id.
+ * @brief Return the id of the QPU currently running.
+ *
+ * The QPU is is a sequential value assigned to a QPU on execution of a kernel.
+ * For example, if the number of QPU's is set to 4, there will be 4 QPU's running with
+ * respectively `me()` == 0, 1, 2, 3.
+ *
+ * The number of QPU's running a kernel can be set with BaseKernel::setNumQPUs().
  *
  * Implemented as a reserved variable.
  */
@@ -176,7 +193,9 @@ IntExpr me() {
 
 
 /**
- * @brief Return a vector containing the QPU count.
+ * @brief Return the number of QPU's assigned to the execution of the current kernel.
+ *
+ * The number of QPU's running a kernel can be set with BaseKernel::setNumQPUs().
  *
  * Implemented as a reserved variable.
  */

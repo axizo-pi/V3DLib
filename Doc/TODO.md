@@ -7,6 +7,8 @@
 ## Current
 
 - [ ] Use external mempory-mapped buffer objects.
+- [ ] Fix emulator, errors occur during execution.  
+      **TODO:** Find kernels in unit tests that fail (`testConvert.cpp`?).
 
 
 ### v3d
