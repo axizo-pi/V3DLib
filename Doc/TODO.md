@@ -6,7 +6,7 @@
 
 ## Current
 
-- [ ] Use external mempory-mapped buffer objects.
+- [ ] Use external memory-mapped buffer objects.
 - [ ] Fix emulator, errors occur during execution.  
       **TODO:** Find kernels in unit tests that fail (`testConvert.cpp`?).
 
@@ -103,13 +103,6 @@ are uninitialized and therefore garbage. Due to this, things likely explode on e
 ### Library Code
 - [ ] Add check in emulator for too many `gather()` calls. Or not enough `receive()` calls, same thing
 - [ ] Add method for build/platform info, for display on startup of an application
-
-
-### Other
-
-- [x] `Rot3D` make various versions selectable on command line
-- [x] enable `-Wall` on compilation and deal with all the fallout
-- [x] enable build for QPU and Emulation mode together
 
 
 ### Ideas for Examples
