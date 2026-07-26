@@ -152,7 +152,13 @@ IntExpr abs(IntExpr a) {
 /**
  * @brief Determine index of topmost bit set.
  *
- * Incoming values are assumed to be unsigned.
+ * Can be used on any variable type, but using it on unsigned values make the most sense.
+ *
+ * Usage example:
+ *
+ *     Int  tmp = 1 << (index() + 3);
+ *     Int b = topmost_bit(tmp);
+ *     // b now contains: <3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18>
  *
  * This is basically the function of `clz`, which is a hardware operation.
  * Therefore, this operation is defined using `clz`.

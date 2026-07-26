@@ -72,12 +72,21 @@ uint32_t Float::param_value(float val) {
 }
 
 
+/** @addtogroup SourceLanguage
+ *  @{
+ */
+
 /**
- * @brief Reinterpret the incoming integer expression as a float
+ * @brief Reinterpret the incoming integer expression as a float.
+ *
+ * This is a bitwise conversion; whatever the bits of the integer expessions are,
+ * it is reinterpreted as a float.
  */
 void Float::as_float(IntExpr rhs) {
   (*this) = FloatExpr(rhs.expr());
 }
+
+/** @} */ // end of group SourceLanguage
 
 
 /**
