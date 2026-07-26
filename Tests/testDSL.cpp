@@ -435,8 +435,13 @@ void int_ops_kernel(Int::Ptr result) {
   store(abs(index() - 8));
   store(two_complement(index() - 8));       // 2's complement, library call
 
-  Int b = topmost_bit(1 << (index() + 3));
-  store(b);
+  Int tmp_b = 1 << index();
+  Int b = clz(tmp_b);     store(b);
+  b = topmost_bit(tmp_b); store(b);
+
+  tmp_b = 1 << (index() + 3);
+  b = clz(tmp_b);         store(b);
+  b = topmost_bit(tmp_b); store(b);
 
   b = -256;
   store(b);
@@ -537,10 +542,9 @@ void rot_kernel(Ptr result, Ptr a) {
 
 TEST_CASE("Test specific operations in DSL [dsl][ops]") {
   SUBCASE("Test integer operations") {
-    int const N = 12;  // Number of expected results
+    int const N = 16;  // Number of expected results
 
     auto k = compile(int_ops_kernel);
-    //to_file("int_ops_kernel.txt", k.dump());
 
     Int::Array result(16*N);
     result.fill(-1);
@@ -549,11 +553,14 @@ TEST_CASE("Test specific operations in DSL [dsl][ops]") {
     k.run();
 
     vector<vector<int>> expected = {
-      {3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18},                    // +=
-      {-8, -7, -6, -5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5, 6, 7},                     // -=
-      {8, 7, 6, 5, 4, 3, 2, 1, 0, 1, 2, 3, 4, 5, 6, 7},                             // abs
-      {8, 7, 6, 5, 4, 3, 2, 1, 0, -1, -2, -3, -4, -5, -6, -7},                      // 2-s complement
-      {3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18},                    // topmost_bit
+      { 3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18},             // +=
+      {-8, -7, -6, -5, -4, -3, -2, -1,  0,  1,  2,  3,  4,  5,  6,  7},             // -=
+      { 8,  7,  6,  5,  4,  3,  2,  1,  0,  1,  2,  3,  4,  5,  6,  7},             // abs
+      { 8,  7,  6,  5,  4,  3,  2,  1,  0, -1, -2, -3, -4, -5, -6, -7},             // 2-s complement
+			{31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16},             // clz
+      { 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15},             // topmost_bit
+			{28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13},             // clz + 3
+      { 3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15, 16, 17, 18},             // topmost_bit + 3
       {-256, -256, -256, -256, -256, -256, -256, -256, -256, -256, -256, -256, -256, -256, -256, -256}, // b = -256 
 
       //

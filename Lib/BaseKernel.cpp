@@ -56,7 +56,14 @@ void BaseKernel::compile_init() {
 
   if (!m_settings.compile_only) {
     if (Platform::use_main_memory() && m_settings.run_type == QPU) {
-      warn << "Main memory selected in QPU mode, running on emulator instead of QPU.";
+			static int warn_count = 0;
+
+			if (warn_count == 0) {
+	      warn << "Main memory selected in QPU mode, running on emulator instead of QPU. "
+					   << "This also applies to subsequent calls.";
+				warn_count++;
+			}
+
       m_settings.run_type = Emulator;
       select_kernel = vc4;
     }
@@ -117,8 +124,10 @@ void BaseKernel::run(bool wait_complete) {
         fatal("Main memory selected in QPU mode and not compiled for vc4, can not run.");
       }
     } else {
-       if (!m_settings.compile_only && (m_settings.run_type == QPU)) {
-        warn << "Main memory selected in QPU mode, running on emulator instead of QPU.";
+		  // This is also tested in `compile_init()`. However this version is called
+			// outside of unit tests.
+      if (!m_settings.compile_only && (m_settings.run_type == QPU)) {
+       warn << "Main memory selected in QPU mode, running on emulator instead of QPU.";
         m_settings.run_type = Emulator;
       }
     }

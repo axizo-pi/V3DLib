@@ -38,6 +38,8 @@ void check_vector(
   std::vector<T1> const &expected,
   float precision = 0.0f
 ) {
+	REQUIRE(expected.size() % 16 == 0);  // size must match 16-vectors
+
   bool passed = true;
   int j = 0;
   for (; j < (int) expected.size(); ++j) {

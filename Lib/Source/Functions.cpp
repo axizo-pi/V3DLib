@@ -145,36 +145,28 @@ IntExpr abs(IntExpr a) {
 }
 
 
+/** @addtogroup SourceLanguage
+ *  @{
+ */
+
 /**
  * @brief Determine index of topmost bit set.
  *
  * Incoming values are assumed to be unsigned.
- * a == 0 will return -1.
  *
- * **TODO:** This is basically the function of `clz`, which is a hardware operation.
- *           Consider replacing with `clz`.
+ * This is basically the function of `clz`, which is a hardware operation.
+ * Therefore, this operation is defined using `clz`.
+ *
+ * **TODO:** Consider removing.
  */
 IntExpr topmost_bit(IntExpr in_a) {
   return create_function_snippet([in_a] {
-    Int a = in_a;
-    Int topmost = -1;
-
-    For (Int n = 30, n >= 0, n--)
-      Where (topmost == -1)
-        Where ((a & (1 << n)) != 0)
-          topmost = n;
-        End
-      End
-    End
+    Int topmost = 31 - clz(in_a);
 
     Return(topmost);
   });
 }
 
-
-/** @addtogroup SourceLanguage
- *  @{
- */
 
 /**
  * @brief Long integer division, returning quotient and remainder.
@@ -216,7 +208,6 @@ void integer_division(Int &Q, Int &R, IntExpr num, IntExpr denom) {
   R = 0;
 
   IntExpr top_bit = topmost_bit(N);  // Find first non-zero bit
-
 
   For (Int i = 30, i >= 0, i--)
     Where (D == 0)

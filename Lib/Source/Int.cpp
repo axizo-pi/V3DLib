@@ -226,12 +226,22 @@ IntExpr rotate(IntExpr a, IntExpr b) {
 }
 
 
+/** @addtogroup SourceLanguage
+ *  @{
+ */
+
 /**
- * Count Leading Zeroes
+ * @brief Count leading zeroes
+ *
+ * Determine the number of zeroes before the first non-zero bit.
+ *
+ * This is a hardware operation for `vc4` as well as `v3d`.
  */
 IntExpr clz(IntExpr a) {
   return mkIntApply(a, Op(CLZ, INT32), a);
 }
+
+/** @} */ // end of group SourceLanguage
 
 
 IntExpr operator+(IntExpr a, IntExpr b)  { return mkIntApply(a, Op(ADD,  INT32), b); }
