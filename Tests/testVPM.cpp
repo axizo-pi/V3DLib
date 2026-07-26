@@ -69,18 +69,18 @@ void init_expected(Int::Array &expected, int numQPUs) {
 }
 
 bool check_VPM_usage() {
-	static int warn_count = 0;
+  static int warn_count = 0;
 
   if (!Platform::compiling_for_vc4()) {
-		if (warn_count == 0) {
-	    warn << "Not running VPM mem on QPU's for v3d";
-			warn_count++;
-		}
+    if (warn_count == 0) {
+      warn << "Not running VPM mem on QPU's for v3d";
+      warn_count++;
+    }
 
-		return false;
+    return false;
   }
 
-	return true;
+  return true;
 }
 
 }
@@ -118,7 +118,7 @@ TEST_CASE("Test VPM memory [vpm]") {
 
 
   SUBCASE("on QPUs") {
-		if (!check_VPM_usage()) return;
+    if (!check_VPM_usage()) return;
 
     Int::Array result(numQPUs*16);
 
@@ -166,7 +166,7 @@ TEST_CASE("Test VPM array [vpm][arr]") {
 
 
   SUBCASE("on QPUs") {
-		if (!check_VPM_usage()) return;
+    if (!check_VPM_usage()) return;
 
     Int::Array result(numQPUs*16);
 
