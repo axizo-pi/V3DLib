@@ -269,90 +269,18 @@ IntExpr integer_division_f(IntExpr in_a, IntExpr in_b) {
   });
 }
 
-/** @} */ // end of group SourceLanguage
-
 
 ///////////////////////////////////////////////////////////////////////////////
 // Trigonometric functions
 ///////////////////////////////////////////////////////////////////////////////
 
-namespace scalar {
-
 /**
- * scalar version of cosine.
+ * @brief Cosine for QPU using Taylor approximation.
  *
- * This circumvents the QPU cos() function.
+ * `vc4` has no cosine, hence an explicit implementation is needed.  
+ * `v3d` has a hardware operation for cosine.
  *
- * The input param is normalized on 2*M_PI. Hence setting `x = 1.0f` means that
- * `cos(2*M_PI) is calculated.
- *
- * From source:
- *   If EXTRA_PRECISION is defined, the maximum error is about 0.00109 for the range -π to π,i
- *   assuming T is double. Otherwise, the maximum error is about 0.056 for the same range.
- *
- * Source: https://stackoverflow.com/questions/18662261/fastest-implementation-of-sine-cosine-and-square-root-in-c-doesnt-need-to-b/28050328#28050328
- */
-float cos(float x_in, bool extra_precision) noexcept {
-  double x = x_in;
-  
-  // setting to true in param overrides lib setting
-  extra_precision |= LibSettings::use_high_precision_sincos();
-
-
-  x -= .25 + std::floor(x + .25);
-  x *= 16. * (std::abs(x) - .5);
-
-  if (extra_precision) {
-    //Log::warn << "doing extra precision 2";
-    x += .225 * x * (std::abs(x) - 1.0f);
-  }
-
-  return (float) x;
-}
-
-
-/**
- * scalar version of sine
- *
- * NB: The input param is normalized on 2*M_PI.
- */
-float sin(float x_in, bool extra_precision) noexcept {
-  return functions::scalar::cos(0.25f - x_in, extra_precision);
-}
-
-} // namespace scalar
-
-
-/**
- * This circumvents the SFU cos() function.
- *
- * See header comment of scalar cos().
- *
- * Possible alternative: https://www.johndcook.com/blog/2021/03/21/simple-trig-approx/
- */
-FloatExpr cos_prev(FloatExpr x_in, bool extra_precision) {
-  Float x = x_in;
-
-  x -= 0.25f + functions::ffloor(x + 0.25f);  comment("Start cosine");
-  x *= 16.0f * (fabs(x) - 0.5f);
-
-  extra_precision |= LibSettings::use_high_precision_sincos();
-  if (extra_precision) {
-    //Log::warn << "doing extra precision";
-    x += 0.225f * x * (fabs(x) - 1.0f);
-  }
-
-  return x;
-}
-
-
-/**
- * @brief cosine for QPU using Taylor approximation.
- *
- * This is _much_ more precise than the previous functions `cos_prev()` (see above).  
- * `vc4` has no cosine, hence an explicit implementation is needed.
- *
- * @param x_in angle in units of 2*M_PI. Hence `x_in = 0.5f` stands for 1M_PI`. 
+ * @param x_in Angle in units of `2*PI`. Hence `x_in = 0.5f` stands for `PI`. 
  *
  * Source: https://www.numberanalytics.com/blog/ultimate-taylor-trigonometry-guide#series-for-sine-and-cosine
  */
@@ -396,20 +324,26 @@ FloatExpr cos(FloatExpr x_in) {
 }
 
 
+/**
+ * @brief Calculate sin value for given input.
+ *
+ * `sin()` is implemented in terms of `cos()`.
+ *
+ * @param x_in Angle in units of `2*PI`. Hence `x_in = 0.5f` stands for `M_PI`. 
+ *
+ */
 FloatExpr sin(FloatExpr x_in) {
   return functions::cos(0.25f - x_in);
 }
 
 
 /**
- * Calculate sine for v3d using hardware
+ * @brief Calculate sine for v3d using hardware
  * 
- * Use this for v3d only.
+ * **Normally, you do not need to call this function explicitly**.  
+ * Use this for `v3d` only. The compilation will select this when appropriate.
  *
- * v3d sin takes params in which are multiples of PI.
- * Also works only in range -PI/2..PI/2.
- *
- * Incoming values are multiples of 2*PI.
+ * @param x_in Angle in units of `2*PI`. Works only in range `-PI/2..PI/2`.
  *
  * ============================================================================
  * NOTES
@@ -452,8 +386,6 @@ FloatExpr sin(FloatExpr x_in) {
  *   Okay, that was real interesting.
  */
 FloatExpr sin_v3d(FloatExpr x_in) {
-  //Log::warn << "using v3d sin";
-
   return create_float_function_snippet([x_in] {
     Float tmp = x_in;                    comment("Start source lang v3d sin");
 
@@ -473,6 +405,60 @@ FloatExpr sin_v3d(FloatExpr x_in) {
     Return(sin_op(tmp));
   });
 }
+
+/** @} */ // end of group SourceLanguage
+
+
+namespace scalar {
+
+/**
+ * scalar version of cosine.
+ *
+ * This circumvents the QPU cos() function.
+ *
+ * The input param is normalized on 2*M_PI. Hence setting `x = 1.0f` means that
+ * `cos(2*M_PI) is calculated.
+ *
+ * From source:
+ *   If EXTRA_PRECISION is defined, the maximum error is about 0.00109 for the range -π to π,i
+ *   assuming T is double. Otherwise, the maximum error is about 0.056 for the same range.
+ *
+ * Source: https://stackoverflow.com/questions/18662261/fastest-implementation-of-sine-cosine-and-square-root-in-c-doesnt-need-to-b/28050328#28050328
+ *
+ * **TODO:** Taylor approximation is demonstrably better. Consider changing to Taylor.
+ */
+float cos(float x_in, bool extra_precision) noexcept {
+  double x = x_in;
+  
+  // setting to true in param overrides lib setting
+  extra_precision |= LibSettings::use_high_precision_sincos();
+
+
+  x -= .25 + std::floor(x + .25);
+  x *= 16. * (std::abs(x) - .5);
+
+  if (extra_precision) {
+    //Log::warn << "doing extra precision 2";
+    x += .225 * x * (std::abs(x) - 1.0f);
+  }
+
+  return (float) x;
+}
+
+
+/**
+ * scalar version of sine
+ *
+ * NB: The input param is normalized on 2*M_PI.
+ */
+float sin(float x_in, bool extra_precision) noexcept {
+  return functions::scalar::cos(0.25f - x_in, extra_precision);
+}
+
+} // namespace scalar
+
+
+//### End Trigonometric functions ###
 
 
 /**
@@ -557,7 +543,7 @@ FloatExpr ffloor_vc4(FloatExpr x) {
 /**
  * Implementation of ffloor() in source language.
  *
- * `v3d` has an ffloor operation, and is a one-liner.
+ * `v3d` has a hardware ffloor operation, and is therefore a one-liner.
  */
 FloatExpr ffloor(FloatExpr x) {
   //warn << "Handling ffloor()";

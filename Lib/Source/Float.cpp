@@ -77,24 +77,27 @@ uint32_t Float::param_value(float val) {
  */
 
 /**
- * @brief Reinterpret the incoming integer expression as a float.
+ * @brief Reinterpret the incoming Int expression as Float.
  *
  * This is a bitwise conversion; whatever the bits of the integer expessions are,
- * it is reinterpreted as a float.
+ * they are reinterpreted as a Float.
  */
 void Float::as_float(IntExpr rhs) {
   (*this) = FloatExpr(rhs.expr());
 }
 
-/** @} */ // end of group SourceLanguage
-
 
 /**
- * @brief Reinterpret the float expression as an int expression
+ * @brief Reinterpret the Float value as an Int expression.
+ *
+ * This is a bitwise conversion; whatever the bits of the Float variable are,
+ * they are reinterpreted as an Int.
  */
 IntExpr Float::as_int() const {
   return IntExpr(m_expr);
 }
+
+/** @} */ // end of group SourceLanguage
 
 
 /**

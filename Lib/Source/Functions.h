@@ -26,18 +26,19 @@ FloatExpr cos(FloatExpr x_in);
 FloatExpr sin(FloatExpr x_in);
 FloatExpr sin_v3d(FloatExpr x_in);
 
-void float_fields(Float &x_f, Int &sign, Int &exponent, Int &significand);
-
-FloatExpr ffloor_vc4(FloatExpr x);
-FloatExpr ffloor(FloatExpr x);
-FloatExpr fabs(FloatExpr x);
-
 namespace scalar {
 
 float cos(float x_in, bool extra_precision = false) noexcept;
 float sin(float x_in, bool extra_precision = false) noexcept;
 
 } // namespace scalar
+
+void float_fields(Float &x_f, Int &sign, Int &exponent, Int &significand);
+
+FloatExpr ffloor_vc4(FloatExpr x);
+FloatExpr ffloor(FloatExpr x);
+FloatExpr fabs(FloatExpr x);
+
 }  // namespace functions
 
 void rotate_sum(Int &input, Int &result);

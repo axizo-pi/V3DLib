@@ -7,10 +7,19 @@
 /** @defgroup SourceLanguage Source Language Operations.
  *
  * This page will document all operations which can be used in a kernel
- * at Source-level. Ie., the operations that can be used when defining
- * a kernel at the top level.
+ * at Source-lagniage level.
+ * Ie., the operations that can be used when defining a kernel at the top level.
  *
- * **NOTE:** Ongoing work, far from complete.
+ * --------------------------
+ *
+ * ## Notes
+ *
+ * - **Ongoing work, far from complete.**
+ * - It is worth noting that the hardware QPU's don't care if a value
+ *   in a vector variable is Float or Int. A random Float hardware operation on
+ *   an Int register will work just fine.  
+ *   The difference between Int and Float is actually enforced in the Source language.
+ *   Regard this as an attempt to retain your sanity when creating kernels.
  */
 
 namespace V3DLib {
@@ -235,7 +244,13 @@ IntExpr rotate(IntExpr a, IntExpr b) {
  *
  * Determine the number of zeroes before the first non-zero bit.
  *
- * This is a hardware operation for `vc4` as well as `v3d`.
+ * This is a hardware operation for both `vc4` and `v3d`.
+ *
+ * Usage Example:
+ *
+ *      Int a = 1 << index();
+ *      Int b = clz(a);
+ *      // b contains: <31, 30, 29, 28, 27, 26, 25, 24, 23, 22, 21, 20, 19, 18, 17, 16>
  */
 IntExpr clz(IntExpr a) {
   return mkIntApply(a, Op(CLZ, INT32), a);
