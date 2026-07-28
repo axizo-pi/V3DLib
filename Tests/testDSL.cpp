@@ -1170,7 +1170,7 @@ TEST_CASE("Test edge cases of TMU [dsl][tmu]") {
     //
     // Test multiple QPU's
     //
-    const int NumQPUs = 7;  // All values appear to work fine
+    const int NumQPUs = 8;  // All values appear to work fine
 
     for (int i = 0; i < (int) expected.size(); ++i) {
       expected[i] *= NumQPUs;
