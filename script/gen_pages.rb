@@ -47,6 +47,7 @@ class GenPages < WebController
 			"Issues.md",
 			"TODO.md",
 			"Overview.md",
+			"Changes.md",
 			"DMAVPM.md",
 			"Profiling/ComparingVMPandTMU.md",
 			"Profiling/BlockMatrix.md",
