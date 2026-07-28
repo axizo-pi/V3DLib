@@ -40,6 +40,28 @@ Also, from what I understand, you will need a specially compiled linux kernel to
 For `vc4`, there is a workaround for this: use DMA exclusively. For `v3d`, this is not an option.
 
 
+## Int initialization compiles but it illegal
+
+*This can not be fixed - just keep it in mind*
+
+Example:
+
+    Float x = freq*(x + toFloat(index() - offset));  // Note usage x in RHS (redacted from original)
+
+### Research
+
+The issue here is that the following is allowed by `C++` syntax:
+
+    int x = x;  // or any other rhs with x
+
+...and this is also valid for `Int x`. With `-Wall`, you will get output:
+
+    warning: ‘x’ may be used uninitialized in this function [-Wmaybe-uninitialized]
+
+In the case of `Int x = x` the compiler will happily compile, but the contents of `x` on the rhs
+are uninitialized and therefore garbage. Due to this, things likely explode on execution.
+
+
 ## 32-bit programs will not run with a 64-bit kernel
 
 While it is certainly possible to run 32-bit programs with a 64-bit kernel, the initialization code

@@ -341,9 +341,9 @@ So, calculation:
 
 # The Next Step: Clustering
 
-I have 14 Pi's organized in three clusters:
+I have 15 Pi's organized in three clusters:
 
-![Pi Clusters](./images/Pi_clusters.jpeg)
+<img src="./images/Pi_clusters.jpeg" alt="Pi Clusters" style="width:20%;"/>
 
 Getting these clustered Pi's to work together is an ongoing, separate project.
 
