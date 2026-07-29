@@ -72,6 +72,12 @@ uint32_t Float::param_value(float val) {
 }
 
 
+/**
+ * Cast to a FloatExpr
+ */
+Float::operator FloatExpr() const { return FloatExpr(m_expr); }
+
+
 /** @addtogroup SourceLanguage
  *  @{
  */
@@ -97,24 +103,26 @@ IntExpr Float::as_int() const {
   return IntExpr(m_expr);
 }
 
-/** @} */ // end of group SourceLanguage
 
-
-/**
- * Cast to a FloatExpr
- */
-Float::operator FloatExpr() const { return FloatExpr(m_expr); }
-
+// ============================================================================
+// Assignments
+// ============================================================================
 
 /**
- * Assignment
+ * @brief Assign a float constant to a Float variable.
+ *
+ * Usage example:
+ *
+ *     Float a = 1.23f;
+ *     // Variable a now contains: <1.23f,1.23f,1.23f,1.23f,1.23f,1.23f,1.23f,1.23f,1.23f,1.23f,1.23f,1.23f,1.23f,1.23f,1.23f,1.23f>
  */
-
 Float &Float::operator=(float rhs) {
   Float tmp(rhs);
   assign(m_expr, tmp.expr());
   return self();
 }
+
+/** @} */ // end of group SourceLanguage
 
 
 Float &Float::operator=(Float &rhs) {

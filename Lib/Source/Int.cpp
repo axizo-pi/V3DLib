@@ -70,7 +70,7 @@ Int::operator IntExpr() const {
  *
  * Usage example:
  *
- *     Int val = 123;
+ *     Int a = 123;
  *     // Variable a now contains: <123,123,123,123,123,123,123,123,123,123,123,123,123,123,123,123>
  */
 Int &Int::operator=(int x) {
