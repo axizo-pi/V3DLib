@@ -251,10 +251,10 @@ IntExpr integer_division_f(IntExpr in_a, IntExpr in_b) {
 
   Float tmp1 = a/b;
 
-  // Doesn't appear to do much
-  //Float tmp = functions::ffloor(tmp1);  // ffloor() fixes rounding up 
-
-  res = toInt(tmp1);
+	// ffloor() fixes rounding up.
+	// Doesn't do much for vc4, important for v3d
+  Float tmp = functions::ffloor(tmp1);
+  res = toInt(tmp);
 
   Where (in_b == 0)
     res = _INF();
