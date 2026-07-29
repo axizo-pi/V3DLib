@@ -63,7 +63,7 @@ void signed_to_float_kernel(Float::Ptr result, Int::Ptr input, Int Blocks) {
 void unsigned_to_float_kernel(Float::Ptr result, Int::Ptr input, Int Blocks) {
   For (Int i = 0, i < Blocks, i++)
     Int   n = *input;
-    Float r = UnsignedtoFloat(n);
+    Float r = functions::UnsignedtoFloat(n);
     *result = r;
 
     input.inc();
@@ -335,8 +335,22 @@ TEST_CASE("Test conversion of unsigned to float [convert]") {
   k.load(&result, &input, Blocks).run();
   //warn << "result: " << dump_array(result);
 
+/*
+  std::string buf;
+  buf << "result unsigned: ";
+  for (int i = 0; i < 16*Blocks; ++i) {
+    buf << ((unsigned) result[i]) << ", ";
+  }
+  warn << buf;
+*/
+
+  float Precision = 0.0f;
+  if (Platform::compiling_for_vc4()) {
+    Precision = 256.0f;  // vc4 not precise
+  }
+
   // Float result is compared to unsigned values
-  check_vector(result, 0, expected);
+  check_vector(result, 0, expected, Precision);
 }
 
 

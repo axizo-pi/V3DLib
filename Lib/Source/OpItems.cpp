@@ -1,37 +1,38 @@
 #include "OpItems.h"
 #include <vector>
 #include "Support/basics.h"
+#include "Support/Helpers.h"  // trim()
 #include "Support/Platform.h"
 
 namespace V3DLib {
 namespace {
 
 std::vector<OpItem> m_list = {
-  {ADD,    "+",        false, Enum::A_FADD,           Enum::A_ADD},
-  {SUB,    "-",        false, Enum::A_FSUB,           Enum::A_SUB},
-  {MUL,    "*",        false, Enum::M_FMUL,           Enum::M_MUL24},
-  {MIN,    " min ",    false, Enum::A_FMIN,           Enum::A_MIN},
-  {MAX,    " max ",    false, Enum::A_FMAX,           Enum::A_MAX},
-  {ItoF,   "(Float) ", false, Enum::A_ItoF,           Enum::OP_UNDEFINED,    false, 1},
-  {UtoF,   "(Float) ", false, Enum::A_UtoF,           Enum::OP_UNDEFINED,    true,  1},
-  {FtoI,   "(Int) ",   false, Enum::OP_UNDEFINED,     Enum::A_FtoI,  false, 1},
-  {ROTATE, " rotate ", false, Enum::M_ROTATE,         Enum::M_ROTATE},
-  {SHL,    " << ",     false, Enum::OP_UNDEFINED,     Enum::A_SHL},
-  {SHR,    " >> ",     false, Enum::OP_UNDEFINED,     Enum::A_ASR},
-  {USHR,   " _>> ",    false, Enum::OP_UNDEFINED,     Enum::A_SHR},
-  {ROR,    " ror ",    false, Enum::OP_UNDEFINED,     Enum::A_ROR},
-  {BAND,   " & ",      false, Enum::OP_UNDEFINED,     Enum::A_BAND},
-  {BOR,    " | ",      false, Enum::OP_UNDEFINED,     Enum::A_BOR},
-  {BXOR,   " ^ ",      false, Enum::OP_UNDEFINED,     Enum::A_BXOR},
-  {BNOT,   "~",        false, Enum::OP_UNDEFINED,     Enum::A_BNOT, false, 1},
-  {CLZ,    "clz",      false, Enum::OP_UNDEFINED,     Enum::A_CLZ,  false, 1},
+  {ADD,    "+",         false, Enum::A_FADD,           Enum::A_ADD},
+  {SUB,    "-",         false, Enum::A_FSUB,           Enum::A_SUB},
+  {MUL,    "*",         false, Enum::M_FMUL,           Enum::M_MUL24},
+  {MIN,    " min ",     false, Enum::A_FMIN,           Enum::A_MIN},
+  {MAX,    " max ",     false, Enum::A_FMAX,           Enum::A_MAX},
+  {ItoF,   "(Float) ",  false, Enum::A_ItoF,           Enum::OP_UNDEFINED,    false, 1},
+  {UtoF,   "(UFloat) ", false, Enum::A_UtoF,           Enum::OP_UNDEFINED,    true,  1},
+  {FtoI,   "(Int) ",    false, Enum::OP_UNDEFINED,     Enum::A_FtoI,  false, 1},
+  {ROTATE, " rotate ",  false, Enum::M_ROTATE,         Enum::M_ROTATE},
+  {SHL,    " << ",      false, Enum::OP_UNDEFINED,     Enum::A_SHL},
+  {SHR,    " >> ",      false, Enum::OP_UNDEFINED,     Enum::A_ASR},
+  {USHR,   " _>> ",     false, Enum::OP_UNDEFINED,     Enum::A_SHR},
+  {ROR,    " ror ",     false, Enum::OP_UNDEFINED,     Enum::A_ROR},
+  {BAND,   " & ",       false, Enum::OP_UNDEFINED,     Enum::A_BAND},
+  {BOR,    " | ",       false, Enum::OP_UNDEFINED,     Enum::A_BOR},
+  {BXOR,   " ^ ",       false, Enum::OP_UNDEFINED,     Enum::A_BXOR},
+  {BNOT,   "~",         false, Enum::OP_UNDEFINED,     Enum::A_BNOT, false, 1},
+  {CLZ,    "clz",       false, Enum::OP_UNDEFINED,     Enum::A_CLZ,  false, 1},
 
   // v3d-specific
-  {FFLOOR, "ffloor",    true, Enum::A_FFLOOR, Enum::OP_UNDEFINED,   true, 1},
-  {SIN,    "sin",       true, Enum::A_FSIN,   Enum::OP_UNDEFINED,   true, 1},  // also SFU function
-  {TIDX,   "tidx",     false, Enum::OP_UNDEFINED,     Enum::A_TIDX, true, 0},
-  {EIDX,   "eidx",     false, Enum::OP_UNDEFINED,     Enum::A_EIDX, true, 0},
-  {BARRIER,"barrier",  false, Enum::OP_UNDEFINED,     Enum::A_BARRIER, true, 0},
+  {FFLOOR, "ffloor",    true,  Enum::A_FFLOOR, Enum::OP_UNDEFINED,   true, 1},
+  {SIN,    "sin",       true,  Enum::A_FSIN,   Enum::OP_UNDEFINED,   true, 1},  // also SFU function
+  {TIDX,   "tidx",      false, Enum::OP_UNDEFINED,     Enum::A_TIDX, true, 0},
+  {EIDX,   "eidx",      false, Enum::OP_UNDEFINED,     Enum::A_EIDX, true, 0},
+  {BARRIER,"barrier",   false, Enum::OP_UNDEFINED,     Enum::A_BARRIER, true, 0},
 
   // SFU functions
   {RECIP,     "recip",     true, Enum::A_RECIP, Enum::OP_UNDEFINED, false, 1},
@@ -118,7 +119,10 @@ std::string OpItem::disp(std::string const &lhs, std::string const &rhs) const {
 
 std::string OpItem::dump() const {
   std::string ret;
-  ret << "Op " << tag << " (" << str << ")";
+  std::string tmp = str;
+  trim(tmp);
+
+  ret << "Op " << tag << " '" << tmp << "'";
   return ret;
 }
 
@@ -168,7 +172,7 @@ Enum opcode(Op const &op) {
     if (Platform::compiling_for_vc4()) {
       std::string msg;
       msg << "opcode(): " << item->dump() << " is only for v3d";
-      assertq(msg);
+      assertq(false, msg);
     }
   }
 

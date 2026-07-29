@@ -33,6 +33,7 @@ float sin(float x_in, bool extra_precision = false) noexcept;
 
 } // namespace scalar
 
+FloatExpr UnsignedtoFloat(IntExpr a);
 void float_fields(Float &x_f, Int &sign, Int &exponent, Int &significand);
 
 FloatExpr ffloor_vc4(FloatExpr x);

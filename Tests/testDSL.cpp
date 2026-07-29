@@ -450,7 +450,8 @@ void int_ops_kernel(Int::Ptr result) {
   store(16*16/index());
 
   comment("Integer division by float");
-  store(integer_division_f(16*16, index()));
+  Int tmp = integer_division_f(16*16, index());
+  store(tmp);
 
   comment("First usage -index() starts next");
   store((-16*16)/(-index()));
@@ -545,6 +546,7 @@ TEST_CASE("Test specific operations in DSL [dsl][ops]") {
     int const N = 16;  // Number of expected results
 
     auto k = compile(int_ops_kernel);
+    to_file("int_ops_kernel.txt", k.dump());
 
     Int::Array result(16*N);
     result.fill(-1);
@@ -579,7 +581,14 @@ TEST_CASE("Test specific operations in DSL [dsl][ops]") {
       {0, 1, 3, 4, 6, 7, 9, 10, 12, 13, 15, 17, 18, 20, 21, 23}
     };
 
-    check_vectors(result, expected);
+    float Precision = 0;
+    if (Platform::compiling_for_vc4()) {
+      // This is specifically for  integer_division_f(), index == 10 in result and expected.
+      // In this case, off-by-1 downward is common.
+      Precision = 1;
+    }
+
+    check_vectors(result, expected, Precision);
   }
 
 

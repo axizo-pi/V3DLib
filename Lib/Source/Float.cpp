@@ -16,14 +16,13 @@ FloatExpr unary_float_op(OpId op_id, FloatExpr a) {
 // ============================================================================
 
 FloatExpr::FloatExpr(float x) {
-  //Log::warn << "FloatExpr ctor val: " << x;
   m_expr = std::make_shared<Expr>(x);
 }
 
 
 FloatExpr::FloatExpr(Deref<Float> d) : BaseExpr(d.expr()) {}
 
-FloatExpr FloatExpr::operator-() { return (*this)*-1.0f; }
+FloatExpr FloatExpr::operator-() { return (*this) * -1.0f; }
 
 
 // ============================================================================
@@ -222,17 +221,6 @@ FloatExpr toFloat(IntExpr a) {
 }
 
 
-/**
- * @brief Conversion unsigned to Float
- *
- * Int is usually a signed value, here it is regarded as unsigned.
- */
-FloatExpr UnsignedtoFloat(IntExpr a) {
-  Expr::Ptr e = mkApply(a.expr(), Op(UtoF, FLOAT));
-  return FloatExpr(e);
-}
-
-
 FloatExpr ffloor(FloatExpr a) { return unary_float_op(FFLOOR, a); }
 
 FloatExpr operator+(FloatExpr a, FloatExpr b) { return mkFloatApply(a, Op(ADD, FLOAT), b); }
@@ -246,7 +234,10 @@ FloatExpr operator/(FloatExpr a, FloatExpr b) {
 FloatExpr min(FloatExpr a, FloatExpr b)       { return mkFloatApply(a, Op(MIN, FLOAT), b); }
 FloatExpr max(FloatExpr a, FloatExpr b)       { return mkFloatApply(a, Op(MAX, FLOAT), b); }
 
+
+//
 // SFU functions
+//
 FloatExpr recip(FloatExpr x)     { return mkFloatApply(x, Op(RECIP    , FLOAT)); }
 FloatExpr recipsqrt(FloatExpr x) { return mkFloatApply(x, Op(RECIPSQRT, FLOAT)); }
 FloatExpr exp(FloatExpr x)       { return mkFloatApply(x, Op(EXP      , FLOAT)); }
@@ -266,6 +257,7 @@ FloatExpr sin_op(FloatExpr x) {
   return unary_float_op(SIN, x);
 }
 
+
 FloatExpr cos(FloatExpr x) {
   if (Platform::compiling_for_vc4()) {
     return functions::cos(x);
@@ -273,6 +265,7 @@ FloatExpr cos(FloatExpr x) {
     return functions::sin_v3d(0.25f - x);
   }
 }
+
 
 FloatExpr sin(FloatExpr x) {
   if (Platform::compiling_for_vc4()) {
