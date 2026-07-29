@@ -26,6 +26,7 @@ bool contains(std::string const &s1, std::string const &s2);
 bool hasEnding (std::string const &fullString, std::string const &ending);
 std::vector<std::string> split(std::string s, std::string const &delimiter);
 int num_newlines(std::string const &s);
+void trim(std::string &s);
 
 //
 // Debug Functions

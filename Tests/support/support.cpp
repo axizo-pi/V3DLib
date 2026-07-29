@@ -1,6 +1,6 @@
 #include "support.h"
 #include "Support/Helpers.h"
-#include <algorithm>
+#include <algorithm>         // unique()
 #include <filesystem>
 #include <iterator>
 
@@ -178,34 +178,6 @@ std::string dump_array(V3DLib::Int::Array const &a, int linesize) {
 
 
 namespace {
-
-// Source: https://stackoverflow.com/questions/216823/how-can-i-trim-a-stdstring
-
-/**
- * @brief Trim from the start (in place)
- */
-inline void ltrim(std::string &s) {
-  s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
-    return !std::isspace(ch);
-  }));
-}
-
-
-/**
- * @brief Trim from the end (in place)
- */
-inline void rtrim(std::string &s) {
-  s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
-    return !std::isspace(ch);
-  }).base(), s.end());
-}
-
-
-inline void trim(std::string &s) {
-  rtrim(s);
-  ltrim(s);
-}
-
 
 struct BothAre {
   char c;

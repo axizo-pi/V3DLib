@@ -80,7 +80,6 @@ FloatExpr vpmGetFloat();
 FloatExpr rotate(FloatExpr a, IntExpr b);
 IntExpr toInt(FloatExpr a);
 FloatExpr toFloat(IntExpr a);
-FloatExpr UnsignedtoFloat(IntExpr a);
 FloatExpr ffloor(FloatExpr a);
 
 FloatExpr operator+(FloatExpr a, FloatExpr b);

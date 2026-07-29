@@ -66,13 +66,16 @@ Instr::List varAssign(AssignCond cond, Var v, Expr::Ptr expr) {
         ret << tmp; 
       }
       break;
+
     case Expr::INT_LIT:                                              // 'v := i', i is an integer literal
       //Log::warn << "varAssign() c,expr: " << v.dump() << ", " << expr->dump();
       ret << li(v, e.intLit).cond(cond);
       break;
+
     case Expr::FLOAT_LIT:                                            // 'v := f', f is a float literal
       ret << li(v, e.floatLit).cond(cond);
       break;
+
     case Expr::APPLY: {                                              // 'v := x op y'
       if (!e.lhs()->isSimple() || !e.rhs()->isSimple()) {            // x or y are not simple
         e.lhs(simplify(&ret, e.lhs()));
@@ -85,14 +88,18 @@ Instr::List varAssign(AssignCond cond, Var v, Expr::Ptr expr) {
         e.lhs(mkVar(tmpVar));
       }
 
+      auto src = [&e] () -> Var {
+        return e.lhs()->var();
+      };
+
       switch (e.apply_op().op) {                                     // x and y are simple
-        case RECIP:     ret << recip(v, e.lhs()->var());     break;
-        case RECIPSQRT: ret << recipsqrt(v, e.lhs()->var()); break;
-        case EXP:       ret << bexp(v, e.lhs()->var());      break;
-        case EXP_E:     ret << bexp_e(v, e.lhs()->var());    break;
-        case LOG:       ret << blog(v, e.lhs()->var());      break;
-        case TANH:      ret << tanh(v, e.lhs()->var());      break;
-        case LOG_E:     ret << bln(v, e.lhs()->var());       break;
+        case RECIP:     ret << recip(    v, src()); break;
+        case RECIPSQRT: ret << recipsqrt(v, src()); break;
+        case EXP:       ret << bexp(     v, src()); break;
+        case EXP_E:     ret << bexp_e(   v, src()); break;
+        case LOG:       ret << blog(     v, src()); break;
+        case TANH:      ret << tanh(     v, src()); break;
+        case LOG_E:     ret << bln(      v, src()); break;
 
         default:
           // Everything else is considered to be a single binary operation
@@ -108,6 +115,7 @@ Instr::List varAssign(AssignCond cond, Var v, Expr::Ptr expr) {
       }
     }
     break;
+
     case Expr::DEREF:                                                // 'v := *w'
       if (e.deref_ptr()->tag() != Expr::VAR) {                       // w is not a variable
         assert(!e.deref_ptr()->isLit());
@@ -449,10 +457,10 @@ Instr::List whereStmt(
   Instr::List ret;
 
   for (int i = 0; i < (int) src.size(); i++) {
-		Instr::List tmp = whereStmt(src[i], condVar, cond, (i == 0 && first_true)?true:saveRestore);
-		tmp.back().transfer_comments(*src[i]);
+    Instr::List tmp = whereStmt(src[i], condVar, cond, (i == 0 && first_true)?true:saveRestore);
+    tmp.back().transfer_comments(*src[i]);
 
-		ret << tmp;
+    ret << tmp;
   }
 
   return ret;

@@ -244,29 +244,25 @@ void integer_division(Int &Q, Int &R, IntExpr num, IntExpr denom) {
  * This is not always precise (confirmed) but more concise than the full integer calculation
  */
 IntExpr integer_division_f(IntExpr in_a, IntExpr in_b) {
-  return create_function_snippet([in_a, in_b] {
-    Float a = toFloat(in_a);    comment("Start integer division by float");
-    Float b = toFloat(in_b);
+  Float a = toFloat(in_a);    comment("Start integer division by float");
+  Float b = toFloat(in_b);
 
-    Int res;
+  Int res = 0;
 
-    Where (in_b == 0)
-      res = _INF();
-    Else
-      // Doing it like this (all in one line) leads to multiple generations of
-      // this function in the output. No clue why.
-      // res = toInt(functions::ffloor(a / b));  // ffloor() fixes rounding up 
+  Float tmp1 = a/b;
 
-      // This works as expected
-      Float tmp = a/b;
-      tmp = functions::ffloor(tmp);  // ffloor() fixes rounding up 
-      res = toInt(tmp);
-    End
+  // Doesn't appear to do much
+  //Float tmp = functions::ffloor(tmp1);  // ffloor() fixes rounding up 
 
-    comment("End integer division by float");
+  res = toInt(tmp1);
 
-    return Return(res);
-  });
+  Where (in_b == 0)
+    res = _INF();
+  End
+
+  comment("End integer division by float");
+
+  return res;
 }
 
 
@@ -408,6 +404,69 @@ FloatExpr sin_v3d(FloatExpr x_in) {
 
 /** @} */ // end of group SourceLanguage
 
+namespace {
+
+/**
+ * @brief v3d version of conversion unsigned->float
+ *
+ * v3d has a hardware operation for this.
+ */
+FloatExpr u_to_f_v3d(IntExpr a) {
+  Expr::Ptr e = mkApply(a.expr(), Op(UtoF, FLOAT));
+  return FloatExpr(e);
+}
+
+} // anon namespace
+
+
+/**
+ * @brief Conversion unsigned to Float
+ *
+ * Int is by syntax a signed value, here it is regarded as unsigned.
+ *
+ * ================================================================
+ *
+ * `vc4` is imprecise. Following records the differences for the
+ * different implementation options, in the unit test [convert].
+ *
+ * The options are registered in the code.
+ *
+ * | Option | Max diff |
+ * |--------|----------|
+ * | 1      | 65536    |
+ * | 2      |   256    |
+ * | 3      |   256    |
+ * | 4      |   256    |
+ * |--------|----------|
+ */
+FloatExpr UnsignedtoFloat(IntExpr a) {
+  if (Platform::compiling_for_vc4()) {
+    Int Mask = 0x7fffffff;
+/*
+    // Top bit indicates sign, handle separately
+    Float ret = toFloat(a & Mask);
+
+    Int max_int = 0x40000000;
+    Where ((a & 0x80000000) != 0)
+      //ret += exp(31);          // Option 1
+      ret += 2*toFloat(max_int); // Option 2
+    End
+ */   
+
+    Float ret = toFloat(shr(a, 1))*2.0f + toFloat(a & 1); // Option 3
+/*
+    // Option 4
+    Float ret = toFloat(shr(a, 1))*2.0f;
+    Where ((a & 1) != 0)
+      ret += 1.0f;
+    End
+*/
+    return ret;
+  } else {
+    return u_to_f_v3d(a);
+  }
+}
+
 
 namespace scalar {
 
@@ -492,16 +551,15 @@ void float_fields(Float &x_f, Int &sign, Int &exponent, Int &significand) {
  * Relies on IEEE 754 specs for 32-bit floats.
  * Special values (Nan's, Inf's) are ignored
  */
-FloatExpr ffloor_vc4(FloatExpr x) {
+FloatExpr ffloor_vc4(FloatExpr in_x) {
   //warn << "Handling ffloor_vc4()";
-
   Float ret;
 
-  Float x_val = x;
+  Float x = in_x;
   Int sign;
   Int exp;
   Int significand;
-  float_fields(x_val, sign, exp, significand);
+  float_fields(x, sign, exp, significand);
 
   Int frac = (significand >> exp);
 
@@ -512,7 +570,7 @@ FloatExpr ffloor_vc4(FloatExpr x) {
   //
   // TODO: freaking ugly and prob not necessary; see if can be cleaned up
   //
-  auto zap_mantissa  = [&exp] (FloatExpr x) -> FloatExpr {
+  auto zap_mantissa  = [&exp] (Float &x) -> FloatExpr {
     int const SIZE_MANTISSA = 23;
     Int fraction_mask = (1 << (SIZE_MANTISSA - exp)) - 1;
 
@@ -527,6 +585,7 @@ FloatExpr ffloor_vc4(FloatExpr x) {
   Where (exp <= 23)
     Where (x >= 1)
       ret = zap_mantissa(x);
+      //Int dummy = 1;
     Else Where (x >= 0)
       ret = 0.0f;
     Else Where (x >= -1.0f)
@@ -551,6 +610,7 @@ FloatExpr ffloor(FloatExpr x) {
   Float ret;
 
   if (Platform::compiling_for_vc4()) {
+    //warn << "Doing ffloor_vc4(x)";
     ret = ffloor_vc4(x);
   } else {
     // v3d

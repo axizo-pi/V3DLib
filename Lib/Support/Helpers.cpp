@@ -5,6 +5,7 @@
 #include <filesystem>
 #include <thread>
 #include <fstream>
+#include <algorithm>  // find_if()
 
 namespace fs = std::filesystem; // Alias for brevity
 
@@ -35,16 +36,8 @@ std::vector<std::string> exec(std::string const &command) {
   assert(result == 0);
 
   ret = load_file_vec(tmp_file);
-
-/*
-  std::string buf;
-  for (auto const &s: ret) {
-    buf << s << "\n";
-  }
-  warn << "system() returns:\n" << buf;
-*/  
-
   std::remove(tmp_file.c_str());
+
   return ret;
 }
 
@@ -122,6 +115,30 @@ MAYBE_UNUSED int gnu_version(bool show = true) {
   }
 
   return __GNUC__;
+}
+
+
+/**
+ * @brief Trim from the start (in place)
+ *
+ * Source: https://stackoverflow.com/questions/216823/how-can-i-trim-a-stdstring
+ */
+void ltrim(std::string &s) {
+  s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
+    return !std::isspace(ch);
+  }));
+}
+
+
+/**
+ * @brief Trim from the end (in place)
+ *
+ * Source: https://stackoverflow.com/questions/216823/how-can-i-trim-a-stdstring
+ */
+void rtrim(std::string &s) {
+  s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
+    return !std::isspace(ch);
+  }).base(), s.end());
 }
 
 } // anon namespace
@@ -320,6 +337,12 @@ std::vector<std::string> split(std::string s, std::string const &delimiter) {
 int num_newlines(std::string const &s) {
   auto ret = split(s, "\n");
   return (int) (ret.size() - 1);
+}
+
+
+void trim(std::string &s) {
+  rtrim(s);
+  ltrim(s);
 }
 
 

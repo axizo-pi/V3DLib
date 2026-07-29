@@ -38,18 +38,29 @@ void check_vector(
   std::vector<T1> const &expected,
   float precision = 0.0f
 ) {
-	REQUIRE(expected.size() % 16 == 0);  // size must match 16-vectors
+  REQUIRE(expected.size() % 16 == 0);  // size must match 16-vectors
 
   bool passed = true;
-  int j = 0;
-  for (; j < (int) expected.size(); ++j) {
-    if (abs((float) result[16*index + j] - (float) expected[j]) > precision) {
-      passed = false;
-      break;
+  int first_j = 0;
+  float max_diff = 0;
+
+  for (int j = 0; j < (int) expected.size(); ++j) {
+    float diff = abs((float) result[16*index + j] - (float) expected[j]);
+
+    if (max_diff < diff) {
+      max_diff = diff;
+    }
+
+    if (passed) {
+      if (diff > precision) {
+        first_j = j;
+        passed = false;
+      }
     }
   }
 
-  INFO("index: " << index << ", j: " << j);
+  INFO("index: " << index << ", first j: " << first_j);
+  INFO("max diff: " << max_diff);
   INFO(showResult(result, index, (int) expected.size()));
   INFO(showExpected(expected));
   REQUIRE(passed);

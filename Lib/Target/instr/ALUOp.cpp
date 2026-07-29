@@ -181,9 +181,13 @@ uint8_t ALUOp::vc4_encodeAddOp() const {
     case A_CLZ:     return 24;
     case A_V8ADDS:  return 30;
 
-    default:
-      assertq(false, "V3DLib: unknown add op");
+    default: {
+      std::string msg = "ALUOp::vc4_encodeAddOp() ";
+      msg << "unknown op value: " << m_value << ", " << dump();
+
+      assertq(false, msg);
       return 0;
+    }
   }
 }
 
