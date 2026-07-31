@@ -22,9 +22,25 @@ IntExpr integer_division_f(IntExpr in_a, IntExpr in_b);
 
 inline IntExpr operator-(IntExpr a) { return two_complement(a); }
 
+namespace vc4 {
+
+FloatExpr u_to_f(IntExpr a);
+FloatExpr ffloor(FloatExpr x);
 FloatExpr cos(FloatExpr x_in);
 FloatExpr sin(FloatExpr x_in);
-FloatExpr sin_v3d(FloatExpr x_in);
+void barrier();
+
+void mutex_acquire();
+void mutex_release();
+}
+
+namespace v3d {
+
+FloatExpr u_to_f(IntExpr a);
+FloatExpr sin(FloatExpr x_in);
+void barrier();
+
+}
 
 namespace scalar {
 
@@ -33,12 +49,7 @@ float sin(float x_in, bool extra_precision = false) noexcept;
 
 } // namespace scalar
 
-FloatExpr UnsignedtoFloat(IntExpr a);
 void float_fields(Float &x_f, Int &sign, Int &exponent, Int &significand);
-
-FloatExpr ffloor_vc4(FloatExpr x);
-FloatExpr ffloor(FloatExpr x);
-FloatExpr fabs(FloatExpr x);
 
 }  // namespace functions
 
@@ -50,10 +61,6 @@ void rotate_min(Float &input, Float &result, Int &index);
 void element_at(Float const &input, Int &n, Float &result);
 void set_at(Int &dst, Int n, Int const &src);
 void set_at(Float &dst, Int n, Float const &src);
-
-void mutex_acquire();
-void mutex_release();
-void barrier();
 
 void nop(int num);
 

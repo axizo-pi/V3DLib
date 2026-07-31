@@ -123,23 +123,10 @@ std::vector<float> lib_tanh_values(int size, float min_x = -2.0f, float max_x = 
 void cosine_kernel(Float::Ptr result, Int numValues, Float freq, Int offset) {
   For (Int n = 0, n < numValues, n += 16)
     Float x = freq*toFloat(n + index() - offset);
-    *result = functions::cos(x);
+    *result = cos(x);
     result.inc();
   End
 }
-
-
-/*
-  Currently not used
-
-void sine_kernel(Float::Ptr result, Int numValues, Float freq, Int offset) {
-  For (Int n = 0, n < numValues, n += 16)
-    Float x = freq*toFloat(n + index() - offset);
-    *result = functions::sin(x);
-    result.inc();
-  End
-}
-*/
 
 
 void sincos_kernel(Float::Ptr result, Int size) {
@@ -148,14 +135,14 @@ void sincos_kernel(Float::Ptr result, Int size) {
   For (Int n = 0, n < count, n++)
     Float param = toFloat((n << 4) + index())/toFloat(size);
 
-    Float val  = functions::sin(param);
+    Float val  = sin(param);
     *result = val;  result.inc();
   End
 
   For (Int n = 0, n < count, n++)
     Float param = toFloat((n << 4) + index())/toFloat(size);
 
-    Float val  = functions::sin(param);
+    Float val  = sin(param);
     *result = val;  result.inc();
   End
 

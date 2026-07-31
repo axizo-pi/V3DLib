@@ -10,14 +10,12 @@ int const INITIAL_FREE_RANGE_SIZE = 32;
 
 namespace V3DLib {
 
-
 HeapManager::HeapManager() {
   m_free_ranges.reserve(INITIAL_FREE_RANGE_SIZE);
 }
 
 
 HeapManager::~HeapManager() {
-  //warn << "HeapManager dtor called";
   m_active = false;
 }
 

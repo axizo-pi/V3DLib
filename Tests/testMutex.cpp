@@ -11,12 +11,14 @@ using namespace V3DLib;
 namespace {
 
 void mutex_kernel(Int::Ptr ret) {
+  using namespace functions;
+
   Int val      = me();
   Int::Ptr dst = ret + (me()*16);
 
-  mutex_acquire();      comment("mutex_acquire");
+  vc4::mutex_acquire();  comment("mutex_acquire");
   *dst = val;
-  mutex_release();      comment("mutex_release");
+  vc4::mutex_release();  comment("mutex_release");
 }
 
 
@@ -200,7 +202,7 @@ TEST_CASE("Test mutexes emulator[mutex]") {
  * This is specifically meant for the `vc4` implementation of `barrier`,
  * but should work on `v3d` as well.
  */
-TEST_CASE("Test barrier[mutex][barrier]") {
+TEST_CASE("Test barrier [mutex][barrier]") {
   LibSettings::tmu_load tmu(false);
 
   int numQPUs = 1;

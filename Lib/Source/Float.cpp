@@ -229,7 +229,21 @@ FloatExpr toFloat(IntExpr a) {
 }
 
 
-FloatExpr ffloor(FloatExpr a) { return unary_float_op(FFLOOR, a); }
+/**
+ * Implementation of fabs() in source language.
+ *
+ * Relies on IEEE 754 specs for 32-bit floats.
+ * Special values (Nan's, Inf's) are ignored
+ */
+FloatExpr fabs(FloatExpr x) {
+  uint32_t const Mask = ~(((uint32_t) 1) << 31);
+
+  // Just zap the top bit
+  Float ret;
+  ret.as_float(x.as_int() & Mask);
+  return ret;
+}
+
 
 FloatExpr operator+(FloatExpr a, FloatExpr b) { return mkFloatApply(a, Op(ADD, FLOAT), b); }
 FloatExpr operator-(FloatExpr a, FloatExpr b) { return mkFloatApply(a, Op(SUB, FLOAT), b); }
@@ -259,29 +273,100 @@ FloatExpr sqrt_f(FloatExpr x) { return recip(recipsqrt(x)); }
 
 /**
  * Should not be used directly in code.
- * use `sin()` below instead
+ * use `sin()` instead.
+ *
+ * Made visible for use in `Functions.cpp`.
  */
 FloatExpr sin_op(FloatExpr x) {
   return unary_float_op(SIN, x);
 }
 
+namespace {
 
+/**
+ * Used for `v3d`, defined as function for `vc4`.
+ */
+FloatExpr ffloor_op(FloatExpr a) { return unary_float_op(FFLOOR, a); }
+
+};
+
+
+/** @addtogroup SourceLanguage
+ *  @{
+ */
+
+
+/**
+ * @brief Conversion unsigned to Float
+ *
+ * Int is a signed value by syntax, here it is regarded as unsigned.
+ */
+FloatExpr UnsignedtoFloat(IntExpr a) {
+  using namespace functions;
+
+  if (Platform::compiling_for_vc4()) {
+    return vc4::u_to_f(a);
+  } else {
+    return v3d::u_to_f(a);
+  }
+}
+
+
+/**
+ * Implementation of ffloor() in source language.
+ *
+ * `v3d` has a hardware ffloor operation, and is therefore a one-liner.
+ */
+FloatExpr ffloor(FloatExpr x) {
+  using namespace functions;
+
+  Float ret;
+
+  if (Platform::compiling_for_vc4()) {
+    ret = vc4::ffloor(x);
+  } else {
+    // v3d
+    ret = ffloor_op(x);  comment("ffloor() v3d");
+  }
+
+  return ret;
+}
+
+
+/**
+ * @brief Source-level call for `cos()`.
+ *
+ * @param x Angle in units of `2*PI`. Hence `x_in = 0.5f` stands for `PI`. 
+ *
+ */
 FloatExpr cos(FloatExpr x) {
+  using namespace functions;
+
   if (Platform::compiling_for_vc4()) {
-    return functions::cos(x);
+    return vc4::cos(x);
   } else {
-    return functions::sin_v3d(0.25f - x);
+    return v3d::sin(0.25f - x);
   }
 }
 
 
+/**
+ * @brief Source-level call for `sin()`.
+ *
+ * @param x Angle in units of `2*PI`. Hence `x_in = 0.5f` stands for `PI`. 
+ *
+ */
 FloatExpr sin(FloatExpr x) {
+  using namespace functions;
+
   if (Platform::compiling_for_vc4()) {
-    return functions::sin(x);
+    return vc4::sin(x);
   } else {
-    return functions::sin_v3d(x);
+    return v3d::sin(x);
   }
 }
+
+/** @} */ // end of group SourceLanguage
 
 }  // namespace V3DLib
 

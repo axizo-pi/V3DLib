@@ -177,8 +177,8 @@ IntExpr topmost_bit(IntExpr in_a) {
 /**
  * @brief Long integer division, returning quotient and remainder.
  *
- * There is no support for hardware integer division on the VideoCores, this is an implementation for
- * when you really need it.
+ * There is no support for hardware integer division on all VideoCores.
+ * This is an implementation for when you really need it.
  *
  * The calculation is **exact**, however it is costly in terms of number of operations.  
  * If you are willing to trade precision for performance, consider using
@@ -241,7 +241,7 @@ void integer_division(Int &Q, Int &R, IntExpr num, IntExpr denom) {
 /**
  * @brief Do integer division by converting to and from float.
  *
- * This is not always precise (confirmed) but more concise than the full integer calculation
+ * This is not always precise (confirmed) but more concise than the full integer calculation.
  */
 IntExpr integer_division_f(IntExpr in_a, IntExpr in_b) {
   Float a = toFloat(in_a);    comment("Start integer division by float");
@@ -251,9 +251,9 @@ IntExpr integer_division_f(IntExpr in_a, IntExpr in_b) {
 
   Float tmp1 = a/b;
 
-	// ffloor() fixes rounding up.
-	// Doesn't do much for vc4, important for v3d
-  Float tmp = functions::ffloor(tmp1);
+  // ffloor() fixes rounding up.
+  // Doesn't do much for vc4, important for v3d
+  Float tmp = ffloor(tmp1);
   res = toInt(tmp);
 
   Where (in_b == 0)
@@ -265,10 +265,118 @@ IntExpr integer_division_f(IntExpr in_a, IntExpr in_b) {
   return res;
 }
 
+/** @} */ // end of group SourceLanguage
 
-///////////////////////////////////////////////////////////////////////////////
-// Trigonometric functions
-///////////////////////////////////////////////////////////////////////////////
+
+/**
+ * Collects all operations and functions which are specific to `vc4`.
+ *
+ * Many operations, which are implemented in hardware on `v3d`, are missing on `vc4`.
+ * Essential operations are implemented here as functions.
+ *
+ * Usually, these operations are not called directly.
+ * Call the top-level functions instead in `Int.h` and `Float.h`.
+ */
+namespace vc4 {
+
+/**
+ * @brief Conversion unsigned to Float
+ *
+ * Int is by syntax a signed value, here it is regarded as unsigned.
+ *
+ * ================================================================
+ *
+ * `vc4` is imprecise. Following records the differences for the
+ * different implementation options, in the unit test [convert].
+ *
+ * The options are registered in the code.
+ *
+ * | Option | Max diff |
+ * |--------|----------|
+ * | 1      | 65536    |
+ * | 2      |   256    |
+ * | 3      |   256    |
+ * | 4      |   256    |
+ * |--------|----------|
+ */
+FloatExpr u_to_f(IntExpr a) {
+  Int Mask = 0x7fffffff;
+/*
+  // Top bit indicates sign, handle separately
+  Float ret = toFloat(a & Mask);
+
+  Int max_int = 0x40000000;
+  Where ((a & 0x80000000) != 0)
+    //ret += exp(31);          // Option 1
+    ret += 2*toFloat(max_int); // Option 2
+  End
+ */   
+
+  Float ret = toFloat(shr(a, 1))*2.0f + toFloat(a & 1); // Option 3
+/*
+  // Option 4
+  Float ret = toFloat(shr(a, 1))*2.0f;
+  Where ((a & 1) != 0)
+    ret += 1.0f;
+  End
+*/
+  return ret;
+}
+
+
+/**
+ * @brief Implementation of ffloor() in source language for vc4.
+ *
+ * Also called explicitly in unit tests on `v3d`.
+ *
+ * Relies on IEEE 754 specs for 32-bit floats.
+ * Special values (Nan's, Inf's) are ignored
+ */
+FloatExpr ffloor(FloatExpr in_x) {
+  Float ret;
+
+  Float x = in_x;
+  Int sign;
+  Int exp;
+  Int significand;
+  float_fields(x, sign, exp, significand);
+
+  Int frac = (significand >> exp);
+
+  //
+  // Clear the fractional part of the mantissa
+  //
+  // Helper for better readability.
+  //
+  // TODO: freaking ugly and prob not necessary; see if can be cleaned up
+  //
+  auto zap_mantissa  = [&exp] (Float &x) -> FloatExpr {
+    int const SIZE_MANTISSA = 23;
+    Int fraction_mask = (1 << (SIZE_MANTISSA - exp)) - 1;
+
+    Float ret;
+    ret.as_float(x.as_int() & ~(fraction_mask + 0));
+    return ret;
+  };
+
+  ret = x;  // result same as input for exp > 23 bits and whole-integer negative values
+  comment("Start ffloor()");
+
+  Where (exp <= 23)
+    Where (x >= 1)
+      ret = zap_mantissa(x);
+      //Int dummy = 1;
+    Else Where (x >= 0)
+      ret = 0.0f;
+    Else Where (x >= -1.0f)
+      ret = -1.0f;
+    Else Where (x < -1.0f && (frac != 0))
+      ret = zap_mantissa(x) - 1;
+    End End End End
+  End
+
+  return ret;
+}
 
 /**
  * @brief Cosine for QPU using Taylor approximation.
@@ -276,7 +384,6 @@ IntExpr integer_division_f(IntExpr in_a, IntExpr in_b) {
  * `vc4` has no cosine, hence an explicit implementation is needed.  
  * `v3d` has a hardware operation for cosine.
  *
- * @param x_in Angle in units of `2*PI`. Hence `x_in = 0.5f` stands for `PI`. 
  *
  * Source: https://www.numberanalytics.com/blog/ultimate-taylor-trigonometry-guide#series-for-sine-and-cosine
  */
@@ -289,7 +396,7 @@ FloatExpr cos(FloatExpr x_in) {
 
   // Normalize x to a value in the range [-0.5, 0.5]
   Float tmp = x + 0.5f;
-  x = tmp - functions::ffloor(tmp) - 0.5f;
+  x = tmp - V3DLib::ffloor(tmp) - 0.5f;
 
   x = x * (float) (2.0f * M_PI);  comment("Start Taylor");
 
@@ -325,11 +432,125 @@ FloatExpr cos(FloatExpr x_in) {
  *
  * `sin()` is implemented in terms of `cos()`.
  *
- * @param x_in Angle in units of `2*PI`. Hence `x_in = 0.5f` stands for `M_PI`. 
- *
  */
 FloatExpr sin(FloatExpr x_in) {
-  return functions::cos(0.25f - x_in);
+  return vc4::cos(0.25f - x_in);
+}
+
+
+/**
+ * @brief barrier implementation for `vc4`
+ *
+ * This uses VPM as shared memory
+ * You can't assume that `QPU 0` enters this routine first.
+ *
+ * **Not working properly**. **TODO:** Need to rethink.
+ *
+ * ---------------------------------------------
+ *
+ * Notes
+ * -----
+ *
+ * - This code is for `vc4`. `v3d` has a hardware `barrier` operation, which
+ *   is much more convenient.
+ */
+void barrier() {
+  assert(Platform::compiling_for_vc4());
+
+  //
+  // 'I' refers to the QPU that grabbed the mutex.
+  // 'We' refers to all other QPU's participating.
+  //
+
+  nop(1);   header("vc4 barrier");
+
+  If (numQPUs() != 1)                     // Don't bother if only one QPU
+    Int mask = (1 << numQPUs()) - 1;
+
+    vpm.set(0, 0);
+    mutex_acquire();   comment("mutex_acquire");
+
+    Int tmp = vpm.get(0);
+    While (tmp != mask)
+      vpm.set(0, tmp | (1<< me()));
+
+      mutex_release();
+      mutex_acquire();
+
+      tmp = vpm.get(0);
+    End
+
+    mutex_release();
+
+    //
+    // There is a nonzero possibility  here in that the first released QPU's
+    // overwrite vpm(0) with DMA transfers.
+    //
+    // Not apparent yet if I have to deal with that.
+    // For the time being, assume that the loop is fast enough before any
+    // DMA transfers happen.  
+    // Also, DMA transfers use vertical layout, perhaps this is enough
+    // to prevent any overwrites.
+    //
+  End
+}
+
+
+/**
+ * @brief Get a mutex for `vc4`.
+ *
+ * This operation is specific to `vc4`.
+ * It is not used in the `V3DLib` code, but it does feature in the unit tests.
+ */
+void mutex_acquire() {
+  assert(Platform::compiling_for_vc4());
+
+  Expr::Ptr dummy = mkVar(Var(DUMMY));
+  Expr::Ptr mutex = mkVar(Var(MUTEX_ACQUIRE));  // Read A/B
+
+  Stmt::Ptr ptr = Stmt::create_assign(dummy, mutex);
+  stmtStack().push(ptr);
+}
+
+
+/**
+ * @brief Release a mutex for `vc4`.
+ *
+ * This operation is specific to `vc4`.
+ * It is not used in the `V3DLib` code, but it does feature in the unit tests.
+ *
+ * **NOTE:** Can't use DUMMY as src var. Fails on Target translation.
+ */
+void mutex_release() {
+  assert(Platform::compiling_for_vc4());
+
+  Expr::Ptr mutex = mkVar(Var(MUTEX_RELEASE));  // Write A/B
+
+  Stmt::Ptr ptr = Stmt::create_assign(mutex, IntExpr(0).expr());
+  stmtStack().push(ptr);
+}
+
+} // namespace vc4
+
+
+/**
+ * This namespace collects all operations and functions which are specific to `v3d`.
+ *
+ * `v3d` has hardware operations, which are missing on `vc4`.
+ *
+ * Usually, these operations are not called directly.
+ * Call the top-level functions instead in `Int.h` and `Float.h`.
+ */
+namespace v3d {
+
+/**
+ * @brief v3d version of conversion unsigned->float
+ *
+ * This is a hardware operation on `v3d`.
+ */
+FloatExpr u_to_f(IntExpr a) {
+  Expr::Ptr e = mkApply(a.expr(), Op(UtoF, FLOAT));
+  return FloatExpr(e);
 }
 
 
@@ -339,9 +560,11 @@ FloatExpr sin(FloatExpr x_in) {
  * **Normally, you do not need to call this function explicitly**.  
  * Use this for `v3d` only. The compilation will select this when appropriate.
  *
- * @param x_in Angle in units of `2*PI`. Works only in range `-PI/2..PI/2`.
+ * The operation actually works only in range `-PI/2..PI/2`.
+ * Preamble is added to make it works for all input values.
  *
- * ============================================================================
+ * ----------------------------------------------------------------------------
+ *
  * NOTES
  * =====
  *
@@ -381,14 +604,14 @@ FloatExpr sin(FloatExpr x_in) {
  *
  *   Okay, that was real interesting.
  */
-FloatExpr sin_v3d(FloatExpr x_in) {
+FloatExpr sin(FloatExpr x_in) {
   return create_float_function_snippet([x_in] {
     Float tmp = x_in;                    comment("Start source lang v3d sin");
 
     tmp += 0.25f;                        // Modulo to range -0.25...0.75
     comment("v3d sin preamble to get param in the allowed range");
 
-    tmp -= functions::ffloor(tmp);       // Get the fractional part
+    tmp -= V3DLib::ffloor(tmp);          // Get the fractional part
     tmp -= 0.25f;
 
     Where (tmp > 0.25f)                  // Adjust value to the range -PI/2...PI/2
@@ -402,70 +625,21 @@ FloatExpr sin_v3d(FloatExpr x_in) {
   });
 }
 
-/** @} */ // end of group SourceLanguage
-
-namespace {
 
 /**
- * @brief v3d version of conversion unsigned->float
+ * @brief v3d-specific version of barrier
  *
- * v3d has a hardware operation for this.
+ * Has no inputs, only an output, which is always magic reg SYNCB.
+ *
+ * `barrier` is v3d-specific. vc4 will need a different implementation,
+ * most likely with semaphores.
  */
-FloatExpr u_to_f_v3d(IntExpr a) {
-  Expr::Ptr e = mkApply(a.expr(), Op(UtoF, FLOAT));
-  return FloatExpr(e);
+void barrier() {
+  assertq(!Platform::compiling_for_vc4(), "This version of barrier runs only on v3d");
+  stmtStack().push(Stmt::create(Stmt::BARRIER));
 }
 
-} // anon namespace
-
-
-/**
- * @brief Conversion unsigned to Float
- *
- * Int is by syntax a signed value, here it is regarded as unsigned.
- *
- * ================================================================
- *
- * `vc4` is imprecise. Following records the differences for the
- * different implementation options, in the unit test [convert].
- *
- * The options are registered in the code.
- *
- * | Option | Max diff |
- * |--------|----------|
- * | 1      | 65536    |
- * | 2      |   256    |
- * | 3      |   256    |
- * | 4      |   256    |
- * |--------|----------|
- */
-FloatExpr UnsignedtoFloat(IntExpr a) {
-  if (Platform::compiling_for_vc4()) {
-    Int Mask = 0x7fffffff;
-/*
-    // Top bit indicates sign, handle separately
-    Float ret = toFloat(a & Mask);
-
-    Int max_int = 0x40000000;
-    Where ((a & 0x80000000) != 0)
-      //ret += exp(31);          // Option 1
-      ret += 2*toFloat(max_int); // Option 2
-    End
- */   
-
-    Float ret = toFloat(shr(a, 1))*2.0f + toFloat(a & 1); // Option 3
-/*
-    // Option 4
-    Float ret = toFloat(shr(a, 1))*2.0f;
-    Where ((a & 1) != 0)
-      ret += 1.0f;
-    End
-*/
-    return ret;
-  } else {
-    return u_to_f_v3d(a);
-  }
-}
+} //namespace v3d
 
 
 namespace scalar {
@@ -517,9 +691,6 @@ float sin(float x_in, bool extra_precision) noexcept {
 } // namespace scalar
 
 
-//### End Trigonometric functions ###
-
-
 /**
  * @brief Dissect a float value into the constituent fields
  *
@@ -542,106 +713,6 @@ void float_fields(Float &x_f, Int &sign, Int &exponent, Int &significand) {
   significand = x & fraction_mask;
 }
 
-
-/**
- * Implementation of ffloor() in source language for vc4.
- *
- * Made visible for unit tests on v3d.
- *
- * Relies on IEEE 754 specs for 32-bit floats.
- * Special values (Nan's, Inf's) are ignored
- */
-FloatExpr ffloor_vc4(FloatExpr in_x) {
-  //warn << "Handling ffloor_vc4()";
-  Float ret;
-
-  Float x = in_x;
-  Int sign;
-  Int exp;
-  Int significand;
-  float_fields(x, sign, exp, significand);
-
-  Int frac = (significand >> exp);
-
-  //
-  // Clear the fractional part of the mantissa
-  //
-  // Helper for better readability.
-  //
-  // TODO: freaking ugly and prob not necessary; see if can be cleaned up
-  //
-  auto zap_mantissa  = [&exp] (Float &x) -> FloatExpr {
-    int const SIZE_MANTISSA = 23;
-    Int fraction_mask = (1 << (SIZE_MANTISSA - exp)) - 1;
-
-    Float ret;
-    ret.as_float(x.as_int() & ~(fraction_mask + 0));
-    return ret;
-  };
-
-  ret = x;  // result same as input for exp > 23 bits and whole-integer negative values
-  comment("Start ffloor()");
-
-  Where (exp <= 23)
-    Where (x >= 1)
-      ret = zap_mantissa(x);
-      //Int dummy = 1;
-    Else Where (x >= 0)
-      ret = 0.0f;
-    Else Where (x >= -1.0f)
-      ret = -1.0f;
-    Else Where (x < -1.0f && (frac != 0))
-      ret = zap_mantissa(x) - 1;
-    End End End End
-  End
-
-  return ret;
-}
-
-
-/**
- * Implementation of ffloor() in source language.
- *
- * `v3d` has a hardware ffloor operation, and is therefore a one-liner.
- */
-FloatExpr ffloor(FloatExpr x) {
-  //warn << "Handling ffloor()";
-
-  Float ret;
-
-  if (Platform::compiling_for_vc4()) {
-    //warn << "Doing ffloor_vc4(x)";
-    ret = ffloor_vc4(x);
-  } else {
-    // v3d
-    ret = V3DLib::ffloor(x);  comment("ffloor() v3d");
-  }
-
-  return ret;
-}
-
-
-/**
- * Implementation of fabs() in source language.
- *
- * Relies on IEEE 754 specs for 32-bit floats.
- * Special values (Nan's, Inf's) are ignored
- */
-FloatExpr fabs(FloatExpr x) {
-  Float ret;
-
-  if(Platform::compiling_for_vc4()) {
-    uint32_t const Mask = ~(((uint32_t) 1) << 31);
-
-    // Just zap the top bit
-    ret.as_float(x.as_int() & Mask);            comment("fabs vc4");
-  } else {
-    // v3d: The conversion of Mask is really long-winded; make the mask in-place
-    ret.as_float(x.as_int() & shr(Int(-1), 1));  comment("fabs v3d");
-  }
-
-  return ret;
-}
 
 
 }  // namespace functions
@@ -795,121 +866,8 @@ void set_at(Float &dst, Int n, Float const &src) {
 }
 
 
-void mutex_acquire() {
-  assert(Platform::compiling_for_vc4());
-
-  Expr::Ptr dummy = mkVar(Var(DUMMY));
-  Expr::Ptr mutex = mkVar(Var(MUTEX_ACQUIRE));  // Read A/B
-
-  Stmt::Ptr ptr = Stmt::create_assign(dummy, mutex);
-  stmtStack().push(ptr);
-}
-
-
-/**
- * Can't use DUMMY as src var. Fails on Target translation.
- */
-void mutex_release() {
-  assert(Platform::compiling_for_vc4());
-
-  Expr::Ptr mutex = mkVar(Var(MUTEX_RELEASE));  // Write A/B
-
-  Stmt::Ptr ptr = Stmt::create_assign(mutex, IntExpr(0).expr());
-  stmtStack().push(ptr);
-}
-
-
-namespace {
-
-/**
- * @brief barrier implementation for `vc4`
- *
- * This uses VPM as shared memory
- * You can't assume that `QPU 0` enters this routine first.
- *
- * ---------------------------------------------
- *
- * Notes
- * -----
- *
- * - This code is for `vc4`. `v3d` has a `barrier` operation, which
- *   is much more convenient.
- */
-void barrier_vc4() {
-  //Log::warn << "barrier vc4";
-  assert(Platform::compiling_for_vc4());
-
-  //
-  // 'I' refers to the QPU that grabbed the mutex.
-  // 'We' refers to all other QPU's participating.
-  //
-
-  nop(1);   header("vc4 barrier");
-
-  If (numQPUs() != 1)                     // Don't bother if only one QPU
-    Int mask = (1 << numQPUs()) - 1;
-
-    vpm.set(0, 0);
-    mutex_acquire();   comment("mutex_acquire");
-
-    Int tmp = vpm.get(0);
-    While (tmp != mask)
-      vpm.set(0, tmp | (1<< me()));
-
-      mutex_release();
-      mutex_acquire();
-
-      tmp = vpm.get(0);
-    End
-
-    mutex_release();
-
-    //
-    // There is a nonzero possibility  here in that the first released QPU's
-    // overwrite vpm(0) with DMA transfers.
-    //
-    // Not apparent yet if I have to deal with that.
-    // For the time being, assume that the loop is fast enough before any
-    // DMA transfers happen.  
-    // Also, DMA transfers use vertical layout, perhaps this is enough
-    // to prevent any overwrites.
-    //
-  End
-}
-
-
-/**
- * @brief v3d-specific version of barrier
- *
- * Has no inputs, only an output, which is always magic reg SYNCB.
- *
- * `barrier` is v3d-specific. vc4 will need a different implementation,
- * most likely with semaphores.
- */
-void barrier_v3d() {
-  assertq(!Platform::compiling_for_vc4(), "This version of barrier runs only on v3d");
-  stmtStack().push(Stmt::create(Stmt::BARRIER));
-}
-
-} // anon namespace
-
-
-/**
- * @brief Generic version of `barrier()`
- */
-void barrier() {
-  if (Platform::compiling_for_vc4()) {
-    // vc4 - Stmt::BARRIER is not passed on
-    barrier_vc4();
-  } else {
-    barrier_v3d();
-  }
-}
-
-
 void nop(int num) {
   assert(num >= 0);
-
   stmtStack() << Stmt::create(Stmt::NOP, nullptr, IntExpr(num).expr());
 }
 

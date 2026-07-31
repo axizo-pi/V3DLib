@@ -59,7 +59,9 @@ struct Int : public BaseExpr {
 
 
 // ============================================================================
-// Operations
+// Generic Operations
+//
+// These are mostly the same for `vc4` and `v3d`.
 // ============================================================================
 
 IntExpr getUniformInt();
@@ -88,6 +90,15 @@ IntExpr bnot(IntExpr a);
 
 IntExpr operator/(IntExpr a, IntExpr b);
 IntExpr operator%(IntExpr a, IntExpr b);
+
+
+// ============================================================================
+// Global Operations
+//
+// Not specifically related to `Int`.
+// ============================================================================
+
+void barrier();
 
 }  // namespace V3DLib
 

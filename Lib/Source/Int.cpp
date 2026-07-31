@@ -256,6 +256,22 @@ IntExpr clz(IntExpr a) {
   return mkIntApply(a, Op(CLZ, INT32), a);
 }
 
+
+/**
+ * @brief Generic version of `barrier()`
+ */
+void barrier() {
+  warn << "Called top barrier()";
+
+  using namespace functions;
+
+  if (Platform::compiling_for_vc4()) {
+    vc4::barrier();  // Stmt::BARRIER is not passed on for `vc4`
+  } else {
+    v3d::barrier();
+  }
+}
+
 /** @} */ // end of group SourceLanguage
 
 

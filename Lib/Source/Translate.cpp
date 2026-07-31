@@ -733,8 +733,8 @@ Instr::List encode(Stmt::Ptr s) {
       ret << recv(s->address()->var());
       break;
 
-    case Stmt::BARRIER: ret << barrier();       break;
-    case Stmt::NOP:     ret << translateNop(s); break;
+    case Stmt::BARRIER: ret << instr::barrier(); break;
+    case Stmt::NOP:     ret << translateNop(s);  break;
 
     default:
       if (!getSourceTranslate().stmt(ret, s)) {

@@ -80,7 +80,7 @@ FloatExpr vpmGetFloat();
 FloatExpr rotate(FloatExpr a, IntExpr b);
 IntExpr toInt(FloatExpr a);
 FloatExpr toFloat(IntExpr a);
-FloatExpr ffloor(FloatExpr a);
+FloatExpr fabs(FloatExpr x);
 
 FloatExpr operator+(FloatExpr a, FloatExpr b);
 FloatExpr operator-(FloatExpr a, FloatExpr b);
@@ -99,6 +99,9 @@ FloatExpr log(FloatExpr x);
 
 FloatExpr ln(FloatExpr x);
 FloatExpr sqrt_f(FloatExpr x);
+
+FloatExpr UnsignedtoFloat(IntExpr a);
+FloatExpr ffloor(FloatExpr a);
 
 FloatExpr sin_op(FloatExpr x);
 FloatExpr sin(FloatExpr x);

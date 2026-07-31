@@ -226,8 +226,10 @@ void complex_kernel(Complex::Ptr input, Complex::Ptr result) {
 
 
 void floor_kernel_vc4(Float::Ptr result, Float::Ptr input, Int numValues) {
+  using namespace functions;
+
   For (Int n = 0, n < numValues, n += 16)
-    *result = functions::ffloor_vc4(*input);
+    *result = vc4::ffloor(*input);
 
     result.inc();
     input.inc();
@@ -237,7 +239,7 @@ void floor_kernel_vc4(Float::Ptr result, Float::Ptr input, Int numValues) {
 
 void floor_kernel(Float::Ptr result, Float::Ptr input, Int numValues) {
   For (Int n = 0, n < numValues, n += 16)
-    *result = functions::ffloor(*input);
+    *result = ffloor(*input);
 
     result.inc();
     input.inc();
@@ -247,7 +249,7 @@ void floor_kernel(Float::Ptr result, Float::Ptr input, Int numValues) {
 
 void fabs_kernel(Float::Ptr result, Float::Ptr input, Int numValues) {
   For (Int n = 0, n < numValues, n += 16)
-    *result = functions::fabs(*input);
+    *result = fabs(*input);
 
     result.inc();
     input.inc();
@@ -771,6 +773,7 @@ TEST_CASE("Test functions [dsl][func]") {
       }
     };
 
+    // This kernel with vc4 code is also called on v3d
     {
       result.fill(-1.0f);
       auto k = compile(floor_kernel_vc4);

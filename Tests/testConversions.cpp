@@ -63,7 +63,7 @@ void signed_to_float_kernel(Float::Ptr result, Int::Ptr input, Int Blocks) {
 void unsigned_to_float_kernel(Float::Ptr result, Int::Ptr input, Int Blocks) {
   For (Int i = 0, i < Blocks, i++)
     Int   n = *input;
-    Float r = functions::UnsignedtoFloat(n);
+    Float r = UnsignedtoFloat(n);
     *result = r;
 
     input.inc();
