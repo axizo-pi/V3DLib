@@ -313,9 +313,9 @@ FloatExpr UnsignedtoFloat(IntExpr a) {
 
 
 /**
- * Implementation of ffloor() in source language.
+ * Implementation of floor() in source language.
  *
- * `v3d` has a hardware ffloor operation, and is therefore a one-liner.
+ * `v3d` has a hardware floor() operation, and is therefore a one-liner.
  */
 FloatExpr ffloor(FloatExpr x) {
   using namespace functions;

@@ -261,8 +261,6 @@ IntExpr clz(IntExpr a) {
  * @brief Generic version of `barrier()`
  */
 void barrier() {
-  warn << "Called top barrier()";
-
   using namespace functions;
 
   if (Platform::compiling_for_vc4()) {
