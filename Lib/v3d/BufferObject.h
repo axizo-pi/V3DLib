@@ -1,7 +1,7 @@
 #ifndef _V3DLIB_V3D_BUFFEROBJECT_H_
 #define _V3DLIB_V3D_BUFFEROBJECT_H_
-#include <vector>
 #include "Common/BufferObject.h"
+#include <vector>
 
 namespace V3DLib {
 namespace v3d {

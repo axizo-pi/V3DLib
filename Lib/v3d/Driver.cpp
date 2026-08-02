@@ -38,12 +38,9 @@
 #include "Driver.h"
 #include "v3d.h"
 #include "LibSettings.h"
-#include "Support/Timer.h"
-#include <algorithm>  // find()
 
 namespace V3DLib {
 namespace v3d {
-
 namespace {
 
 struct WorkGroup {
@@ -102,7 +99,7 @@ uint32_t roundup(uint32_t n, uint32_t d) {
  *
  * _(timing values determined in `GRU`)_
  */
-bool Driver::execute(Code &code, Data *uniforms, uint32_t thread, bool wait_complete) {
+bool Driver::execute(Code const &code, Data *uniforms, uint32_t thread, bool wait_complete) {
   uint32_t code_phyaddr = code.getAddress();
 
   // Check if there is space for the special flags
@@ -166,15 +163,11 @@ bool Driver::execute(Code &code, Data *uniforms, uint32_t thread, bool wait_comp
     .flags           = 0,
   };
 
-  //timers.start("Driver submit_csd");
-
   bool ret = (0 == ::v3d::submit_csd(st));
   assert(ret);
   if (ret && wait_complete) {
     ret = wait_bo();
   }
-
-  //timers.stop("Driver submit_csd");
 
   assert(ret);
   return ret;
@@ -185,7 +178,6 @@ bool Driver::execute(Code &code, Data *uniforms, uint32_t thread, bool wait_comp
  * @return true if all waits succeeded, false otherwise
  */
 bool Driver::wait_bo() {
-	//warn << "Called wait_bo";
   assert(m_bo_handles.size() > 0);
 
   uint64_t timeout_ns = 1000000000llu * LibSettings::qpu_timeout();

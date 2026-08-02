@@ -40,6 +40,8 @@ LIB_EXTERN+= \
 #
 #    It is benign: https://stackoverflow.com/a/48149400
 #
+# Last items after single \ on line required in mesa lib include files
+#
 CXX_FLAGS = \
  -Wall \
  -Wconversion \
@@ -53,7 +55,8 @@ CXX_FLAGS = \
  -D HAVE_SECURE_GETENV \
  -D HAVE_STRUCT_TIMESPEC
 
-# NOTE: Last items after single \ required in mesa lib include files
+# -D OUTPUT_COMPILEDATA
+
 
 CXX= g++
 LINK= g++

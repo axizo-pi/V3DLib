@@ -4,7 +4,7 @@
 
 # V3DLib
 
-**Version 0.8.1**
+**Version 0.8.2**
 
 `V3DLib` is a C++ library for programming the GPU's of _all_ versions of the [Raspberry Pi](https://www.raspberrypi.org/).
 

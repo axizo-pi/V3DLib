@@ -1,7 +1,7 @@
 #
 # This file is generated!  Editing it directly is a bad idea.
 #
-# Generated on: Tue Jul 21 06:16:54 AM CEST 2026
+# Generated on: Sun Aug  2 06:13:41 AM CEST 2026
 #
 ###############################################################################
 
@@ -23,7 +23,6 @@ OBJ := \
   Support/Helpers.o  \
   Support/HeapManager.o  \
   Support/InstructionComment.o  \
-  KernelDriver.o  \
   Kernels/DotVector.o  \
   Kernels/ComplexDotVector.o  \
   Kernels/Rot3D.o  \
@@ -47,6 +46,7 @@ OBJ := \
   Source/Float.o  \
   Source/CExpr.o  \
   SourceTranslate.o  \
+  Compile.o  \
   Target/instr/Reg.o  \
   Target/instr/Imm.o  \
   Target/instr/Label.o  \
@@ -73,6 +73,7 @@ OBJ := \
   vc4/KernelDriver.o  \
   vc4/BufferObject.o  \
   vc4/SourceTranslate.o  \
+  vc4/Compile.o  \
   vc4/Mailbox.o  \
   vc4/Encode.o  \
   vc4/PerformanceCounters.o  \
@@ -102,6 +103,7 @@ OBJ := \
   v3d/UniformConstants.o  \
   v3d/BufferObject.o  \
   v3d/SourceTranslate.o  \
+  v3d/Compile.o  \
   v3d/Combine.o  \
   v3d/v3d.o  \
   v3d/PerformanceCounters.o  \

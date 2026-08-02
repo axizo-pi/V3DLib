@@ -1,14 +1,13 @@
 #include "Int.h"
-#include "Lang.h"       // only for assign()!
+#include "Lang.h"             // only for assign()!
 #include "Support/Platform.h"
 #include "Support/debug.h"
-#include "Functions.h"  // operator/
+#include "Functions.h"        // operator/
 
 /** @defgroup SourceLanguage Source Language Operations.
  *
  * This page will document all operations which can be used in a kernel
- * at Source-lagniage level.
- * Ie., the operations that can be used when defining a kernel at the top level.
+ * at Source-language level.
  *
  * --------------------------
  *
