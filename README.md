@@ -35,9 +35,9 @@ This code translates directly to QPU instructions. The thing to take away here i
 
 **All values in `QPU` are 16 4-byte values.**
 
-- A parameter of type `Int` is actually represents 16 integer values.
-- An `Int::Ptr` thus points to 16 consecutive integer values. The single operation in the kernel
-  sets _all_ of these integers to `1`.
+- A parameter of type `Int` is actually a vector of 16 integer values.
+- An `Int::Ptr` points to 16 consecutive integer values in main memory.
+  The single operation in the kernel sets _all_ of these values to `1`.
 
 To get to grip on `VideoCore` programming, see the [Basics Page](Doc/Basics.md).
 

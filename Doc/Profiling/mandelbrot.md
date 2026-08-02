@@ -4,7 +4,14 @@
 
 # Mandelbrot Performance
 
-The `Mandelbrot` app is a pretty good indicator of performance, because it is **compute-bound**.
+The `Mandelbrot` app is a pretty good indicator of performance, because it is **compute-bound**[^1].
+
+[^1]: Meaning that the calculation dominates the execution time. This is in contrast to
+      **data-bound**, where the transfer of data to and from the VideoCores dominates.
+
+The default output is as follows:
+
+<img src="../images/mandelbrot.bmp" alt="Mandelbrot output" style="width:30%;"/>
 
 ## GPU
 
@@ -49,3 +56,7 @@ Admittedly, some code enhancement was required for this.
 of four.  
 In fact, the `Pi5` CPU value is better than the GPU values for `Pi1`, `Zero` and `Pi2`,
 even though the implementation is simplistic and _single-threaded_.
+
+-------------------------------
+
+## Footnotes
