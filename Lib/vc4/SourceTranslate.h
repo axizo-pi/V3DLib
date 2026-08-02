@@ -5,17 +5,19 @@
 namespace V3DLib {
 namespace vc4 {
 
+using List = V3DLib::Target::Instr::List;
+
 class SourceTranslate : public ISourceTranslate {
   using Parent = ISourceTranslate;
 
 public:
-  Instr::List load_var(Var &dst, Expr &e) override;
-  Instr::List store_var(Var dst_addr, Var src) override;
-  void regAlloc(Instr::List &instrs) override;
-  bool stmt(Instr::List &seq, Stmt::Ptr s) override; 
+  List load_var(Var &dst, Expr &e) override;
+  List store_var(Var dst_addr, Var src) override;
+  void regAlloc(List &instrs) override;
+  bool stmt(List &seq, Stmt::Ptr s) override; 
 };
 
-void add_init_block(Instr::List &code);
+void add_init_block(List &code);
 
 }  // namespace vc4
 }  // namespace V3DLib

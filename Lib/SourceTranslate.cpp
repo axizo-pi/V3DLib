@@ -1,11 +1,11 @@
 #include "SourceTranslate.h"
-#include <memory>
 #include "Support/debug.h"
-#include "global/log.h"
 #include "Support/Platform.h"
 #include "vc4/SourceTranslate.h"
 #include "v3d/SourceTranslate.h"
 #include "Target/instr/Mnemonics.h"
+#include "global/log.h"
+#include <memory>
 
 namespace {
 
@@ -35,7 +35,7 @@ Instr::List ISourceTranslate::load_var(Var &in_dst, Expr &e) {
   ret << mov(TMUA, src)
       << recv(dst);
 
-	//Log::debug << "\n" << ret.dump(true);
+  //Log::debug << "\n" << ret.dump(true);
   return ret;
 }
 
@@ -47,7 +47,7 @@ Instr::List ISourceTranslate::load_var(Var &in_dst, Expr &e) {
 Instr::List add_uniform_pointer_offset(Instr::List &code) {
   using namespace V3DLib::Target::instr;
 
-	Reg acc = ACC0();
+  Reg acc = ACC0();
 
   Instr::List ret;
 
@@ -75,26 +75,26 @@ Instr::List add_uniform_pointer_offset(Instr::List &code) {
 
 
 ISourceTranslate &vc4_SourceTranslate() {
-	if (_vc4_source_translate.get() == nullptr) {
-		_vc4_source_translate.reset(new vc4::SourceTranslate());
-	}
-	return *_vc4_source_translate.get();
+  if (_vc4_source_translate.get() == nullptr) {
+    _vc4_source_translate.reset(new vc4::SourceTranslate());
+  }
+  return *_vc4_source_translate.get();
 }
 
 
 ISourceTranslate &v3d_SourceTranslate() {
-	if (_v3d_source_translate.get() == nullptr) {
-		_v3d_source_translate.reset(new v3d::SourceTranslate());
-	}
-	return *_v3d_source_translate.get();
+  if (_v3d_source_translate.get() == nullptr) {
+    _v3d_source_translate.reset(new v3d::SourceTranslate());
+  }
+  return *_v3d_source_translate.get();
 }
 
 
 ISourceTranslate &getSourceTranslate() {
   if (Platform::compiling_for_vc4()) {
-		return vc4_SourceTranslate();
+    return vc4_SourceTranslate();
   } else {
-		return v3d_SourceTranslate();
+    return v3d_SourceTranslate();
   }
 }
 

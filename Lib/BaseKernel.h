@@ -1,14 +1,10 @@
 #ifndef _V3DLIB_BASEKERNEL_H_
 #define _V3DLIB_BASEKERNEL_H_
-#include "Params.h"
 #include "KernelDriver.h"
+#include "Params.h"
 #include "Support/BaseSettings.h"
-#include "Support/Timer.h"
 #include <memory>
 
-/**
- * @brief Library namespace
- */
 namespace V3DLib {
 
 /**
@@ -61,6 +57,8 @@ public:
   bool has_driver() const;
   V3DLib::KernelDriver &driver();
   V3DLib::KernelDriver const &driver() const;
+  V3DLib::Compile &compiler() const;
+  V3DLib::Compile &compiler();
 
   void compile_init();
   std::string dump();
@@ -93,7 +91,7 @@ public:
   void qpu(bool wait_complete = true);
   void wait_complete() { driver().wait_complete(); }
 
-  Code const &code() const { return m_driver->code(); }
+  Code const &code() const { return m_compile->code(); }
   IntList const &params() const { return uniforms; }  // Can't name it uniforms because the data member is called that
 
   std::string compile_info() const;
@@ -137,6 +135,8 @@ protected:
   // Defined as unique pointer so that it easily survives std::move
   // (There are other reasons but this is the main one)
   std::unique_ptr<KernelDriver> m_driver;
+
+  std::unique_ptr<Compile> m_compile;
 };
 
 

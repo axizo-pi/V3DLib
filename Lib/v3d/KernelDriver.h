@@ -1,11 +1,10 @@
 #ifndef _V3DLIB_V3D_KERNELDRIVER_H
 #define _V3DLIB_V3D_KERNELDRIVER_H
+#include "Compile.h"
 #include "../KernelDriver.h"
 #include "Common/SharedArray.h"
-#include "instr/Instr.h"
 #include "BufferObject.h"
 #include "Driver.h"
-#include "UniformConstants.h"
 
 namespace V3DLib {
 namespace v3d {
@@ -26,29 +25,17 @@ class KernelDriver : public V3DLib::KernelDriver {
   using Instructions = V3DLib::v3d::Instructions;
 
 public:
-  KernelDriver();
+  KernelDriver() {}
   KernelDriver(KernelDriver &&a) = default;
 
-  void invoke(int numQPUs, IntList &params, bool wait_complete = true) override;
-  void encode() override;
-  int kernel_size() const override { return (int) instructions.size(); }
+  void invoke(V3DLib::Compile &code, int numQPUs, IntList &params, bool wait_complete = true) override;
   void wait_complete() override;
 
 private:
-  Instructions  instructions;
-
   Data   uniforms;
   Data   devnull;
   Data   done;
   Driver drv;
-  UniformConstants m_uniform_constants;
-
-  void compile_intern() override;
-
-  void allocate();
-  ByteCode to_opcodes();
-  std::string emit_opcodes() override;
-  void init_uniforms() override;
 };
 
 }  // namespace v3d

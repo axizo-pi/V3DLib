@@ -64,7 +64,7 @@ public:
     bool prev = Platform::compiling_for_vc4();
     compile_init();
 
-    driver().compile([this, f] () {
+    compiler().compile([this, f] () {
       f(mkArg<ts>(m_typelist)...);  // Construct the AST
     });
 
