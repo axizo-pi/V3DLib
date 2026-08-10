@@ -53,7 +53,7 @@ bool same(float *in_ptr, int offset, int length = 16) {
 
 
 void sfu_kernel(Float x, Float::Ptr r) {
-  
+	// Basic operations
   *r = 0.0f;                 r.inc();
   *r = 2.0f*x;               r.inc();  // Float mult
   *r = 2*x;                  r.inc();  // Int mult
@@ -61,35 +61,60 @@ void sfu_kernel(Float x, Float::Ptr r) {
   Float var = -2.0f;
   *r = var*x;                r.inc();  // Float mult from var
 
-  // Prefixes to avoid conflicts with lib functions
+  // SFU - prefixes to avoid conflicts with lib functions
   *r = V3DLib::exp(3.0f);    r.inc();
   *r = V3DLib::exp(x);       r.inc();
 
   *r = V3DLib::recip(x);     r.inc();
   *r = V3DLib::recipsqrt(x); r.inc();
   *r = V3DLib::log(x);       r.inc();
-  *r = V3DLib::exp_e(1);     r.inc();
+  *r = V3DLib::exp_e(1);     r.inc();  // Not really required, 1.0f is one of the test parameters
   *r = V3DLib::exp_e(x);     r.inc();
-  *r = V3DLib::ln(1);        r.inc();
   *r = V3DLib::ln(x);        r.inc();
+  *r = V3DLib::tanh(x);      r.inc();
+  *r = V3DLib::sqrt_f(x);    r.inc();
 }
 
 
 /**
  * @brief Check results SFU kernel
+ *
+ * Special cases for invalid input resulting in Inf, Nan are taken into account.
  */
 void check(float val, Float::Array &results, double precision) {
   REQUIRE(results[0]    == 0.0f);
   REQUIRE(results[16]   == 2*val);
   REQUIRE(results[16*2] == 2*val);
   REQUIRE(results[16*3] == -2*val);
-  REQUIRE(abs(results[ 16*4] - 8.0)           <   precision);
-  REQUIRE(abs(results[ 16*5] - exp2(val))     <   precision);  // Should be exact, but isn't
-  REQUIRE(abs(results[ 16*6] - 1/val)         <   precision);
-  REQUIRE(abs(results[ 16*7] - (1/sqrt(val))) <   precision);
-  REQUIRE(abs(results[ 16*8] - log2(val))     <   precision);
-  REQUIRE(abs(results[ 16*9] - exp(1))        < 2*precision);  // A bit less precise, is a calc
-  REQUIRE(abs(results[16*10] - exp(val))      <  50*precision);
+  REQUIRE(abs(results[16*4] - 8.0)           <   precision);
+  REQUIRE(abs(results[16*5] - exp2(val))     <   precision);  // Should be exact, but isn't
+
+	// Note that indexes for Nan and inf tests are non-consecutive
+	if (val < 0) {
+  	REQUIRE(std::isnan(results[16* 7]));
+  	REQUIRE(std::isnan(results[16*13]));
+	} else if (val == 0) {
+  	REQUIRE(std::isinf(results[16* 6]));
+  	REQUIRE(std::isinf(results[16* 7]));
+  	REQUIRE(std::isinf(results[16* 8]));
+  	REQUIRE(std::isinf(results[16*11]));
+	} else {
+  	REQUIRE(abs(results[16* 6] - 1/val)         <  precision);
+  	REQUIRE(abs(results[16* 7] - (1/sqrt(val))) <  precision);
+  	REQUIRE(abs(results[16* 8] - log2(val))     <  precision);
+  	REQUIRE(abs(results[16*11] - log(val))      <  precision);
+/*
+		{
+			float res = results[16*13];
+			warn << "test sqrt_f(): " << res << " = " << sqrt(val);
+		}
+*/		
+	  REQUIRE(abs(results[16*13] - sqrt(val))      <  precision);
+	}
+
+  REQUIRE(abs(results[16* 9] - exp(1))        <   precision);
+  REQUIRE(abs(results[16*10] - exp(val))      < 5*precision);  // Less precise, is a lib function
+  REQUIRE(abs(results[16*12] - tanh(val))      <  precision);
 }
 
 
@@ -231,8 +256,7 @@ void element_at_kernel(Float::Ptr in_ptr, Float::Ptr result) {
 
 
 TEST_CASE("Test SFU functions [sfu]") {
-
-  int N = 13;  // Number of results returned
+  int N = 14;  // Number of results returned
 
   Float::Array results(16*N);
 
@@ -240,7 +264,7 @@ TEST_CASE("Test SFU functions [sfu]") {
 
   INFO("Running qpu");
   //
-  // For vc4 one of the QPU SFU values are exact! Significant difference with int and emu.
+  // For vc4 none of the QPU SFU values are exact! Significant difference with int and emu.
   // Perhaps due to float precision, as opposed to double on cpu?
   //
   // v3d has same output as int and emu.
@@ -249,30 +273,23 @@ TEST_CASE("Test SFU functions [sfu]") {
 
   results.fill(0.0);
 
-  INFO("Testing 1.0f");
-  k.load(1.0f, &results).run();
-  check(1.0f, results, precision);
+	auto test = [&] (float val) {
+		//warn << "Testing " << val << "f";
+  	INFO("Testing " << val << "f");
 
-  INFO("Testing 0.5f");
-  k.load(2.5f, &results).run();
-  //Log::warn << dump_array(results, 16, true);
-  check(2.5f, results, precision);
+  	k.load(val, &results).run();
+  	check(val, results, precision);
+	};
 
-  INFO("Testing 1.1f");
-  k.load(1.1f, &results).run();
-  check(1.1f, results, precision);
+	test(1.0f);
+	test(0.5f);
+	test(1.1f);
+	test(2.5f);
+	test(PI);
 
-  INFO("Testing 2.5f");
-  k.load(2.5f, &results).run();
-  check(2.5f, results, precision);
-
-  INFO("Testing PI");
-  k.load(PI, &results).run();
-  check(PI, results, precision);
-
-// Following generates nanf - for 1/x
-//  k.load(0.0f, &results).run();
-//  check(0.0f, results, precision);
+	// Nan and Inf for various operations
+	test(0.0f);
+	test(-1.0f);
 }
 
 
