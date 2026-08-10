@@ -257,19 +257,100 @@ FloatExpr min(FloatExpr a, FloatExpr b)       { return mkFloatApply(a, Op(MIN, F
 FloatExpr max(FloatExpr a, FloatExpr b)       { return mkFloatApply(a, Op(MAX, FLOAT), b); }
 
 
-//
-// SFU functions
-//
+/**
+ * @addtogroup SourceLanguage
+ *
+ * ### SFU functions
+ *
+ * The `SFU` (Special Function Unit) is a separate hardware component on
+ * `vc4` and `vc6`, which runs specific functions.  
+ * The functions in question are delegated to the `SFU`. Any `SFU` operation takes
+ * two program cycles to complete and the result is put in special
+ * accumulator register `ACC4`.
+ *
+ * On `vc7`, there is no `SFU`. The special functions have been reassigned as
+ * regular hardware operations on the Add ALU.
+ *
+ *  @{
+ */
+
+/**
+ * @brief For the Float parameter `x` return `1/x`.
+ *
+ * This is an `SFU` operation.
+ */
 FloatExpr recip(FloatExpr x)     { return mkFloatApply(x, Op(RECIP    , FLOAT)); }
+
+
+/**
+ * @brief For the Float parameter `x` return `1/sqrt(x)`.
+ *
+ * This is an `SFU` operation.
+ */
 FloatExpr recipsqrt(FloatExpr x) { return mkFloatApply(x, Op(RECIPSQRT, FLOAT)); }
+
+
+/**
+ * @brief For the Float parameter `x` return `2^x`.
+ *
+ * Note that the base is `2`.
+ *
+ * This is an `SFU` operation.
+ */
 FloatExpr exp(FloatExpr x)       { return mkFloatApply(x, Op(EXP      , FLOAT)); }
+
+
+/**
+ * @brief For the Float parameter `x` return `e^x`.
+ *
+ * Note that the base is `e`.
+ *
+ * This is a library function which uses `SFU` operation `exp()`.
+ */
 FloatExpr exp_e(FloatExpr x)     { return mkFloatApply(x, Op(EXP_E    , FLOAT)); }
+
+
+/**
+ * @brief For the Float parameter `x` return `tanh(x)`.
+ *
+ * This is a library function which internally uses `SFU` operation `exp()`.
+ */
 FloatExpr tanh(FloatExpr x)      { return mkFloatApply(x, Op(TANH     , FLOAT)); }
+
+
+/**
+ * @brief For the Float parameter `x` return `log(x)`.
+ *
+ * Note that the base is `2`.
+ *
+ * This is an `SFU` operation.
+ */
 FloatExpr log(FloatExpr x)       { return mkFloatApply(x, Op(LOG      , FLOAT)); }
+
+
+/**
+ * @brief For the Float parameter `x` return `ln(x)`.
+ *
+ * Note that the base is `e`.
+ *
+ * This is a library function which uses `SFU` operation `log()`.
+ */
 FloatExpr ln(FloatExpr x)        { return mkFloatApply(x, Op(LOG_E    , FLOAT)); }
 
 
+/**
+ * @brief For the Float parameter `x` return `sqrt(x)`.
+ *
+ * This is a library function which internally uses `SFU` operations `recip()` and `recipsqrt()`.
+ * There is no direct `sqrt` operation on the `QPU`'s.
+ *
+ * The `_f` postfix is added to avoid conflicts with other `sqrt` functions.
+ * There might be a better solution for this.
+ */
 FloatExpr sqrt_f(FloatExpr x) { return recip(recipsqrt(x)); }
+
+/** @} */ // end of group SourceLanguage
+
 
 /**
  * Should not be used directly in code.
