@@ -1,4 +1,5 @@
 #include "KernelDriver.h"
+#include "Compile.h"
 #include "UniformConstants.h"
 
 namespace V3DLib {
@@ -17,14 +18,14 @@ void load_uniforms(
   int numQPUs,
   Data const &devnull,
   Data const &done,
-  IntList const &params
+  IntList const &params,
+  UniformConstants const &uc
 ) {
-  UniformConstants uc =  uniform_constants.list();
-/*
+
   if (!uc.empty()) {
     warn << "load_uniforms() " << uc.size() << " uniform constants";
   }
-*/
+
   unif.alloc(params.size() + 4 + (int) uc.size());
 
   int offset = 0;
@@ -77,7 +78,13 @@ void load_uniforms(
 /**
  * @brief Invoke kernel on QPUs
  */
-void KernelDriver::invoke(V3DLib::Compile &code, int numQPUs, IntList &params, bool wait_complete) {
+void KernelDriver::invoke(
+	Compile &code,
+	int numQPUs,
+	IntList &params,
+  UniformConstants const &uc,
+	bool wait_complete
+) {
   assert(params.size() != 0);
 
   if (code.has_errors()) {
@@ -111,7 +118,7 @@ void KernelDriver::invoke(V3DLib::Compile &code, int numQPUs, IntList &params, b
   done.alloc(1);
   done[0] = 0;
 
-  load_uniforms(uniforms, numQPUs, devnull, done, params);
+  load_uniforms(uniforms, numQPUs, devnull, done, params, uc);
 
   drv.add_bo(getBufferObject().getHandle());
   drv.execute(code.code(), &uniforms, numQPUs, wait_complete);

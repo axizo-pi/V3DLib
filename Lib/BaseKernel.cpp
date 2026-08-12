@@ -1,6 +1,6 @@
 #include "BaseKernel.h"
-#include "vc4/KernelDriver.h"
-#include "v3d/KernelDriver.h"
+#include "vc4/Compile.h"
+#include "v3d/Compile.h"
 #include "Support/basics.h"
 #include "Emulator/Interpreter.h"  // interpreter()
 #include "Emulator/Emulator.h"     // emulate()
@@ -23,13 +23,7 @@ int s_qpu_call_count =0;
 BaseKernel::BaseKernel(BaseSettings const &settings) : m_settings(settings) {}
 
 
-bool BaseKernel::has_driver() const { return m_driver.get() != nullptr; }
-
-
-V3DLib::KernelDriver &BaseKernel::driver() {
-  assert(has_driver());
-  return *m_driver;
-}
+bool BaseKernel::has_compile() const { return m_compile.get() != nullptr; }
 
 
 V3DLib::Compile &BaseKernel::compiler() const {
@@ -44,15 +38,9 @@ V3DLib::Compile &BaseKernel::compiler() {
 }
 
 
-V3DLib::KernelDriver const &BaseKernel::driver() const {
-  assert(has_driver());
-  return *m_driver;
-}
-
-
 void BaseKernel::compile_init() {
   //warn << "Called compile_init()";
-  assert(m_driver.get() == nullptr);
+  assert(m_compile.get() == nullptr);
 
   enum SelectKernel {
     None,
@@ -92,18 +80,16 @@ void BaseKernel::compile_init() {
   if (select_kernel == vc4) {
     //warn << "BaseKernel compiling for vc4";
     Platform::compiling_for_vc4(true);
-    m_driver.reset(new vc4::KernelDriver);
     m_compile.reset(new vc4::Compile);
   } else {
     Platform::compiling_for_vc4(false);
-    m_driver.reset(new v3d::KernelDriver);
     m_compile.reset(new v3d::Compile);
   }
 }
 
 
 bool BaseKernel::has_errors() const {
- return has_driver() && compiler().has_errors();
+ return compiler().has_errors();
 }
 
 
@@ -128,7 +114,7 @@ BaseKernel &BaseKernel::setMaxQPUs() {
  *   code is about 1%.
  */
 void BaseKernel::run(bool wait_complete) {
-  assert(m_driver.get() != nullptr);
+  assert(m_compile.get() != nullptr);
 
   if (Platform::use_main_memory()) {
     if (compiler().is_v3d()) {
@@ -139,7 +125,7 @@ void BaseKernel::run(bool wait_complete) {
       // This is also tested in `compile_init()`. However this version is called
       // outside of unit tests.
       if (!m_settings.compile_only && (m_settings.run_type == QPU)) {
-       warn << "Main memory selected in QPU mode, running on emulator instead of QPU.";
+        warn << "Main memory selected in QPU mode, running on emulator instead of QPU.";
         m_settings.run_type = Emulator;
       }
     }
@@ -219,7 +205,7 @@ void BaseKernel::qpu(bool wait_complete) {
   assert(!m_settings.compile_only);    // Paranoia
 
   s_qpu_call_count++;
-  driver().invoke(compiler(), numQPUs(), uniforms, wait_complete);
+  compiler().invoke(numQPUs(), uniforms, wait_complete);
 }
 
 
@@ -235,8 +221,8 @@ std::string BaseKernel::compile_info() const {
       << "Compile info\n"
       << "============\n";
 
-  if (!has_driver()) {
-    ret << "No kernel drivers enabled\n\n";
+  if (!has_compile()) {
+    ret << "No compiler enabled\n\n";
   } else {
     ret << compiler().kernel_type_str() << ":\n";
   }
@@ -257,11 +243,11 @@ std::string BaseKernel::dump_compile_data() {
 std::string BaseKernel::info() const {
   std::string ret;
 
-  if (has_driver() ) {
+  if (has_compile() ) {
     ret << "  " << compiler().kernel_type_str() << " kernel: "
         << compiler().kernel_size() << " instructions\n";
   } else {
-    ret << "  kernel not present\n";
+    ret << "  compiler not present\n";
   }
 
   return ret;

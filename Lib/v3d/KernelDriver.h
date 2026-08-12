@@ -1,13 +1,16 @@
 #ifndef _V3DLIB_V3D_KERNELDRIVER_H
 #define _V3DLIB_V3D_KERNELDRIVER_H
-#include "Compile.h"
-#include "../KernelDriver.h"
+//#include "Compile.h"
+//#include "../KernelDriver.h"
+#include "UniformConstants.h"
 #include "Common/SharedArray.h"
 #include "BufferObject.h"
 #include "Driver.h"
 
 namespace V3DLib {
 namespace v3d {
+
+class Compile; // Forward declaration
 
 /**
  * @brief Buffer Object for v3d
@@ -19,17 +22,23 @@ namespace v3d {
  * and resulted in run timeouts and eventually locked up the pi4.
  * vc4 does not have this issue.
  */
-class KernelDriver : public V3DLib::KernelDriver {
-  using Parent       = V3DLib::KernelDriver;
-  using Instruction  = V3DLib::v3d::instr::Instr;
-  using Instructions = V3DLib::v3d::Instructions;
+class KernelDriver {
+  //using Instruction  = V3DLib::v3d::instr::Instr;
+  //using Instructions = V3DLib::v3d::Instructions;
 
 public:
   KernelDriver() {}
   KernelDriver(KernelDriver &&a) = default;
 
-  void invoke(V3DLib::Compile &code, int numQPUs, IntList &params, bool wait_complete = true) override;
-  void wait_complete() override;
+  void invoke(
+		Compile &code,
+		int numQPUs,
+		IntList &params,
+  	UniformConstants const &uc,
+		bool wait_complete = true
+	);
+
+  void wait_complete();
 
 private:
   Data   uniforms;

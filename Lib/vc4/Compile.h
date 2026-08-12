@@ -12,6 +12,8 @@ public:
   int kernel_size() const override;
   void encode() override;
 
+  void invoke(int numQPUs, IntList &params, bool wait_complete = true) override { assert(false); /* TODO */ }
+
 private:
   void compile_intern() override;
   std::string emit_opcodes() override;

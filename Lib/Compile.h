@@ -36,6 +36,9 @@ public:
   bool has_errors() const { return !m_errors.empty(); }
   std::string compile_info() const;
 
+  virtual void invoke(int numQPUs, IntList &params, bool wait_complete = true) = 0;
+  virtual void wait_complete() {}  // For v3d
+
 protected:
   KernelType  m_type;
 

@@ -726,6 +726,7 @@ void Compile::compile_intern() {
     //
     info << "=== Uniform constants changed! Redoing encode ===";
 
+  	m_uc = uniform_constants.list();
     uniform_constants.add_uniforms(m_body);
 
     // Was fully expecting for following to be necessary; alas
@@ -788,6 +789,11 @@ void Compile::init_uniforms()  {
 ByteCode Compile::to_opcodes() {
   assert(instructions.size() > 0);
   return instructions.bytecode();
+}
+
+
+void Compile::invoke(int numQPUs, IntList &params, bool wait_complete) {
+	m_driver.invoke(*this, numQPUs, params, m_uc, wait_complete);
 }
 
 

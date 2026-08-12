@@ -12,6 +12,7 @@ UniformConstantsHandler::UniformConstantsHandler() {}
 
 
 void UniformConstantsHandler::reset() {
+	//warn << "UniformConstantsHandler::reset()";
   m_last_uniform = -1;
   m_list.clear();
 }
@@ -62,7 +63,7 @@ void UniformConstantsHandler::add_uniforms(Stmts &source) {
 
 
 /**
- * Return var index for given value
+ * @brief Return var index for given value
  *
  * This assumes two passes; the first pass returns -1.
  * the second pass returns the proper var index.
@@ -89,7 +90,11 @@ int UniformConstantsHandler::get(float val) {
   }
 
   // var_id is -1 for first encoding run.
-  return m_list[index].var_id;
+  int ret = m_list[index].var_id;
+	if (ret != -1) {
+		warn << "UniformConstantsHandler::get(): " << ret;
+	}
+	return ret;
 }
 
 
