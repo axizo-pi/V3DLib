@@ -116,8 +116,11 @@ void init_local() {
   s_op_add             .reset(new BaseKernel(compile(kernel::outer_add      , settings())));
   s_op_add_rows        .reset(new BaseKernel(compile(kernel::outer_add_rows , settings())));
   s_sigmoid            .reset(new BaseKernel(compile(kernel::sigmoid        , settings())));
-  s_dsigmoid           .reset(new BaseKernel(compile(kernel::dsigmoid       , settings())));
+	s_dsigmoid           .reset(new BaseKernel(compile(kernel::dsigmoid       , settings())));
+
   s_tanh               .reset(new BaseKernel(compile(kernel::tanh           , settings())));
+	to_file("tanh.txt", s_tanh->dump());
+
   s_dtanh              .reset(new BaseKernel(compile(kernel::dtanh          , settings())));
   s_ln                 .reset(new BaseKernel(compile(kernel::ln             , settings())));
   s_max_row            .reset(new BaseKernel(compile(kernel::max_row        , settings())));
@@ -527,10 +530,12 @@ matrix matrix::mul_e(matrix const &rhs) const {
 
 
 matrix matrix::tanh() const {
-  matrix bias(rows(), columns());
-
+  //warn << "matrix::tanh pre: " << dump();
   matrix ret(rows(), columns());
+
   s_tanh->load(&arr(), &ret.arr(), size()/16).run();
+
+  //warn << "matrix::tanh ret: " << ret.dump();
   return ret;  
 }
 
@@ -718,6 +723,19 @@ void matrix::outer_add(matrix const &lhs, matrix const &rhs) {
 }
 
 
+/**
+ * Bulk of time goes into this method. For full first epoch:
+ *
+ * numQPUs == 1:
+ *
+ *     matrix::outer_add_rows     : 2692.408546s in 797040 steps, average:  0.003378s
+ *
+ * Using multiple QPU's dramatically improves this. numQPUs == 16:
+ *
+ *     matrix::outer_add_rows     : 228.809337s in 797040 steps, average:  0.000287s
+ *
+ * Called multiple times in `LoopState::update_gradient_rows()`.
+ */
 void matrix::outer_add_rows(matrix const &lhs, matrix const &rhs) {
   assert(rows() == lhs.columns() && columns() == rhs.columns());
   assert(rhs.columns() % 16 == 0);
@@ -728,8 +746,8 @@ void matrix::outer_add_rows(matrix const &lhs, matrix const &rhs) {
 */
   timers.start("matrix::outer_add_rows");
     
-  //s_op_add_rows->setMaxQPUs();
-  s_op_add_rows->setNumQPUs(1);
+  s_op_add_rows->setMaxQPUs();
+  //s_op_add_rows->setNumQPUs(1);
   s_op_add_rows->load(&arr(), &lhs.arr(), &rhs.arr(), lhs.rows(), lhs.columns(), rhs.columns()).run();
 
   timers.stop("matrix::outer_add_rows");

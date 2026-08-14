@@ -21,11 +21,11 @@ void load_uniforms(
   IntList const &params,
   UniformConstants const &uc
 ) {
-
+/*
   if (!uc.empty()) {
     warn << "load_uniforms() " << uc.size() << " uniform constants";
   }
-
+*/
   unif.alloc(params.size() + 4 + (int) uc.size());
 
   int offset = 0;

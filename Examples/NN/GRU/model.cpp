@@ -171,7 +171,7 @@ void Model::grad_div_steps(int in_steps) {
 
   //warn << "grad_div_steps V pre: " << V.dump();
   V   /= steps;
-  assert(V.is_zero());  // Zero on init, warn me if it changes
+  //assert(V.is_zero());  // Zero on init, warn me if it changes
 
   eval();
 }
@@ -262,6 +262,23 @@ void State::init(int time_steps, int hidden_dim, int output_dim) {
     //tmp_S.eval();
     m_S.set(tmp_S, true);
   }
+}
+
+
+std::string State::dump() const {
+	std::string ret;
+
+	ret << "\n=========== State dump ==========\n"
+	    << "  m_do_temp: " << m_do_temp << "\n";
+	ret << "  E: "   << E.dump()   << "\n";
+	ret << "  z: "   << z.dump()   << "\n";
+	ret << "  r: "   << r.dump()   << "\n";
+	ret << "  h: "   << h.dump()   << "\n";
+	ret << "  O: "   << O.dump()   << "\n";
+	ret << "  m_S: " << m_S.dump()
+	    << "\n=================================";
+
+	return ret;
 }
 
 

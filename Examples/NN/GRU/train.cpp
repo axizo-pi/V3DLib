@@ -90,6 +90,16 @@ void LoopState::update(MMatrix &ds_cur, Model const &m) const {
 
 /**
  * Verified that values change here.
+ *
+ * Biggest time hog in calculating first entire epoch of train:
+ *
+ * numQPUs == 1:
+ *
+ *     x_step update_gradient_rows: 2704.828095s in 132840 steps, average:  0.020361s
+ *
+ * Using multiple QPU's dramatically improves this. numQPUs == 16:
+ *
+ *     x_step update_gradient_rows: 241.045550s in 132840 steps, average:  0.001814s
  */
 void LoopState::update_gradient_rows(Model &grad) const {
   grad.U_h.outer_add_rows(temp_X, dreluInput_h);   // Changes val
@@ -105,66 +115,83 @@ void LoopState::update_gradient_rows(Model &grad) const {
 }
 
 
-void gradient_delta(LoopState &ls, Model &grad, MMatrix &delta_y_x, int time_steps) {
-  // First calls pass zeroes
-  warn << "Called gradient_delta()"
-       << ", Zero (ls.temp().S(), " "grad.V): "
-       << "(" << ls.temp().S().is_zero() << ", " << grad.V.is_zero() << ")";
-  //warn << "delta_y_x: " << delta_y_x.dump();
+/**
+ * @brief Calculate gradient delta.
+ *
+ * At time of writing, this does nothing because input parameters are zero.
+ *
+ * @param grad_v    Output parameter
+ * @param S         Input parameter
+ * @param delta_y_x Input parameter
+ *
+ * ------------------------------------------------
+ *
+ * Notes
+ * =====
+ *
+ * 1. Final `eval()` important. Otherwise, non-zero values are returned.
+ *    Expecting tmp to be zeroes when all inputs are zero.  
+ *    Can't do afterward, e.g.  `tmp.eval()`; apparently, needs to be in calculation.
+ */
+void gradient_delta(MMatrix &grad_V, MMatrix const &S, MMatrix const &delta_y_x, int time_steps) {
+  assert(grad_V.is_zero());
 
-  MMatrix grad_V_x = grad.V;
-  assert(grad_V_x.same(grad.V)); // Pre check
+#if 0
+	//
+	// S is now non_zero; check when delta_y_x changes
+	//
+  bool input_zero = (grad_V.is_zero() && delta_y_x.is_zero());
+	if (!input_zero) {
+	  warn << "Called gradient_delta()"
+	       << ", Zero (grad.V, S, delta_y_x): "
+	       << "(" << grad_V.is_zero() << ", " << S.is_zero() << ", " << delta_y_x.is_zero() << ")";
 
-  timers.start("delta set");
+  	//warn << "S: " << S.dump();
+  	//warn << "delta_y_x: " << delta_y_x.dump();
+  	//assert(delta_y_x.is_zero());  // Warn me when this changes
+	}
+#endif	
 
-  auto V_pre = grad.V;
-  //warn << "ls.temp().S(): " << ls.temp().S().dump();
+  MMatrix grad_V_pre = grad_V; // Remember original state to compare with
+  MMatrix grad_V_x   = grad_V; // Copy param for qpu
 
-  for(int time_step = time_steps - 1; time_step >= 0; time_step--) {
-    //
-    // **NOTE:** Final eval() important. Otherwise, non-zero values are returned.
-    // Expecting tmp to be zeroes when all inputs are zero.
-    //
-    // Can't do afterward, e.g.  `tmp.eval()`; apparently, needs to be in calculation.
-    //
-    auto tmp = (ls.temp().S().Xf().transpose() * delta_y_x.Xf().row(time_step)).eval();
-    //tmp(1,1) = 1.0f;
-    //warn << "tmp: " << dump(tmp);
-    assert(is_zero(tmp)); // Warn me when this changes, we really want non-zero here
+	{ // Xf
+  	timers.start("delta set Xf");
 
-    grad.V.set(grad.V.Xf() + tmp);
-  }
+	  for (int time_step = time_steps - 1; time_step >= 0; time_step--) {
+			// See Note 1 for following line.
+	    auto tmp = (S.row(time_step + 1).Xf().transpose() * delta_y_x.Xf().row(time_step)).eval();
+	    grad_V.set(grad_V.Xf() + tmp);
+  	}
 
-  //warn << "grad.V post: " << grad.V.dump();
-  assert(V_pre.diff(grad.V));
-
-  timers.stop("delta set");
+	  timers.stop("delta set Xf");
+	}
 
   //
   // TODO: continue with this if values become non-zero
   //
-  timers.start("delta set qpu");
+	{ // qpu
+	  timers.start("delta set qpu");
 
-  auto V_x_pre = grad_V_x;
-  //warn << "ls.temp().S(): " << ls.temp().S().dump();
+	  for (int time_step = time_steps - 1; time_step >= 0; time_step--) {
+	    // Following always non-zero
+	    //warn << "delta_y_x(" << time_step << "): " << delta_y_x.row(time_step).dump();
 
-  for(int time_step = time_steps - 1; time_step >= 0; time_step--) {
-    // Following always non-zero
-    //warn << "delta_y_x(" << time_step << "): " << delta_y_x.row(time_step).dump();
+	    // delta_y_x is non-zero for every time_step
+	    auto tmp = S.row(time_step + 1).outer(delta_y_x.row(time_step));
+	    grad_V_x.set(grad_V_x + tmp);
+	  }
 
-    // delta_y_x is non-zero for every time_step
-    auto tmp = ls.temp().S().outer(delta_y_x.row(time_step));
-    grad_V_x.set(grad_V_x + tmp);
-  }
-  //warn << "delta grad.V: " << grad.V.dump_dim();
-  //warn << "delta grad_V_x: " << grad_V_x.dump_dim();
-  //assert(grad_V_x.is_zero());  // Want this to change
-  assert(V_x_pre.diff(grad_V_x));
+	  timers.stop("delta set qpu");
+	}
 
-  //assert(delta_y_x.same(delta_y));
-  assert(grad_V_x.same(grad.V)); // Post check
-
-  timers.stop("delta set qpu");
+	//
+	// Post Check: grad_V and similar should be changing
+	//
+	// They are changing now; check QPU and Xf are same
+	//
+  assert(grad_V_x.same(grad_V));
+  assert(!grad_V.is_zero());
 }
 
 } // anon namespace
@@ -200,19 +227,22 @@ void back_propagation(
   /* gradients = dLdV, dLdU0, dLdU1, dLdU2, dLdW0, dLdW1, dLdW2 */
   grad.init_val(m.input_dim(), m.hidden_dim(), m.output_dim(), 0.0f, false);
 
-  LoopState ls(1, input_dim, hidden_dim);
+	//warn << "state.O: " << state.O.dump();
+	//warn << "Y: " << Y.dump();  // Non-zero
 
   MMatrix delta_y_x = state.O - Y;
+	//warn << "delta_y_x: " << delta_y_x.dump();
 
   State x_state = state;
   x_state.S() = remove_last_rows(1, x_state.S());
 
-  gradient_delta(ls, grad, delta_y_x, time_steps);
+  gradient_delta(grad.V, state.S(), delta_y_x, time_steps);
 
   // Difference in calculations between Xf and MMatrix larger than expected
   // All other mul_t() calls work fine.
   // TODO: examine further later
-  MMatrix ds_single = m.V.mul_t(delta_y_x /* , true */);  // Enabling true does Xf calculation
+	bool do_Xf_calc = false;
+  MMatrix ds_single = m.V.mul_t(delta_y_x, do_Xf_calc);
 
   LoopState x_ls(time_steps, input_dim, hidden_dim);
 
@@ -338,7 +368,17 @@ void read_x_y(MMatrix &x, MMatrix &y, int pos) {
 }  // anon namespace
 
 
-void train(std::string filename_input, std::string filename_output, float learning_rate, int nepoch, int input_dim, int hidden_dim, int output_dim, int time_steps, float decay) {
+void train(
+	std::string filename_input,
+	std::string filename_output,
+	float learning_rate,
+	int nepoch,
+	int input_dim,
+	int hidden_dim,
+	int output_dim,
+	int time_steps,
+	float decay
+) {
   float prev_loss = 0.0f;
 
   int inputSize   = get_input_size(filename_input) - time_steps - 1;
@@ -359,6 +399,7 @@ void train(std::string filename_input, std::string filename_output, float learni
 
   for(int epoch = 0; epoch < nepoch; epoch++) {
     warn << "train loop epoch: " << epoch << ", limit: " << limit;
+		if (epoch > 1) return;
 
     float loss = 0;
     for(int i = 0; i < limit; i++) {
@@ -375,6 +416,7 @@ void train(std::string filename_input, std::string filename_output, float learni
 
       State state;
       state.init(time_steps, hidden_dim, output_dim);
+			//warn << "state init: " << state.dump();
 
       MMatrix currX(time_steps, input_dim);
       MMatrix currY(time_steps, output_dim);
@@ -386,6 +428,9 @@ void train(std::string filename_input, std::string filename_output, float learni
       state.eval();
 
       forward_propagation(m, currX, currY, state, time_steps, input_dim, hidden_dim, output_dim);
+			//warn << "state forward: " << state.dump();
+			//warn << "state.O forward: " << state.O.dump();
+
       loss += (calculate_cost(state.E, time_steps) / (float) limit);
       //warn << "loss: " << loss;
 

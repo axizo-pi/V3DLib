@@ -45,6 +45,7 @@ public:
   MMatrix const &S() const;
 
   void init(int time_steps, int hidden_dim, int output_dim);
+	std::string dump() const;
   void eval();
   void set_step(int time_step, State const &state);
   void move_rows(int step, State const &state);

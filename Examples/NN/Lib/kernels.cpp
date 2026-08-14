@@ -63,9 +63,11 @@ void dsigmoid(Float::Ptr in, Float::Ptr out, Int N) {
 
 
 void tanh(Float::Ptr in, Float::Ptr out, Int N) {
+	//warn << "kernels::tanh";
+
   For (Int h = 0, h < N, h++)
-    Float x = *in;
-    x = V3DLib::tanh(x);
+    Float var = *in;
+    Float x   = V3DLib::tanh(var);
     *out = x;
 
     in.inc();
@@ -92,6 +94,8 @@ void ln(Float::Ptr in, Float::Ptr out, Int N) {
  * Input is `in = tanh(x)`
  */
 void dtanh(Float::Ptr in, Float::Ptr out, Int N) {
+	warn << "kernels::dtanh";
+
   For (Int h = 0, h < N, h++)
     Float x = *in;
     x = 1.0f - x*x;
