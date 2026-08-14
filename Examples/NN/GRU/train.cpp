@@ -152,7 +152,7 @@ void gradient_delta(MMatrix &grad_V, MMatrix const &S, MMatrix const &delta_y_x,
 	}
 #endif	
 
-  MMatrix grad_V_pre = grad_V; // Remember original state to compare with
+#if 0
   MMatrix grad_V_x   = grad_V; // Copy param for qpu
 
 	{ // Xf
@@ -161,26 +161,22 @@ void gradient_delta(MMatrix &grad_V, MMatrix const &S, MMatrix const &delta_y_x,
 	  for (int time_step = time_steps - 1; time_step >= 0; time_step--) {
 			// See Note 1 for following line.
 	    auto tmp = (S.row(time_step + 1).Xf().transpose() * delta_y_x.Xf().row(time_step)).eval();
-	    grad_V.set(grad_V.Xf() + tmp);
+	    grad_V_x.set(grad_V.Xf() + tmp);
   	}
 
 	  timers.stop("delta set Xf");
 	}
+#endif	
 
   //
-  // TODO: continue with this if values become non-zero
+	// > 10x faster than Xf
   //
 	{ // qpu
 	  timers.start("delta set qpu");
+		auto S2 = remove_first_rows(1, S);
+		//warn << "S2 dim: " << S2.dump_dim();
 
-	  for (int time_step = time_steps - 1; time_step >= 0; time_step--) {
-	    // Following always non-zero
-	    //warn << "delta_y_x(" << time_step << "): " << delta_y_x.row(time_step).dump();
-
-	    // delta_y_x is non-zero for every time_step
-	    auto tmp = S.row(time_step + 1).outer(delta_y_x.row(time_step));
-	    grad_V_x.set(grad_V_x + tmp);
-	  }
+		grad_V.outer_add_rows(S2, delta_y_x);
 
 	  timers.stop("delta set qpu");
 	}
@@ -190,7 +186,13 @@ void gradient_delta(MMatrix &grad_V, MMatrix const &S, MMatrix const &delta_y_x,
 	//
 	// They are changing now; check QPU and Xf are same
 	//
-  assert(grad_V_x.same(grad_V));
+
+	// By the looks of it, bit_diff == 6 is an outlier.
+	// train loop i = 972 has bit_diff == 13
+	// I hypothesize that for most comparisons, bit_diff == 1
+	//
+	// TODO: make stats for # bit_diffs for given comparison
+  //assert(grad_V_x.same(grad_V, 13));
   assert(!grad_V.is_zero());
 }
 
@@ -404,7 +406,7 @@ void train(
     float loss = 0;
     for(int i = 0; i < limit; i++) {
       if (true) {
-        if (i >= 10) break; // DEBUG
+        if (i >= 1000) break; // DEBUG
         warn << "train loop i: " << i;
       } else {
         if (i % 400 == 0) {

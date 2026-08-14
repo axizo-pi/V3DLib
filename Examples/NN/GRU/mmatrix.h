@@ -120,5 +120,6 @@ inline MMatrix operator*(float val, MMatrix const &rhs) {
 
 
 MMatrix remove_last_rows(int num, MMatrix const &rhs);
+MMatrix remove_first_rows(int num, MMatrix const &rhs);
 
 #endif // _GRU_MMATRIX_H

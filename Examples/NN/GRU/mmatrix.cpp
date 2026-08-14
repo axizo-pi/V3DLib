@@ -1473,3 +1473,22 @@ MMatrix remove_last_rows(int num, MMatrix const &rhs) {
 
   return ret;
 }
+
+
+MMatrix remove_first_rows(int num, MMatrix const &rhs) {
+  if (num == 0) return rhs; // Nothing to do
+
+  assert(num > 0 && num < rhs.rows());
+
+  timers.start("remove_first_rows");
+
+  MMatrix ret(rhs.rows() - num, rhs.cols());
+
+  for (int i = 0; i < rhs.rows() - num; ++i) {
+    ret.row(i, rhs.row(i + num));
+  }
+
+  timers.stop("remove_first_rows");
+
+  return ret;
+}
