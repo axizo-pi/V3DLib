@@ -19,12 +19,13 @@
 
 Took an earlier commit, because the latest doesn't work (missing input file).
 
-Way too late into the conversion, I discoved that the gradient calculation
-always results in a zero matrix.
+Gradient calculation is now doing something.
+The loss convergence is still dismal.
+
 This might be due to not using the latest commit of this project.
 
 Letting this project rest until I find a solution, or I find a better GRU project
-to use as reference. I'll do a throw at integrating latest commit first.
+to use as reference. I examine it from time to time.
 
 ### Timing:
 
@@ -42,3 +43,15 @@ Default settings:
 
 - Original, reference app:  **958 epochs in 45 hours 56 minutes.**. That's **2.88 minutes per epoch**.
 - This app: **10 epochs in 133 minutes**. That's over **13 minutes** per epoch. Severely disappointed.....
+
+-------------------------------------------
+
+## Other candidates
+
+Both projects are `C++` libraries which support GRU, RNN, LSTM.
+
+- [netcpp](https://github.com/steckdenis/nnetcpp/tree/master)
+- [SUDL](https://github.com/kymo/SUDL/tree/master)
+
+Each project has its own design principles which basically bury the calculations.
+Because the operations are not transparent, I am currently hesitant to use these libraries.

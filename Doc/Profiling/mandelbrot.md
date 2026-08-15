@@ -11,7 +11,7 @@ The `Mandelbrot` app is a pretty good indicator of performance, because it is **
 
 The default output is as follows:
 
-<img src="../images/mandelbrot.bmp" alt="Mandelbrot output" style="width:30%;"/>
+<img src="../images/mandelbrot.bmp" alt="Mandelbrot output" style="width:50%;"/>
 
 ## GPU
 

@@ -6,4 +6,8 @@ Reference Project: **Raytracing in one Weekend**
 
 There are three books in the series, this project concentrates on the first book.
 
+The default output of the reference application is as follows:
+
+![Raytracing Reference](reference.png)
+
 Timing for default run: **10m49.475s** (with `time`)

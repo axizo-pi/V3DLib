@@ -3,12 +3,23 @@
 #include "Functions.h"
 
 namespace V3DLib {
+namespace {
 
 FloatExpr unary_float_op(OpId op_id, FloatExpr a) {
   Expr::Ptr dummy = mkVar(Var(DUMMY));
   Expr::Ptr e = mkApply(a.expr(), Op(op_id, FLOAT), dummy);
   return FloatExpr(e);
 }
+
+
+/**
+ * Used for `v3d`, defined as function for `vc4`.
+ */
+FloatExpr ffloor_op(FloatExpr a) { return unary_float_op(FFLOOR, a); }
+
+};
+
+}  // Anon namespace
 
 
 // ============================================================================
@@ -229,22 +240,6 @@ FloatExpr toFloat(IntExpr a) {
 }
 
 
-/**
- * Implementation of fabs() in source language.
- *
- * Relies on IEEE 754 specs for 32-bit floats.
- * Special values (Nan's, Inf's) are ignored
- */
-FloatExpr fabs(FloatExpr x) {
-  uint32_t const Mask = ~(((uint32_t) 1) << 31);
-
-  // Just zap the top bit
-  Float ret;
-  ret.as_float(x.as_int() & Mask);
-  return ret;
-}
-
-
 FloatExpr operator+(FloatExpr a, FloatExpr b) { return mkFloatApply(a, Op(ADD, FLOAT), b); }
 FloatExpr operator-(FloatExpr a, FloatExpr b) { return mkFloatApply(a, Op(SUB, FLOAT), b); }
 FloatExpr operator*(FloatExpr a, FloatExpr b) { return mkFloatApply(a, Op(MUL, FLOAT), b); }
@@ -252,9 +247,6 @@ FloatExpr operator*(FloatExpr a, FloatExpr b) { return mkFloatApply(a, Op(MUL, F
 FloatExpr operator/(FloatExpr a, FloatExpr b) {
   return mkFloatApply(a, Op(MUL, FLOAT), recip(b));
 }
-
-FloatExpr min(FloatExpr a, FloatExpr b)       { return mkFloatApply(a, Op(MIN, FLOAT), b); }
-FloatExpr max(FloatExpr a, FloatExpr b)       { return mkFloatApply(a, Op(MAX, FLOAT), b); }
 
 
 /**
@@ -273,6 +265,36 @@ FloatExpr max(FloatExpr a, FloatExpr b)       { return mkFloatApply(a, Op(MAX, F
  *
  *  @{
  */
+
+/**
+ * @brief Determine the per-element absolute float value of the input vector.
+ *
+ * Implementation of `fabs()` in source language.
+ *
+ * This relies on IEEE 754 specs for 32-bit floats.
+ * Special values (`Nan`, `Inf`) are disregarded.
+ */
+FloatExpr fabs(FloatExpr x) {
+  uint32_t const Mask = ~(((uint32_t) 1) << 31);
+
+  // Just zap the top bit
+  Float ret;
+  ret.as_float(x.as_int() & Mask);
+  return ret;
+}
+
+
+/**
+ * @brief Determine the per-element minimum value of the two input vectors.
+ */
+FloatExpr min(FloatExpr a, FloatExpr b)       { return mkFloatApply(a, Op(MIN, FLOAT), b); }
+
+
+/**
+ * @brief Determine the per-element maximum value of the two input vectors.
+ */
+FloatExpr max(FloatExpr a, FloatExpr b)       { return mkFloatApply(a, Op(MAX, FLOAT), b); }
+
 
 /**
  * @brief For the Float parameter `x` return `1/x`.
@@ -349,33 +371,6 @@ FloatExpr ln(FloatExpr x)        { return mkFloatApply(x, Op(LOG_E    , FLOAT));
  */
 FloatExpr sqrt_f(FloatExpr x) { return recip(recipsqrt(x)); }
 
-/** @} */ // end of group SourceLanguage
-
-
-/**
- * Should not be used directly in code.
- * use `sin()` instead.
- *
- * Made visible for use in `Functions.cpp`.
- */
-FloatExpr sin_op(FloatExpr x) {
-  return unary_float_op(SIN, x);
-}
-
-namespace {
-
-/**
- * Used for `v3d`, defined as function for `vc4`.
- */
-FloatExpr ffloor_op(FloatExpr a) { return unary_float_op(FFLOOR, a); }
-
-};
-
-
-/** @addtogroup SourceLanguage
- *  @{
- */
-
 
 /**
  * @brief Conversion unsigned to Float
@@ -448,6 +443,17 @@ FloatExpr sin(FloatExpr x) {
 }
 
 /** @} */ // end of group SourceLanguage
+
+
+/**
+ * Should not be used directly in code.
+ * use `sin()` instead.
+ *
+ * Made visible for use in `Functions.cpp`.
+ */
+FloatExpr sin_op(FloatExpr x) {
+  return unary_float_op(SIN, x);
+}
 
 }  // namespace V3DLib
 
