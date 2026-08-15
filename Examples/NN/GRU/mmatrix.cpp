@@ -663,9 +663,7 @@ MMatrix MMatrix::div_e(MMatrix const &rhs) const {
 
 
 MMatrix MMatrix::tanh() const {
-  //need_fields(true, true);
   assert(m_using_Xf || m_using_qpu);
-	//warn << "MMatrix::tanh pre: " << dump();
 
   MMatrix ret;
 
@@ -681,11 +679,9 @@ MMatrix MMatrix::tanh() const {
     timers.stop("MMatrix tanh qpu");
   }
 
-  //ret.used_fields(true, true);
   ret.used_fields(m_using_Xf, m_using_qpu);
   //assert(ret.same(11));       // Very bad convergence, 11 often not enough
 
-	//warn << "MMatrix::tanh ret: " << ret.dump();
   return ret;
 }
 
@@ -1282,17 +1278,17 @@ MMatrix MMatrix::forward_4(MMatrix &S, MMatrix const &h_row) {
   need_fields(false, true);
 
   MMatrix ret(rows(), cols());
-
+/*
   timers.start("forward_4 Xf");
   MatrixXf ones = MatrixXf::Ones(S.rows(), S.cols());
   ret.m_Xf = (ones - Xf()).cwiseProduct(h_row.Xf() + Xf()).cwiseProduct(S.Xf());
   ret.m_Xf.eval();
   timers.stop("forward_4 Xf");
-
-  //timers.start("forward_4 qpu");
-  // Timing 0.046ms, still 9x slower than Xf
+*/
+  timers.start("forward_4 qpu");
+  // 9x faster than Xf
   gru_kernel::forward_4(ret.m_qpu, m_qpu,  h_row.m_qpu, S.m_qpu);
-  //timers.stop("forward_4 qpu");
+  timers.stop("forward_4 qpu");
 
   ret.used_fields(false, true);
   //OK assert(ret.same(2));  // Usually exact

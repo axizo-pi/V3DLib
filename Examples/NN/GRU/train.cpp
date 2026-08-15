@@ -399,20 +399,42 @@ void train(
 
   load_x_y(filename_input, filename_output);
 
+	//
+	// Restrict the number of loops, as well as the log output.
+	//
+	// Returns true if the loop can be exited
+	//
+	const int max_i = 100; // limit;
+
+	auto output_loop = [max_i] (int i) -> bool {
+		bool ret  = false;
+		bool show = false;
+
+    if (i >= max_i) ret = true;
+
+    if (max_i < 100) {
+			show = true;
+		} else if (max_i < 400) {
+			show = (i % 20 == 0);
+		} else if (max_i < 1500) {
+			show = (i % 100 == 0);
+    } else {
+			show = (i % 800 == 0);
+    }
+
+		if (show) {
+	    warn << "train loop i: " << i;
+		}
+
+		return ret;
+	};
+
   for(int epoch = 0; epoch < nepoch; epoch++) {
     warn << "train loop epoch: " << epoch << ", limit: " << limit;
-		if (epoch > 1) return;
 
     float loss = 0;
     for(int i = 0; i < limit; i++) {
-      if (true) {
-        if (i >= 1000) break; // DEBUG
-        warn << "train loop i: " << i;
-      } else {
-        if (i % 400 == 0) {
-          warn << "train loop i: " << i;
-        }
-      }
+			if (output_loop(i)) break;
 
       timers.start("train limit loop");
 
