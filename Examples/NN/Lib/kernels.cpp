@@ -63,7 +63,7 @@ void dsigmoid(Float::Ptr in, Float::Ptr out, Int N) {
 
 
 void tanh(Float::Ptr in, Float::Ptr out, Int N) {
-	//warn << "kernels::tanh";
+  //warn << "kernels::tanh";
 
   For (Int h = 0, h < N, h++)
     Float var = *in;
@@ -94,7 +94,7 @@ void ln(Float::Ptr in, Float::Ptr out, Int N) {
  * Input is `in = tanh(x)`
  */
 void dtanh(Float::Ptr in, Float::Ptr out, Int N) {
-	//warn << "kernels::dtanh";
+  //warn << "kernels::dtanh";
 
   For (Int h = 0, h < N, h++)
     Float x = *in;
@@ -473,13 +473,13 @@ void outer_add_partial(Float::Ptr &ret, Float::Ptr &lhs, Float::Ptr &rhs, Int &N
   Int Start;
   Int Inc;
 
-	if (do_multi_qpu) {
-  	Start  = me();         comment("Doing multi QPU");
-  	Inc    = numQPUs();
-	} else {
-  	Start  = 0;            comment("Doing single QPU");
-  	Inc    = 1;
-	}
+  if (do_multi_qpu) {
+    Start  = me();         comment("Doing multi QPU");
+    Inc    = numQPUs();
+  } else {
+    Start  = 0;            comment("Doing single QPU");
+    Inc    = 1;
+  }
 
   Int Offset = M << 4;                     // 16*24
 
@@ -566,6 +566,9 @@ void vector_add(Float::Ptr left, Float::Ptr right, Float::Ptr out, Int N) {
 
 /**
  * @brief Calculate max per row
+ *
+ * There is currently no point in making this multi-QPU, because
+ * the number of rows is always 1 for current test app.
  */
 void max_row(Float::Ptr ret, Float::Ptr in_rhs, Int rows, Int cols) {
   ret -= index();

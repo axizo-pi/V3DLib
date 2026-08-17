@@ -67,8 +67,8 @@ void CompareStats::reset() {
   exact    = 0;
   same     = 0;
   zeroes   = 0;
-   max_diff = 0.0f;
-   max_bit  = -1;
+  max_diff = 0.0f;
+  max_bit  = -1;
 }
 
 
@@ -386,9 +386,7 @@ bool check_precision(float lhs, float rhs, int bit_diff, CompareStats *stats, bo
 
       if (lhs == 0.0f) {
         stats->zeroes++;
-      } //else {
-      //  warn << "Exact but not zero: " << lhs << ", " << rhs;
-      //}
+      }
     } else {
       if (ret) stats->same++;
     }
@@ -398,7 +396,13 @@ bool check_precision(float lhs, float rhs, int bit_diff, CompareStats *stats, bo
 }
 
 
-bool same_intern(MatrixAdapter const &lhs, MatrixAdapter const &rhs, int bit_diff, CompareStats &stats) {
+bool same_intern(
+  MatrixAdapter const &lhs,
+  MatrixAdapter const &rhs,
+  int bit_diff,
+   CompareStats &stats,
+  bool do_show
+) {
   //warn << "Called same_intern(Adapter, Adapter)";
   bool ret = true;
 
@@ -406,7 +410,7 @@ bool same_intern(MatrixAdapter const &lhs, MatrixAdapter const &rhs, int bit_dif
   if (lhs.columns() == 1 && lhs.columns() == rhs.rows() && lhs.rows() == rhs.columns() ) {
     int size = lhs.rows();
     for (int i = 0; i < size; ++i) {
-      if (!check_precision(lhs.at(i, 0), rhs.at(0, i), bit_diff, &stats)) {
+      if (!check_precision(lhs.at(i, 0), rhs.at(0, i), bit_diff, &stats, do_show)) {
          if (ret) {
           stats.first_i = i;
           stats.first_j = 0;
@@ -436,7 +440,7 @@ bool same_intern(MatrixAdapter const &lhs, MatrixAdapter const &rhs, int bit_dif
     if (stats.fail_on_first() && !ret) break;
 
     for (int j = 0; j < (int) rhs.columns(); ++j) {
-      if (!check_precision(lhs.at(i, j), rhs.at(i, j), bit_diff, &stats, ret)) {
+      if (!check_precision(lhs.at(i, j), rhs.at(i, j), bit_diff, &stats, ret && do_show)) {
         if (ret) {  // Register first fail only
           stats.first_i = i;
           stats.first_j = j;
@@ -453,18 +457,117 @@ bool same_intern(MatrixAdapter const &lhs, MatrixAdapter const &rhs, int bit_dif
 
 
 bool same(MatrixAdapter const &lhs, MatrixAdapter const &rhs, int bit_diff, bool show_stats) {
-  //warn << "Called same(Adapter, Adapter)";
-
   CompareStats stats(true);
-
   bool ret = same_intern(lhs, rhs, bit_diff, stats);
 
   if (stats.failed()) {
     warn << "Fail same() at (i,j): (" << stats.first_i << ", " << stats.first_j  << ")";
   }
 
-  if (show_stats) {
-     warn << stats.dump();
-  }
+  if (show_stats) warn << stats.dump();
   return ret;
 }
+
+
+namespace  bitdiff_stats {
+namespace {
+
+/**
+ * @brief Keep track of determined bit diff's for a given compare.
+ *
+ * The first element store is for `bit_diff == -1`, which means that
+ * bit diff is within limits.
+ */
+class StatsStruct {
+public:
+  StatsStruct() { init(); }
+
+  /**
+   * bit_diff is the index of the first bit (RTL) that is different.
+   * bit_diff == -1 mean exact match
+   */
+  void inc(int bit_diff) {
+    bit_diff++;
+    //warn << "bit_diff: " << bit_diff;
+
+    assert(0 <= bit_diff && bit_diff < SIZE);
+    arr[bit_diff]++;
+  }
+
+  std::string dump() {
+    std::string ret;
+    ret << "<";
+
+    for (int i = 0; i < SIZE; ++ i) {
+      if (i > 0) {
+        ret << ", ";
+      }
+      ret << arr[i];
+    }
+    ret << ">";
+
+    return ret;
+  }
+
+private:
+  static const int SIZE = 32 + 1;  // extra element for -1
+  int arr[SIZE];
+
+  void init() {
+    for (int i = 0; i < SIZE; ++ i) {
+      arr[i] = 0;
+    }
+  }
+};
+
+
+/**
+ * @brief Global store for bit diff comparisons
+ *
+ * Values are stored per id, which is a unique value for a given compare.
+ * Keeping the id unique is the responsibility of the programmer.
+ */
+class Stats : public std::map<int, StatsStruct> {
+public:
+  void add(int id, int bit_diff) {
+    auto & val = (*this)[id];
+    val.inc(bit_diff);
+  }
+
+  std::string dump() {
+    std::string ret;
+
+    if (empty()) {
+      ret << "<<bitdiff stats: none>>";
+    } else {
+      ret << "<<bitdiff stats (first index == -1):\n";
+
+      for (auto val : *this) {
+        ret << "  " << val.first << ": " << val.second.dump() << "\n";
+      }
+
+      ret << ">>";
+    }
+
+    return ret;
+  }
+};
+
+Stats s_stats;
+
+} // anon namespace
+
+
+void add(MatrixAdapter const &lhs, MatrixAdapter const &rhs, int id) {
+  // Compare both matrices completely and register the largest bit_diff detected.
+  CompareStats stats(false);
+  same_intern(lhs, rhs, -1, stats, false);
+
+  s_stats.add(id, stats.max_bit);
+}
+
+void dump() {
+  warn << s_stats.dump();
+}
+
+} // namespace  bitdiff_stats

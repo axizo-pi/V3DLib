@@ -350,22 +350,23 @@ void trim(std::string &s) {
  * @brief Determine the first bit that differs in the parameters.
  *
  * If the difference falls outside of the specified bit margin,
- * the bit index is determined.
+ * the top bit index of the offset is determined.
  *
- * Bits are compared back to front, to catch the most significant
- * bit where the difference occurs.
+ * The basic test is:
+ *
+ *     abs((uint) val1 - (uint) val2) <= (1 << ignore_bit)
+ *
+ * The conversion to `uint` is bit-wise.
  *
  * The result is the regular bit offset, where bit 0 is the least
  * significant bit of the fraction.
- *
- * Source: https://en.wikipedia.org/wiki/Single-precision_floating-point_format
  *
  * @param in_val1    First value to check
  * @param in_val2    Second value to check
  * @param ignore_bit Index of tpmost bit to ignore.
  *                   What is tested, is the range which the bit represents.
  *                   (e.g. for `ignore_bit = 1`, a difference of 2 is allowed.
- *                   Note that the default value is 0, meaning that the least significant
+ *                   The default value is 0, meaning that the least significant
  *                   bit does not count. This occurs often.
  *                   To do an exact compare, pass -1 for this parameter.
  * @return           index of first bit that is different, -1 if values deemed the same
@@ -374,15 +375,18 @@ void trim(std::string &s) {
  * Notes
  * -----
  *
- * - Using bitmasks didn't work here, due to rollover.
- *   E.g. cases encountered:
- *   * diff 0x02, goes from 0x6f to 0x71 in least significant bits
- *   * diff 0x01, goes from 0xb7 to 0xb8
+ * 1. Rollover issue:
  *
- *   Thus 2nd case, even if diff is 1 bit in value, the bit change goes up to bit 3.
- *   Better to use margins instead of masks.
+ *   | val1       | val2       | diff | diff bit |
+ *   |------------|------------|------|----------|
+ *   | 0x397c20d8 | 0x397c20d7 | 1    |  3       |
+ *   | 0x397c4950 | 0x397c494f | 1    |  4       |
+ *   | 0x39c119ff | 0x39c11a00 | 1    |  9       |
+ *   | 0x397c8000 | 0x397c7fff | 1    | 15       |
+ *   |------------|------------|------|----------|
  *
- *   Up till now, this occurs for `vc4`. `v3d` calculations are more precise.
+ *   Even if the value diff is well within the mask range, the top changed bit
+ *   can be much larger. Better to use margins instead of masks.
  */
 int bit_diff(float in_val1, float in_val2, int ignore_bit) {
   assert(sizeof(uint32_t) == sizeof(float));
@@ -399,33 +403,41 @@ int bit_diff(float in_val1, float in_val2, int ignore_bit) {
   }
 
   uint32_t abs_diff = (val1 > val2)? (val1 - val2): (val2 - val1);
-/* 
-  if (abs_diff > 0) {
-    warn << "abs_diff: " << abs_diff;
-    warn << "bit_margin: " << bit_margin;
-  }
-*/  
-  if (abs_diff <= bit_margin) return offset;
 
-  uint32_t diff = (val1 ^ val2);
+  bool ok = (abs_diff <= bit_margin);
+  if (ok) return offset;
+
+/*  
+  warn << "(abs_diff <= bit_margin): "
+       << "(" << abs_diff << " <= " << bit_margin << ") = "
+        << ok;
+  warn << "val1: " << hex << val1;
+  warn << "val2: " << hex << val2;
+*/  
+
+  //
+  // Determine the topmost bit of the absolute diff.
+  // This used to be the topmost bits of the diff in bitwise values, see Note 1.
+  //
+  //uint32_t diff = (val1 ^ val2);
 
   for (int bit = 0; bit < size; bit++) {
-    uint32_t mask = 1 << (size - 1 - bit);  // Test back to front
+    uint32_t mask = 1 << (size - 1 - bit);
 
-    if (diff & mask) {
+    if (abs_diff & mask) {
       offset = (size - 1 - bit);
       break;
     }
   }
 
-  if (offset <= ignore_bit) offset = -1;
-/*
-  if (offset != -1) {
-    warn << "val1: " << hex << val1;
-    warn << "val2: " << hex << val2;
-    warn << "bit_diff() diff at bit: " << offset;
+  if (offset <= ignore_bit) {
+    offset = -1;
+  } else {
+    if (ignore_bit != -1) {
+      warn << "(offset > ignore_bit): (" << offset << " > " << ignore_bit << ")";
+    }
   }
-*/
+
   return offset;  
 }
 

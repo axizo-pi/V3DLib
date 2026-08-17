@@ -59,25 +59,25 @@ void forward_propagation(
     state.r.row(i, temp.sigmoid());
 
     MMatrix tempb = X_row.forward_3(m, S_row, state.r.row(i));
-		//warn << "tempb: " << tempb.dump();
+    //warn << "tempb: " << tempb.dump();
     state.h.row(i, tempb.tanh());
 
     // forward_4/5 timing small
-		//warn << "Z_row: " << Z_row.dump();
-		//warn << "S_row: " << S_row.dump();
-		//warn << "state.h: " << state.h.dump();
-		//warn << "state.h.row(i): " << state.h.row(i).dump();
+    //warn << "Z_row: " << Z_row.dump();
+    //warn << "S_row: " << S_row.dump();
+    //warn << "state.h: " << state.h.dump();
+    //warn << "state.h.row(i): " << state.h.row(i).dump();
 
     temp_hidden = Z_row.forward_4(S_row, state.h.row(i));
     state.S().row(i + 1, temp_hidden);   // Assumption: value at i == 0 should be retained
 
-		//warn << "temp_hidden: " << temp_hidden.dump();
-		//warn << "m.V: " << m.V.dump();  // Non-zero
+    //warn << "temp_hidden: " << temp_hidden.dump();
+    //warn << "m.V: " << m.V.dump();  // Non-zero
     auto temp_output = temp_hidden * m.V;
-		//warn << "temp_output: " << temp_output.dump();
+    //warn << "temp_output: " << temp_output.dump();
 
     auto temp2 = temp_output.forward_5();
-		//warn << "temp2: " << temp2.dump();
+    //warn << "temp2: " << temp2.dump();
 
     state.O.row(i, temp2);
 

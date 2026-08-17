@@ -137,62 +137,85 @@ void gradient_delta(MMatrix &grad_V, MMatrix const &S, MMatrix const &delta_y_x,
   assert(grad_V.is_zero());
 
 #if 0
-	//
-	// S is now non_zero; check when delta_y_x changes
-	//
+  //
+  // S is now non_zero; check when delta_y_x changes
+  //
   bool input_zero = (grad_V.is_zero() && delta_y_x.is_zero());
-	if (!input_zero) {
-	  warn << "Called gradient_delta()"
-	       << ", Zero (grad.V, S, delta_y_x): "
-	       << "(" << grad_V.is_zero() << ", " << S.is_zero() << ", " << delta_y_x.is_zero() << ")";
+  if (!input_zero) {
+    warn << "Called gradient_delta()"
+         << ", Zero (grad.V, S, delta_y_x): "
+         << "(" << grad_V.is_zero() << ", " << S.is_zero() << ", " << delta_y_x.is_zero() << ")";
 
-  	//warn << "S: " << S.dump();
-  	//warn << "delta_y_x: " << delta_y_x.dump();
-  	//assert(delta_y_x.is_zero());  // Warn me when this changes
-	}
-#endif	
+    //warn << "S: " << S.dump();
+    //warn << "delta_y_x: " << delta_y_x.dump();
+    //assert(delta_y_x.is_zero());  // Warn me when this changes
+  }
+#endif  
 
 #if 0
-  MMatrix grad_V_x   = grad_V; // Copy param for qpu
+  MMatrix grad_V_x   = grad_V;
 
-	{ // Xf
-  	timers.start("delta set Xf");
+  { // Xf
+    timers.start("delta set Xf");
 
-	  for (int time_step = time_steps - 1; time_step >= 0; time_step--) {
-			// See Note 1 for following line.
-	    auto tmp = (S.row(time_step + 1).Xf().transpose() * delta_y_x.Xf().row(time_step)).eval();
-	    grad_V_x.set(grad_V.Xf() + tmp);
-  	}
+    for (int time_step = time_steps - 1; time_step >= 0; time_step--) {
+      // See Note 1 for following line.
+      auto tmp = (S.row(time_step + 1).Xf().transpose() * delta_y_x.Xf().row(time_step)).eval();
+      grad_V_x.set(grad_V_x.Xf() + tmp);
+    }
 
-	  timers.stop("delta set Xf");
-	}
-#endif	
+    timers.stop("delta set Xf");
+  }
+#endif  
+
+#if 0
+  MMatrix grad_V_x   = grad_V; // Copy params, only qpu present
+  //warn << "grad_V_x: " << grad_V_x.dump_dim();
+
+  { // qpu naive
+    timers.start("delta set naive");
+
+    for (int time_step = time_steps - 1; time_step >= 0; time_step--) {
+      // See Note 1 for following line.
+      auto tmp = S.row(time_step + 1).qpu().outer(delta_y_x.qpu().row(time_step));
+      grad_V_x.qpu(grad_V_x.qpu() + tmp);
+    }
+
+    timers.stop("delta set naive");
+  }
+#endif
 
   //
-	// > 10x faster than Xf
+  // - > 10x faster than Xf
+  // -    5x faster than qpu naive 
   //
-	{ // qpu
-	  timers.start("delta set qpu");
-		auto S2 = remove_first_rows(1, S);
-		//warn << "S2 dim: " << S2.dump_dim();
+  { // qpu
+    timers.start("delta set qpu");
+    auto S2 = remove_first_rows(1, S);
+    //warn << "S2 dim: " << S2.dump_dim();
 
-		grad_V.outer_add_rows(S2, delta_y_x);
+    grad_V.outer_add_rows(S2, delta_y_x);
 
-	  timers.stop("delta set qpu");
-	}
+    timers.stop("delta set qpu");
+  }
 
-	//
-	// Post Check: grad_V and similar should be changing
-	//
-	// They are changing now; check QPU and Xf are same
-	//
+  //
+  // Post Check
+  //
+  // For both Xf and naive:
+  //
+  //   - Many passes bit diff <= 3; 4 occurs sporadically
+  //
 
-	// By the looks of it, bit_diff == 6 is an outlier.
-	// train loop i = 972 has bit_diff == 13
-	// I hypothesize that for most comparisons, bit_diff == 1
-	//
-	// TODO: make stats for # bit_diffs for given comparison
-  //assert(grad_V_x.same(grad_V, 13));
+  // Comparison with Xf
+  //bitdiff_stats::add(grad_V.qpu().src(), grad_V_x.Xf_src(), 2);
+
+#if 0
+  // Comparison with naive
+  // OKassert(grad_V.same(grad_V_x, 4));
+  bitdiff_stats::add(grad_V.qpu().src(), grad_V_x.qpu().src(), 1);
+#endif  
+
   assert(!grad_V.is_zero());
 }
 
@@ -229,11 +252,11 @@ void back_propagation(
   /* gradients = dLdV, dLdU0, dLdU1, dLdU2, dLdW0, dLdW1, dLdW2 */
   grad.init_val(m.input_dim(), m.hidden_dim(), m.output_dim(), 0.0f, false);
 
-	//warn << "state.O: " << state.O.dump();
-	//warn << "Y: " << Y.dump();  // Non-zero
+  //warn << "state.O: " << state.O.dump();
+  //warn << "Y: " << Y.dump();  // Non-zero
 
   MMatrix delta_y_x = state.O - Y;
-	//warn << "delta_y_x: " << delta_y_x.dump();
+  //warn << "delta_y_x: " << delta_y_x.dump();
 
   State x_state = state;
   x_state.S() = remove_last_rows(1, x_state.S());
@@ -243,7 +266,7 @@ void back_propagation(
   // Difference in calculations between Xf and MMatrix larger than expected
   // All other mul_t() calls work fine.
   // TODO: examine further later
-	bool do_Xf_calc = false;
+  bool do_Xf_calc = false;
   MMatrix ds_single = m.V.mul_t(delta_y_x, do_Xf_calc);
 
   LoopState x_ls(time_steps, input_dim, hidden_dim);
@@ -371,15 +394,15 @@ void read_x_y(MMatrix &x, MMatrix &y, int pos) {
 
 
 void train(
-	std::string filename_input,
-	std::string filename_output,
-	float learning_rate,
-	int nepoch,
-	int input_dim,
-	int hidden_dim,
-	int output_dim,
-	int time_steps,
-	float decay
+  std::string filename_input,
+  std::string filename_output,
+  float learning_rate,
+  int nepoch,
+  int input_dim,
+  int hidden_dim,
+  int output_dim,
+  int time_steps,
+  float decay
 ) {
   float prev_loss = 0.0f;
 
@@ -399,48 +422,48 @@ void train(
 
   load_x_y(filename_input, filename_output);
 
-	//
-	// Restrict the number of loops, as well as the log output.
-	//
-	// Returns true if the loop can be exited
-	//
-	const int max_i = 100; // limit;
+  //
+  // Restrict the number of loops, as well as the log output.
+  //
+  // Returns true if the loop can be exited
+  //
+  const int max_i = 100; // limit;
 
-	auto output_loop = [max_i] (int i) -> bool {
-		bool ret  = false;
-		bool show = false;
+  auto output_loop = [max_i] (int i) -> bool {
+    bool ret  = false;
+    bool show = false;
 
     if (i >= max_i) ret = true;
 
     if (max_i < 100) {
-			show = true;
-		} else if (max_i < 400) {
-			show = (i % 20 == 0);
-		} else if (max_i < 1500) {
-			show = (i % 100 == 0);
+      show = true;
+    } else if (max_i < 400) {
+      show = (i % 20 == 0);
+    } else if (max_i < 1500) {
+      show = (i % 100 == 0);
     } else {
-			show = (i % 800 == 0);
+      show = (i % 800 == 0);
     }
 
-		if (show) {
-	    warn << "train loop i: " << i;
-		}
+    if (show) {
+      warn << "train loop i: " << i;
+    }
 
-		return ret;
-	};
+    return ret;
+  };
 
   for(int epoch = 0; epoch < nepoch; epoch++) {
     warn << "train loop epoch: " << epoch << ", limit: " << limit;
 
     float loss = 0;
     for(int i = 0; i < limit; i++) {
-			if (output_loop(i)) break;
+      if (output_loop(i)) break;
 
       timers.start("train limit loop");
 
       State state;
       state.init(time_steps, hidden_dim, output_dim);
-			//warn << "state init: " << state.dump();
+      //warn << "state init: " << state.dump();
 
       MMatrix currX(time_steps, input_dim);
       MMatrix currY(time_steps, output_dim);
@@ -452,8 +475,8 @@ void train(
       state.eval();
 
       forward_propagation(m, currX, currY, state, time_steps, input_dim, hidden_dim, output_dim);
-			//warn << "state forward: " << state.dump();
-			//warn << "state.O forward: " << state.O.dump();
+      //warn << "state forward: " << state.dump();
+      //warn << "state.O forward: " << state.O.dump();
 
       loss += (calculate_cost(state.E, time_steps) / (float) limit);
       //warn << "loss: " << loss;
@@ -644,4 +667,6 @@ void train_main() {
     time_steps,
     decay
   );
+
+  bitdiff_stats::dump();
 }

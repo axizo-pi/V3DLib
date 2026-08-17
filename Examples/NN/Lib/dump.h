@@ -57,15 +57,37 @@ struct CompareStats {
 
 private:
   const bool m_fail_on_first;
-
 };  
 
 
 std::string vector_dump(MatrixAdapter const &src, int start_index, bool output_int, bool transpose = false);
 std::string matrix_dump(MatrixAdapter const &src, bool output_int);
 std::string matrix_dump_simple(MatrixAdapter const &src);
-bool check_precision(float lhs, float rhs, int bit_diff = -1, CompareStats *stats = nullptr, bool do_show = true);
-bool same_intern(MatrixAdapter const &lhs, MatrixAdapter const &rhs, int bit_diff, CompareStats &stats);
+
+bool check_precision(
+  float lhs,
+  float rhs,
+  int bit_diff = -1,
+  CompareStats *stats = nullptr,
+  bool do_show = true
+);
+
+
+bool same_intern(
+  MatrixAdapter const &lhs,
+  MatrixAdapter const &rhs,
+  int bit_diff,
+  CompareStats &stats,
+  bool do_show = true
+);
+
 bool same(MatrixAdapter const &lhs, MatrixAdapter const &rhs, int bit_diff = -1, bool show_stats = false); 
+
+namespace  bitdiff_stats {
+
+void add(MatrixAdapter const &lhs, MatrixAdapter const &rhs, int id);
+void dump();
+
+} // namespace  bitdiff_stats
 
 #endif // _INCLUDE_RNNSUPPORT_DUMP_H

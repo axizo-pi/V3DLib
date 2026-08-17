@@ -101,8 +101,6 @@ void init_local() {
   s_mult_matrix        .reset(new BaseKernel(compile(kernel::mult_matrix    , settings())));
 
   s_mult_matrix_col    .reset(new BaseKernel(compile(kernel::mult_matrix_col, settings())));
-  //to_file("s_mult_matrix_col.txt", s_mult_matrix_col->dump());
-
   s_mult_matrix_t      .reset(new BaseKernel(compile(kernel::mult_matrix_t  , settings())));
   s_matrix_add         .reset(new BaseKernel(compile(kernel::matrix_add     , settings())));
   s_matrix_sub         .reset(new BaseKernel(compile(kernel::matrix_sub     , settings())));
@@ -115,10 +113,10 @@ void init_local() {
   s_op                 .reset(new BaseKernel(compile(kernel::outer_product  , settings())));
   s_op_add             .reset(new BaseKernel(compile(kernel::outer_add      , settings())));
   s_op_add_rows        .reset(new BaseKernel(compile(kernel::outer_add_rows , settings())));
-	//to_file("outer_add_rows.txt", s_op_add_rows->dump());
+  //to_file("outer_add_rows.txt", s_op_add_rows->dump());
 
   s_sigmoid            .reset(new BaseKernel(compile(kernel::sigmoid        , settings())));
-	s_dsigmoid           .reset(new BaseKernel(compile(kernel::dsigmoid       , settings())));
+  s_dsigmoid           .reset(new BaseKernel(compile(kernel::dsigmoid       , settings())));
   s_tanh               .reset(new BaseKernel(compile(kernel::tanh           , settings())));
   s_dtanh              .reset(new BaseKernel(compile(kernel::dtanh          , settings())));
   s_ln                 .reset(new BaseKernel(compile(kernel::ln             , settings())));
@@ -745,7 +743,7 @@ void matrix::outer_add_rows(matrix const &lhs, matrix const &rhs) {
        << "rhs: " << rhs.dump_dim() << ", "
        << "ret: " << dump_dim();
 */
-	timers.start("matrix::outer_add_rows");
+  timers.start("matrix::outer_add_rows");
     
   s_op_add_rows->setMaxQPUs();
   //s_op_add_rows->setNumQPUs(2);  // 1 is default

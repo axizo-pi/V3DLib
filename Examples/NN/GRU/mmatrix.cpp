@@ -52,7 +52,6 @@ void MMatrix::resize(int rows, int columns, float val) {
 
 
 MMatrix::MMatrix(MMatrix const &rhs) {
-  //warn << "Called MMatrix ctor";
   timers.start("MMatrix ctor &");
   set(rhs);
   timers.stop("MMatrix ctor &");
@@ -260,7 +259,7 @@ void MMatrix::row(int index, MMatrix const &val) {
   assert(val.rows() == 1);
   assert(cols() == val.cols());
   assert(index >=0 && index < rows());
-	//warn << "index: " << index << ", row val: " << val.dump();
+  //warn << "index: " << index << ", row val: " << val.dump();
 
   val.need_fields(false, true);
   need_fields(val.m_using_Xf, true);
@@ -281,7 +280,7 @@ void MMatrix::row(int index, MMatrix const &val) {
   //timers.stop("row(index, MMatrix) qpu");
 
   used_fields(used_Xf, true);
-	//warn << "row post: " << dump();
+  //warn << "row post: " << dump();
 }
 
 
@@ -726,11 +725,11 @@ MMatrix MMatrix::outer(MMatrix const &rhs) const {
   MMatrix ret;
 
   timers.start("MMatrix outer Xf");
-/*	
+/*  
   if (!(m_Xf.rows() == 1 || m_Xf.cols() == 1)) {
-		breakpoint;
-	}
-*/	
+    breakpoint;
+  }
+*/  
   assert(m_Xf.rows() == 1 || m_Xf.cols() == 1);
 
   if (m_Xf.rows() == 1) {
@@ -818,7 +817,7 @@ void MMatrix::outer_rows(MMatrix const &lhs, MMatrix const &rhs) {
  */
 MMatrix MMatrix::max_row() const {
   need_fields(false, true);
-	//warn << "max_row this: " << dump();
+  //warn << "max_row this: " << dump();
 
   MMatrix ret(rows(), 1);
 
@@ -858,8 +857,6 @@ MMatrix MMatrix::max_row() const {
 
   timers.stop("max_row qpu");
 
-  //warn << "ret: " << ret.dump();
-  //warn << "ret2: " << ret2.dump();
   assert(ret.same(ret2));
 
   return ret;
@@ -932,8 +929,8 @@ float MMatrix::sum() const {
 
   MMatrix tmp = sum_row();
 
-	// Fails for train loop i: 2144, first call to train (epoch == 0); diff == 3 instead of 1
-	assert(tmp.same(3)); // OK
+  // Fails for train loop i: 2144, first call to train (epoch == 0); diff == 3 instead of 1
+  assert(tmp.same(3)); // OK
   return tmp.m_qpu.at(0,0);
 }
 
@@ -1315,7 +1312,7 @@ MMatrix MMatrix::forward_5() const {
   timers.stop("forward_5");
   //warn << "forward_5 ret: " << ret.dump();
 
-	return ret;
+  return ret;
 
 /*  
   //timers.start("forward_5 qpu");

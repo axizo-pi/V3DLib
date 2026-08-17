@@ -266,19 +266,19 @@ void State::init(int time_steps, int hidden_dim, int output_dim) {
 
 
 std::string State::dump() const {
-	std::string ret;
+  std::string ret;
 
-	ret << "\n=========== State dump ==========\n"
-	    << "  m_do_temp: " << m_do_temp << "\n";
-	ret << "  E: "   << E.dump()   << "\n";
-	ret << "  z: "   << z.dump()   << "\n";
-	ret << "  r: "   << r.dump()   << "\n";
-	ret << "  h: "   << h.dump()   << "\n";
-	ret << "  O: "   << O.dump()   << "\n";
-	ret << "  m_S: " << m_S.dump()
-	    << "\n=================================";
+  ret << "\n=========== State dump ==========\n"
+      << "  m_do_temp: " << m_do_temp << "\n";
+  ret << "  E: "   << E.dump()   << "\n";
+  ret << "  z: "   << z.dump()   << "\n";
+  ret << "  r: "   << r.dump()   << "\n";
+  ret << "  h: "   << h.dump()   << "\n";
+  ret << "  O: "   << O.dump()   << "\n";
+  ret << "  m_S: " << m_S.dump()
+      << "\n=================================";
 
-	return ret;
+  return ret;
 }
 
 

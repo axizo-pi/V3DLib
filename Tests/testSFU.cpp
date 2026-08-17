@@ -53,7 +53,7 @@ bool same(float *in_ptr, int offset, int length = 16) {
 
 
 void sfu_kernel(Float x, Float::Ptr r) {
-	// Basic operations
+  // Basic operations
   *r = 0.0f;                 r.inc();
   *r = 2.0f*x;               r.inc();  // Float mult
   *r = 2*x;                  r.inc();  // Int mult
@@ -89,28 +89,28 @@ void check(float val, Float::Array &results, double precision) {
   REQUIRE(abs(results[16*4] - 8.0)           <   precision);
   REQUIRE(abs(results[16*5] - exp2(val))     <   precision);  // Should be exact, but isn't
 
-	// Note that indexes for Nan and inf tests are non-consecutive
-	if (val < 0) {
-  	REQUIRE(std::isnan(results[16* 7]));
-  	REQUIRE(std::isnan(results[16*13]));
-	} else if (val == 0) {
-  	REQUIRE(std::isinf(results[16* 6]));
-  	REQUIRE(std::isinf(results[16* 7]));
-  	REQUIRE(std::isinf(results[16* 8]));
-  	REQUIRE(std::isinf(results[16*11]));
-	} else {
-  	REQUIRE(abs(results[16* 6] - 1/val)         <  precision);
-  	REQUIRE(abs(results[16* 7] - (1/sqrt(val))) <  precision);
-  	REQUIRE(abs(results[16* 8] - log2(val))     <  precision);
-  	REQUIRE(abs(results[16*11] - log(val))      <  precision);
+  // Note that indexes for Nan and inf tests are non-consecutive
+  if (val < 0) {
+    REQUIRE(std::isnan(results[16* 7]));
+    REQUIRE(std::isnan(results[16*13]));
+  } else if (val == 0) {
+    REQUIRE(std::isinf(results[16* 6]));
+    REQUIRE(std::isinf(results[16* 7]));
+    REQUIRE(std::isinf(results[16* 8]));
+    REQUIRE(std::isinf(results[16*11]));
+  } else {
+    REQUIRE(abs(results[16* 6] - 1/val)         <  precision);
+    REQUIRE(abs(results[16* 7] - (1/sqrt(val))) <  precision);
+    REQUIRE(abs(results[16* 8] - log2(val))     <  precision);
+    REQUIRE(abs(results[16*11] - log(val))      <  precision);
 /*
-		{
-			float res = results[16*13];
-			warn << "test sqrt_f(): " << res << " = " << sqrt(val);
-		}
-*/		
-	  REQUIRE(abs(results[16*13] - sqrt(val))      <  precision);
-	}
+    {
+      float res = results[16*13];
+      warn << "test sqrt_f(): " << res << " = " << sqrt(val);
+    }
+*/    
+    REQUIRE(abs(results[16*13] - sqrt(val))      <  precision);
+  }
 
   REQUIRE(abs(results[16* 9] - exp(1))        <   precision);
   REQUIRE(abs(results[16*10] - exp(val))      < 5*precision);  // Less precise, is a lib function
@@ -273,23 +273,23 @@ TEST_CASE("Test SFU functions [sfu]") {
 
   results.fill(0.0);
 
-	auto test = [&] (float val) {
-		//warn << "Testing " << val << "f";
-  	INFO("Testing " << val << "f");
+  auto test = [&] (float val) {
+    //warn << "Testing " << val << "f";
+    INFO("Testing " << val << "f");
 
-  	k.load(val, &results).run();
-  	check(val, results, precision);
-	};
+    k.load(val, &results).run();
+    check(val, results, precision);
+  };
 
-	test(1.0f);
-	test(0.5f);
-	test(1.1f);
-	test(2.5f);
-	test(PI);
+  test(1.0f);
+  test(0.5f);
+  test(1.1f);
+  test(2.5f);
+  test(PI);
 
-	// Nan and Inf for various operations
-	test(0.0f);
-	test(-1.0f);
+  // Nan and Inf for various operations
+  test(0.0f);
+  test(-1.0f);
 }
 
 
