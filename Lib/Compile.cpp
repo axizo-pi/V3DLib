@@ -5,6 +5,7 @@ namespace V3DLib {
 
 using ::operator<<;  // C++ weirdness
 
+
 std::string Compile::kernel_type_str() const {
   switch(kernel_type()) {
     case vc4: return "vc4";

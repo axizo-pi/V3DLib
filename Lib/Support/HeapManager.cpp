@@ -169,7 +169,7 @@ int HeapManager::alloc_array(uint32_t size_in_bytes) {
 
 
 /**
- * Mark given range as unused.
+ * @brief Mark given range as unused.
  *
  * This should be called from deallocating SharedArray instances, which allocated
  * from this BO.
@@ -208,9 +208,11 @@ void HeapManager::dealloc_array(FreeRange const in_range) {
     assertq(msg);
   }
 #endif
-  //Log::warn << "Called HeapManager::dealloc_array()\n"
-  //          << dump_free_ranges();
-
+/*  
+  Log::warn << "Called HeapManager::dealloc_array(), in_range: " << in_range.dump() << "\n"
+            << "free ranges:\n"
+            << dump_free_ranges();
+*/
   // Find adjacent matches in current free range list
   int left_match_index  = -1;
   int right_match_index = -1;
@@ -245,7 +247,6 @@ void HeapManager::dealloc_array(FreeRange const in_range) {
       m_free_ranges.pop_back();
       if (right_match_index != (int) m_free_ranges.size()) {
         m_free_ranges[right_match_index] = tmp;
-      } else {
       }
 
     } else {

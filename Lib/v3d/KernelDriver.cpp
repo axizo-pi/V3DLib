@@ -67,7 +67,6 @@ void load_uniforms(
 */  
 }
 
-
 } // anon namespace
 
 
@@ -79,11 +78,11 @@ void load_uniforms(
  * @brief Invoke kernel on QPUs
  */
 void KernelDriver::invoke(
-	Compile &code,
-	int numQPUs,
-	IntList &params,
+  Compile &code,
+  int numQPUs,
+  IntList &params,
   UniformConstants const &uc,
-	bool wait_complete
+  bool wait_complete
 ) {
   assert(params.size() != 0);
 

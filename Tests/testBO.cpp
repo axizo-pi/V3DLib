@@ -168,7 +168,6 @@ TEST_CASE("Multiple BO's should work [bo][multi]") {
     bo2.alloc_bo(SIZE);
     REQUIRE(bo2.size() == SIZE);
     REQUIRE(bo2.getHandle() != 0);
-    //warn << "Main bo offset " << getBufferObject().offset();
 
     {
       const int ARR_SIZE = 16;
@@ -188,16 +187,16 @@ TEST_CASE("Multiple BO's should work [bo][multi]") {
 
       REQUIRE(bo2.offset() == 4*ARR_SIZE);
       REQUIRE(getBufferObject().offset() == 2*4*ARR_SIZE);
-      //warn << "bo2 offset " << bo2.offset();
-      //warn << "Main bo offset " << getBufferObject().offset();
 
       auto k = compile(multi_bo_kernel);
       k.load(&result, &arr1, &arr2).run();
-      //warn << "result: " << dump_array(result);
+
       check_vector(result, 0, expected);
     }
 
     REQUIRE(bo2.offset() == 0);
+    //warn << "Main bo dump " << getBufferObject().dump();
+    //warn << "Main bo offset " << getBufferObject().offset();
     REQUIRE(getBufferObject().offset() == 0);
   }
 }

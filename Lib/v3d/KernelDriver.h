@@ -1,7 +1,5 @@
 #ifndef _V3DLIB_V3D_KERNELDRIVER_H
 #define _V3DLIB_V3D_KERNELDRIVER_H
-//#include "Compile.h"
-//#include "../KernelDriver.h"
 #include "UniformConstants.h"
 #include "Common/SharedArray.h"
 #include "BufferObject.h"
@@ -23,20 +21,17 @@ class Compile; // Forward declaration
  * vc4 does not have this issue.
  */
 class KernelDriver {
-  //using Instruction  = V3DLib::v3d::instr::Instr;
-  //using Instructions = V3DLib::v3d::Instructions;
-
 public:
   KernelDriver() {}
   KernelDriver(KernelDriver &&a) = default;
 
   void invoke(
-		Compile &code,
-		int numQPUs,
-		IntList &params,
-  	UniformConstants const &uc,
-		bool wait_complete = true
-	);
+    Compile &code,
+    int numQPUs,
+    IntList &params,
+    UniformConstants const &uc,
+    bool wait_complete = true
+  );
 
   void wait_complete();
 

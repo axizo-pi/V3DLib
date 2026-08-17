@@ -56,7 +56,7 @@ public:
 
   bool has_compile() const;
 
-	// TODO rename to compile()
+  // TODO rename to compile()
   V3DLib::Compile &compiler() const;
   V3DLib::Compile &compiler();
 
@@ -134,8 +134,6 @@ protected:
 
   // Defined as unique pointer so that it easily survives std::move
   // (There are other reasons but this is the main one)
-  //std::unique_ptr<KernelDriver> m_driver;
-
   std::unique_ptr<Compile> m_compile;
 };
 

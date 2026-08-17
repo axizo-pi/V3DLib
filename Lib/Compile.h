@@ -17,6 +17,8 @@ public:
     vc7
   };
 
+  virtual ~Compile() {} // `virtual` required to call dtor's derived types
+
   bool        is_v3d()      const { return m_type == vc6 || m_type == vc7; }
   KernelType  kernel_type() const { return m_type; }
   std::string kernel_type_str() const;
