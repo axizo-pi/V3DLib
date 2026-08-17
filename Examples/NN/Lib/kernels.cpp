@@ -63,7 +63,7 @@ void dsigmoid(Float::Ptr in, Float::Ptr out, Int N) {
 
 
 void tanh(Float::Ptr in, Float::Ptr out, Int N) {
-	//warn << "kernels::tanh";
+  //warn << "kernels::tanh";
 
   For (Int h = 0, h < N, h++)
     Float var = *in;
@@ -94,7 +94,7 @@ void ln(Float::Ptr in, Float::Ptr out, Int N) {
  * Input is `in = tanh(x)`
  */
 void dtanh(Float::Ptr in, Float::Ptr out, Int N) {
-	warn << "kernels::dtanh";
+  //warn << "kernels::dtanh";
 
   For (Int h = 0, h < N, h++)
     Float x = *in;
@@ -466,11 +466,21 @@ namespace {
  *
  * TODO: Research this
  */
+template<bool do_multi_qpu = true>
 void outer_add_partial(Float::Ptr &ret, Float::Ptr &lhs, Float::Ptr &rhs, Int &N, Int &M) {
   lhs -= index();          comment("Start outer_add_partial");
 
-  Int Start  = me();
-  Int Inc    = numQPUs();
+  Int Start;
+  Int Inc;
+
+  if (do_multi_qpu) {
+    Start  = me();         comment("Doing multi QPU");
+    Inc    = numQPUs();
+  } else {
+    Start  = 0;            comment("Doing single QPU");
+    Inc    = 1;
+  }
+
   Int Offset = M << 4;                     // 16*24
 
   For (Int i = Start, i < N, i += Inc)     // N max: 16*24 = 2^7*3
@@ -497,11 +507,23 @@ void outer_add(Float::Ptr ret, Float::Ptr left, Float::Ptr right, Int N, Int M) 
 }
 
 
+/**
+ * @brief Do per-row outer product of inputs. The results are added together in output.
+ *
+ * ---------------------------------
+ *
+ * Notes
+ * -----
+ *
+ * - Tried making outer loop multi-QPU (instead of multi within `outer_add_partial()`).
+ *   Performance becomes 40% worse.
+ */
 void outer_add_rows(Float::Ptr ret, Float::Ptr lhs, Float::Ptr rhs, Int lhs_rows, Int lhs_cols, Int rhs_cols) {
   Int rhs_step = rhs_cols >> 4;
 
+  //For (Int row = me(), row < lhs_rows, row += numQPUs())
   For (Int row = 0, row < lhs_rows, row++)
-    Float::Ptr start_ret = ret;
+    Float::Ptr start_ret = ret;             comment("outer_add_rows start loop");
 
     Int lhs_row = row*lhs_cols; // 2^15*3
     Int rhs_row = row*rhs_cols;
@@ -509,7 +531,7 @@ void outer_add_rows(Float::Ptr ret, Float::Ptr lhs, Float::Ptr rhs, Int lhs_rows
     Float::Ptr lhs_offset = lhs + lhs_row;  comment("Set lhs_offset");
     Float::Ptr rhs_offset = rhs + rhs_row;
 
-    outer_add_partial(start_ret, lhs_offset, rhs_offset, lhs_cols, rhs_step);
+    outer_add_partial<true>(start_ret, lhs_offset, rhs_offset, lhs_cols, rhs_step);
   End
 }
 
@@ -544,6 +566,9 @@ void vector_add(Float::Ptr left, Float::Ptr right, Float::Ptr out, Int N) {
 
 /**
  * @brief Calculate max per row
+ *
+ * There is currently no point in making this multi-QPU, because
+ * the number of rows is always 1 for current test app.
  */
 void max_row(Float::Ptr ret, Float::Ptr in_rhs, Int rows, Int cols) {
   ret -= index();

@@ -41,6 +41,7 @@ public:
 
   MatrixXf    const &Xf()  const;
   qpu::matrix const &qpu() const;
+  MatrixXfAdapter Xf_src() { assert(m_using_Xf); return MatrixXfAdapter(m_Xf); }
 
   void Xf(MatrixXf const &val)     { m_Xf  = val; }
   void qpu(qpu::matrix const &val) { m_qpu = val; }

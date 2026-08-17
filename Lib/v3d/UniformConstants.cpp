@@ -12,7 +12,7 @@ UniformConstantsHandler::UniformConstantsHandler() {}
 
 
 void UniformConstantsHandler::reset() {
-	//warn << "UniformConstantsHandler::reset()";
+  //warn << "UniformConstantsHandler::reset()";
   m_last_uniform = -1;
   m_list.clear();
 }
@@ -91,12 +91,12 @@ int UniformConstantsHandler::get(float val) {
 
   // var_id is -1 for first encoding run.
   int ret = m_list[index].var_id;
-/*	
-	if (ret != -1) {
-		warn << "UniformConstantsHandler::get(): " << ret;
-	}
-*/	
-	return ret;
+/*  
+  if (ret != -1) {
+    warn << "UniformConstantsHandler::get(): " << ret;
+  }
+*/  
+  return ret;
 }
 
 

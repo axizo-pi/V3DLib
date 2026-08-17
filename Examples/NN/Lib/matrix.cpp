@@ -101,8 +101,6 @@ void init_local() {
   s_mult_matrix        .reset(new BaseKernel(compile(kernel::mult_matrix    , settings())));
 
   s_mult_matrix_col    .reset(new BaseKernel(compile(kernel::mult_matrix_col, settings())));
-  //to_file("s_mult_matrix_col.txt", s_mult_matrix_col->dump());
-
   s_mult_matrix_t      .reset(new BaseKernel(compile(kernel::mult_matrix_t  , settings())));
   s_matrix_add         .reset(new BaseKernel(compile(kernel::matrix_add     , settings())));
   s_matrix_sub         .reset(new BaseKernel(compile(kernel::matrix_sub     , settings())));
@@ -115,12 +113,11 @@ void init_local() {
   s_op                 .reset(new BaseKernel(compile(kernel::outer_product  , settings())));
   s_op_add             .reset(new BaseKernel(compile(kernel::outer_add      , settings())));
   s_op_add_rows        .reset(new BaseKernel(compile(kernel::outer_add_rows , settings())));
+  //to_file("outer_add_rows.txt", s_op_add_rows->dump());
+
   s_sigmoid            .reset(new BaseKernel(compile(kernel::sigmoid        , settings())));
-	s_dsigmoid           .reset(new BaseKernel(compile(kernel::dsigmoid       , settings())));
-
+  s_dsigmoid           .reset(new BaseKernel(compile(kernel::dsigmoid       , settings())));
   s_tanh               .reset(new BaseKernel(compile(kernel::tanh           , settings())));
-	to_file("tanh.txt", s_tanh->dump());
-
   s_dtanh              .reset(new BaseKernel(compile(kernel::dtanh          , settings())));
   s_ln                 .reset(new BaseKernel(compile(kernel::ln             , settings())));
   s_max_row            .reset(new BaseKernel(compile(kernel::max_row        , settings())));
@@ -530,12 +527,8 @@ matrix matrix::mul_e(matrix const &rhs) const {
 
 
 matrix matrix::tanh() const {
-  //warn << "matrix::tanh pre: " << dump();
   matrix ret(rows(), columns());
-
   s_tanh->load(&arr(), &ret.arr(), size()/16).run();
-
-  //warn << "matrix::tanh ret: " << ret.dump();
   return ret;  
 }
 
@@ -718,13 +711,20 @@ void matrix::outer_add(matrix const &lhs, matrix const &rhs) {
   assert(rows() == lhs.size() && columns() == rhs.size());
 
   s_op_add->setMaxQPUs();
-  //s_op_add_rows->setNumQPUs(2);
   s_op_add->load(&arr(), &lhs.arr(), &rhs.arr(), lhs.size(), rhs.size()/16).run();
 }
 
 
 /**
- * Bulk of time goes into this method. For full first epoch:
+ * @brief Do per-row outer product of inputs. The result is added to `lhs`.
+ *
+ * ---------------------------------
+ *
+ * Notes
+ * -----
+ *
+ * - Called multiple times in `LoopState::update_gradient_rows()`.
+ * - Bulk of time goes into this method. For full first epoch:
  *
  * numQPUs == 1:
  *
@@ -734,7 +734,6 @@ void matrix::outer_add(matrix const &lhs, matrix const &rhs) {
  *
  *     matrix::outer_add_rows     : 228.809337s in 797040 steps, average:  0.000287s
  *
- * Called multiple times in `LoopState::update_gradient_rows()`.
  */
 void matrix::outer_add_rows(matrix const &lhs, matrix const &rhs) {
   assert(rows() == lhs.columns() && columns() == rhs.columns());
@@ -747,7 +746,7 @@ void matrix::outer_add_rows(matrix const &lhs, matrix const &rhs) {
   timers.start("matrix::outer_add_rows");
     
   s_op_add_rows->setMaxQPUs();
-  //s_op_add_rows->setNumQPUs(1);
+  //s_op_add_rows->setNumQPUs(2);  // 1 is default
   s_op_add_rows->load(&arr(), &lhs.arr(), &rhs.arr(), lhs.rows(), lhs.columns(), rhs.columns()).run();
 
   timers.stop("matrix::outer_add_rows");

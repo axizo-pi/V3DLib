@@ -17,8 +17,6 @@ FloatExpr unary_float_op(OpId op_id, FloatExpr a) {
  */
 FloatExpr ffloor_op(FloatExpr a) { return unary_float_op(FFLOOR, a); }
 
-};
-
 }  // Anon namespace
 
 

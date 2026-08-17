@@ -52,7 +52,6 @@ void MMatrix::resize(int rows, int columns, float val) {
 
 
 MMatrix::MMatrix(MMatrix const &rhs) {
-  //warn << "Called MMatrix ctor";
   timers.start("MMatrix ctor &");
   set(rhs);
   timers.stop("MMatrix ctor &");
@@ -260,7 +259,7 @@ void MMatrix::row(int index, MMatrix const &val) {
   assert(val.rows() == 1);
   assert(cols() == val.cols());
   assert(index >=0 && index < rows());
-	//warn << "index: " << index << ", row val: " << val.dump();
+  //warn << "index: " << index << ", row val: " << val.dump();
 
   val.need_fields(false, true);
   need_fields(val.m_using_Xf, true);
@@ -281,7 +280,7 @@ void MMatrix::row(int index, MMatrix const &val) {
   //timers.stop("row(index, MMatrix) qpu");
 
   used_fields(used_Xf, true);
-	//warn << "row post: " << dump();
+  //warn << "row post: " << dump();
 }
 
 
@@ -663,9 +662,7 @@ MMatrix MMatrix::div_e(MMatrix const &rhs) const {
 
 
 MMatrix MMatrix::tanh() const {
-  //need_fields(true, true);
   assert(m_using_Xf || m_using_qpu);
-	//warn << "MMatrix::tanh pre: " << dump();
 
   MMatrix ret;
 
@@ -681,11 +678,9 @@ MMatrix MMatrix::tanh() const {
     timers.stop("MMatrix tanh qpu");
   }
 
-  //ret.used_fields(true, true);
   ret.used_fields(m_using_Xf, m_using_qpu);
   //assert(ret.same(11));       // Very bad convergence, 11 often not enough
 
-	//warn << "MMatrix::tanh ret: " << ret.dump();
   return ret;
 }
 
@@ -730,11 +725,11 @@ MMatrix MMatrix::outer(MMatrix const &rhs) const {
   MMatrix ret;
 
   timers.start("MMatrix outer Xf");
-/*	
+/*  
   if (!(m_Xf.rows() == 1 || m_Xf.cols() == 1)) {
-		breakpoint;
-	}
-*/	
+    breakpoint;
+  }
+*/  
   assert(m_Xf.rows() == 1 || m_Xf.cols() == 1);
 
   if (m_Xf.rows() == 1) {
@@ -822,7 +817,7 @@ void MMatrix::outer_rows(MMatrix const &lhs, MMatrix const &rhs) {
  */
 MMatrix MMatrix::max_row() const {
   need_fields(false, true);
-	//warn << "max_row this: " << dump();
+  //warn << "max_row this: " << dump();
 
   MMatrix ret(rows(), 1);
 
@@ -862,8 +857,6 @@ MMatrix MMatrix::max_row() const {
 
   timers.stop("max_row qpu");
 
-  //warn << "ret: " << ret.dump();
-  //warn << "ret2: " << ret2.dump();
   assert(ret.same(ret2));
 
   return ret;
@@ -936,8 +929,8 @@ float MMatrix::sum() const {
 
   MMatrix tmp = sum_row();
 
-	// Fails for train loop i: 2144, first call to train (epoch == 0); diff == 3 instead of 1
-	assert(tmp.same(3)); // OK
+  // Fails for train loop i: 2144, first call to train (epoch == 0); diff == 3 instead of 1
+  assert(tmp.same(3)); // OK
   return tmp.m_qpu.at(0,0);
 }
 
@@ -1282,17 +1275,17 @@ MMatrix MMatrix::forward_4(MMatrix &S, MMatrix const &h_row) {
   need_fields(false, true);
 
   MMatrix ret(rows(), cols());
-
+/*
   timers.start("forward_4 Xf");
   MatrixXf ones = MatrixXf::Ones(S.rows(), S.cols());
   ret.m_Xf = (ones - Xf()).cwiseProduct(h_row.Xf() + Xf()).cwiseProduct(S.Xf());
   ret.m_Xf.eval();
   timers.stop("forward_4 Xf");
-
-  //timers.start("forward_4 qpu");
-  // Timing 0.046ms, still 9x slower than Xf
+*/
+  timers.start("forward_4 qpu");
+  // 9x faster than Xf
   gru_kernel::forward_4(ret.m_qpu, m_qpu,  h_row.m_qpu, S.m_qpu);
-  //timers.stop("forward_4 qpu");
+  timers.stop("forward_4 qpu");
 
   ret.used_fields(false, true);
   //OK assert(ret.same(2));  // Usually exact
@@ -1319,7 +1312,7 @@ MMatrix MMatrix::forward_5() const {
   timers.stop("forward_5");
   //warn << "forward_5 ret: " << ret.dump();
 
-	return ret;
+  return ret;
 
 /*  
   //timers.start("forward_5 qpu");
