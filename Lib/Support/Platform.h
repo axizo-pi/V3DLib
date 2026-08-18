@@ -25,6 +25,7 @@ Tag tag();
 void compiling_for_vc4(bool val);
 bool compiling_for_vc4();
 bool compiling_for_vc7();
+bool compiling_for_vc6();
 void use_main_memory(bool val);
 bool use_main_memory();
 int  size_regfile();

@@ -96,6 +96,7 @@ void dump_data(T const &arr, bool do_all = false, bool as_float = false) {
 
 std::string dump_array(float *a, int size, int linesize = -1);
 std::string dump_array(std::vector<unsigned> const &a,  int linesize = -1);
+std::string dump_array(std::vector<float> const &a,  int linesize = -1);
 std::string dump_array(V3DLib::Float::Array const &a, int linesize = -1, bool do_first = false);
 std::string dump_array(V3DLib::Int::Array const &a, int linesize = -1);
 

@@ -116,9 +116,9 @@ Reg ACC0() {
 }
 
 
-Reg _64() {
-  return Reg(Var_64());
-}
+Reg _64()  { return Reg(Var_64()); }
+Reg _NaN() { return Reg(Var_NaN()); }
+Reg _Inf() { return Reg(Var_Inf()); }
 
 
 /**
@@ -359,7 +359,7 @@ Instr::List recipsqrt(Var dst, Var srcA) {
   if (Platform::compiling_for_vc7()) {
     Instr::List ret;
 
-    // We also have Enum::A_RSQRT2d
+    // TODO: `Enum::A_RSQRT2d` also exists, examine
     ret << genInstr(Enum::A_RSQRT, dst, srcA);
 
     return ret;

@@ -299,15 +299,40 @@ FloatExpr max(FloatExpr a, FloatExpr b)       { return mkFloatApply(a, Op(MAX, F
  *
  * This is an `SFU` operation.
  */
-FloatExpr recip(FloatExpr x)     { return mkFloatApply(x, Op(RECIP    , FLOAT)); }
+FloatExpr recip(FloatExpr x) { return mkFloatApply(x, Op(RECIP    , FLOAT)); }
 
 
 /**
  * @brief For the Float parameter `x` return `1/sqrt(x)`.
  *
  * This is an `SFU` operation.
+ *
  */
-FloatExpr recipsqrt(FloatExpr x) { return mkFloatApply(x, Op(RECIPSQRT, FLOAT)); }
+FloatExpr recipsqrt(FloatExpr x) {
+  Float ret;
+  ret = mkFloatApply(x, Op(RECIPSQRT, FLOAT));
+
+  if (!Platform::compiling_for_vc7()) {
+    if (Platform::compiling_for_vc6()) {
+      warn << "Doing recipsqrt vc6";
+    }
+
+    // Specific for SFU: these return 0.0f instead of NaN or Inf.
+    // Compensate for this.
+    Float NaN; NaN.as_float(0x7f800001);  comment("Bit-value for NaN");
+    Float Inf; Inf.as_float(0x7f800000);  comment("Bit-value for Inf");
+
+    Where (x < 0)
+      ret = NaN;
+    End
+
+    Where (x == 0)
+      ret = Inf;
+    End
+  }
+
+  return ret;
+}
 
 
 /**
@@ -367,7 +392,26 @@ FloatExpr ln(FloatExpr x)        { return mkFloatApply(x, Op(LOG_E    , FLOAT));
  * The `_f` postfix is added to avoid conflicts with other `sqrt` functions.
  * There might be a better solution for this.
  */
-FloatExpr sqrt_f(FloatExpr x) { return recip(recipsqrt(x)); }
+FloatExpr sqrt_f(FloatExpr x) {
+  Float ret;
+  ret = recip(recipsqrt(x));
+
+  if (!Platform::compiling_for_vc7()) {
+    if (Platform::compiling_for_vc6()) {
+      warn << "Doing sqrt vc6";
+    }
+
+    // Specific for SFU: these return 0.0f instead of NaN or Inf.
+    // Compensate for this.
+    Float NaN; NaN.as_float(0x7f800001);  comment("Bit-value for NaN");
+
+    Where (x < 0)
+      ret = NaN;
+    End
+  }
+
+  return ret;
+}
 
 
 /**

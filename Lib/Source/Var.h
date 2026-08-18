@@ -65,6 +65,8 @@ public:
 };
 
 Var Var_64();
+Var Var_NaN();
+Var Var_Inf();
 
 }  // namespace V3DLib
 

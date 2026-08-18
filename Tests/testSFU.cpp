@@ -1,5 +1,6 @@
 #include "doctest.h"
 #include "V3DLib.h"
+#include "support/check.h"
 #include "support/support.h"
 #include "Support/Helpers.h"  // bit_diff()
 #include <iostream>
@@ -91,6 +92,11 @@ void check(float val, Float::Array &results, double precision) {
 
   // Note that indexes for Nan and inf tests are non-consecutive
   if (val < 0) {
+    warn << "(1/sqrt(" << val << ")) : " << (1/sqrt(val));
+    warn << "results[16* 7]: " << results[16* 7];
+    warn << "(sqrt(" << val << "))   : " << sqrt(val);
+    warn << "results[16*13]: " << results[16*13];
+
     REQUIRE(std::isnan(results[16* 7]));
     REQUIRE(std::isnan(results[16*13]));
   } else if (val == 0) {
@@ -113,16 +119,16 @@ void check(float val, Float::Array &results, double precision) {
   }
 
   REQUIRE(abs(results[16* 9] - exp(1))        <   precision);
-  REQUIRE(abs(results[16*10] - exp(val))      < 5*precision);  // Less precise, is a lib function
-  REQUIRE(abs(results[16*12] - tanh(val))      <  precision);
+  REQUIRE(abs(results[16*10] - exp(val))      < 5*precision);  // Fail at about > 5.0f
+  REQUIRE(abs(results[16*12] - tanh(val))     <   precision);
 }
 
 
-//
-// @brief Check that all elements of the result vectors are the same.
-//
-// Result Vector consists of N blocks of 16 with same values.
-//
+/**
+ * @brief Check that all elements of the result vectors are the same.
+ *
+ * Result Vector consists of N blocks of 16 with same values.
+ */
 void elements_same(Float::Array &vec, int N) {
   auto vec_ptr = vec.ptr();
   for (int i = 0; i < N; ++i) {
@@ -294,9 +300,7 @@ TEST_CASE("Test SFU functions [sfu]") {
 
 
 TEST_CASE("Test library functions [sfu][rotate]") {
-
   auto k = compile(lib_kernel);
-  to_file("lib_kernel.txt", k.dump());
 
   const int N_ops   = 4;  // Number of operations tested
   const int N_input = 4;  // Number of test vectors
@@ -393,4 +397,48 @@ TEST_CASE("Test element_at [sfu][elem]") {
     float res = result[16*i];
     REQUIRE(res == input[i]);
   }
+}
+
+
+namespace {
+
+void recipsqrt_kernel(Float::Ptr r) {
+  Float x = toFloat(index() - 3);
+
+  *r = V3DLib::recipsqrt(x); r.inc();
+  *r = V3DLib::sqrt_f(x);
+}
+
+} // anon namespace
+
+
+TEST_CASE("Test recipsqrt [sfu][recipsqrt]") {
+  const int SIZE = 2*16;
+
+  //
+  // Initialize expected values
+  //
+  std::vector<float> expected(SIZE);
+
+  for (int i = 0; i < 16; ++i) {
+    expected[i] = (float) (1.0/sqrt(i - 3));
+  }
+
+  for (int i = 0; i < 16; ++i) {
+    expected[i + 16] = (float) sqrt(i - 3);
+  }
+  //warn << "Expected: " << dump_array(expected, 16);
+
+  //
+  // Compile and perform test
+  //
+  Float::Array result(SIZE);
+
+  auto k = compile(recipsqrt_kernel);
+  to_file("recipsqrt_kernel.txt", k.dump());
+
+  k.load(&result).run();
+
+  //warn << "Result: " << dump_array(result, 16);
+  check_vector(result, 0, expected, 3.0e-8f); // Precision determined on vc6
 }

@@ -164,6 +164,11 @@ std::string dump_array(std::vector<unsigned> const &a,  int linesize) {
 }
 
 
+std::string dump_array(std::vector<float> const &a,  int linesize) {
+  return dump_array_template(&a[0], (int) a.size(), linesize);
+}
+
+
 /**
  * Show contents of SharedArray instance
  */

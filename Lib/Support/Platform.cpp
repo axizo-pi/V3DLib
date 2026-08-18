@@ -295,6 +295,11 @@ bool compiling_for_vc7() {
 }
 
 
+bool compiling_for_vc6() {
+	return !compiling_for_vc4() && (instance().vc_type == vc6);
+}
+
+
 bool use_main_memory()      { return instance().m_use_main_memory; }
 std::string platform_info() { return instance().output(); }
 bool is_pi_platform()       { return instance().is_pi_platform; }
