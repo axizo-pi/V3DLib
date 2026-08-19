@@ -1,20 +1,17 @@
 #ifndef _V3DLIB_VC4_KERNELDRIVER_H
 #define _V3DLIB_VC4_KERNELDRIVER_H
-#include "../KernelDriver.h"
+#include "../Compile.h"
 #include "Invoke.h"
-#include "Compile.h"
 
 namespace V3DLib {
 namespace vc4 {
 
-class KernelDriver : public V3DLib::KernelDriver, private MailBoxInvoke {
-  using Parent = V3DLib::KernelDriver;
-
+class KernelDriver : private MailBoxInvoke {
 public:
   KernelDriver() {}
   KernelDriver(KernelDriver &&k) = default;
 
-  void invoke(V3DLib::Compile &code, int numQPUs, IntList &params, bool wait_complete = true) override;
+  void invoke(V3DLib::Compile &code, int numQPUs, IntList &params, bool wait_complete = true);
 };
 
 }  // namespace vc4

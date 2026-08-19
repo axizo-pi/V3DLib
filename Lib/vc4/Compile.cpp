@@ -103,6 +103,11 @@ void Compile::encode() {
 }
 
 
+void Compile::invoke(int numQPUs, IntList &params, bool wait_complete) {
+  m_driver.invoke(*this, numQPUs, params,  wait_complete);
+}
+
+
 void Compile::compile_intern() {
   vc4::kernelFinish();
 

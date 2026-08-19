@@ -1,5 +1,6 @@
 #include "V3DLib.h"
 #include "Support/Settings.h"
+#include "Invoke.h"
 
 using namespace V3DLib;
 
@@ -8,19 +9,19 @@ V3DLib::Settings settings;
 
 void kernel_1(Int offset, Int::Ptr p) {
   p += offset*16;
-	*p = 1;
+  *p = 1;
 }
 
 
 void kernel_2(Int offset, Int::Ptr p) {
   p += offset*16;
-	*p = 2;
+  *p = 2;
 }
 
 
 void kernel_3(Int offset, Int::Ptr p) {
   p += offset*16;
-	*p = 4;
+  *p = 4;
 }
 
 
@@ -29,13 +30,13 @@ void kernel_3(Int offset, Int::Ptr p) {
  */
 void kernel_4(Int offset, Int mult, Int::Ptr p) {
   p += offset*16;
-	*p = mult*8;
+  *p = mult*8;
 }
 
 
 void kernel_5(Int offset, Int::Ptr p) {
   p += offset*16;
-	*p = 16;
+  *p = 16;
 }
 
 

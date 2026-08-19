@@ -25,7 +25,25 @@ int main(int argc, char** argv) {
 
   doctest::Context context;
   context.applyCommandLine(argc, argv);
+
+  //
+  // Following for ensuring that tests in testCmdline run first.
+  //
+  // These test cases have a prefix `0:` in their name, ensuring that they come first in the sort order.
+  //
+  // The reason for this is that these unit tests call V3dLib apps which allocate their own BO's.
+  // This conflicts on `vc4` with allocated BO's in the main test program itself; it is apparently not
+  // possible to assign BO's in multiple processes running in parallel on `vc4`.
+  //
+  // This worked fine for a _long_ time, but suddenly failed. `doctest` internally changed the run
+  // order of the unit tests.
+  //
+  // This is not an issue for `vc4`.
+  //
+  context.setOption("order-by", "name");
+
   int res = context.run();              // run
+
   if(context.shouldExit()) {            // important - query flags (and --exit) rely on the user doing this
     return res;                         // propagate the result of the tests
   }

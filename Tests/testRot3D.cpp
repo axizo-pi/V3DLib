@@ -29,7 +29,7 @@ void compareResults(
   Array2 &x2,
   Array2 &y2,
   int size,
-  const char *label,
+  std::string const &label,
   bool compare_exact = true) {
   for (int i = 0; i < size; i++) {
     INFO("Comparing " << label << " for index " << i);
@@ -38,7 +38,7 @@ void compareResults(
       REQUIRE(x1[i] == x2[i]);
       REQUIRE(y1[i] == y2[i]);
     } else {
-      INFO("x1[" << i << "]: " << x1[i]);
+      INFO("x1[" << i << "]: " << x1[i] << ", expecting: " << x2[i]);
       REQUIRE(x1[i] == doctest::Approx(x2[i]).epsilon(0.001));
       REQUIRE(y1[i] == doctest::Approx(y2[i]).epsilon(0.001));
     }
@@ -111,7 +111,6 @@ TEST_CASE("Test working of Rot3D example [rot3d][pass3]") {
         x_1[i] = x[i];
         y_1[i] = y[i];
       }
-
     }
 
     //

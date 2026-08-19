@@ -190,7 +190,7 @@ void check_output_example(std::string const &program, std::string const &extra_p
 //
 // Better would be to check if the first line is the same
 //
-TEST_CASE("Detect platform scripts should both return the same thing [cmdline]") {
+TEST_CASE("0: Detect platform scripts should both return the same thing [cmdline]") {
   // It is possible to compile QPU=0 on a Pi.
   // In that case, the return values will be logically different; skip that case.
   const int cpp_expected = 0;
@@ -210,7 +210,7 @@ TEST_CASE("Detect platform scripts should both return the same thing [cmdline]")
 }
 
 
-TEST_CASE("Check correct output example programs for all three run options [cmdline]") {
+TEST_CASE("0: Check correct output example programs for all three run options [cmdline]") {
   init_msg();
   make_test_dir();
 
@@ -236,7 +236,7 @@ TEST_CASE("Check correct output example programs for all three run options [cmdl
  * - Scalar output on i7 is different from Pi!
  *   Difference on order of 10e-6.
  */
-TEST_CASE("Check correct output Rot3D [cmdline][rot3d]") {
+TEST_CASE("0: Check correct output Rot3D [cmdline][rot3d]") {
   init_msg();
   make_test_dir();
 

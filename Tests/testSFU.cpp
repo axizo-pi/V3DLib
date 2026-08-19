@@ -115,12 +115,14 @@ void check(float val, Float::Array &results, double precision) {
       warn << "test sqrt_f(): " << res << " = " << sqrt(val);
     }
 */    
-    REQUIRE(abs(results[16*13] - sqrt(val))      <  precision);
+    REQUIRE(abs(results[16*13] - sqrt(val))     <  precision);
   }
 
-  REQUIRE(abs(results[16* 9] - exp(1))        <   precision);
-  REQUIRE(abs(results[16*10] - exp(val))      < 5*precision);  // Fail at about > 5.0f
-  REQUIRE(abs(results[16*12] - tanh(val))     <   precision);
+  REQUIRE(abs(results[16* 9] - exp(1))          <   precision);
+
+  // Following crappy convergense, especially vc4
+  REQUIRE(abs(results[16*10] - exp(val))        < 10*precision); // vc6 fail at about > 5.0f
+  REQUIRE(abs(results[16*12] - tanh(val))       <   precision);
 }
 
 
@@ -440,5 +442,6 @@ TEST_CASE("Test recipsqrt [sfu][recipsqrt]") {
   k.load(&result).run();
 
   //warn << "Result: " << dump_array(result, 16);
-  check_vector(result, 0, expected, 3.0e-8f); // Precision determined on vc6
+  float Precision = Platform::compiling_for_vc4()?2.5e-4f:3.0e-8f;
+  check_vector(result, 0, expected, Precision);
 }
