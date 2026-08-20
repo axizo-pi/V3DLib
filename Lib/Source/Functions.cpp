@@ -727,21 +727,21 @@ void float_fields(Float &x_f, Int &sign, Int &exponent, Int &significand) {
  * Source: https://www.wolframalpha.com/input/?i=taylor+series+expansion+of+e%5Ex
  */
 void bexp_t(Float &dst, Float &src) {
-	Float x   = src;  comment("Start e taylor");
-	Float div = 1.0f;
-	Float sum = 1.0f;
+  Float x   = src;  comment("Start e taylor");
+  Float div = 1.0f;
+  Float sum = 1.0f;
 
-	sum += x;
+  sum += x;
 
-	for (int i = 2; i < 10; ++i) {
-		x   *= src;
-		div *= toFloat(i);
-		sum += (x/div);
-	}
+  for (int i = 2; i < 10; ++i) {
+    x   *= src;
+    div *= toFloat(i);
+    sum += (x/div);
+  }
 
-	comment("End e taylor");
+  comment("End e taylor");
 
-	dst = sum;	
+  dst = sum;  
 }
 
 
