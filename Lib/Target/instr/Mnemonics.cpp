@@ -421,6 +421,12 @@ Instr::List bexp(Var dst, RegOrImm const &srcA) {
 
 /**
  * @brief Return e to the power `srcA`.
+ *
+ * Uses the following conversion formula:
+ *
+ *     2^(log2(e)*srcA)
+ *
+ * This converges badly and fails for about srcA > 5.
  */
 Instr::List bexp_e(Var dst, RegOrImm const &srcA) {
   const float e_const = 2.718281828459045f;

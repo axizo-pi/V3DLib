@@ -434,7 +434,7 @@ int bit_diff(float in_val1, float in_val2, int ignore_bit) {
     offset = -1;
   } else {
     if (ignore_bit != -1) {
-      warn << "(offset > ignore_bit): (" << offset << " > " << ignore_bit << ")";
+      warn << "bit_diff(): (offset > ignore_bit): (" << offset << " > " << ignore_bit << ")";
     }
   }
 

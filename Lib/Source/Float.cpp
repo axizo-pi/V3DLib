@@ -313,9 +313,9 @@ FloatExpr recipsqrt(FloatExpr x) {
   ret = mkFloatApply(x, Op(RECIPSQRT, FLOAT));
 
   if (!Platform::compiling_for_vc7()) {
-    if (Platform::compiling_for_vc6()) {
-      warn << "Doing recipsqrt vc6";
-    }
+    // if (Platform::compiling_for_vc6()) {
+    //   warn << "Doing recipsqrt vc6";
+    // }
 
     // Specific for SFU: these return 0.0f instead of NaN or Inf.
     // Compensate for this.
@@ -397,9 +397,9 @@ FloatExpr sqrt_f(FloatExpr x) {
   ret = recip(recipsqrt(x));
 
   if (!Platform::compiling_for_vc7()) {
-    if (Platform::compiling_for_vc6()) {
-      warn << "Doing sqrt vc6";
-    }
+    // if (Platform::compiling_for_vc6()) {
+    //   warn << "Doing sqrt vc6";
+    // }
 
     // Specific for SFU: these return 0.0f instead of NaN or Inf.
     // Compensate for this.

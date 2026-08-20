@@ -1,5 +1,7 @@
 #ifndef _TEST_SUPPORT_CHECK_H
 #define _TEST_SUPPORT_CHECK_H
+#include "../doctest.h"
+#include "Common/SharedArray.h"
 
 template<typename Array>
 std::string showResult(Array &result, int index, int size = 16) {
@@ -29,7 +31,9 @@ std::string showExpected(const std::vector<T> &expected) {
 
 
 /**
- * Compare `result` starting at `index` with expected value.
+ * @brief Compare `result` starting at `index` with expected value.
+ *
+ * Internally, this compares float values; the template is also used for int vectors.
  */
 template<typename T1, typename T2>
 void check_vector(
@@ -45,7 +49,9 @@ void check_vector(
   float max_diff = 0;
 
   for (int j = 0; j < (int) expected.size(); ++j) {
-    float diff = abs((float) result[16*index + j] - (float) expected[j]);
+    float val1 = (float) result[16*index + j];
+		float val2 = (float) expected[j];
+    float diff = abs(val1 - val2);
 
     if (max_diff < diff) {
       max_diff = diff;
@@ -94,5 +100,12 @@ void check_vectors(
   }
 }
 
+
+void check_vector_b(
+  V3DLib::SharedArray<float> &result,
+  int index,
+  std::vector<float> const &expected,
+  int bit_precision = 0
+);
 
 #endif // _TEST_SUPPORT_CHECK_H

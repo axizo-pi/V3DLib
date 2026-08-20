@@ -82,21 +82,33 @@ void sfu_kernel(Float x, Float::Ptr r) {
  *
  * Special cases for invalid input resulting in Inf, Nan are taken into account.
  */
-void check(float val, Float::Array &results, double precision) {
+void check(float val, Float::Array &results, int max_bit = 1) {
+
+	auto check_bits = [max_bit, &results] (int index, double in_val2) {
+		float val1 = results[index];
+		float val2 = (float) in_val2;
+		int   bits = bit_diff(val1, val2, max_bit);
+
+		INFO("j: " << index << ", exp bit_diff: " << bits);
+		REQUIRE(bits == -1);
+	};
+
   REQUIRE(results[0]    == 0.0f);
   REQUIRE(results[16]   == 2*val);
   REQUIRE(results[16*2] == 2*val);
   REQUIRE(results[16*3] == -2*val);
-  REQUIRE(abs(results[16*4] - 8.0)           <   precision);
-  REQUIRE(abs(results[16*5] - exp2(val))     <   precision);  // Should be exact, but isn't
+
+	check_bits(16*4, 8.0);
+	check_bits(16*5, exp2(val));
 
   // Note that indexes for Nan and inf tests are non-consecutive
   if (val < 0) {
+/*
     warn << "(1/sqrt(" << val << ")) : " << (1/sqrt(val));
     warn << "results[16* 7]: " << results[16* 7];
     warn << "(sqrt(" << val << "))   : " << sqrt(val);
     warn << "results[16*13]: " << results[16*13];
-
+*/
     REQUIRE(std::isnan(results[16* 7]));
     REQUIRE(std::isnan(results[16*13]));
   } else if (val == 0) {
@@ -105,24 +117,16 @@ void check(float val, Float::Array &results, double precision) {
     REQUIRE(std::isinf(results[16* 8]));
     REQUIRE(std::isinf(results[16*11]));
   } else {
-    REQUIRE(abs(results[16* 6] - 1/val)         <  precision);
-    REQUIRE(abs(results[16* 7] - (1/sqrt(val))) <  precision);
-    REQUIRE(abs(results[16* 8] - log2(val))     <  precision);
-    REQUIRE(abs(results[16*11] - log(val))      <  precision);
-/*
-    {
-      float res = results[16*13];
-      warn << "test sqrt_f(): " << res << " = " << sqrt(val);
-    }
-*/    
-    REQUIRE(abs(results[16*13] - sqrt(val))     <  precision);
+		check_bits(16*6, 1/(val));
+		check_bits(16*7, 1/sqrt(val));
+		check_bits(16*8, log2(val));
+		check_bits(16*11, log(val));
+		check_bits(16*13, sqrt(val));
   }
 
-  REQUIRE(abs(results[16* 9] - exp(1))          <   precision);
-
-  // Following crappy convergense, especially vc4
-  REQUIRE(abs(results[16*10] - exp(val))        < 10*precision); // vc6 fail at about > 5.0f
-  REQUIRE(abs(results[16*12] - tanh(val))       <   precision);
+	check_bits(16*9, exp(1));
+	check_bits(16*10, exp(val));  // bit_diff() works much better than precision for exp()
+	check_bits(16*12, tanh(val));
 }
 
 
@@ -277,7 +281,7 @@ TEST_CASE("Test SFU functions [sfu]") {
   //
   // v3d has same output as int and emu.
   //
-  double precision = (Platform::run_vc4())?3e-4:1e-6;
+  //double precision = (Platform::run_vc4())?3e-4:1e-6;
 
   results.fill(0.0);
 
@@ -286,7 +290,7 @@ TEST_CASE("Test SFU functions [sfu]") {
     INFO("Testing " << val << "f");
 
     k.load(val, &results).run();
-    check(val, results, precision);
+    check(val, results);
   };
 
   test(1.0f);
@@ -348,7 +352,6 @@ TEST_CASE("Test library functions [sfu][rotate]") {
       float res = result[start_index + 16*i];
 
       if (bit_diff(res,  expected[i], tmp_bit_diff) != -1) {
-
         cerr << "check_expected failed for "
              << "start_index: " << start_index << ", "
              << "index: " << i << ", "
@@ -404,18 +407,19 @@ TEST_CASE("Test element_at [sfu][elem]") {
 
 namespace {
 
-void recipsqrt_kernel(Float::Ptr r) {
+void naninf_kernel(Float::Ptr r) {
   Float x = toFloat(index() - 3);
 
   *r = V3DLib::recipsqrt(x); r.inc();
-  *r = V3DLib::sqrt_f(x);
+  *r = V3DLib::sqrt_f(x);    r.inc();
+  *r = V3DLib::exp_e(x);
 }
 
 } // anon namespace
 
 
-TEST_CASE("Test recipsqrt [sfu][recipsqrt]") {
-  const int SIZE = 2*16;
+TEST_CASE("Test Nan/Inf [sfu][nan]") {
+  const int SIZE = 3*16;
 
   //
   // Initialize expected values
@@ -429,6 +433,10 @@ TEST_CASE("Test recipsqrt [sfu][recipsqrt]") {
   for (int i = 0; i < 16; ++i) {
     expected[i + 16] = (float) sqrt(i - 3);
   }
+
+  for (int i = 0; i < 16; ++i) {
+    expected[i + 32] = (float) exp(i - 3);
+  }
   //warn << "Expected: " << dump_array(expected, 16);
 
   //
@@ -436,12 +444,11 @@ TEST_CASE("Test recipsqrt [sfu][recipsqrt]") {
   //
   Float::Array result(SIZE);
 
-  auto k = compile(recipsqrt_kernel);
-  to_file("recipsqrt_kernel.txt", k.dump());
+  auto k = compile(naninf_kernel);
+  //to_file("naninf_kernel.txt", k.dump());
 
   k.load(&result).run();
 
   //warn << "Result: " << dump_array(result, 16);
-  float Precision = Platform::compiling_for_vc4()?2.5e-4f:3.0e-8f;
-  check_vector(result, 0, expected, Precision);
+  check_vector_b(result, 0, expected, 2);
 }
