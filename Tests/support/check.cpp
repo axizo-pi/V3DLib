@@ -21,14 +21,14 @@ void check_vector_b(
 
   for (int j = 0; j < (int) expected.size(); ++j) {
     float val1 = result[16*index + j];
-		float val2 = expected[j];
+    float val2 = expected[j];
 
-		// ignore special values if they match
-		if ((std::isnan(val1) && std::isnan(val2))
-		 || (std::isinf(val1) && std::isinf(val2))
-		) {
-			continue;
-		}
+    // ignore special values if they match
+    if ((std::isnan(val1) && std::isnan(val2))
+     || (std::isinf(val1) && std::isinf(val2))
+    ) {
+      continue;
+    }
 
     int diff = V3DLib::bit_diff(val1, val2, bit_precision);
 
@@ -38,7 +38,7 @@ void check_vector_b(
 
     if (passed) {
       if (diff > bit_precision) {
-				warn << "j: " << j << ", bit diff: " << diff;
+        warn << "j: " << j << ", bit diff: " << diff;
 
         first_j = j;
         passed = false;

@@ -84,22 +84,22 @@ void sfu_kernel(Float x, Float::Ptr r) {
  */
 void check(float val, Float::Array &results, int max_bit = 1) {
 
-	auto check_bits = [max_bit, &results] (int index, double in_val2) {
-		float val1 = results[index];
-		float val2 = (float) in_val2;
-		int   bits = bit_diff(val1, val2, max_bit);
+  auto check_bits = [max_bit, &results] (int index, double in_val2) {
+    float val1 = results[index];
+    float val2 = (float) in_val2;
+    int   bits = bit_diff(val1, val2, max_bit);
 
-		INFO("j: " << index << ", exp bit_diff: " << bits);
-		REQUIRE(bits == -1);
-	};
+    INFO("j: " << index << ", exp bit_diff: " << bits);
+    REQUIRE(bits == -1);
+  };
 
   REQUIRE(results[0]    == 0.0f);
   REQUIRE(results[16]   == 2*val);
   REQUIRE(results[16*2] == 2*val);
   REQUIRE(results[16*3] == -2*val);
 
-	check_bits(16*4, 8.0);
-	check_bits(16*5, exp2(val));
+  check_bits(16*4, 8.0);
+  check_bits(16*5, exp2(val));
 
   // Note that indexes for Nan and inf tests are non-consecutive
   if (val < 0) {
@@ -117,16 +117,16 @@ void check(float val, Float::Array &results, int max_bit = 1) {
     REQUIRE(std::isinf(results[16* 8]));
     REQUIRE(std::isinf(results[16*11]));
   } else {
-		check_bits(16*6, 1/(val));
-		check_bits(16*7, 1/sqrt(val));
-		check_bits(16*8, log2(val));
-		check_bits(16*11, log(val));
-		check_bits(16*13, sqrt(val));
+    check_bits(16*6, 1/(val));
+    check_bits(16*7, 1/sqrt(val));
+    check_bits(16*8, log2(val));
+    check_bits(16*11, log(val));
+    check_bits(16*13, sqrt(val));
   }
 
-	check_bits(16*9, exp(1));
-	check_bits(16*10, exp(val));  // bit_diff() works much better than precision for exp()
-	check_bits(16*12, tanh(val));
+  check_bits(16*9, exp(1));
+  check_bits(16*10, exp(val));  // bit_diff() works much better than precision for exp()
+  check_bits(16*12, tanh(val));
 }
 
 

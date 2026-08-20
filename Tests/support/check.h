@@ -50,7 +50,7 @@ void check_vector(
 
   for (int j = 0; j < (int) expected.size(); ++j) {
     float val1 = (float) result[16*index + j];
-		float val2 = (float) expected[j];
+    float val2 = (float) expected[j];
     float diff = abs(val1 - val2);
 
     if (max_diff < diff) {
