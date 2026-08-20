@@ -53,8 +53,6 @@ void float_fields(Float &x_f, Int &sign, Int &exponent, Int &significand);
 
 }  // namespace functions
 
-void bexp_t(Float &dst, Float &src);
-
 void rotate_sum(Int &input, Int &result);
 void rotate_sum(Float &input, Float &result);
 void rotate_max(Float &input, Float &result);
