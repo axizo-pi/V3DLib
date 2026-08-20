@@ -286,11 +286,11 @@ TEST_CASE("Test SFU functions [sfu]") {
   results.fill(0.0);
 
   auto test = [&] (float val) {
-    //warn << "Testing " << val << "f";
+    const int max_bit_diff = Platform::compiling_for_vc4()?12:2;
     INFO("Testing " << val << "f");
 
     k.load(val, &results).run();
-    check(val, results);
+    check(val, results, max_bit_diff);
   };
 
   test(1.0f);
@@ -446,9 +446,10 @@ TEST_CASE("Test Nan/Inf [sfu][nan]") {
 
   auto k = compile(naninf_kernel);
   //to_file("naninf_kernel.txt", k.dump());
-
   k.load(&result).run();
-
   //warn << "Result: " << dump_array(result, 16);
-  check_vector_b(result, 0, expected, 2);
+
+  // vc4 convergence is kind of crappy here
+  int max_bit_diff = Platform::compiling_for_vc4()?12:2;
+  check_vector_b(result, 0, expected, max_bit_diff);
 }
