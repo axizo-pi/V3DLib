@@ -39,6 +39,9 @@ for `vc6` is actually more flexible. E.g.:
 - The `SFU` (Special Functions Unit) has been dropped. All functions of the `SFU`
   are now done on the Add ALU.
 
+  This has an positive consequence: the new operations now return `Nan` and `Inf` as expected.
+  The actual `SFU` functions return `0.0f` instead.
+
 
 ## Significant Changes From `vc4` to `vc6`
 
@@ -69,6 +72,14 @@ e.g.:
 
 Of these, only `alu` and `branch` remain on `vc6`.
 The functionality of `alu small imm` has been merged into `alu`.
+
+`load imm 32` loads a 4-byte value into a vector.
+This is actually very useful and its presence is sorely missed on `v3d`.
+On `vc4`, loading a constant value is a one-liner, on `v3d` you need to construct the constant with multiple operations.
+I'm trying out alternatives, eg:
+
+  - Loading constants as uniforms.
+  - Initialize constants _once_ on kernel startup.
 
 ### Stuff I discovered during coding
 
