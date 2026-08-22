@@ -29,7 +29,8 @@ namespace V3DLib {
  *                        (`IF`, `WHERE`), contains the array of statements in
  *                        the ELSE-part.
  *
- * =====
+ * ----------------------------------------------------
+ *
  * Notes
  * -----
  *
@@ -83,6 +84,7 @@ struct Stmt : public InstructionComment {
   class Array : public std::vector<Ptr> {
   public:
     std::string dump(bool show_comments = false) const;
+		Array &operator<<(Array const &b);
   };
 
   Stmt(Tag in_tag) : tag(in_tag) {}
@@ -93,7 +95,7 @@ struct Stmt : public InstructionComment {
   Stmt &comment(std::string msg)       { InstructionComment::comment(msg); return *this; }
 
   std::string disp() const { return disp_intern(false, 0); }
-  std::string dump(bool show_comments = false) const { return disp_intern(true, 0, show_comments); }
+  std::string dump(bool show_comments = false) const;
   void append(Array const &rhs);
 
   //
