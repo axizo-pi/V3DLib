@@ -49,7 +49,6 @@ int Imm::encode_imm() const {
     } else if (is_float()) {
       // Return value will be -1 if fails
       v3d::instr::SmallImm::float_to_opcode_value(m_floatVal, ret);
-			//uniform_constants.size();
     }
   }
 

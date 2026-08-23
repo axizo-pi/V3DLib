@@ -52,7 +52,7 @@ void Return(Float const &val) {
 
 
 /**
- * Create a function snippet from the generation of the passed callback
+ * @brief Create a function snippet from the generation of the passed callback.
  *
  * This hijacks the global statement stack to generate from source lang,
  * and then isolates the generation in a separate expression.

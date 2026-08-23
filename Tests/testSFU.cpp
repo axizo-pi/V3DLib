@@ -2,7 +2,7 @@
 #include "V3DLib.h"
 #include "support/check.h"
 #include "support/support.h"
-#include "Support/Helpers.h"  // bit_diff()
+#include "Support/Helpers.h"        // bit_diff()
 #include <iostream>
 #include <cmath>
 
@@ -447,7 +447,6 @@ TEST_CASE("Test Nan/Inf [sfu][nan]") {
   auto k = compile(naninf_kernel);
   //to_file("naninf_kernel.txt", k.dump());
   k.load(&result).run();
-  //warn << "Result: " << dump_array(result, 16);
 
   // vc4 convergence is kind of crappy here
   int max_bit_diff = Platform::compiling_for_vc4()?12:2;

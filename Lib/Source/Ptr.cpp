@@ -1,6 +1,7 @@
 #include "Ptr.h"
 #include "Common/SharedArray.h"
-#include "Lang.h"  // comment()
+#include "Lang.h"               // comment()
+#include "GlobalConstants.h"    // Var_64();
 
 namespace V3DLib {
 

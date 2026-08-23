@@ -72,3 +72,10 @@ std::string &operator<<(std::string &a, double val) {
   a += out.str();
   return a;
 }
+
+
+std::string int_hex(int val) {
+  std::ostringstream ss;
+  ss << "0x" << std::hex << val;
+  return ss.str();
+}

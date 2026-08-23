@@ -1,6 +1,7 @@
 #include "Var.h"
 #include "Support/basics.h"
 #include "Support/Platform.h"
+#include "GlobalConstants.h"
 
 /**
  * /file
@@ -8,6 +9,9 @@
  */
 
 namespace V3DLib {
+
+using ::operator<<; // C++ weirdness
+
 namespace {
 
 int globalVarId = 0;  // Used for fresh variable generation
@@ -77,74 +81,14 @@ int VarGen::count() {
 }
 
 
-namespace {
-
-int tag_64 = -1;
-int tag_NaN = -1;
-int tag_Inf = -1;
-
-/**
- * @brief define a specific global variable.
- *
- * The variable is defined **once** in the initialization step on a kernel.
- *
- * Works great on `v3d`, on `vc4` mostly and that's not good enough.
- * `vc4` doesn't need it anyway because initialization of a constant is a single operation.
- */
-Var global_var(int &tag) {
-  //warn << "Called global_var()";
-
-  if (Platform::compiling_for_vc4()) {
-    cerr << "Don't use global var's on vc4" << thrw;
-  }
-
-  if (tag == -1) {
-    tag = V3DLib::VarGen::fresh_tag();
-  }
-
-  return Var(STANDARD, tag);
-}
-
-} // anon namespace
-
-
 /**
  * Reset fresh variable generator
  */
 void VarGen::reset(int val) {
   assert(val >= 0);
-  //warn << "VarGen::reset() val: " << val;
   globalVarId = val;
 
-  // Reset the global var's before each new kernel compile
-  tag_64 = -1;
-  tag_NaN = -1;
-  tag_Inf = -1;
+  GlobalConstants::reset();
 }
-
-
-/**
- * @brief Define a single global variable that contains the value 64.
- *
- * This is used mainly for incrementing pointers.
- * See also the `_64` register.
- */
-Var Var_64() { return global_var(tag_64); }
-
-
-/**
- * @brief Define a single global variable that contains the value NaN.
- *
- * See also the `_NaN` reg.
- */
-Var Var_NaN() { return global_var(tag_NaN); }
-
-
-/**
- * @brief Define a single global variable that contains the value Inf.
- *
- * See also the `_Inf` register.
- */
-Var Var_Inf() { return global_var(tag_Inf); }
 
 }  // namespace V3DLib

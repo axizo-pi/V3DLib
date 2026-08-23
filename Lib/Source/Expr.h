@@ -1,8 +1,8 @@
 #ifndef _V3DLIB_SOURCE_EXPR_H_
 #define _V3DLIB_SOURCE_EXPR_H_
-#include <memory>
 #include "Var.h"
 #include "Op.h"
+#include <memory>
 
 namespace V3DLib {
 
@@ -63,13 +63,13 @@ private:
 };
 
 
-
 class BaseExpr {
 public:
   BaseExpr();
 
   Expr::Ptr expr() const { return m_expr; }
   std::string dump() const;
+  void assign_intern(Expr::Ptr expr);
 
 protected:
   Expr::Ptr m_expr;  // Abstract syntax tree
@@ -78,7 +78,6 @@ protected:
   BaseExpr(Expr::Ptr e, char const *label = "");
 
   void assign_intern();
-  void assign_intern(Expr::Ptr expr);
   Expr::Ptr deref_with_index(Expr::Ptr base, Expr::Ptr index_expr);
 
 private:

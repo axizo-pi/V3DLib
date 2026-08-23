@@ -84,7 +84,7 @@ struct Stmt : public InstructionComment {
   class Array : public std::vector<Ptr> {
   public:
     std::string dump(bool show_comments = false) const;
-		Array &operator<<(Array const &b);
+    Array &operator<<(Array const &b);
   };
 
   Stmt(Tag in_tag) : tag(in_tag) {}
@@ -159,7 +159,7 @@ private:
 class Stmts : public Stmt::Array {
 public:
   std::string dump() const;
-	int lastUniform(bool do_dump = true);
+  int lastUniform(bool do_dump = true);
 };
 
 }  // namespace V3DLib
