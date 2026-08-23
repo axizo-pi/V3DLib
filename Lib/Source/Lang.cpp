@@ -110,26 +110,45 @@ void ForBody_() {
 // Comments and breakpoints
 //=============================================================================
 
-void header(char const *str) {
+namespace {
+
+Stmt::Ptr cur_stmt() {
   auto stmt = stmtStack().last_stmt(false);
 
   if (stmt == nullptr) {
-    cerr << "header() no statement to add to for string: '" << str << "'. stack:\n"
+    cerr << "header() no statement to add comment to. Stack:\n"
          << stmtStack().dump();
-  } else {
+  }
+
+	return stmt;
+}
+
+} // anon namespace
+
+
+void header(std::string const &str) {
+	auto stmt = cur_stmt();
+
+  if (stmt != nullptr) {
     stmt->header(str);
   }
 }
 
 
-void comment(char const *str) {
-  auto stmt = stmtStack().last_stmt(false);
+void sub_header(std::string const &str) {
+	auto stmt = cur_stmt();
 
-  if (stmt == nullptr) {
-    cerr << "comment() no statement to add to for string: '" << str << "'."
-    //     << " stack:\n" << stmtStack().dump()
-    ;
-  } else {
+  if (stmt != nullptr) {
+    stmt->sub_header(str);
+  }
+}
+
+
+
+void comment(std::string const &str) {
+	auto stmt = cur_stmt();
+
+  if (stmt != nullptr) {
     stmt->comment(str);
   }
 }

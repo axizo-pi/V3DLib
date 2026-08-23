@@ -103,7 +103,7 @@ void init(Stmt::Array &src) {
   // If these are not used in a kernel.
   if (!src.empty()) {
     auto first = *src.begin();
-    first->comment("Start init global constants");
+    first->sub_header("Start init global constants");
   }
 }
 

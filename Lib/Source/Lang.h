@@ -38,10 +38,9 @@ void For_(Cond c);
 void For_(BoolExpr b);
 void ForBody_();
 
-void header(char const *str);
-inline void header(std::string const &str) { header(str.c_str()); }
-void comment(char const *str);
-inline void comment(std::string const &str) { comment(str.c_str()); }
+void header(std::string const &str);
+void sub_header(std::string const &str);
+void comment(std::string const &str);
 
 }  // namespace V3DLib
 

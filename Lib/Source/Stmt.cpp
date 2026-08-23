@@ -10,20 +10,6 @@ using ::operator<<;  // C++ weirdness
 
 namespace {
 
-std::string make_comment(std::string &str) {
-  std::vector<std::string> lines = split(str, "\n");
-
-  std::string ret;
-  ret << "\n#\n";
-  for (int i = 0; i < (int) lines.size(); i++) {
-    ret << "# " << lines[i] << "\n";
-  }
-  ret << "#\n";
-
-  return ret;
-}
-
-
 const char *dump_stmt_tag(Stmt::Tag tag) {
   switch(tag) {
     case Stmt::SEQ:     return "SEQ";
@@ -402,17 +388,9 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_com
 
   if (show_comments) {
     std::string out;
-    auto h = InstructionComment::header(); 
-    if (!h.empty()) {
-      out << make_comment(h);
-    }
-
+    out<< InstructionComment::emit_header(";"); 
     out << ret; 
-
-    auto c = InstructionComment::comment(); 
-    if (!c.empty()) {
-      out << "           ; " << c;
-    }
+		out << InstructionComment::emit_comment((int) ret.size(), -1, ";");
 
     return out;
   }
@@ -530,7 +508,7 @@ std::string Stmts::dump() const {
 
   int count = 0;
   std::string ret;
-  std::string pre = "#";
+  std::string pre = ";";
   std::string sp = "  ";
 
   for (int i = 0; i < (int) lines.size(); i++) {

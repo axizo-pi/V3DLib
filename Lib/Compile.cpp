@@ -5,6 +5,20 @@ namespace V3DLib {
 
 using ::operator<<;  // C++ weirdness
 
+struct CodeStruct {
+  Stmts       m_body;         // Source code statements
+  Instr::List m_targetCode;   // Target code generated from AST
+  Code m_code;                // Memory region for QPU code
+};
+
+
+Compile::Compile() {
+	m_code_struct = new CodeStruct;
+}
+
+Compile::~Compile() {
+	delete m_code_struct;
+}
 
 std::string Compile::kernel_type_str() const {
   switch(kernel_type()) {
@@ -61,12 +75,25 @@ void Compile::compile(std::function<void()> create_ast) {
 #endif // OUTPUT_COMPILEDATA
 }
 
+Code const &Compile::code() const {
+	assert(m_code_struct != nullptr);
+	return m_code;
+}
+
+
+Instr::List &Compile::targetCode() {
+	assert(m_code_struct != nullptr);
+	return m_targetCode;
+}
+
+
 /**
  * @brief Return AST representing the source code
  *
  * But it's not really a 'tree' anymore, it's a top-level sequence of statements
  */
 Stmts &Compile::sourceCode() {
+	assert(m_code_struct != nullptr);
   return m_body;
 }
 

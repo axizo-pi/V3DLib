@@ -408,10 +408,10 @@ TEST_CASE("Test element_at [sfu][elem]") {
 namespace {
 
 void naninf_kernel(Float::Ptr r) {
-  Float x = toFloat(index() - 3);
+  Float x = toFloat(index() - 3);     header("Doing some major shit here");
 
   *r = V3DLib::recipsqrt(x); r.inc();
-  *r = V3DLib::sqrt_f(x);    r.inc();
+  *r = V3DLib::sqrt_f(x);    r.inc(); sub_header("Minor shit happening here");
   *r = V3DLib::exp_e(x);
 }
 
@@ -445,7 +445,7 @@ TEST_CASE("Test Nan/Inf [sfu][nan]") {
   Float::Array result(SIZE);
 
   auto k = compile(naninf_kernel);
-  //to_file("naninf_kernel.txt", k.dump());
+  to_file("naninf_kernel.txt", k.dump());
   k.load(&result).run();
 
   // vc4 convergence is kind of crappy here

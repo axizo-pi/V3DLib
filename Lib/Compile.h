@@ -6,6 +6,8 @@
 
 namespace V3DLib {
 
+class CodeStruct; // Forward declaration
+
 /**
  * @brief Creation and storage of `VideoCore` code on all levels.
  */
@@ -17,7 +19,8 @@ public:
     vc7
   };
 
-  virtual ~Compile() {} // `virtual` required to call dtor's derived types
+	Compile();
+  virtual ~Compile(); // `virtual` required to call dtor's derived types
 
   bool        is_v3d()      const { return m_type == vc6 || m_type == vc7; }
   KernelType  kernel_type() const { return m_type; }
@@ -29,9 +32,10 @@ public:
 
   void compile(std::function<void()> create_ast);
 
-  Code const &code() const { return m_code; }
+  Code const &code() const;
   Stmts &sourceCode();
-  Instr::List &targetCode() { return m_targetCode; }
+  Instr::List &targetCode();
+
   int numVars() const { return m_numVars; }
 
   std::string dump();
@@ -43,6 +47,8 @@ public:
 
 protected:
   KernelType  m_type;
+
+	CodeStruct *m_code_struct = nullptr;
 
   Stmts       m_body;         // Source code statements
   Instr::List m_targetCode;   // Target code generated from AST

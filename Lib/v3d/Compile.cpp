@@ -8,7 +8,6 @@
 #include "Support/Helpers.h"        // contains()
 #include "UniformConstants.h"
 #include "instr/Snippets.h"
-#include "LibSettings.h"
 
 namespace V3DLib {
 namespace v3d {
@@ -545,6 +544,7 @@ Instructions encodeInstr(V3DLib::Instr instr) {
     } else {
       //Log::warn << "v3d encodeInstr() transferring comments: " << instr.mnemonic(true);
       ret.front().transfer_comments(instr);
+      //Log::warn << "v3d encodeInstr() transferring comments post: " << ret.front().mnemonic(true);
     }
   }
 
@@ -656,7 +656,7 @@ Compile::Compile() {
 
 
 void Compile::encode() {
-  if (instructions.size() > 0) return;  // Don't bother if already encoded
+  if (instructions.size() > 0) return;   // Don't bother if already encoded
   if (has_errors()) return;              // Don't do this if compile errors occured
   assert(!m_code.allocated());
 
@@ -749,29 +749,7 @@ void Compile::compile_intern() {
 
 
 std::string Compile::emit_opcodes() {
-  if (instructions.empty()) return "<No opcodes to print>\n";
-
-  bool do_line_numbers = LibSettings::dump_line_numbers();
-  std::string ret;
-
-  int count = 0;
-  for (auto const &instr : instructions) {
-    auto buf = instr.mnemonic(false);
-    int size = (int) buf.size();
-
-    ret << instr.emit_header();
-
-    if (do_line_numbers) {
-      ret << count << ": ";
-    }
-
-    ret << buf 
-        << instr.emit_comment(size)
-        << "\n";
-    count++;
-  }
-
-  return ret;
+	return instructions.dump();
 }
 
 
