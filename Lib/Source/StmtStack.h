@@ -1,10 +1,10 @@
 #ifndef _V3DLIB_SOURCE_STMTSTACK_H_
 #define _V3DLIB_SOURCE_STMTSTACK_H_
+#include "Stmt.h"
+#include "Common/Stack.h"
 #include <functional>
 #include <vector>
 #include <map>
-#include "Common/Stack.h"
-#include "Stmt.h"
 
 namespace V3DLib {
 

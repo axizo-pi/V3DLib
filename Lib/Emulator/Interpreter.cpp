@@ -1,8 +1,7 @@
 #include "Interpreter.h"
-#include "Common/SharedArray.h"
-#include "Source/Stmt.h"
-#include "Common/BufferObject.h"
+#include "../CodeStruct.h"
 #include "EmuState.h"
+#include "Source/Stmt.h"
 #include "Support/basics.h"
 #include <algorithm>            // reverse()
 
@@ -555,11 +554,12 @@ void exec(InterpreterState &is, int core_index) {
  */
 void interpreter(
   int numCores,
-  Stmts const &stmts,
+	CodeStruct const &cs,
   int numVars,
   IntList &uniforms,
   BufferObject &heap
 ) {
+  Stmts const &stmts = cs.sourceCode();
   InterpreterState state(numCores, uniforms);
 
   // Initialise state

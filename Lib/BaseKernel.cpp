@@ -1,7 +1,6 @@
 #include "BaseKernel.h"
 #include "vc4/Compile.h"
 #include "v3d/Compile.h"
-#include "Support/basics.h"
 #include "Emulator/Interpreter.h"  // interpreter()
 #include "Emulator/Emulator.h"     // emulate()
 
@@ -26,7 +25,7 @@ BaseKernel::BaseKernel(BaseSettings const &settings) : m_settings(settings) {}
 bool BaseKernel::has_compile() const { return m_compile.get() != nullptr; }
 
 
-V3DLib::Compile &BaseKernel::compiler() const {
+V3DLib::Compile const &BaseKernel::compiler() const {
   assert(m_compile != nullptr);
   return *m_compile;
 }
@@ -172,7 +171,7 @@ void BaseKernel::emu(bool do_debug) {
 
   emulate(
     numQPUs(),
-    compiler().targetCode(),
+    compiler().code_struct(),
     compiler().numVars(),
     uniforms,
     getBufferObject(),
@@ -194,7 +193,7 @@ void BaseKernel::interpret() {
   }
 
   assert(uniforms.size() != 0);
-  interpreter(numQPUs(), compiler().sourceCode(), compiler().numVars(), uniforms, getBufferObject());
+  interpreter(numQPUs(), compiler().code_struct(), compiler().numVars(), uniforms, getBufferObject());
 }
 
 

@@ -1,7 +1,7 @@
 #
 # This file is generated!  Editing it directly is a bad idea.
 #
-# Generated on: Sat Aug 22 04:36:09 AM CEST 2026
+# Generated on: Mon Aug 24 06:27:00 AM CEST 2026
 #
 ###############################################################################
 
@@ -73,6 +73,7 @@ OBJ := \
   Liveness/RegUsage.o  \
   Liveness/Optimizations.o  \
   SourceTranslate.o  \
+  CodeStruct.o  \
   Emulator/DMAAddr.o  \
   Emulator/EmuSupport.o  \
   Emulator/EmuState.o  \

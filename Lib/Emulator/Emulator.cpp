@@ -1,9 +1,9 @@
 #include "Emulator.h"
-#include "Support/Platform.h"
+#include "../CodeStruct.h"
+#include "Mutex.h"
 #include "QPUState.h"
 #include "Debugger.h"
 #include "State.h"
-#include "Mutex.h"
 
 namespace V3DLib {
 
@@ -510,13 +510,14 @@ void run_instruction(QPUState &s, State &state, Instr const &instr) {
  */
 void emulate(
   int numQPUs,
-  Instr::List &instrs,
+	CodeStruct const &cs,
   int maxReg,
   IntList &uniforms,
   BufferObject &heap,
   bool do_debug
 ) {
   Platform::running_emulator(true);
+  Instr::List const &instrs = cs.targetCode();
   State state(numQPUs, uniforms);
   state.emuHeap.heap_view(heap);
 

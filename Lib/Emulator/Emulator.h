@@ -1,14 +1,15 @@
 #ifndef _V3DLIB_EMULATOR_EMULATOR_H_
 #define _V3DLIB_EMULATOR_EMULATOR_H_
-#include "Target/instr/Instr.h"
+#include "Common/Seq.h"  // IntList
 
 namespace V3DLib {
 
 class BufferObject;
+class CodeStruct;
 
 void emulate(
   int numQPUs,
-  Target::Instr::List &instrs,
+	CodeStruct const &cs,
   int maxReg,
   IntList &uniforms,
   BufferObject &heap,

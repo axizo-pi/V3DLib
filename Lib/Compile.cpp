@@ -1,23 +1,19 @@
 #include "Compile.h"
-#include "Source/Lang.h"
+#include "CodeStruct.h"
+#include "Source/Lang.h"  // comment()
 
 namespace V3DLib {
 
 using ::operator<<;  // C++ weirdness
 
-struct CodeStruct {
-  Stmts       m_body;         // Source code statements
-  Instr::List m_targetCode;   // Target code generated from AST
-  Code m_code;                // Memory region for QPU code
-};
-
-
 Compile::Compile() {
-	m_code_struct = new CodeStruct;
+  m_code_struct = new CodeStruct;
 }
 
+
 Compile::~Compile() {
-	delete m_code_struct;
+	//warn << "Called Compile dtor";
+  delete m_code_struct;
 }
 
 std::string Compile::kernel_type_str() const {
@@ -27,6 +23,18 @@ std::string Compile::kernel_type_str() const {
     case vc7: return "vc7";
     default:  assert(false); return "none";  // Should never occur
   }
+}
+
+
+CodeStruct &Compile::code_struct() {
+  assert(m_code_struct != nullptr);
+  return *m_code_struct;
+}
+
+
+CodeStruct const &Compile::code_struct() const {
+  assert(m_code_struct != nullptr);
+  return *m_code_struct;
 }
 
 
@@ -75,47 +83,15 @@ void Compile::compile(std::function<void()> create_ast) {
 #endif // OUTPUT_COMPILEDATA
 }
 
-Code const &Compile::code() const {
-	assert(m_code_struct != nullptr);
-	return m_code;
-}
-
-
-Instr::List &Compile::targetCode() {
-	assert(m_code_struct != nullptr);
-	return m_targetCode;
-}
-
-
-/**
- * @brief Return AST representing the source code
- *
- * But it's not really a 'tree' anymore, it's a top-level sequence of statements
- */
-Stmts &Compile::sourceCode() {
-	assert(m_code_struct != nullptr);
-  return m_body;
-}
-
-
-void Compile::obtain_ast() {
-  clearStack();
-
-  if (m_stmtStack.size() != 1) {
-    info << "Expected exactly one item on stmtstack; perhaps an 'End'-statement is missing." << thrw;
-  }
-
-  m_body = *m_stmtStack.pop();
-}
-
 
 /**
  * Reset the state for compilation
  *
  */
 void Compile::init_compile() {
-  initStack(m_stmtStack);
+	auto &cs = code_struct();
 
+	cs.init();
   VarGen::reset();
   resetFreshLabelGen();
 
@@ -174,6 +150,7 @@ bool Compile::handle_errors() {
 * @param filename  if specified, print the output to this file. Otherwise, print to stdout
 */
 std::string Compile::dump() {
+	auto &cs = code_struct();
   std::string ret;
 
   if (has_errors()) {
@@ -189,12 +166,12 @@ std::string Compile::dump() {
 
   ret << "Source for " << kernel_type_str() << "\n"
       << "===============\n"
-      << m_body.dump()
+      << cs.m_body.dump()
       << "\n"
 
       << "Target for " << kernel_type_str() << "\n"
       << "===============\n"
-      << m_targetCode.dump();
+      << cs.m_targetCode.dump();
 
   return ret;
 }

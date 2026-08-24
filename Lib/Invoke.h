@@ -1,7 +1,7 @@
 #ifndef _V3DLIB_INVOKE_H_
 #define _V3DLIB_INVOKE_H_
 #include "Common/Seq.h"
-#include "Common/SharedArray.h"
+#include "Common/SharedArray.h"  // Code
 
 namespace V3DLib {
 
@@ -29,7 +29,7 @@ public:
 
 namespace Invoke {
 
-void schedule(BaseKernel const &kernel);
+void schedule(Code const &code, IntList const &params);
 void run();
 
 }  // namespace Invoke

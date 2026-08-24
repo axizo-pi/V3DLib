@@ -1,7 +1,5 @@
 #include "StmtStack.h"
-#include "Support/basics.h"
 #include "Source/gather.h"
-#include <iostream>          // std::cout
 
 namespace V3DLib {
 namespace {
