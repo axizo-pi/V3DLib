@@ -16,10 +16,10 @@ const char *dump_stmt_tag(Stmt::Tag tag) {
     case Stmt::WHERE:   return "WHERE";
     case Stmt::WHILE:   return "WHILE";
     case Stmt::FOR:     return "FOR";
- 		// Add other tags here as required
+     // Add other tags here as required
 
     default:
-			cerr << "dump_stmt_tag() unhandled tag: " << tag;
+      cerr << "dump_stmt_tag() unhandled tag: " << tag;
       return "<UNKNOWN>";
   }
 }
@@ -45,7 +45,7 @@ Stmt::~Stmt() {
 
 
 std::string Stmt::dump(bool show_comments) const {
-	return disp_intern(true, 0, show_comments);
+  return disp_intern(true, 0, show_comments);
 }
 
 
@@ -114,24 +114,24 @@ bool Stmt::check_blocks() const {
 
   // then and else blocks may not both be empty
   if (m_stmts_a.empty() && m_stmts_b.empty()) {
-		return false;
-	}
+    return false;
+  }
 
   if (!m_stmts_a.empty()) {
     for (int i = 0; i < (int) m_stmts_a.size(); i++) {
       if (!m_stmts_a[i]) {
-				warn << "check_blocks a fails at i: " << i;
-				return false;
-			}
+        warn << "check_blocks a fails at i: " << i;
+        return false;
+      }
     }
   }
 
   if (!m_stmts_b.empty()) {
     for (int i = 0; i < (int) m_stmts_b.size(); i++) {
       if (!m_stmts_b[i]) {
-				warn << "check_blocks b fails at i: " << i;
-				return false;
-			}
+        warn << "check_blocks b fails at i: " << i;
+        return false;
+      }
     }
   }
 
@@ -192,12 +192,12 @@ Stmt::Array const &Stmt::else_block() const {
  */
 bool Stmt::then_block(Array const &in_block) {
   if ((tag == Stmt::IF || tag == Stmt::WHERE ) && m_stmts_a.empty()) {
-		//warn << "then_block adding in_block:" << in_block.dump();
+    //warn << "then_block adding in_block:" << in_block.dump();
     m_stmts_a << in_block;
-		assert(!m_stmts_a.empty());
+    assert(!m_stmts_a.empty());
     return true;
-	} else {
-		assert(false);
+  } else {
+    assert(false);
   }
 
   return false;
@@ -215,11 +215,11 @@ bool Stmt::add_block(Array const &block) {
     case Stmt::IF:
     case Stmt::WHERE:
       if (then_is_empty) {
-				//warn << "add_block adding then-block for WHERE: " << block.empty();
+        //warn << "add_block adding then-block for WHERE: " << block.empty();
         then_block(block);
         return true;
       } else if (else_is_empty) {
-				//warn << "add_block adding else-block for WHERE: " << block.empty();
+        //warn << "add_block adding else-block for WHERE: " << block.empty();
         m_stmts_b = block;
         return true;
       } else {
@@ -390,7 +390,7 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_com
     std::string out;
     out<< InstructionComment::emit_header(";"); 
     out << ret; 
-		out << InstructionComment::emit_comment((int) ret.size(), -1, ";");
+    out << InstructionComment::emit_comment((int) ret.size(), -1, ";");
 
     return out;
   }
@@ -493,9 +493,9 @@ std::string Stmt::Array::dump(bool show_comments) const {
 
 
 Stmt::Array &Stmt::Array::operator<<(Array const &b) {
-	auto &a = *this;
-	a.insert(a.end(), b.begin(), b.end());
-	return *this;
+  auto &a = *this;
+  a.insert(a.end(), b.begin(), b.end());
+  return *this;
 }
 
 
@@ -550,28 +550,28 @@ std::string Stmts::dump() const {
  * Returns -1 in the extremely unlikely event of no uniforms present.
  */
 int Stmts::lastUniform(bool do_dump) {
-	std::string buf;
+  std::string buf;
 
-	int i = 0;
-	for (; i < (int) size(); ++i) {
-		auto &item = *at(i);
+  int i = 0;
+  for (; i < (int) size(); ++i) {
+    auto &item = *at(i);
 
-		if (item.tag != Stmt::ASSIGN) break;
+    if (item.tag != Stmt::ASSIGN) break;
 
-		auto rhs = item.rhs();
-		if (rhs == nullptr) break;
-		if (rhs->tag() != Expr::VAR) break; 
+    auto rhs = item.rhs();
+    if (rhs == nullptr) break;
+    if (rhs->tag() != Expr::VAR) break; 
 
-		Var var = rhs->var();
-		if (var.tag() != UNIFORM) break; 
+    Var var = rhs->var();
+    if (var.tag() != UNIFORM) break; 
 
-		buf << item.dump(true) << "\n";
-	}
+    buf << item.dump(true) << "\n";
+  }
 
-	if (do_dump) {
-		warn << "lastUniform: \n" << buf;
-	}
-	return (i - 1);
+  if (do_dump) {
+    warn << "lastUniform: \n" << buf;
+  }
+  return (i - 1);
 }
 
 }  // namespace V3DLib

@@ -1,12 +1,12 @@
 #ifndef _V3DLIB_V3D_COMBINE_H
 #define _V3DLIB_V3D_COMBINE_H
-#include "instr/Instr.h"
 
 namespace V3DLib {
+
+class Instructions;  // Forward declaration
+
 namespace v3d {
 namespace Combine {
-
-using V3DLib::v3d::instr::Instr;
 
 int optimize(Instructions &instrs);
 

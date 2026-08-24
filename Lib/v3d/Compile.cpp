@@ -749,7 +749,7 @@ void Compile::compile_intern() {
 
 
 std::string Compile::emit_opcodes() {
-	return instructions.dump();
+  return instructions.dump();
 }
 
 

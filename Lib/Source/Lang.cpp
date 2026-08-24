@@ -120,14 +120,14 @@ Stmt::Ptr cur_stmt() {
          << stmtStack().dump();
   }
 
-	return stmt;
+  return stmt;
 }
 
 } // anon namespace
 
 
 void header(std::string const &str) {
-	auto stmt = cur_stmt();
+  auto stmt = cur_stmt();
 
   if (stmt != nullptr) {
     stmt->header(str);
@@ -136,7 +136,7 @@ void header(std::string const &str) {
 
 
 void sub_header(std::string const &str) {
-	auto stmt = cur_stmt();
+  auto stmt = cur_stmt();
 
   if (stmt != nullptr) {
     stmt->sub_header(str);
@@ -146,7 +146,7 @@ void sub_header(std::string const &str) {
 
 
 void comment(std::string const &str) {
-	auto stmt = cur_stmt();
+  auto stmt = cur_stmt();
 
   if (stmt != nullptr) {
     stmt->comment(str);

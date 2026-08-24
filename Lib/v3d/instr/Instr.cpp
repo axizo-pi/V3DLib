@@ -1466,7 +1466,7 @@ ByteCode Instructions::bytecode() const {
 
 
 std::string Instructions::dump() const {
-	//warn << "Called Instructions::dump()";
+  //warn << "Called Instructions::dump()";
   if (empty()) return "<No opcodes to print>\n";
 
   bool do_line_numbers = LibSettings::dump_line_numbers();
