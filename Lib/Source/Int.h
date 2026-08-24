@@ -37,6 +37,7 @@ struct Int : public BaseExpr {
   Int(Deref<Int> d);
   Int(IntExpr e);
   Int(Int const &x);
+  Int(Var const &v);
 
   static Int mkArg();
   static bool passParam(IntList &uniforms, int val);

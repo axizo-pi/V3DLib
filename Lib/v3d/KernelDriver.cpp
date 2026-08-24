@@ -1,6 +1,4 @@
 #include "KernelDriver.h"
-#include "Compile.h"
-#include "UniformConstants.h"
 
 namespace V3DLib {
 namespace v3d {
@@ -78,17 +76,15 @@ void load_uniforms(
  * @brief Invoke kernel on QPUs
  */
 void KernelDriver::invoke(
-  Compile &code,
+  Code const &code,
   int numQPUs,
   IntList &params,
   UniformConstants const &uc,
   bool wait_complete
 ) {
+  assert(!code.empty());
+  assert(code.allocated());
   assert(params.size() != 0);
-
-  if (code.has_errors()) {
-    fatal("Errors during kernel compilation/encoding, can't continue.");
-  }
 
   if (numQPUs <= 0) {
       cerr << "Zero or negative QPU's selected" << thrw;
@@ -104,11 +100,6 @@ void KernelDriver::invoke(
     }
   }
 
-  assertq(!code.has_errors(), "v3d kernels has errors, can not invoke");
-
-  code.allocate();
-  //assert(m_code.allocated());
-  assert(!code.code().empty());
 
   if (!devnull.allocated()) {
     devnull.alloc(16);
@@ -120,7 +111,7 @@ void KernelDriver::invoke(
   load_uniforms(uniforms, numQPUs, devnull, done, params, uc);
 
   drv.add_bo(getBufferObject().getHandle());
-  drv.execute(code.code(), &uniforms, numQPUs, wait_complete);
+  drv.execute(code, &uniforms, numQPUs, wait_complete);
 }
 
 

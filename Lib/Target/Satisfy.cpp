@@ -320,7 +320,7 @@ bool encode_int(Instr::List &ret, Reg dst, int value) {
 
   {
     std::string cmt;
-    cmt << "Load full imm int " << value;
+    cmt << "Load full imm int " << value << " (" << int_hex(value) << ")";
     tmp.front().comment(cmt);
 
     cmt ="";

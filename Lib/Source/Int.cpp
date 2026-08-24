@@ -53,6 +53,17 @@ Int::Int(Int const &x) {
 
 
 /**
+ * @brief Set the Var id of Int instance to an existing Var.
+ *
+ * This is used to assign global constants in the library,
+ * @see GlobalConstants.
+ *
+ * Do not use directly in kernel code.
+ */
+Int::Int(Var const &v)   { m_expr = mkVar(v); }
+
+
+/**
  * @brief Cast to an IntExpr.
  */
 Int::operator IntExpr() const {

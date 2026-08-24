@@ -1,6 +1,7 @@
 #include "Source/Float.h"
-#include "Lang.h"  // only for assign()!
+#include "Lang.h"            // only for assign()!
 #include "Functions.h"
+#include "GlobalConstants.h"
 
 namespace V3DLib {
 namespace {
@@ -65,6 +66,17 @@ Float::Float(float x) {
 Float::Float(FloatExpr e)    { assign_intern(e.expr()); }
 Float::Float(Deref<Float> d) { assign_intern(d.expr()); }
 Float::Float(Float const &x) { assign_intern(x.expr()); }
+
+
+/**
+ * @brief Set the Var id of Float instance to an existing Var.
+ *
+ * This is used to assign global constants in the library,
+ * @see GlobalConstants.
+ *
+ * Do not use directly in kernel code.
+ */
+Float::Float(Var const &v)   { m_expr = mkVar(v); }
 
 
 bool Float::passParam(IntList &uniforms, float val) {
@@ -198,6 +210,7 @@ void Float::set_at(Int n, Float const &src) {
   V3DLib::set_at(*this, n, src);
 }
 
+
 // ============================================================================
 // Operations
 // ============================================================================
@@ -313,21 +326,17 @@ FloatExpr recipsqrt(FloatExpr x) {
   ret = mkFloatApply(x, Op(RECIPSQRT, FLOAT));
 
   if (!Platform::compiling_for_vc7()) {
-    // if (Platform::compiling_for_vc6()) {
-    //   warn << "Doing recipsqrt vc6";
-    // }
-
-    // Specific for SFU: these return 0.0f instead of NaN or Inf.
+    //
+    // Specific for SFU functions: these return 0.0f instead of NaN or Inf.
     // Compensate for this.
-    Float NaN; NaN.as_float(0x7f800001);  comment("Bit-value for NaN");
-    Float Inf; Inf.as_float(0x7f800000);  comment("Bit-value for Inf");
+    //
 
     Where (x < 0)
-      ret = NaN;
+      ret = NaN();
     End
 
     Where (x == 0)
-      ret = Inf;
+      ret = Inf();
     End
   }
 
@@ -397,16 +406,13 @@ FloatExpr sqrt_f(FloatExpr x) {
   ret = recip(recipsqrt(x));
 
   if (!Platform::compiling_for_vc7()) {
-    // if (Platform::compiling_for_vc6()) {
-    //   warn << "Doing sqrt vc6";
-    // }
-
-    // Specific for SFU: these return 0.0f instead of NaN or Inf.
+    //
+    // Specific for SFU functions: these return 0.0f instead of NaN or Inf.
     // Compensate for this.
-    Float NaN; NaN.as_float(0x7f800001);  comment("Bit-value for NaN");
+    //
 
     Where (x < 0)
-      ret = NaN;
+      ret = NaN();
     End
   }
 

@@ -1,9 +1,8 @@
 #ifndef _V3DLIB_V3D_KERNELDRIVER_H
 #define _V3DLIB_V3D_KERNELDRIVER_H
-#include "UniformConstants.h"
-#include "Common/SharedArray.h"
-#include "BufferObject.h"
 #include "Driver.h"
+#include "Common/Seq.h"           // IntList
+#include "UniformConstants.h"
 
 namespace V3DLib {
 namespace v3d {
@@ -26,7 +25,7 @@ public:
   KernelDriver(KernelDriver &&a) = default;
 
   void invoke(
-    Compile &code,
+    Code const &code,
     int numQPUs,
     IntList &params,
     UniformConstants const &uc,

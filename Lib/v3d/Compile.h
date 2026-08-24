@@ -1,9 +1,9 @@
 #ifndef _V3DLIB_V3D_COMPILE_H
 #define _V3DLIB_V3D_COMPILE_H
 #include "../Compile.h"
-#include "KernelDriver.h"
-#include "UniformConstants.h"
 #include "instr/Instr.h"
+#include "UniformConstants.h"
+#include "KernelDriver.h"
 
 namespace V3DLib {
 namespace v3d {

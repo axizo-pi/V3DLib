@@ -45,6 +45,7 @@ struct Float : public BaseExpr {
   Float(FloatExpr e);
   Float(Deref<Float> d);
   Float(Float const &x);
+  Float(Var const &v);
 
   static Float mkArg();
   static bool passParam(IntList &uniforms, float val);

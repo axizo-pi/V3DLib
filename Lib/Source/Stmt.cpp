@@ -10,28 +10,16 @@ using ::operator<<;  // C++ weirdness
 
 namespace {
 
-std::string make_comment(std::string &str) {
-  std::vector<std::string> lines = split(str, "\n");
-
-  std::string ret;
-  ret << "\n#\n";
-  for (int i = 0; i < (int) lines.size(); i++) {
-    ret << "# " << lines[i] << "\n";
-  }
-  ret << "#\n";
-
-  return ret;
-}
-
-
 const char *dump_stmt_tag(Stmt::Tag tag) {
   switch(tag) {
     case Stmt::SEQ:     return "SEQ";
+    case Stmt::WHERE:   return "WHERE";
     case Stmt::WHILE:   return "WHILE";
     case Stmt::FOR:     return "FOR";
+     // Add other tags here as required
 
     default:
-      assert(false);  // Add other tags here as required
+      cerr << "dump_stmt_tag() unhandled tag: " << tag;
       return "<UNKNOWN>";
   }
 }
@@ -53,6 +41,11 @@ Stmt::~Stmt() {
          << "  comment: " << InstructionComment::comment() << "\n";
   }
 */  
+}
+
+
+std::string Stmt::dump(bool show_comments) const {
+  return disp_intern(true, 0, show_comments);
 }
 
 
@@ -117,18 +110,28 @@ Expr::Ptr Stmt::address() {
 
 
 bool Stmt::check_blocks() const {
+  //warn << "check_blocks tag " << dump_stmt_tag(tag);
+
   // then and else blocks may not both be empty
-  if (m_stmts_a.empty() && m_stmts_b.empty()) return false;
+  if (m_stmts_a.empty() && m_stmts_b.empty()) {
+    return false;
+  }
 
   if (!m_stmts_a.empty()) {
     for (int i = 0; i < (int) m_stmts_a.size(); i++) {
-      if (!m_stmts_a[i]) return false;
+      if (!m_stmts_a[i]) {
+        warn << "check_blocks a fails at i: " << i;
+        return false;
+      }
     }
   }
 
   if (!m_stmts_b.empty()) {
     for (int i = 0; i < (int) m_stmts_b.size(); i++) {
-      if (!m_stmts_b[i]) return false;
+      if (!m_stmts_b[i]) {
+        warn << "check_blocks b fails at i: " << i;
+        return false;
+      }
     }
   }
 
@@ -188,11 +191,13 @@ Stmt::Array const &Stmt::else_block() const {
  * @return true if block successfully added, false otherwise
  */
 bool Stmt::then_block(Array const &in_block) {
-  assert((tag == Stmt::IF || tag == Stmt::WHERE ) && m_stmts_a.empty());  // TODO check if converse ever happens
-
   if ((tag == Stmt::IF || tag == Stmt::WHERE ) && m_stmts_a.empty()) {
+    //warn << "then_block adding in_block:" << in_block.dump();
     m_stmts_a << in_block;
+    assert(!m_stmts_a.empty());
     return true;
+  } else {
+    assert(false);
   }
 
   return false;
@@ -210,9 +215,11 @@ bool Stmt::add_block(Array const &block) {
     case Stmt::IF:
     case Stmt::WHERE:
       if (then_is_empty) {
+        //warn << "add_block adding then-block for WHERE: " << block.empty();
         then_block(block);
         return true;
       } else if (else_is_empty) {
+        //warn << "add_block adding else-block for WHERE: " << block.empty();
         m_stmts_b = block;
         return true;
       } else {
@@ -381,17 +388,9 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_com
 
   if (show_comments) {
     std::string out;
-    auto h = InstructionComment::header(); 
-    if (!h.empty()) {
-      out << make_comment(h);
-    }
-
+    out<< InstructionComment::emit_header(";"); 
     out << ret; 
-
-    auto c = InstructionComment::comment(); 
-    if (!c.empty()) {
-      out << "           ; " << c;
-    }
+    out << InstructionComment::emit_comment((int) ret.size(), -1, ";");
 
     return out;
   }
@@ -493,6 +492,13 @@ std::string Stmt::Array::dump(bool show_comments) const {
 }
 
 
+Stmt::Array &Stmt::Array::operator<<(Array const &b) {
+  auto &a = *this;
+  a.insert(a.end(), b.begin(), b.end());
+  return *this;
+}
+
+
 std::string Stmts::dump() const {
   if (empty()) return "<Empty>";
 
@@ -502,7 +508,7 @@ std::string Stmts::dump() const {
 
   int count = 0;
   std::string ret;
-  std::string pre = "#";
+  std::string pre = ";";
   std::string sp = "  ";
 
   for (int i = 0; i < (int) lines.size(); i++) {
@@ -544,28 +550,28 @@ std::string Stmts::dump() const {
  * Returns -1 in the extremely unlikely event of no uniforms present.
  */
 int Stmts::lastUniform(bool do_dump) {
-	std::string buf;
+  std::string buf;
 
-	int i = 0;
-	for (; i < (int) size(); ++i) {
-		auto &item = *at(i);
+  int i = 0;
+  for (; i < (int) size(); ++i) {
+    auto &item = *at(i);
 
-		if (item.tag != Stmt::ASSIGN) break;
+    if (item.tag != Stmt::ASSIGN) break;
 
-		auto rhs = item.rhs();
-		if (rhs == nullptr) break;
-		if (rhs->tag() != Expr::VAR) break; 
+    auto rhs = item.rhs();
+    if (rhs == nullptr) break;
+    if (rhs->tag() != Expr::VAR) break; 
 
-		Var var = rhs->var();
-		if (var.tag() != UNIFORM) break; 
+    Var var = rhs->var();
+    if (var.tag() != UNIFORM) break; 
 
-		buf << item.dump(true) << "\n";
-	}
+    buf << item.dump(true) << "\n";
+  }
 
-	if (do_dump) {
-		warn << "lastUniform: \n" << buf;
-	}
-	return (i - 1);
+  if (do_dump) {
+    warn << "lastUniform: \n" << buf;
+  }
+  return (i - 1);
 }
 
 }  // namespace V3DLib

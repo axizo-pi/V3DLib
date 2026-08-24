@@ -1,14 +1,13 @@
 #include "Compile.h"
+#include "../CodeStruct.h"
 #include "Combine.h"
-#include "Target/Satisfy.h"
-#include "Target/RemoveLabels.h"
-#include "Source/Lang.h"            // comment()
 #include "Source/Translate.h"
 #include "SourceTranslate.h"
-#include "Support/Helpers.h"        // contains()
-#include "UniformConstants.h"
+#include "Target/Satisfy.h"
+#include "Target/RemoveLabels.h"
 #include "instr/Snippets.h"
-#include "LibSettings.h"
+#include "Support/Helpers.h"        // contains()
+#include "Source/Lang.h"            // comment()
 
 namespace V3DLib {
 namespace v3d {
@@ -545,6 +544,7 @@ Instructions encodeInstr(V3DLib::Instr instr) {
     } else {
       //Log::warn << "v3d encodeInstr() transferring comments: " << instr.mnemonic(true);
       ret.front().transfer_comments(instr);
+      //Log::warn << "v3d encodeInstr() transferring comments post: " << ret.front().mnemonic(true);
     }
   }
 
@@ -656,12 +656,13 @@ Compile::Compile() {
 
 
 void Compile::encode() {
-  if (instructions.size() > 0) return;  // Don't bother if already encoded
+  if (instructions.size() > 0) return;   // Don't bother if already encoded
   if (has_errors()) return;              // Don't do this if compile errors occured
-  assert(!m_code.allocated());
+	auto &cs = code_struct();
+  assert(!cs.m_code.allocated());
 
   // Encode target instructions
-  _encode(m_targetCode, instructions);
+  _encode(cs.m_targetCode, instructions);
 
 #ifdef DEBUG
   // Check if src's are set for the instructions we expect
@@ -705,7 +706,7 @@ void Compile::encode() {
   }
 
   if (!local_errors.empty()) {
-    breakpoint
+    breakpoint;  // Warn me if this happens
   }
 
   errors() << local_errors;
@@ -714,11 +715,12 @@ void Compile::encode() {
 
 
 void Compile::compile_intern() {
-  obtain_ast();
+	auto &cs = code_struct();
+  cs.obtain_ast();
 
   uniform_constants.reset();
-  uniform_constants.last_uniform(m_body);
-  encode_source(m_targetCode, m_body);
+  uniform_constants.last_uniform(cs.m_body);
+  encode_source(cs.m_targetCode, cs.m_body);
 
   if (!uniform_constants.empty()) {
     //
@@ -727,51 +729,29 @@ void Compile::compile_intern() {
     info << "=== Uniform constants changed! Redoing encode ===";
 
     m_uc = uniform_constants.list();
-    uniform_constants.add_uniforms(m_body);
+    uniform_constants.add_uniforms(cs.m_body);
 
     // Was fully expecting for following to be necessary; alas
     //VarGen::reset();
-    m_targetCode.clear();
-    encode_source(m_targetCode, m_body);
+    cs.m_targetCode.clear();
+    encode_source(cs.m_targetCode, cs.m_body);
   }
 
-  add_init_block(m_targetCode);
-  adjust_immediates(m_targetCode);
+  add_init_block(cs.m_targetCode);
+  adjust_immediates(cs.m_targetCode);
 
   // Perform register allocation
-  v3d_SourceTranslate().regAlloc(m_targetCode);
+  v3d_SourceTranslate().regAlloc(cs.m_targetCode);
 
   // Satisfy target code constraints
-  v3d_satisfy(m_targetCode);
+  v3d_satisfy(cs.m_targetCode);
 
   encode();
 }
 
 
 std::string Compile::emit_opcodes() {
-  if (instructions.empty()) return "<No opcodes to print>\n";
-
-  bool do_line_numbers = LibSettings::dump_line_numbers();
-  std::string ret;
-
-  int count = 0;
-  for (auto const &instr : instructions) {
-    auto buf = instr.mnemonic(false);
-    int size = (int) buf.size();
-
-    ret << instr.emit_header();
-
-    if (do_line_numbers) {
-      ret << count << ": ";
-    }
-
-    ret << buf 
-        << instr.emit_comment(size)
-        << "\n";
-    count++;
-  }
-
-  return ret;
+  return instructions.dump();
 }
 
 
@@ -793,28 +773,36 @@ ByteCode Compile::to_opcodes() {
 
 
 void Compile::invoke(int numQPUs, IntList &params, bool wait_complete) {
-  m_driver.invoke(*this, numQPUs, params, m_uc, wait_complete);
+  if (has_errors()) {
+    fatal("Errors during kernel compilation/encoding, can't continue.");
+  }
+  //assertq(!has_errors(), "v3d kernels has errors, can not invoke");
+
+	allocate();
+	auto const &cs = code_struct();
+  m_driver.invoke(cs.code(), numQPUs, params, m_uc, wait_complete);
 }
 
 
 void Compile::allocate() {
   assert(!instructions.empty());
+	auto &cs = code_struct();
 
   // Assumption: code in a kernel, once allocated, doesn't change
-  if (m_code.allocated()) {
-    if (instructions.size() > m_code.size()) {
+  if (cs.m_code.allocated()) {
+    if (instructions.size() > cs.m_code.size()) {
       cerr << "KernelDriver::allocate(): Discrepancy between instruction size: " << (int) instructions.size()
-           << " and m_code size: " << m_code.size();
+           << " and m_code size: " << cs.m_code.size();
     }
-    assert(instructions.size() <= m_code.size());  // Tentative check, not perfect
-                                                        // actual opcode seq can be smaller due to removal labels
+    assert(instructions.size() <= cs.m_code.size());  // Tentative check, not perfect
+                                                      // actual opcode seq can be smaller due to removal labels
   } else {
     std::vector<uint64_t> code = to_opcodes();
     assert(!code.empty());
 
     // Allocate memory for the QPU code
-    m_code.alloc((uint32_t) code.size());
-    m_code.copyFrom(code);  // Copy kernel to code memory
+    cs.m_code.alloc((uint32_t) code.size());
+    cs.m_code.copyFrom(code);  // Copy kernel to code memory
   }
 }
 

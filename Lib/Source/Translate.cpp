@@ -5,6 +5,7 @@
 #include "Target/SmallLiteral.h"
 #include "Target/instr/Mnemonics.h"
 #include "Support/basics.h"
+#include "GlobalConstants.h"
 
 namespace V3DLib {
 
@@ -763,9 +764,16 @@ Instr::List encode(Stmt::Ptr s) {
  */
 void insertInitBlock(Instr::List &code) {
   int index = code.lastUniformOffset();
+
+  Stmt::Array init_gc;
+  Instr::List target_gc;
+  GlobalConstants::init(init_gc);
+  encode_target(target_gc, init_gc);
+
   Instr::List ret;
 
   ret << Instr(INIT_BEGIN)
+      << target_gc
       << Instr(INIT_END);
 
   code.insert(index + 1, ret);
@@ -781,7 +789,7 @@ void insertInitBlock(Instr::List &code) {
  * @param source read-parameter; list of Source statements to convert 
  */
 void encode_target(Instr::List &target, Stmt::Array const &source) {
-  assert(!source.empty());
+  if (source.empty()) { return; }  // Nothing to do, happens if source is empty init block
 
   for (int i = 0; i < (int) source.size(); i++) {
     auto ret = encode(source[i]);
@@ -830,6 +838,8 @@ Instr::List varAssign(Var v, Expr::Ptr expr) {
  * @brief Encode the Source program `source` to target statements in `target`.
  *
  * This is the entry point for source -> target translation.
+ *
+ * @param source Array of Source-level statements to translate to Target.
  */
 void encode_source(Instr::List &target, Stmt::Array const &source) {
   assert(target.empty());

@@ -1,10 +1,12 @@
 #ifndef _V3DLIB_COMPILE_H
 #define _V3DLIB_COMPILE_H
-#include "Source/StmtStack.h"
-#include "Source/Stmt.h"
+#include "Common/Seq.h"           // IntList
 #include "Common/CompileData.h"
+#include <functional>
 
 namespace V3DLib {
+
+class CodeStruct; // Forward declaration
 
 /**
  * @brief Creation and storage of `VideoCore` code on all levels.
@@ -17,7 +19,8 @@ public:
     vc7
   };
 
-  virtual ~Compile() {} // `virtual` required to call dtor's derived types
+  Compile();
+  virtual ~Compile(); // `virtual` required to call dtor's derived types
 
   bool        is_v3d()      const { return m_type == vc6 || m_type == vc7; }
   KernelType  kernel_type() const { return m_type; }
@@ -29,9 +32,6 @@ public:
 
   void compile(std::function<void()> create_ast);
 
-  Code const &code() const { return m_code; }
-  Stmts &sourceCode();
-  Instr::List &targetCode() { return m_targetCode; }
   int numVars() const { return m_numVars; }
 
   std::string dump();
@@ -41,21 +41,18 @@ public:
   virtual void invoke(int numQPUs, IntList &params, bool wait_complete = true) = 0;
   virtual void wait_complete() {}  // For v3d
 
+	CodeStruct const &code_struct() const;
+	CodeStruct &code_struct();
+
 protected:
   KernelType  m_type;
 
-  Stmts       m_body;         // Source code statements
-  Instr::List m_targetCode;   // Target code generated from AST
-  Code m_code;                // Memory region for QPU code
-                              // Doesn't survive std::move, dtor gets called despite move ctor present
-
-  void obtain_ast();
   void init_compile();
   std::vector<std::string> &errors() { return m_errors; }  // TODO remove when done
   bool handle_errors();
 
 private:
-  StmtStack   m_stmtStack;
+  CodeStruct *m_code_struct = nullptr;
 
   int         m_numVars = 0;  // The number of variables in the source code for vc4
 

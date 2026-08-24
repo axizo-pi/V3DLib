@@ -1,6 +1,5 @@
 #ifndef _V3DLIB_VC4_KERNELDRIVER_H
 #define _V3DLIB_VC4_KERNELDRIVER_H
-#include "../Compile.h"
 #include "Invoke.h"
 
 namespace V3DLib {
@@ -11,7 +10,7 @@ public:
   KernelDriver() {}
   KernelDriver(KernelDriver &&k) = default;
 
-  void invoke(V3DLib::Compile &code, int numQPUs, IntList &params, bool wait_complete = true);
+  void invoke(V3DLib::Code const &code, int numQPUs, IntList &params, bool wait_complete = true);
 };
 
 }  // namespace vc4

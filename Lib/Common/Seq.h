@@ -65,6 +65,12 @@ public:
     return elems[index];
   }
 
+  T const &get(int index) const{
+    assertq(!empty(), "seq[]: can not access elements, sequence is empty");
+    assertq(0 <= index && index < numElems, "Seq[]: index out of range");
+    return elems[index];
+  }
+
 
   T operator[](int index) const {
     assertq(!empty(), "seq[]: can not access elements, sequence is empty");

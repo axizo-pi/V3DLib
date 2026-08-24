@@ -3,7 +3,6 @@
 #include "Compile.h"
 #include "Params.h"
 #include "Support/BaseSettings.h"
-#include <memory>
 
 namespace V3DLib {
 
@@ -57,7 +56,7 @@ public:
   bool has_compile() const;
 
   // TODO rename to compile()
-  V3DLib::Compile &compiler() const;
+  V3DLib::Compile const &compiler() const;
   V3DLib::Compile &compiler();
 
   void compile_init();
@@ -91,7 +90,7 @@ public:
   void qpu(bool wait_complete = true);
   void wait_complete() { compiler().wait_complete(); }
 
-  Code const &code() const { return m_compile->code(); }
+  //Code const &code() const { return m_compile->code(); }
   IntList const &params() const { return uniforms; }  // Can't name it uniforms because the data member is called that
 
   std::string compile_info() const;

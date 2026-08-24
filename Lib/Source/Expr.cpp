@@ -143,9 +143,8 @@ bool Expr::isSimple() const {
 
 BaseExpr::BaseExpr() {}
 
-
 BaseExpr::BaseExpr(char const *label) : m_label(label) {
-  //Log::warn << "BaseExpr ctor label";
+  //Log::warn << "BaseExpr ctor label: " << label;
   assert(label != nullptr);
   assign_intern();
 }

@@ -1,9 +1,9 @@
 #include "Combine.h"
-#include "Support/Platform.h"
-#include "Support/basics.h"
-#include "instr/BaseSource.h"
+#include "instr/Instr.h"
 #include "instr/Mnemonics.h"  // instr::tmua
+#include "Support/Platform.h"
 #include <set>
+
 
 /** 
  * @file
@@ -28,6 +28,7 @@ namespace v3d {
  */
 namespace Combine {
 
+using V3DLib::v3d::instr::Instr;
 using V3DLib::v3d::instr::BaseSource;
 using ::operator<<;  // C++ weirdness
 
@@ -383,8 +384,7 @@ bool alu_to_mul_alu(Instr const &src, Instr &dst) {
     ret.flags.muf = src.flags.muf;
   }
 
-  ret.header(src.header());
-  ret.comment(src.comment());
+  ret.transfer_comments(src);
 
   dst = ret;
   return true;
@@ -1382,13 +1382,11 @@ MAYBE_UNUSED void combine(Instructions &instr) {
         //
 
         // bottom comment most likely belong to a block; move comment to next op
-        instr[i + 1].header(bottom.header());
-        instr[i + 1].comment(bottom.comment());
+        instr[i + 1].transfer_comments(bottom);
 
         // retain only the comments of ftop
         ret.clear_comments();
-        ret.header(ftop.header());
-        ret.comment(ftop.comment());
+        ret.transfer_comments(ftop);
 
         warn << "Combine success.\n"
              << "Pre:\n"

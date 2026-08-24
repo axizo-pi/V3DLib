@@ -80,4 +80,6 @@ inline std::string &operator<<(std::string &a, bool val)     { a += val?"true":"
 std::string &operator<<(std::string &a, float val);
 std::string &operator<<(std::string &a, double val);
 
+std::string int_hex(int val);
+
 #endif  // _V3DLIB_SUPPORT_BASICS_H

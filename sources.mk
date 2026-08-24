@@ -1,7 +1,7 @@
 #
 # This file is generated!  Editing it directly is a bad idea.
 #
-# Generated on: Thu Aug 20 06:49:14 AM CEST 2026
+# Generated on: Mon Aug 24 06:27:00 AM CEST 2026
 #
 ###############################################################################
 
@@ -22,6 +22,7 @@ OBJ := \
   Source/Functions.o  \
   Source/gather.o  \
   Source/Op.o  \
+  Source/GlobalConstants.o  \
   Source/CExpr.o  \
   Source/Expr.o  \
   Source/Complex.o  \
@@ -72,6 +73,7 @@ OBJ := \
   Liveness/RegUsage.o  \
   Liveness/Optimizations.o  \
   SourceTranslate.o  \
+  CodeStruct.o  \
   Emulator/DMAAddr.o  \
   Emulator/EmuSupport.o  \
   Emulator/EmuState.o  \

@@ -7,6 +7,7 @@
 #include "Mnemonics.h"
 #include "OpItems.h"
 #include "Support/Platform.h"
+#include "LibSettings.h"
 #include <cstdio>
 #include <cstdlib>        // abs()
 #include <bits/stdc++.h>  // swap()
@@ -425,14 +426,14 @@ std::string Instr::dump_internal() const {
 std::string Instr::mnemonic(bool with_comments) const {
   std::string ret;
 
-  if (with_comments && !InstructionComment::header().empty()) {
+  if (with_comments) {
     ret << emit_header();
   }
 
   std::string out = dump_internal();
   ret << out;
 
-  if (with_comments && !InstructionComment::comment().empty()) {
+  if (with_comments) {
     ret << emit_comment((int) out.size());
   }
 
@@ -1465,11 +1466,26 @@ ByteCode Instructions::bytecode() const {
 
 
 std::string Instructions::dump() const {
+  //warn << "Called Instructions::dump()";
+  if (empty()) return "<No opcodes to print>\n";
+
+  bool do_line_numbers = LibSettings::dump_line_numbers();
   std::string ret;
 
   int count = 0;
   for (auto const &instr : *this) {
-    ret << count << "; " << instr.mnemonic(true) << "\n"; 
+    auto buf = instr.mnemonic(false);
+    int size = (int) buf.size();
+
+    ret << instr.emit_header();
+
+    if (do_line_numbers) {
+      ret << count << ": ";
+    }
+
+    ret << buf 
+        << instr.emit_comment(size)
+        << "\n";
     count++;
   }
 

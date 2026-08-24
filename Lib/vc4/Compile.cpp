@@ -1,15 +1,15 @@
 #include "Compile.h"
-#include "Instr.h"
-#include "Target/instr/Mnemonics.h"
-#include "Encode.h"
+#include "../CodeStruct.h"
+#include "../LibSettings.h"
 #include "Functions.h"
-#include "RegAlloc.h"
+#include "Instr.h"
+#include "Source/Translate.h"
 #include "SourceTranslate.h"
 #include "Target/RemoveLabels.h"
+#include "Encode.h"
 #include "Target/Satisfy.h"
-#include "Source/Translate.h"
-#include "LibSettings.h"
-#include "Support/basics.h"
+#include "Target/instr/Mnemonics.h"
+#include "RegAlloc.h"
 
 namespace V3DLib {
 namespace vc4 {
@@ -75,8 +75,9 @@ Compile::Compile() {
 
 
 int Compile::kernel_size() const {
-  assert(m_code.allocated());
-  return m_code.size();
+	auto const &code = code_struct().m_code;
+  assert(code.allocated());
+  return code.size();
 }
 
 
@@ -86,33 +87,41 @@ int Compile::kernel_size() const {
  * Assumption: code in a kernel, once allocated, does not change.
  */
 void Compile::encode() {
-  if (!m_code.empty()) return;      // Don't bother if already encoded
+	auto &cs = code_struct();
+
+  if (!cs.m_code.empty()) return;      // Don't bother if already encoded
   if (has_errors())    return;      // Don't do this if compile errors occured
 
-  CodeList code = V3DLib::vc4::encode(m_targetCode);
+  CodeList code = V3DLib::vc4::encode(cs.m_targetCode);
 
   // Allocate memory for QPU code
-  m_code.alloc(code.size());
-  assert(m_code.size() > 0);
+  cs.m_code.alloc(code.size());
+  assert(cs.m_code.size() > 0);
 
   // Copy kernel to code memory
   int offset = 0;
   for (int i = 0; i < code.size(); i++) {
-    m_code[offset++] = code[i];
+    cs.m_code[offset++] = code[i];
   }
 }
 
 
 void Compile::invoke(int numQPUs, IntList &params, bool wait_complete) {
-  m_driver.invoke(*this, numQPUs, params,  wait_complete);
+  if (has_errors()) {
+    fatal("Errors during kernel compilation/encoding, can't continue.");
+  }
+
+	auto &cs = code_struct();
+  m_driver.invoke(cs.m_code, numQPUs, params,  wait_complete);
 }
 
 
 void Compile::compile_intern() {
+	auto &cs = code_struct();
   vc4::kernelFinish();
 
-  obtain_ast();
-  encode_source(m_targetCode, m_body);
+  cs.obtain_ast();
+  encode_source(cs.m_targetCode, cs.m_body);
 
   // Add final dummy uniform handling - See Note 1, function `invoke()` in `vc4/Invoke.cpp`,
   {
@@ -124,32 +133,33 @@ void Compile::compile_intern() {
     ret << mov(tmp1, Var(UNIFORM));
     ret.front().comment("Last uniform load is dummy value");
 
-    int index = m_targetCode.lastUniformOffset();
+    int index = cs.m_targetCode.lastUniformOffset();
     assert(index > 0);
-    m_targetCode.insert(index + 1, ret);
+    cs.m_targetCode.insert(index + 1, ret);
   }
 
-  vc4::add_init_block(m_targetCode);
-  m_targetCode << Target::Instr(END);
+  vc4::add_init_block(cs.m_targetCode);
+  cs.m_targetCode << Target::Instr(END);
 
-  compile_postprocess(m_targetCode);
+  compile_postprocess(cs.m_targetCode);
 
-  removeLabels(m_targetCode);
+  removeLabels(cs.m_targetCode);
 
   encode();
 }
 
 
 std::string Compile::emit_opcodes() {
+	auto &cs = code_struct();
   encode();
 
-  auto list = vc4::opcodes(m_code);
+  auto list = vc4::opcodes(cs.m_code);
 
   // Following takes tags INIT_BEGIN/INIT_END into account
-  if ((int) (list.size() + 2) != m_targetCode.size()) {
+  if ((int) (list.size() + 2) != cs.m_targetCode.size()) {
     Log::cerr << "vc4 emit_opcodes() discrepancy in opcode and target code size. "
               << "opcode size: " << list.size() << " (plus INIT), "
-              << "target code size: " << m_targetCode.size()
+              << "target code size: " << cs.m_targetCode.size()
               << thrw
     ;
   }
@@ -164,12 +174,12 @@ std::string Compile::emit_opcodes() {
   std::string ret;
   int t_i = 0;
   for (int i = 0; i < (int) list.size(); ++i, ++t_i) {
-    auto t = m_targetCode[t_i];
+    auto t = cs.m_targetCode[t_i];
 
     if (t.tag == INIT_BEGIN || t.tag == INIT_END) {
       cdebug << "emit_opcodes() detected INIT marker";
       ++t_i;
-      t = m_targetCode[t_i];
+      t = cs.m_targetCode[t_i];
     }
 
     ret << t.emit_header();

@@ -1,7 +1,7 @@
 #ifndef _V3DLIB_VC4_COMPILE_H
 #define _V3DLIB_VC4_COMPILE_H
 #include "../Compile.h"
-#include "./KernelDriver.h"
+#include "KernelDriver.h"
 
 namespace V3DLib {
 namespace vc4 {

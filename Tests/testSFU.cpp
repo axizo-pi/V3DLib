@@ -2,7 +2,7 @@
 #include "V3DLib.h"
 #include "support/check.h"
 #include "support/support.h"
-#include "Support/Helpers.h"  // bit_diff()
+#include "Support/Helpers.h"        // bit_diff()
 #include <iostream>
 #include <cmath>
 
@@ -307,6 +307,7 @@ TEST_CASE("Test SFU functions [sfu]") {
 
 TEST_CASE("Test library functions [sfu][rotate]") {
   auto k = compile(lib_kernel);
+  //to_file("lib_kernel.txt", k.dump());
 
   const int N_ops   = 4;  // Number of operations tested
   const int N_input = 4;  // Number of test vectors
@@ -368,7 +369,7 @@ TEST_CASE("Test library functions [sfu][rotate]") {
   // The actual tests
   //
   std::vector<float> sum_expected   = { 120.0f, 120.0f, 7059.0f, 7213.93f, 14512.93f};
-  std::vector<int> vc4_bit_diff     = { -1, -1, -1, 1, 0};
+  std::vector<int>   vc4_bit_diff   = { -1, -1, -1, 1, 0};
   std::vector<float> max_expected   = { 15.0f, 15.0f, 964.0f, 914.81f, 964.00f};
   std::vector<float> min_expected   = { 0, 0, 15, 144.04f, 0};
   std::vector<float> index_expected = { 3, 12, 13, 8, 3};
@@ -445,9 +446,8 @@ TEST_CASE("Test Nan/Inf [sfu][nan]") {
   Float::Array result(SIZE);
 
   auto k = compile(naninf_kernel);
-  //to_file("naninf_kernel.txt", k.dump());
+  to_file("naninf_kernel.txt", k.dump());
   k.load(&result).run();
-  //warn << "Result: " << dump_array(result, 16);
 
   // vc4 convergence is kind of crappy here
   int max_bit_diff = Platform::compiling_for_vc4()?12:2;

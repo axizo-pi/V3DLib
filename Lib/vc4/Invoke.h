@@ -1,8 +1,8 @@
 #ifndef _V3DLIB_VC4_INVOKE_H_
 #define _V3DLIB_VC4_INVOKE_H_
-#include <stdint.h>
 #include "Common/Seq.h"
 #include "Common/SharedArray.h"
+#include <stdint.h>
 
 namespace V3DLib {
 

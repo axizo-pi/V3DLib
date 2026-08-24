@@ -1,6 +1,7 @@
 #include "Mnemonics.h"
 #include "Support/basics.h"
 #include "Support/Platform.h"
+#include "Source/GlobalConstants.h"
 #include <memory>
 
 /** \file 
@@ -17,6 +18,7 @@
 
 namespace V3DLib {
 
+using ::operator<<; // C++ weirdness
 using namespace Target;
 
 namespace {
@@ -116,17 +118,19 @@ Reg ACC0() {
 }
 
 
-Reg _64()  { return Reg(Var_64()); }
-Reg _NaN() { return Reg(Var_NaN()); }
-Reg _Inf() { return Reg(Var_Inf()); }
-
+//
+// Example how to use a global constant in Target language.
+//
+// Enable and add to include file if required.
+//
+//Reg _64()  { return Reg(Var_64()); }
 
 /**
- * This is a special purpose register  on vc4, vc6.
- * It is not on vc7.
+ * This is a special purpose register on `vc4`, `vc6`. It is not on `vc7`.
  */
 Reg ACC4() {
   if (Platform::compiling_for_vc7()) {
+    // Just create a new Reg for vc7
     assert(V3DLib::VarGen::count() != 0);
     return Reg(V3DLib::VarGen::fresh());
   } else {

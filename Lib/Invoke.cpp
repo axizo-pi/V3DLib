@@ -1,10 +1,7 @@
 #include "Invoke.h"
 #include "vc4/Invoke.h"
-#include "BaseKernel.h"
-
 
 namespace V3DLib {
-
 
 /**
  * Number of 32-bit words needed for the parameters (uniforms)
@@ -37,10 +34,9 @@ int ScheduledJobs::num_params() const {
 
 namespace Invoke {
 
-//void schedule(Code const &code, IntList const &params);
-void schedule(BaseKernel const &kernel) {
-  assertq(!kernel.code().empty(), "schedule(): no code passed");
-  auto item = ScheduledJob(kernel.code(), kernel.params());
+void schedule(Code const &code, IntList const &params) {
+  assertq(!code.empty(), "schedule(): no code passed");
+  auto item = ScheduledJob(code, params);
   s_jobs.push_back(item);
 }
 

@@ -89,12 +89,11 @@ void add_init_block(Instr::List &code) {
   using namespace V3DLib::Target::instr;
 
   Reg acc  = ACC0();
-  Reg _r64 = _64();
 
   Instr::List ret;
 
   if (Platform::compiling_for_vc7()) {
-    // vc7: No restriction on #QPU's 1 or 8
+    // vc7: No restriction on #QPU's, max is 16
     ret << mov(acc, QPU_ID)
         << shr(acc, acc, 2)
         << band(rf(RSV_QPU_ID), acc, 15)
@@ -102,6 +101,8 @@ void add_init_block(Instr::List &code) {
   } else {
     // vc6: Determine the qpu index for 'current' QPU
     // This is derived from the thread index. 
+    //
+    // #num QPU's is either 1 or 8.
     //
     // Broadly:
     //
@@ -125,8 +126,8 @@ void add_init_block(Instr::List &code) {
     ;
   }
 
-  ret << mov(_r64, 1)
-      << shl(_r64, _r64, 6)   . comment("init global 64");
+//  ret << mov(_r64, 1)
+//      << shl(_r64, _r64, 6)   . comment("init global 64");
 
   ret << add_uniform_pointer_offset(code);
 

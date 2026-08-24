@@ -1,10 +1,10 @@
 #ifndef _V3DLIB_SOURCE_STMTSTACK_H_
 #define _V3DLIB_SOURCE_STMTSTACK_H_
+#include "Stmt.h"
+#include "Common/Stack.h"
 #include <functional>
 #include <vector>
 #include <map>
-#include "Common/Stack.h"
-#include "Stmt.h"
 
 namespace V3DLib {
 
@@ -113,9 +113,7 @@ void prefetch(T &dst, Pointer &src, int prefetch_label = 0) {
   stmtStack().add_prefetch(src, prefetch_label);
 }
 
-
 int prefetch_label();
-
 
 using StackCallback = std::function<void()>;
 Stmts tempStmt(StackCallback f);

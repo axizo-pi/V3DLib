@@ -64,10 +64,6 @@ public:
   static void reset(int val = 0);
 };
 
-Var Var_64();
-Var Var_NaN();
-Var Var_Inf();
-
 }  // namespace V3DLib
 
 #endif  // _V3DLIB_SOURCE_VAR_H_
