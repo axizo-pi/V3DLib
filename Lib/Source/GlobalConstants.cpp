@@ -9,9 +9,11 @@ using ::operator<<; // C++ weirdness
 
 namespace {
 
-int tag_64 = -1;
-int tag_NaN = -1;
-int tag_Inf = -1;
+int tag_64       = -1;
+int tag_NaN      = -1;
+int tag_Inf      = -1;
+int tag_MinInf   = -1;
+int tag_MinFloat = -1;
 
 /**
  * @brief define a specific global variable.
@@ -24,10 +26,6 @@ int tag_Inf = -1;
 Var global_var(int &tag) {
   //warn << "Called global_var()";
 
-  if (Platform::compiling_for_vc4()) {
-    cerr << "Don't use global var's on vc4" << thrw;
-  }
-
   if (tag == -1) {
     tag = V3DLib::VarGen::fresh_tag();
   //} else {
@@ -38,6 +36,7 @@ Var global_var(int &tag) {
 }
 
 } // anon namespace
+
 
 /**
  * @brief Support for Global Constants.
@@ -52,6 +51,7 @@ Var global_var(int &tag) {
  * This is a consideration for `v3d`. On `vc4` this is not much of a consideration,
  * because it has a  `load imm 32` operation. Constant initialization is thus a
  * single operation for `vc4`.
+ * Despite this, global constants are also used for `vc`.
  *
  * An alternative to `GlobalConstants` is to load constant values as uniforms, which
  * also saves on the constant initialization step. @see UniformConstants.
@@ -67,6 +67,8 @@ void reset() {
   tag_64 = -1;
   tag_NaN = -1;
   tag_Inf = -1;
+  tag_MinInf = -1;
+  tag_MinFloat = -1;
 }
 
 
@@ -82,16 +84,28 @@ void init(Stmt::Array &src) {
       buf << "_64, ";
     }
 
+    if (tag_NaN != -1) {
+      tmp.as_float(0x7f800001);  comment("Bit-value for NaN");
+      NaN() = tmp;
+      buf << "NaN, ";
+    }
+
     if (tag_Inf != -1) {
       tmp.as_float(0x7f800000);  comment("Bit-value for Inf");
       Inf() = tmp;
       buf << "Inf, ";
     }
 
-    if (tag_NaN != -1) {
-      tmp.as_float(0x7f800001);  comment("Bit-value for NaN");
-      NaN() = tmp;
-      buf << "NaN, ";
+    if (tag_MinInf != -1) {
+      tmp.as_float(0xff800000);  comment("Bit-value for Minus Inf");
+      MinInf() = tmp;
+      buf << "MinInf, ";
+    }
+
+    if (tag_MinFloat != -1) {
+      tmp.as_float(0xff7fffff);  comment("Bit-value for largest negative Float");
+      MinFloat() = tmp;
+      buf << "MinFloat, ";
     }
 
     if (!buf.empty()) {
@@ -134,9 +148,14 @@ Var Var_NaN() { return global_var(tag_NaN); }
  */
 Var Var_Inf() { return global_var(tag_Inf); }
 
+Var Var_MinInf() { return global_var(tag_MinInf); }
+Var Var_MinFloat() { return global_var(tag_MinFloat); }
 
-Int   _64() { return Int  (Var_64()); }
-Float NaN() { return Float(Var_NaN()); }
-Float Inf() { return Float(Var_Inf()); }
+
+Int   _64()    { return Int  (Var_64()); }
+Float NaN()    { return Float(Var_NaN()); }
+Float Inf()    { return Float(Var_Inf()); }
+Float MinInf() { return Float(Var_MinInf()); }
+Float MinFloat() { return Float(Var_MinFloat()); }
 
 }  // namespace V3DLib

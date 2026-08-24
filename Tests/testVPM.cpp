@@ -36,9 +36,12 @@ void vpm_kernel(Int::Ptr ret) {
 
   // Write own value to VPM
   vpmSetupWrite(HORIZ, me());
+
   vpmPut(tmp);
 
-  VPMArray::add_nop(); // TODO: Check if calling this just before vpmGetInt() makes a difference
+  // These NOP's are required for numQPUs > 3
+  VPMArray::add_nop();
+  VPMArray::add_nop();
 
   // Read other value from VPM
   Int tmp2 = next_addres();
@@ -54,6 +57,10 @@ void vpm_array_kernel(Int::Ptr ret) {
   Int val = 10*(me() + 1);
 
   vpm.set(me(), val);                 // Write own value to VPM
+
+  // NOP required for numQPUs > 3
+  VPMArray::add_nop();
+
   Int tmp3 = vpm.get(next_addres());  // Read other value from VPM
 
   *(ret + 16*me()) = tmp3;            // Store to main mem
@@ -67,6 +74,7 @@ void init_expected(Int::Array &expected, int numQPUs) {
     }
   }
 }
+
 
 bool check_VPM_usage() {
   static int warn_count = 0;
@@ -94,7 +102,7 @@ bool check_VPM_usage() {
  */
 TEST_CASE("Test VPM memory [vpm]") {
   LibSettings::tmu_load tmu(false);
-  int numQPUs = 4;
+  int numQPUs = 10; // Always succeeds for 3, added NOP's in kernel for > 3
 
 
   SUBCASE("In emulator") {
@@ -131,8 +139,8 @@ TEST_CASE("Test VPM memory [vpm]") {
     k.load(&result);
     k.run();
 
-    //std::cout << result.dump() << "\n";
-    //std::cout << expected.dump() << "\n";
+    INFO("result:\n"   << result.dump());
+    INFO("expected:\n" << expected.dump());
     REQUIRE(result == expected);
   }
 }
@@ -143,7 +151,7 @@ TEST_CASE("Test VPM memory [vpm]") {
  */
 TEST_CASE("Test VPM array [vpm][arr]") {
   LibSettings::tmu_load tmu(false);
-  int numQPUs = 4;
+  int numQPUs = 10; // Always succeeds for 3, added NOP's in kernel for > 3
 
   SUBCASE("In emulator") {
     // This works on v3d
@@ -159,8 +167,8 @@ TEST_CASE("Test VPM array [vpm][arr]") {
     k.load(&result);
     k.emu();
 
-    //std::cout << result.dump() << "\n";
-    //std::cout << expected.dump() << "\n";
+    INFO("result:\n"   << result.dump());
+    INFO("expected:\n" << expected.dump());
     REQUIRE(result == expected);
   }
 
@@ -179,8 +187,8 @@ TEST_CASE("Test VPM array [vpm][arr]") {
     k.load(&result);
     k.run();
 
-    //std::cout << result.dump() << "\n";
-    //std::cout << expected.dump() << "\n";
+    INFO("result:\n"   << result.dump());
+    INFO("expected:\n" << expected.dump());
     REQUIRE(result == expected);
   }
 }

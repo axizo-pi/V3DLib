@@ -9,6 +9,7 @@
 #include "Lang.h"
 #include "vc4/DMA/VPMArray.h"
 #include "LibSettings.h"
+#include "GlobalConstants.h"  // MinInf()
 #include <cmath>
 
 /**
@@ -803,11 +804,11 @@ void rotate_min(Float &input, Float &result, Int &index) {
   rotate_min(input, result);
 
   Float tmp     = input;
-  Float minInf  = toFloat(0xff800000);  comment("Bit-value for minus infinity");
 
   Where (tmp > result)
     // Previously used 0 here, which was kind of stupid. 0 is a perfectly legal value.
-    tmp = minInf;
+    // MinInf() doesn't work here
+    tmp = MinFloat();  // Works as long as MinFloat is not in the input.
   End
 
   Int start_elems    = 15;
@@ -816,7 +817,7 @@ void rotate_min(Float &input, Float &result, Int &index) {
 
   For (Int n = start_elems, n >= 0, n--)
     element_at(tmp, n, tmp2);
-    If (tmp2 != minInf)
+    If (tmp2 != MinFloat())
       smallest_index = n;
     End
   End

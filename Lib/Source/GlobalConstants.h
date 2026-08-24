@@ -14,10 +14,14 @@ void init(Stmt::Array &src);
 Var Var_64();
 Var Var_NaN();
 Var Var_Inf();
+Var Var_MinInf();
+Var Var_MinFloat();
 
 Int   _64();
 Float NaN();
 Float Inf();
+Float MinInf();
+Float MinFloat();
 
 }  // namespace V3DLib
 
