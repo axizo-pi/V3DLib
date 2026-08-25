@@ -1,7 +1,6 @@
 #ifndef _V3DLIB_CODESTRUCT_H
 #define _V3DLIB_CODESTRUCT_H
 #include "Source/StmtStack.h"
-//#include "Source/Stmt.h"
 
 namespace V3DLib {
 

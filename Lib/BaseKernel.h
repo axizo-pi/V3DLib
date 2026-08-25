@@ -55,9 +55,8 @@ public:
 
   bool has_compile() const;
 
-  // TODO rename to compile()
-  V3DLib::Compile const &compiler() const;
-  V3DLib::Compile &compiler();
+  V3DLib::Compile const &compile() const;
+  V3DLib::Compile &compile();
 
   void compile_init();
   std::string dump();
@@ -88,9 +87,8 @@ public:
   void emu(bool do_debug = false);
   void interpret();
   void qpu(bool wait_complete = true);
-  void wait_complete() { compiler().wait_complete(); }
+  void wait_complete() { compile().wait_complete(); }
 
-  //Code const &code() const { return m_compile->code(); }
   IntList const &params() const { return uniforms; }  // Can't name it uniforms because the data member is called that
 
   std::string compile_info() const;
