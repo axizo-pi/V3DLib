@@ -161,6 +161,10 @@ FloatExpr Float::operator=(FloatExpr const &rhs) {
   return self();
 }
 
+FloatExpr Float::operator-() {
+  return self() * -1.0f;
+}
+
 
 Float &Float::operator=(Deref<Float> d) {
   Float tmp = d;
@@ -177,6 +181,7 @@ Float &Float::self() {
 Float &Float::operator+=(FloatExpr rhs) { *this = *this + rhs; return *this; }
 Float &Float::operator-=(FloatExpr rhs) { *this = *this - rhs; return *this; }
 Float &Float::operator*=(FloatExpr rhs) { *this = *this * rhs; return *this; }
+
 
 
 // ============================================================================
@@ -363,13 +368,43 @@ FloatExpr exp(FloatExpr x)       { return mkFloatApply(x, Op(EXP      , FLOAT));
  */
 FloatExpr exp_e(FloatExpr x)     { return mkFloatApply(x, Op(EXP_E    , FLOAT)); }
 
+namespace {
 
 /**
  * @brief For the Float parameter `x` return `tanh(x)`.
  *
  * This is a library function which internally uses `SFU` operation `exp()`.
+ *
+ * This fails at least on `vc7` for big numbers and returns NaN.
  */
-FloatExpr tanh(FloatExpr x)      { return mkFloatApply(x, Op(TANH     , FLOAT)); }
+FloatExpr tanh_sfu(FloatExpr x)      { return mkFloatApply(x, Op(TANH     , FLOAT)); }
+
+} // anon namespace
+
+
+/**
+ * @brief return tanh(x)
+ *
+ * SFU call fails for large values of x.
+ * For this reason, return +-1 in this case.
+ * Cutoff value empirically determined to be abs(13.37).
+ */
+FloatExpr tanh(FloatExpr x) {
+	Float CUTOFF = 13.37f;
+
+  Float ret;
+	ret = tanh_sfu(x);
+
+	Where (x > CUTOFF)
+		ret = 1.0f;
+	End
+
+	Where (x <= -CUTOFF)
+		ret = -1.0f;
+	End
+
+	return ret;
+}
 
 
 /**
