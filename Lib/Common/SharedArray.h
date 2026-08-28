@@ -3,7 +3,6 @@
 #include <vector>
 #include "BufferObject.h"
 #include "Support/basics.h"
-#include "Support/Timer.h"
 #include "Support/Platform.h"  // has_vc4
 #include <cstring>             // memcpy
 

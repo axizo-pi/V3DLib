@@ -496,6 +496,15 @@ public:
   }
 
   std::string dump() {
+    bool do_percent = false;
+    int sum = 0;
+
+    if (do_percent) {
+      for (int i = 0; i < SIZE; ++ i) {
+        sum += arr[i];
+      }
+    }
+
     std::string ret;
     ret << "<";
 
@@ -506,6 +515,19 @@ public:
       ret << arr[i];
     }
     ret << ">";
+
+    if (do_percent) {
+      // Do percentages
+      ret << "\n     <";
+
+      for (int i = 0; i < SIZE; ++ i) {
+        if (i > 0) {
+          ret << ", ";
+        }
+        ret << (arr[i]*100/sum) << "%";
+      }
+      ret << ">";
+    }
 
     return ret;
   }
