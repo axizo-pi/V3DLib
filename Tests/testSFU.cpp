@@ -86,9 +86,9 @@ void sfu_kernel(Float x, Float::Ptr r) {
 void check(float val, Float::Array &results, int max_bit = 1) {
 
   auto check_bits = [max_bit, &results] (int index, double in_val2, int bit_val = -1) {
-		if (bit_val == -1) {
-			bit_val = max_bit;
-		}
+    if (bit_val == -1) {
+      bit_val = max_bit;
+    }
 
     float val1 = results[index];
     float val2 = (float) in_val2;
@@ -96,10 +96,10 @@ void check(float val, Float::Array &results, int max_bit = 1) {
 
     INFO("index: " << index/16 << ", val1: " << val1 << ", val2: " << val2 << ", exp bit_diff: " << bits);
     if (bits != -1) {
-			uint32_t u1 = *((uint32_t *) &val1);
-			uint32_t u2 = *((uint32_t *) &val2);
-			warn << "u1: " << hex << u1 << ", u2: " << hex << u2;
-		}
+      uint32_t u1 = *((uint32_t *) &val1);
+      uint32_t u2 = *((uint32_t *) &val2);
+      warn << "u1: " << hex << u1 << ", u2: " << hex << u2;
+    }
     REQUIRE(bits == -1);
   };
 
@@ -297,11 +297,11 @@ TEST_CASE("Test SFU functions [sfu]") {
   results.fill(0.0);
 
   auto test = [&] (float val, int bit_val = -1) {
-		if (bit_val == -1) {
-    	const int max_bit_diff = Platform::compiling_for_vc4()?12:2;
+    if (bit_val == -1) {
+      const int max_bit_diff = Platform::compiling_for_vc4()?12:2;
 
-			bit_val = max_bit_diff;
-		}
+      bit_val = max_bit_diff;
+    }
 
     INFO("Testing " << val << "f");
 
@@ -315,13 +315,13 @@ TEST_CASE("Test SFU functions [sfu]") {
   test(2.5f);
   test(PI);
 
-	test(6.373127e+03f);   // Failed in Raytracing for sqrt(); works fine here
+  test(6.373127e+03f);   // Failed in Raytracing for sqrt(); works fine here
 
-	// Test cutoff tanh()
-	test( 13.36f);
-	test(-13.36f);
-	test( 13.37f);
-	test(-13.37f, 3);      // Bit diff is very consistently 3 for exp() for large negative values
+  // Test cutoff tanh()
+  test( 13.36f);
+  test(-13.36f);
+  test( 13.37f);
+  test(-13.37f, 3);      // Bit diff is very consistently 3 for exp() for large negative values
 
   // Nan and Inf for various operations
   test(0.0f);
@@ -462,7 +462,7 @@ TEST_CASE("Test Nan/Inf [sfu][nan]") {
   for (int i = 0; i < 16; ++i) {
     expected[i + 32] = (float) exp(i - 3);
   }
-  //warn << "Expected: " << dump_array(expected, 16);
+  warn << "Expected: " << dump_array(expected, 16);
 
   //
   // Compile and perform test
@@ -470,8 +470,9 @@ TEST_CASE("Test Nan/Inf [sfu][nan]") {
   Float::Array result(SIZE);
 
   auto k = compile(naninf_kernel);
-  to_file("naninf_kernel.txt", k.dump());
+  //to_file("naninf_kernel.txt", k.dump());
   k.load(&result).run();
+  warn << showResult(result, 0, SIZE);
 
   // vc4 convergence is kind of crappy here
   int max_bit_diff = Platform::compiling_for_vc4()?12:2;

@@ -10,6 +10,9 @@ std::string showResult(Array &result, int index, int size = 16) {
 
   buf << "result  : ";
   for (int j = 0; j < size; j++) {
+    if (j % 16 == 0) {
+      buf << "\n  ";
+    }
     buf << result[size*index + j] << ", ";
   }
 
