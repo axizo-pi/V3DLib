@@ -2,7 +2,7 @@
 #include "model.h"
 #include "Source/Functions.h"  // rotate_sum
 #include "helpers.h"
-#include "dump.h"
+#include "Support/dump.h"
 
 using namespace V3DLib;
 

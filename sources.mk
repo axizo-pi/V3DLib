@@ -1,128 +1,129 @@
 #
 # This file is generated!  Editing it directly is a bad idea.
 #
-# Generated on: Mon Aug 24 06:27:00 AM CEST 2026
+# Generated on: Fri Aug 28 06:40:45 AM CEST 2026
 #
 ###############################################################################
 
 # Library Object files - only used for LIB
 OBJ := \
-  Support/BaseSettings.o  \
-  Support/HeapManager.o  \
-  Support/Timer.o  \
-  Support/InstructionComment.o  \
-  Support/Helpers.o  \
-  Support/debug.o  \
-  Support/pgm.o  \
-  Support/RegIdSet.o  \
-  Support/Platform.o  \
-  Support/basics.o  \
-  Support/bmp.o  \
-  Support/Settings.o  \
-  Source/Functions.o  \
-  Source/gather.o  \
-  Source/Op.o  \
-  Source/GlobalConstants.o  \
-  Source/CExpr.o  \
-  Source/Expr.o  \
-  Source/Complex.o  \
-  Source/Translate.o  \
-  Source/Var.o  \
-  Source/Stmt.o  \
-  Source/BExpr.o  \
-  Source/Lang.o  \
-  Source/Ptr.o  \
-  Source/OpItems.o  \
-  Source/Float.o  \
-  Source/Cond.o  \
-  Source/Int.o  \
-  Source/StmtStack.o  \
-  LibSettings.o  \
-  Kernels/ComplexDotVector.o  \
-  Kernels/Matrix.o  \
-  Kernels/DotVector.o  \
-  Kernels/Rot3D.o  \
-  Kernels/Cursor.o  \
-  vc4/Functions.o  \
-  vc4/PerformanceCounters.o  \
-  vc4/BufferObject.o  \
-  vc4/Encode.o  \
-  vc4/DMA/VPMArray.o  \
-  vc4/DMA/Helpers.o  \
-  vc4/DMA/Operations.o  \
-  vc4/DMA/LoadStore.o  \
-  vc4/DMA/VPMRequest.o  \
-  vc4/DMA/DMA.o  \
-  vc4/Mailbox.o  \
-  vc4/RegAlloc.o  \
-  vc4/SourceTranslate.o  \
-  vc4/Compile.o  \
-  vc4/KernelDriver.o  \
-  vc4/RegisterMap.o  \
-  vc4/Instr.o  \
-  vc4/vc4.o  \
-  vc4/Invoke.o  \
   Common/BufferObject.o  \
   Common/SharedArray.o  \
   Common/CompileData.o  \
-  Liveness/Range.o  \
-  Liveness/Liveness.o  \
-  Liveness/UseDef.o  \
-  Liveness/LiveSet.o  \
-  Liveness/CFG.o  \
-  Liveness/RegUsage.o  \
-  Liveness/Optimizations.o  \
-  SourceTranslate.o  \
+  global/log.o  \
   CodeStruct.o  \
-  Emulator/DMAAddr.o  \
-  Emulator/EmuSupport.o  \
-  Emulator/EmuState.o  \
-  Emulator/Interpreter.o  \
-  Emulator/QPUState.o  \
-  Emulator/Debugger.o  \
-  Emulator/Mutex.o  \
-  Emulator/Emulator.o  \
-  Emulator/DMA.o  \
-  BaseKernel.o  \
+  Support/RegIdSet.o  \
+  Support/BaseSettings.o  \
+  Support/Timer.o  \
+  Support/Settings.o  \
+  Support/debug.o  \
+  Support/dump.o  \
+  Support/pgm.o  \
+  Support/Platform.o  \
+  Support/bmp.o  \
+  Support/basics.o  \
+  Support/Helpers.o  \
+  Support/HeapManager.o  \
+  Support/InstructionComment.o  \
+  Kernels/DotVector.o  \
+  Kernels/ComplexDotVector.o  \
+  Kernels/Rot3D.o  \
+  Kernels/Matrix.o  \
+  Kernels/Cursor.o  \
+  Source/gather.o  \
+  Source/Cond.o  \
+  Source/Ptr.o  \
+  Source/Complex.o  \
+  Source/Stmt.o  \
+  Source/Op.o  \
+  Source/Functions.o  \
+  Source/StmtStack.o  \
+  Source/Var.o  \
+  Source/Lang.o  \
+  Source/Expr.o  \
+  Source/BExpr.o  \
+  Source/Translate.o  \
+  Source/OpItems.o  \
+  Source/Int.o  \
+  Source/GlobalConstants.o  \
+  Source/Float.o  \
+  Source/CExpr.o  \
+  SourceTranslate.o  \
   Compile.o  \
+  Target/instr/Reg.o  \
+  Target/instr/Imm.o  \
+  Target/instr/Label.o  \
+  Target/instr/Instr.o  \
+  Target/instr/ALUOp.o  \
+  Target/instr/ALUInstruction.o  \
+  Target/instr/RegOrImm.o  \
+  Target/instr/Conditions.o  \
+  Target/instr/Mnemonics.o  \
+  Target/BufferObject.o  \
+  Target/Satisfy.o  \
   Target/Subst.o  \
   Target/SmallLiteral.o  \
-  Target/BufferObject.o  \
-  Target/instr/Imm.o  \
-  Target/instr/Conditions.o  \
-  Target/instr/RegOrImm.o  \
-  Target/instr/Label.o  \
-  Target/instr/ALUInstruction.o  \
-  Target/instr/Reg.o  \
-  Target/instr/ALUOp.o  \
-  Target/instr/Instr.o  \
-  Target/instr/Mnemonics.o  \
-  Target/Satisfy.o  \
-  v3d/Combine.o  \
-  v3d/PerformanceCounters.o  \
-  v3d/BufferObject.o  \
-  v3d/Driver.o  \
-  v3d/SourceTranslate.o  \
-  v3d/driver/BOList.o  \
-  v3d/driver/device_info.o  \
-  v3d/driver/screen.o  \
-  v3d/instr/Source.o  \
-  v3d/instr/Encode.o  \
-  v3d/instr/Register.o  \
-  v3d/instr/SmallImm.o  \
+  vc4/DMA/DMA.o  \
+  vc4/DMA/VPMRequest.o  \
+  vc4/DMA/LoadStore.o  \
+  vc4/DMA/Helpers.o  \
+  vc4/DMA/VPMArray.o  \
+  vc4/DMA/Operations.o  \
+  vc4/vc4.o  \
+  vc4/Functions.o  \
+  vc4/Instr.o  \
+  vc4/RegAlloc.o  \
+  vc4/KernelDriver.o  \
+  vc4/BufferObject.o  \
+  vc4/SourceTranslate.o  \
+  vc4/Compile.o  \
+  vc4/Mailbox.o  \
+  vc4/Encode.o  \
+  vc4/PerformanceCounters.o  \
+  vc4/RegisterMap.o  \
+  vc4/Invoke.o  \
+  Liveness/Range.o  \
+  Liveness/Optimizations.o  \
+  Liveness/CFG.o  \
+  Liveness/Liveness.o  \
+  Liveness/LiveSet.o  \
+  Liveness/RegUsage.o  \
+  Liveness/UseDef.o  \
+  BaseKernel.o  \
   v3d/instr/RFAddress.o  \
-  v3d/instr/BaseSource.o  \
-  v3d/instr/Snippets.o  \
-  v3d/instr/OpItems.o  \
+  v3d/instr/Register.o  \
   v3d/instr/Instr.o  \
-  v3d/instr/Mnemonics.o  \
   v3d/instr/Location.o  \
-  v3d/Compile.o  \
-  v3d/RegisterMapping.o  \
-  v3d/v3d.o  \
+  v3d/instr/SmallImm.o  \
+  v3d/instr/Snippets.o  \
+  v3d/instr/BaseSource.o  \
+  v3d/instr/Encode.o  \
+  v3d/instr/Source.o  \
+  v3d/instr/OpItems.o  \
+  v3d/instr/Mnemonics.o  \
+  v3d/Driver.o  \
   v3d/KernelDriver.o  \
   v3d/UniformConstants.o  \
-  global/log.o  \
+  v3d/BufferObject.o  \
+  v3d/SourceTranslate.o  \
+  v3d/Compile.o  \
+  v3d/Combine.o  \
+  v3d/v3d.o  \
+  v3d/PerformanceCounters.o  \
+  v3d/driver/screen.o  \
+  v3d/driver/BOList.o  \
+  v3d/driver/device_info.o  \
+  v3d/RegisterMapping.o  \
+  LibSettings.o  \
+  Emulator/Mutex.o  \
+  Emulator/EmuSupport.o  \
+  Emulator/Interpreter.o  \
+  Emulator/DMA.o  \
+  Emulator/QPUState.o  \
+  Emulator/Emulator.o  \
+  Emulator/EmuState.o  \
+  Emulator/DMAAddr.o  \
+  Emulator/Debugger.o  \
   Invoke.o  \
   vc4/dump_instr.o  \
   v3d/instr/v3d_api.o  \
@@ -146,36 +147,36 @@ EXAMPLES := \
 
 # support files for tests
 TESTS_FILES := \
-  Tests/testV3d.o  \
-  Tests/testLoop.o  \
-  Tests/testTrig.o  \
-  Tests/testCmdLine.o  \
-  Tests/testMatrix.o  \
-  Tests/testFunctions.o  \
-  Tests/testVPM.o  \
   Tests/testRegMap.o  \
-  Tests/testCLZ.o  \
-  Tests/testMutex.o  \
-  Tests/testImmediates.o  \
-  Tests/testConditionCodes.o  \
-  Tests/testMain.o  \
-  Tests/testFFT.o  \
-  Tests/testPrefetch.o  \
   Tests/testLog.o  \
-  Tests/testConversions.o  \
+  Tests/testCLZ.o  \
+  Tests/testCmdLine.o  \
   Tests/testRot3D.o  \
-  Tests/testDSL.o  \
+  Tests/testPrefetch.o  \
   Tests/testDFT.o  \
-  Tests/testBO.o  \
+  Tests/testMain.o  \
+  Tests/testTrig.o  \
+  Tests/support/rotate_kernel.o  \
+  Tests/support/dft_support.o  \
+  Tests/support/summation_kernel.o  \
+  Tests/support/matrix_support.o  \
+  Tests/support/check.o  \
+  Tests/support/disasm_kernel.o  \
   Tests/support/ProfileOutput.o  \
   Tests/support/support.o  \
-  Tests/support/disasm_kernel.o  \
-  Tests/support/rotate_kernel.o  \
-  Tests/support/check.o  \
-  Tests/support/matrix_support.o  \
-  Tests/support/summation_kernel.o  \
-  Tests/support/dft_support.o  \
+  Tests/testV3d.o  \
+  Tests/testDSL.o  \
+  Tests/testFunctions.o  \
+  Tests/testMutex.o  \
+  Tests/testMatrix.o  \
+  Tests/testBO.o  \
+  Tests/testFFT.o  \
+  Tests/testConversions.o  \
+  Tests/testVPM.o  \
+  Tests/testLoop.o  \
   Tests/testSFU.o  \
+  Tests/testConditionCodes.o  \
+  Tests/testImmediates.o  \
   Tests/support/qpu_disasm.o  \
 
 #
@@ -183,41 +184,41 @@ TESTS_FILES := \
 #
 SUB_PROJECTS := \
   Mandelbrot \
-  RayTracing \
-  GRU \
-  RNN \
-  LSTM \
-  Lib \
   HeatMap \
-  Rot3D \
   Gravity \
+  Rot3D \
+  GRU \
+  LSTM \
+  RNN \
+  Lib \
+  RayTracing \
 
 
 Mandelbrot: $(V3DLIB)
 	@cd Examples/Mandelbrot && make DEBUG=${DEBUG}
 	
-RayTracing: $(V3DLIB)
-	@cd Examples/RayTracing && make DEBUG=${DEBUG}
-	
-GRU: $(V3DLIB)
-	@cd Examples/NN/GRU && make DEBUG=${DEBUG}
-	
-RNN: $(V3DLIB)
-	@cd Examples/NN/RNN && make DEBUG=${DEBUG}
-	
-LSTM: $(V3DLIB)
-	@cd Examples/NN/LSTM && make DEBUG=${DEBUG}
-	
-Lib: $(V3DLIB)
-	@cd Examples/NN/Lib && make DEBUG=${DEBUG}
-	
 HeatMap: $(V3DLIB)
 	@cd Examples/HeatMap && make DEBUG=${DEBUG}
+	
+Gravity: $(V3DLIB)
+	@cd Examples/Gravity && make DEBUG=${DEBUG}
 	
 Rot3D: $(V3DLIB)
 	@cd Examples/Rot3D && make DEBUG=${DEBUG}
 	
-Gravity: $(V3DLIB)
-	@cd Examples/Gravity && make DEBUG=${DEBUG}
+GRU: $(V3DLIB)
+	@cd Examples/NN/GRU && make DEBUG=${DEBUG}
+	
+LSTM: $(V3DLIB)
+	@cd Examples/NN/LSTM && make DEBUG=${DEBUG}
+	
+RNN: $(V3DLIB)
+	@cd Examples/NN/RNN && make DEBUG=${DEBUG}
+	
+Lib: $(V3DLIB)
+	@cd Examples/NN/Lib && make DEBUG=${DEBUG}
+	
+RayTracing: $(V3DLIB)
+	@cd Examples/RayTracing && make DEBUG=${DEBUG}
 	
 

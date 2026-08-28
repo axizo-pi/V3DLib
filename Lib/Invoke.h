@@ -29,7 +29,7 @@ public:
 
 namespace Invoke {
 
-void schedule(Code const &code, IntList const &params);
+void schedule(BaseKernel const &k);
 void run();
 
 }  // namespace Invoke

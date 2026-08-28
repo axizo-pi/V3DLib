@@ -2,7 +2,6 @@
 #define _V3D_KERNEL_PARAMS_H_
 #include "Source/Complex.h"
 #include "Source/Float.h"
-#include "Support/Timer.h"
 
 namespace V3DLib {
 

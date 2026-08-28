@@ -60,6 +60,7 @@ struct Float : public BaseExpr {
   Float &operator=(Float &rhs);
   Float &operator=(Float const &rhs);
   FloatExpr operator=(FloatExpr const &rhs);
+  FloatExpr operator-();
   Float &operator=(Deref<Float> d);
   Float &operator+=(FloatExpr rhs);
   Float &operator-=(FloatExpr rhs);

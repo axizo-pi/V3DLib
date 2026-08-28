@@ -115,7 +115,7 @@ std::string dump_array_template(
   std::string ret("<");
 
   auto output = [&a, as_int] (int i) -> std::string {
-    std::string ret;
+    std::ostringstream ret;  // Using streambuf simplifies float representation
 
     if (as_int) {
       // Force output to integer
@@ -124,7 +124,7 @@ std::string dump_array_template(
        ret << a[i] << ", " ;
     }
 
-    return ret;
+    return ret.str();
   };
 
   if (do_first) {
@@ -137,7 +137,7 @@ std::string dump_array_template(
     for (int i = 0; i < (int) size; i++) {
       if (linesize != -1) {
         if (i % linesize == 0) {
-          ret << "\n";
+          ret << "\n  ";
         }
       }
       ret << output(i);

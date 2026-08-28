@@ -1,4 +1,6 @@
 #include "Invoke.h"
+#include "BaseKernel.h"
+#include "CodeStruct.h"
 #include "vc4/Invoke.h"
 
 namespace V3DLib {
@@ -20,6 +22,10 @@ ScheduledJobs s_jobs;
 
 }  // anon namespace
 
+
+/**
+ * @brief Determine the total number of parameters for all scheduled jobs.
+ */
 int ScheduledJobs::num_params() const {
   int ret = 0;
 
@@ -32,15 +38,31 @@ int ScheduledJobs::num_params() const {
 }
 
 
+/**
+ * @brief Support for running kernels in parallel.
+ *
+ * Kernels are stored in a scheduling list and invoked together.
+ *
+ * `vc4` only; there is no direct option on `v3d` to run multiple kernels simultaneously.
+ */
 namespace Invoke {
 
-void schedule(Code const &code, IntList const &params) {
+/**
+ * @brief Add passed kernel to list of kernels to run
+ */
+void schedule(BaseKernel const &k) {
+  auto const &code   = k.compile().code_struct().code();
+  auto const &params = k.params();
+
   assertq(!code.empty(), "schedule(): no code passed");
   auto item = ScheduledJob(code, params);
   s_jobs.push_back(item);
 }
 
 
+/**
+ * @brief Run all kernels in the scheduling list synchronously.
+ */
 void run() {
   assertq(!s_jobs.empty(), "No scheduled jobs to run");
   assertq(Platform::max_qpus() >= (int) s_jobs.size(), "More scheduled jobs than QPU's present");

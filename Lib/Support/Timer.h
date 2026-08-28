@@ -6,6 +6,8 @@
 
 namespace V3DLib {
 
+class MaxWidths;  // Forward declaration
+
 /**
  * Simple wrapper class for outputting run time for examples
  */
@@ -21,9 +23,14 @@ public:
 
   std::string const &label() const { return m_label; }
 	long total()   const { return time_long(tvTotal); }
-	long average() const { return time_long(tvTotal, count); }
+	std::string total_str() const;
+	long average() const { return time_long(tvTotal, m_count); }
+	std::string avg_str() const;
+	int count() const { return m_count; }
+	std::string min_str() const;
+	std::string max_str() const;
 
-  std::string dump(int width = -1, bool show_extended = false);
+  std::string dump(MaxWidths const &widths, bool show_extended = false);
   std::string end(bool show_output = true);
 
 private:
@@ -34,7 +41,7 @@ private:
 
   timeval tvStart;
   timeval tvTotal   = {0,0};
-  int     count     = 0;
+  int     m_count   = 0;
   bool    m_started = false;
   float   m_diff;
 
@@ -43,7 +50,7 @@ private:
 
   timeval diff_time();
 	long time_long(timeval const &val, int count = 1) const;
-  std::string time_to_str(timeval const &val, int count = 1);
+  std::string time_to_str(timeval const &val, int count = 1) const;
 
   std::vector<timeval> m_history;
 };
@@ -75,6 +82,7 @@ public:
   void stop(std::string const &label);
   void end(bool show_minmax = false);
 	Timers &sort(SortColumn sort_column, bool desc = false);
+  std::vector<Timer> const &list() const { return m_list; }
 
 private:
 	struct SortData {
@@ -86,7 +94,6 @@ private:
   std::vector<Timer> m_list;
 
   int find(std::string const &label);
-	int max_label_width() const;
 	std::vector<int> sort_indexes();
 };
 

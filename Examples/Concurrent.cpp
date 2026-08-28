@@ -2,6 +2,14 @@
 #include "Support/Settings.h"
 #include "Invoke.h"
 
+/**
+ * @file
+ *
+ * Demonstrates how to run multiple single-QPU kernels in parallel.
+ *
+ * `vc4` only; there is no direct option on `v3d` to do this.
+ */
+
 using namespace V3DLib;
 
 V3DLib::Settings settings;

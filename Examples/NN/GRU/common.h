@@ -2,7 +2,7 @@
 #define _GRU_COMMON_H
 #include "Support/Timer.h"
 #include "../Lib/matrix.h"
-#include "../Lib/dump.h"
+#include "Support/dump.h"
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wfloat-conversion"

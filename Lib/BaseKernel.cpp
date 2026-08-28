@@ -25,13 +25,13 @@ BaseKernel::BaseKernel(BaseSettings const &settings) : m_settings(settings) {}
 bool BaseKernel::has_compile() const { return m_compile.get() != nullptr; }
 
 
-V3DLib::Compile const &BaseKernel::compiler() const {
+V3DLib::Compile const &BaseKernel::compile() const {
   assert(m_compile != nullptr);
   return *m_compile;
 }
 
 
-V3DLib::Compile &BaseKernel::compiler() {
+V3DLib::Compile &BaseKernel::compile() {
   assert(m_compile != nullptr);
   return *m_compile;
 }
@@ -88,12 +88,12 @@ void BaseKernel::compile_init() {
 
 
 bool BaseKernel::has_errors() const {
- return compiler().has_errors();
+ return compile().has_errors();
 }
 
 
 std::string BaseKernel::dump() {
-  return compiler().dump();
+  return compile().dump();
 }
 
 
@@ -116,7 +116,7 @@ void BaseKernel::run(bool wait_complete) {
   assert(m_compile.get() != nullptr);
 
   if (Platform::use_main_memory()) {
-    if (compiler().is_v3d()) {
+    if (compile().is_v3d()) {
        if (!m_settings.compile_only) {
         fatal("Main memory selected in QPU mode and not compiled for vc4, can not run.");
       }
@@ -162,7 +162,7 @@ void BaseKernel::run(bool wait_complete) {
 void BaseKernel::emu(bool do_debug) {
   if (m_settings.compile_only) return;
 
-  if (compiler().has_errors()) {
+  if (compile().has_errors()) {
     warn << "Not running on emulator, there were errors during compile.";
     return;
   }
@@ -171,8 +171,8 @@ void BaseKernel::emu(bool do_debug) {
 
   emulate(
     numQPUs(),
-    compiler().code_struct(),
-    compiler().numVars(),
+    compile().code_struct(),
+    compile().numVars(),
     uniforms,
     getBufferObject(),
     do_debug
@@ -185,15 +185,15 @@ void BaseKernel::emu(bool do_debug) {
  */
 void BaseKernel::interpret() {
   assert(!m_settings.compile_only);    // Paranoia
-  assertq(!compiler().is_v3d(), "Can not run interpreter on v3d");
+  assertq(!compile().is_v3d(), "Can not run interpreter on v3d");
 
-  if (compiler().has_errors()) {
+  if (compile().has_errors()) {
     warn << "Not running interpreter, there were errors during compile.";
     return;
   }
 
   assert(uniforms.size() != 0);
-  interpreter(numQPUs(), compiler().code_struct(), compiler().numVars(), uniforms, getBufferObject());
+  interpreter(numQPUs(), compile().code_struct(), compile().numVars(), uniforms, getBufferObject());
 }
 
 
@@ -204,7 +204,7 @@ void BaseKernel::qpu(bool wait_complete) {
   assert(!m_settings.compile_only);    // Paranoia
 
   s_qpu_call_count++;
-  compiler().invoke(numQPUs(), uniforms, wait_complete);
+  compile().invoke(numQPUs(), uniforms, wait_complete);
 }
 
 
@@ -221,12 +221,12 @@ std::string BaseKernel::compile_info() const {
       << "============\n";
 
   if (!has_compile()) {
-    ret << "No compiler enabled\n\n";
+    ret << "No compile member enabled\n\n";
   } else {
-    ret << compiler().kernel_type_str() << ":\n";
+    ret << compile().kernel_type_str() << ":\n";
   }
 
-  ret << compiler().compile_info() << "\n\n";
+  ret << compile().compile_info() << "\n\n";
 
   return ret;
 }
@@ -234,7 +234,7 @@ std::string BaseKernel::compile_info() const {
 
 #ifdef OUTPUT_COMPILEDATA
 std::string BaseKernel::dump_compile_data() {
-  return compiler().dump_compile_data();
+  return compile().dump_compile_data();
 }
 #endif // OUTPUT_COMPILEDATA
 
@@ -243,10 +243,10 @@ std::string BaseKernel::info() const {
   std::string ret;
 
   if (has_compile() ) {
-    ret << "  " << compiler().kernel_type_str() << " kernel: "
-        << compiler().kernel_size() << " instructions\n";
+    ret << "  " << compile().kernel_type_str() << " kernel: "
+        << compile().kernel_size() << " instructions\n";
   } else {
-    ret << "  compiler not present\n";
+    ret << "  compile member not present\n";
   }
 
   return ret;

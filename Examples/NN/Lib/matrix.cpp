@@ -1,7 +1,7 @@
 #include "matrix.h"
 #include "scalar.h"
 #include "helpers.h"          // frrand()
-#include "./dump.h"
+#include "Support/dump.h"
 #include "Support/Helpers.h"  // to_file()
 #include <cmath>              // std::exp()
 

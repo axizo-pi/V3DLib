@@ -1,9 +1,10 @@
 #include "dump.h"
-#include "Support/Helpers.h"  // bit_diff();
+#include "Helpers.h"          // bit_diff();
 #include <cmath>              // floor()
+#include <map>
 
 using namespace V3DLib;
-using namespace qpu;
+//using namespace qpu;
 
 ////////////////////////////////////////////////////////
 // Class MatrixAdapter
@@ -400,7 +401,7 @@ bool same_intern(
   MatrixAdapter const &lhs,
   MatrixAdapter const &rhs,
   int bit_diff,
-   CompareStats &stats,
+  CompareStats &stats,
   bool do_show
 ) {
   //warn << "Called same_intern(Adapter, Adapter)";
@@ -495,6 +496,15 @@ public:
   }
 
   std::string dump() {
+    bool do_percent = false;
+    int sum = 0;
+
+    if (do_percent) {
+      for (int i = 0; i < SIZE; ++ i) {
+        sum += arr[i];
+      }
+    }
+
     std::string ret;
     ret << "<";
 
@@ -505,6 +515,19 @@ public:
       ret << arr[i];
     }
     ret << ">";
+
+    if (do_percent) {
+      // Do percentages
+      ret << "\n     <";
+
+      for (int i = 0; i < SIZE; ++ i) {
+        if (i > 0) {
+          ret << ", ";
+        }
+        ret << (arr[i]*100/sum) << "%";
+      }
+      ret << ">";
+    }
 
     return ret;
   }
@@ -556,6 +579,12 @@ public:
 Stats s_stats;
 
 } // anon namespace
+
+
+void add(float lhs, float rhs, int id) {
+  int bit = V3DLib::bit_diff(lhs, rhs, -1);
+  s_stats.add(id, bit);
+}
 
 
 void add(MatrixAdapter const &lhs, MatrixAdapter const &rhs, int id) {
