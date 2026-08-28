@@ -1,9 +1,10 @@
 #include "dump.h"
-#include "Support/Helpers.h"  // bit_diff();
+#include "Helpers.h"          // bit_diff();
 #include <cmath>              // floor()
+#include <map>
 
 using namespace V3DLib;
-using namespace qpu;
+//using namespace qpu;
 
 ////////////////////////////////////////////////////////
 // Class MatrixAdapter
@@ -400,7 +401,7 @@ bool same_intern(
   MatrixAdapter const &lhs,
   MatrixAdapter const &rhs,
   int bit_diff,
-   CompareStats &stats,
+  CompareStats &stats,
   bool do_show
 ) {
   //warn << "Called same_intern(Adapter, Adapter)";
@@ -556,6 +557,12 @@ public:
 Stats s_stats;
 
 } // anon namespace
+
+
+void add(float lhs, float rhs, int id) {
+  int bit = V3DLib::bit_diff(lhs, rhs, -1);
+  s_stats.add(id, bit);
+}
 
 
 void add(MatrixAdapter const &lhs, MatrixAdapter const &rhs, int id) {

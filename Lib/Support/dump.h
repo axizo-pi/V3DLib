@@ -1,6 +1,5 @@
 #ifndef _INCLUDE_RNNSUPPORT_DUMP_H
 #define _INCLUDE_RNNSUPPORT_DUMP_H
-#include "matrix.h"
 #include "Source/Float.h"
 #include <string>
 
@@ -83,8 +82,9 @@ bool same_intern(
 
 bool same(MatrixAdapter const &lhs, MatrixAdapter const &rhs, int bit_diff = -1, bool show_stats = false); 
 
-namespace  bitdiff_stats {
+namespace bitdiff_stats {
 
+void add(float lhs, float rhs, int id);
 void add(MatrixAdapter const &lhs, MatrixAdapter const &rhs, int id);
 void dump();
 
