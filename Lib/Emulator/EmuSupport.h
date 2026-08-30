@@ -1,12 +1,10 @@
 #ifndef _V3DLIB_EMULATOR_EMUSUPPORT_H_
 #define _V3DLIB_EMULATOR_EMUSUPPORT_H_
-#include <stdint.h>
-#include <vector>
 #include "Common/Seq.h"
 #include "Target/instr/Imm.h"
-#include "Target/SmallLiteral.h"  // Word
 #include "vc4/DMA/VPMRequest.h"
-
+#include <stdint.h>
+#include <vector>
 
 /**
  * Definitions which are used in both the emulator and the interpreter.
@@ -19,6 +17,19 @@ class ALUOp;
 const int NUM_LANES =   16;
 const int MAX_QPUS  =   12;
 const int VPM_SIZE  = 1024;
+
+/**
+ * @brief Type for representing the values in a vector
+ */
+struct Word {
+
+union {
+  int32_t intVal = 0;
+  float   floatVal; 
+};
+
+bool is_small_imm() const;
+};
 
 
 /**

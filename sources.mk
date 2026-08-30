@@ -1,7 +1,7 @@
 #
 # This file is generated!  Editing it directly is a bad idea.
 #
-# Generated on: Fri Aug 28 06:40:45 AM CEST 2026
+# Generated on: Sun Aug 30 04:45:28 PM CEST 2026
 #
 ###############################################################################
 
@@ -62,7 +62,6 @@ OBJ := \
   Target/BufferObject.o  \
   Target/Satisfy.o  \
   Target/Subst.o  \
-  Target/SmallLiteral.o  \
   vc4/DMA/DMA.o  \
   vc4/DMA/VPMRequest.o  \
   vc4/DMA/LoadStore.o  \

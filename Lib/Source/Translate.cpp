@@ -2,7 +2,6 @@
 #include "Support/Platform.h"
 #include "Support/Helpers.h"   // contains()
 #include "SourceTranslate.h"
-#include "Target/SmallLiteral.h"
 #include "Target/instr/Mnemonics.h"
 #include "Support/basics.h"
 #include "GlobalConstants.h"

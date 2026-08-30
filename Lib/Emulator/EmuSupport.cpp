@@ -1,5 +1,6 @@
 #include "EmuSupport.h"
 #include "Source/Op.h"
+#include "v3d/instr/SmallImm.h"
 #include <cmath>
 
 /** \file 
@@ -44,6 +45,28 @@ Vec rotate(Vec v, int n) {
 }
 
 }  // anon namespace
+
+
+// ============================================================================
+// Struct Word
+// ============================================================================
+
+/**
+ * @brief Check if current instance is a valid small imm value.
+ *
+ * The issue here is that there is no way of knowing if the Word instance
+ * is used as int or float. Both are checked.
+ */
+bool Word::is_small_imm() const {
+	int ret;
+  v3d::instr::SmallImm::int_to_opcode_value(intVal, ret);
+	if (ret >= 0) return true;
+
+  v3d::instr::SmallImm::float_to_opcode_value(floatVal, ret);
+	if (ret >= 0) return true;
+
+	return false;
+}
 
 
 // ============================================================================

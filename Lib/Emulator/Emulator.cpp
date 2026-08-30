@@ -372,6 +372,7 @@ void writeReg(QPUState* s, State* g, bool setFlags, AssignCond cond, Reg dest, V
             if (cond.is_float()) {
               s->zeroFlags[i] = x.floatVal == 0;
               s->negFlags[i]  = x.floatVal < 0;
+							breakpoint;
             } else {
               s->zeroFlags[i] = x.intVal == 0;
               s->negFlags[i]  = x.intVal < 0;
@@ -414,7 +415,8 @@ Vec readRegOrImm(QPUState* s, State &state, RegOrImm const &src) {
       assert(src.imm().is_float());
       w.floatVal = imm.floatVal();
     }
-    assert(SmallLit::valid(w));
+
+    assert(w.is_small_imm());
 
     Vec ret(w);
 
