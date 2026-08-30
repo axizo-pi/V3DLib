@@ -372,7 +372,7 @@ void writeReg(QPUState* s, State* g, bool setFlags, AssignCond cond, Reg dest, V
             if (cond.is_float()) {
               s->zeroFlags[i] = x.floatVal == 0;
               s->negFlags[i]  = x.floatVal < 0;
-							breakpoint;
+              breakpoint;
             } else {
               s->zeroFlags[i] = x.intVal == 0;
               s->negFlags[i]  = x.intVal < 0;
@@ -380,11 +380,6 @@ void writeReg(QPUState* s, State* g, bool setFlags, AssignCond cond, Reg dest, V
           }
         }
       }
-/*
-      warn << "is_float: " << cond.is_float();
-      warn << "v: " << v.dump();
-      //breakpoint;
-*/
 
       return;
 
@@ -402,33 +397,13 @@ void writeReg(QPUState* s, State* g, bool setFlags, AssignCond cond, Reg dest, V
 Vec readRegOrImm(QPUState* s, State &state, RegOrImm const &src) {
   if (src.is_reg()) {
     Vec ret = readReg(*s, state, src.reg());
-    //warn << "ret 1: " << ret.dump();
     return ret;
   } else {
     // Fully expecting the imm value to be small imm
-    Word w;
-    assert(src.is_imm());
-    auto const &imm = src.imm();
-    if (imm.is_int()) {
-      w.intVal = imm.intVal();
-    } else {
-      assert(src.imm().is_float());
-      w.floatVal = imm.floatVal();
-    }
-
+    Word w(src);
     assert(w.is_small_imm());
 
     Vec ret(w);
-
-#if 0    
-    Vec ret = evalSmallImm(s, src.encode());
-    /*
-    warn << "src 2: " << src.dump();
-    warn << "ret 2: " << ret.dump();
-    //breakpoint;
-    */
-#endif    
-
     return ret;
   }
 }

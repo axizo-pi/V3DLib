@@ -462,7 +462,7 @@ TEST_CASE("Test Nan/Inf [sfu][nan]") {
   for (int i = 0; i < 16; ++i) {
     expected[i + 32] = (float) exp(i - 3);
   }
-  warn << "Expected: " << dump_array(expected, 16);
+  //warn << "Expected: " << dump_array(expected, 16);
 
   //
   // Compile and perform test
@@ -472,7 +472,7 @@ TEST_CASE("Test Nan/Inf [sfu][nan]") {
   auto k = compile(naninf_kernel);
   //to_file("naninf_kernel.txt", k.dump());
   k.load(&result).run();
-  warn << showResult(result, 0, SIZE);
+  //warn << showResult(result, 0, SIZE);
 
   // vc4 convergence is kind of crappy here
   int max_bit_diff = Platform::compiling_for_vc4()?12:2;

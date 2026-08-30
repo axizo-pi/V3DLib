@@ -13,6 +13,7 @@ namespace V3DLib {
 
 class Op;
 class ALUOp;
+class RegOrImm;
 
 const int NUM_LANES =   16;
 const int MAX_QPUS  =   12;
@@ -23,12 +24,16 @@ const int VPM_SIZE  = 1024;
  */
 struct Word {
 
+Word() = default;
+Word(RegOrImm const &src);
+
+bool is_small_imm() const;
+
 union {
   int32_t intVal = 0;
   float   floatVal; 
 };
 
-bool is_small_imm() const;
 };
 
 

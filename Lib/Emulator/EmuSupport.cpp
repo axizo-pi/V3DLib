@@ -1,6 +1,7 @@
 #include "EmuSupport.h"
 #include "Source/Op.h"
 #include "v3d/instr/SmallImm.h"
+#include "Target/instr/RegOrImm.h"
 #include <cmath>
 
 /** \file 
@@ -51,6 +52,17 @@ Vec rotate(Vec v, int n) {
 // Struct Word
 // ============================================================================
 
+Word::Word(RegOrImm const &src) {
+  assert(src.is_imm());
+  auto const &imm = src.imm();
+  if (imm.is_int()) {
+    intVal = imm.intVal();
+  } else {
+    assert(src.imm().is_float());
+    floatVal = imm.floatVal();
+  }
+}
+
 /**
  * @brief Check if current instance is a valid small imm value.
  *
@@ -58,14 +70,14 @@ Vec rotate(Vec v, int n) {
  * is used as int or float. Both are checked.
  */
 bool Word::is_small_imm() const {
-	int ret;
+  int ret;
   v3d::instr::SmallImm::int_to_opcode_value(intVal, ret);
-	if (ret >= 0) return true;
+  if (ret >= 0) return true;
 
   v3d::instr::SmallImm::float_to_opcode_value(floatVal, ret);
-	if (ret >= 0) return true;
+  if (ret >= 0) return true;
 
-	return false;
+  return false;
 }
 
 
