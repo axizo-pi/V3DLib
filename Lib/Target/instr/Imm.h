@@ -11,7 +11,7 @@ struct Imm {
   enum ImmTag {
     IMM_INT32,    // 32-bit word
     IMM_FLOAT32,  // 32-bit float
-    IMM_MASK     // 1 bit per vector element (0 to 0xffff)
+    IMM_MASK      // 1 bit per vector element (0 to 0xffff)
   };
 
 

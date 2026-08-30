@@ -7,8 +7,15 @@ namespace V3DLib {
 
 using ::operator<<;  // C++ weirdness
 
-// Small literals are literals that fit in the small immediate field
-// of the VideoCore-IV instruction set.
+
+/**
+ * @brief Small literals are literals that fit in the small immediate field
+ *        of the `vc4` instruction set.
+ *
+ * Note that this is currently `vc4` only. `v3d` has different small imm values for floats.
+ * There is considerable overlap with `SmallInt`.
+ */
+namespace SmallLit {
 
 const int NUM_SMALL_FLOATS = 16;
 const float smallFloats[NUM_SMALL_FLOATS] = {
@@ -31,7 +38,7 @@ const float smallFloats[NUM_SMALL_FLOATS] = {
 };
 
 
-int encodeSmallInt(int val) {
+int encode(int val) {
   if (val >= 0 && val <= 15)
     return val;
   else if (val >= -16 && val <= -1)
@@ -41,11 +48,12 @@ int encodeSmallInt(int val) {
 }
 
 
-int encodeSmallFloat(float val) {
+int encode(float val) {
   if (val == 0.0)
     return 0;
   else {
     int index = -1;
+
     for (int i = 0; i < NUM_SMALL_FLOATS; i++)
       if (smallFloats[i] == val) {
         index = i;
@@ -65,11 +73,11 @@ int encodeSmallFloat(float val) {
  * 
  * @return encoded lit value, -1 if expression cannot be encoded
  */
-int encodeSmallLit(Expr const &e) {
+int encode(Expr const &e) {
   if (e.tag() == Expr::INT_LIT) { 
-    return encodeSmallInt(e.intLit);
+    return encode(e.intLit);
   } else if (e.tag() == Expr::FLOAT_LIT) {
-    return encodeSmallFloat(e.floatLit);
+    return encode(e.floatLit);
   }
 
   return -1;
@@ -79,7 +87,7 @@ int encodeSmallLit(Expr const &e) {
 /**
  * Decode a small literal.
  */
-Word decodeSmallLit(int x) {
+Word decode(int x) {
   Word w;
 
   if (x >= 32) {
@@ -94,17 +102,14 @@ Word decodeSmallLit(int x) {
 }
 
 
-std::string printSmallLit(int x) {
-  std::string ret;
-
-  if (x >= 32)
-    ret << smallFloats[x - 32];
-  else if (x >= 16)
-    ret << (x - 32);
-  else
-    ret << x;
-
-  return ret;
+/**
+ * @brief Check if given input is a valid small imm value.
+ *
+ * The **value** is checked, not the small imm index
+ */
+bool valid(Word w) {
+  return (encode(w.intVal) != -1) || (encode(w.floatVal) != -1);
 }
 
+}  // namespace SmallLit
 }  // namespace V3DLib

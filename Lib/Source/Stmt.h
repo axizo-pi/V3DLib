@@ -1,7 +1,6 @@
 #ifndef _V3DLIB_SOURCE_STMT_H_
 #define _V3DLIB_SOURCE_STMT_H_
 #include "Support/InstructionComment.h"
-#include "Int.h"
 #include "Expr.h"
 #include "CExpr.h"
 #include "vc4/DMA/DMA.h"
@@ -99,7 +98,8 @@ struct Stmt : public InstructionComment {
   Stmt &comment(std::string msg)           { InstructionComment::comment(msg); return *this; }
 
   std::string disp() const { return disp_intern(false, 0); }
-  std::string dump(bool show_comments = false) const;
+  std::string dump() const;
+  std::string dump(bool show_comments) const;
   void append(Array const &rhs);
 
   //

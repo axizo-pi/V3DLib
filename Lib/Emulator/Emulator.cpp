@@ -161,11 +161,11 @@ Vec readReg(QPUState &s, State &g, Reg const &reg) {
 inline bool checkAssignCond(QPUState* s, AssignCond cond, int i) {
   using Tag = AssignCond::Tag;
 
-  switch (cond.tag) {
+  switch (cond.tag()) {
     case Tag::NEVER:  return false;
     case Tag::ALWAYS: return true;
     case Tag::FLAG:
-      switch (cond.flag) {
+      switch (cond.flag()) {
         case ZS: return  s->zeroFlags[i];
         case ZC: return !s->zeroFlags[i];
         case NS: return  s->negFlags[i];
@@ -215,6 +215,7 @@ inline bool checkBranchCond(QPUState* s, BranchCond cond) {
       }
 
       return false;
+
     default:
       assertq(false, "checkBranchCond(): unexpected value");
       return false;
@@ -357,21 +358,36 @@ void writeReg(QPUState* s, State* g, bool setFlags, AssignCond cond, Reg dest, V
         w = &s->accum[dest.regId];
       }
       
-      for (int i = 0; i < NUM_LANES; i++)
+      for (int i = 0; i < NUM_LANES; i++) {
         if (checkAssignCond(s, cond, i)) {
           Word x = v[i];
           if (dest.tag != NONE) w->get(i) = x;
 
           if (setFlags) {
-            s->zeroFlags[i] = x.intVal == 0;
-            s->negFlags[i]  = x.intVal < 0;
+            if (!cond.is_always()) {
+              warn << "cond: " << cond.dump();
+              breakpoint;
+            }
+
+            if (cond.is_float()) {
+              s->zeroFlags[i] = x.floatVal == 0;
+              s->negFlags[i]  = x.floatVal < 0;
+            } else {
+              s->zeroFlags[i] = x.intVal == 0;
+              s->negFlags[i]  = x.intVal < 0;
+            }
           }
         }
+      }
+/*
+      warn << "is_float: " << cond.is_float();
+      warn << "v: " << v.dump();
+      //breakpoint;
+*/
 
       return;
 
     case SPECIAL:
-      //warn << "writeReg SPECIAL v: " << v.dump();
       write_special_register(s, g, setFlags, cond, dest, v);
       return;
 
@@ -382,28 +398,36 @@ void writeReg(QPUState* s, State* g, bool setFlags, AssignCond cond, Reg dest, V
 }
 
 
-// ============================================================================
-// Interpret a small immediate operand
-// ============================================================================
-
-Vec evalSmallImm(QPUState* s, uint32_t imm) {
-  Vec v;
-  Word w = decodeSmallLit(imm);
-
-  for (int i = 0; i < NUM_LANES; i++) {
-    v[i] = w;
-  }
-
-  return v;
-}
-
-
 Vec readRegOrImm(QPUState* s, State &state, RegOrImm const &src) {
   if (src.is_reg()) {
     Vec ret = readReg(*s, state, src.reg());
+    //warn << "ret 1: " << ret.dump();
     return ret;
   } else {
-    return evalSmallImm(s, src.encode());
+    // Fully expecting the imm value to be small imm
+    Word w;
+    assert(src.is_imm());
+    auto const &imm = src.imm();
+    if (imm.is_int()) {
+      w.intVal = imm.intVal();
+    } else {
+      assert(src.imm().is_float());
+      w.floatVal = imm.floatVal();
+    }
+    assert(SmallLit::valid(w));
+
+    Vec ret(w);
+
+#if 0    
+    Vec ret = evalSmallImm(s, src.encode());
+    /*
+    warn << "src 2: " << src.dump();
+    warn << "ret 2: " << ret.dump();
+    //breakpoint;
+    */
+#endif    
+
+    return ret;
   }
 }
 
@@ -412,8 +436,6 @@ Vec readRegOrImm(QPUState* s, State &state, RegOrImm const &src) {
  * @brief run the current instruction in the emulator for the selected QPU
  */
 void run_instruction(QPUState &s, State &state, Instr const &instr) {
-  auto ALWAYS = AssignCond::Tag::ALWAYS;
-
   switch (instr.tag) {
     case LI: {
       Vec imm(instr.LI.imm);
@@ -432,12 +454,24 @@ void run_instruction(QPUState &s, State &state, Instr const &instr) {
         } else {
           a = readRegOrImm(&s, state, instr.ALU.srcA);
           b = readRegOrImm(&s, state, instr.ALU.srcB);
+          /*
+          warn << "srcA: " << instr.ALU.srcA.dump();
+          warn << "a: " << a.dump();
+          warn << "srcB: " << instr.ALU.srcB.dump();
+          warn << "b: " << a.dump();
+          */
         }
 
         Vec result;
         result.apply(instr.ALU.op, a, b);
 
-        writeReg(&s, &state, instr.set_cond().flags_set(), instr.assign_cond(), instr.dest(), result);
+        bool flags_set = instr.set_cond().flags_set();
+        /*
+        if (flags_set) {
+          breakpoint;
+        }
+        */
+        writeReg(&s, &state, flags_set, instr.assign_cond(), instr.dest(), result);
       }
     break;
 
@@ -462,8 +496,6 @@ void run_instruction(QPUState &s, State &state, Instr const &instr) {
     case RECV: {                             // receive load-via-TMU response
       assert(s.loadBuffer.size() > 0);
       Vec val = s.loadBuffer.remove(0);
-      AssignCond always;
-      always.tag = ALWAYS;
       writeReg(&s, &state, false, always, instr.dest(), val);
     }
     break;
@@ -510,12 +542,14 @@ void run_instruction(QPUState &s, State &state, Instr const &instr) {
  */
 void emulate(
   int numQPUs,
-	CodeStruct const &cs,
+  CodeStruct const &cs,
   int maxReg,
   IntList &uniforms,
   BufferObject &heap,
   bool do_debug
 ) {
+  warn << "Running emulator";
+
   Platform::running_emulator(true);
   Instr::List const &instrs = cs.targetCode();
   State state(numQPUs, uniforms);

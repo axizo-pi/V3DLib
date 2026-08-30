@@ -40,13 +40,13 @@ std::string binaryValue(uint64_t num) {
 
 
 v3d_qpu_cond translate_assign_cond(AssignCond cond) {
-  assertq(cond.tag != AssignCond::Tag::NEVER, "Not expecting NEVER (yet)");
+  assertq(cond.tag() != AssignCond::Tag::NEVER, "Not expecting NEVER (yet)");
 
   v3d_qpu_cond tag_value = V3D_QPU_COND_NONE;
 
-  if (cond.tag != AssignCond::Tag::FLAG) return tag_value;
+  if (cond.tag() != AssignCond::Tag::FLAG) return tag_value;
 
-  switch(cond.flag) {
+  switch(cond.flag()) {
     case ZS:
     case NS:
       // set ifa tag
@@ -285,8 +285,8 @@ void Instr::set_cond_tag(AssignCond cond) {
   if (cond.is_always()) return;
   if (add_nop() && mul_nop()) return;  // Don't bother with a full nop instruction
 
-  assertq(cond.tag != AssignCond::Tag::NEVER, "Not expecting NEVER (yet)");
-  assertq(cond.tag == AssignCond::Tag::FLAG,  "const.tag can only be FLAG here");  // The only remaining option
+  assertq(cond.tag() != AssignCond::Tag::NEVER, "Not expecting NEVER (yet)");
+  assertq(cond.tag() == AssignCond::Tag::FLAG,  "const.tag can only be FLAG here");  // The only remaining option
 
   v3d_qpu_cond tag_value = translate_assign_cond(cond);
   assert(tag_value != V3D_QPU_COND_NONE);

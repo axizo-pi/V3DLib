@@ -332,6 +332,7 @@ void cmpExp(Instr::List *seq, BExpr::Ptr bexpr, Var v) {
 
   // Implement comparison using subtraction instruction
   Op op(SUB, b.cmp.type());
+  //breakpoint;
 
   Instr instr(ALU);
   instr.setCondOp(b.cmp);
@@ -351,10 +352,11 @@ void cmpExp(Instr::List *seq, BExpr::Ptr bexpr, Var v) {
   *seq << li(v, 0).comment("Store condition as Bool var")
        << instr
        << mov1
-       << mov2
-  ;
+       << mov2;
 
   seq->back().comment("End store condition as Bool var");
+
+  //warn << "cmpExp() seq: " << seq->dump();
 }
 
 
@@ -468,18 +470,20 @@ Instr::List whereStmt(
 }
 
 
-Instr::List whereStmt(Stmt::Ptr s, Var condVar, AssignCond cond, bool saveRestore) {
+Instr::List whereStmt(Stmt::Ptr s_ptr, Var condVar, AssignCond cond, bool saveRestore) {
   using namespace V3DLib::Target::instr;
   Instr::List ret;
 
-  if (s.get() == nullptr) return ret;
-  if (s->tag == Stmt::SKIP) return ret;
+  if (s_ptr.get() == nullptr) return ret;
+  Stmt &s = *s_ptr;
+
+  if (s.tag == Stmt::SKIP) return ret;
 
   // ------------------------------------------------------
   // Case: v = e, where v is a variable and e an expression
   // ------------------------------------------------------
-  if (s->tag == Stmt::ASSIGN && s->assign_lhs()->tag() == Expr::VAR) {
-    assign(ret, s->assign_lhs(), s->assign_rhs());
+  if (s.tag == Stmt::ASSIGN && s.assign_lhs()->tag() == Expr::VAR) {
+    assign(ret, s.assign_lhs(), s.assign_rhs());
     ret.back().cond(cond); //.comment("Assign var in Where");
     return ret;
   }
@@ -487,8 +491,8 @@ Instr::List whereStmt(Stmt::Ptr s, Var condVar, AssignCond cond, bool saveRestor
   // ------------------------------------------------------
   // Case: *v = e, where v is a pointer and e an expression
   // ------------------------------------------------------
-  if (s->tag == Stmt::ASSIGN && s->assign_lhs()->tag() == Expr::DEREF) {
-    assign(ret, s->assign_lhs(), s->assign_rhs());
+  if (s.tag == Stmt::ASSIGN && s.assign_lhs()->tag() == Expr::DEREF) {
+    assign(ret, s.assign_lhs(), s.assign_rhs());
     ret.back().cond(cond); // .comment("Assign *var (deref) in Where");
     return ret;
   }
@@ -496,9 +500,9 @@ Instr::List whereStmt(Stmt::Ptr s, Var condVar, AssignCond cond, bool saveRestor
   // ---------------------------------------------
   // Case: sequence of statements
   // ---------------------------------------------
-  if (s->tag == Stmt::SEQ) {
+  if (s.tag == Stmt::SEQ) {
     breakpoint  // TODO apparently never reached, verify
-    ret << whereStmt(s->body(), condVar, cond, saveRestore, true);
+    ret << whereStmt(s.body(), condVar, cond, saveRestore, true);
     return ret;
   }
 
@@ -506,16 +510,16 @@ Instr::List whereStmt(Stmt::Ptr s, Var condVar, AssignCond cond, bool saveRestor
   // Case: where (b) s0 s1, where b is a boolean expression and
   //                        s0 and s1 are statements.
   // ----------------------------------------------------------
-  if (s->tag == Stmt::WHERE) {
+  if (s.tag == Stmt::WHERE) {
     using Target::instr::mov;
     AssignCond andCond(CmpOp(CmpOp::NEQ, INT32));  // Wonky syntax to get the flags right
 
     Var newCondVar   = VarGen::fresh();
-    AssignCond newCond;
     {
       // Compile new boolean expression
       Instr::List seq;
-      newCond = boolExp(&seq, s->where_cond(), newCondVar);
+      boolExp(&seq, s.where_cond(), newCondVar);
+      //warn << "whereStmt seq:\n" << seq.dump();
       assert(!seq.empty());
 
       std::string cmt = "Start where (";
@@ -538,19 +542,19 @@ Instr::List whereStmt(Stmt::Ptr s, Var condVar, AssignCond cond, bool saveRestor
       // Top-level handling of where-statements
 
       // Compile 'then' statement
-      if (!s->then_block().empty()) {
-        auto seq = whereStmt(s->then_block(), newCondVar, andCond, !s->else_block().empty());
+      if (!s.then_block().empty()) {
+        auto seq = whereStmt(s.then_block(), newCondVar, andCond, !s.else_block().empty());
         assert(!seq.empty());
         seq.front().comment("then-branch of where (always)");
         ret << seq;
       }
 
       // Compile 'else' statement
-      if (!s->else_block().empty()) {
+      if (!s.else_block().empty()) {
         Var v2 = VarGen::fresh();
         ret << bxor(v2, newCondVar, 1).setCondFlag(Flag::ZC);
 
-        auto seq = whereStmt(s->else_block(), v2, andCond, false);
+        auto seq = whereStmt(s.else_block(), v2, andCond, false);
         assert(!seq.empty());
         seq.front().comment("else-branch of where (always)");
         ret << seq;
@@ -558,21 +562,21 @@ Instr::List whereStmt(Stmt::Ptr s, Var condVar, AssignCond cond, bool saveRestor
     } else {
       // Where-statements nested in other where-statements
 
-      if (!s->then_block().empty()) {
+      if (!s.then_block().empty()) {
         // AND new boolean expression with original condition
         Var dummy   = VarGen::fresh();
         ret << band(dummy, condVar, newCondVar).setCondFlag(Flag::ZC);
 
         // Compile 'then' statement
         {
-          auto seq = whereStmt(s->then_block(), dummy, andCond, false);
+          auto seq = whereStmt(s.then_block(), dummy, andCond, false);
           assert(!seq.empty());
           seq.front().comment("then-branch of where (nested)");
           ret << seq;
         }
       }
 
-      if (!s->else_block().empty()) {
+      if (!s.else_block().empty()) {
         Var v2    = VarGen::fresh();
         Var dummy = VarGen::fresh();
 
@@ -581,7 +585,7 @@ Instr::List whereStmt(Stmt::Ptr s, Var condVar, AssignCond cond, bool saveRestor
 
         // Compile 'else' statement
         {
-          auto seq = whereStmt(s->else_block(), dummy, andCond, false);
+          auto seq = whereStmt(s.else_block(), dummy, andCond, false);
           assert(!seq.empty());
           seq.front().comment("else-branch of where (nested)");
           ret << seq;

@@ -1,14 +1,14 @@
 #ifndef _V3DLIB_V3D_INSTR_INSTR_H
 #define _V3DLIB_V3D_INSTR_INSTR_H
-#include <cstdint>
-#include <string>
-#include <vector>
 #include "v3d_api.h"
 #include "Support/InstructionComment.h"
 #include "Source.h"
 #include "Encode.h"
 #include "Target/instr/ALUInstruction.h"
 #include "BaseSource.h"
+#include <cstdint>
+#include <string>
+#include <vector>
 
 
 namespace V3DLib {

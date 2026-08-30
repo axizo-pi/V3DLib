@@ -167,36 +167,32 @@ void SetCond::setFlag(Flag flag) {
 // Class AssignCond
 ///////////////////////////////////////////////////////////////////////////////
 
-namespace {
 
-std::string dump(AssignCond cond) {
-  using Tag = AssignCond::Tag;
-
-  switch (cond.tag) {
-    case Tag::ALWAYS: return "always";
-    case Tag::NEVER:  return "never";
-    case Tag::FLAG:   return dump_flag(cond.flag);
-    default: assert(false); return "";
-  }
+AssignCond::AssignCond(CmpOp const &cmp_op) :
+  m_tag(FLAG),
+  m_flag(cmp_op.assign_flag()),
+  m_type(cmp_op.type())
+{
+  assert(m_type == INT32 || m_type == FLOAT);
 }
 
-}  // anon namespace
+
+AssignCond::AssignCond(Tag in_tag, Flag in_flag) : m_tag(in_tag), m_flag(in_flag) {}
 
 
-AssignCond always(AssignCond::Tag::ALWAYS);  // Is a global to reduce eyestrain in gdb
-AssignCond never(AssignCond::Tag::NEVER);    // idem
+bool AssignCond::operator==(AssignCond rhs) const {
+  return (m_tag == rhs.m_tag && m_flag == rhs.m_flag);
+}
 
-
-AssignCond::AssignCond(CmpOp const &cmp_op) : tag(FLAG), flag(cmp_op.assign_flag()) {}
 
 
 AssignCond AssignCond::negate() const {
   AssignCond ret = *this;
 
-  switch (tag) {
-    case NEVER:  ret.tag = ALWAYS; break;
-    case ALWAYS: ret.tag = NEVER;  break;
-    case FLAG:   ret.flag = negFlag(flag); break;
+  switch (m_tag) {
+    case NEVER:  ret.m_tag  = ALWAYS; break;
+    case ALWAYS: ret.m_tag  = NEVER;  break;
+    case FLAG:   ret.m_flag = negFlag(m_flag); break;
     default:
       assert(false);
       break;
@@ -206,27 +202,42 @@ AssignCond AssignCond::negate() const {
 }
 
 
-std::string AssignCond::to_string() const {
-  auto ALWAYS = AssignCond::Tag::ALWAYS;
+std::string AssignCond::dump() const {
+  using Tag = AssignCond::Tag;
 
-  if (tag == ALWAYS) {
+  // 'int always' is taken as default
+  if (!is_float() && m_tag == Tag::ALWAYS) {
     return "";
-  } else {
-    std::string ret;
-    ret << "where " << dump(*this) << ": ";
-    return ret;
   }
+
+  std::string ret;
+  ret << (is_float()?"float ":"int ");
+
+  switch (m_tag) {
+    case Tag::ALWAYS: ret << "always";                      break;
+    case Tag::NEVER:  ret << "never";                       break;
+    case Tag::FLAG:   ret << "where " << dump_flag(flag()); break;
+    default: assert(false);
+  }
+
+  if (!ret.empty()) {
+    auto tmp = ret;
+    ret.clear();
+    ret << "(" << tmp << ") ";
+  }
+
+  return ret;
 }
 
 
 uint8_t AssignCond::encode() const {
   assertq(Platform::compiling_for_vc4(), "AssignCond::encode(): this call is vc4 only");
 
-  switch (tag) {
+  switch (m_tag) {
     case NEVER:  return 0;
     case ALWAYS: return 1;
     case FLAG:
-      switch (flag) {
+      switch (m_flag) {
         case ZS: return 2;
         case ZC: return 3;
         case NS: return 4;
@@ -251,9 +262,9 @@ BranchCond AssignCond::to_branch_cond(bool do_all) const {
   if (is_always()) { bcond.tag = BranchCond::COND_ALWAYS; return bcond; }
   if (is_never())  { bcond.tag = BranchCond::COND_NEVER; return bcond; }
 
-  assert(tag == AssignCond::FLAG);
+  assert(tag() == AssignCond::FLAG);
  
-   bcond.flag = flag;
+   bcond.flag = m_flag;
  
    if (do_all) {
     bcond.tag = BranchCond::COND_ALL;
@@ -263,5 +274,8 @@ BranchCond AssignCond::to_branch_cond(bool do_all) const {
 
   return bcond;
 }
+
+AssignCond always(AssignCond::Tag::ALWAYS);  // Is a global to reduce eyestrain in gdb
+AssignCond never(AssignCond::Tag::NEVER);    // idem
 
 }  // namespace V3DLib

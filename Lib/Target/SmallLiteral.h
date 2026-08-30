@@ -9,18 +9,24 @@ class Expr;
 /**
  * @brief Type for representing the values in a vector
  */
-union Word {
+struct Word {
+
+union {
   int32_t intVal = 0;
   float   floatVal; 
 };
 
+};
 
-int encodeSmallInt(int val);
-int encodeSmallFloat(float val);
-int encodeSmallLit(Expr const &e);
-std::string printSmallLit(int x);
-Word decodeSmallLit(int x);
+namespace SmallLit {
 
+int encode(int val);
+int encode(float val);
+int encode(Expr const &e);
+Word decode(int x);
+bool valid(Word w);
+
+}  // namespace SmallLit
 }  // namespace V3DLib
 
 #endif  // _V3DLIB_SMALL_LITERAL_H_

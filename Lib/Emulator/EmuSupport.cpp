@@ -55,6 +55,11 @@ Vec::Vec(int val) {
     elems[i].intVal = val;
 }
 
+Vec::Vec(Word w) {
+  for (int i = 0; i < NUM_LANES; i++)
+    elems[i] = w;
+}
+
 
 Vec::Vec(Imm imm) {
   switch (imm.tag()) {

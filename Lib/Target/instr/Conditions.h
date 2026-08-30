@@ -1,5 +1,6 @@
 #ifndef _V3DLIB_TARGET_SYNTAX_INSTR_CONDITIONS_H_
 #define _V3DLIB_TARGET_SYNTAX_INSTR_CONDITIONS_H_
+#include "Source/Op.h"     // BaseType
 #include <string>
 #include <cstdint>
 
@@ -84,27 +85,32 @@ struct AssignCond {
     FLAG
   };
 
-  Tag tag   = ALWAYS; // Kind of assignment condition
-  Flag flag = ZC;     // Condition flag
-
   AssignCond() = default;
   AssignCond(CmpOp const &cmp_op);
-  AssignCond(Tag in_tag, Flag in_flag = ZC) : tag(in_tag), flag(in_flag) {}
+  AssignCond(Tag in_tag, Flag in_flag = ZC);
 
-  bool is_always() const { return tag == ALWAYS; }
-  bool is_never()  const { return tag == NEVER; }
+  Tag  tag()  const { return m_tag; }
+  Flag flag() const { return m_flag; }
+  bool is_always() const { return m_tag  == ALWAYS; }
+  bool is_never()  const { return m_tag  == NEVER;  }
+  bool is_float()  const { return m_type == FLOAT;  }
   AssignCond negate() const;
 
-  bool operator==(AssignCond rhs) const { return (tag == rhs.tag && flag == rhs.flag); }
+  bool operator==(AssignCond rhs) const;
   bool operator!=(AssignCond rhs) const { return !(*this == rhs); }
 
   uint8_t encode() const;
-  std::string to_string() const;
+  std::string dump() const;
   BranchCond to_branch_cond(bool do_all) const;
+
+private:
+  Tag      m_tag  = ALWAYS; // Kind of assignment condition
+  Flag     m_flag = ZC;     // Condition flag
+  BaseType m_type = INT32;
 };
 
-extern AssignCond always;  // Is a global to reduce eyestrain in gdb
-extern AssignCond never;   // idem
+extern AssignCond always;   // Is a global to reduce eyestrain in gdb
+extern AssignCond never;    // idem
 
 }  // namespace V3DLib
 

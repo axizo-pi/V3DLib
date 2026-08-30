@@ -28,6 +28,7 @@ struct Vec {
   Vec() = default;
   Vec(int val);
   Vec(Imm imm);
+  Vec(Word w);
   Vec(std::vector<int> const &rhs);
 
   Vec &operator=(Vec const &rhs) { assign(rhs); return *this; }

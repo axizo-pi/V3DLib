@@ -41,7 +41,7 @@ std::string dump_instr(Instr const &instr) {
 
   switch (instr.tag) {
     case LI: {
-      buf << instr.assign_cond().to_string()
+      buf << instr.assign_cond().dump()
           << "LI " << instr.dest().dump()
           << " <-" << instr.set_cond().dump() << " "
           << instr.LI.imm.dump();
@@ -49,7 +49,7 @@ std::string dump_instr(Instr const &instr) {
     break;
 
     case ALU: {
-      buf << instr.assign_cond().to_string()
+      buf << instr.assign_cond().dump()
           << instr.dest().dump()
           << " <-" << instr.set_cond().dump() << " "
           << instr.ALU.op.dump();
@@ -284,13 +284,11 @@ bool Instr::is_dst_reg(Reg const &rhs) const {
  *   It is corrected afterwards in methode `Liveness::compute()`.
  */
 std::set<Reg> Instr::src_regs(bool set_use_where) const {
-  auto ALWAYS = AssignCond::Tag::ALWAYS;
-
   std::set<Reg> ret;
 
   if (set_use_where) {  // Add destination reg to 'use' set if conditional assigment
     if (tag == InstrTag::LI || tag == InstrTag::ALU) {
-      if (m_assign_cond.tag != ALWAYS) {
+      if (!m_assign_cond.is_always()) {
         ret.insert(dest());
       }
     }
@@ -391,7 +389,10 @@ bool Instr::isCondAssign() const {
 }
 
 
-void Instr::assign_cond(AssignCond rhs) { assert(tag == InstrTag::LI || tag == InstrTag::ALU); m_assign_cond = rhs; }
+void Instr::assign_cond(AssignCond const &rhs) {
+  assert(tag == InstrTag::LI || tag == InstrTag::ALU);
+  m_assign_cond = rhs;
+}
 
 
 AssignCond Instr::assign_cond() const   { 

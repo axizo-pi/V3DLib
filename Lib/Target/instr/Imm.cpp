@@ -38,9 +38,9 @@ int Imm::encode_imm() const {
 
   if (Platform::compiling_for_vc4()) {
     if (is_int()) {
-      ret = encodeSmallInt(m_intVal);
+      ret = SmallLit::encode(m_intVal);
     } else if (is_float()) {
-      ret = encodeSmallFloat(m_floatVal);
+      ret = SmallLit::encode(m_floatVal);
     }
   } else {
     if (is_int()) {
@@ -60,7 +60,7 @@ std::string Imm::dump() const {
 
   switch (m_tag) {
     case IMM_INT32:   ret << "int "   << m_intVal;   break;
-    case IMM_FLOAT32: ret << "float " <<m_floatVal; break;
+    case IMM_FLOAT32: ret << "float " << m_floatVal; break;
 
     case IMM_MASK: {
         int b = m_intVal;

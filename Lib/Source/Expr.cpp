@@ -132,7 +132,7 @@ std::string Expr::dump() const {
  * An expression is 'simple' if it is a small literal or a variable.
  */
 bool Expr::isSimple() const {
-  bool isSmallLit = encodeSmallLit(*this) >= 0;
+  bool isSmallLit = SmallLit::encode(*this) >= 0;
   return (m_tag == VAR) || isSmallLit;
 }
 
@@ -158,13 +158,11 @@ BaseExpr::BaseExpr(Expr::Ptr e, char const *label) : m_label(label) {
 
 void BaseExpr::assign_intern() {
   Var v  = VarGen::fresh();
-  //Log::warn << "BaseExpr assign_intern v: " << v.dump();
   m_expr = mkVar(v);
 }
 
 
 void BaseExpr::assign_intern(Expr::Ptr expr) {
-  //Log::warn << "BaseExpr::assign_intern expr: " << expr->dump();
   assign_intern();
   assign(m_expr, expr);
 }
@@ -238,6 +236,5 @@ Expr::Ptr mkApply(Op const &op) {
 // ============================================================================
 
 IntExpr::IntExpr(int x) { m_expr = mkIntLit(x); }
-
 
 }  // namespace V3DLib

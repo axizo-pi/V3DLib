@@ -37,19 +37,20 @@ Flag CmpOp::assign_flag() const {
 }
 
 
-char const *CmpOp::to_string() const {
+std::string CmpOp::dump() const {
+  std::string ret;
+
   switch (m_op) {
-    case EQ : return "==";
-    case NEQ: return "!=";
-    case LT : return "<";
-    case LE : return "<=";
-    case GT : return ">";
-    case GE : return ">=";
+    case EQ : ret = "=="; break;
+    case NEQ: ret = "!="; break;
+    case LT : ret = "<";  break;
+    case LE : ret = "<="; break;
+    case GT : ret = ">";  break;
+    case GE : ret = ">="; break;
+    default: assert(false);
   }
 
-  // Not reachable
-  assert(false);
-  return nullptr;
+  return ret;
 }
 
 
@@ -171,7 +172,7 @@ std::string BExpr::dump() const {
 
     // Comparison
     case CMP:
-      ret << cmp_lhs()->dump() << cmp.to_string() << cmp_rhs()->dump();
+      ret << cmp_lhs()->dump() << " " << cmp.dump() << " " << cmp_rhs()->dump();
       break;
   }
 
