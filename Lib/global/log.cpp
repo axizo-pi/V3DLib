@@ -450,7 +450,7 @@ std::string Logger::msg() {
   //assertq(!m_buf.str().empty(), "m_buf is empty!");  // See Note 1
 
   std::string msg;
-  msg << prefix << " " << m_buf.str() << "\n";
+  msg << prefix << m_buf.str() << "\n";
 
   return msg;
 }
