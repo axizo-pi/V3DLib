@@ -36,7 +36,7 @@ struct TriSettings : public Settings {
 ///////////////////////////////////////////
 
 void tri_int(Int::Ptr p) {
-  p += me()*16;
+//  p += me()*16;
 
   Int n = *p;
   Int sum = 0;

@@ -3,6 +3,7 @@
 #include "helpers.h"          // frrand()
 #include "Support/dump.h"
 #include "Support/Helpers.h"  // to_file()
+#include "Support/Timer.h"
 #include <cmath>              // std::exp()
 
 namespace qpu {

@@ -1,5 +1,6 @@
 #include "global/log.h"
 #include "global.h"
+#include "Support/Timer.h"
 #include <iostream>
 
 using namespace std;

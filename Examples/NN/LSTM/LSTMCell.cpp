@@ -1,5 +1,6 @@
 #include "LSTMCell.h"
 #include "lstm_kernel.h"
+#include "Support/Timer.h"
 
 //
 // Define's to ease the transitioning to QPU

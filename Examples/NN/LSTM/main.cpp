@@ -5,6 +5,7 @@
  */
 #include "LSTMNetwork.h"
 #include "../Lib/helpers.h"     // settings()
+#include "Support/Timer.h"
 #include <iostream>
 
 

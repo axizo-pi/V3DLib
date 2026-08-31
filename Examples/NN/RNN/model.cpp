@@ -1,4 +1,5 @@
 #include "model.h"
+#include "Support/Timer.h"
 
 model::model(int n_size, int m_size) : s_tmp(n_size) {    
   w1.frand();
