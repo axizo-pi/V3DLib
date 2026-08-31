@@ -364,15 +364,10 @@ void writeReg(QPUState* s, State* g, bool setFlags, AssignCond cond, Reg dest, V
           if (dest.tag != NONE) w->get(i) = x;
 
           if (setFlags) {
-            if (!cond.is_always()) {
-              warn << "cond: " << cond.dump();
-              breakpoint;
-            }
-
             if (cond.is_float()) {
               s->zeroFlags[i] = x.floatVal == 0;
               s->negFlags[i]  = x.floatVal < 0;
-              breakpoint;
+              breakpoint;  // Apparently never called, warn me if this happens
             } else {
               s->zeroFlags[i] = x.intVal == 0;
               s->negFlags[i]  = x.intVal < 0;
@@ -431,23 +426,14 @@ void run_instruction(QPUState &s, State &state, Instr const &instr) {
         } else {
           a = readRegOrImm(&s, state, instr.ALU.srcA);
           b = readRegOrImm(&s, state, instr.ALU.srcB);
-          /*
-          warn << "srcA: " << instr.ALU.srcA.dump();
-          warn << "a: " << a.dump();
-          warn << "srcB: " << instr.ALU.srcB.dump();
-          warn << "b: " << a.dump();
-          */
         }
 
         Vec result;
         result.apply(instr.ALU.op, a, b);
 
+        //warn << "instr: " << instr.dump();
+
         bool flags_set = instr.set_cond().flags_set();
-        /*
-        if (flags_set) {
-          breakpoint;
-        }
-        */
         writeReg(&s, &state, flags_set, instr.assign_cond(), instr.dest(), result);
       }
     break;
@@ -508,7 +494,7 @@ void run_instruction(QPUState &s, State &state, Instr const &instr) {
 /**
  * @brief Run the kernel code on the emulator.
  *
- * This runs over the target code.
+ * This runs the `vc4` **Target code**.
  *
  * @param numQPUs   Number of QPUs active
  * @param instrs    Instruction sequence
@@ -525,7 +511,7 @@ void emulate(
   BufferObject &heap,
   bool do_debug
 ) {
-  warn << "Running emulator";
+  //warn << "Running emulator";
 
   Platform::running_emulator(true);
   Instr::List const &instrs = cs.targetCode();

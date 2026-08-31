@@ -29,7 +29,9 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 #include "support/support.h"
+#include "support/check.h"    // showResult()
 #include "Support/pgm.h"
+#include "Support/Helpers.h"  // to_file()
 
 namespace {
 
@@ -178,6 +180,7 @@ TEST_CASE("Check v3d condition codes [v3d][cond]") {
 using namespace V3DLib;
 
 namespace {
+
 const int VEC_SIZE = 16;
 
 void next(Int::Ptr &result, Int &r) {
@@ -186,19 +189,37 @@ void next(Int::Ptr &result, Int &r) {
   r = 0;
 }
 
-void where_kernel(Int::Ptr result) {
+
+void int_where_kernel(Int::Ptr result) {
   Int a = index();
   Int r = 0;
 
-  Where (a <  8)   r = 1; End; next(result, r);
-  Where (a <= 8)   r = 1; End; next(result, r);
-  Where (a == 8)   r = 1; End; next(result, r);
-  Where (a != 8)   r = 1; End; next(result, r);
-  Where (a >  8)   r = 1; End; next(result, r);
-  Where (a >= 8)   r = 1; End; next(result, r);
-  Where (!(a > 3)) r = 1; End; next(result, r);
-  // NB hangs v3d:  *result = r;
-  // This likely because of previous next() call.
+  // If limit is init'ed outside of small imm value, it becomes a register.
+  const int limit = 8;
+
+  Where (a <  limit) r = 1; End; next(result, r);
+  Where (a <= limit) r = 1; End; next(result, r);
+  Where (a == limit) r = 1; End; next(result, r);
+  Where (a != limit) r = 1; End; next(result, r);
+  Where (a >  limit) r = 1; End; next(result, r);
+  Where (a >= limit) r = 1; End; next(result, r);
+  Where (!(a > 3))   r = 1; End; next(result, r);
+}
+
+
+void float_where_kernel(Int::Ptr result) {
+  Float a = toFloat(index());
+  Int r = 0;
+
+  const float limit = 8.0f;  // Stored as small imm
+
+  Where (a <  limit)   r = 1; End; next(result, r);
+  Where (a <= limit)   r = 1; End; next(result, r);
+  Where (a == limit)   r = 1; End; next(result, r);
+  Where (a != limit)   r = 1; End; next(result, r);
+  Where (a >  limit)   r = 1; End; next(result, r);
+  Where (a >= limit)   r = 1; End; next(result, r);
+  Where (!(a > 3.0f)) r = 1; End; next(result, r);  // 3.0f not a small imm, will be a reg
 }
 
 
@@ -402,29 +423,48 @@ void check_pgm(std::string const &filename) {
 
 TEST_CASE("Test Where blocks [where][cond]") {
   int const NUM_TESTS = 7;
+   int const SIZE      = NUM_TESTS*VEC_SIZE;
 
   BaseSettings settings;
+  Int::Array result(SIZE);
 
-  Int::Array result(NUM_TESTS*VEC_SIZE);
+  SUBCASE("Testing int_where_kernel") {
+    auto k1 = compile(int_where_kernel, settings);
+    k1.load(&result).run();
+    check_where_result(result);
 
-  auto k1 = compile(where_kernel, settings);
-  k1.load(&result).run();
-  check_where_result(result);
+    reset(result);
+    settings.run_type = Emulator;
+    auto k2 = compile(int_where_kernel, settings);
+    k2.load(&result).run();
+    check_where_result(result);
+    
+    reset(result);
+    settings.run_type = Interpreter;
+    auto k3 = compile(int_where_kernel, settings);
+    k3.load(&result).run();
+    check_where_result(result);
+  }
 
-  // TODO:  compiling for vc4 on other platforms is messed up
-  //        Need to fix compile-time kernel compile before enabling this
-  //warning("[where][cond] test emulator and interpreter");
-  reset(result);
-  settings.run_type = Emulator;
-  auto k2 = compile(where_kernel, settings);
-  k2.load(&result).run();
-  check_where_result(result);
+  SUBCASE("Testing float_where_kernel") {
+    reset(result);
+    auto k1 = compile(float_where_kernel, settings);
+    k1.load(&result).run();
+    check_where_result(result);
 
-  reset(result);
-  settings.run_type = Interpreter;
-  auto k3 = compile(where_kernel, settings);
-  k3.load(&result).run();
-  check_where_result(result);
+    reset(result);
+    settings.run_type = Emulator;
+    auto k2 = compile(float_where_kernel, settings);
+    to_file("float_where_kernel.txt", k2.dump());
+    k2.load(&result).run();
+    check_where_result(result);
+
+    reset(result);
+    settings.run_type = Interpreter;
+    auto k3 = compile(float_where_kernel, settings);
+    k3.load(&result).run();
+    check_where_result(result);
+  }
 }
 
 

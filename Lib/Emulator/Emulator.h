@@ -9,7 +9,7 @@ class CodeStruct;
 
 void emulate(
   int numQPUs,
-	CodeStruct const &cs,
+  CodeStruct const &cs,
   int maxReg,
   IntList &uniforms,
   BufferObject &heap,
