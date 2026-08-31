@@ -32,7 +32,10 @@ FloatExpr::FloatExpr(float x) {
 
 FloatExpr::FloatExpr(Deref<Float> d) : BaseExpr(d.expr()) {}
 
-FloatExpr FloatExpr::operator-() { return (*this) * -1.0f; }
+FloatExpr FloatExpr::operator-() {
+  warn << "FloatExpr::operator-";
+  return (*this) * -1.0f;
+}
 
 
 // ============================================================================
@@ -162,6 +165,8 @@ FloatExpr Float::operator=(FloatExpr const &rhs) {
 }
 
 FloatExpr Float::operator-() {
+  // For vc4, return value is literally `-0` for `self() == 0.0f`.
+  // Compensating here didn't work, instead handling '-0' in bit_diff() test.
   return self() * -1.0f;
 }
 

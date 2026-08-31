@@ -62,6 +62,7 @@ public:
   };
 
   Logger(Level level = INFO) : m_level(level) {}
+  ~Logger();
 
 
   template <typename T>

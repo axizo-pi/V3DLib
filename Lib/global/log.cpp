@@ -1,6 +1,7 @@
 /******************************************************************
  * Versions
  * ========
+ * 9 - Prevent segfault on global shutdown, see Note 1 of Logger:msg()
  * 8 - Added globals 'global', 'fixed' and associated
  *   - Modifier flags moved to anon namespace; they are now global over all log calls
  *   - Pretty extensive refactoring to make this work
@@ -25,6 +26,20 @@ namespace Log {
 namespace fs = std::filesystem; // Alias for brevity
 
 namespace {
+
+bool s_log_to_cout       = true;
+bool s_logging_shut_down = false;
+
+bool shutting_down() {
+  static bool showed_msg = false;
+
+  if (s_logging_shut_down && !showed_msg && s_log_to_cout) {
+    std::cerr << "<<Logging shut down, not outputting>>\n";
+    showed_msg = true;
+  }
+
+  return s_logging_shut_down;
+}
 
 class Modifiers {
 public:
@@ -116,7 +131,6 @@ Modifiers s_modifiers;
 const unsigned long ROLLOVER = 10*1024*1024;
 
 bool s_cout_show_timestamp = true;
-bool s_log_to_cout = true;
 
 std::string timestamp() {
   char time_buf[256];
@@ -159,13 +173,13 @@ bool create_directory_if_missing(const fs::path& dir_path) {
 
 
 /**
- * @brief Tryout for rollover
+ * @brief Rollover logfile when current is too large
  */
 void rollover(std::string const &dir, std::string const &file) {
   std::string outfile;
   outfile << dir << "/" << file;
   if (!fs::exists(outfile)) return;
-
+  
   fs::path p{outfile};
   auto size = fs::file_size(p);
 
@@ -222,6 +236,8 @@ public:
   }
 
   void out(Logger::Level level, std::string const &msg) {
+    if (shutting_down()) return;
+
     if (m_level > level) return; 
     _out(level, msg);
   }
@@ -398,7 +414,29 @@ LogItem &LogItem::operator<<(LogFlag f) {
 }
 
 
+Logger::~Logger() {
+  //std::cout << "Logger shutting down";
+  s_logging_shut_down = true;
+}
+
+
+/**
+ * --------------------------------------
+ *
+ * Notes
+ * =====
+ *
+ * 1. Following happened:
+ *    On vc4, logging message called during global shutdown;
+ *    `assertq()` led to infinite recursion resulting in segfault.
+ * 
+ *    This worked most of the time; I guess it's just bad luck on the
+ *    order of destruction of globals on shutdown.
+ */
 std::string Logger::msg() {
+    // This is a stopgap measure to prevent segfault on shutdown, see Note 1
+  if (shutting_down()) return "";
+
   std::string prefix = "";
 
   switch (m_level) {
@@ -409,9 +447,10 @@ std::string Logger::msg() {
     case FATAL:   prefix = "FATAL: ";   break;
   }
 
-  assertq(!m_buf.str().empty(), "m_buf is empty!");
+  //assertq(!m_buf.str().empty(), "m_buf is empty!");  // See Note 1
+
   std::string msg;
-  msg << prefix << m_buf.str() << "\n";
+  msg << prefix << " " << m_buf.str() << "\n";
 
   return msg;
 }

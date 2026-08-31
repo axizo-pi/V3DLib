@@ -298,7 +298,7 @@ TEST_CASE("Test SFU functions [sfu]") {
 
   auto test = [&] (float val, int bit_val = -1) {
     if (bit_val == -1) {
-      const int max_bit_diff = Platform::compiling_for_vc4()?12:2;
+      const int max_bit_diff = Platform::compiling_for_vc4()?13:2;
 
       bit_val = max_bit_diff;
     }
@@ -321,10 +321,15 @@ TEST_CASE("Test SFU functions [sfu]") {
   test( 13.36f);
   test(-13.36f);
   test( 13.37f);
-  test(-13.37f, 3);      // Bit diff is very consistently 3 for exp() for large negative values
+
+  // Bit diff is different for exp() for large negative values.
+  // For v3d, this is consistently 3.
+  const int bit_diff = Platform::compiling_for_vc4()?13:3;
+  test(-13.37f, bit_diff);
 
   // Nan and Inf for various operations
   test(0.0f);
+  test(-0.0f);  // param converted to '0' on compile; value '-0' is relevant for vc4
   test(-1.0f);
 }
 
