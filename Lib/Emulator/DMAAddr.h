@@ -1,6 +1,6 @@
 #ifndef _V3DLIB_EMULATOR_DMAADDR_H_
 #define _V3DLIB_EMULATOR_DMAADDR_H_
-#include "Target/SmallLiteral.h"  // Word
+#include "EmuSupport.h"  // Word
 
 namespace V3DLib {
 

@@ -2,7 +2,6 @@
 #include "Support/basics.h"
 #include "Support/Platform.h"
 #include "v3d/instr/SmallImm.h"
-#include "Target/SmallLiteral.h"
 
 namespace V3DLib {
 
@@ -36,20 +35,11 @@ int Imm::encode_imm() const {
 
   int ret = -1; 
 
-  if (Platform::compiling_for_vc4()) {
-    if (is_int()) {
-      ret = encodeSmallInt(m_intVal);
-    } else if (is_float()) {
-      ret = encodeSmallFloat(m_floatVal);
-    }
-  } else {
-    if (is_int()) {
-      // Return value will be -1 if fails
-      v3d::instr::SmallImm::int_to_opcode_value(m_intVal, ret);
-    } else if (is_float()) {
-      // Return value will be -1 if fails
-      v3d::instr::SmallImm::float_to_opcode_value(m_floatVal, ret);
-    }
+  // ret will be -1 on fail in both calls
+  if (is_int()) {
+    v3d::instr::SmallImm::int_to_opcode_value(m_intVal, ret);
+  } else if (is_float()) {
+    v3d::instr::SmallImm::float_to_opcode_value(m_floatVal, ret);
   }
 
   return ret;
@@ -60,7 +50,7 @@ std::string Imm::dump() const {
 
   switch (m_tag) {
     case IMM_INT32:   ret << "int "   << m_intVal;   break;
-    case IMM_FLOAT32: ret << "float " <<m_floatVal; break;
+    case IMM_FLOAT32: ret << "float " << m_floatVal; break;
 
     case IMM_MASK: {
         int b = m_intVal;

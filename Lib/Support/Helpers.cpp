@@ -279,7 +279,7 @@ void sleep(int sec) {
 
 
 /**
- * Check if a given string contains a substring.
+ * @brief Check if a given string contains a substring.
  *
  * This is actually a one-liner in modern C++,
  * But defining it like this indicates the intent.
@@ -396,6 +396,11 @@ int bit_diff(float in_val1, float in_val2, int ignore_bit) {
 
   uint32_t val1 = *((uint32_t *) &in_val1);
   uint32_t val2 = *((uint32_t *) &in_val2);
+
+  // Special handling for `-0`, which occurs on vc4.
+  // Convert '-0' to '0'.
+  if (val1 == 0x80000000) val1 = 0;  // Doesn't appear to occur, taking into account anyway
+  if (val2 == 0x80000000) val2 = 0;
 
   uint32_t bit_margin = 0;
   if (ignore_bit != -1) {

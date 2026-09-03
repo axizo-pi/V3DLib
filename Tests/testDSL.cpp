@@ -548,7 +548,7 @@ TEST_CASE("Test specific operations in DSL [dsl][ops]") {
     int const N = 16;  // Number of expected results
 
     auto k = compile(int_ops_kernel);
-    to_file("int_ops_kernel.txt", k.dump());
+    //to_file("int_ops_kernel.txt", k.dump());
 
     Int::Array result(16*N);
     result.fill(-1);

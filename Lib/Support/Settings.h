@@ -9,6 +9,7 @@ struct Settings : public BaseSettings {
   bool silent;
 
   Settings(CmdParameters *derived_params = nullptr, bool use_num_qpus = false);
+  Settings(std::string const &description, bool use_num_qpus);
 
   void init(int argc, const char *argv[]);
   virtual bool init_params() { return true; }

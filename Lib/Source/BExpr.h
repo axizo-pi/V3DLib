@@ -1,9 +1,9 @@
 #ifndef _V3DLIB_SOURCE_BEXPR_H_
 #define _V3DLIB_SOURCE_BEXPR_H_
-#include <memory>
-#include <string>
 #include "Expr.h"
 #include "Target/instr/Conditions.h"
+#include <memory>
+#include <string>
 
 namespace V3DLib {
 
@@ -29,7 +29,7 @@ public:
 
   SetCond::Tag cond_tag() const;
   Flag         assign_flag() const;
-  char const  *to_string() const;
+  std::string  dump() const;
 
 private:
   Id       m_op;

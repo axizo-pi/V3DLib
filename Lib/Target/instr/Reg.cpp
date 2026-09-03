@@ -194,6 +194,9 @@ std::string Reg::dump() const {
 }
 
 
+Reg Reg::TMUA(SPECIAL, SPECIAL_TMUA);
+
+
 // TODO Move this away, to DMA
 bool is_dma_only_register(Reg const &reg) {
   if (reg.tag != SPECIAL) return false;

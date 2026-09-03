@@ -1,3 +1,10 @@
+#include "model.h"
+#include "test.h"
+#include "Support/basics.h"
+#include "Support/Timer.h"
+#include "Source/Functions.h"  // rotate
+#include "helpers.h"
+
 /**
  * /file
  * Support for Reverse Neural Networks.
@@ -10,11 +17,6 @@
  *
  * Adapted from: https://www.geeksforgeeks.org/numpy/implementation-of-neural-network-from-scratch-using-numpy/
  */
-#include "model.h"
-#include "test.h"
-#include "Support/basics.h"
-#include "Source/Functions.h"  // rotate
-#include "helpers.h"
 
 const int NumInputs = 3;
 const int NumEpochs = 1000;

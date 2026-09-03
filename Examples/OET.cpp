@@ -25,8 +25,8 @@ V3DLib::Settings settings;
  * DMA load works fine.
  */
 void kernel(Int::Ptr p) {
-	Int::Ptr p2 = p;  // See Note 1
-	p2.inc();
+  Int::Ptr p2 = p;  // See Note 1
+  p2.inc();
 
   Int evens = *p;
   Int odds  = *p2;

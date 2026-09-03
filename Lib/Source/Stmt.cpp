@@ -31,22 +31,10 @@ const char *dump_stmt_tag(Stmt::Tag tag) {
 // Class Stmt
 // ============================================================================
 
-Stmt::~Stmt() {
-/*  
-  // Useful only for debug
-  if (!InstructionComment::transferred()) {
-    warn << "Stmt dtor comments not transferred\n"
-         << "     stmt: " << dump() << "\n"
-         << "   header: " << InstructionComment::header()  << "\n"
-         << "  comment: " << InstructionComment::comment() << "\n";
-  }
-*/  
-}
+Stmt::~Stmt() {}
 
-
-std::string Stmt::dump(bool show_comments) const {
-  return disp_intern(true, 0, show_comments);
-}
+std::string Stmt::dump()                   const { return disp_intern(true, 0, false);         }
+std::string Stmt::dump(bool show_comments) const { return disp_intern(true, 0, show_comments); }
 
 
 void Stmt::append(Array const &rhs) {
@@ -110,8 +98,6 @@ Expr::Ptr Stmt::address() {
 
 
 bool Stmt::check_blocks() const {
-  //warn << "check_blocks tag " << dump_stmt_tag(tag);
-
   // then and else blocks may not both be empty
   if (m_stmts_a.empty() && m_stmts_b.empty()) {
     return false;
@@ -174,7 +160,6 @@ Stmt::Array const &Stmt::body() const {
   }
 
   assert(check_blocks());  // Probably superfluous
-
   return m_stmts_a;
 }
 
@@ -270,15 +255,13 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_com
   std::string ret;
 
   switch (tag) {
-    case NOP:
-      ret << "NOP(" << rhs()->dump() << ")";
-    break;
-    case SKIP:
-      ret << "SKIP";
-    break;
+    case NOP:  ret << "NOP(" << rhs()->dump() << ")"; break;
+    case SKIP: ret << "SKIP";                         break;
+
     case ASSIGN:
       ret << "ASSIGN " << assign_lhs()->dump() << " = " << assign_rhs()->dump();
     break;
+
     case SEQ:
       assert(!m_stmts_a.empty());
       assert(m_stmts_b.empty());
@@ -320,6 +303,7 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_com
         ret << "}";
       }
     break;
+
     case WHERE:
       assert(m_where_cond.get() != nullptr);
       ret << "WHERE (" << m_where_cond->dump() << ")\n"
@@ -329,6 +313,7 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_com
         ret << "\n  ELSE " << else_block().dump(show_comments);
       }
     break;
+
     case IF:
       assert(m_cond.get() != nullptr);
       ret << "IF (" << m_cond->dump() << ") THEN\n"
@@ -345,6 +330,7 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_com
             << "  " << else_block().dump(show_comments);
       }
     break;
+
     case WHILE:
       assert(m_cond.get() != nullptr);
       ret << "WHILE (" << m_cond->dump() << ")\n"
@@ -365,25 +351,23 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_com
     case BARRIER:          ret << "BARRIER";         break;
 
     default: {
-        std::string tmp = DMA::dump_tag(tag);  // Check for unhandled DMA stuff
+      std::string tmp = DMA::dump_tag(tag);   // Check for unhandled DMA stuff
 
-        if (!tmp.empty()) {
-          // DMA
-          ret << tmp;
-        } else {
-          // Unknown tag
-          std::string msg;
-          msg << "Stmt::disp_intern() "
-              << "Unknown tag '" << tag << "'";
+      if (!tmp.empty()) {                     // DMA
+        ret << tmp;
+      } else {                                // Unknown tag
+        std::string msg;
+        msg << "Stmt::disp_intern() "
+            << "Unknown tag '" << tag << "'";
 
-          if (tag < 0 || tag >= NUM_TAGS) {
-            msg << "; tag out of range";
-          }
-
-          assertq(msg);
+        if (tag < 0 || tag >= NUM_TAGS) {
+          msg << "; tag out of range";
         }
+
+        assertq(msg);
       }
-      break;
+    }
+    break;
   }
 
   if (show_comments) {

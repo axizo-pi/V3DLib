@@ -1,12 +1,10 @@
 #ifndef _V3DLIB_EMULATOR_EMUSUPPORT_H_
 #define _V3DLIB_EMULATOR_EMUSUPPORT_H_
-#include <stdint.h>
-#include <vector>
 #include "Common/Seq.h"
 #include "Target/instr/Imm.h"
-#include "Target/SmallLiteral.h"  // Word
 #include "vc4/DMA/VPMRequest.h"
-
+#include <stdint.h>
+#include <vector>
 
 /**
  * Definitions which are used in both the emulator and the interpreter.
@@ -15,10 +13,28 @@ namespace V3DLib {
 
 class Op;
 class ALUOp;
+class RegOrImm;
 
 const int NUM_LANES =   16;
 const int MAX_QPUS  =   12;
 const int VPM_SIZE  = 1024;
+
+/**
+ * @brief Type for representing the values in a vector
+ */
+struct Word {
+
+Word() = default;
+Word(RegOrImm const &src);
+
+bool is_small_imm() const;
+
+union {
+  int32_t intVal = 0;
+  float   floatVal; 
+};
+
+};
 
 
 /**
@@ -28,6 +44,7 @@ struct Vec {
   Vec() = default;
   Vec(int val);
   Vec(Imm imm);
+  Vec(Word w);
   Vec(std::vector<int> const &rhs);
 
   Vec &operator=(Vec const &rhs) { assign(rhs); return *this; }

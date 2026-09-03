@@ -94,7 +94,7 @@ CmdParameters base_params = {
 
 
 CmdParameters numqpu_params = {
-  "",
+  "QPU params",
   {{
     "Num QPU's",
     "-n=",
@@ -143,6 +143,14 @@ Settings::Settings(CmdParameters *derived_params, bool use_num_qpus) :
   m_derived_params(derived_params),
   m_use_num_qpus(use_num_qpus)
 {}
+
+
+Settings::Settings(std::string const &description, bool use_num_qpus) :
+  m_derived_params(nullptr),
+  m_use_num_qpus(use_num_qpus)
+{
+  m_all_params.description(description);
+}
 
 
 void Settings::init(int argc, const char *argv[]) {
@@ -255,9 +263,6 @@ bool Settings::process() {
   int qpu_timeout  = p["QPU timeout"]->get_int_value();
   LibSettings::qpu_timeout(qpu_timeout);
 
-  int heap_mem     = p["Shared Memory Size"]->get_int_value();
-  V3DLib::LibSettings::heap_size(heap_mem << 20);
-
   if (silent) {
     Log::log_to_cout(false);
   }
@@ -296,6 +301,9 @@ bool Settings::process() {
     Log::warn << "Only compiling, using main memory.";
     Platform::use_main_memory(true);
   }
+
+  int heap_mem     = p["Shared Memory Size"]->get_int_value();
+  V3DLib::LibSettings::heap_size(heap_mem << 20);
 
   return true;
 }

@@ -22,7 +22,7 @@ std::vector<std::string> last_log_lines(std::string const &path, int num_lines) 
 		str = split(str, "DEBUG: ")[1];
 		ret << str;
 
-		//std::cout << "  " << str << "\n";
+		//std::cout << "  '" << str << "'\n";
 	}
 
 	return ret;

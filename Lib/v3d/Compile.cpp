@@ -263,8 +263,8 @@ void handle_condition_tags(V3DLib::Instr const &src_instr, Instructions &ret) {
   auto cond = src_instr.assign_cond();
 
   // src_instr.ALU.cond.tag has 3 possible values: NEVER, ALWAYS, FLAG
-  assertq(cond.tag != AssignCond::Tag::NEVER, "NEVER encountered in ALU.cond.tag");             // Not expecting it
-  assertq(cond.tag == AssignCond::Tag::FLAG || cond.is_always(), "Really expecting FLAG here"); // Pedantry
+  assertq(cond.tag() != AssignCond::Tag::NEVER, "NEVER encountered in ALU.cond.tag");             // Not expecting it
+  assertq(cond.tag() == AssignCond::Tag::FLAG || cond.is_always(), "Really expecting FLAG here"); // Pedantry
 
   auto setCond = src_instr.set_cond();
 
@@ -276,7 +276,7 @@ void handle_condition_tags(V3DLib::Instr const &src_instr, Instructions &ret) {
     // Dump fails under some mysterious circumstances, even when flags not used.
     // Eg. when doing '*int_result = -1;' in kernels.
     //
-    // It happens elswhere as well. Not fighting it.
+    // It happens elsewhere as well. Not fighting it.
     //
     //cdebug << "handle_condition_tags(): set_cond_tag: '"
     //       << "v3d: \n" << ret.dump() << "'\n";
@@ -658,7 +658,7 @@ Compile::Compile() {
 void Compile::encode() {
   if (instructions.size() > 0) return;   // Don't bother if already encoded
   if (has_errors()) return;              // Don't do this if compile errors occured
-	auto &cs = code_struct();
+  auto &cs = code_struct();
   assert(!cs.m_code.allocated());
 
   // Encode target instructions
@@ -715,7 +715,7 @@ void Compile::encode() {
 
 
 void Compile::compile_intern() {
-	auto &cs = code_struct();
+  auto &cs = code_struct();
   cs.obtain_ast();
 
   uniform_constants.reset();
@@ -778,15 +778,15 @@ void Compile::invoke(int numQPUs, IntList &params, bool wait_complete) {
   }
   //assertq(!has_errors(), "v3d kernels has errors, can not invoke");
 
-	allocate();
-	auto const &cs = code_struct();
+  allocate();
+  auto const &cs = code_struct();
   m_driver.invoke(cs.code(), numQPUs, params, m_uc, wait_complete);
 }
 
 
 void Compile::allocate() {
   assert(!instructions.empty());
-	auto &cs = code_struct();
+  auto &cs = code_struct();
 
   // Assumption: code in a kernel, once allocated, doesn't change
   if (cs.m_code.allocated()) {

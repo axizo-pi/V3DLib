@@ -75,7 +75,7 @@ Compile::Compile() {
 
 
 int Compile::kernel_size() const {
-	auto const &code = code_struct().m_code;
+  auto const &code = code_struct().m_code;
   assert(code.allocated());
   return code.size();
 }
@@ -87,7 +87,7 @@ int Compile::kernel_size() const {
  * Assumption: code in a kernel, once allocated, does not change.
  */
 void Compile::encode() {
-	auto &cs = code_struct();
+  auto &cs = code_struct();
 
   if (!cs.m_code.empty()) return;      // Don't bother if already encoded
   if (has_errors())    return;      // Don't do this if compile errors occured
@@ -111,13 +111,13 @@ void Compile::invoke(int numQPUs, IntList &params, bool wait_complete) {
     fatal("Errors during kernel compilation/encoding, can't continue.");
   }
 
-	auto &cs = code_struct();
+  auto &cs = code_struct();
   m_driver.invoke(cs.m_code, numQPUs, params,  wait_complete);
 }
 
 
 void Compile::compile_intern() {
-	auto &cs = code_struct();
+  auto &cs = code_struct();
   vc4::kernelFinish();
 
   cs.obtain_ast();
@@ -150,7 +150,7 @@ void Compile::compile_intern() {
 
 
 std::string Compile::emit_opcodes() {
-	auto &cs = code_struct();
+  auto &cs = code_struct();
   encode();
 
   auto list = vc4::opcodes(cs.m_code);

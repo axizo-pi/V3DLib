@@ -4,7 +4,6 @@
 #include "Common/Seq.h"
 #include "Label.h"
 #include "Imm.h"
-#include "Conditions.h"
 #include "ALUInstruction.h"
 #include "Support/RegIdSet.h"
 #include <set>
@@ -148,7 +147,7 @@ struct Instr : public InstructionComment {
 
   SetCond set_cond() const;
   void set_cond_clear() { m_set_cond.clear(); }
-  void assign_cond(AssignCond rhs);
+  void assign_cond(AssignCond const &rhs);
   AssignCond assign_cond() const;
 
   BranchTarget branch_target() const;
