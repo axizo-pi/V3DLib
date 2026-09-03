@@ -443,7 +443,6 @@ TEST_CASE("Discrete Fourier Transform [dft]") {
 
       std::string filename;
       filename << test_path() << "/matrix_mul_decorator.txt";
-      //Log::warn << "filename: " << filename;
       to_file(filename, k.dump());
 
       k.setNumQPUs(8);  // Running with multi-QPU gives very limited performance improvement
@@ -491,7 +490,7 @@ TEST_CASE("Discrete Fourier Transform tmp [dft][dft2]") {
 
     //Timer timer1("DFT compile time");
     auto k = compile(kernels::dft_decorator(input, result));
-    to_file("dft_decorator_code.txt", k.dump());
+    //to_file("dft_decorator_code.txt", k.dump());
     //timer1.end();
 
     k.load(&result, &input);

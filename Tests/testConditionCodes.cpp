@@ -455,7 +455,7 @@ TEST_CASE("Test Where blocks [where][cond]") {
     reset(result);
     settings.run_type = Emulator;
     auto k2 = compile(float_where_kernel, settings);
-    to_file("float_where_kernel.txt", k2.dump());
+    //to_file("float_where_kernel.txt", k2.dump());
     k2.load(&result).run();
     check_where_result(result);
 
