@@ -4,6 +4,101 @@
 
 # Known Issues
 
+## Using TMU input and DMA output on `vc4`  using same or overlapping pointers invalidates memory
+
+This is a `vc4`-only issue. `v3d` has no DMA and also supports TMU writes.
+
+TMU and DMA are two entirely separate ways of accessing main memory for the QPU's.
+By default, memory reads are done using TMU and writes use DMA.
+There is no TMU write on `vc4`, so this situation is kind of inevitable.
+
+The memory access conflicts if the read/writes are to/from the _same memory locations_.
+Of special note, TMU uses an L2 cache, which is a significant part of the problem.
+
+For example, this is the original kernel definition for example program `Tri`:
+
+    void tri_kernel(Int::Ptr p) {
+      p += me()*16;
+
+      Int n = *p;
+      Int sum = 0;
+
+      While (any(n > 0))
+        Where (n > 0)
+          sum = sum + n;
+          n = n - 1;
+        End
+      End
+    
+      *p = sum;
+    }
+
+The memory read and write using `*p` got to the same memory location.
+By default, the read `Int n = *p` will use TMU and the write `*p = sum` will use DMA.
+
+Running the kernel will consistently return a wrong result.
+This kind of surprises me, since the TMU and DMA operations are physically separated in the code.
+Nevertheless, the memory operations fail.
+
+### Resolutions of the issue
+
+The following options are present to resolve this:
+
+**1. Do not use the same memory for input/output.**
+
+Ensure that the pointers for read and write operations do not overlap.
+
+I rewrote the `Tri` kernel to write the result to a separate location:
+
+    void tri_kernel(Int::Ptr p, Int::Ptr result) {
+      p += me()*16;
+      result += me()*16;
+
+      Int n = *p;
+      Int sum = 0;
+
+      While (any(n > 0))
+        Where (n > 0)
+          sum = sum + n;
+          n = n - 1;
+        End
+      End
+    
+      *result = sum;
+    }
+
+This works fine, and is probably the best solution.
+
+
+**2. Disable use of TMU reads**
+
+Add the following at the top of a program, before any kernel operations are executed:
+
+    #include "LibSettings.h"
+    ...
+    LibSettings::use_tmu_for_load(false);  // Use DMA only
+
+This disables usage of TMU, all read/writes will now be done using DMA.
+`v3d` compilations are not affected, because it plainly does not have DMA.
+
+This solution is used in example program `OET`.
+
+
+**3. Disable the TMU L2 cache**
+
+Add the following at the top of a program, before any kernel operations are executed:
+
+    #include "LibSettings.h"
+    ...
+    LibSettings::L2Cache_enable(false);
+
+This also resolves the issue. However, it has drawbacks:
+
+- The cache is also disabled for `v3d`-compiled kernels.
+- Disabling the cache will adversely affect the performance.
+  Measurements indicate that the performance hit is usually limited, but it is real.
+
+
 ## Memory and run issues Pi1 and Pi2
 
 The `Pi1` and `Pi2` have problems running kernels which make use of large reserved allocations in shared memory.
@@ -40,7 +135,7 @@ Also, from what I understand, you will need a specially compiled linux kernel to
 For `vc4`, there is a workaround for this: use DMA exclusively. For `v3d`, this is not an option.
 
 
-## Int initialization compiles but it illegal
+## Int initialization compiles but is illegal
 
 *This can not be fixed - just keep it in mind*
 
