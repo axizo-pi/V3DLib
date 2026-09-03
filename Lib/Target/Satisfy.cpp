@@ -108,47 +108,85 @@ Instr::List translate_rot(Instr::List &instrs) {
 
 
 /**
- * Second pass satisfy constraints: insert NOPs
+ * @brief Pass satisfy constraints: insert NOPs.
  */
 Instr::List insertNops(Instr::List &instrs) {
   Instr::List newInstrs(instrs.size() * 2);
 
+/*
+  // NOT REQUIRED - Nice try, anyway. Might have use in the future
 
-  Instr prev = Instr::nop();
+  auto is_tmua_recv = [&instrs] (int i) -> bool {
+    if (i < 0) return false;
+    if (i + 1 >= instrs.size()) return false;  // Testing 2 instructions
+
+    // Detect S[TMUA] <- or(?, ?)
+    auto &n = instrs[i];
+    if (!(n.tag == ALU
+       && n.dst_reg() == Reg::TMUA
+       && n.ALU.op == A_BOR
+    )) return false;
+    //warn << "instr[" << i << "] TMUA: " << n.dump();
+
+    auto &n2 = instrs[i + 1];
+    if (n2.tag != RECV) return false;
+    //warn << "instr[" << i << " + 1] TMUA: " << n2.dump();
+
+    return true;
+  };
+*/  
+
+  auto is_rf_dest = [&instrs] (int i) -> bool  {
+    if (i < 0) return false;
+    if (i + 1 >= instrs.size()) return false;  // Testing 2 instructions
+
+    // Detect dst
+    auto &n = instrs[i];
+    Reg dst = n.dst_reg();
+    if (dst.tag == NONE || !dst.is_rf_reg()) return false;
+
+    auto &n2 = instrs[i + 1];
+    if (!n2.is_src_reg(dst)) return false;
+
+    return true;
+  };
+
 
   for (int i = 0; i < instrs.size(); i++) {
     Instr instr = instrs[i];
+    newInstrs << instr;
 
-    // 
-    // For vc4, if an rf-register is set, you must wait one cycle before the value is available.
-    // If an rf-register is set, and used immediately in the next instruction, insert a NOP in between.
-    // v3d does not have this restriction.
-    //
     if (Platform::compiling_for_vc4()) {
-      Reg dst = prev.dst_reg();
-      if (dst.tag != NONE) {
-        bool needNop = dst.tag == REG_A || dst.tag == REG_B;  // rf-registers only
+/*
+      // Add wait cycles for TMU read.
+      // This happens elsewhere for v3d.
+      if (is_tmua_recv(i-1)) {
+        warn << i << ": TMUA RECV detected";
 
-        if (needNop && instr.is_src_reg(dst)) {
-          newInstrs << Instr::nop();
-        }
+        newInstrs << Instr::nop()
+                  << Instr::nop()
+                  << Instr::nop();
+      }
+*/    
+      // 
+      // For vc4, if an rf-register is set, you must wait one cycle before the value is available.
+      // If an rf-register is set, and used immediately in the next instruction, insert a NOP in between.
+      // v3d does not have this restriction.
+      //
+      if (is_rf_dest(i)) {
+        newInstrs << Instr::nop();
       }
     }
-
-    newInstrs << instr;                                           // Put current instruction into the new sequence
 
 
     // 
     // Insert NOPs in branch delay slots
     //
     if (instr.tag == BRL || instr.tag == END) {
-      for (int j = 0; j < 3; j++)
-        newInstrs << Instr::nop();
-
-      prev = Instr::nop();
+      newInstrs << Instr::nop()
+                << Instr::nop()
+                << Instr::nop();
     }
-
-    if (instr.tag != LAB) prev = instr;                           // Update previous instruction
   }
 
   return newInstrs;

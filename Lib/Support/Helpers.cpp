@@ -279,7 +279,7 @@ void sleep(int sec) {
 
 
 /**
- * Check if a given string contains a substring.
+ * @brief Check if a given string contains a substring.
  *
  * This is actually a one-liner in modern C++,
  * But defining it like this indicates the intent.

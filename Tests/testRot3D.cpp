@@ -1,7 +1,8 @@
 #include "doctest.h"
-#include <math.h>
 #include "Kernels/Rot3D.h"
 #include "LibSettings.h"
+#include "support/check.h"
+#include <math.h>
 
 using namespace kernels;
 
@@ -30,7 +31,9 @@ void compareResults(
   Array2 &y2,
   int size,
   std::string const &label,
-  bool compare_exact = true) {
+  bool compare_exact = true
+) {
+
   for (int i = 0; i < size; i++) {
     INFO("Comparing " << label << " for index " << i);
     if (compare_exact) {
@@ -104,6 +107,8 @@ TEST_CASE("Test working of Rot3D example [rot3d][pass3]") {
       auto k = compile(vector_rot3D);
       //to_file("vector_rot3D.txt", k.dump());
       k.load(N, 0.0f, 0.0f, 0.5f /* == PI */, &x, &y, &z).run();
+      //warn << "x: " << showResult(x, 0, N);
+
       compareResults(x_scalar, y_scalar, x, y, N, "Rot3D", false);
 
       // Save results for compare with other kernels 
