@@ -1,7 +1,7 @@
 #
 # This file is generated!  Editing it directly is a bad idea.
 #
-# Generated on: Sun Aug 30 04:45:28 PM CEST 2026
+# Generated on: Thu Sep  3 05:34:03 AM CEST 2026
 #
 ###############################################################################
 
@@ -152,6 +152,7 @@ TESTS_FILES := \
   Tests/testCmdLine.o  \
   Tests/testRot3D.o  \
   Tests/testPrefetch.o  \
+  Tests/testIssues.o  \
   Tests/testDFT.o  \
   Tests/testMain.o  \
   Tests/testTrig.o  \
