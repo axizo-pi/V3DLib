@@ -4,7 +4,6 @@
 #include <map>
 
 using namespace V3DLib;
-//using namespace qpu;
 
 ////////////////////////////////////////////////////////
 // Class MatrixAdapter
@@ -496,36 +495,37 @@ public:
   }
 
   std::string dump() {
-    bool do_percent = false;
-    int sum = 0;
+    bool do_percent = true;
+    int total = 0;
 
     if (do_percent) {
       for (int i = 0; i < SIZE; ++ i) {
-        sum += arr[i];
+        total += arr[i];
       }
     }
 
     std::string ret;
-    ret << "<";
+    ret << "Total: " << total << " <";
 
     for (int i = 0; i < SIZE; ++ i) {
-      if (i > 0) {
-        ret << ", ";
-      }
+      if (i > 0) ret << ", ";
       ret << arr[i];
     }
     ret << ">";
 
     if (do_percent) {
-      // Do percentages
+      // Do cumulative percentages
+			int sum = 0;
+
       ret << "\n     <";
 
       for (int i = 0; i < SIZE; ++ i) {
-        if (i > 0) {
-          ret << ", ";
-        }
-        ret << (arr[i]*100/sum) << "%";
+        if (i > 0) ret << ", ";
+
+				sum += arr[i];
+        ret << (sum*100/total) << "%";
       }
+
       ret << ">";
     }
 
