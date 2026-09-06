@@ -7,6 +7,8 @@
 
 namespace qpu {
 
+std::string origin_dump(int index);
+
 void kernels_init();
 void init_arrays(int image_width, int image_height, int samples_per_pixel, int num_spheres);
 
@@ -20,9 +22,11 @@ sphere get_sphere(int index);
 bool same_sphere(int index, sphere const &s);
 
 void hittable_list_hit(const ray &r);
-bool check_ret(int sphere_index, vec3 const &v, float precision = 0, int bit_min = 0, bool show_log = true);
-bool check_f(int sphere_index, double val, float precision = 0, int bit_min = 0);
-bool check_sign(int sphere_index, double val);
+bool check_ret(int sphere_index, vec3 const &v, int bit_min = 0, bool show_log = false);
+bool check_f(int sphere_index, double val, int bit_min = 0);
+float get_f(int index);
+vec3 get_ret(int index);
+int  get_valid(int index);
 void end();
 
 void add_zero();

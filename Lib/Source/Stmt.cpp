@@ -34,7 +34,10 @@ const char *dump_stmt_tag(Stmt::Tag tag) {
 Stmt::~Stmt() {}
 
 std::string Stmt::dump()                   const { return disp_intern(true, 0, false);         }
-std::string Stmt::dump(bool show_comments) const { return disp_intern(true, 0, show_comments); }
+
+std::string Stmt::dump(bool show_comments, int indent) const {
+  return disp_intern(true, indent, show_comments);
+}
 
 
 void Stmt::append(Array const &rhs) {
@@ -307,10 +310,13 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_com
     case WHERE:
       assert(m_where_cond.get() != nullptr);
       ret << "WHERE (" << m_where_cond->dump() << ")\n"
-          << "  THEN " << then_block().dump(show_comments);
+          << tabs(2*seq_depth) << "THEN\n"
+          << then_block().dump(show_comments, seq_depth + 1);
 
       if (!else_block_empty()) {
-        ret << "\n  ELSE " << else_block().dump(show_comments);
+        ret << "\n"
+            << tabs(2*seq_depth) << "ELSE\n"
+            << else_block().dump(show_comments, seq_depth + 1);
       }
     break;
 
@@ -333,13 +339,13 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_com
 
     case WHILE:
       assert(m_cond.get() != nullptr);
-      ret << "WHILE (" << m_cond->dump() << ")\n"
-          << "  ";
+      ret << "WHILE (" << m_cond->dump() << ")\n";
 
       if (then_block_empty()) {
-        ret << "<<NO THEN-BLOCK PRESENT>>";
+        ret << "  <<NO THEN-BLOCK PRESENT>>";
       } else {
-        ret << then_block().dump(show_comments);
+        ret << tabs(2*seq_depth)
+            << then_block().dump(show_comments, seq_depth + 1);
       }
 
       // There is no ELSE for while. TODO: check, code elsewhere says otherwise
@@ -371,10 +377,34 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_com
   }
 
   if (show_comments) {
+    auto header = InstructionComment::emit_header(";"); 
+
     std::string out;
-    out<< InstructionComment::emit_header(";"); 
-    out << ret; 
-    out << InstructionComment::emit_comment((int) ret.size(), -1, ";");
+
+    if (!header.empty()) {
+      auto tmp = split(header, "\n");
+      for (int i = 0; i < (int) tmp.size(); i++) {
+        auto const &line = tmp[i];
+
+        if (!line.empty()) {
+          out << tabs(2*seq_depth);
+          out << line;
+        }
+
+          if (i < (int) tmp.size() - 1) {
+            out << "\n";
+          }
+      }
+
+      out << tabs(2*seq_depth);
+    }
+
+    out << ret
+        << InstructionComment::emit_comment((int) ret.size(), -1, ";");
+
+    if (!header.empty()) {
+        out << "\n" ;
+    }
 
     return out;
   }
@@ -463,13 +493,21 @@ CExpr::Ptr Stmt::loop_cond() const {
  *
  * This is relevant for adding line numbers.
  */
-std::string Stmt::Array::dump(bool show_comments) const {
+std::string Stmt::Array::dump(bool show_comments, int indent) const {
   if (empty()) return "<Empty>";
 
   std::string ret;
 
   for (int i = 0; i < (int) size(); i++) {
-    ret << (*this)[i]->dump(show_comments) << "\n";
+    auto const &item = *(*this)[i];
+    auto tmp = item.dump(show_comments, indent);
+    ret << tabs(2*indent) << tmp;
+
+    if ((num_newlines(tmp) - num_empty(tmp, ";")) < 1) {
+      ret << "\n";
+    //} else {
+    //  warn << "multiline: '" << tmp << "'";
+    }
   }
 
   return ret;
@@ -497,17 +535,19 @@ std::string Stmts::dump() const {
 
   for (int i = 0; i < (int) lines.size(); i++) {
     // Skip empty lines
-    if (lines[i].empty()) {
+    if (trim_s(lines[i]).empty()) {
       ret << "\n";
       continue;
     }
+/*
+    // TODO: Is this still necessary? Perhaps for SEQ output
 
     // Skip line numbers for lines starting with spaces
     if (lines[i].compare(0, sp.size(), sp) == 0) {
       ret << lines[i] << "\n";
       continue;
     }
-
+*/
     // Skip line numbers for comment lines
     if (lines[i].compare(0, pre.size(), pre) == 0) {
       ret << lines[i] << "\n";

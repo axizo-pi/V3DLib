@@ -52,15 +52,15 @@ class vec3 {
     }
 
     float f_length_squared() const {
-			float e_0 = (float) e[0];
-			float e_1 = (float) e[1];
-			float e_2 = (float) e[2];
+      float e_0 = (float) e[0];
+      float e_1 = (float) e[1];
+      float e_2 = (float) e[2];
       return e_0*e_0 + e_1*e_1 + e_2*e_2;
     }
 
     bool near_zero(double precision = 1e-8) const;
 
-		std::string dump(bool as_float = false) const;
+    std::string dump(bool as_float = false) const;
 
     static vec3 random();
     static vec3 random(double min, double max);
@@ -89,7 +89,7 @@ inline vec3 operator*(double t, const vec3& v) {
 }
 
 inline vec3 f_mul(double in_t, const vec3& v) {
-	float t = (float) in_t;
+  float t = (float) in_t;
   return vec3(t*((float) v.e[0]), t*((float) v.e[1]), t*((float) v.e[2]));
 }
 

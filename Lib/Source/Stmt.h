@@ -82,7 +82,7 @@ struct Stmt : public InstructionComment {
 
   class Array : public std::vector<Ptr> {
   public:
-    std::string dump(bool show_comments = false) const;
+    std::string dump(bool show_comments = false, int indent = 0) const;
     Array &operator<<(Array const &b);
   };
 
@@ -99,7 +99,7 @@ struct Stmt : public InstructionComment {
 
   std::string disp() const { return disp_intern(false, 0); }
   std::string dump() const;
-  std::string dump(bool show_comments) const;
+  std::string dump(bool show_comments, int indent = 0) const;
   void append(Array const &rhs);
 
   //
