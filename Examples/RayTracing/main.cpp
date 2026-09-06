@@ -20,26 +20,26 @@
 #include "qpu.h"
 #include "global/log.h"
 #include "Support/Timer.h"
+#include "Support/dump.h"   // bitdiff_stats::dump()
 
 using namespace V3DLib;
 using namespace Log;
 
 void init_spheres(hittable_list const &world) {
-	warn << "init_spheres() size: " << world.objects.size();
+  //warn << "init_spheres() size: " << world.objects.size();
 
-	for (int i = 0; i < (int) world.objects.size(); ++i) {
-		sphere const &s = (sphere const &) *world.objects[i];
-		qpu::add_sphere(i, s);
+  for (int i = 0; i < (int) world.objects.size(); ++i) {
+    sphere const &s = (sphere const &) *world.objects[i];
+    qpu::add_sphere(i, s);
 
-		// DEBUG check values
-		assert(qpu::same_sphere(i, s));
-	}
+    assert(qpu::same_sphere(i, s)); // OK, comparison is exact
+  }
 }
 
 
 int main() {
   timers.start("Init");
-		qpu::kernels_init();
+    qpu::kernels_init();
 
     hittable_list world;
 
@@ -104,7 +104,7 @@ int main() {
     int num_spheres = (int) world.objects.size();
     qpu::init_arrays(cam.image_width, cam.image_height, cam.samples_per_pixel, num_spheres);
     cam.init_rays();
-		init_spheres(world);
+    init_spheres(world);
 
   timers.stop("Init");
   timers.start("Run");
@@ -113,5 +113,7 @@ int main() {
 
   timers.stop("Run");
   timers.end();
-	qpu::end();
+
+  qpu::end();
+  bitdiff_stats::dump();
 }

@@ -46,17 +46,24 @@ void camera::initialize() {
 }
 
 
+/**
+ * @brief Initialize qpu rays
+ *
+ * The returned rays from `get_ray()` have a small offset around the actual coordinates.
+ * For qpu, a number of these 'diffused' rays are passed in for the calculation.
+ *
+ * The number of samples per ray is determined by `samples_per_pixel`.
+ */
 void camera::init_rays() {
   for (int j = 0; j < image_height; j++) {
     for (int i = 0; i < image_width; i++) {
       for (int sample = 0; sample < samples_per_pixel; sample++) {
         ray r = get_ray(i, j);
+        /* int index = */ qpu::set_ray(r, j, i, sample);
 
-        int index = qpu::set_ray(r, j, i, sample);
-
-        // DEBUG check
-        ray r2 = qpu::get_ray(index);
-        assert(same(r, r2));
+        // OK, check confirmed exact
+        //ray r2 = qpu::get_ray(index);
+        //assert(same(r, r2));
       }
     }
   }
@@ -64,28 +71,30 @@ void camera::init_rays() {
 
 
 void camera::render(const hittable& world) {
+  warn << "Called render()";
+
   std::string ret;
   ret << "P3\n" << image_width << " " << image_height << "\n255\n";
 
   int num_indexes = qpu::num_rays();
-	warn << "num_indexes: " << num_indexes;
+  warn << "num_indexes: " << num_indexes;
 
-	int index_limit = (num_indexes < 10000)?(num_indexes < 1000? 10: 100): 1000;
-	int cur_limit = 0;
+  int index_limit = (num_indexes < 10000)?(num_indexes < 1000? 10: 100): 1000;
+  int cur_limit = 0;
 
   for (int index = 0; index < num_indexes; index += samples_per_pixel) {
-		//warn << "index: " << index;
+    //warn << "index: " << index;
     if (index >= cur_limit) {
       std::clog << "\rRays remaining: " << (num_indexes - index) << ' ' << std::flush;
-    	cur_limit += index_limit;
-		}
+      cur_limit += index_limit;
+    }
 
     color pixel_color(0,0,0);
     for (int sample = 0; sample < samples_per_pixel; sample++) {
-			int index2 = (index + sample);
-			//warn << "index2: " << index2;
+      int index2 = (index + sample);
       ray r2 = qpu::get_ray(index2);
-			//warn << "r2: " << r2.dump();
+      //warn << "r2(" << index2 << "): " << r2.dump();
+
       pixel_color += ray_color(r2, max_depth, world, index2, true);
     }
     ret << write_color(pixel_samples_scale * pixel_color);
@@ -125,20 +134,21 @@ color camera::ray_color(const ray& r, int depth, const hittable& world, int ray_
 
   hit_record rec;
 
-	if (do_qpu) {
-		qpu::hittable_list_hit(r);
-	}
+  if (do_qpu) {
+    qpu::hittable_list_hit(r);
+  }
 
   if (world.hit(r, interval(0.001, infinity), rec, ray_index, -1, do_qpu)) {
-		//warn << "Hit!";
+    //warn << "Hit!";
 
-		// Scatter is skipped for qpu (for now, I hope)
+    // Scatter is skipped for qpu (for now, I hope)
     ray scattered;
     color attenuation;
     if (rec.mat->scatter(r, rec, attenuation, scattered)) {
-			//warn << "Doing scatter";
-      return attenuation * ray_color(scattered, depth-1, world);
-		}
+      return attenuation * ray_color(scattered, depth-1, world, ray_index, false);
+    } else {
+      warn << "Scatter fail";
+    }
     return color(0,0,0);
   }
 
