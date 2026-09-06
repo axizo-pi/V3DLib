@@ -36,7 +36,7 @@ Stmt::~Stmt() {}
 std::string Stmt::dump()                   const { return disp_intern(true, 0, false);         }
 
 std::string Stmt::dump(bool show_comments, int indent) const {
-	return disp_intern(true, indent, show_comments);
+  return disp_intern(true, indent, show_comments);
 }
 
 
@@ -311,10 +311,10 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_com
       assert(m_where_cond.get() != nullptr);
       ret << "WHERE (" << m_where_cond->dump() << ")\n"
           << tabs(2*seq_depth) << "THEN\n"
-					<< then_block().dump(show_comments, seq_depth + 1);
+          << then_block().dump(show_comments, seq_depth + 1);
 
       if (!else_block_empty()) {
-				ret << "\n"
+        ret << "\n"
             << tabs(2*seq_depth) << "ELSE\n"
             << else_block().dump(show_comments, seq_depth + 1);
       }
@@ -381,30 +381,30 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_com
 
     std::string out;
 
-		if (!header.empty()) {
-			auto tmp = split(header, "\n");
-  		for (int i = 0; i < (int) tmp.size(); i++) {
-				auto const &line = tmp[i];
+    if (!header.empty()) {
+      auto tmp = split(header, "\n");
+      for (int i = 0; i < (int) tmp.size(); i++) {
+        auto const &line = tmp[i];
 
-				if (!line.empty()) {
-    			out << tabs(2*seq_depth);
-			  	out << line;
-				}
+        if (!line.empty()) {
+          out << tabs(2*seq_depth);
+          out << line;
+        }
 
-					if (i < (int) tmp.size() - 1) {
-				  	out << "\n";
-					}
-			}
+          if (i < (int) tmp.size() - 1) {
+            out << "\n";
+          }
+      }
 
-			out << tabs(2*seq_depth);
-		}
+      out << tabs(2*seq_depth);
+    }
 
-		out << ret
+    out << ret
         << InstructionComment::emit_comment((int) ret.size(), -1, ";");
 
-		if (!header.empty()) {
+    if (!header.empty()) {
         out << "\n" ;
-		}
+    }
 
     return out;
   }
@@ -499,15 +499,15 @@ std::string Stmt::Array::dump(bool show_comments, int indent) const {
   std::string ret;
 
   for (int i = 0; i < (int) size(); i++) {
-		auto const &item = *(*this)[i];
+    auto const &item = *(*this)[i];
     auto tmp = item.dump(show_comments, indent);
     ret << tabs(2*indent) << tmp;
 
-		if ((num_newlines(tmp) - num_empty(tmp, ";")) < 1) {
-    	ret << "\n";
-		//} else {
-		//	warn << "multiline: '" << tmp << "'";
-		}
+    if ((num_newlines(tmp) - num_empty(tmp, ";")) < 1) {
+      ret << "\n";
+    //} else {
+    //  warn << "multiline: '" << tmp << "'";
+    }
   }
 
   return ret;
@@ -540,7 +540,7 @@ std::string Stmts::dump() const {
       continue;
     }
 /*
-	  // TODO: Is this still necessary? Perhaps for SEQ output
+    // TODO: Is this still necessary? Perhaps for SEQ output
 
     // Skip line numbers for lines starting with spaces
     if (lines[i].compare(0, sp.size(), sp) == 0) {

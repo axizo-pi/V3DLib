@@ -515,14 +515,14 @@ public:
 
     if (do_percent) {
       // Do cumulative percentages
-			int sum = 0;
+      int sum = 0;
 
       ret << "\n     <";
 
       for (int i = 0; i < SIZE; ++ i) {
         if (i > 0) ret << ", ";
 
-				sum += arr[i];
+        sum += arr[i];
         ret << (sum*100/total) << "%";
       }
 

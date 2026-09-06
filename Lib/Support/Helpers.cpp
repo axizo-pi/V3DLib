@@ -343,21 +343,21 @@ int num_newlines(std::string const &s) {
  * If `prefix` specified, regard the lines starting with prefix as empty.
  */
 int num_empty(std::string const &s, std::string const prefix) {
-	int ret = 0;
+  int ret = 0;
 
-	if (!prefix.empty()) {
-  	auto tmp = split(s, ("\n" + prefix));
-  	ret = (int) (tmp.size() - 1);
-	}
+  if (!prefix.empty()) {
+    auto tmp = split(s, ("\n" + prefix));
+    ret = (int) (tmp.size() - 1);
+  }
 
   auto tmp = split(s, "\n");
   for (int i = 0; i < (int) tmp.size(); i++) {
-		if (tmp[i].empty()) {
-			ret++;
-		}
-	}
+    if (tmp[i].empty()) {
+      ret++;
+    }
+  }
 
-	return ret;
+  return ret;
 }
 
 
@@ -372,9 +372,9 @@ void trim(std::string &s) {
  *
  */
 std::string trim_s(std::string const &s) {
-	std::string tmp = s;
-	trim(tmp);
-	return tmp;
+  std::string tmp = s;
+  trim(tmp);
+  return tmp;
 }
 
 
