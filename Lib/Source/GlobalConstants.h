@@ -16,12 +16,14 @@ Var Var_NaN();
 Var Var_Inf();
 Var Var_MinInf();
 Var Var_MinFloat();
+Var Var_MaxFloat();
 
 Int   _64();
 Float NaN();
 Float Inf();
 Float MinInf();
 Float MinFloat();
+Float MaxFloat();
 
 }  // namespace V3DLib
 

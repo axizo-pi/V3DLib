@@ -14,6 +14,7 @@ int tag_NaN      = -1;
 int tag_Inf      = -1;
 int tag_MinInf   = -1;
 int tag_MinFloat = -1;
+int tag_MaxFloat = -1;
 
 /**
  * @brief define a specific global variable.
@@ -69,6 +70,7 @@ void reset() {
   tag_Inf = -1;
   tag_MinInf = -1;
   tag_MinFloat = -1;
+  tag_MaxFloat = -1;
 }
 
 
@@ -105,6 +107,12 @@ void init(Stmt::Array &src) {
     if (tag_MinFloat != -1) {
       tmp.as_float(0xff7fffff);  comment("Bit-value for largest negative Float");
       MinFloat() = tmp;
+      buf << "MinFloat, ";
+    }
+
+    if (tag_MaxFloat != -1) {
+      tmp.as_float(0x7f7fffff);  comment("Bit-value for largest positive Float");
+      MaxFloat() = tmp;
       buf << "MinFloat, ";
     }
 
@@ -148,14 +156,16 @@ Var Var_NaN() { return global_var(tag_NaN); }
  */
 Var Var_Inf() { return global_var(tag_Inf); }
 
-Var Var_MinInf() { return global_var(tag_MinInf); }
+Var Var_MinInf()   { return global_var(tag_MinInf); }
 Var Var_MinFloat() { return global_var(tag_MinFloat); }
+Var Var_MaxFloat() { return global_var(tag_MaxFloat); }
 
 
-Int   _64()    { return Int  (Var_64()); }
-Float NaN()    { return Float(Var_NaN()); }
-Float Inf()    { return Float(Var_Inf()); }
-Float MinInf() { return Float(Var_MinInf()); }
+Int   _64()      { return Int  (Var_64()); }
+Float NaN()      { return Float(Var_NaN()); }
+Float Inf()      { return Float(Var_Inf()); }
+Float MinInf()   { return Float(Var_MinInf()); }
 Float MinFloat() { return Float(Var_MinFloat()); }
+Float MaxFloat() { return Float(Var_MaxFloat()); }
 
 }  // namespace V3DLib
