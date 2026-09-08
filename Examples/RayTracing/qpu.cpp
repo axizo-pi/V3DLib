@@ -2,6 +2,7 @@
 #include "kernel.h"
 #include "V3DLib.h"
 #include "Support/Helpers.h"  // resize_16()
+#include "Support/dump.h"     // bitdiff_stats()
 #include <cmath>
 
 using namespace std;
@@ -11,7 +12,7 @@ namespace qpu {
 namespace {
 
 int s_exact_match   = 0;
-int  s_total_matches = 0;
+int s_total_matches = 0;
 int s_zeroes        = 0;
 int s_negatives     = 0;
 
@@ -81,6 +82,17 @@ private:
 };  
 
 
+struct HitRecords {
+  void alloc(int in_size) {
+		p.alloc(in_size);
+		t.alloc(in_size);
+	}
+
+	points       p;
+	Float::Array t;
+};
+
+
 // Ray coordinates
 points origin;
 points direction;
@@ -88,6 +100,9 @@ points direction;
 // Sphere coordinates
 points       center;
 Float::Array radius;
+
+// Hit record values
+HitRecords hit_records;
 
 // DEBUG
 points       ret_p;
@@ -195,6 +210,7 @@ void init_arrays(int image_width, int image_height, int samples_per_pixel, int n
 
   origin.alloc(size);
   direction.alloc(size);
+  hit_records.alloc(size);
 
   s_num_spheres = resize_16(num_spheres);
   assert(s_num_spheres % 16 == 0);
@@ -297,15 +313,18 @@ bool same_sphere(int index, sphere const &s) {
 }
 
 
-void hittable_list_hit(const ray &r) {
+void hittable_list_hit(const ray &r, int ray_index) {
   assert(s_num_spheres > 0);
   //warn << "hittable_list_hit s_num_spheres: " << s_num_spheres;
 
   timers.start("hittable_list_hit");
   kernel::sphere_hit(
-    r, s_num_spheres,
+    r, ray_index,
+		s_num_spheres,
     center.x, center.y, center.z,
     radius,
+		hit_records.p.x, hit_records.p.y, hit_records.p.z,
+		hit_records.t,
     ret_p.x, ret_p.y, ret_p.z,
     ret_f,
     ret_valid
@@ -356,3 +375,29 @@ bool same(ray const &lhs, ray const &rhs) {
   return qpu::same_vec(lhs.origin(), rhs.origin(), -1)
       && qpu::same_vec(lhs.direction(), rhs.direction(), -1);
 }
+
+
+namespace hit_records {
+
+std::string dump(int index) {
+	std::string ret;
+
+	ret << index << ": ";
+	ret << qpu::hit_records.t[index];
+	//ret << qpu::hit_records.p.dump_vec(index);
+
+	return ret;
+}
+
+
+void check(int index, hit_record const &rec) {
+	auto t    = qpu::hit_records.t[index];
+	auto item = qpu::hit_records.p.to_vec(index);
+
+  bitdiff_stats::add(t               , (float) rec.t    , 15);
+  bitdiff_stats::add((float) item.x(), (float) rec.p.x(), 16);
+  bitdiff_stats::add((float) item.y(), (float) rec.p.y(), 17);
+  bitdiff_stats::add((float) item.z(), (float) rec.p.z(), 18);
+}
+
+} // namespace hit_records

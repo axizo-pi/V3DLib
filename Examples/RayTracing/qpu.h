@@ -21,7 +21,7 @@ void add_sphere(int index, sphere const &in_sphere);
 sphere get_sphere(int index);
 bool same_sphere(int index, sphere const &s);
 
-void hittable_list_hit(const ray &r);
+void hittable_list_hit(const ray &r, int ray_index);
 bool check_ret(int sphere_index, vec3 const &v, int bit_min = 0, bool show_log = false);
 bool check_f(int sphere_index, double val, int bit_min = 0);
 float get_f(int index);
@@ -35,5 +35,12 @@ void add_negative();
 }  // namespace qpu
 
 bool same(ray const &lhs, ray const &rhs);
+
+namespace hit_records {
+
+std::string dump(int index);
+void check(int index, hit_record const &rec);
+
+} // namespace hit_records
 
 #endif // _RAYTRACING_QPU_H

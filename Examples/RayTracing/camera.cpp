@@ -135,16 +135,21 @@ color camera::ray_color(const ray& r, int depth, const hittable& world, int ray_
   hit_record rec;
 
   if (do_qpu) {
-    qpu::hittable_list_hit(r);
+    qpu::hittable_list_hit(r, ray_index);
   }
 
   if (world.hit(r, interval(0.001, infinity), rec, ray_index, -1, do_qpu)) {
     //warn << "Hit!";
+  	if (do_qpu) {
+		  //warn << "rec: " << rec.dump() << "; array: " << hit_records::dump(ray_index);
+			hit_records::check(ray_index, rec);
+	  }
 
     // Scatter is skipped for qpu (for now, I hope)
     ray scattered;
     color attenuation;
     if (rec.mat->scatter(r, rec, attenuation, scattered)) {
+      //warn << "Scatter!";
       return attenuation * ray_color(scattered, depth-1, world, ray_index, false);
     } else {
       warn << "Scatter fail";

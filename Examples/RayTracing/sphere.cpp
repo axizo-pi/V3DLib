@@ -150,26 +150,34 @@ bool sphere::hit(const ray& r, interval ray_t, hit_record& rec, int ray_index, i
     // Comparing with root_2 in kernel
     // Total: 904; bitmax: 100% <= 1
     // Interestingly, this one is more precise than the '-' version
-    // OK:
-    if (qpu_check) {
-      assert(qpu::check_f(sphere_index, root, 1));
-      bitdiff_stats::add(qpu::get_f(sphere_index), (float) root, 1);
-    }
+    // OK: if (qpu_check) assert(qpu::check_f(sphere_index, root, 1));
 
     if (!ray_t.surrounds(root)) {
-      //warn << "!surrounds 2";
-      //assert(qpu::get_valid(sphere_index) == 0);
+			if (qpu_check) {
+      	//warn << "!surrounds 2, " << ray_t.dump();
+      	//assert(qpu::get_valid(sphere_index) == 0);
+    		//bitdiff_stats::add(((float) qpu::get_valid(sphere_index)), 1.0f, 2);
+			}
       return false;
     } else {
-      if (qpu_check) {
-        warn << "Success !surrounds 2";
-      }
+      //if (qpu_check) {
+      //  warn << "Success !surrounds 2";
+      //}
     }
   }
 
-  assert(qpu::get_valid(sphere_index) == 1);
+#if 0
+	if (qpu_check) {
+    //if (!qpu::check_f(sphere_index, root, 2)) {
+		//	breakpoint;
+		//}
+    assert(qpu::check_f(sphere_index, root, 5));
+		assert(qpu::get_valid(sphere_index) == 1);
+    //bitdiff_stats::add(qpu::get_f(sphere_index), (float) root, 1);
+	}
+#endif	
 
-  rec.t = root;         // OK, same as root
+  rec.t = root;
 
   rec.p = r.at(rec.t);
   // if (qpu_check) { bool passed = qpu::check_ret(sphere_index, rec.p, 22); }
@@ -201,10 +209,11 @@ bool sphere::hit(const ray& r, interval ray_t, hit_record& rec, int ray_index, i
   // OK front_face perfect match
   // if (qpu_check) assert(qpu::check_f(sphere_index, (rec.front_face?1.0f:-1.0f), -1));
   // rec.normal bitmax 95% <= 6
-  check_vec(rec.normal);
+  //check_vec(rec.normal);
 
   rec.mat = m_mat;
   return true;
+  //return false;
 }
 
 

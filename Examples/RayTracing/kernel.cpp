@@ -1,7 +1,6 @@
 #include "kernel.h"
 #include "Source/GlobalConstants.h"
 #include "Support/Helpers.h"
-//#include "Support/dump.h"
 #include <memory>
 
 using namespace V3DLib;
@@ -9,44 +8,109 @@ using namespace V3DLib;
 namespace kernel {
 namespace {
 
+/**
+ * @brief return the nearest sphere hit for the current ray.
+ */
+void hit_record_partial(
+	Int   &ray_index,
+	Int   &sphere_index,
+	Float &in_t,
+  Float &origin_x,     Float &origin_y,     Float &origin_z,
+  Float &direction_x,  Float &direction_y,  Float &direction_z,
+  Float::Ptr &rec_p_x, Float::Ptr &rec_p_y, Float::Ptr &rec_p_z,
+  Float::Ptr &rec_t
+) {
+	Float t;
+
+	// Get the best t of the values in the 16-vector `in_t`.
+	// This should be the lowest value.
+	rotate_min(in_t, t);
+
+  // rec.p = r.at(rec.t);
+  Float p_x = origin_x + (t*direction_x);                     comment("Start ray.at()");
+                                                              sub_header("Update rec");
+  Float p_y = origin_y + (t*direction_y);
+  Float p_z = origin_z + (t*direction_z);
+
+#if 0
+  //vec3 outward_normal = (rec.p - m_center) / m_radius;
+  outward_normal_x = (rec_p_x - center_x) / radius;            comment("Calc outward_normal");
+  outward_normal_y = (rec_p_y - center_y) / radius;
+  outward_normal_z = (rec_p_z - center_z) / radius;
+
+  // rec.set_face_normal(r, outward_normal);
+  //
+  // This sets the sign for the normal vector and stores it in rec.normal.
+  //
+  Float tmp = direction_x*outward_normal_x
+            + direction_y*outward_normal_y
+            + direction_z*outward_normal_z;
+
+  // NOTE: minus sign is the other way around as I would expect; counter-intuitive but correct.
+  front_face = -1.0f;
+  Where (tmp < 0)
+    front_face = 1.0f;
+  End
+
+  rec_normal_x = front_face*outward_normal_x;
+  rec_normal_y = front_face*outward_normal_y;
+  rec_normal_z = front_face*outward_normal_z;
+#endif			
+
+	// `- index()` to save to a single location in main mem
+	Int offset = ray_index - index();
+
+  *(rec_t   + offset) = t;
+  *(rec_p_x + offset) = p_x;
+  *(rec_p_y + offset) = p_y;
+  *(rec_p_z + offset) = p_z;
+}
+
+
+/**
+ * @brief Get the nearest hit for the given ray.
+ *
+ * All spheres are checked for a hit. The best hit, if any, is returned.
+ *
+ * A single ray is checked. The 16-vectors contain consecutive spheres.
+ *
+ * A bad hit can be detected by checking the coordinates of `rec_p_*`; a failed
+ * hit has Inf coordinates.
+ */
 void sphere_hit_kernel(
+	Int ray_index,
   Float origin_x, Float origin_y, Float origin_z,
   Float direction_x, Float direction_y, Float direction_z,
   Int N_spheres, // Blocks of 16
   Float::Ptr in_center_x, Float::Ptr in_center_y, Float::Ptr in_center_z,
   Float::Ptr in_radius,
+  Float::Ptr rec_p_x, Float::Ptr rec_p_y, Float::Ptr rec_p_z,
+  Float::Ptr rec_t,
   Float::Ptr ret_x, Float::Ptr ret_y, Float::Ptr ret_z,
   Float::Ptr ret_f,
   Int::Ptr   ret_valid
 ) {
-
-  //Float Inf       = toFloat(0x7f800000);  comment("Bit-value for infinity");
-  Float ray_t_min = 0.001f;
-  Float ray_t_max = MaxFloat();    // Is a parameter in reference app
-
-  Float acc_rec_t = Inf();  // TODO: check if Inf works
-  Float acc_rec_p_x;
-  Float acc_rec_p_y;
-  Float acc_rec_p_z;
-  Float acc_rec_normal_x;
-  Float acc_rec_normal_y;
-  Float acc_rec_normal_z;
-  Float acc_rec_front_face;
+  Float ray_t_min  = 0.001f;
+  Float ray_t_max  = Inf();    // Is a parameter in reference app
+	Int sphere_index = -1;
 
   For (Int i = 0, i < N_spheres, i++)
+    Int valid = 1;
+
     Float center_x = *in_center_x;                                 comment("Start sphere loop");
     Float center_y = *in_center_y;
     Float center_z = *in_center_z;
     Float radius   = *in_radius;
 
+		// Exclude items added to resize to multiple of 16 blocks
+		Where (radius == 0.0f)
+			valid = 0;
+		End
+
     // vec3 oc = m_center - r.origin();
     Float oc_x = center_x - origin_x;                              comment("vec3 oc");
     Float oc_y = center_y - origin_y;
     Float oc_z = center_z - origin_z;
-
-    *ret_x = oc_x;
-    *ret_y = oc_y;
-    *ret_z = oc_z;
 
     //auto a = r.direction().length_squared();
     Float dir_x = direction_x;                                     comment("auto a");
@@ -69,7 +133,6 @@ void sphere_hit_kernel(
     *ret_f = discriminant;
 
     // if (discriminant < 0) return false;
-    Int valid = 1;                                                 comment("init valid");
     Where (discriminant < 0.0f)  // `<=` leads to differences
       valid = 0;
     End
@@ -91,90 +154,28 @@ void sphere_hit_kernel(
 
       // if (!ray_t.surrounds(root)) {
       Where (!(ray_t_min < root && root < ray_t_max))
-        root = root_2;
 
         //if (!ray_t.surrounds(root)) return false;
-        Where (!(ray_t_min < root && root < ray_t_max))
+        Where (ray_t_min < root_2 && root_2 < ray_t_max)
+        	root = root_2;
+				Else
           valid = 0;
         End
       End
     End
 
+		Where (valid == 1)
+			ray_t_max = root;
+			sphere_index = 16*i + index();
+		End
+
+    // Debug output
     //*ret_f = sqrtd;
     *ret_f = root;
     //*ret_f = root_2;
-
-    Float rec_t;                                                    sub_header("Update rec");
-    Float rec_p_x;
-    Float rec_p_y;
-    Float rec_p_z;
-    Float outward_normal_x = 1.0f; // Init values to test if values set
-    Float outward_normal_y = 2.0f;
-    Float outward_normal_z = 3.0f;
-    Float front_face;
-    Float rec_normal_x;
-    Float rec_normal_y;
-    Float rec_normal_z;
-
-    Where (valid == 1)
-      // rec.t = root;
-      rec_t = root;
-
-      // rec.p = r.at(rec.t);
-      rec_p_x = origin_x + (rec_t*direction_x);                     comment("Start ray.at()");
-      rec_p_y = origin_y + (rec_t*direction_y);
-      rec_p_z = origin_z + (rec_t*direction_z);
-
-      //vec3 outward_normal = (rec.p - m_center) / m_radius;
-      outward_normal_x = (rec_p_x - center_x) / radius;            comment("Calc outward_normal");
-      outward_normal_y = (rec_p_y - center_y) / radius;
-      outward_normal_z = (rec_p_z - center_z) / radius;
-
-      // rec.set_face_normal(r, outward_normal);
-      //
-      // This sets the sign for the normal vector and stores it in rec.normal.
-      //
-      Float tmp = direction_x*outward_normal_x
-                + direction_y*outward_normal_y
-                + direction_z*outward_normal_z;
-
-      // NOTE: minus sign is the other way around as I would expect; counter-intuitive but correct.
-      front_face = -1.0f;
-      Where (tmp < 0)
-        front_face = 1.0f;
-      End
-
-      rec_normal_x = front_face*outward_normal_x;
-      rec_normal_y = front_face*outward_normal_y;
-      rec_normal_z = front_face*outward_normal_z;
-    End
-
-    // Debug output
-    //*ret_f = front_face;
-    *ret_x = rec_normal_x;
-    *ret_y = rec_normal_y;
-    *ret_z = rec_normal_z;
-
-#if 0      
-    // Collect absolute values for this loop (absolute meaning smalles rec_t)
-    Where (valid == 1 && acc_rec_t > rec_t)
-      acc_rec_t          = rec_t;
-      acc_rec_p_x        = rec_p_x;
-      acc_rec_p_y        = rec_p_y;
-      acc_rec_p_z        = rec_p_z;
-      acc_rec_normal_x   = rec_normal_x;
-      acc_rec_normal_y   = rec_normal_y;
-      acc_rec_normal_z   = rec_normal_z;
-      acc_rec_front_face = front_face;
-    End
-/*
-    // Debug output
-    *ret_x = rec_normal_x;
-    *ret_y = rec_normal_y;
-    *ret_z = rec_normal_z;
-*/
-
-#endif      
+    //*ret_x = rec_normal_x;
+    //*ret_y = rec_normal_y;
+    //*ret_z = rec_normal_z;
 
     *ret_valid = valid;
 
@@ -189,7 +190,18 @@ void sphere_hit_kernel(
     ret_z.inc();
     ret_f.inc();
     ret_valid.inc();
-  End
+	End
+
+	// Store best results
+	hit_record_partial(
+		ray_index,
+		sphere_index,
+		ray_t_max,
+  	origin_x, origin_y, origin_z,
+  	direction_x, direction_y, direction_z,
+  	rec_p_x, rec_p_y, rec_p_z,
+		rec_t
+	);
 }
 
 std::unique_ptr<BaseKernel> s_sphere_hit;
@@ -206,9 +218,12 @@ void init() {
 
 
 void sphere_hit(
-  ray const &r, int N_spheres,
+  ray const &r, int ray_index,
+	int N_spheres,
   Float::Array &center_x, Float::Array &center_y, Float::Array &center_z,
   Float::Array &radius,
+  Float::Array &rec_p_x, Float::Array &rec_p_y, Float::Array &rec_p_z,
+  Float::Array &rec_t,
   Float::Array &ret_x, Float::Array &ret_y, Float::Array &ret_z,
   Float::Array &ret_f,
   Int::Array   &ret_valid
@@ -227,11 +242,14 @@ void sphere_hit(
   int sphere_blocks = resize_16(N_spheres) >> 4;
 
   s_sphere_hit->load(
+		ray_index,
     o_x, o_y, o_z,
     d_x, d_y, d_z,
     sphere_blocks,
     &center_x, &center_y, &center_z,
     &radius,
+  	&rec_p_x, &rec_p_y, &rec_p_z,
+  	&rec_t,
     &ret_x, &ret_y, &ret_z,
     &ret_f,
     &ret_valid
