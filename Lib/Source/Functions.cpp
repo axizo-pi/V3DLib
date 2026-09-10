@@ -794,30 +794,34 @@ void rotate_min(Float &input, Float &result) {
 }
 
 
+namespace {
+
 /**
  * @brief Same as `rotate_min(Float, Float)`, but also returns index of smallest element.
  *
- * In the case of ties, the smallest index is returned.  
+ * In the case of ties, the smallest index is returned. 
  * If min can not be determined (can't exclude), -1 is returned for index.
+ *
+ * Template parameter `T` can only be Int or Float.
  */
-void rotate_min(Float &input, Float &result, Int &index) {
+template<typename T>
+void t_rotate_min(T &input, T &result, Int &index, T const &min_val) {
   rotate_min(input, result);
 
-  Float tmp     = input;
+  T tmp = input;
 
   Where (tmp > result)
-    // Previously used 0 here, which was kind of stupid. 0 is a perfectly legal value.
-    // MinInf() doesn't work here
-    tmp = MinFloat();  // Works as long as MinFloat is not in the input.
+		// +-Inf does not work here, use min/max value instead (for Float)
+    tmp = min_val;  // Works as long as min_val is not in the input.
   End
 
   Int start_elems    = 15;
   Int smallest_index = -1;
-  Float tmp2;
+  T tmp2;
 
   For (Int n = start_elems, n >= 0, n--)
     element_at(tmp, n, tmp2);
-    If (tmp2 != MinFloat())
+    If (tmp2 != min_val)
       smallest_index = n;
     End
   End
@@ -830,15 +834,36 @@ void rotate_min(Float &input, Float &result, Int &index) {
  * @brief Return value in element `n` of `input`.
  *
  * Result is put in all the elements of the output vector.
+ *
+ * Template parameter `T` can only be Int or Float.
  */
-void element_at(Float const &input, Int &n, Float &result) {
-  Float tmp = 0;
+template<typename T>
+void t_element_at(T const &input, Int &n, T &result) {
+  T tmp = 0;
 
   Where (n == index())
     tmp = input;
   End
 
   rotate_sum(tmp, result);
+}
+
+} // anon namespace
+
+
+// TODO: add Int version. Don't need it yet.
+void rotate_min(Float &input, Float &result, Int &index) {
+	t_rotate_min(input, result, index, MinFloat());
+}		
+
+
+void element_at(Float const &input, Int &n, Float &result) {
+  t_element_at(input, n, result);
+}
+
+
+void element_at(Int const &input, Int &n, Int &result) {
+  t_element_at(input, n, result);
 }
 
 

@@ -58,6 +58,7 @@ void rotate_sum(Float &input, Float &result);
 void rotate_max(Float &input, Float &result);
 void rotate_min(Float &input, Float &result);
 void rotate_min(Float &input, Float &result, Int &index);
+void element_at(Int const &input, Int &n, Int &result);
 void element_at(Float const &input, Int &n, Float &result);
 void set_at(Int &dst, Int n, Int const &src);
 void set_at(Float &dst, Int n, Float const &src);
