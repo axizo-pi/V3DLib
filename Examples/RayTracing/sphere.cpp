@@ -154,11 +154,11 @@ bool sphere::hit(const ray& r, interval ray_t, hit_record& rec, int ray_index, i
     // OK: if (qpu_check) assert(qpu::check_f(sphere_index, root, 1));
 
     if (!ray_t.surrounds(root)) {
-			if (qpu_check) {
-      	//warn << "!surrounds 2, " << ray_t.dump();
-      	//assert(qpu::get_valid(sphere_index) == 0);
-    		//bitdiff_stats::add(((float) qpu::get_valid(sphere_index)), 1.0f, 2);
-			}
+      if (qpu_check) {
+        //warn << "!surrounds 2, " << ray_t.dump();
+        //assert(qpu::get_valid(sphere_index) == 0);
+        //bitdiff_stats::add(((float) qpu::get_valid(sphere_index)), 1.0f, 2);
+      }
       return false;
     } else {
       //if (qpu_check) {
@@ -168,15 +168,15 @@ bool sphere::hit(const ray& r, interval ray_t, hit_record& rec, int ray_index, i
   }
 
 #if 0
-	if (qpu_check) {
+  if (qpu_check) {
     //if (!qpu::check_f(sphere_index, root, 2)) {
-		//	breakpoint;
-		//}
+    //  breakpoint;
+    //}
     assert(qpu::check_f(sphere_index, root, 5));
-		assert(qpu::get_valid(sphere_index) == 1);
+    assert(qpu::get_valid(sphere_index) == 1);
     //bitdiff_stats::add(qpu::get_f(sphere_index), (float) root, 1);
-	}
-#endif	
+  }
+#endif  
 
   rec.t = root;
 
@@ -238,8 +238,8 @@ std::vector<shared_ptr<hittable>> objects;
 
 /*
 void add(sphere const &s) {
-	shared_ptr<sphere> object = std::make_shared<sphere>(s);
-	objects.push_back(object);
+  shared_ptr<sphere> object = std::make_shared<sphere>(s);
+  objects.push_back(object);
 }
 */
 
@@ -249,11 +249,11 @@ void add(shared_ptr<hittable> object) {
 }
 
 sphere const &get(int index) {
-	return (sphere const &) *objects[index];
+  return (sphere const &) *objects[index];
 }
 
 int size() {
-	int ret = (int) objects.size();
+  int ret = (int) objects.size();
   //warn << "spheres size: " << ret;
   return ret;
 }

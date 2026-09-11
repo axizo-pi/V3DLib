@@ -20,8 +20,8 @@ void valid_kernel(
   For (Int i = 0, i < N_spheres, i++)
     Int valid = 1;                                                 comment("init valid");
 
-		Float h      = toFloat(index() - 8);
-		Float a      = 1.0f;
+    Float h      = toFloat(index() - 8);
+    Float a      = 1.0f;
     Float sqrtd  = 2.0f;
     Float root   = 0.0f;
     Float root_2 = 0.0f; sub_header("Start test root");
@@ -56,10 +56,10 @@ void valid_kernel(
  * discriminant values are exact.
  */
 TEST_CASE("Test valid [issues][raytracing]") {
-	Int::Array ret_valid(16);
+  Int::Array ret_valid(16);
 
   auto k = compile(valid_kernel);
   k.load(&ret_valid, 1).run();
 
-	warn << "test_valid: " << showResult(ret_valid, 0, 16);
+  warn << "test_valid: " << showResult(ret_valid, 0, 16);
 }

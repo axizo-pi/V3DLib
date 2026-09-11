@@ -17,7 +17,7 @@ class hittable_list : public hittable {
     hittable_list() {}
 
     void add(shared_ptr<hittable> object) {
-			spheres::add(object);
+      spheres::add(object);
     }
 
     bool hit(const ray& r, interval ray_t, hit_record& rec, int ray_index, int sphere_index, bool qpu_check = false) const override;

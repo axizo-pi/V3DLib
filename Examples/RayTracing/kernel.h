@@ -11,7 +11,7 @@ void init();
 
 void sphere_hit(
   ray const &r, int ray_index,
-	int N_spheres,
+  int N_spheres,
   Float::Array &in_center_x, Float::Array &in_center_y, Float::Array &in_center_z,
   Float::Array &in_radius,
   Float::Array &rec_p_x, Float::Array &rec_p_y, Float::Array &rec_p_z,

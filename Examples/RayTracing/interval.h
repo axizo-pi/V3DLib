@@ -37,11 +37,11 @@ class interval {
     }
 
 
-		std::string dump() const {
-			std::string ret;
-			ret << "interval (min, max): (" << min << ", " << max << ")";
-			return ret;
-		}
+    std::string dump() const {
+      std::string ret;
+      ret << "interval (min, max): (" << min << ", " << max << ")";
+      return ret;
+    }
 
     static const interval empty, universe;
 };

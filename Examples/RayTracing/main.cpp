@@ -9,15 +9,13 @@
 // along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 //==============================================================================================
 #include "rtweekend.h"
-
 #include "camera.h"
 #include "hittable.h"
 #include "hittable_list.h"
 #include "material.h"
 #include "sphere.h"
-
 #include "qpu.h"
-#include "qpu.h"
+#include "./global.h"
 #include "global/log.h"
 #include "Support/Timer.h"
 #include "Support/dump.h"   // bitdiff_stats::dump()
@@ -45,6 +43,9 @@ int main() {
 
     hittable_list world;
 
+    //
+    // Initialize the spheres
+    //
     auto ground_material = make_shared<lambertian>(color(0.5, 0.5, 0.5));
     world.add(make_shared<sphere>(point3(0,-1000,0), 1000, ground_material));
 
@@ -85,26 +86,23 @@ int main() {
     auto material3 = make_shared<metal>(color(0.7, 0.6, 0.5), 0.0);
     world.add(make_shared<sphere>(point3(4, 1, 0), 1.0, material3));
 
-
     camera cam;
 
-    cam.aspect_ratio      = 16.0 / 9.0;
-    cam.image_width       = 128; //64; //1200;
-    cam.samples_per_pixel = 10;
-    cam.max_depth         = 20;
+    global::aspect_ratio(16.0 / 9.0);
+    global::image_width(128); // 64; //1200;
+    global::samples_per_pixel(10);
 
-    cam.vfov     = 20;
-    cam.lookfrom = point3(13,2,3);
-    cam.lookat   = point3(0,0,0);
-    cam.vup      = vec3(0,1,0);
-
-    cam.defocus_angle = 0.6;
-    cam.focus_dist    = 10.0;
+    cam.max_depth  = 20;
+    cam.vfov       = 20;
+    cam.lookfrom   = point3(13,2,3);
+    cam.lookat     = point3(0,0,0);
+    cam.vup        = vec3(0,1,0);
+    cam.focus_dist = 10.0;
 
     cam.initialize();
 
     int num_spheres = spheres::size();
-    qpu::init_arrays(cam.image_width, cam.image_height, cam.samples_per_pixel, num_spheres);
+    qpu::init_arrays(num_spheres);
     cam.init_rays();
     init_spheres(world);
 

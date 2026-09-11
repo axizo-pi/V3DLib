@@ -1,6 +1,7 @@
 #include "kernel.h"
 #include "Source/GlobalConstants.h"
 #include "Support/Helpers.h"
+#include "Support/Timer.h"
 #include <memory>
 
 namespace kernel {
@@ -10,28 +11,28 @@ namespace {
  * @brief return the nearest sphere hit for the current ray.
  */
 void hit_record_partial(
-	Int   &ray_index,
-	Int   &in_sphere_index,
-	Float &in_t,
+  Int   &ray_index,
+  Int   &in_sphere_index,
+  Float &in_t,
   Float &origin_x,    Float &origin_y,    Float &origin_z,
   Float &direction_x, Float &direction_y, Float &direction_z,
   Float::Ptr &in_center_x, Float::Ptr &in_center_y, Float::Ptr &in_center_z,
   Float::Ptr &in_radius,
-	// Output parameters
+  // Output parameters
   Float::Ptr &rec_p_x, Float::Ptr &rec_p_y, Float::Ptr &rec_p_z,
   Float::Ptr &rec_normal_x, Float::Ptr &rec_normal_y, Float::Ptr &rec_normal_z,
   Float::Ptr &rec_t,
   Float::Ptr &rec_front_face,
   Int::Ptr   &rec_sphere_index
 ) {
-	Float t;
+  Float t;
 
-	// Get the best t of the values in the 16-vector `in_t`.
-	// This should be the lowest value.
-	Int min_index;
-	rotate_min(in_t, t, min_index);
-	Int sphere_index;
-	element_at(in_sphere_index, min_index, sphere_index);
+  // Get the best t of the values in the 16-vector `in_t`.
+  // This should be the lowest value.
+  Int min_index;
+  rotate_min(in_t, t, min_index);
+  Int sphere_index;
+  element_at(in_sphere_index, min_index, sphere_index);
 
   // rec.p = r.at(rec.t);
   Float p_x = origin_x + (t*direction_x);                     comment("Start ray.at()");
@@ -40,7 +41,7 @@ void hit_record_partial(
   Float p_z = origin_z + (t*direction_z);
 
   //vec3 outward_normal = (rec.p - m_center) / m_radius;
-	Int sphere_offset = sphere_index - index();
+  Int sphere_offset = sphere_index - index();
   Float center_x = *(in_center_x + sphere_offset);
   Float center_y = *(in_center_y + sphere_offset);
   Float center_z = *(in_center_z + sphere_offset);
@@ -64,8 +65,8 @@ void hit_record_partial(
     front_face = 1.0f;
   End
 
-	// `- index()` to save to a single location in main mem
-	Int offset = ray_index - index();
+  // `- index()` to save to a single location in main mem
+  Int offset = ray_index - index();
 
   *(rec_p_x        + offset) = p_x;
   *(rec_p_y        + offset) = p_y;
@@ -85,21 +86,21 @@ void sphere_hit_partial(
   Int &N_spheres,
   Float::Ptr &in_center_x, Float::Ptr &in_center_y, Float::Ptr &in_center_z,
   Float::Ptr &in_radius,
-	// Internal variables
+  // Internal variables
   Int &sphere_index,
-	Float &ray_t_max,
-	// Debug output
+  Float &ray_t_max,
+  // Debug output
   Float::Ptr &ret_x, Float::Ptr &ret_y, Float::Ptr &ret_z,
   Float::Ptr &ret_f,
   Int::Ptr   &ret_valid
 ) {
   Float ray_t_min  = 0.001f;
 
-	// Make copies of pointers, they are also used after the loop
-	Float::Ptr p_center_x = in_center_x;
-	Float::Ptr p_center_y = in_center_y;
-	Float::Ptr p_center_z = in_center_z;
-	Float::Ptr p_radius   = in_radius;
+  // Make copies of pointers, they are also used after the loop
+  Float::Ptr p_center_x = in_center_x;
+  Float::Ptr p_center_y = in_center_y;
+  Float::Ptr p_center_z = in_center_z;
+  Float::Ptr p_radius   = in_radius;
 
   For (Int i = 0, i < N_spheres, i++)
     Int valid = 1;
@@ -109,10 +110,10 @@ void sphere_hit_partial(
     Float center_z = *p_center_z;
     Float radius   = *p_radius;
 
-		// Exclude items added to resize to multiple of 16 blocks
-		Where (radius == 0.0f)
-			valid = 0;
-		End
+    // Exclude items added to resize to multiple of 16 blocks
+    Where (radius == 0.0f)
+      valid = 0;
+    End
 
     // vec3 oc = m_center - r.origin();
     Float oc_x = center_x - origin_x;                              comment("vec3 oc");
@@ -164,17 +165,17 @@ void sphere_hit_partial(
 
         //if (!ray_t.surrounds(root)) return false;
         Where (ray_t_min < root_2 && root_2 < ray_t_max)
-        	root = root_2;
-				Else
+          root = root_2;
+        Else
           valid = 0;
         End
       End
     End
 
-		Where (valid == 1)
-			ray_t_max = root;
-			sphere_index = 16*i + index();
-		End
+    Where (valid == 1)
+      ray_t_max = root;
+      sphere_index = 16*i + index();
+    End
 
     // Debug output
     //*ret_f = sqrtd;
@@ -197,7 +198,7 @@ void sphere_hit_partial(
     ret_z.inc();
     ret_f.inc();
     ret_valid.inc();
-	End
+  End
 }
 
 
@@ -212,55 +213,55 @@ void sphere_hit_partial(
  * hit has Inf coordinates.
  */
 void sphere_hit_kernel(
-	// Input values
-	Int ray_index,
+  // Input values
+  Int ray_index,
   Float origin_x, Float origin_y, Float origin_z,
   Float direction_x, Float direction_y, Float direction_z,
   Int N_spheres, // Blocks of 16
   Float::Ptr in_center_x, Float::Ptr in_center_y, Float::Ptr in_center_z,
   Float::Ptr in_radius,
-	// Output values
+  // Output values
   Float::Ptr rec_p_x, Float::Ptr rec_p_y, Float::Ptr rec_p_z,
   Float::Ptr rec_normal_x, Float::Ptr rec_normal_y, Float::Ptr rec_normal_z,
   Float::Ptr rec_t,
   Float::Ptr rec_front_face,
   Int::Ptr   rec_sphere_index,
-	// Debug output
+  // Debug output
   Float::Ptr ret_x, Float::Ptr ret_y, Float::Ptr ret_z,
   Float::Ptr ret_f,
   Int::Ptr   ret_valid
 ) {
-	Int sphere_index = -1;
+  Int sphere_index = -1;
   Float ray_t_max  = Inf();    // Is a parameter in reference app
 
-	sphere_hit_partial(
-  	origin_x, origin_y, origin_z,
-	  direction_x, direction_y, direction_z,
-	  N_spheres,
-	  in_center_x, in_center_y, in_center_z,
-	  in_radius,
-		sphere_index,
-		ray_t_max,
-	  ret_x, ret_y, ret_z,
-	  ret_f,
-	  ret_valid
-	);
-
-	// Store best results
-	hit_record_partial(
-		ray_index,
-		sphere_index,
-		ray_t_max,
-  	origin_x, origin_y, origin_z,
-  	direction_x, direction_y, direction_z,
+  sphere_hit_partial(
+    origin_x, origin_y, origin_z,
+    direction_x, direction_y, direction_z,
+    N_spheres,
     in_center_x, in_center_y, in_center_z,
-		in_radius,
-  	rec_p_x, rec_p_y, rec_p_z,
-  	rec_normal_x, rec_normal_y, rec_normal_z,
-		rec_t,
+    in_radius,
+    sphere_index,
+    ray_t_max,
+    ret_x, ret_y, ret_z,
+    ret_f,
+    ret_valid
+  );
+
+  // Store best results
+  hit_record_partial(
+    ray_index,
+    sphere_index,
+    ray_t_max,
+    origin_x, origin_y, origin_z,
+    direction_x, direction_y, direction_z,
+    in_center_x, in_center_y, in_center_z,
+    in_radius,
+    rec_p_x, rec_p_y, rec_p_z,
+    rec_normal_x, rec_normal_y, rec_normal_z,
+    rec_t,
     rec_front_face,
     rec_sphere_index
-	);
+  );
 }
 
 std::unique_ptr<BaseKernel> s_sphere_hit;
@@ -271,14 +272,18 @@ std::unique_ptr<BaseKernel> s_sphere_hit;
 void init() {
   if (s_sphere_hit != nullptr) return;
 
+  timers.start("kernel::init()");
+
   s_sphere_hit.reset(new BaseKernel(compile(sphere_hit_kernel))); //, settings())));
-  to_file("sphere_hit_kernel.txt", s_sphere_hit->dump());
+  //to_file("sphere_hit_kernel.txt", s_sphere_hit->dump());
+
+  timers.stop("kernel::init()");
 }
 
 
 void sphere_hit(
   ray const &r, int ray_index,
-	int N_spheres,
+  int N_spheres,
   Float::Array &center_x, Float::Array &center_y, Float::Array &center_z,
   Float::Array &radius,
   Float::Array &rec_p_x, Float::Array &rec_p_y, Float::Array &rec_p_z,
@@ -303,17 +308,17 @@ void sphere_hit(
   int sphere_blocks = resize_16(N_spheres) >> 4;
 
   s_sphere_hit->load(
-		ray_index,
+    ray_index,
     o_x, o_y, o_z,
     d_x, d_y, d_z,
     sphere_blocks,
     &center_x, &center_y, &center_z,
     &radius,
-  	&rec_p_x, &rec_p_y, &rec_p_z,
-  	&rec_normal_x, &rec_normal_y, &rec_normal_z,
-  	&rec_t,
-  	&rec_front_face,
-  	&rec_sphere_index,
+    &rec_p_x, &rec_p_y, &rec_p_z,
+    &rec_normal_x, &rec_normal_y, &rec_normal_z,
+    &rec_t,
+    &rec_front_face,
+    &rec_sphere_index,
     &ret_x, &ret_y, &ret_z,
     &ret_f,
     &ret_valid

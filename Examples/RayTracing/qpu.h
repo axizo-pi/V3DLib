@@ -10,9 +10,8 @@ namespace qpu {
 std::string origin_dump(int index);
 
 void kernels_init();
-void init_arrays(int image_width, int image_height, int samples_per_pixel, int num_spheres);
+void init_arrays(int num_spheres);
 
-int num_rays();
 int set_ray(ray const &in_ray, int r, int c, int spp);
 ray get_ray(uint32_t index);
 

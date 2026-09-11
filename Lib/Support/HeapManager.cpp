@@ -82,7 +82,6 @@ bool HeapManager::check_available(uint32_t n) {
   assert(n > 0);
 
   if (m_offset + n > m_size) {
-    
     cerr << "HeapManager::check_available "
          << "requested: " << n                   << ", "
          << "available: " << (m_size - m_offset) << ", "
