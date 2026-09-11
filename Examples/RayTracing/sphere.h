@@ -14,6 +14,7 @@
 
 class sphere : public hittable {
   public:
+    sphere(const sphere& s) = default;
     sphere(const point3& center, double radius, shared_ptr<material> mat);
 
     bool hit(const ray& r, interval ray_t, hit_record& rec, int ray_index, int sphere_index, bool qpu_check = false) const override;
@@ -31,6 +32,17 @@ class sphere : public hittable {
     double m_radius;
     shared_ptr<material> m_mat;
 };
+
+
+namespace spheres {
+
+void add(shared_ptr<hittable> object);
+//void add(sphere const &s);
+sphere const &get(int index);
+int size();
+void clear();
+
+} // namespace spheres
 
 
 #endif

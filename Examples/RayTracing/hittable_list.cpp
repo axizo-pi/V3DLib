@@ -17,20 +17,16 @@ bool hittable_list::hit(const ray& r, interval ray_t, hit_record& rec, int ray_i
 
   timers.start("hittable_list::hit");
 
-  for (int i = 0; i < (int) objects.size(); ++i) {
-    sphere const &s0 = (sphere const &) *objects[i];
-    //OK, exact  assert(qpu::same_sphere(i, s0));
+  for (int i = 0; i < spheres::size(); ++i) {
+    sphere const &s0 = spheres::get(i);              // OK, exact  assert(qpu::same_sphere(i, s0));
+    //sphere s1 = qpu::get_sphere(i);                // Performance hog!
 
-    sphere s1 = qpu::get_sphere(i);  // No material, seq fault later on
-
-    s1.mat(s0.mat()); // Copy over the material
-
-    if (s1.hit(r, interval(ray_t.min, closest_so_far), temp_rec, ray_index, i, qpu_check)) {
+    if (s0.hit(r, interval(ray_t.min, closest_so_far), temp_rec, ray_index, i, qpu_check)) {
       //warn << "hittable_list Hit!";
       hit_anything = true;
       closest_so_far = temp_rec.t;
       rec = temp_rec;
-      rec.mat = s0.mat(); // Copy over the material
+      rec.mat = s0.mat(); // Copy over the material, seg fault if not added
     }
   }
 

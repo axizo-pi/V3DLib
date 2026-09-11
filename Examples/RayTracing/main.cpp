@@ -26,14 +26,16 @@ using namespace V3DLib;
 using namespace Log;
 
 void init_spheres(hittable_list const &world) {
-  //warn << "init_spheres() size: " << world.objects.size();
+  timers.start("init_spheres");
 
-  for (int i = 0; i < (int) world.objects.size(); ++i) {
-    sphere const &s = (sphere const &) *world.objects[i];
+  for (int i = 0; i < spheres::size(); ++i) {
+    sphere const &s = spheres::get(i);
     qpu::add_sphere(i, s);
 
     assert(qpu::same_sphere(i, s)); // OK, comparison is exact
   }
+
+  timers.stop("init_spheres");
 }
 
 
@@ -87,7 +89,7 @@ int main() {
     camera cam;
 
     cam.aspect_ratio      = 16.0 / 9.0;
-    cam.image_width       = 64; //1200;
+    cam.image_width       = 128; //64; //1200;
     cam.samples_per_pixel = 10;
     cam.max_depth         = 20;
 
@@ -101,7 +103,7 @@ int main() {
 
     cam.initialize();
 
-    int num_spheres = (int) world.objects.size();
+    int num_spheres = spheres::size();
     qpu::init_arrays(cam.image_width, cam.image_height, cam.samples_per_pixel, num_spheres);
     cam.init_rays();
     init_spheres(world);
@@ -112,8 +114,8 @@ int main() {
     cam.render(world);
 
   timers.stop("Run");
-  timers.end();
 
+  timers.end();
   qpu::end();
   bitdiff_stats::dump();
 }

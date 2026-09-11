@@ -14,7 +14,11 @@ void hit_record::set_face_normal(const ray& r, const vec3& outward_normal) {
 
 std::string hit_record::dump() const {
 	std::string ret;
-	//ret << "p: " << p.dump();
-	ret << "t: " << t;
+
+	ret << "p: "          << p.dump()      << ", "
+	    << "normal: "     << normal.dump() << ", "
+	    << "t: "          << t             << ", "
+			<< "front_face: " << front_face;
+
 	return ret;
 }

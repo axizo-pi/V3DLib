@@ -7,6 +7,37 @@
 #include "Support/basics.h"
 #include <cassert>
 
+using namespace V3DLib;
+
+/**
+ * @brief Indicator for run mode.
+ *
+ * There are three options for running:
+ *
+ * - RunQPU    - Run QPU calculation only
+ * - RunScalar - Run CPU calculation only
+ * - RunCheck  - Run both QPU and CPU and compare output where checks are enabled
+ */
+enum RunMode {
+	RunQPU,
+	RunScalar,
+	RunCheck
+};
+
+const RunMode run_mode = RunScalar;
+
+/**
+ * | RunMode | Width | Run  Time (s) | Comment                   |
+ * |---------|-------|---------------|---------------------------|
+ * | Scalar  |  64   |  2.147673     |                           |
+ * | QPU     |  64   |  3.962608     | Kernel call per every ray |
+ * | Scalar  | 128   |  8.599195     |                           |
+ * | QPU     | 128   | 16.356966     | 1 call/ray                |
+ * | Scalar  | 192   |               | heap overflow             |
+ * | QPU     | 192   |               | 1 call/ray, heap overflow |
+ * | QPU     | 256   |               | 1 call/ray, heap overflow |
+ */
+
 
 void camera::initialize() {
   image_height = int(image_width / aspect_ratio);
@@ -82,21 +113,34 @@ void camera::render(const hittable& world) {
   int index_limit = (num_indexes < 10000)?(num_indexes < 1000? 10: 100): 1000;
   int cur_limit = 0;
 
-  for (int index = 0; index < num_indexes; index += samples_per_pixel) {
-    //warn << "index: " << index;
+	//
+	// QPU Calculation
+	//
+	if (run_mode != RunScalar) {
+	  timers.start("QPU run");
+  	for (int index = 0; index < num_indexes; index++) {
+	    ray r = qpu::get_ray(index);
+	    qpu::hittable_list_hit(r, index);
+		}
+	  timers.stop("QPU run");
+	}
+
+
+  for (int index = 0; index < num_indexes; index+= samples_per_pixel) {
     if (index >= cur_limit) {
       std::clog << "\rRays remaining: " << (num_indexes - index) << ' ' << std::flush;
       cur_limit += index_limit;
     }
 
+		// Calculate color averaged over samples
     color pixel_color(0,0,0);
     for (int sample = 0; sample < samples_per_pixel; sample++) {
       int index2 = (index + sample);
       ray r2 = qpu::get_ray(index2);
-      //warn << "r2(" << index2 << "): " << r2.dump();
 
-      pixel_color += ray_color(r2, max_depth, world, index2, true);
+      pixel_color += ray_color(r2, max_depth, world, index2, (run_mode == RunCheck));
     }
+
     ret << write_color(pixel_samples_scale * pixel_color);
   }
 
@@ -127,6 +171,12 @@ vec3 camera::sample_square() const {
 }
 
 
+/**
+ * This method is called recursively for scattered rays.
+ *
+ * @param do_qpu If true, do any activated validation tests between QPU and scalar calculations.
+ *               This is done on the first level of hit-calculations, not for scattered rays.
+ */
 color camera::ray_color(const ray& r, int depth, const hittable& world, int ray_index, bool do_qpu) const {
   // If we've exceeded the ray bounce limit, no more light is gathered.
   if (depth <= 0)
@@ -134,15 +184,37 @@ color camera::ray_color(const ray& r, int depth, const hittable& world, int ray_
 
   hit_record rec;
 
-  if (do_qpu) {
-    qpu::hittable_list_hit(r, ray_index);
-  }
+	auto do_hit = [&world, &r, ray_index, do_qpu, &rec, depth, this] (bool qpu_hit) -> bool {
+		if (qpu_hit && depth == this->max_depth) {
+			if (!hit_records::valid(ray_index)) return false;
 
-  if (world.hit(r, interval(0.001, infinity), rec, ray_index, -1, do_qpu)) {
-    //warn << "Hit!";
+			rec = hit_records::get(ray_index);
+/*
+			warn << "arr: " << hit_records::dump(ray_index);
+
+			std::string msg;
+			msg << "TODO qpu_hit ray_index: " << ray_index;
+			assertq(false, msg);
+*/
+			return true;
+		} else {
+	  	bool ret = world.hit(r, interval(0.001, infinity), rec, ray_index, -1, do_qpu);
+
+			if (do_qpu && depth == this->max_depth) {
+				assert(hit_records::valid(ray_index) == ret);
+			}
+
+			return ret;
+		}
+	};
+
+  if (do_hit(run_mode == RunQPU)) {
   	if (do_qpu) {
-		  //warn << "rec: " << rec.dump() << "; array: " << hit_records::dump(ray_index);
-			hit_records::check(ray_index, rec);
+			if (depth == max_depth) {
+				//warn << "rec: " << rec.dump();
+				//warn << "arr: " << hit_records::dump(ray_index);
+				hit_records::check(ray_index, rec);
+			}
 	  }
 
     // Scatter is skipped for qpu (for now, I hope)
@@ -155,8 +227,9 @@ color camera::ray_color(const ray& r, int depth, const hittable& world, int ray_
       warn << "Scatter fail";
     }
     return color(0,0,0);
-  }
+	}
 
+	// Set default color for miss
   vec3 unit_direction = unit_vector(r.direction());
   auto a = 0.5*(unit_direction.y() + 1.0);
   return (1.0-a)*color(1.0, 1.0, 1.0) + a*color(0.5, 0.7, 1.0);

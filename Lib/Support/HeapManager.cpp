@@ -84,10 +84,10 @@ bool HeapManager::check_available(uint32_t n) {
   if (m_offset + n > m_size) {
     
     cerr << "HeapManager::check_available "
-         << "requested: " << n << ", "
+         << "requested: " << n                   << ", "
+         << "available: " << (m_size - m_offset) << ", "
+         << "total: "     << m_size << " (" << (m_size/(1024*1024)) << "MB)";
          //<< "m_offset: "  << m_offset            << ", "
-         //<< "m_size: "    << m_size              << ", "
-         << "available: " << (m_size - m_offset);
 
     fatal("V3DLib: heap overflow (increase heap size)");  // throws, doesn't return
     return false;

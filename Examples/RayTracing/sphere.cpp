@@ -5,6 +5,7 @@
 #include "Support/dump.h"
 #include <cmath>
 #include <iostream>
+#include <vector>
 
 using namespace V3DLib;
 using namespace Log;
@@ -196,7 +197,7 @@ bool sphere::hit(const ray& r, interval ray_t, hit_record& rec, int ray_index, i
 
   vec3 outward_normal = (rec.p - m_center) / m_radius;
   // bitmax 95% <= 6
-  // check_vec(outward_normal);
+  // Call: check_vec(outward_normal);
   //
   // Verified: qpu length values are never 0.0f, close enough to scalar lengths.
   // length bitmax 99% <= 6
@@ -222,3 +223,41 @@ std::string sphere::dump() const {
   ret << "sphere center: " <<  m_center.dump() << ", radius: " << m_radius;
   return ret;
 }
+
+
+////////////////////////////////////////////
+// Spheres
+
+////////////////////////////////////////////
+namespace spheres {
+namespace {
+
+std::vector<shared_ptr<hittable>> objects;
+
+}  // anon namespace
+
+/*
+void add(sphere const &s) {
+	shared_ptr<sphere> object = std::make_shared<sphere>(s);
+	objects.push_back(object);
+}
+*/
+
+
+void add(shared_ptr<hittable> object) {
+  objects.push_back(object);
+}
+
+sphere const &get(int index) {
+	return (sphere const &) *objects[index];
+}
+
+int size() {
+	int ret = (int) objects.size();
+  //warn << "spheres size: " << ret;
+  return ret;
+}
+
+void clear() { objects.clear(); }
+
+} // namespace spheres

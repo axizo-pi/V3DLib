@@ -40,6 +40,8 @@ namespace hit_records {
 
 std::string dump(int index);
 void check(int index, hit_record const &rec);
+hit_record get(int index);
+bool valid(int index);
 
 } // namespace hit_records
 

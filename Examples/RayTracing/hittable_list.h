@@ -10,20 +10,14 @@
 // You should have received a copy (see file COPYING.txt) of the CC0 Public Domain Dedication
 // along with this software. If not, see <http://creativecommons.org/publicdomain/zero/1.0/>.
 //==============================================================================================
-#include "hittable.h"
-#include <vector>
+#include "sphere.h"
 
 class hittable_list : public hittable {
   public:
-    std::vector<shared_ptr<hittable>> objects;
-
     hittable_list() {}
-    hittable_list(shared_ptr<hittable> object) { add(object); }
-
-    void clear() { objects.clear(); }
 
     void add(shared_ptr<hittable> object) {
-        objects.push_back(object);
+			spheres::add(object);
     }
 
     bool hit(const ray& r, interval ray_t, hit_record& rec, int ray_index, int sphere_index, bool qpu_check = false) const override;

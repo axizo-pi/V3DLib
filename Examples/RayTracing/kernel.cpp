@@ -3,8 +3,6 @@
 #include "Support/Helpers.h"
 #include <memory>
 
-using namespace V3DLib;
-
 namespace kernel {
 namespace {
 
@@ -13,18 +11,27 @@ namespace {
  */
 void hit_record_partial(
 	Int   &ray_index,
-	Int   &sphere_index,
+	Int   &in_sphere_index,
 	Float &in_t,
-  Float &origin_x,     Float &origin_y,     Float &origin_z,
-  Float &direction_x,  Float &direction_y,  Float &direction_z,
+  Float &origin_x,    Float &origin_y,    Float &origin_z,
+  Float &direction_x, Float &direction_y, Float &direction_z,
+  Float::Ptr &in_center_x, Float::Ptr &in_center_y, Float::Ptr &in_center_z,
+  Float::Ptr &in_radius,
+	// Output parameters
   Float::Ptr &rec_p_x, Float::Ptr &rec_p_y, Float::Ptr &rec_p_z,
-  Float::Ptr &rec_t
+  Float::Ptr &rec_normal_x, Float::Ptr &rec_normal_y, Float::Ptr &rec_normal_z,
+  Float::Ptr &rec_t,
+  Float::Ptr &rec_front_face,
+  Int::Ptr   &rec_sphere_index
 ) {
 	Float t;
 
 	// Get the best t of the values in the 16-vector `in_t`.
 	// This should be the lowest value.
-	rotate_min(in_t, t);
+	Int min_index;
+	rotate_min(in_t, t, min_index);
+	Int sphere_index;
+	element_at(in_sphere_index, min_index, sphere_index);
 
   // rec.p = r.at(rec.t);
   Float p_x = origin_x + (t*direction_x);                     comment("Start ray.at()");
@@ -32,11 +39,16 @@ void hit_record_partial(
   Float p_y = origin_y + (t*direction_y);
   Float p_z = origin_z + (t*direction_z);
 
-#if 0
   //vec3 outward_normal = (rec.p - m_center) / m_radius;
-  outward_normal_x = (rec_p_x - center_x) / radius;            comment("Calc outward_normal");
-  outward_normal_y = (rec_p_y - center_y) / radius;
-  outward_normal_z = (rec_p_z - center_z) / radius;
+	Int sphere_offset = sphere_index - index();
+  Float center_x = *(in_center_x + sphere_offset);
+  Float center_y = *(in_center_y + sphere_offset);
+  Float center_z = *(in_center_z + sphere_offset);
+  Float radius   = *(in_radius   + sphere_offset);
+
+  Float outward_normal_x = (p_x - center_x) / radius;     comment("Calc outward_normal");
+  Float outward_normal_y = (p_y - center_y) / radius;
+  Float outward_normal_z = (p_z - center_z) / radius;
 
   // rec.set_face_normal(r, outward_normal);
   //
@@ -47,60 +59,55 @@ void hit_record_partial(
             + direction_z*outward_normal_z;
 
   // NOTE: minus sign is the other way around as I would expect; counter-intuitive but correct.
-  front_face = -1.0f;
+  Float front_face = -1.0f;
   Where (tmp < 0)
     front_face = 1.0f;
   End
 
-  rec_normal_x = front_face*outward_normal_x;
-  rec_normal_y = front_face*outward_normal_y;
-  rec_normal_z = front_face*outward_normal_z;
-#endif			
-
 	// `- index()` to save to a single location in main mem
 	Int offset = ray_index - index();
 
-  *(rec_t   + offset) = t;
-  *(rec_p_x + offset) = p_x;
-  *(rec_p_y + offset) = p_y;
-  *(rec_p_z + offset) = p_z;
+  *(rec_p_x        + offset) = p_x;
+  *(rec_p_y        + offset) = p_y;
+  *(rec_p_z        + offset) = p_z;
+  *(rec_normal_x   + offset) = front_face*outward_normal_x;
+  *(rec_normal_y   + offset) = front_face*outward_normal_y;
+  *(rec_normal_z   + offset) = front_face*outward_normal_z;
+  *(rec_t          + offset) = t;
+  *(rec_front_face + offset) = front_face;
+  *(rec_sphere_index + offset) = sphere_index;
 }
 
 
-/**
- * @brief Get the nearest hit for the given ray.
- *
- * All spheres are checked for a hit. The best hit, if any, is returned.
- *
- * A single ray is checked. The 16-vectors contain consecutive spheres.
- *
- * A bad hit can be detected by checking the coordinates of `rec_p_*`; a failed
- * hit has Inf coordinates.
- */
-void sphere_hit_kernel(
-	Int ray_index,
-  Float origin_x, Float origin_y, Float origin_z,
-  Float direction_x, Float direction_y, Float direction_z,
-  Int N_spheres, // Blocks of 16
-  Float::Ptr in_center_x, Float::Ptr in_center_y, Float::Ptr in_center_z,
-  Float::Ptr in_radius,
-  Float::Ptr rec_p_x, Float::Ptr rec_p_y, Float::Ptr rec_p_z,
-  Float::Ptr rec_t,
-  Float::Ptr ret_x, Float::Ptr ret_y, Float::Ptr ret_z,
-  Float::Ptr ret_f,
-  Int::Ptr   ret_valid
+void sphere_hit_partial(
+  Float &origin_x   , Float &origin_y   , Float &origin_z,
+  Float &direction_x, Float &direction_y, Float &direction_z,
+  Int &N_spheres,
+  Float::Ptr &in_center_x, Float::Ptr &in_center_y, Float::Ptr &in_center_z,
+  Float::Ptr &in_radius,
+	// Internal variables
+  Int &sphere_index,
+	Float &ray_t_max,
+	// Debug output
+  Float::Ptr &ret_x, Float::Ptr &ret_y, Float::Ptr &ret_z,
+  Float::Ptr &ret_f,
+  Int::Ptr   &ret_valid
 ) {
   Float ray_t_min  = 0.001f;
-  Float ray_t_max  = Inf();    // Is a parameter in reference app
-	Int sphere_index = -1;
+
+	// Make copies of pointers, they are also used after the loop
+	Float::Ptr p_center_x = in_center_x;
+	Float::Ptr p_center_y = in_center_y;
+	Float::Ptr p_center_z = in_center_z;
+	Float::Ptr p_radius   = in_radius;
 
   For (Int i = 0, i < N_spheres, i++)
     Int valid = 1;
 
-    Float center_x = *in_center_x;                                 comment("Start sphere loop");
-    Float center_y = *in_center_y;
-    Float center_z = *in_center_z;
-    Float radius   = *in_radius;
+    Float center_x = *p_center_x;                                 comment("Start sphere loop");
+    Float center_y = *p_center_y;
+    Float center_z = *p_center_z;
+    Float radius   = *p_radius;
 
 		// Exclude items added to resize to multiple of 16 blocks
 		Where (radius == 0.0f)
@@ -179,10 +186,10 @@ void sphere_hit_kernel(
 
     *ret_valid = valid;
 
-    in_center_x.inc();    header("Start increment pointers");
-    in_center_y.inc();
-    in_center_z.inc();
-    in_radius.inc();
+    p_center_x.inc();    header("Start increment pointers");
+    p_center_y.inc();
+    p_center_z.inc();
+    p_radius.inc();
 
     // Increment debug pointers
     ret_x.inc();
@@ -191,6 +198,53 @@ void sphere_hit_kernel(
     ret_f.inc();
     ret_valid.inc();
 	End
+}
+
+
+/**
+ * @brief Get the nearest hit for the given ray.
+ *
+ * All spheres are checked for a hit. The best hit, if any, is returned.
+ *
+ * A single ray is checked. The 16-vectors contain consecutive spheres.
+ *
+ * A bad hit can be detected by checking the coordinates of `rec_p_*`; a failed
+ * hit has Inf coordinates.
+ */
+void sphere_hit_kernel(
+	// Input values
+	Int ray_index,
+  Float origin_x, Float origin_y, Float origin_z,
+  Float direction_x, Float direction_y, Float direction_z,
+  Int N_spheres, // Blocks of 16
+  Float::Ptr in_center_x, Float::Ptr in_center_y, Float::Ptr in_center_z,
+  Float::Ptr in_radius,
+	// Output values
+  Float::Ptr rec_p_x, Float::Ptr rec_p_y, Float::Ptr rec_p_z,
+  Float::Ptr rec_normal_x, Float::Ptr rec_normal_y, Float::Ptr rec_normal_z,
+  Float::Ptr rec_t,
+  Float::Ptr rec_front_face,
+  Int::Ptr   rec_sphere_index,
+	// Debug output
+  Float::Ptr ret_x, Float::Ptr ret_y, Float::Ptr ret_z,
+  Float::Ptr ret_f,
+  Int::Ptr   ret_valid
+) {
+	Int sphere_index = -1;
+  Float ray_t_max  = Inf();    // Is a parameter in reference app
+
+	sphere_hit_partial(
+  	origin_x, origin_y, origin_z,
+	  direction_x, direction_y, direction_z,
+	  N_spheres,
+	  in_center_x, in_center_y, in_center_z,
+	  in_radius,
+		sphere_index,
+		ray_t_max,
+	  ret_x, ret_y, ret_z,
+	  ret_f,
+	  ret_valid
+	);
 
 	// Store best results
 	hit_record_partial(
@@ -199,8 +253,13 @@ void sphere_hit_kernel(
 		ray_t_max,
   	origin_x, origin_y, origin_z,
   	direction_x, direction_y, direction_z,
+    in_center_x, in_center_y, in_center_z,
+		in_radius,
   	rec_p_x, rec_p_y, rec_p_z,
-		rec_t
+  	rec_normal_x, rec_normal_y, rec_normal_z,
+		rec_t,
+    rec_front_face,
+    rec_sphere_index
 	);
 }
 
@@ -223,7 +282,10 @@ void sphere_hit(
   Float::Array &center_x, Float::Array &center_y, Float::Array &center_z,
   Float::Array &radius,
   Float::Array &rec_p_x, Float::Array &rec_p_y, Float::Array &rec_p_z,
+  Float::Array &rec_normal_x, Float::Array &rec_normal_y, Float::Array &rec_normal_z,
   Float::Array &rec_t,
+  Float::Array &rec_front_face,
+  Int::Array   &rec_sphere_index,
   Float::Array &ret_x, Float::Array &ret_y, Float::Array &ret_z,
   Float::Array &ret_f,
   Int::Array   &ret_valid
@@ -233,7 +295,6 @@ void sphere_hit(
   float o_x = (float) r.origin().x();
   float o_y = (float) r.origin().y();
   float o_z = (float) r.origin().z();
-
 
   float d_x = (float) r.direction().x();
   float d_y = (float) r.direction().y();
@@ -249,7 +310,10 @@ void sphere_hit(
     &center_x, &center_y, &center_z,
     &radius,
   	&rec_p_x, &rec_p_y, &rec_p_z,
+  	&rec_normal_x, &rec_normal_y, &rec_normal_z,
   	&rec_t,
+  	&rec_front_face,
+  	&rec_sphere_index,
     &ret_x, &ret_y, &ret_z,
     &ret_f,
     &ret_valid
