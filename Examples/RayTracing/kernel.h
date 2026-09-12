@@ -18,10 +18,7 @@ void sphere_hit(
   Float::Array &rec_normal_x, Float::Array &rec_normal_y, Float::Array &rec_normal_z,
   Float::Array &rec_t,
   Float::Array &rec_front_face,
-  Int::Array   &rec_sphere_index,
-  Float::Array &ret_x, Float::Array &ret_y, Float::Array &ret_z,
-  Float::Array &ret_f,
-  Int::Array   &ret_valid
+  Int::Array   &rec_sphere_index
 );
 
 } // namespace kernel

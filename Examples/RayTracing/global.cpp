@@ -1,6 +1,7 @@
 #include "global.h"
 #include "rtweekend.h"
 #include "Support/Timer.h"
+#include "Support/Helpers.h"  // to_file();
 #include <cassert>
 
 using namespace V3DLib;
@@ -9,21 +10,27 @@ using namespace V3DLib;
  *
  * - Setting main_memory(true) for pure Scalar does not work,
  *   probably because Array items are global.
+ * - Added multiple passes, taking default heap memory size into account.
+ *   This fixes the heap overflow.
+ * - 1 call/ray only relevant for RunQPU
  *
- * | RunMode | Width | Run  Time (s) | Comment                   |
- * |---------|-------|---------------|---------------------------|
- * | Scalar  |  64   |  2.147673     |                           |
- * | QPU     |  64   |  3.962608     | Kernel call per every ray |
- * | Scalar  | 128   |  8.599195     |                           |
- * | QPU     | 128   | 16.356966     | 1 call/ray                |
- * | Scalar  | 192   |               | heap overflow             |
- * | QPU     | 192   |               | 1 call/ray, heap overflow |
- * | QPU     | 256   |               | 1 call/ray, heap overflow |
+ * | RunMode | Width | Run  Time (s) | Num passes |1 call/ray |Comment                   |
+ * |---------|-------|---------------|------------|-----------|--------------------------|
+ * | Scalar  |  64   |   2.147673    |  1         |           |                          |
+ * | QPU     |  64   |   3.962608    |  1         | y         |                          |
+ * | Scalar  | 128   |   8.599195    |  1         |           |                          |
+ * | QPU     | 128   |  16.356966    |  1         | y         |                          |
+ * | Scalar  | 192   |  19.153500    |  3         |           |                          |
+ * | QPU     | 192   |  34.133194    |  3         | y         |                          |
+ * | Scalar  | 256   |  34.370761    |  4         |           |                          |
+ * | QPU     | 256   |  60.193135    |  4         | y         |                          |
+ * | Scalar  | 512   | 135.673185    | 16         |           |                          |
+ * | QPU     | 512   | 240.844060    | 16         | y         |                          |
  */
 
 namespace {
 
-RunMode s_run_mode = RunScalar;
+RunMode s_run_mode = RunQPU;
 
 double s_aspect_ratio      = 1.0;  // Ratio of image width over height
 int    s_image_width       = 100;  // Rendered image width in pixel count
@@ -180,43 +187,66 @@ void ViewPort::init() {
 
 
 bool RayIterator::done() const {
-  return !(
-         (j < s_image_height)
-      && (i < s_image_width)
-      && (sample < s_samples_per_pixel)
-  );
+  return (j == s_image_height);
 }
 
 
-void RayIterator::inc() {
-  assert(!done());
-
-  if (sample < s_samples_per_pixel) {
-    sample++;
-  } else {
-    if (i < s_image_width) {
-      sample = 0;
-      i++;
-    } else {
-      if (j < s_image_height) {
-        sample = 0;
-        i      = 0;
-        j++;
-      } else {
-        assert(false);
-      }
-    }
-  }
-}
-
-
-bool RayIterator::next(std::function<void(int index, ray r)> f) {
+bool RayIterator::inc() {
   if (done()) return false;
 
-  int index = (j*s_image_width +  i)*s_samples_per_pixel + sample;
-  ray r = global::get_ray(i, j);
+	// Special case for first element
+	if (i == -1) {
+		i = 0;
+		j = 0;
+		sample = 0;
+		return true;
+	}
 
-  f(index, r);
+  sample++;
+  if (sample == s_samples_per_pixel) {
+		sample = 0;
+    i++;
 
-  return true;
+	  if (i == s_image_width) {
+			i = 0;
+	    j++;
+		}
+
+	  //if (j == s_image_height) {
+		//	return false;
+		//}
+	}
+
+	return !done();
+}
+
+
+bool RayIterator::next(std::function<bool(int index, ray r)> f) {
+	if (inc()) {
+  	int index = (j*s_image_width +  i)*s_samples_per_pixel + sample;
+		assert(index >= 0);  // Check for overflow (not inconceivable, we're dealing with huge numbers
+	  ray r = global::get_ray(i, j);
+
+	  return f(index, r);
+	} else {
+		return false;
+	}
+}
+
+
+RayIterator ray_iterator;
+
+
+PPM::PPM() {
+  ret << "P3\n" << global::image_width() << " " << global::image_height() << "\n255\n";
+}
+
+
+void PPM::write_color(const color& pixel_color) {
+	ret << ::write_color(pixel_color);
+}
+
+
+void PPM::write() const {
+  V3DLib::to_file("out.ppm", ret);
 }

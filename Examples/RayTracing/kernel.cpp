@@ -88,11 +88,7 @@ void sphere_hit_partial(
   Float::Ptr &in_radius,
   // Internal variables
   Int &sphere_index,
-  Float &ray_t_max,
-  // Debug output
-  Float::Ptr &ret_x, Float::Ptr &ret_y, Float::Ptr &ret_z,
-  Float::Ptr &ret_f,
-  Int::Ptr   &ret_valid
+  Float &ray_t_max
 ) {
   Float ray_t_min  = 0.001f;
 
@@ -126,19 +122,15 @@ void sphere_hit_partial(
     Float dir_z = direction_z;
 
     Float a = dir_x*dir_x + dir_y*dir_y + dir_z*dir_z;             comment("Float a");
-    //*ret_f = a;
 
     //auto h = f_dot(r.direction(), oc);
     Float h = dir_x*oc_x + dir_y*oc_y + dir_z*oc_z;                comment("Float h");
-    //*ret_f = h;
 
     //auto c = oc.length_squared() - m_radius*m_radius;
     Float c = (oc_x*oc_x + oc_y*oc_y + oc_z*oc_z) - radius*radius; comment("Float c");
-    //*ret_f = c;
 
     //auto discriminant = h*h - a*c;
     Float discriminant = h*h - a*c;                                comment("Float discriminant");
-    *ret_f = discriminant;
 
     // if (discriminant < 0) return false;
     Where (discriminant < 0.0f)  // `<=` leads to differences
@@ -177,27 +169,10 @@ void sphere_hit_partial(
       sphere_index = 16*i + index();
     End
 
-    // Debug output
-    //*ret_f = sqrtd;
-    *ret_f = root;
-    //*ret_f = root_2;
-    //*ret_x = rec_normal_x;
-    //*ret_y = rec_normal_y;
-    //*ret_z = rec_normal_z;
-
-    *ret_valid = valid;
-
     p_center_x.inc();    header("Start increment pointers");
     p_center_y.inc();
     p_center_z.inc();
     p_radius.inc();
-
-    // Increment debug pointers
-    ret_x.inc();
-    ret_y.inc();
-    ret_z.inc();
-    ret_f.inc();
-    ret_valid.inc();
   End
 }
 
@@ -225,11 +200,7 @@ void sphere_hit_kernel(
   Float::Ptr rec_normal_x, Float::Ptr rec_normal_y, Float::Ptr rec_normal_z,
   Float::Ptr rec_t,
   Float::Ptr rec_front_face,
-  Int::Ptr   rec_sphere_index,
-  // Debug output
-  Float::Ptr ret_x, Float::Ptr ret_y, Float::Ptr ret_z,
-  Float::Ptr ret_f,
-  Int::Ptr   ret_valid
+  Int::Ptr   rec_sphere_index
 ) {
   Int sphere_index = -1;
   Float ray_t_max  = Inf();    // Is a parameter in reference app
@@ -241,10 +212,7 @@ void sphere_hit_kernel(
     in_center_x, in_center_y, in_center_z,
     in_radius,
     sphere_index,
-    ray_t_max,
-    ret_x, ret_y, ret_z,
-    ret_f,
-    ret_valid
+    ray_t_max
   );
 
   // Store best results
@@ -290,10 +258,7 @@ void sphere_hit(
   Float::Array &rec_normal_x, Float::Array &rec_normal_y, Float::Array &rec_normal_z,
   Float::Array &rec_t,
   Float::Array &rec_front_face,
-  Int::Array   &rec_sphere_index,
-  Float::Array &ret_x, Float::Array &ret_y, Float::Array &ret_z,
-  Float::Array &ret_f,
-  Int::Array   &ret_valid
+  Int::Array   &rec_sphere_index
 ) {
   //warn << "sphere_hit N_spheres: " << N_spheres;
 
@@ -318,15 +283,8 @@ void sphere_hit(
     &rec_normal_x, &rec_normal_y, &rec_normal_z,
     &rec_t,
     &rec_front_face,
-    &rec_sphere_index,
-    &ret_x, &ret_y, &ret_z,
-    &ret_f,
-    &ret_valid
+    &rec_sphere_index
   ).run();
-
-  // Checking kernel values origin (kernel adjusted)
-  // All tests xyz and index exact
-  //bitdiff_stats::add(ret_x[256], (float) r.origin().x(), 100);
 }
 
 } // namespace kernel

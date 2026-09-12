@@ -507,8 +507,18 @@ void log_to_cout(bool val) {
 }
 
 
-void assertq(bool condition, const std::string &msg) {
+/**
+ * @brief Alternative for `assert` that throws passed string.
+ */
+void assertq(bool condition, const std::string &msg, bool do_break) {
   if (condition) return;
+
+#ifdef DEBUG
+  if (do_break) {
+    std::cout << "assertq(): breakpoint with message: '" << msg << "'" << std::endl;
+    breakpoint
+  }
+#endif
 
   if (msg.empty()) {
     fatal << "assertq failed.\n";

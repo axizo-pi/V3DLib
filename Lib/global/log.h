@@ -85,7 +85,7 @@ void set_log_file(std::string const &file);
 std::string log_file();
 void log_to_cout(bool val);
 
-void assertq(bool condition, const std::string &msg = "");
+void assertq(bool condition, const std::string &msg = "", bool do_break = false);
 
 inline void assertq(const std::string &msg) {
   assertq(false, msg);

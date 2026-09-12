@@ -62,15 +62,31 @@ ray get_ray(int i, int j);
 
 
 class RayIterator {
+public: 	
   bool done() const;
-  bool next(std::function<void(int index, ray r)> f);
+  bool next(std::function<bool(int index, ray r)> f);
 
 private:
-  int i = 0;       // Index over width
+  int i = -1;      // Index over width, -1 indicates not run yet
   int j = 0;       // Index over height
   int sample = 0;
 
-  void inc();
+  bool inc();
 };
+
+extern RayIterator ray_iterator;
+
+
+class PPM {
+using color = vec3;
+
+public:
+	PPM();
+	void write_color(const color& pixel_color);
+	void write() const;
+
+private:
+	std::string ret;
+};	
 
 #endif // _RAYTRACING_GLOBAL_H

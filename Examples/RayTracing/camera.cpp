@@ -4,12 +4,10 @@
 #include "material.h"
 #include "qpu.h"
 #include "global.h"
-#include "Support/Helpers.h"
 #include "Support/basics.h"
 #include <cassert>
 
 using namespace V3DLib;
-
 
 void camera::initialize() {
   pixel_samples_scale = 1.0 / global::samples_per_pixel();
@@ -27,27 +25,39 @@ void camera::initialize() {
  * For qpu, a number of these 'diffused' rays are passed in for the calculation.
  *
  * The number of samples per ray is determined by `samples_per_pixel`.
+ *
+ * @return number of rays added. This is zero when done.
  */
-void camera::init_rays() {
-  for (int j = 0; j < global::image_height(); j++) {
-    for (int i = 0; i < global::image_width(); i++) {
-      for (int sample = 0; sample < global::samples_per_pixel(); sample++) {
-        ray r = global::get_ray(i, j);
-        qpu::set_ray(r, j, i, sample);
-      }
-    }
-  }
+int camera::init_rays() {
+	static int call_count = 0;
+	call_count++;
+
+	timers.start("init_rays()");
+
+	qpu::rays_reset();
+
+	while (ray_iterator.next([] (int index, ray r) -> bool {
+		//warn << "index: " << index << ", ray: " << r.dump();
+		return qpu::set_ray(r, index);
+	}));
+
+	int ret = qpu::num_rays();
+	assert(ret % global::samples_per_pixel() == 0); // Samples per pixel must be in same buffer
+	
+	timers.stop("init_rays()");
+
+	if (ret > 0) {
+		warn << "init_rays did pass " << call_count << ", num rays: " << ret;
+	}
+
+	return ret;
 }
 
 
-void camera::render(const hittable& world) {
-  warn << "Called render()";
-
-  std::string ret;
-  ret << "P3\n" << global::image_width() << " " << global::image_height() << "\n255\n";
+void camera::render(const hittable& world, PPM &ret) {
+  //warn << "Called render()";
 
   int num_indexes = global::num_rays();
-  warn << "num_indexes: " << num_indexes;
 
   int index_limit = (num_indexes > 50000)?10000:(
       (num_indexes > 10000)?1000:(
@@ -62,15 +72,17 @@ void camera::render(const hittable& world) {
   //
   if (global::run_mode() != RunScalar) {
     timers.start("QPU run");
-    for (int index = 0; index < num_indexes; index++) {
-      ray r = qpu::get_ray(index);
+
+    for (int index = 0; index < qpu::num_rays(); index++) {
+      ray r = qpu::get_ray(index, false);
       qpu::hittable_list_hit(r, index);
     }
+
     timers.stop("QPU run");
   }
 
 
-  for (int index = 0; index < num_indexes; index += global::samples_per_pixel()) {
+  for (int index = qpu::ray_first_index(); index < qpu::ray_last_index(); index += global::samples_per_pixel()) {
     if (index >= cur_limit) {
       std::clog << "\rRays remaining: " << (num_indexes - index) << ' ' << std::flush;
       cur_limit += index_limit;
@@ -85,11 +97,8 @@ void camera::render(const hittable& world) {
       pixel_color += ray_color(r2, max_depth, world, index2, (global::run_mode() == RunCheck));
     }
 
-    ret << write_color(pixel_samples_scale * pixel_color);
+    ret.write_color(pixel_samples_scale * pixel_color);
   }
-
-  std::clog << "\rDone.                 \n";
-  V3DLib::to_file("out.ppm", ret);
 }
 
 
@@ -147,10 +156,9 @@ color camera::ray_color(const ray& r, int depth, const hittable& world, int ray_
     ray scattered;
     color attenuation;
     if (rec.mat->scatter(r, rec, attenuation, scattered)) {
-      //warn << "Scatter!";
       return attenuation * ray_color(scattered, depth-1, world, ray_index, false);
     } else {
-      warn << "Scatter fail";
+      //TODO warn << "Scatter fail";
     }
     return color(0,0,0);
   }

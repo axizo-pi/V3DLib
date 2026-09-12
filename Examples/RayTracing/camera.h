@@ -21,8 +21,8 @@ class camera: public ViewPort {
     int    max_depth         = 10;   // Maximum number of ray bounces into scene
 
     void initialize();
-    void init_rays();
-    void render(const hittable& world); 
+    int  init_rays();
+    void render(const hittable& world, PPM &ret); 
 
   private:
     double pixel_samples_scale;  // Color scale factor for a sum of pixel samples

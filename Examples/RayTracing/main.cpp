@@ -89,7 +89,7 @@ int main() {
     camera cam;
 
     global::aspect_ratio(16.0 / 9.0);
-    global::image_width(128); // 64; //1200;
+    global::image_width(512); //1200;
     global::samples_per_pixel(10);
 
     cam.max_depth  = 20;
@@ -103,16 +103,30 @@ int main() {
 
     int num_spheres = spheres::size();
     qpu::init_arrays(num_spheres);
-    cam.init_rays();
     init_spheres(world);
 
+  warn << "num rays: " << global::num_rays();
+
   timers.stop("Init");
-  timers.start("Run");
 
-    cam.render(world);
+	{
+	  timers.start("Run");
 
-  timers.stop("Run");
+		PPM ppm;
 
+		while (!ray_iterator.done()) {
+    	if (cam.init_rays() > 0) {
+			  cam.render(world, ppm);
+			}
+		}
+
+	  std::clog << "\rDone.                 \n";
+		ppm.write();
+
+  	timers.stop("Run");
+	}
+
+	// Finalize output
   timers.end();
   qpu::end();
   bitdiff_stats::dump();

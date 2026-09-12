@@ -15,10 +15,29 @@ namespace {
 
 int s_exact_match   = 0;
 int s_total_matches = 0;
-int s_zeroes        = 0;
-int s_negatives     = 0;
 
 int s_num_spheres     = 0;
+
+// Size of point arrays.
+// Value is a decent heuristic, which fits into the default heap size.
+const int ArraySize = 92160;
+
+// Index of first item in point array
+// -1 indicates 'not filled'
+int s_point_first_index = -1;
+
+// Number of items in point arrays
+int s_point_count = 0;
+
+
+int relative_index(int ray_index) {
+	int index = ray_index - s_point_first_index;
+	assert(s_point_count > 0);
+	assert(0 <= index && index < s_point_count);
+
+	return index;
+}
+
 
 struct points {
   void alloc(int in_size) {
@@ -111,13 +130,8 @@ Float::Array radius;
 // Hit record values
 HitRecords hit_records;
 
-// DEBUG
-points       ret_p;
-Float::Array ret_f;
-Int::Array   ret_valid;
 
-
-bool same_vec(int index, vec3 const &v, points const &pts, int bit_min = 0, bool show_log = true) {
+MAYBE_UNUSED bool same_vec(int index, vec3 const &v, points const &pts, int bit_min = 0, bool show_log = true) {
   int bits_x = bit_diff(pts.x[index], (float) v.x(), bit_min);
   int bits_y = bit_diff(pts.y[index], (float) v.y(), bit_min);
   int bits_z = bit_diff(pts.z[index], (float) v.z(), bit_min);
@@ -179,7 +193,7 @@ bool same_vec(vec3 const &lhs, vec3 const &rhs, int bit_min = 0) {
 }
 
 
-bool same_float(int index, float val, Float::Array &ret_f, int bit_min = 0) {
+MAYBE_UNUSED bool same_float(int index, float val, Float::Array &ret_f, int bit_min = 0) {
   assert(bit_min >= -1);
 
   int bits = same_bits(ret_f[index] , val, bit_min);
@@ -213,7 +227,9 @@ void kernels_init() {
 
 
 void init_arrays(int num_spheres) {
-  uint32_t size = global::num_rays();
+	assert(ArraySize % global::samples_per_pixel() == 0); // Samples per pixel must be in same buffer
+
+  uint32_t size = ArraySize; //global::num_rays();
   assert(size % 16 == 0);
 
   origin.alloc(size);
@@ -226,58 +242,81 @@ void init_arrays(int num_spheres) {
 
   center.alloc(s_num_spheres);
   radius.alloc(s_num_spheres);
-
-  ret_p.alloc(s_num_spheres);
-  ret_f.alloc(s_num_spheres);
-  ret_valid.alloc(s_num_spheres);
 }
 
 
 /**
- *
- * @param  r    Row index of ray
- * @param  c    Column index of ray
- * @param  spp  Sample per pixel
- * @return      Index into Float arrays
+ * @return true if can add a ray after this call,
+ *         false if arrays now filled.
  */
-int set_ray(ray const &in_ray, int r, int c, int spp) {
-  int index = (r*global::image_width() +  c)*global::samples_per_pixel() + spp;
-  //warn << "set_ray index: " << index;
+bool set_ray(ray const &in_ray, int ray_index) {
+	if (s_point_first_index == -1) {
+		//warn << "set_ray resetting first index";
+		assert(ray_index >= 0);
+		s_point_first_index = ray_index;
+		s_point_count = 0;
+	} else {
+		assert(s_point_count < ArraySize);
+	}
 
-  assert(origin.x[index] == 0.0f);  // Assuming rest of arrays also zero
+	int index = ray_index - s_point_first_index;
+	assert(0 <= index && index < ArraySize);
 
   origin.set_vec(index, in_ray.origin());
   direction.set_vec(index, in_ray.direction());
 
-  return index;
+	s_point_count++;
+	bool ret = (s_point_count < ArraySize);
+
+	//if (!ret) {
+	//	warn << "set_ray arrays full";
+	//}
+	return ret;
 }
 
 
-ray get_ray(uint32_t index) {
+ray get_ray(uint32_t ray_index, bool absolute_index) {
   timers.start("get_ray(index)");
+
+	int index;
+
+	if (absolute_index) {
+		index = ray_index - s_point_first_index;
+	} else {
+		index = ray_index;
+	}
+
+	assert(s_point_count > 0);
+	assert(0 <= index && index < s_point_count);
 
   vec3 tmp_origin    = origin.to_vec(index);
   vec3 tmp_direction = direction.to_vec(index);
 
   ray ret(tmp_origin, tmp_direction);
-  timers.stop("get_ray(index)");
 
+  timers.stop("get_ray(index)");
   return ret;
 }
 
 
-float get_f(int index) {
-  return ret_f[index];
+int num_rays() {
+	return s_point_count;
+}
+
+int ray_first_index() {
+	assert(s_point_first_index >=0);
+	return s_point_first_index;
+}
+
+int ray_last_index() {
+	assert(s_point_first_index >=0);
+	return s_point_first_index + s_point_count;
 }
 
 
-vec3 get_ret(int index) {
-  return ret_p.to_vec(index);
-}
-
-
-int get_valid(int index) {
-  return ret_valid[index];
+void rays_reset() {
+	s_point_first_index = -1;
+	s_point_count = 0;
 }
 
 
@@ -343,28 +382,9 @@ void hittable_list_hit(const ray &r, int ray_index) {
     hit_records.normal.x, hit_records.normal.y, hit_records.normal.z,
     hit_records.t,
     hit_records.front_face,
-    hit_records.sphere_index,
-    ret_p.x, ret_p.y, ret_p.z,
-    ret_f,
-    ret_valid
+    hit_records.sphere_index
   );
   timers.stop("hittable_list_hit");
-}
-
-
-bool check_ret(int sphere_index, vec3 const &v, int bit_min, bool show_log) {
-  timers.start("check_ret");
-  bool ret = same_vec(sphere_index, v, qpu::ret_p, bit_min, show_log);
-  timers.stop("check_ret");
-  return ret;
-}
-
-
-bool check_f(int sphere_index, double val, int bit_min) {
-  timers.start("check_f");
-  bool ret = same_float(sphere_index, (float) val, qpu::ret_f, bit_min);
-  timers.stop("check_f");
-  return ret;
 }
 
 
@@ -377,15 +397,9 @@ void end() {
 
   warn << "\n"
        << "  Total        : " << s_total_matches << "\n"
-       << "  exact matches: " << s_exact_match << ", " << percent(s_exact_match) << "\n"
-       << "  zeroes       : " << s_zeroes      << ", " << percent(s_zeroes)      << "\n"
-       << "  negatives    : " << s_negatives   << ", " << percent(s_negatives)
+       << "  exact matches: " << s_exact_match << ", " << percent(s_exact_match)
   ;
 }
-
-
-void add_zero() { s_zeroes++; }
-void add_negative() { s_negatives++; }
 
 }  // namespace qpu
 
@@ -428,9 +442,10 @@ void check(int index, hit_record const &rec) {
 }
 
 
-hit_record get(int index) {
+hit_record get(int ray_index) {
   timers.start("hit_records::get");
 
+	int index = qpu::relative_index(ray_index);
   hit_record ret;
 
   auto p      = qpu::hit_records.p.to_vec(index);
@@ -456,9 +471,13 @@ hit_record get(int index) {
   return ret;
 }  
 
-bool valid(int index) {
+
+bool valid(int ray_index) {
+	int index =  qpu::relative_index(ray_index);
+
   float val = qpu::hit_records.p.x[index];
   float inf = std::numeric_limits<float>::infinity();
+
   return val != inf && val != -inf;
 }  
 

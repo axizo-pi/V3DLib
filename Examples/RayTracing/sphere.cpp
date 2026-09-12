@@ -10,42 +10,6 @@
 using namespace V3DLib;
 using namespace Log;
 
-namespace {
-
-MAYBE_UNUSED void qpu_check_ret(vec3 const &v, int ray_index, int sphere_index) {
-  timers.start("qpu_check ret");
-
-  std::string buf;
-  buf  << "check_ret failed at "
-       << "ray_index: " << ray_index << ", "
-       << "sphere_index: " << sphere_index;
-
-  vec3 zero(0,0,0);
-  vec3 negative = -1.0f*v;
-
-  int zero_bit_diff    = 14;
-
-  if (Platform::compiling_for_vc4()) {
-    zero_bit_diff  = 18;
-  }
-
-   if (qpu::check_ret(sphere_index, zero, 0, false)) {
-    //warn << buf << ": qpu is zero";
-    qpu::add_zero();
-  } else if (qpu::check_ret(sphere_index, negative, zero_bit_diff, false)) {
-    //warn << buf << ": qpu is negative";
-    qpu::add_negative();
-  } else if (!qpu::check_ret(sphere_index, v)) { //, 1.7e-5f, 10)) {
-    warn << buf << "\n";
-    assert(false);
-  }
-
-  timers.stop("qpu_check ret");
-}
-
-} // anon namespace
-
-
 sphere::sphere(const point3& center, double radius, shared_ptr<material> mat)
   : m_center(center), m_radius(std::fmax(0,radius)), m_mat(mat) {}
 
@@ -86,29 +50,6 @@ sphere::sphere(const point3& center, double radius, shared_ptr<material> mat)
  *   extended information.
  */
 bool sphere::hit(const ray& r, interval ray_t, hit_record& rec, int ray_index, int sphere_index, bool qpu_check) const {
-
-  /**
-   * @brief Local method to facilitate comparison of vectors.
-   */
-  MAYBE_UNUSED auto check_vec = [qpu_check, ray_index, sphere_index] (vec3 const &vec) {
-    if (!qpu_check) return; 
-
-    bool passed = qpu::check_ret(sphere_index, vec, 18);
-    if (!passed) {
-      warn << "FAIL ray_index: " << ray_index;
-    }
-//    assert(passed);
-    auto qpu_vec = qpu::get_ret(sphere_index);
-
-    if (!passed) {
-      warn << "\n  vec    : " << vec.dump()
-           << "\n  qpu_vec: " << qpu_vec.dump();
-    }      
-
-    bitdiff_stats::add((float) qpu_vec.x(), (float) vec.x(), 123);
-    bitdiff_stats::add((float) qpu_vec.y(), (float) vec.y(), 123);
-    bitdiff_stats::add((float) qpu_vec.z(), (float) vec.z(), 123);
-  };
 
   //
   // Following values all exact in test
