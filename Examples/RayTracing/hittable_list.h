@@ -23,5 +23,4 @@ class hittable_list : public hittable {
     bool hit(const ray& r, interval ray_t, hit_record& rec, int ray_index, int sphere_index, bool qpu_check = false) const override;
 };
 
-
 #endif

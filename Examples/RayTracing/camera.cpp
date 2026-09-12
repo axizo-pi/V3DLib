@@ -1,11 +1,6 @@
 #include "camera.h"
-#include "rtweekend.h"
-#include "hittable.h"
-#include "material.h"
 #include "qpu.h"
-#include "global.h"
-#include "Support/basics.h"
-#include <cassert>
+#include "material.h"
 
 using namespace V3DLib;
 
@@ -24,39 +19,32 @@ void camera::initialize() {
  * The returned rays from `get_ray()` have a small offset around the actual coordinates.
  * For qpu, a number of these 'diffused' rays are passed in for the calculation.
  *
- * The number of samples per ray is determined by `samples_per_pixel`.
+ * Timing inconsequential.
  *
  * @return number of rays added. This is zero when done.
  */
 int camera::init_rays() {
-	static int call_count = 0;
-	call_count++;
+  static int call_count = 0;
+  call_count++;
 
-	timers.start("init_rays()");
+  rays::reset();
 
-	qpu::rays_reset();
+  while (ray_iterator.next([] (int index, ray r) -> bool {
+    return rays::set(r, index);
+  }));
 
-	while (ray_iterator.next([] (int index, ray r) -> bool {
-		//warn << "index: " << index << ", ray: " << r.dump();
-		return qpu::set_ray(r, index);
-	}));
+  int ret = rays::num();
+  assert(ret % global::samples_per_pixel() == 0); // Samples per pixel must be in same buffer
+  
+  if (ret > 0) {
+    warn << "init_rays did pass " << call_count << ", num rays: " << ret;
+  }
 
-	int ret = qpu::num_rays();
-	assert(ret % global::samples_per_pixel() == 0); // Samples per pixel must be in same buffer
-	
-	timers.stop("init_rays()");
-
-	if (ret > 0) {
-		warn << "init_rays did pass " << call_count << ", num rays: " << ret;
-	}
-
-	return ret;
+  return ret;
 }
 
 
 void camera::render(const hittable& world, PPM &ret) {
-  //warn << "Called render()";
-
   int num_indexes = global::num_rays();
 
   int index_limit = (num_indexes > 50000)?10000:(
@@ -67,22 +55,7 @@ void camera::render(const hittable& world, PPM &ret) {
 
   int cur_limit = 0;
 
-  //
-  // QPU Calculation
-  //
-  if (global::run_mode() != RunScalar) {
-    timers.start("QPU run");
-
-    for (int index = 0; index < qpu::num_rays(); index++) {
-      ray r = qpu::get_ray(index, false);
-      qpu::hittable_list_hit(r, index);
-    }
-
-    timers.stop("QPU run");
-  }
-
-
-  for (int index = qpu::ray_first_index(); index < qpu::ray_last_index(); index += global::samples_per_pixel()) {
+  for (int index = rays::first_index(); index < rays::last_index(); index += global::samples_per_pixel()) {
     if (index >= cur_limit) {
       std::clog << "\rRays remaining: " << (num_indexes - index) << ' ' << std::flush;
       cur_limit += index_limit;
@@ -92,7 +65,7 @@ void camera::render(const hittable& world, PPM &ret) {
     color pixel_color(0,0,0);
     for (int sample = 0; sample < global::samples_per_pixel(); sample++) {
       int index2 = (index + sample);
-      ray r2 = qpu::get_ray(index2);
+      ray r2 = rays::get(index2);
 
       pixel_color += ray_color(r2, max_depth, world, index2, (global::run_mode() == RunCheck));
     }
@@ -100,10 +73,6 @@ void camera::render(const hittable& world, PPM &ret) {
     ret.write_color(pixel_samples_scale * pixel_color);
   }
 }
-
-
-
-
 
 
 /**
@@ -124,13 +93,6 @@ color camera::ray_color(const ray& r, int depth, const hittable& world, int ray_
       if (!hit_records::valid(ray_index)) return false;
 
       rec = hit_records::get(ray_index);
-/*
-      warn << "arr: " << hit_records::dump(ray_index);
-
-      std::string msg;
-      msg << "TODO qpu_hit ray_index: " << ray_index;
-      assertq(false, msg);
-*/
       return true;
     } else {
       bool ret = world.hit(r, interval(0.001, infinity), rec, ray_index, -1, do_qpu);
@@ -146,8 +108,6 @@ color camera::ray_color(const ray& r, int depth, const hittable& world, int ray_
   if (do_hit(global::run_mode() == RunQPU)) {
     if (do_qpu) {
       if (depth == max_depth) {
-        //warn << "rec: " << rec.dump();
-        //warn << "arr: " << hit_records::dump(ray_index);
         hit_records::check(ray_index, rec);
       }
     }
@@ -168,4 +128,3 @@ color camera::ray_color(const ray& r, int depth, const hittable& world, int ray_
   auto a = 0.5*(unit_direction.y() + 1.0);
   return (1.0-a)*color(1.0, 1.0, 1.0) + a*color(0.5, 0.7, 1.0);
 }
-

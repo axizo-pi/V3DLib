@@ -1,16 +1,20 @@
 /******************************************************************
  * Versions
  * ========
- * 9 - Prevent segfault on global shutdown, see Note 1 of Logger:msg()
- * 8 - Added globals 'global', 'fixed' and associated
- *   - Modifier flags moved to anon namespace; they are now global over all log calls
- *   - Pretty extensive refactoring to make this work
- *   - Added unit tests for logging, especially for new modifiers
- * 7 - Added rollover, improved file permissions
- * 6 - restored log_to_cout()
- * 5 - Added logging to file
- * 4 - Added thrw flag, option to suppres console output
- * 3 - Added hex flag
+ *
+ * Highest is current.
+ *
+ * 10 - Added parameter `do_break` to assertq()
+ *  9 - Prevent segfault on global shutdown, see Note 1 of Logger:msg()
+ *  8 - Added globals 'global', 'fixed' and associated
+ *      Modifier flags moved to anon namespace; they are now global over all log calls
+ *      Pretty extensive refactoring to make this work
+ *      Added unit tests for logging, especially for new modifiers
+ *  7 - Added rollover, improved file permissions
+ *  6 - restored log_to_cout()
+ *  5 - Added logging to file
+ *  4 - Added thrw flag, option to suppres console output
+ *  3 - Added hex flag
  ******************************************************************/
 #include "log.h"
 #include "Support/Helpers.h"

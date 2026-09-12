@@ -1,16 +1,12 @@
 #include "hittable_list.h"
 #include "Support/Timer.h"
-#include "qpu.h"
-#include <cassert>
 
 using namespace V3DLib;
-using namespace Log;
 
 /**
  * **NOTE**: Param sphere_index not used in the calculation, here for the override.
  */
 bool hittable_list::hit(const ray& r, interval ray_t, hit_record& rec, int ray_index,  int sphere_index, bool qpu_check) const {
-  //warn << "hittable_list::hit() ray_index: " << ray_index;
   hit_record temp_rec;
   bool hit_anything = false;
   auto closest_so_far = ray_t.max;

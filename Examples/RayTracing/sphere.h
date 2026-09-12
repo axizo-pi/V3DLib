@@ -36,8 +36,8 @@ class sphere : public hittable {
 
 namespace spheres {
 
+void init();
 void add(shared_ptr<hittable> object);
-//void add(sphere const &s);
 sphere const &get(int index);
 int size();
 void clear();

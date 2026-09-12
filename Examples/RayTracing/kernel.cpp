@@ -2,7 +2,6 @@
 #include "Source/GlobalConstants.h"
 #include "Support/Helpers.h"
 #include "Support/Timer.h"
-#include <memory>
 
 namespace kernel {
 namespace {

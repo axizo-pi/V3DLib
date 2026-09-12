@@ -1,42 +1,23 @@
 #include "qpu.h"
 #include "global.h"
 #include "kernel.h"
-#include "V3DLib.h"
 #include "Support/Helpers.h"  // resize_16()
 #include "Support/dump.h"     // bitdiff_stats()
-#include <cmath>
+#include "Support/Timer.h"
 #include <limits>             // infinity
 
-using namespace std;
 using namespace V3DLib;
 
 namespace qpu {
 namespace {
 
-int s_exact_match   = 0;
-int s_total_matches = 0;
-
-int s_num_spheres     = 0;
-
 // Size of point arrays.
 // Value is a decent heuristic, which fits into the default heap size.
 const int ArraySize = 92160;
 
-// Index of first item in point array
-// -1 indicates 'not filled'
-int s_point_first_index = -1;
-
-// Number of items in point arrays
-int s_point_count = 0;
-
-
-int relative_index(int ray_index) {
-	int index = ray_index - s_point_first_index;
-	assert(s_point_count > 0);
-	assert(0 <= index && index < s_point_count);
-
-	return index;
-}
+int s_exact_match   = 0;
+int s_total_matches = 0;
+int s_num_spheres   = 0;
 
 
 struct points {
@@ -213,10 +194,6 @@ MAYBE_UNUSED bool same_float(int index, float val, Float::Array &ret_f, int bit_
 
 }  // anon namespace
 
-std::string origin_dump(int index) {
-  return origin.dump_vec(index);
-}
-
 
 void kernels_init() {
   // Don't bother initializing kernel if not used.
@@ -227,7 +204,7 @@ void kernels_init() {
 
 
 void init_arrays(int num_spheres) {
-	assert(ArraySize % global::samples_per_pixel() == 0); // Samples per pixel must be in same buffer
+  assert(ArraySize % global::samples_per_pixel() == 0); // Samples per pixel must be in same buffer
 
   uint32_t size = ArraySize; //global::num_rays();
   assert(size % 16 == 0);
@@ -242,81 +219,6 @@ void init_arrays(int num_spheres) {
 
   center.alloc(s_num_spheres);
   radius.alloc(s_num_spheres);
-}
-
-
-/**
- * @return true if can add a ray after this call,
- *         false if arrays now filled.
- */
-bool set_ray(ray const &in_ray, int ray_index) {
-	if (s_point_first_index == -1) {
-		//warn << "set_ray resetting first index";
-		assert(ray_index >= 0);
-		s_point_first_index = ray_index;
-		s_point_count = 0;
-	} else {
-		assert(s_point_count < ArraySize);
-	}
-
-	int index = ray_index - s_point_first_index;
-	assert(0 <= index && index < ArraySize);
-
-  origin.set_vec(index, in_ray.origin());
-  direction.set_vec(index, in_ray.direction());
-
-	s_point_count++;
-	bool ret = (s_point_count < ArraySize);
-
-	//if (!ret) {
-	//	warn << "set_ray arrays full";
-	//}
-	return ret;
-}
-
-
-ray get_ray(uint32_t ray_index, bool absolute_index) {
-  timers.start("get_ray(index)");
-
-	int index;
-
-	if (absolute_index) {
-		index = ray_index - s_point_first_index;
-	} else {
-		index = ray_index;
-	}
-
-	assert(s_point_count > 0);
-	assert(0 <= index && index < s_point_count);
-
-  vec3 tmp_origin    = origin.to_vec(index);
-  vec3 tmp_direction = direction.to_vec(index);
-
-  ray ret(tmp_origin, tmp_direction);
-
-  timers.stop("get_ray(index)");
-  return ret;
-}
-
-
-int num_rays() {
-	return s_point_count;
-}
-
-int ray_first_index() {
-	assert(s_point_first_index >=0);
-	return s_point_first_index;
-}
-
-int ray_last_index() {
-	assert(s_point_first_index >=0);
-	return s_point_first_index + s_point_count;
-}
-
-
-void rays_reset() {
-	s_point_first_index = -1;
-	s_point_count = 0;
 }
 
 
@@ -336,24 +238,17 @@ void add_sphere(int index, sphere const &in_sphere) {
 
 
 /**
- * Disgustingly inefficient, like 20x worse than original access.
- * TODO: set up things to avoid having to use it.
+ * **NOTE**: Material not added here
  *
- * Material not added here
+ * This used to be used extensively, causing a significant performance hit.
+ * Main loop for the testcase is about 4s without iti, instead of 22s.
  *
- * Major performance hog! Timing:
- *
- *     get_sphere        : 22.961639s in 19246572 steps, average:  0.000001s
- *
- * Main loop for the testcase is about 4s without it.
+ * Timing inconsequential.
  */
 sphere get_sphere(int index) {
-  timers.start("get_sphere");
-
   assert(0 <= index && index < num_spheres());
   auto ret = sphere(center.to_vec(index), (double) radius[index], nullptr);
 
-  timers.stop("get_sphere");
   return ret;
 }
 
@@ -368,6 +263,22 @@ bool same_sphere(int index, sphere const &s) {
       && bit_diff((float) s0.radius(), (float) s.radius(), bit_min);
 }
 
+
+void end() {
+  auto percent = [] (int val) -> std::string {
+    std::string ret;
+    ret << (int) (100.0*val/s_total_matches) << "%";
+    return ret;
+  };
+
+  warn << "\n"
+       << "  Total        : " << s_total_matches << "\n"
+       << "  exact matches: " << s_exact_match << ", " << percent(s_exact_match)
+  ;
+}
+
+
+namespace {
 
 void hittable_list_hit(const ray &r, int ray_index) {
   assert(s_num_spheres > 0);
@@ -387,21 +298,113 @@ void hittable_list_hit(const ray &r, int ray_index) {
   timers.stop("hittable_list_hit");
 }
 
+} // anon namespace
 
-void end() {
-  auto percent = [] (int val) -> std::string {
-    std::string ret;
-    ret << (int) (100.0*val/s_total_matches) << "%";
-    return ret;
-  };
 
-  warn << "\n"
-       << "  Total        : " << s_total_matches << "\n"
-       << "  exact matches: " << s_exact_match << ", " << percent(s_exact_match)
-  ;
+void run_kernel() {
+  assert(global::run_mode() != RunScalar);
+
+  timers.start("QPU run");
+
+  for (int index = 0; index < rays::num(); index++) {
+    ray r = rays::get(index, false);
+    hittable_list_hit(r, index);
+  }
+
+  timers.stop("QPU run");
 }
 
 }  // namespace qpu
+
+
+namespace rays {
+namespace {
+
+// Index of first item in point array
+// -1 indicates 'not filled'
+int s_point_first_index = -1;
+
+// Number of items in point arrays
+int s_point_count = 0;
+
+
+int relative_index(int ray_index) {
+  int index = ray_index - s_point_first_index;
+  assert(s_point_count > 0);
+  assert(0 <= index && index < s_point_count);
+
+  return index;
+}
+
+} // anon namespace
+
+
+bool set(ray const &in_ray, int ray_index) {
+  if (s_point_first_index == -1) {
+    //warn << "set_ray resetting first index";
+    assert(ray_index >= 0);
+    s_point_first_index = ray_index;
+    s_point_count = 0;
+  } else {
+    assert(s_point_count < qpu::ArraySize);
+  }
+
+  int index = ray_index - s_point_first_index;
+  assert(0 <= index && index < qpu::ArraySize);
+
+  qpu::origin.set_vec(index, in_ray.origin());
+  qpu::direction.set_vec(index, in_ray.direction());
+
+  s_point_count++;
+  bool ret = (s_point_count < qpu::ArraySize);
+
+  return ret;
+}
+
+
+/**
+ * Timing inconsequential.
+ */
+ray get(uint32_t ray_index, bool absolute_index) {
+  int index = ray_index;
+
+  if (absolute_index) {
+    index -= s_point_first_index;
+  }
+
+  assert(s_point_count > 0);
+  assert(0 <= index && index < s_point_count);
+
+  vec3 tmp_origin    = qpu::origin.to_vec(index);
+  vec3 tmp_direction = qpu::direction.to_vec(index);
+
+  return ray(tmp_origin, tmp_direction);
+}
+
+
+int num() {
+  return s_point_count;
+}
+
+
+int first_index() {
+  assert(s_point_first_index >=0);
+  return s_point_first_index;
+}
+
+
+int last_index() {
+  assert(s_point_first_index >=0);
+  return s_point_first_index + s_point_count;
+}
+
+
+void reset() {
+  s_point_first_index = -1;
+  s_point_count = 0;
+}
+
+}  // namespace rays
 
 
 bool same(ray const &lhs, ray const &rhs) {
@@ -445,7 +448,7 @@ void check(int index, hit_record const &rec) {
 hit_record get(int ray_index) {
   timers.start("hit_records::get");
 
-	int index = qpu::relative_index(ray_index);
+  int index = rays::relative_index(ray_index);
   hit_record ret;
 
   auto p      = qpu::hit_records.p.to_vec(index);
@@ -473,7 +476,7 @@ hit_record get(int ray_index) {
 
 
 bool valid(int ray_index) {
-	int index =  qpu::relative_index(ray_index);
+  int index =  rays::relative_index(ray_index);
 
   float val = qpu::hit_records.p.x[index];
   float inf = std::numeric_limits<float>::infinity();

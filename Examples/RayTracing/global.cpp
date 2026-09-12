@@ -1,8 +1,7 @@
 #include "global.h"
-#include "rtweekend.h"
 #include "Support/Timer.h"
+#include "rtweekend.h"
 #include "Support/Helpers.h"  // to_file();
-#include <cassert>
 
 using namespace V3DLib;
 
@@ -14,6 +13,7 @@ using namespace V3DLib;
  *   This fixes the heap overflow.
  * - 1 call/ray only relevant for RunQPU
  *
+ * |---------|-------|---------------|------------|-----------|--------------------------|
  * | RunMode | Width | Run  Time (s) | Num passes |1 call/ray |Comment                   |
  * |---------|-------|---------------|------------|-----------|--------------------------|
  * | Scalar  |  64   |   2.147673    |  1         |           |                          |
@@ -26,11 +26,12 @@ using namespace V3DLib;
  * | QPU     | 256   |  60.193135    |  4         | y         |                          |
  * | Scalar  | 512   | 135.673185    | 16         |           |                          |
  * | QPU     | 512   | 240.844060    | 16         | y         |                          |
+ * |---------|-------|---------------|------------|-----------|--------------------------|
  */
 
 namespace {
 
-RunMode s_run_mode = RunQPU;
+RunMode s_run_mode = RunScalar;
 
 double s_aspect_ratio      = 1.0;  // Ratio of image width over height
 int    s_image_width       = 100;  // Rendered image width in pixel count
@@ -38,7 +39,7 @@ int    s_image_height      = -1;   // Rendered image height
 int    s_samples_per_pixel = 10;   // Count of random samples for each pixel
 
 //
-// Viewport and defocus stuff
+// Defocus stuff
 //
 point3 pixel00_loc;          // Location of pixel 0, 0
 double defocus_angle = 0;  // Variation angle of rays through each pixel
@@ -49,6 +50,7 @@ vec3   defocus_disk_v;       // Defocus disk vertical radius
 vec3   pixel_delta_u;        // Offset to pixel to the right
 vec3   pixel_delta_v;        // Offset to pixel below
 point3 center;               // Camera center
+
 
 /**
  * @brief Returns the vector to a random point in the [-.5,-.5]-[+.5,+.5] unit square.
@@ -75,19 +77,15 @@ point3 defocus_disk_sample() {
 
 namespace global {
 
-RunMode run_mode() {
-  return s_run_mode;
-}
+RunMode run_mode()                 { return s_run_mode; }
+int     image_width()              { return s_image_width; }
+void    samples_per_pixel(int val) { s_samples_per_pixel = val; }
+int     samples_per_pixel()        { return s_samples_per_pixel; }
 
 
 void aspect_ratio(double val) {
   s_aspect_ratio = val;
   s_image_height = -1;
-}
-
-
-int image_width() {
-  return s_image_width;
 }
 
 
@@ -104,15 +102,6 @@ int image_height() {
   }
 
   return s_image_height;
-}
-
-
-void samples_per_pixel(int val) {
-  s_samples_per_pixel = val;
-}
-
-int samples_per_pixel() {
-  return s_samples_per_pixel;
 }
 
 
@@ -142,12 +131,13 @@ void defocus_init(ViewPort const &vp, point3 const &in_center) {
 }
 
 
+/**
+ * @brief Construct a camera ray originating from the defocus disk and directed at a randomly
+ *        sampled point around the pixel location i, j.
+ *
+ * Timing inconsequential.
+ */
 ray get_ray(int i, int j) {
-  timers.start("get_ray(i, j)");
-
-  // Construct a camera ray originating from the defocus disk and directed at a randomly
-  // sampled point around the pixel location i, j.
-
   auto offset = sample_square();
   auto pixel_sample = pixel00_loc
     + ((i + offset.x()) * pixel_delta_u)
@@ -156,9 +146,7 @@ ray get_ray(int i, int j) {
   auto ray_origin = (defocus_angle <= 0) ? center : defocus_disk_sample();
   auto ray_direction = pixel_sample - ray_origin;
 
-  ray ret(ray_origin, ray_direction);
-  timers.stop("get_ray(i, j)");
-  return ret;
+  return ray(ray_origin, ray_direction);
 }
 
 } // namespace global
@@ -194,43 +182,39 @@ bool RayIterator::done() const {
 bool RayIterator::inc() {
   if (done()) return false;
 
-	// Special case for first element
-	if (i == -1) {
-		i = 0;
-		j = 0;
-		sample = 0;
-		return true;
-	}
+  // Special case for first element
+  if (i == -1) {
+    i = 0;
+    j = 0;
+    sample = 0;
+    return true;
+  }
 
   sample++;
   if (sample == s_samples_per_pixel) {
-		sample = 0;
+    sample = 0;
     i++;
 
-	  if (i == s_image_width) {
-			i = 0;
-	    j++;
-		}
+    if (i == s_image_width) {
+      i = 0;
+      j++;
+    }
+  }
 
-	  //if (j == s_image_height) {
-		//	return false;
-		//}
-	}
-
-	return !done();
+  return !done();
 }
 
 
 bool RayIterator::next(std::function<bool(int index, ray r)> f) {
-	if (inc()) {
-  	int index = (j*s_image_width +  i)*s_samples_per_pixel + sample;
-		assert(index >= 0);  // Check for overflow (not inconceivable, we're dealing with huge numbers
-	  ray r = global::get_ray(i, j);
+  if (inc()) {
+    int index = (j*s_image_width +  i)*s_samples_per_pixel + sample;
+    assert(index >= 0);  // Check for overflow (not inconceivable, we're dealing with huge numbers
+    ray r = global::get_ray(i, j);
 
-	  return f(index, r);
-	} else {
-		return false;
-	}
+    return f(index, r);
+  } else {
+    return false;
+  }
 }
 
 
@@ -243,7 +227,7 @@ PPM::PPM() {
 
 
 void PPM::write_color(const color& pixel_color) {
-	ret << ::write_color(pixel_color);
+  ret << ::write_color(pixel_color);
 }
 
 

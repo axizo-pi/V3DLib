@@ -62,7 +62,7 @@ ray get_ray(int i, int j);
 
 
 class RayIterator {
-public: 	
+public:   
   bool done() const;
   bool next(std::function<bool(int index, ray r)> f);
 
@@ -81,12 +81,12 @@ class PPM {
 using color = vec3;
 
 public:
-	PPM();
-	void write_color(const color& pixel_color);
-	void write() const;
+  PPM();
+  void write_color(const color& pixel_color);
+  void write() const;
 
 private:
-	std::string ret;
-};	
+  std::string ret;
+};  
 
 #endif // _RAYTRACING_GLOBAL_H

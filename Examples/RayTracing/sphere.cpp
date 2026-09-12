@@ -29,7 +29,7 @@ sphere::sphere(const point3& center, double radius, shared_ptr<material> mat)
  * Notes
  * -----
  *
- *1. When`qpu_check == true`, the QPU calculations are verified.
+ * 1. When`qpu_check == true`, the QPU calculations are verified.
  *
  *   The interim assertions depend on debug return values (`ret_f, ret_x, ret_y, ret_z`) for that step.
  *   In other words, the kernel needs to be adjusted to return the correct interim value.
@@ -71,10 +71,6 @@ bool sphere::hit(const ray& r, interval ray_t, hit_record& rec, int ray_index, i
     return false;
   }
 
-  //
-  // From here onwards, checking `qpu_check` is required for scalar-QPU comparison
-  //
-
   float sqrtd = std::sqrt(discriminant);
 
   //
@@ -107,17 +103,6 @@ bool sphere::hit(const ray& r, interval ray_t, hit_record& rec, int ray_index, i
       //}
     }
   }
-
-#if 0
-  if (qpu_check) {
-    //if (!qpu::check_f(sphere_index, root, 2)) {
-    //  breakpoint;
-    //}
-    assert(qpu::check_f(sphere_index, root, 5));
-    assert(qpu::get_valid(sphere_index) == 1);
-    //bitdiff_stats::add(qpu::get_f(sphere_index), (float) root, 1);
-  }
-#endif  
 
   rec.t = root;
 
@@ -155,7 +140,6 @@ bool sphere::hit(const ray& r, interval ray_t, hit_record& rec, int ray_index, i
 
   rec.mat = m_mat;
   return true;
-  //return false;
 }
 
 
@@ -168,8 +152,8 @@ std::string sphere::dump() const {
 
 ////////////////////////////////////////////
 // Spheres
-
 ////////////////////////////////////////////
+
 namespace spheres {
 namespace {
 
@@ -177,28 +161,23 @@ std::vector<shared_ptr<hittable>> objects;
 
 }  // anon namespace
 
-/*
-void add(sphere const &s) {
-  shared_ptr<sphere> object = std::make_shared<sphere>(s);
-  objects.push_back(object);
-}
-*/
 
+/**
+ * Timing inconsequential
+ */
+void init() {
+  for (int i = 0; i < size(); ++i) {
+    sphere const &s = get(i);
+    qpu::add_sphere(i, s);
 
-void add(shared_ptr<hittable> object) {
-  objects.push_back(object);
-}
-
-sphere const &get(int index) {
-  return (sphere const &) *objects[index];
+    assert(qpu::same_sphere(i, s)); // OK, comparison is exact
+  }
 }
 
-int size() {
-  int ret = (int) objects.size();
-  //warn << "spheres size: " << ret;
-  return ret;
-}
 
-void clear() { objects.clear(); }
+void          add(shared_ptr<hittable> object) { objects.push_back(object); }
+sphere const &get(int index)                   { return (sphere const &) *objects[index]; }
+int           size()                           { return (int) objects.size(); }
+void          clear()                          { objects.clear(); }
 
 } // namespace spheres
