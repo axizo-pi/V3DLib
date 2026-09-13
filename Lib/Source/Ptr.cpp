@@ -84,7 +84,9 @@ void Pointer::inc() {
  * add directly.
  */
 PointerExpr Pointer::offset(IntExpr b) {
-  return mkApply(expr(), Op(ADD, INT32), b.expr());
+	auto ret = bare_addself(*this, b);
+	self() = ret;
+	return ret;
 }
 
 

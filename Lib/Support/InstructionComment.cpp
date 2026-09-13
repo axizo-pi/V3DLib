@@ -4,46 +4,16 @@
 namespace V3DLib {
 
 InstructionComment::InstructionComment() :
-	m_header(""),
-	m_comment(""),
-	m_main_header(true)
+	m_header_1(""),
+	m_header_2(""),
+	m_comment("")
 {}
-
-/*
-// Experimental. Default ctor is prob good enough
-//TODO: is it needed?
-InstructionComment::InstructionComment(InstructionComment const &rhs) :
-	m_header(rhs.m_header),
-	m_comment(rhs.m_comment),
-	m_main_header(rhs.m_main_header)
-{
-	//warn << "InstructionComment ctor(rhs)";
-}
-*/
 
 
 void InstructionComment::transfer_comments(InstructionComment const &rhs) {
-  if (!rhs.header().empty()) {
-  	if (header().empty()) {
-			m_main_header = rhs.m_main_header;  // Never a problem
-		} else if(!m_main_header) {  // Retain main header of `this` if set
-			auto prev = m_main_header;
-
-			m_main_header = rhs.m_main_header;
-
-			if (m_main_header != prev) {
-				warn << "transfer_comments main_header changed to: " << m_main_header;
-			}
-
-		}
-
-    header(rhs.header());
-  }
-
-  if (!rhs.comment().empty()) {
-    comment(rhs.comment());
-  }
-
+  header(rhs.m_header_1);
+  sub_header(rhs.m_header_2);
+  comment(rhs.comment());
   rhs.m_transferred = true;
 }
 
@@ -57,52 +27,57 @@ bool InstructionComment::transferred() const {
 
 
 void InstructionComment::clear_comments() {
-  m_header.clear();
+  m_header_1.clear();
+  m_header_2.clear();
   m_comment.clear();
-	m_main_header = true;
   assert(!m_transferred);
 }
 
 
 bool InstructionComment::has_comments() const {
-  return !m_header.empty() || !m_comment.empty();
+  return !m_header_1.empty() || !m_header_2.empty() || !m_comment.empty();
 }
 
 
 /**
- * Assign header comment to current instance
- *
- * For display purposes only, when generating a dump of the opcodes.
+ * Note that only top-level header is returned.
  */
-void InstructionComment::header(std::string const &msg) {
+std::string const &InstructionComment::header()  const { return m_header_1; }
+
+std::string const &InstructionComment::comment() const { return m_comment; }
+
+namespace {
+
+void assign_header(std::string &header, std::string const &msg) {
   if (msg.empty()) return;
 
-  if (!m_header.empty()) {
+  if (!header.empty()) {
     // If input is same as current, ignore
-    if (msg == m_header) return;
+    if (msg == header) return;
 
-    warn << "header() Header comment already has a value when setting it\n"
-         << "current: " << m_header << "\n"
+    warn << "assign_header() Header comment already has a value when setting it\n"
+         << "current: " << header << "\n"
          << "new: "     << msg      << "\n"
     ;
   }
 
-  if (!m_header.empty()) {
-    m_header << "\n";
+  if (!header.empty()) {
+    header << "\n";
   }
 
-  m_header <<  msg;
+  header <<  msg;
+}
+
+} // anon namespace
+
+
+void InstructionComment::header(std::string const &msg) {
+	assign_header(m_header_1, msg);
 }
 
 
 void InstructionComment::sub_header(std::string const &msg) {
-	if (header().empty()) {
-		m_main_header = false;
-	} else {
-		assert(!m_main_header);  // Warn me if/when this happens
-	}
-
-	header(msg);
+	assign_header(m_header_2, msg);
 }
 
 
@@ -127,22 +102,28 @@ void InstructionComment::comment(std::string msg) {
 
 
 std::string InstructionComment::emit_header(std::string const &comment_prefix) const {
-  if (m_header.empty()) return "";
+  if (m_header_1.empty() && m_header_2.empty()) return "";
 
 	auto c = comment_prefix;
 	std::string pre = "\n";
 	pre << c << " ";
 
-  std::string buf = header();
-  findAndReplaceAll(buf, "\n", pre);
+	std::string ret;
 
-  std::string ret;
+  if (!m_header_1.empty()) {
+	  std::string buf = m_header_1;
+	  findAndReplaceAll(buf, "\n", pre);
 
-	if (m_main_header) {
 	  ret << "\n" << c << pre << buf << "\n" << c << "\n";
-	} else {
+	}
+
+  if (!m_header_2.empty()) {
+	  std::string buf = m_header_2;
+	  findAndReplaceAll(buf, "\n", pre);
+
 	  ret << pre << buf << "\n";
 	}
+
   return ret;
 }
 
