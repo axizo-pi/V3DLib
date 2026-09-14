@@ -68,7 +68,15 @@ Float::Float(float x) {
 
 Float::Float(FloatExpr e)    { assign_intern(e.expr()); }
 Float::Float(Deref<Float> d) { assign_intern(d.expr()); }
-Float::Float(Float const &x) { assign_intern(x.expr()); }
+
+Float::Float(Float const &x) {
+	if (this == &x) {
+		cerr << "Float ctor: Can not initialize Float with self" << thrw;
+	}
+
+	Log::warn << "Float ctor Float const x: " << x.dump();
+	assign_intern(x.expr());
+}
 
 
 /**
@@ -147,17 +155,17 @@ Float &Float::operator=(float rhs) {
 
 /** @} */ // end of group SourceLanguage
 
-
 Float &Float::operator=(Float &rhs) {
-  assign(m_expr, rhs.expr());
-  return rhs;
-}
-
-Float &Float::operator=(Float const &rhs) {
+	warn << "Float::operator=(Float &" << rhs.dump() << ")";
   assign(m_expr, rhs.expr());
   return self();
 }
 
+Float &Float::operator=(Float const &rhs) {
+	warn << "Float::operator=(Float const &" << rhs.dump() << ")";
+  assign(m_expr, rhs.expr());
+  return self();
+}
 
 FloatExpr Float::operator=(FloatExpr const &rhs) {
   assign(m_expr, rhs.expr());

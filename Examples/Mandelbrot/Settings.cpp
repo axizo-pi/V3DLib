@@ -3,9 +3,6 @@
 
 using namespace V3DLib;
 
-//#include <signal.h>
-//#define breakpoint raise(SIGTRAP)
-
 namespace {
 
 std::vector<const char *> const _kernels = { "multi", "cpu" };  // Order important! First is default, 'all' must be last

@@ -47,6 +47,10 @@ Int::Int(IntExpr e) {
 }
 
 Int::Int(Int const &x) {
+	if (this == &x) {
+		cerr << "Int ctor: Can not initialize Int with self" << thrw;
+	}
+
   //Log::warn << "Int ctor int const";
   assign_intern(x.expr());
 }

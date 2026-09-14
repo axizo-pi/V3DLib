@@ -51,6 +51,8 @@ void Compile::compile(std::function<void()> create_ast) {
     m_numVars = VarGen::count();
   } catch (V3DLib::Exception const &e) {
     // TODO: Looks like this one is not used, cleanup?
+		breakpoint; // Warn me when this happens, TODO test on all platforms
+
     std::string e_msg = e.what();
     Log::warn << "V3DLib::Exception caught: " << e_msg;
 
@@ -129,14 +131,13 @@ bool Compile::handle_errors() {
   Log::cout_timestamp ts(false);
 
   std::string buf;
-
-  buf << "Errors encountered during compilation and/or encoding:\n";
+  buf << "\n\nErrors encountered during compilation and/or encoding:\n";
 
   for (auto const &err : m_errors) {
     buf << "  * " << err << "\n";
   }
 
-  buf << "\nNot running the kernel\n";
+  buf << "Not running the kernel\n";
 
   cerr << buf;
 
