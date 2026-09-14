@@ -83,6 +83,7 @@ void set_log_dir(std::string const &path);
 std::string log_dir();
 void set_log_file(std::string const &file);
 std::string log_file();
+void enable_log_file();
 void log_to_cout(bool val);
 
 void assertq(bool condition, const std::string &msg = "", bool do_break = false);
