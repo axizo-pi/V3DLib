@@ -11,7 +11,8 @@ using namespace V3DLib;
  *   probably because Array items are global.
  * - Added multiple passes, taking default heap memory size into account.
  *   This fixes the heap overflow.
- * - 1 call/ray only relevant for RunQPU
+ * - 1 call/ray only relevant for RunQPU.
+ *   The alternative is to calculate *all* initialized rays with a single kernel.
  *
  * |---------|-------|---------------|------------|-----------|--------------------------|
  * | RunMode | Width | Run  Time (s) | Num passes |1 call/ray |Comment                   |
@@ -31,7 +32,7 @@ using namespace V3DLib;
 
 namespace {
 
-RunMode s_run_mode = RunScalar;
+RunMode s_run_mode = RunQPU;
 
 double s_aspect_ratio      = 1.0;  // Ratio of image width over height
 int    s_image_width       = 100;  // Rendered image width in pixel count
@@ -42,7 +43,7 @@ int    s_samples_per_pixel = 10;   // Count of random samples for each pixel
 // Defocus stuff
 //
 point3 pixel00_loc;          // Location of pixel 0, 0
-double defocus_angle = 0;  // Variation angle of rays through each pixel
+double defocus_angle = 0;    // Variation angle of rays through each pixel
 vec3   defocus_disk_u;       // Defocus disk horizontal radius
 vec3   defocus_disk_v;       // Defocus disk vertical radius
 

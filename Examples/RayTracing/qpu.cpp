@@ -4,24 +4,31 @@
 #include "Support/Helpers.h"  // resize_16()
 #include "Support/dump.h"     // bitdiff_stats()
 #include "Support/Timer.h"
+#include "material.h"         // For default material
 #include <limits>             // infinity
 
 using namespace V3DLib;
 
-namespace qpu {
 namespace {
 
-// Size of point arrays.
-// Value is a decent heuristic, which fits into the default heap size.
-const int ArraySize = 92160;
+/**
+ * Size of point arrays.
+ *
+ * Output fails for multi-ray kernel if the array size is selected too large.
+ * I can not determine why this happens (overflow? I/O is swamped?).
+ *
+ * The single-ray kernel works fine. This test done on pi5 (vc7), rest not done yet.
+ *
+ * The workaround for now is to limit the array sizes here.
+ */
+const int ArraySize = 12800; //Highest value I could determine that succeeds. Fail: 20480;
+//const int ArraySize = 92160; // Decent heuristic, which fits into the default heap size.
 
 int s_exact_match   = 0;
 int s_total_matches = 0;
-int s_num_spheres   = 0;
-
 
 struct points {
-  void alloc(int in_size) {
+  void alloc(int in_size, float init_val = 0.0f) {
     size = in_size;
     assert(size > 0);
 
@@ -29,9 +36,9 @@ struct points {
     y.alloc(size);
     z.alloc(size);
 
-    x.fill(0.0f);
-    y.fill(0.0f);
-    z.fill(0.0f);
+    x.fill(init_val);
+    y.fill(init_val);
+    z.fill(init_val);
   }
 
 
@@ -84,12 +91,12 @@ private:
 
 struct HitRecords {
   void alloc(int in_size) {
-    p.alloc(in_size);
+    p.alloc(in_size, 123.0f);
     normal.alloc(in_size);
     t.alloc(in_size);
     front_face.alloc(in_size);
     sphere_index.alloc(in_size);
-    sphere_index.fill(-1);         // Init to illegal value
+    sphere_index.fill(-2);         // Init to illegal value
   }
 
   points       p;
@@ -104,12 +111,8 @@ struct HitRecords {
 points origin;
 points direction;
 
-// Sphere coordinates
-points       center;
-Float::Array radius;
-
 // Hit record values
-HitRecords hit_records;
+HitRecords hitrecords;  // Var name hit_records was ambiguous with namespace hit_records
 
 
 MAYBE_UNUSED bool same_vec(int index, vec3 const &v, points const &pts, int bit_min = 0, bool show_log = true) {
@@ -136,8 +139,6 @@ MAYBE_UNUSED bool same_vec(int index, vec3 const &v, points const &pts, int bit_
   return ret;
 }
 
-namespace {
-
 int same_bits(float val1, float val2, int bit_min = 0) {
   assert(bit_min >= -1);
 
@@ -151,9 +152,6 @@ int same_bits(float val1, float val2, int bit_min = 0) {
 
   return bits;
 }
-
-} // anon namespace
-
 
 bool same_vec(vec3 const &lhs, vec3 const &rhs, int bit_min = 0) {
   int bits_x = same_bits((float) lhs.x(), (float) rhs.x(), bit_min);
@@ -192,8 +190,67 @@ MAYBE_UNUSED bool same_float(int index, float val, Float::Array &ret_f, int bit_
   return ret;
 }
 
-}  // anon namespace
+int s_num_spheres   = 0;
 
+// Sphere coordinates
+points       center;
+Float::Array radius;
+
+} // anon namespace
+
+
+namespace spheres {
+
+int num() {
+  assert(s_num_spheres > 0);
+  return s_num_spheres;
+}
+
+
+void add(int index, sphere const &in_sphere) {
+  //warn << "add_sphere index: " << index << ", num spheres: " << num_spheres();
+  assert(0 <= index && index < num());
+
+  center.set_vec(index, in_sphere.center());
+  radius[index] = (float) in_sphere.radius();
+}
+
+
+/**
+ * @brief Get sphere from array
+ *
+ * **TODO**: See if this method can be removed in favor of spheres::get().
+ *
+ * **NOTE**: Material not added here
+ *
+ * This used to be used extensively, causing a significant performance hit.
+ * Main loop for the testcase is about 4s without iti, instead of 22s.
+ *
+ * Timing inconsequential.
+ */
+sphere get_a(int index) {
+  assert(0 <= index && index < num());
+  auto ret = sphere(center.to_vec(index), (double) radius[index], nullptr);
+
+  return ret;
+}
+
+
+bool same(int index, sphere const &s) {
+  assert(0 <= index && index < spheres::num());
+
+  int bit_min = -1;
+  auto const &s0 = spheres::get_a(index);
+  // TODO auto const &s0 = spheres::get(index); - Is this better (faster)?
+
+  return same_vec(s0.center(), s.center(), bit_min)
+      && bit_diff((float) s0.radius(), (float) s.radius(), bit_min);
+}
+
+}  // namespace spheres
+
+
+namespace qpu {
 
 void kernels_init() {
   // Don't bother initializing kernel if not used.
@@ -206,61 +263,18 @@ void kernels_init() {
 void init_arrays(int num_spheres) {
   assert(ArraySize % global::samples_per_pixel() == 0); // Samples per pixel must be in same buffer
 
-  uint32_t size = ArraySize; //global::num_rays();
+  uint32_t size = ArraySize;
   assert(size % 16 == 0);
 
   origin.alloc(size);
   direction.alloc(size);
-  hit_records.alloc(size);
+  hitrecords.alloc(size);
 
   s_num_spheres = resize_16(num_spheres);
   assert(s_num_spheres % 16 == 0);
-  //warn << "s_num_spheres: " << s_num_spheres;
 
   center.alloc(s_num_spheres);
   radius.alloc(s_num_spheres);
-}
-
-
-int num_spheres() {
-  assert(s_num_spheres > 0);
-  return s_num_spheres;
-}
-
-
-void add_sphere(int index, sphere const &in_sphere) {
-  //warn << "add_sphere index: " << index << ", num spheres: " << num_spheres();
-  assert(0 <= index && index < num_spheres());
-
-  center.set_vec(index, in_sphere.center());
-  radius[index] = (float) in_sphere.radius();
-}
-
-
-/**
- * **NOTE**: Material not added here
- *
- * This used to be used extensively, causing a significant performance hit.
- * Main loop for the testcase is about 4s without iti, instead of 22s.
- *
- * Timing inconsequential.
- */
-sphere get_sphere(int index) {
-  assert(0 <= index && index < num_spheres());
-  auto ret = sphere(center.to_vec(index), (double) radius[index], nullptr);
-
-  return ret;
-}
-
-
-bool same_sphere(int index, sphere const &s) {
-  assert(0 <= index && index < num_spheres());
-
-  int bit_min = -1;
-  auto const &s0 = get_sphere(index);
-
-  return same_vec(s0.center(), s.center(), bit_min)
-      && bit_diff((float) s0.radius(), (float) s.radius(), bit_min);
 }
 
 
@@ -280,22 +294,24 @@ void end() {
 
 namespace {
 
-void hittable_list_hit(const ray &r, int ray_index) {
+void hittable_list_hit(int ray_index) {
   assert(s_num_spheres > 0);
+  //warn << "hittable_list_hit ray_num: " << rays::num();
 
-  timers.start("hittable_list_hit");
   kernel::sphere_hit(
-    r, ray_index,
+    ray_index,
+    rays::num(),
+    origin.x, origin.y, origin.z,
+    direction.x, direction.y, direction.z,
     s_num_spheres,
     center.x, center.y, center.z,
     radius,
-    hit_records.p.x, hit_records.p.y, hit_records.p.z,
-    hit_records.normal.x, hit_records.normal.y, hit_records.normal.z,
-    hit_records.t,
-    hit_records.front_face,
-    hit_records.sphere_index
+    hitrecords.p.x, hitrecords.p.y, hitrecords.p.z,
+    hitrecords.normal.x, hitrecords.normal.y, hitrecords.normal.z,
+    hitrecords.t,
+    hitrecords.front_face,
+    hitrecords.sphere_index
   );
-  timers.stop("hittable_list_hit");
 }
 
 } // anon namespace
@@ -303,18 +319,25 @@ void hittable_list_hit(const ray &r, int ray_index) {
 
 void run_kernel() {
   assert(global::run_mode() != RunScalar);
-
   timers.start("QPU run");
 
+#ifdef SINGLE_RAY
+  warn << "SINGLE_RAY defined qpu";
+
   for (int index = 0; index < rays::num(); index++) {
-    ray r = rays::get(index, false);
-    hittable_list_hit(r, index);
+    hittable_list_hit(index);
   }
+#else
+  hittable_list_hit(0);
+#endif    
 
   timers.stop("QPU run");
+  //sleep(10);
 }
 
 }  // namespace qpu
+
+
 
 
 namespace rays {
@@ -346,17 +369,17 @@ bool set(ray const &in_ray, int ray_index) {
     s_point_first_index = ray_index;
     s_point_count = 0;
   } else {
-    assert(s_point_count < qpu::ArraySize);
+    assert(s_point_count < ArraySize);
   }
 
   int index = ray_index - s_point_first_index;
-  assert(0 <= index && index < qpu::ArraySize);
+  assert(0 <= index && index < ArraySize);
 
-  qpu::origin.set_vec(index, in_ray.origin());
-  qpu::direction.set_vec(index, in_ray.direction());
+  origin.set_vec(index, in_ray.origin());
+  direction.set_vec(index, in_ray.direction());
 
   s_point_count++;
-  bool ret = (s_point_count < qpu::ArraySize);
+  bool ret = (s_point_count < ArraySize);
 
   return ret;
 }
@@ -375,8 +398,8 @@ ray get(uint32_t ray_index, bool absolute_index) {
   assert(s_point_count > 0);
   assert(0 <= index && index < s_point_count);
 
-  vec3 tmp_origin    = qpu::origin.to_vec(index);
-  vec3 tmp_direction = qpu::direction.to_vec(index);
+  vec3 tmp_origin    = origin.to_vec(index);
+  vec3 tmp_direction = direction.to_vec(index);
 
   return ray(tmp_origin, tmp_direction);
 }
@@ -408,8 +431,8 @@ void reset() {
 
 
 bool same(ray const &lhs, ray const &rhs) {
-  return qpu::same_vec(lhs.origin(), rhs.origin(), -1)
-      && qpu::same_vec(lhs.direction(), rhs.direction(), -1);
+  return same_vec(lhs.origin(), rhs.origin(), -1)
+      && same_vec(lhs.direction(), rhs.direction(), -1);
 }
 
 
@@ -419,20 +442,20 @@ std::string dump(int index) {
   std::string ret;
 
   ret //<< index << ": "
-      << "p: "      << qpu::hit_records.p.dump_vec(index)      << ", "
-      << "normal: " << qpu::hit_records.normal.dump_vec(index) << ", "
-      << "t: "      << qpu::hit_records.t[index] << ", "
-      << "sphere_index: "      << qpu::hit_records.sphere_index[index];
+      << "p: "            << hitrecords.p.dump_vec(index)      << ", "
+      << "normal: "       << hitrecords.normal.dump_vec(index) << ", "
+      << "t: "            << hitrecords.t[index] << ", "
+      << "sphere_index: " << hitrecords.sphere_index[index];
 
   return ret;
 }
 
 
 void check(int index, hit_record const &rec) {
-  auto t      = qpu::hit_records.t[index];
-  auto p      = qpu::hit_records.p.to_vec(index);
-  auto normal = qpu::hit_records.normal.to_vec(index);
-  auto front_face = qpu::hit_records.front_face[index];
+  auto t          = hitrecords.t[index];
+  auto p          = hitrecords.p.to_vec(index);
+  auto normal     = hitrecords.normal.to_vec(index);
+  auto front_face = hitrecords.front_face[index];
 
   bitdiff_stats::add(t            , (float) rec.t    , 15);
   bitdiff_stats::add((float) p.x(), (float) rec.p.x(), 16);
@@ -451,26 +474,48 @@ hit_record get(int ray_index) {
   int index = rays::relative_index(ray_index);
   hit_record ret;
 
-  auto p      = qpu::hit_records.p.to_vec(index);
-  auto normal = qpu::hit_records.normal.to_vec(index);
-  auto t      = qpu::hit_records.t[index];
+  auto p      = hitrecords.p.to_vec(index);
+  auto normal = hitrecords.normal.to_vec(index);
+  auto t      = hitrecords.t[index];
 
-  float tmp   = qpu::hit_records.front_face[index];
-  assert(tmp == -1.0f || tmp == 1.0f);
-  bool front_face = (tmp == 1.0f);
+  bool  front_face = false;
+  float tmp        = hitrecords.front_face[index];
+  if (tmp == -1.0f || tmp == 1.0f) {
+    assert(tmp == -1.0f || tmp == 1.0f);
+    front_face = (tmp == 1.0f);
+  } else {
+    //warn << "index: " << index << ", front_face: " << tmp;
+  }
 
-  int sphere_index = qpu::hit_records.sphere_index[index];
-  assert(sphere_index >= 0);
-  sphere const &s = spheres::get(sphere_index);
+  int sphere_index = hitrecords.sphere_index[index];
+  //warn << "index: " << index << ", sphere_index: " << sphere_index << ", p: " << p.dump();
+
+  std::shared_ptr<material> mat = std::make_shared<dielectric>(1.5);
+
+  if (sphere_index >= 0 && sphere_index < spheres::size()) {
+    sphere const &s = spheres::get(sphere_index);
+    mat = s.mat();
+  } else {
+    //warn << "index: " << index << ", sphere_index: " << sphere_index << ", p: " << p.dump();
+  }
 
   ret.p          = p;
   ret.normal     = normal;
   ret.t          = t;
   ret.front_face = front_face;
-  ret.mat        = s.mat();
+  ret.mat        = mat;
 
   timers.stop("hit_records::get");
 
+/*
+  warn << "hitrecords::get(" << index << "), "
+       << "sphere_index: " << sphere_index << ", "
+       << "ret: " << ret.dump();
+*/
+  if (sphere_index < 0) {
+    warn << "hitrecords::get(" << index << "), "
+         << "sphere_index: " << sphere_index;
+  }
   return ret;
 }  
 
@@ -478,7 +523,7 @@ hit_record get(int ray_index) {
 bool valid(int ray_index) {
   int index =  rays::relative_index(ray_index);
 
-  float val = qpu::hit_records.p.x[index];
+  float val = hitrecords.p.x[index];
   float inf = std::numeric_limits<float>::infinity();
 
   return val != inf && val != -inf;

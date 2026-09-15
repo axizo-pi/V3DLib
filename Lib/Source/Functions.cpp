@@ -811,7 +811,7 @@ void t_rotate_min(T &input, T &result, Int &index, T const &min_val) {
   T tmp = input;
 
   Where (tmp > result)
-		// +-Inf does not work here, use min/max value instead (for Float)
+    // +-Inf does not work here, use min/max value instead (for Float)
     tmp = min_val;  // Works as long as min_val is not in the input.
   End
 
@@ -853,8 +853,8 @@ void t_element_at(T const &input, Int &n, T &result) {
 
 // TODO: add Int version. Don't need it yet.
 void rotate_min(Float &input, Float &result, Int &index) {
-	t_rotate_min(input, result, index, MinFloat());
-}		
+  t_rotate_min(input, result, index, MinFloat());
+}    
 
 
 void element_at(Float const &input, Int &n, Float &result) {

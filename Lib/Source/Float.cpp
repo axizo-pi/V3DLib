@@ -33,7 +33,7 @@ FloatExpr::FloatExpr(float x) {
 FloatExpr::FloatExpr(Deref<Float> d) : BaseExpr(d.expr()) {}
 
 FloatExpr FloatExpr::operator-() {
-  warn << "FloatExpr::operator-";
+  //warn << "FloatExpr::operator-";
   return (*this) * -1.0f;
 }
 
@@ -70,12 +70,12 @@ Float::Float(FloatExpr e)    { assign_intern(e.expr()); }
 Float::Float(Deref<Float> d) { assign_intern(d.expr()); }
 
 Float::Float(Float const &x) {
-	if (this == &x) {
-		cerr << "Float ctor: Can not initialize Float with self" << thrw;
-	}
+  if (this == &x) {
+    cerr << "Float ctor: Can not initialize Float with self" << thrw;
+  }
 
-	Log::warn << "Float ctor Float const x: " << x.dump();
-	assign_intern(x.expr());
+  //Log::warn << "Float ctor Float const x: " << x.dump();
+  assign_intern(x.expr());
 }
 
 
@@ -156,13 +156,13 @@ Float &Float::operator=(float rhs) {
 /** @} */ // end of group SourceLanguage
 
 Float &Float::operator=(Float &rhs) {
-	warn << "Float::operator=(Float &" << rhs.dump() << ")";
+  //warn << "Float::operator=(Float &" << rhs.dump() << ")";
   assign(m_expr, rhs.expr());
   return self();
 }
 
 Float &Float::operator=(Float const &rhs) {
-	warn << "Float::operator=(Float const &" << rhs.dump() << ")";
+  //warn << "Float::operator=(Float const &" << rhs.dump() << ")";
   assign(m_expr, rhs.expr());
   return self();
 }
@@ -403,20 +403,20 @@ FloatExpr tanh_sfu(FloatExpr x)      { return mkFloatApply(x, Op(TANH     , FLOA
  * Cutoff value empirically determined to be abs(13.37).
  */
 FloatExpr tanh(FloatExpr x) {
-	Float CUTOFF = 13.37f;
+  Float CUTOFF = 13.37f;
 
   Float ret;
-	ret = tanh_sfu(x);
+  ret = tanh_sfu(x);
 
-	Where (x > CUTOFF)
-		ret = 1.0f;
-	End
+  Where (x > CUTOFF)
+    ret = 1.0f;
+  End
 
-	Where (x <= -CUTOFF)
-		ret = -1.0f;
-	End
+  Where (x <= -CUTOFF)
+    ret = -1.0f;
+  End
 
-	return ret;
+  return ret;
 }
 
 

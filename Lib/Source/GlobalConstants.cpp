@@ -42,20 +42,34 @@ Var global_var(int &tag) {
 /**
  * @brief Support for Global Constants.
  *
- * This is used for commonly occuring constant values in the librar,
+ * This is used for commonly occuring constant values in the library,
  * which may occur often in the code. Notable examples are `Nan` and `Inf`.
  *
  * The constant are initialized _once_ on kernel initialization and can be used
  * multiple times. This saves on the initialization step, which can be extensive,
  * consisting of many operations.
  *
- * This is a consideration for `v3d`. On `vc4` this is not much of a consideration,
- * because it has a  `load imm 32` operation. Constant initialization is thus a
- * single operation for `vc4`.
+ * This is a consideration for `v3d`.
+ * On `vc4` this is easier, because it has operation `load imm 32`.
+ * Constant initialization is thus a single operation for `vc4`.
  * Despite this, global constants are also used for `vc`.
  *
  * An alternative to `GlobalConstants` is to load constant values as uniforms, which
  * also saves on the constant initialization step. @see UniformConstants.
+ *
+ * =============================================================
+ * Notes
+ * -----
+ *
+ * - Interestingly, following didn't work as expected:
+ *
+ *     Float x = Inf();
+ *
+ *   `Inf()` returns a Float, and the result of this statement is that `x` becomes the same Float, i.e. not a copy.
+ *   In essence, `x` is an alias of the returned value (more precisely, an alias of the underlying `Var` of the `Float`).
+ *
+ *   Much confusion ensued, but I am one step closer to enlightment.
+ *   TODO: Can this be fixed?
  */
 namespace GlobalConstants {
 
@@ -163,7 +177,13 @@ Var Var_MaxFloat() { return global_var(tag_MaxFloat); }
 
 Int   _64()      { return Int  (Var_64()); }
 Float NaN()      { return Float(Var_NaN()); }
-Float Inf()      { return Float(Var_Inf()); }
+
+Float Inf()      {
+  auto ret = Float(Var_Inf());
+  //warn << "Called Float Inf() tag: " << tag_Inf << ", var: " << Var_Inf().dump() << ", ret: " << ret.dump();
+  return ret;
+}
+
 Float MinInf()   { return Float(Var_MinInf()); }
 Float MinFloat() { return Float(Var_MinFloat()); }
 Float MaxFloat() { return Float(Var_MaxFloat()); }

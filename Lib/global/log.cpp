@@ -133,7 +133,7 @@ bool Modifiers::do_fixed() {
 
 Modifiers s_modifiers;
 
-const unsigned long ROLLOVER = 10*1024*1024;
+const unsigned long ROLLOVER = 100*1024*1024;
 
 bool s_cout_show_timestamp = true;
 

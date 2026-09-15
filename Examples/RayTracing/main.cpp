@@ -25,6 +25,12 @@ using namespace Log;
 
 
 int main() {
+  Log::enable_log_file();
+  Log::info << "\n"
+            << "===================\n"
+            << " Running RayTrace\n"
+            << "===================";
+
   timers.start("Init");
     qpu::kernels_init();
 

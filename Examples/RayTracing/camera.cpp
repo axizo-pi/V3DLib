@@ -1,6 +1,7 @@
 #include "camera.h"
 #include "qpu.h"
 #include "material.h"
+#include "Support/Timer.h"
 
 using namespace V3DLib;
 
@@ -36,22 +37,22 @@ int camera::init_rays() {
   int ret = rays::num();
   assert(ret % global::samples_per_pixel() == 0); // Samples per pixel must be in same buffer
   
-  if (ret > 0) {
-    warn << "init_rays did pass " << call_count << ", num rays: " << ret;
-  }
-
   return ret;
 }
 
 
 void camera::render(const hittable& world, PPM &ret) {
+  timers.start("render");
+
   int num_indexes = global::num_rays();
 
-  int index_limit = (num_indexes > 50000)?10000:(
+  int index_limit = (num_indexes > 1000000)?100000:(
+    (num_indexes > 50000)?10000:(
       (num_indexes > 10000)?1000:(
         (num_indexes > 1000)?100:10
       )
-    );
+    )
+  );
 
   int cur_limit = 0;
 
@@ -72,6 +73,8 @@ void camera::render(const hittable& world, PPM &ret) {
 
     ret.write_color(pixel_samples_scale * pixel_color);
   }
+
+  timers.stop("render");
 }
 
 
@@ -91,6 +94,7 @@ color camera::ray_color(const ray& r, int depth, const hittable& world, int ray_
   auto do_hit = [&world, &r, ray_index, do_qpu, &rec, depth, this] (bool qpu_hit) -> bool {
     if (qpu_hit && depth == this->max_depth) {
       if (!hit_records::valid(ray_index)) return false;
+      //warn << "do_hit QPU valid ray_index: " << ray_index;
 
       rec = hit_records::get(ray_index);
       return true;
@@ -112,14 +116,14 @@ color camera::ray_color(const ray& r, int depth, const hittable& world, int ray_
       }
     }
 
-    // Scatter is skipped for qpu (for now, I hope)
     ray scattered;
     color attenuation;
     if (rec.mat->scatter(r, rec, attenuation, scattered)) {
       return attenuation * ray_color(scattered, depth-1, world, ray_index, false);
-    } else {
-      //TODO warn << "Scatter fail";
+    //} else {
+    //TODO warn << "Scatter fail";
     }
+
     return color(0,0,0);
   }
 

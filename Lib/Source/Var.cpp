@@ -65,6 +65,7 @@ std::string Var::dump() const {
  * @return a new standard variable
  */
 Var VarGen::fresh(VarTag tag) {
+  //warn << "VarGen::fresh(): " << globalVarId;
   return Var(tag, globalVarId++);
 }
 

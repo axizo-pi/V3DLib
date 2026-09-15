@@ -5,18 +5,22 @@
 
 namespace qpu {
 
-void kernels_init();
 void init_arrays(int num_spheres);
-
-int  num_spheres();
-void add_sphere(int index, sphere const &in_sphere);
-sphere get_sphere(int index);
-bool same_sphere(int index, sphere const &s);
-
+void kernels_init();
 void run_kernel();
 void end();
 
 }  // namespace qpu
+
+
+namespace spheres {
+
+int num();
+void add(int index, sphere const &in_sphere);
+sphere get_a(int index);
+bool same(int index, sphere const &s);
+
+}  // namespace spheres
 
 
 namespace rays {

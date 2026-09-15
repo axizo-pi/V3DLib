@@ -25,38 +25,38 @@ void output_image(Array &result, std::string filename = "") {
   int numIterations = settings().num_iterations;
 
   if (settings().output_grey) {
-		if (filename.empty()) {
-			filename = "mandelbrot.bmp";
-		}
+    if (filename.empty()) {
+      filename = "mandelbrot.bmp";
+    }
     output_bmp(result, width, height, numIterations, filename.c_str(), false);
   }
 
   if (settings().output_color) {
-		if (filename.empty()) {
-			filename = "mandelbrot_c.bmp";
-		}
+    if (filename.empty()) {
+      filename = "mandelbrot_c.bmp";
+    }
     output_bmp(result, width, height, numIterations, filename.c_str(), true);
   }
 }
 
 
 void run_qpu_kernel(KernelType &kernel) {
-	const bool do_animate = false;
-	auto const &s = settings();
+  const bool do_animate = false;
+  auto const &s = settings();
 
   assertq(0 == s.numStepsWidth % 16, "Width dimension must be a multiple of 16");
 
-	//
-	// Allowed to run if:
-	// - v3d QPU
-	// - vc4 interpreter or emulator
-	// - vc4 QPU with #QPU's >= 0
-	//
-	// TODO recheck following condition
+  //
+  // Allowed to run if:
+  // - v3d QPU
+  // - vc4 interpreter or emulator
+  // - vc4 QPU with #QPU's >= 0
+  //
+  // TODO recheck following condition
   //
   // - Verified: nothing to do with semaphores and wait_qpu()
   // - Runs fine in emulator
-	//
+  //
   assertq(!Platform::compiling_for_vc4() || (settings().run_type != 0) || (4 <= s.num_qpus),
     "Num QPU's must be at least 4 for vc4"
   );
@@ -69,42 +69,42 @@ void run_qpu_kernel(KernelType &kernel) {
 
   Int::Array result(s.num_items());  // Allocate and initialise
 
-	if (do_animate) {
-		int index = 0;
-		animate::init(s);
+  if (do_animate) {
+    int index = 0;
+    animate::init(s);
 
-		while (!animate::done()) {
-			MandRange r = animate::next();
-			//Log::warn << "MandRange r:\n" << r.dump();
-			if (index % 100 == 0) {
-				warn << "index: " << index;
-			}
+    while (!animate::done()) {
+      MandRange r = animate::next();
+      //Log::warn << "MandRange r:\n" << r.dump();
+      if (index % 100 == 0) {
+        warn << "index: " << index;
+      }
 
-			std::string filename;
-			filename << index << "_mandelbrot.bmp";
+      std::string filename;
+      filename << index << "_mandelbrot.bmp";
 
-	  	k.load(
-		    r.topLeftReal, r.topLeftIm,
-		    r.offsetX(), r.offsetY(),
-		    r.numStepsWidth, r.numStepsHeight,
-		    s.num_iterations,
-		    &result,
-		    s.count
-		  ).run();
+      k.load(
+        r.topLeftReal, r.topLeftIm,
+        r.offsetX(), r.offsetY(),
+        r.numStepsWidth, r.numStepsHeight,
+        s.num_iterations,
+        &result,
+        s.count
+      ).run();
   
-			output_image(result, filename);
-			index++;
-		}
-	} else {
-	  k.load(
-	    s.topLeftReal, s.topLeftIm,
-	    s.offsetX(), s.offsetY(),
-	    s.numStepsWidth, s.numStepsHeight,
-	    s.num_iterations,
-	    &result,
-	    s.count
-	  ).run();
-	}
+      output_image(result, filename);
+      index++;
+    }
+  } else {
+    k.load(
+      s.topLeftReal, s.topLeftIm,
+      s.offsetX(), s.offsetY(),
+      s.numStepsWidth, s.numStepsHeight,
+      s.num_iterations,
+      &result,
+      s.count
+    ).run();
+  }
 
   output_image(result);
 }

@@ -10,7 +10,10 @@ using namespace V3DLib;
 void init();
 
 void sphere_hit(
-  ray const &r, int ray_index,
+  int ray_index,
+  int num_rays,
+  Float::Array &in_origin_x, Float::Array &in_origin_y, Float::Array &in_origin_z,
+  Float::Array &in_direction_x, Float::Array &in_direction_y, Float::Array &in_direction_z,
   int N_spheres,
   Float::Array &in_center_x, Float::Array &in_center_y, Float::Array &in_center_z,
   Float::Array &in_radius,

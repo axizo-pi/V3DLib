@@ -3,6 +3,8 @@
 #include "ray.h"
 #include <functional>
 
+// Disabling following invokes the multi-ray kernel
+//#define SINGLE_RAY
 
 /**
  * @brief Indicator for run mode.

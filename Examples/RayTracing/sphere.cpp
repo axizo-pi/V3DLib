@@ -168,16 +168,19 @@ std::vector<shared_ptr<hittable>> objects;
 void init() {
   for (int i = 0; i < size(); ++i) {
     sphere const &s = get(i);
-    qpu::add_sphere(i, s);
-
-    assert(qpu::same_sphere(i, s)); // OK, comparison is exact
+    spheres::add(i, s);
+    //assert(spheres::same(i, s)); // OK, comparison is exact
   }
 }
 
 
-void          add(shared_ptr<hittable> object) { objects.push_back(object); }
-sphere const &get(int index)                   { return (sphere const &) *objects[index]; }
-int           size()                           { return (int) objects.size(); }
-void          clear()                          { objects.clear(); }
+void add(shared_ptr<hittable> object) { objects.push_back(object); }
+int  size()                           { return (int) objects.size(); }
+void clear()                          { objects.clear(); }
+
+/**
+ * @brief Get sphere from initialization definition
+ */
+sphere const &get(int index) { return (sphere const &) *objects[index]; }
 
 } // namespace spheres

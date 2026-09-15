@@ -84,9 +84,9 @@ void Pointer::inc() {
  * add directly.
  */
 PointerExpr Pointer::offset(IntExpr b) {
-	auto ret = bare_addself(*this, b);
-	self() = ret;
-	return ret;
+  auto ret = bare_addself(*this, b);
+  self() = ret;
+  return ret;
 }
 
 

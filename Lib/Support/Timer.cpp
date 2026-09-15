@@ -36,59 +36,59 @@ namespace V3DLib {
  * Used internally only
  */
 struct MaxWidths {
-	int label = -1;
-	int total = -1;
-	int steps = -1;
-	int avg   = -1;
-	int min   = -1;
-	int max   = -1;
+  int label = -1;
+  int total = -1;
+  int steps = -1;
+  int avg   = -1;
+  int min   = -1;
+  int max   = -1;
 
-	std::string total_str(std::string const &str) const;
-	std::string total_steps(int val) const;
-	std::string avg_str(std::string const &str) const;
-	std::string min_str(std::string const &str) const;
-	std::string max_str(std::string const &str) const;
+  std::string total_str(std::string const &str) const;
+  std::string total_steps(int val) const;
+  std::string avg_str(std::string const &str) const;
+  std::string min_str(std::string const &str) const;
+  std::string max_str(std::string const &str) const;
 
-	void update(Timers const &timers);
+  void update(Timers const &timers);
 };
 
 
 std::string MaxWidths::total_str(std::string const &str) const {
-	std::string ret;
+  std::string ret;
   ret << indentBy(total - (int) str.length()) << str;
-	return ret;
+  return ret;
 }
 
 
 std::string MaxWidths::total_steps(int val) const {
-	std::string tmp;
-	tmp << val;
+  std::string tmp;
+  tmp << val;
 
-	std::string ret;
+  std::string ret;
   ret << indentBy(steps - (int) tmp.length()) << val;
-	return ret;
+  return ret;
 }
 
 
 std::string MaxWidths::avg_str(std::string const &str) const {
-	std::string ret;
+  std::string ret;
   ret << indentBy(avg - (int) str.length()) << str;
-	return ret;
+  return ret;
 }
 
 
 std::string MaxWidths::min_str(std::string const &str) const {
-	std::string ret;
+  std::string ret;
   ret << indentBy(min - (int) str.length()) << str;
-	return ret;
-}	
+  return ret;
+}  
 
 
 std::string MaxWidths::max_str(std::string const &str) const {
-	std::string ret;
+  std::string ret;
   ret << indentBy(max - (int) str.length()) << str;
-	return ret;
-}	
+  return ret;
+}  
 
 
 void MaxWidths::update(Timers const &timers) {
@@ -100,30 +100,30 @@ void MaxWidths::update(Timers const &timers) {
       label = tmp;
     }
 
-		tmp = (int) n.total_str().length();
+    tmp = (int) n.total_str().length();
     if (total < tmp) {
       total = tmp;
     }
 
-		std::string tmp2;
-		tmp2 << n.count();
+    std::string tmp2;
+    tmp2 << n.count();
 
-		tmp = (int) tmp2.length();
+    tmp = (int) tmp2.length();
     if (steps < tmp) {
       steps = tmp;
     }
 
-		tmp = (int) n.avg_str().length();
+    tmp = (int) n.avg_str().length();
     if (avg < tmp) {
       avg = tmp;
     }
 
-		tmp = (int) n.min_str().length();
+    tmp = (int) n.min_str().length();
     if (min < tmp) {
       min = tmp;
     }
 
-		tmp = (int) n.max_str().length();
+    tmp = (int) n.max_str().length();
     if (max < tmp) {
       max = tmp;
     }
@@ -249,7 +249,7 @@ std::string Timer::dump(MaxWidths const &widths, bool show_extended) {
 
     buf2 << widths.total_str(total_str()) 
          << " in " << widths.total_steps(m_count)  << " steps, "
-				 << "average: " << widths.avg_str(avg_str());
+         << "average: " << widths.avg_str(avg_str());
 
     if (show_extended) {
       buf2 << " - Min: " << widths.min_str(min_str())
@@ -281,7 +281,7 @@ std::string Timer::dump(MaxWidths const &widths, bool show_extended) {
 
 std::string Timer::end(bool show_output) {
   if (show_output) {
-		MaxWidths dummy;
+    MaxWidths dummy;
     warn << dump(dummy);
   }
 
@@ -412,8 +412,8 @@ void Timers::end(bool show_minmax) {
   }
 
   auto indexes = sort_indexes();
-	MaxWidths widths;
-	widths.update(*this);
+  MaxWidths widths;
+  widths.update(*this);
 
   std::string buf;
   for (int i = 0; i < (int) indexes.size(); ++i) {

@@ -4,9 +4,9 @@
 namespace V3DLib {
 
 InstructionComment::InstructionComment() :
-	m_header_1(""),
-	m_header_2(""),
-	m_comment("")
+  m_header_1(""),
+  m_header_2(""),
+  m_comment("")
 {}
 
 
@@ -72,12 +72,12 @@ void assign_header(std::string &header, std::string const &msg) {
 
 
 void InstructionComment::header(std::string const &msg) {
-	assign_header(m_header_1, msg);
+  assign_header(m_header_1, msg);
 }
 
 
 void InstructionComment::sub_header(std::string const &msg) {
-	assign_header(m_header_2, msg);
+  assign_header(m_header_2, msg);
 }
 
 
@@ -104,25 +104,25 @@ void InstructionComment::comment(std::string msg) {
 std::string InstructionComment::emit_header(std::string const &comment_prefix) const {
   if (m_header_1.empty() && m_header_2.empty()) return "";
 
-	auto c = comment_prefix;
-	std::string pre = "\n";
-	pre << c << " ";
+  auto c = comment_prefix;
+  std::string pre = "\n";
+  pre << c << " ";
 
-	std::string ret;
+  std::string ret;
 
   if (!m_header_1.empty()) {
-	  std::string buf = m_header_1;
-	  findAndReplaceAll(buf, "\n", pre);
+    std::string buf = m_header_1;
+    findAndReplaceAll(buf, "\n", pre);
 
-	  ret << "\n" << c << pre << buf << "\n" << c << "\n";
-	}
+    ret << "\n" << c << pre << buf << "\n" << c << "\n";
+  }
 
   if (!m_header_2.empty()) {
-	  std::string buf = m_header_2;
-	  findAndReplaceAll(buf, "\n", pre);
+    std::string buf = m_header_2;
+    findAndReplaceAll(buf, "\n", pre);
 
-	  ret << pre << buf << "\n";
-	}
+    ret << pre << buf << "\n";
+  }
 
   return ret;
 }
