@@ -32,6 +32,7 @@ struct Expr {
 
   Tag tag() const { return m_tag; }
   bool isLit() const { return (tag() == INT_LIT) || (tag() == FLOAT_LIT); }
+  bool isVar() const { return (tag() == VAR); }
 
   Ptr lhs() const;
   Ptr rhs() const;

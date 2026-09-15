@@ -135,17 +135,21 @@ bool Expr::isSimple() const {
   // Compilation to vc4/v3d unimportant here. What matters is that ret != -1
   int ret = -1;
 
-  if (tag() == Expr::INT_LIT) { 
-    v3d::instr::SmallImm::int_to_opcode_value(intLit, ret);
-  } else if (tag() == Expr::FLOAT_LIT) {
-    v3d::instr::SmallImm::float_to_opcode_value(floatLit, ret);
-  } else {
-    // All other tags can not be simple
-    return false;
+  switch (tag()) {
+		case Expr::VAR:
+			return true;
+		case Expr::INT_LIT: 
+	    v3d::instr::SmallImm::int_to_opcode_value(intLit, ret);
+			break;
+  	case Expr::FLOAT_LIT:
+	    v3d::instr::SmallImm::float_to_opcode_value(floatLit, ret);
+			break;
+  	default:
+    	// All other tags can not be simple
+    	return false;
   }
 
-  bool is_simple = (ret >= 0);
-  return (m_tag == VAR) || is_simple;
+  return (ret >= 0);
 }
 
 
