@@ -132,21 +132,22 @@ std::string Expr::dump() const {
  * An expression is 'simple' if it is a small literal or a variable.
  */
 bool Expr::isSimple() const {
-  // Compilation to vc4/v3d unimportant here. What matters is that ret != -1
+  // Compilation to vc4/v3d unimportant here (they have differing small imm values).
+  // What matters is that ret != -1i on return.
   int ret = -1;
 
   switch (tag()) {
-		case Expr::VAR:
-			return true;
-		case Expr::INT_LIT: 
-	    v3d::instr::SmallImm::int_to_opcode_value(intLit, ret);
-			break;
-  	case Expr::FLOAT_LIT:
-	    v3d::instr::SmallImm::float_to_opcode_value(floatLit, ret);
-			break;
-  	default:
-    	// All other tags can not be simple
-    	return false;
+    case Expr::VAR:
+      return true;
+    case Expr::INT_LIT: 
+      v3d::instr::SmallImm::int_to_opcode_value(intLit, ret);
+      break;
+    case Expr::FLOAT_LIT:
+      v3d::instr::SmallImm::float_to_opcode_value(floatLit, ret);
+      break;
+    default:
+      // All other tags can not be simple
+      return false;
   }
 
   return (ret >= 0);

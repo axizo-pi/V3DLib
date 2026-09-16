@@ -2,6 +2,7 @@
 #include "Lang.h"
 #include "StmtStack.h"
 #include "Support/basics.h"
+#include <map>
 
 namespace V3DLib {
 
@@ -16,6 +17,9 @@ int tag_MinInf   = -1;
 int tag_MinFloat = -1;
 int tag_MaxFloat = -1;
 
+std::map<float, int> values;
+
+
 /**
  * @brief define a specific global variable.
  *
@@ -25,12 +29,24 @@ int tag_MaxFloat = -1;
  * `vc4` doesn't need it anyway because initialization of a constant is a single operation.
  */
 Var global_var(int &tag) {
-  //warn << "Called global_var()";
-
   if (tag == -1) {
     tag = V3DLib::VarGen::fresh_tag();
-  //} else {
-  //  warn << "global_var() tag already defined, not overwriting: " << tag;
+  }
+
+  return Var(STANDARD, tag);
+}
+
+
+Var global_value(float val) {
+  //warn << "Called global_value: " << val;
+  int tag = -1;
+
+  auto it = values.find(val);
+  if (it == values.end()) {
+    tag = V3DLib::VarGen::fresh_tag();
+    values.insert({val, tag});
+  } else {
+    tag = it->second;
   }
 
   return Var(STANDARD, tag);
@@ -85,6 +101,8 @@ void reset() {
   tag_MinInf = -1;
   tag_MinFloat = -1;
   tag_MaxFloat = -1;
+
+  values.clear();
 }
 
 
@@ -128,6 +146,18 @@ void init(Stmt::Array &src) {
       tmp.as_float(0x7f7fffff);  comment("Bit-value for largest positive Float");
       MaxFloat() = tmp;
       buf << "MinFloat, ";
+    }
+
+    for (auto it = values.begin(); it != values.end(); ++it) {
+      float val = it->first;
+
+      std::string cmt = "Const float ";
+      cmt  << val;
+
+      tmp = val; comment(cmt);
+      GlobalConst(val) = tmp;
+
+      buf << cmt << ", ";
     }
 
     if (!buf.empty()) {
@@ -187,5 +217,9 @@ Float Inf()      {
 Float MinInf()   { return Float(Var_MinInf()); }
 Float MinFloat() { return Float(Var_MinFloat()); }
 Float MaxFloat() { return Float(Var_MaxFloat()); }
+
+Float GlobalConst(float val) {
+  return Float(global_value(val));
+}
 
 }  // namespace V3DLib

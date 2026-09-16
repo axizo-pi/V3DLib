@@ -209,7 +209,7 @@ void lib_kernel(Float::Ptr in_ptr, Float::Ptr res_ptr, Int N_input) {
   //
   // Test rotate_sum
   //
-	nop(1); sub_header("Test rotate_sum");
+  nop(1); sub_header("Test rotate_sum");
   per_vector(rotate_sum);
   combined_vectors(
     [] (Float &in, Float &out) { out += in; },
@@ -219,7 +219,7 @@ void lib_kernel(Float::Ptr in_ptr, Float::Ptr res_ptr, Int N_input) {
   //
   // Test rotate_max
   //
-	nop(1); sub_header("Test rotate_max");
+  nop(1); sub_header("Test rotate_max");
   per_vector(rotate_max);
   combined_vectors(
     [] (Float &in, Float &out) { out = max(out, in); },
@@ -229,7 +229,7 @@ void lib_kernel(Float::Ptr in_ptr, Float::Ptr res_ptr, Int N_input) {
   //
   // Test rotate_min
   //
-	nop(1); sub_header("Test rotate_min");
+  nop(1); sub_header("Test rotate_min");
   per_vector(rotate_min);
   combined_vectors(
     [] (Float &in, Float &out) { out = min(out, in); },

@@ -25,6 +25,8 @@ Float MinInf();
 Float MinFloat();
 Float MaxFloat();
 
+Float GlobalConst(float val);
+
 }  // namespace V3DLib
 
 #endif // _V3DLIB_SOURCE_GLOBALCONSTANTS_H_

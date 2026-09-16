@@ -52,8 +52,10 @@ void valid_kernel(
 /**
  * This tests isolates an issue in RayTracing.
  *
- * valid fiels sometimes incorrect, even if the
+ * valid fields sometimes incorrect, even if the
  * discriminant values are exact.
+ *
+ * TODO: This looks useless, remove?
  */
 TEST_CASE("Test valid [issues][raytracing]") {
   Int::Array ret_valid(16);

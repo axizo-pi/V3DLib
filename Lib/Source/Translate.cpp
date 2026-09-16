@@ -77,20 +77,11 @@ Instr::List varAssign(AssignCond cond, Var v, Expr::Ptr expr) {
       break;
 
     case Expr::APPLY: {                                              // 'v := x op y'
-/*												
-			bool val = ((e.lhs()->isVar() && e.lhs()->var().id() <= 10)
-			        && (e.rhs()->isVar() && e.rhs()->var().id() == 81));
-
-			if (val) {
-	    	warn << "Expr::APPLY: " << e.dump();
-      	warn << "Tag: " << e.lhs()->tag() << ", " << e.rhs()->tag();
-      	warn << "Simple: " << e.lhs()->isSimple() << ", " << e.rhs()->isSimple();
-			}
-*/
-      if (!e.lhs()->isSimple() || !e.rhs()->isSimple()) {            // x or y are not simple
-//				if (val) warn << "Here.";
-
+      if (!e.lhs()->isSimple()) {                                    // x not simple
         e.lhs(simplify(&ret, e.lhs()));
+      }
+
+      if (!e.rhs()->isSimple()) {                                    // y not simple
         e.rhs(simplify(&ret, e.rhs()));
       }
 
@@ -184,7 +175,7 @@ Expr::Ptr simplify(Instr::List *seq, Expr::Ptr e) {
  * Similar to 'simplify' but ensure that the result is a variable.
  */
 Expr::Ptr putInVar(Instr::List *seq, Expr::Ptr e) {
-  Log::cdebug << "Called putInVar()";
+  //Log::cdebug << "Called putInVar()";
 
   if (e->tag() == Expr::VAR) {
     return e;
