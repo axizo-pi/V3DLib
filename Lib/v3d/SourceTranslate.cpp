@@ -48,20 +48,15 @@ void SourceTranslate::regAlloc(Instr::List &instrs) {
 
   // Step 3 - Allocate a register to each variable
   for (int i = 0; i < numVars; i++) {
-    if (live.reg_usage()[i].reg.tag != NONE) continue;
+		auto &reg = live.reg_usage()[i].reg;
+
+    if (reg.tag != NONE) continue;  // Already allocated
 
     auto possible = liveWith.possible_registers(i, live.reg_usage());
+    RegId regId   = LiveSets::choose_register(possible);  // Throws if no register available
 
-    live.reg_usage()[i].reg.tag = REG_A;
-    RegId regId = LiveSets::choose_register(possible, false);
-
-    if (regId < 0) {
-      std::string buf = "v3d regAlloc(): register allocation failed for target instruction ";
-      buf << i << ": " << instrs[i].mnemonic();
-      cerr << buf << thrw;
-    } else {
-      live.reg_usage()[i].reg.regId = regId;
-    }
+    reg.tag   = REG_A;
+    reg.regId = regId;
   }
 
 #ifdef OUTPUT_COMPILEDATA

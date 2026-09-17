@@ -275,7 +275,7 @@ RegUsageItem &RegUsage::get(int i) {
   }
 
 #ifdef DEBUG
-  // at() is useful because it does bound checking, which
+  // at() is useful because it does bounds checking, which
   // is also the reason it is inefficient
   return at(i);
 #else
@@ -304,6 +304,7 @@ void RegUsage::set_used(Instr::List &instrs) {
     }
 
     for (auto r : out.use) {
+			//warn << "add_src: " << i;
       //assert(r < (int) size());
       get(r).add_src(i);
     }
@@ -316,9 +317,16 @@ void RegUsage::set_live(Liveness &live) {
     auto &item = live[i];
 
     for (auto it : item) {
-      (*this)[it].add_live(i);
+      auto &item2 = (*this)[it];
+			item2.add_live(i);
     }
   }
+/*
+	for (int i = 60; i <= 65; ++i) {
+    auto &item2 = (*this)[i];
+	  warn << "item2 " << i << ": " << item2.dump();
+	}
+*/	
 }
 
 
@@ -397,13 +405,15 @@ std::string RegUsage::dump(bool verbose) const {
 
   if (!verbose) return allocated_registers_dump();
 
-  bool const ShowUnused = false;
+  bool const ShowUnused = true;
 
   std::string ret;
 
   for (int i = 0; i < (int) size(); i++) {
-    if (ShowUnused || !(*this)[i].unused()) {
-      ret << i << ": " << (*this)[i].dump() << "\n";
+    auto const &item = (*this)[i];
+
+    if (ShowUnused || !item.unused()) {
+      ret << i << ": " << item.dump() << "\n";
     }
   }
 

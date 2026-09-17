@@ -52,9 +52,13 @@ RegIdSet &LiveSets::operator[](int index) {
 
 
 /**
- * Determine the available register in the register file, to use for variable 'index'.
+ * @brief Determine an available register in the given register file, to use for variable 'index'.
  *
- * @param index  index of variable
+ * @param index   index of variable to assign to register
+ * @param reg_tag Which register file to use.
+ *                For vc4 this can be A or B; v3d is always A, has just 1 register file
+ * @return        Array with flags for which registers are present;i
+ *                if element is true, register is available, otherwise not available.
  */
 std::vector<bool> LiveSets::possible_registers(int index, RegUsage &alloc, RegTag reg_tag) {
   assert(reg_tag == REG_A || reg_tag == REG_B);
@@ -62,6 +66,7 @@ std::vector<bool> LiveSets::possible_registers(int index, RegUsage &alloc, RegTa
   const int NUM_REGS = Platform::size_regfile();
   std::vector<bool> possible(NUM_REGS);
 
+	// Initialize flags
   for (int j = 0; j < NUM_REGS; j++)
     possible[j] = true;
 
@@ -107,14 +112,19 @@ void LiveSets::dump_possible(std::vector<bool> &possible, int index) {
 
 
 /**
- * Find possible register in each register file
+ * @brief Find possible register in a register file.
  */
 RegId LiveSets::choose_register(std::vector<bool> &possible, bool check_limit) {
+	check_limit = true;
   assert(!possible.empty());
   RegId chosenA = -1;
 
-  for (int j = 0; j < (int) possible.size(); j++)
-    if (possible[j]) { chosenA = j; break; }
+  for (int j = 0; j < (int) possible.size(); j++) {
+    if (possible[j]) {
+			chosenA = j;
+			break;
+		}
+	}
 
   if (check_limit && chosenA < 0) {
     cerr << "LiveSets::choose_register(): register allocation failed, insufficient capacity" << thrw;

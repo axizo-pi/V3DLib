@@ -13,8 +13,14 @@ std::string RegIdSet::dump() const {
 
   ret << "(";
 
+	bool did_first = false;
   for (auto reg : *this) {
-    ret << reg << ", ";
+    ret << reg;
+
+		if (did_first) {
+    	ret << ", ";
+		}
+		did_first = true;
   }
 
   ret << ")";

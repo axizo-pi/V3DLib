@@ -5,6 +5,22 @@
 
 using namespace V3DLib;
 
+namespace {
+
+color def_color1(1.0, 1.0, 1.0);
+color def_color2(0.5, 0.7, 1.0);
+
+/**
+ * @brief Determine default color for miss
+*/
+color default_color(ray const &r) {
+  vec3 unit_direction = unit_vector(r.direction());
+  auto a = 0.5*(unit_direction.y() + 1.0);
+  return (1.0 - a)*def_color1 + a*def_color2;
+}
+
+} // anon namspace
+
 void camera::initialize() {
   pixel_samples_scale = 1.0 / global::samples_per_pixel();
   center = lookfrom;
@@ -94,7 +110,6 @@ color camera::ray_color(const ray& r, int depth, const hittable& world, int ray_
   auto do_hit = [&world, &r, ray_index, do_qpu, &rec, depth, this] (bool qpu_hit) -> bool {
     if (qpu_hit && depth == this->max_depth) {
       if (!hit_records::valid(ray_index)) return false;
-      //warn << "do_hit QPU valid ray_index: " << ray_index;
 
       rec = hit_records::get(ray_index);
       return true;
@@ -110,25 +125,21 @@ color camera::ray_color(const ray& r, int depth, const hittable& world, int ray_
   };
 
   if (do_hit(global::run_mode() == RunQPU)) {
-    if (do_qpu) {
-      if (depth == max_depth) {
-        hit_records::check(ray_index, rec);
-      }
+    if (do_qpu && (depth == max_depth)) {
+      hit_records::check(ray_index, rec);
     }
 
-    ray scattered;
+    ray   scattered;
     color attenuation;
-    if (rec.mat->scatter(r, rec, attenuation, scattered)) {
+
+    // Timing scatter inconsequential
+    bool success = rec.mat->scatter(r, rec, attenuation, scattered);
+    if (success) {
       return attenuation * ray_color(scattered, depth-1, world, ray_index, false);
-    //} else {
-    //TODO warn << "Scatter fail";
     }
 
     return color(0,0,0);
   }
 
-  // Set default color for miss
-  vec3 unit_direction = unit_vector(r.direction());
-  auto a = 0.5*(unit_direction.y() + 1.0);
-  return (1.0-a)*color(1.0, 1.0, 1.0) + a*color(0.5, 0.7, 1.0);
+  return default_color(r);  // Set default color for miss
 }

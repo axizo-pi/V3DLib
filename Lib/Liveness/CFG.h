@@ -12,9 +12,21 @@ using Succs = RegIdSet;               // Set of successors.
 
 
 /**
- * Control Flow Graph (CFG)
+ * @brief Control Flow Graph (CFG)
  *
- * Set of successors for each instruction.
+ * Track successor instructions per instruction.
+ * A successor instruction precedes the current instruction in the program flow.
+ *
+ * If there is no successor list defined, only the preceding instruction is a successor.  
+ * An extra successor is a jump from a branch to this instruction.
+ *
+ * The exception to the successor list is the final Target item, which has
+ * an explicit empty successor list.
+ * This is a label, thus a branch destination and not an instruction.
+ *
+ * The code is arranged into blocks; a block starts with an instruction with  multiple successors.
+ * Blocks may be completely contained in other blocks; they are not allowed to overlap.
+ * dd
  */
 class CFG : public std::vector<Succs> {
   using Parent = std::vector<Succs>;

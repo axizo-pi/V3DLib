@@ -82,7 +82,7 @@ int main() {
     camera cam;
 
     global::aspect_ratio(16.0 / 9.0);
-    global::image_width(64); //1200;
+    global::image_width(128); //1200;
     global::samples_per_pixel(10);
 
     cam.max_depth  = 20;

@@ -205,16 +205,11 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
   for (int i = 0; i < (int) instrs.size(); i++) {
     Instr &instr = instrs[i];
     if (instr.tag != InstrTag::LI) continue;
+		//warn << "combineImmediates " << i << ": " << instr.dump();
 
     if (instr.LI.imm.is_small_imm()) {
       auto const &reg_usage = live.reg_usage()[instr.dest().regId];
-/*
-      // WRI DEBUG  
-      auto buf = instr.dump();
-      if (contains(buf, "MUTEX_")) {
-        Log::warn << "combineImmediates: " << buf;
-      }
-*/
+
       if (instr.dest().is_special()) {
         info << "combineImmediates special dest register, not combinining, instr: " << instr.dump();
         continue;
@@ -251,7 +246,7 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
         }
 
         if (can_remove) {
-          //info << "combineImmediates can_remove, instr: " << instr.dump();
+          info << "combineImmediates can_remove, instr: " << instr.dump();
           instr.set_skip();
         }
       }

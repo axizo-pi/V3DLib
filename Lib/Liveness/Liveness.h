@@ -13,6 +13,16 @@
 namespace V3DLib {
 
 /**
+ * @brief Track liveness of variables.
+ *
+ * 'Live' means that a variable needs to be available in a given code block.
+ * If a variable is not live, the assigned register for that variable can be reassigned.
+ *
+ * - Tracks wich variables are live per line
+ * - Per variable, tracks the instruction range in which the variable is used
+ *
+ * ====================================
+ *
  * The result of liveness analysis is a set of live variables for each instruction.
  *
  * `Liveness Analysis` is a method to assign registers to variables.

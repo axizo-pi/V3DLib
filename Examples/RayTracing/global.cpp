@@ -11,23 +11,31 @@ using namespace V3DLib;
  *   probably because Array items are global.
  * - Added multiple passes, taking default heap memory size into account.
  *   This fixes the heap overflow.
- * - 1 call/ray only relevant for RunQPU.
- *   The alternative is to calculate *all* initialized rays with a single kernel.
+ * - Multi-ray (kernel) only relevant for RunQPU.
+ *   The alternative is to call the kernel for every single ray.
+ * - Multi-ray has smaller ray buffers.
  *
- * |---------|-------|---------------|------------|-----------|--------------------------|
- * | RunMode | Width | Run  Time (s) | Num passes |1 call/ray |Comment                   |
- * |---------|-------|---------------|------------|-----------|--------------------------|
- * | Scalar  |  64   |   2.147673    |  1         |           |                          |
- * | QPU     |  64   |   3.962608    |  1         | y         |                          |
- * | Scalar  | 128   |   8.599195    |  1         |           |                          |
- * | QPU     | 128   |  16.356966    |  1         | y         |                          |
- * | Scalar  | 192   |  19.153500    |  3         |           |                          |
- * | QPU     | 192   |  34.133194    |  3         | y         |                          |
- * | Scalar  | 256   |  34.370761    |  4         |           |                          |
- * | QPU     | 256   |  60.193135    |  4         | y         |                          |
- * | Scalar  | 512   | 135.673185    | 16         |           |                          |
- * | QPU     | 512   | 240.844060    | 16         | y         |                          |
- * |---------|-------|---------------|------------|-----------|--------------------------|
+ * |---------|-------|---------------|------------|----------|--------------------------|
+ * | RunMode | Width | Run  Time (s) | Num passes |Multi-ray |Comment                   |
+ * |---------|-------|---------------|------------|----------|--------------------------|
+ * | Scalar  |   64   |   2.147673   |   1        |          |                          |
+ * | QPU     |   64   |   3.962608   |   1        | n        |                          |
+ * | QPU     |   64   |   2.164501   |   2        | y        |                          |
+ * | Scalar  |  128   |   8.599195   |   1        |          |                          |
+ * | QPU     |  128   |  16.356966   |   1        | n        |                          |
+ * | QPU     |  128   |   8.712187   |   8        | y        |                          |
+ * | Scalar  |  192   |  19.153500   |   3        |          |                          |
+ * | QPU     |  192   |  34.133194   |   3        | n        |                          |
+ * | QPU     |  192   |  19.629027   |  17        | y        |                          |
+ * | Scalar  |  256   |  34.370761   |   4        |          |                          |
+ * | QPU     |  256   |  60.193135   |   4        | n        |                          |
+ * | QPU     |  256   |  34.751029   |  29        | y        |                          |
+ * | Scalar  |  512   | 135.673185   |  16        |          |                          |
+ * | QPU     |  512   | 240.844060   |  16        | n        |                          |
+ * | QPU     |  512   | 139.367050   | 116        | y        |                          |
+ * | Scalar  | 1024   | 531.943500   |  64        |          |                          |
+ * | QPU     | 1024   | 557.398976   | 461        | y        |                          |
+ * |---------|--------|--------------|------------|----------|--------------------------|
  */
 
 namespace {

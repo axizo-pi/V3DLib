@@ -61,6 +61,7 @@ Float::Float() { assign_intern(); }
 
 
 Float::Float(float x) {
+	//warn << "Float(" << x << ")";
   auto a = std::make_shared<Expr>(x);
   assign_intern(a);
 }

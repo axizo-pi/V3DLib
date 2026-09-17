@@ -124,15 +124,8 @@ Instr::List remove_skips(Instr::List &instrs) {
  * Determine the liveness sets for each instruction.
  */
 void Liveness::compute_liveness(Instr::List &instrs) {
-
   // Initialise live mapping to have one entry per instruction
   setSize(instrs.size());
-/*
-  // Went wrong with Seq<>, you never know later on
-  for (int i = 0; i < (int) m_set.size(); i++) {
-    assert(m_set[i].empty());
-  }
-*/
 
   // For temporarily storing live-in and live-out variables
   RegIdSet liveIn;
@@ -233,7 +226,7 @@ void Liveness::compute(Instr::List &instrs) {
 
 
 /**
- * Compute live sets for each instruction
+ * @brief Compute live-out sets for each instruction.
  *
  * Compute the live-out variables of an instruction, given the live-in
  * variables of all instructions and the CFG.
@@ -308,13 +301,54 @@ void Liveness::optimize(Instr::List &instrs, int numVars) {
 #ifdef OUTPUT_COMPILEDATA
   compile_data.target_code_before_optimization = instrs.dump();
 #endif // OUTPUT_COMPILEDATA
+	
+	MAYBE_UNUSED auto reg_warn = [] (Instr::List const &instrs) {
+		for (int i = 0; i < instrs.size(); ++i) {
+			auto const &instr = instrs[i];
+
+			if (instr.ALU.srcB.is_reg()) {
+				auto id = instr.ALU.srcB.reg().regId;
+				if ((60 <= id && id <= 65)) {
+					warn << "optimize: " << i << ": " <<  instr.dump();
+				}
+			}
+		}
+
+		warn << "----";
+	};
+
+	//reg_warn(instrs);
 
   Liveness live(numVars);
   live.compute(instrs);
 
+	//warn << "live: " << live.dump();
+/*	
+	for (int i = 0; i <= live.size(); ++i) {
+		auto const &item = live[i];
+
+		bool has_reg = false;
+		for (int j = 60; j <= 65; ++j) {
+			if (item.member(j)) {
+				has_reg = true;
+				break;
+			}
+		}
+
+		if (has_reg) {
+			warn << "live set " << i << ": " << item.dump();
+		}
+	}
+*/
+
+	//warn << "live reg_usage: " << live.reg_usage().dump();
+
   if (combineImmediates(live, instrs)) {
     live.compute(instrs);  // instructions have changed, redo liveness
   }
+
+
+	//reg_warn(instrs);
 
   //
   // vc7 has no general purpose accumulators,
