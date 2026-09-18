@@ -321,15 +321,7 @@ void run_kernel() {
   assert(global::run_mode() != RunScalar);
   timers.start("QPU run");
 
-#ifdef SINGLE_RAY
-  warn << "SINGLE_RAY defined qpu";
-
-  for (int index = 0; index < rays::num(); index++) {
-    hittable_list_hit(index);
-  }
-#else
   hittable_list_hit(0);
-#endif    
 
   timers.stop("QPU run");
   //sleep(10);

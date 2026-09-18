@@ -1,5 +1,4 @@
 #include "kernel.h"
-#include "global.h"  // SINGLE_RAY
 #include "Source/GlobalConstants.h"
 #include "Support/Helpers.h"
 #include "Support/Timer.h"
@@ -323,7 +322,7 @@ void sphere_hit_partial(
       // auto root = (h + sqrtd) / a;
       root_2 = (h + sqrtd) / a;
 
-      // if (!ray_t.surrounds(root)) {
+      // if (!ray_t.surrounds(root))
       Where (!(ray_t_min < root && root < ray_t_max))
 
         //if (!ray_t.surrounds(root)) return false;
@@ -374,6 +373,8 @@ void sphere_hit_kernel(
   Int::Ptr   rec_sphere_index
 ) {
 
+#define BLOCK_READ
+
   nop(1);                        sub_header("Init RayPtr");
 	RayPtr ray_ptr;
 	ray_ptr.init(
@@ -381,24 +382,6 @@ void sphere_hit_kernel(
   	p_direction_x, p_direction_y, p_direction_z
 	);
 
-//#define BLOCK_READ
-
-#if defined(SINGLE_RAY) || !defined(BLOCK_READ)
-  nop(1);                        sub_header("Adjust point pointers");
-  Int offset = index()*-4;
-	ray_ptr.offset(offset);
-#endif  
-
-#ifdef SINGLE_RAY
-  warn << "SINGLE_RAY defined kernel";
-
-  Int ray_index = ray_dummy;
-	Ray ray;
-	ray.load(ray_ptr, ray_index);
-
-	SpherePtr sphere_ptr;
-	sphere_ptr.load(in_center_x, in_center_y, in_center_z, in_radius);
-#else
   nop(1);                        sub_header("Start ray_index loop");
 
 #ifdef BLOCK_READ
@@ -421,6 +404,10 @@ void sphere_hit_kernel(
 			SpherePtr sphere_ptr;
 		  sphere_ptr.load(in_center_x, in_center_y, in_center_z, in_radius);
 #else  
+  nop(1);                        sub_header("Adjust point pointers");
+  Int offset = index()*-4;
+	ray_ptr.offset(offset);
+
   For (Int ray_index = 0, ray_index < ray_num, ray_index++)
 		Ray ray;
 		ray.load(ray_ptr);
@@ -428,7 +415,6 @@ void sphere_hit_kernel(
 		SpherePtr sphere_ptr;
 	  sphere_ptr.load(in_center_x, in_center_y, in_center_z, in_radius);
 #endif  
-#endif  // SINGLE_RAY
 
     Int   sphere_index = -1;       comment("sphere_index"); // Used to store sphere indexes of best hits
     Float ray_t_max    = 1*Inf();  comment("ray_t_max"); // Is a parameter in reference app
@@ -459,7 +445,6 @@ void sphere_hit_kernel(
     );
 
 
-#ifndef SINGLE_RAY
 #ifdef BLOCK_READ
     End
 
@@ -470,17 +455,15 @@ void sphere_hit_kernel(
 		ray_ptr++;
 #endif    
 
-    nop(1);                        sub_header("End ray_index loop");
-  End
-#endif    
+	End
 
 #undef BLOCK_READ
 }
 
 std::unique_ptr<BaseKernel> s_sphere_hit;
 
-
 } // anon namespace
+
 
 void init() {
   if (s_sphere_hit != nullptr) return;
