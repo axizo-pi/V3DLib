@@ -36,6 +36,12 @@ struct Vector {
 		y = rhs.y;
 		z = rhs.z;
 	}
+
+	void mult(Float &k) {
+		x = k*x;
+		y = k*y;
+		z = k*z;
+	}
 };
 
 
@@ -187,6 +193,58 @@ struct Sphere {
 };
 
 
+struct HitRecordPtr {
+	Int::Ptr   sphere_index;
+	Float::Ptr p_x;
+	Float::Ptr p_y;
+	Float::Ptr p_z;
+  Float::Ptr normal_x;
+ 	Float::Ptr normal_y;
+	Float::Ptr normal_z;
+	Float::Ptr t;
+	Float::Ptr front_face;
+
+	void load(
+  	Int::Ptr   &rec_sphere_index,
+		Float::Ptr &rec_p_x, Float::Ptr &rec_p_y, Float::Ptr &rec_p_z,
+    Float::Ptr &rec_normal_x, Float::Ptr &rec_normal_y, Float::Ptr &rec_normal_z,
+  	Float::Ptr &rec_t,
+  	Float::Ptr &rec_front_face
+	) {
+		sphere_index = rec_sphere_index;
+		p_x = rec_p_x;
+		p_y = rec_p_y;
+		p_z = rec_p_z;
+  	normal_x = rec_normal_x;
+  	normal_y = rec_normal_y;
+  	normal_z = rec_normal_z;
+  	t = rec_t;
+		front_face = rec_front_face;
+	}
+};
+
+
+struct HitRecord {
+	Int    sphere_index;
+	Vector p;
+	Vector outward_normal;
+	Float  t;
+	Float  front_face;
+
+	void store(HitRecordPtr &ptr, Int &offset) {
+  	*(ptr.sphere_index + offset) = sphere_index;
+  	*(ptr.p_x        + offset) = p.x;
+  	*(ptr.p_y        + offset) = p.y;
+  	*(ptr.p_z        + offset) = p.z;
+  	*(ptr.normal_x   + offset) = outward_normal.x;
+  	*(ptr.normal_y   + offset) = outward_normal.y;
+  	*(ptr.normal_z   + offset) = outward_normal.z;
+  	*(ptr.t          + offset) = t;
+  	*(ptr.front_face + offset) = front_face;
+	}
+};
+
+
 ///////////////////////////////////////////////////////////////////
 // Partial Definitions
 ///////////////////////////////////////////////////////////////////
@@ -200,60 +258,47 @@ void hit_record_partial(
   Float &in_t,
 	Ray &r,
 	SpherePtr &sphere_ptr,
-  // Output parameters
-  Float::Ptr &rec_p_x, Float::Ptr &rec_p_y, Float::Ptr &rec_p_z,
-  Float::Ptr &rec_normal_x, Float::Ptr &rec_normal_y, Float::Ptr &rec_normal_z,
-  Float::Ptr &rec_t,
-  Float::Ptr &rec_front_face,
-  Int::Ptr   &rec_sphere_index
+	HitRecordPtr &hr_ptr
 ) {
   nop(1);             sub_header("Start hit_record_partial");
-  Float t = -1;
+
+	HitRecord hr;
+	hr.t = -1;
+  hr.front_face = -1.0f;
 
   // Get the best t of the values in the 16-vector `in_t`.
   // This should be the lowest value.
   Int min_index;
-  rotate_min(in_t, t, min_index);
-  Int sphere_index;
-  element_at(in_sphere_index, min_index, sphere_index);
+  rotate_min(in_t, hr.t, min_index);
+  element_at(in_sphere_index, min_index, hr.sphere_index);
 
   // rec.p = r.at(rec.t);
-	Vector p;
-	r.at(p, t);                                sub_header("Update rec"); comment("Start ray.at()");
+	r.at(hr.p, hr.t);                          comment("Start ray.at()");
 
   //vec3 outward_normal = (rec.p - m_center) / m_radius;
-  Int sphere_offset = sphere_index - index();
+  Int sphere_offset = hr.sphere_index - index();
 	Sphere sphere;
  	sphere.load(sphere_ptr, sphere_offset);
 
-	Vector outward_normal;
-	sphere.normal(outward_normal, p);                                     comment("Calc outward_normal");
+	sphere.normal(hr.outward_normal, hr.p);
 
   // rec.set_face_normal(r, outward_normal);
   //
   // This sets the sign for the normal vector and stores it in rec.normal.
   //
   Float tmp;
-	r.direction.inner(tmp, outward_normal);
+	r.direction.inner(tmp, hr.outward_normal);
 
   // NOTE: minus sign is the other way around as I would expect; counter-intuitive but correct.
-  Float front_face = -1.0f;
   Where (tmp < 0)
-    front_face = 1.0f;
+    hr.front_face = 1.0f;
   End
+
+	hr.outward_normal.mult(hr.front_face);
 
   // `- index()` to save to a single location in main mem
   Int offset = ray_index - index();
-
-  *(rec_sphere_index + offset) = sphere_index;
-  *(rec_p_x        + offset) = p.x;
-  *(rec_p_y        + offset) = p.y;
-  *(rec_p_z        + offset) = p.z;
-  *(rec_normal_x   + offset) = front_face*outward_normal.x;
-  *(rec_normal_y   + offset) = front_face*outward_normal.y;
-  *(rec_normal_z   + offset) = front_face*outward_normal.z;
-  *(rec_t          + offset) = t;
-  *(rec_front_face + offset) = front_face;
+	hr.store(hr_ptr, offset);
 }
 
 
@@ -265,7 +310,7 @@ void sphere_hit_partial(
   Int &sphere_index,
   Float &ray_t_max
 ) {
-   nop(1);                                                         sub_header("Start sphere_hit_partial");
+  nop(1);                                                         sub_header("Start sphere_hit_partial");
 
   Float ray_t_min  = GlobalConst(0.001f);  // ray_t_min is an alias;
                                            // this is fine here because values doesn't change
@@ -282,26 +327,26 @@ void sphere_hit_partial(
 
     // vec3 oc = m_center - r.origin();
 		Vector oc;
-		sphere.center.sub(oc, r.origin);                               comment("vec3 oc");
+		sphere.center.sub(oc, r.origin);
 
     //auto a = r.direction().length_squared();
 		Vector dir;
 		dir.assign(r.direction);
 
     Float a;
-		dir.length_squared(a);                                           comment("Float a");
+		dir.length_squared(a);
 
     //auto h = f_dot(r.direction(), oc);
     Float h;
-    dir.inner(h, oc);                                               comment("Float h");
+    dir.inner(h, oc);
 
     //auto c = oc.length_squared() - m_radius*m_radius;
     Float c;
-		oc.length_squared(c);                                           comment("Float c");
+		oc.length_squared(c);
     c -= sphere.radius*sphere.radius;
 
     //auto discriminant = h*h - a*c;
-    Float discriminant = h*h - a*c;                                comment("Float discriminant");
+    Float discriminant = h*h - a*c;
 
     // if (discriminant < 0) return false;
     Where (discriminant < 0.0f)  // `<=` leads to differences
@@ -335,11 +380,11 @@ void sphere_hit_partial(
     End
 
     Where (valid == 1)
-      ray_t_max = root;                 comment("Setting ray_t_max");
+      ray_t_max = root;
       sphere_index = 16*i + index();
     End
 
-		sphere_ptr.inc();                   comment("Start increment pointers");
+		sphere_ptr.inc();                   comment("Increment pointers");
   End
 }
 
@@ -380,6 +425,15 @@ void sphere_hit_kernel(
 	ray_ptr.init(
   	p_origin_x,    p_origin_y,    p_origin_z,
   	p_direction_x, p_direction_y, p_direction_z
+	);
+
+	HitRecordPtr hr_ptr;
+	hr_ptr.load(
+		rec_sphere_index,
+		rec_p_x, rec_p_y, rec_p_z,
+  	rec_normal_x, rec_normal_y, rec_normal_z,
+		rec_t,
+		rec_front_face
 	);
 
   nop(1);                        sub_header("Start ray_index loop");
@@ -437,11 +491,7 @@ void sphere_hit_kernel(
       ray_t_max,
 			ray,
 			sphere_ptr,
-      rec_p_x, rec_p_y, rec_p_z,
-      rec_normal_x, rec_normal_y, rec_normal_z,
-      rec_t,
-      rec_front_face,
-      rec_sphere_index
+			hr_ptr
     );
 
 
