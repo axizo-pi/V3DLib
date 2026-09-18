@@ -71,7 +71,7 @@ Instructions output(Location const &src) {
   Instructions ret;
   ret << mov(tmud, src).comment("Output to main mem")       // write result to main mem
       << mov(tmua, rf(1))
-      << tmuwt(rf(16))                                      // rf(16) used as devnull for return value of tmuwt
+      << tmuwt()
       << add(rf(1), rf(1), 4).comment("increment pointer");
   return ret;
 }

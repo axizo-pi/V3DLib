@@ -301,6 +301,7 @@ Register const exp("exp", V3D_QPU_WADDR_EXP);
 Register const log("log", V3D_QPU_WADDR_LOG);
 Register const sin("sin", V3D_QPU_WADDR_SIN);
 Register const rsqrt2("rsqrt2", V3D_QPU_WADDR_RSQRT2);
+Register const devnull("devnull", V3D_QPU_WADDR_NOP);
 
 
 // For branch
@@ -454,11 +455,17 @@ Mnemonic vflb(Location const &dst) {
 
 
 Mnemonic tmuwt() {
-  // Log::debug << "tmuwt(): using rf(63) as devnull";
-  return tmuwt(rf(63));
+  Mnemonic instr;
+  instr.alu.add.op = V3D_QPU_A_TMUWT;
+
+  // Ignore dst for vc4, vc6
+  if (Platform::compiling_for_vc7()) {
+    instr.alu_add_dst(devnull);
+	}
+  return instr;
 }
 
-
+/*
 Mnemonic tmuwt(Location const &dst) {
   Mnemonic instr;
   instr.alu.add.op = V3D_QPU_A_TMUWT;
@@ -469,6 +476,7 @@ Mnemonic tmuwt(Location const &dst) {
   }
   return instr;
 }
+*/
 
 
 Mnemonic ldvpmg_in(Location const &dst, Location const &a, Location const &b) {

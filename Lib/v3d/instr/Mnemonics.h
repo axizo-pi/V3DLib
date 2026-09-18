@@ -135,6 +135,7 @@ extern Register const exp;
 extern Register const log;
 extern Register const sin;
 extern Register const rsqrt2;
+extern Register const devnull;
 
 // For branch
 extern BranchDest const lri;
@@ -210,7 +211,7 @@ Mnemonic fdx(Location const &dst, Location const &srca);
 Mnemonic fdx(Location const &dst, Location const &srca);
 Mnemonic vflb(Location const &dst);
 Mnemonic tmuwt();
-Mnemonic tmuwt(Location const &dst);
+//Mnemonic tmuwt(Location const &dst);
 
 Mnemonic ldvpmg_in(Location const &dst, Location const &a, Location const &b);
 Mnemonic stvpmv(SmallImm const &a, Location const &b);
