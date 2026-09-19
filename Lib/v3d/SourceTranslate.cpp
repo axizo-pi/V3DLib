@@ -47,7 +47,7 @@ void SourceTranslate::regAlloc(Instr::List &instrs) {
   liveWith.init(instrs, live);
 
   // Step 3 - Allocate a register to each variable
-	warn << "numVars: " << numVars;
+  //warn << "numVars: " << numVars;
 
   for (int i = 0; i < numVars; i++) {
     auto &reg = live.reg_usage()[i].reg;
@@ -82,6 +82,25 @@ Instr label(Label in_label) {
 
 /**
  * @brief Add initialization code after uniform loads
+ *
+ * ===================================================
+ * Notes
+ * -----
+ *
+ * 1. vc6: Determine the qpu index for 'current' QPU.
+ * This is derived from the thread index. 
+ *
+ * #num QPU's is either 1 or 8.
+ *
+ * Broadly:
+ *
+ *     If (numQPUs() == 8)  // Alternative is 1, then qpu num initalized to 0 is ok
+ *      me() = (thread_index() >> 2) & 0b1111;
+ *     End
+ *
+ * This works because the thread indexes are consecutive for multiple reserved
+ * threads. It's probably also the reason why you can select only 1 or 8 (max)
+ * threads, otherwise there would be gaps in the qpu id.
  */
 void add_init_block(Instr::List &code) {
   using namespace V3DLib::Target::instr;
@@ -94,24 +113,9 @@ void add_init_block(Instr::List &code) {
     // vc7: No restriction on #QPU's, max is 16
     ret << mov(acc, QPU_ID)
         << shr(acc, acc, 2)
-        << band(rf(RSV_QPU_ID), acc, 15)
-    ;
+        << band(rf(RSV_QPU_ID), acc, 15);
   } else {
-    // vc6: Determine the qpu index for 'current' QPU
-    // This is derived from the thread index. 
-    //
-    // #num QPU's is either 1 or 8.
-    //
-    // Broadly:
-    //
-    // If (numQPUs() == 8)  // Alternative is 1, then qpu num initalized to 0 is ok
-    //   me() = (thread_index() >> 2) & 0b1111;
-    // End
-    //
-    // This works because the thread indexes are consecutive for multiple reserved
-    // threads. It's probably also the reason why you can select only 1 or 8 (max)
-    // threads, otherwise there would be gaps in the qpu id.
-    //
+    // vc6: Determine the qpu index for 'current' QPU; see Note 1.
     Label endifLabel = freshLabel();
 
     ret << mov(rf(RSV_QPU_ID), 0)           // not needed, already init'd to 0. Left here to counter future brainfarts
@@ -120,12 +124,8 @@ void add_init_block(Instr::List &code) {
         << mov(acc, QPU_ID)
         << shr(acc, acc, 2)
         << band(rf(RSV_QPU_ID), acc, 15)
-        << label(endifLabel)
-    ;
+        << label(endifLabel);
   }
-
-//  ret << mov(_r64, 1)
-//      << shl(_r64, _r64, 6)   . comment("init global 64");
 
   ret << add_uniform_pointer_offset(code);
 

@@ -205,7 +205,6 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
   for (int i = 0; i < (int) instrs.size(); i++) {
     Instr &instr = instrs[i];
     if (instr.tag != InstrTag::LI) continue;
-		//warn << "combineImmediates " << i << ": " << instr.dump();
 
     if (instr.LI.imm.is_small_imm()) {
       auto const &reg_usage = live.reg_usage()[instr.dest().regId];
@@ -247,7 +246,7 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
 
         if (can_remove) {
           info << "combineImmediates can_remove, instr: " << instr.dump();
-          instr.set_skip();
+          instrs.set_skip(i);
         }
       }
 
@@ -261,21 +260,13 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
     for (int j = i + 1; j < (int) instrs.size(); j++) {
       Instr &instr2 = instrs[j];
 
-      if (instr2.is_branch()) {  // Don't go over branches, this affects liveness in a bad way
-        break;
-      }
+      // Don't go over branches, this affects liveness in a bad way
+      if (instr2.is_branch()) break;
 
-      if (last_use + LAST_USE_LIMIT < j) {  // This is here for performance reasons,
-                                            // to avoid fully scanning huge kernels.
-        break;
-      }
+       // This is here for performance reasons, to avoid fully scanning huge kernels.
+      if (last_use + LAST_USE_LIMIT < j) break;
 
-
-
-      if (instr2.is_dst_reg(instr.dest())) {
-        break;
-      }
-
+      if (instr2.is_dst_reg(instr.dest())) break;
       if (instr2.tag != InstrTag::LI) continue;
       if (instr2.LI.imm != instr.LI.imm) continue;
       if (!live.cfg().is_parent_block(j, live.cfg().block_at(i))) continue;
@@ -305,12 +296,10 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
           break;  // Stop if var to replace is rewritten
         }
 
-
         Log::debug << "Renaming instr:\n"
                    << "current     : " << i << ": " << current.dump()         << "\n"
                    << "instr3      : " << k << ": " << instr3.mnemonic(false) << "\n"
-                   << "replace_with:   "    << ": " << replace_with.dump()    << "\n"
-        ;
+                   << "replace_with:   "    << ": " << replace_with.dump()    << "\n";
 
         if (renameUses(instr3, current, replace_with)) {
           num_subsitutions++;
@@ -320,8 +309,8 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
       if (num_subsitutions > 0) {
         last_use = j;
 
-        Log::debug << "Setting skip on instruction at " << j;
-        instr2.set_skip();
+        warn /*Log::debug*/ << "Setting skip on instruction at " << j; // TODO revert to debug when checked
+        instrs.set_skip(j);
       }
     }
 
@@ -353,7 +342,7 @@ int introduceAccum(Liveness &live, Instr::List &instrs) {
   RegUsage &allocated_vars = live.reg_usage();
 
 #ifdef DEBUG
-	// Paranoia safeguard; reg's should not be allocated already
+  // Paranoia safeguard; reg's should not be allocated already
   for (int i = 0; i < (int) allocated_vars.size(); i++) {
     assert(allocated_vars[i].reg.tag == NONE);
   }

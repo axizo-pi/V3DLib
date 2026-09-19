@@ -696,8 +696,15 @@ int Instr::List::tag_count(InstrTag tag) {
 }
 
 
+/**
+ * @brief Find the single instruction with the passed tag marker.
+ *
+ * It is expected that there is at most one instruction with the given tag.
+ * This is checked internally.
+ *
+ * @return Index of instruction with given tag, -1 if not found.
+ */
 int Instr::List::tag_index(InstrTag tag, bool ensure_one) {
-  // Find the init begin marker
   int found = -1;
   int count = 0;
 
@@ -801,6 +808,25 @@ int Instr::List::get_free_acc(int first, int last) const {
   }
 
   return ret;
+}
+
+
+/**
+ * @brief Set the instruction at the given index to 'skip'.
+ *
+ * Done like this so that instruction comment of skipp instruction
+ * can be transferred to next instruction.
+ */
+void Instr::List::set_skip(int index) {
+  assert(0 <= index && index < size());
+  auto &instr = (*this)[index];
+
+  // Transfer comments to next instruction, if possible
+  if ((index + 1) < (int) size()) {
+    (*this)[index + 1].transfer_comments(instr);
+  }
+
+  instr.set_skip();
 }
 
 

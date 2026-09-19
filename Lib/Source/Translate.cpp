@@ -841,15 +841,16 @@ void encode_target(Instr::List &target, Stmt::Array const &source) {
  * @param init   list of operations for the init block
  */
 void insert_init_block(Instr::List &code, Instr::List &init) {
-  init.front().header("Init block");
+  init.front().header("Init block!");
 
-  int insert_index = code.tag_index(INIT_BEGIN);
-  assertq(insert_index >= 0, "Expecting init begin marker");
-  code.insert(insert_index + 1, init);  // Insert init code after the INIT_BEGIN marker
+  int begin_index = code.tag_index(INIT_BEGIN);
+  assertq(begin_index >= 0, "Expecting init begin marker");
 
-  insert_index = code.tag_index(INIT_END);
-  assertq(insert_index >= 0, "Expecting init end marker");
-  code[insert_index + 1].header("Main program");
+  int end_index = code.tag_index(INIT_END);
+  assertq(end_index >= 0, "Expecting init end marker");
+  code[end_index + 1].header("Main program");
+
+  code.insert(begin_index + 1, init);  // Insert init code after the INIT_BEGIN marker
 }
 
 
