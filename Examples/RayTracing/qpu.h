@@ -37,8 +37,8 @@ void reset();
 
 namespace hit_records {
 
-std::string dump(int index);
-void check(int index, hit_record const &rec);
+std::string dump(int ray_index);
+void check(int ray_index, hit_record const &rec);
 hit_record get(int ray_index);
 bool valid(int ray_index);
 

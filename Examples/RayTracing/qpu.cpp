@@ -436,9 +436,10 @@ bool same(ray const &lhs, ray const &rhs) {
 
 namespace hit_records {
 
-std::string dump(int index) {
-  std::string ret;
+std::string dump(int ray_index) {
+  int index = rays::relative_index(ray_index);
 
+  std::string ret;
   ret //<< index << ": "
       << "p: "            << hitrecords.p.dump_vec(index)      << ", "
       << "normal: "       << hitrecords.normal.dump_vec(index) << ", "
@@ -449,7 +450,9 @@ std::string dump(int index) {
 }
 
 
-void check(int index, hit_record const &rec) {
+void check(int ray_index, hit_record const &rec) {
+  int index = rays::relative_index(ray_index);
+
   auto t          = hitrecords.t[index];
   auto p          = hitrecords.p.to_vec(index);
   auto normal     = hitrecords.normal.to_vec(index);
@@ -524,7 +527,11 @@ bool valid(int ray_index) {
   float val = hitrecords.p.x[index];
   float inf = std::numeric_limits<float>::infinity();
 
-  return val != inf && val != -inf;
+  bool ret = (val != inf && val != -inf);
+	//if (!ret) {
+	//	warn << "not valid!";  // Valid looks OK for vc6
+	//}
+	return ret;
 }  
 
 } // namespace hit_records

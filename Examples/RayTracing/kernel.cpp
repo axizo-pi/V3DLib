@@ -455,7 +455,7 @@ void sphere_hit_kernel(
   Int::Ptr   rec_sphere_index
 ) {
 
-#define BLOCK_WRITE
+//#define BLOCK_WRITE
 
   RayPtr ray_ptr(
     p_origin_x,    p_origin_y,    p_origin_z,
