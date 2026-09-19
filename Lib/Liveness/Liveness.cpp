@@ -302,54 +302,53 @@ void Liveness::optimize(Instr::List &instrs, int numVars) {
 #ifdef OUTPUT_COMPILEDATA
   compile_data.target_code_before_optimization = instrs.dump();
 #endif // OUTPUT_COMPILEDATA
-	
-	MAYBE_UNUSED auto reg_warn = [] (Instr::List const &instrs) {
-		for (int i = 0; i < instrs.size(); ++i) {
-			auto const &instr = instrs[i];
+  
+  MAYBE_UNUSED auto reg_warn = [] (Instr::List const &instrs) {
+    for (int i = 0; i < instrs.size(); ++i) {
+      auto const &instr = instrs[i];
 
-			if (instr.ALU.srcB.is_reg()) {
-				auto id = instr.ALU.srcB.reg().regId;
-				if ((60 <= id && id <= 65)) {
-					warn << "optimize: " << i << ": " <<  instr.dump();
-				}
-			}
-		}
+      if (instr.ALU.srcB.is_reg()) {
+        auto id = instr.ALU.srcB.reg().regId;
+        if ((60 <= id && id <= 65)) {
+          warn << "optimize: " << i << ": " <<  instr.dump();
+        }
+      }
+    }
 
-		warn << "----";
-	};
+    warn << "----";
+  };
 
-	//reg_warn(instrs);
+  //reg_warn(instrs);
 
   Liveness live(numVars);
   live.compute(instrs);
 
-	//warn << "live: " << live.dump();
-/*	
-	for (int i = 0; i <= live.size(); ++i) {
-		auto const &item = live[i];
+  //warn << "live: " << live.dump();
+/*  
+  for (int i = 0; i <= live.size(); ++i) {
+    auto const &item = live[i];
 
-		bool has_reg = false;
-		for (int j = 60; j <= 65; ++j) {
-			if (item.member(j)) {
-				has_reg = true;
-				break;
-			}
-		}
+    bool has_reg = false;
+    for (int j = 60; j <= 65; ++j) {
+      if (item.member(j)) {
+        has_reg = true;
+        break;
+      }
+    }
 
-		if (has_reg) {
-			warn << "live set " << i << ": " << item.dump();
-		}
-	}
+    if (has_reg) {
+      warn << "live set " << i << ": " << item.dump();
+    }
+  }
 */
 
-	//warn << "live reg_usage: " << live.reg_usage().dump();
+  //warn << "live reg_usage: " << live.reg_usage().dump();
 
   if (combineImmediates(live, instrs)) {
     live.compute(instrs);  // instructions have changed, redo liveness
   }
 
-
-	//reg_warn(instrs);
+  //reg_warn(instrs);
 
   //
   // vc7 has no general purpose accumulators,

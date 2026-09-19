@@ -12,7 +12,7 @@ Compile::Compile() {
 
 
 Compile::~Compile() {
-	//warn << "Called Compile dtor";
+  //warn << "Called Compile dtor";
   delete m_code_struct;
 }
 
@@ -51,7 +51,7 @@ void Compile::compile(std::function<void()> create_ast) {
     m_numVars = VarGen::count();
   } catch (V3DLib::Exception const &e) {
     // TODO: Looks like this one is not used, cleanup?
-		breakpoint; // Warn me when this happens, TODO test on all platforms
+    breakpoint; // Warn me when this happens, TODO test on all platforms
 
     std::string e_msg = e.what();
     Log::warn << "V3DLib::Exception caught: " << e_msg;
@@ -91,9 +91,9 @@ void Compile::compile(std::function<void()> create_ast) {
  *
  */
 void Compile::init_compile() {
-	auto &cs = code_struct();
+  auto &cs = code_struct();
 
-	cs.init();
+  cs.init();
   VarGen::reset();
   resetFreshLabelGen();
 
@@ -151,7 +151,7 @@ bool Compile::handle_errors() {
 * @param filename  if specified, print the output to this file. Otherwise, print to stdout
 */
 std::string Compile::dump() {
-	auto &cs = code_struct();
+  auto &cs = code_struct();
   std::string ret;
 
   if (has_errors()) {
@@ -181,16 +181,16 @@ std::string Compile::dump() {
 #ifdef OUTPUT_COMPILEDATA
 
 std::string Compile::dump_compile_data() const {
-	std::string ret;
+  std::string ret;
   ret = m_compile_data.dump();
 
-	// vc7 has no accumulators, don't display
-	if (!Platform::compiling_for_vc7()) {
+  // vc7 has no accumulators, don't display
+  if (!Platform::compiling_for_vc7()) {
     ret << ::title("ACC usage")
         << code_struct().m_targetCode.check_acc_usage();
-	}
+  }
 
-	return ret;
+  return ret;
 }
 
 #endif // OUTPUT_COMPILEDATA

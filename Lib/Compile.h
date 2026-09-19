@@ -41,8 +41,8 @@ public:
   virtual void invoke(int numQPUs, IntList &params, bool wait_complete = true) = 0;
   virtual void wait_complete() {}  // For v3d
 
-	CodeStruct const &code_struct() const;
-	CodeStruct &code_struct();
+  CodeStruct const &code_struct() const;
+  CodeStruct &code_struct();
 
 protected:
   KernelType  m_type;

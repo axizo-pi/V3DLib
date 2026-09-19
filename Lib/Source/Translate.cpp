@@ -13,15 +13,15 @@ using ::operator<<;  // C++ weirdness
 namespace {
 
 MAYBE_UNUSED bool debug_warn(std::string const &prefix, Expr &e) {
-	if (!e.isVar()) return false;
+  if (!e.isVar()) return false;
 
-	auto v = e.var();
-	if (v.tag() == STANDARD && (60 <= v.id() && v.id() <= 65)) {
-		warn << prefix << v.dump();
-		return true;
-	}
+  auto v = e.var();
+  if (v.tag() == STANDARD && (60 <= v.id() && v.id() <= 65)) {
+    warn << prefix << v.dump();
+    return true;
+  }
 
-	return false;
+  return false;
 }
 
 // Forward declarations
@@ -71,7 +71,7 @@ Instr::List varAssign(AssignCond cond, Var v, Expr::Ptr expr) {
 
   switch (e.tag()) {
     case Expr::VAR: {                                                // 'v := w', v and w variables
-				//debug_warn("varAssign var: ", e);
+        //debug_warn("varAssign var: ", e);
         auto tmp = mov(v, e.var());
         assert(tmp.size() ==1);
         tmp.back().cond(cond);
@@ -86,12 +86,12 @@ Instr::List varAssign(AssignCond cond, Var v, Expr::Ptr expr) {
       break;
 
     case Expr::FLOAT_LIT:                                            // 'v := f', f is a float literal
-			//warn << "varAssign float: " << e.floatLit;
+      //warn << "varAssign float: " << e.floatLit;
       ret << li(v, e.floatLit).cond(cond);
       break;
 
     case Expr::APPLY: {                                              // 'v := x op y'
-			//bool found = debug_warn("varAssign apply rhs: ", *e.rhs());
+      //bool found = debug_warn("varAssign apply rhs: ", *e.rhs());
       if (!e.lhs()->isSimple()) {                                    // x not simple
         e.lhs(simplify(&ret, e.lhs()));
       }
@@ -100,7 +100,7 @@ Instr::List varAssign(AssignCond cond, Var v, Expr::Ptr expr) {
         e.rhs(simplify(&ret, e.rhs()));
       }
 
-			//if (found) { warn << "varAssign apply rhs post: " << e.rhs()->dump(); }
+      //if (found) { warn << "varAssign apply rhs post: " << e.rhs()->dump(); }
 
       if (e.lhs()->isLit() && e.rhs()->isLit()) {                    // x and y are both literals
         Var tmpVar = VarGen::fresh();
@@ -134,7 +134,7 @@ Instr::List varAssign(AssignCond cond, Var v, Expr::Ptr expr) {
         break;
       }
 
-			//if (found) { warn << "varAssign apply ret: " << ret.dump(); }
+      //if (found) { warn << "varAssign apply ret: " << ret.dump(); }
 
     }
     break;
@@ -180,7 +180,7 @@ Expr::Ptr simplify(Instr::List *seq, Expr::Ptr e) {
   Instr::List tmp;
   tmp << varAssign(tmp_var, e);
   //tmp.front().comment("simplify varAssign");
-	//warn << "simplify tmp: " << tmp.dump();
+  //warn << "simplify tmp: " << tmp.dump();
   *seq << tmp;
 
   return mkVar(tmp_var);
@@ -203,7 +203,7 @@ Expr::Ptr putInVar(Instr::List *seq, Expr::Ptr e) {
   }
 
   Var tmp = VarGen::fresh();
-	warn << "putInVar tmp: " << tmp.dump();
+  warn << "putInVar tmp: " << tmp.dump();
   *seq << varAssign(tmp, e);
   return mkVar(tmp);
 }

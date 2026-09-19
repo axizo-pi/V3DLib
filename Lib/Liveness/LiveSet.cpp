@@ -66,7 +66,7 @@ std::vector<bool> LiveSets::possible_registers(int index, RegUsage &alloc, RegTa
   const int NUM_REGS = Platform::size_regfile();
   std::vector<bool> possible(NUM_REGS);
 
-	// Initialize flags
+  // Initialize flags
   for (int j = 0; j < NUM_REGS; j++)
     possible[j] = true;
 
@@ -115,16 +115,16 @@ void LiveSets::dump_possible(std::vector<bool> &possible, int index) {
  * @brief Find possible register in a register file.
  */
 RegId LiveSets::choose_register(std::vector<bool> &possible, bool check_limit) {
-	check_limit = true;
+  check_limit = true;
   assert(!possible.empty());
   RegId chosenA = -1;
 
   for (int j = 0; j < (int) possible.size(); j++) {
     if (possible[j]) {
-			chosenA = j;
-			break;
-		}
-	}
+      chosenA = j;
+      break;
+    }
+  }
 
   if (check_limit && chosenA < 0) {
     cerr << "LiveSets::choose_register(): register allocation failed, insufficient capacity" << thrw;

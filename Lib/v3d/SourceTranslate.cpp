@@ -48,7 +48,7 @@ void SourceTranslate::regAlloc(Instr::List &instrs) {
 
   // Step 3 - Allocate a register to each variable
   for (int i = 0; i < numVars; i++) {
-		auto &reg = live.reg_usage()[i].reg;
+    auto &reg = live.reg_usage()[i].reg;
 
     if (reg.tag != NONE) continue;  // Already allocated
 

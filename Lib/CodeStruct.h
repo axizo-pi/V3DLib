@@ -14,11 +14,11 @@ struct CodeStruct {
   Instr::List m_targetCode;   // Target code generated from AST
   Code m_code;                // Memory region for QPU code
 
-	void init();
-	void obtain_ast();
+  void init();
+  void obtain_ast();
 
-	Code const &code() const { return m_code; }
-	Stmts const &sourceCode() const;
+  Code const &code() const { return m_code; }
+  Stmts const &sourceCode() const;
   Instr::List const &targetCode() const { return m_targetCode; }
 
 private:

@@ -734,7 +734,7 @@ std::string Instr::List::check_acc_usage(int first, int last) const {
   std::string ret;
 
   for (int index = first; index <= last; ++index) {
-		auto const &line = (*this)[index];
+    auto const &line = (*this)[index];
 
     uint32_t accs = line.get_acc_usage();
     assert(accs < 64);
@@ -754,7 +754,7 @@ std::string Instr::List::check_acc_usage(int first, int last) const {
       ret << " - Rot instruction.";
     }
 
-		//ret << "   " << line.mnemonic();
+    //ret << "   " << line.mnemonic();
     ret << "\n";
   }
 

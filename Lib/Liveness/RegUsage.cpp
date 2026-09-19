@@ -76,7 +76,7 @@ std::string RegUsageItem::dump() const {
     return ret;
   }
 
-	std::string dst_list;
+  std::string dst_list;
   for (int i = 0; i < (int) use_dst.size(); ++i) {
     if (i != 0) {
       dst_list << ", ";
@@ -304,7 +304,7 @@ void RegUsage::set_used(Instr::List &instrs) {
     }
 
     for (auto r : out.use) {
-			//warn << "add_src: " << i;
+      //warn << "add_src: " << i;
       //assert(r < (int) size());
       get(r).add_src(i);
     }
@@ -318,15 +318,9 @@ void RegUsage::set_live(Liveness &live) {
 
     for (auto it : item) {
       auto &item2 = (*this)[it];
-			item2.add_live(i);
+      item2.add_live(i);
     }
   }
-/*
-	for (int i = 60; i <= 65; ++i) {
-    auto &item2 = (*this)[i];
-	  warn << "item2 " << i << ": " << item2.dump();
-	}
-*/	
 }
 
 

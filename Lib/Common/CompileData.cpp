@@ -11,35 +11,35 @@ namespace V3DLib {
 CompileData compile_data;
 
 std::string CompileData::dump() const {
-	std::string register_blurb;
-	register_blurb
-		  << "Line Layout:\n"
-		  << "\n"
-		  << "  l: r;src(first, last, count);dst: {list}; live(first, last, count)\n"
-		  << "\n"
-		  << "       l: Index of variable in Target code.\n"
-			<< "       r: Index of assigned register, '_' if not assigned.\n"
-			<< "     src: Range of line numbers where variable is used as source,\n"
-		  << "          and number of times it is used as source in that range;\n"
-		  << "          'src(none)' if not used as source.\n"
-			<< "     dst: List of line numbers where variable is used as destination, may be empty.\n"
-			<< "    live: Range of line numbers where variable is live and line count;\n"
-		  << "          'live(none)' if no range.\n"
-		  << "\n";
+  std::string register_blurb;
+  register_blurb
+      << "Line Layout:\n"
+      << "\n"
+      << "  l: r;src(first, last, count);dst: {list}; live(first, last, count)\n"
+      << "\n"
+      << "       l: Index of variable in Target code.\n"
+      << "       r: Index of assigned register, '_' if not assigned.\n"
+      << "     src: Range of line numbers where variable is used as source,\n"
+      << "          and number of times it is used as source in that range;\n"
+      << "          'src(none)' if not used as source.\n"
+      << "     dst: List of line numbers where variable is used as destination, may be empty.\n"
+      << "    live: Range of line numbers where variable is live and line count;\n"
+      << "          'live(none)' if no range.\n"
+      << "\n";
 
   std::string ret;
   ret << title("Liveness dump")
-		  << " - Index is line number in target code, see below.\n"
-			<< " - Value between brackets is number of variables live at that line.\n"
-			<< " - Values in list are the indexes of the live variables.\n"
-		  << "\n"
+      << " - Index is line number in target code, see below.\n"
+      << " - Value between brackets is number of variables live at that line.\n"
+      << " - Values in list are the indexes of the live variables.\n"
+      << "\n"
       << liveness_dump
 /*
       << title("Register Usage Dump")
       << reg_usage_dump
 */
       << title("Allocated Registers to Variables")
-			<< register_blurb
+      << register_blurb
       << allocated_registers_dump;
 /*
   if (!target_code_before_optimization.empty()) {
@@ -56,7 +56,7 @@ std::string CompileData::dump() const {
   if (!target_code_before_liveness.empty()) {
     ret << title("Target Code")
         << " - Before liveness, after peepholes.\n"
-				<< "\n"
+        << "\n"
         << target_code_before_liveness;
   }
 
