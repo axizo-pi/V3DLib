@@ -14,15 +14,21 @@ namespace {
 /**
  * Size of point arrays.
  *
- * Output fails for multi-ray kernel if the array size is selected too large.
+ * Screen artefacts for multi-ray kernel if the array size is selected too large.
  * I can not determine why this happens (overflow? I/O is swamped?).
  *
  * The single-ray kernel works fine. This test done on pi5 (vc7), rest not done yet.
  *
  * The workaround for now is to limit the array sizes here.
+ *
+ * ArraySize
+ * ---------
+ * 92160     - Decent heuristic, which fits into the default heap size.
+ *             Obvious screen artefacts
+ * 16640     - Overall good, a few pixels black
+ * 12800     - Highest value I could determine that completely succeeds.
  */
-const int ArraySize = 12800; //Highest value I could determine that succeeds. Fail: 20480;
-//const int ArraySize = 92160; // Decent heuristic, which fits into the default heap size.
+const int ArraySize = 12800;
 
 int s_exact_match   = 0;
 int s_total_matches = 0;
