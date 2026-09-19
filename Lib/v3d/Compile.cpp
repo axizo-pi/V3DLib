@@ -307,9 +307,13 @@ void handle_condition_tags(V3DLib::Instr const &src_instr, Instructions &ret) {
   ret.back().set_push_tag(setCond);
 
   Instr tmp_instr;
-  auto reg = encodeDestReg(src_instr);
+  auto dst = encodeDestReg(src_instr);
+  assert(dst);
+
+  assert(src_instr.ALU.srcA.is_reg());
+  auto reg = encodeSrcReg(src_instr.ALU.srcA.reg());
   assert(reg);
-  tmp_instr = nop().sub(*reg, *reg, SmallImm(0)).pushz();
+  tmp_instr = nop().sub(*dst, *reg, SmallImm(0)).pushz();
 
   ret << tmp_instr;
 }

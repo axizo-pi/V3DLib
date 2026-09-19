@@ -244,10 +244,22 @@ void andor_kernel(Int::Ptr result) {
 
 
 void noloop_where_kernel(Int::Ptr result, Int x, Int y) {
+  Int y_min = 10;
+  Int y_max = 20;
+  Int x_min = 10;
+  Int x_max = 20;
+
   Int tmp = 0;
-  Where (y > 10 && y < 20 && x > 10 && x < 20)
+
+  //
+  // Fails for x=21, y=15 with immediates values, eg:
+  //
+  //   Where (y > 10 && y < 20 && x > 10 && x < 20)
+  //
+  Where (y > y_min && y < y_max && x > x_min && x < x_max)
     tmp = 1;
   End
+
   *result = tmp;
 }
 
@@ -497,6 +509,7 @@ TEST_CASE("Test if/where without loop [noloop][cond]") {
     Int::Array result(VEC_SIZE);
 
     auto k1 = compile(noloop_where_kernel);
+    //to_file("noloop_where_kernel.txt", k1.dump());
 
     k1.load(&result, 0, 0);   run_qpu(result, k1, 0, expected_1);
     k1.load(&result, 12, 15); run_qpu(result, k1, 1, expected_2);

@@ -197,7 +197,6 @@ IntExpr index() {
 }
 
 
-
 /**
  * @brief Return the id of the QPU currently running.
  *

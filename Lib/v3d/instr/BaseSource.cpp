@@ -39,10 +39,11 @@ BaseSource::BaseSource(Location const &rhs) {
 
 
 void BaseSource::_init(Location const &rhs) {
-  assert (!Platform::compiling_for_vc7() || rhs.is_rf());
+  //warn << "_init rhs: " << rhs.dump();
+  assert(!Platform::compiling_for_vc7() || rhs.is_rf());
 
   m_val    = rhs.to_waddr();
-   m_is_rf  = rhs.is_rf();
+  m_is_rf  = rhs.is_rf();
   m_is_reg = rhs.is_reg();
 
   unpack(rhs.input_unpack());

@@ -203,7 +203,7 @@ Expr::Ptr putInVar(Instr::List *seq, Expr::Ptr e) {
   }
 
   Var tmp = VarGen::fresh();
-  warn << "putInVar tmp: " << tmp.dump();
+  //warn << "putInVar tmp: " << tmp.dump();
   *seq << varAssign(tmp, e);
   return mkVar(tmp);
 }
@@ -350,37 +350,35 @@ void cmpExp(Instr::List *seq, BExpr::Ptr bexpr, Var v) {
   //
   using namespace V3DLib::Target::instr;
 
-  Var dummy  = VarGen::fresh();
-  Var dummy2 = VarGen::fresh();
   AssignCond assign_cond(b.cmp);
 
+  //
   // Implement comparison using subtraction instruction
+  //
   Op op(SUB, b.cmp.type());
-  //breakpoint;
 
   Instr instr(ALU);
   instr.setCondOp(b.cmp);
-  instr.ALU.op       = ALUOp(op);
-  instr.ALU.srcA     = operand(b.cmp_lhs());
-  instr.ALU.srcB     = operand(b.cmp_rhs());
-  instr.dest(dummy);
+  instr.ALU.op   = ALUOp(op);
+  instr.ALU.srcA = operand(b.cmp_lhs());
+  instr.ALU.srcB = operand(b.cmp_rhs());
+  instr.dest(Dummy);
 
   auto mov1 = mov(v, 1);
   assert(mov1.size() == 1);
-  mov1.back().cond(assign_cond);        // TODO: would be better if this used acc-reg
+  mov1.back().cond(assign_cond);
 
-  auto mov2 = mov(dummy2, v);
-  assert(mov2.size() == 1);
-  mov2.back().setCondFlag(Flag::ZC);  // Reset flags so that Z-flag is used
+  auto instr2 = sub(Dummy, v, 0);
+  instr2.setCondFlag(Flag::ZC);    // Reset flags so that Z-flag is used
 
   *seq << li(v, 0).comment("Store condition as Bool var")
        << instr
        << mov1
-       << mov2;
+       << instr2;
 
   seq->back().comment("End store condition as Bool var");
 
-  //warn << "cmpExp() seq: " << seq->dump();
+  //warn << "cmpExp() seq:\n" << seq->dump();
 }
 
 

@@ -7,9 +7,9 @@
 namespace V3DLib {
 
 struct ALUInstruction {
-  RegOrImm   srcA;
-  ALUOp      op;
-  RegOrImm   srcB;
+  RegOrImm srcA;
+  ALUOp    op;
+  RegOrImm srcB;
 
   ALUInstruction() = default;
 

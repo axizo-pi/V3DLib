@@ -64,6 +64,8 @@ public:
   static void reset(int val = 0);
 };
 
+extern const Var Dummy;
+
 }  // namespace V3DLib
 
 #endif  // _V3DLIB_SOURCE_VAR_H_

@@ -201,33 +201,10 @@ std::unique_ptr<Location> encodeDestReg(V3DLib::Instr const &src_instr) {
           break;
       }
       break;
-    case NONE: {
-      // As far as I can tell, there is no such thing as a NONE register on v3d;
-      // it may be one of the bits in `struct v3d_qpu_sig`.
-      //
-      // The first time I encountered this was in (V3DLib target code):
-      //       _ <-{sf} or(B6, B6)
-      //
-      // The idea seems to be to set the CNZ flags depending on the value of a given rf-register.
-      // So, for the time being, we will set a condition (how? Don't know for sure yet) if
-      // srcA and srcB are the same in this respect, and set target same as both src's.
-      is_none = true;
-      assert(src_instr.tag == ALU);
-      assert(src_instr.set_cond().flags_set());
 
-      auto &srcA = src_instr.ALU.srcA;
-
-      // srcA and srcB are the same rf-register
-      if (srcA.is_reg()
-      && (srcA.reg().tag == REG_A || srcA.reg().tag == REG_B)
-      && (srcA == src_instr.ALU.srcB || src_instr.ALU.srcB.is_none())  // 2nd item for vc7
-      ) {
-        ret = encodeSrcReg(srcA.reg());
-      } else {
-        breakpoint  // case not handled yet
-      }
-    }
-    break;
+    case NONE:
+      ret = loc_ptr(devnull);
+      break;
 
     default:
       assertq("V3DLib: unexpected reg tag in encodeDestReg()");

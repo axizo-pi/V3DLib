@@ -65,7 +65,6 @@ std::string Var::dump() const {
  * @return a new standard variable
  */
 Var VarGen::fresh(VarTag tag) {
-  //warn << "VarGen::fresh(): " << globalVarId;
   return Var(tag, globalVarId++);
 }
 
@@ -91,5 +90,7 @@ void VarGen::reset(int val) {
 
   GlobalConstants::reset();
 }
+
+const Var Dummy(DUMMY);
 
 }  // namespace V3DLib
