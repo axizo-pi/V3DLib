@@ -399,7 +399,7 @@ std::string RegUsage::dump(bool verbose) const {
 
   if (!verbose) return allocated_registers_dump();
 
-  bool const ShowUnused = true;
+  bool const ShowUnused = false;
 
   std::string ret;
 

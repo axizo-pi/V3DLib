@@ -29,7 +29,7 @@ int count_skips(Instr::List &instrs) {
 
 
 /**
- * Replace the variables with the assigned registers for the given instruction
+ * @brief Replace the variables with the assigned registers for the given instruction
  *
  * This functions assigns real registers to the 'variable registers' of the instruction.
  *
@@ -48,7 +48,7 @@ void allocate_registers(Instr &instr, RegUsage const &alloc) {
 
     UseDefReg out(instr);
 
-    std::string msg = "regAlloc(): allocated register must be in register file.";
+    std::string msg = "allocate_registers(): allocated register must be in register file.";
     msg << "\n"
         << "Instruction: " << instr.dump() << ", "
         << "Registers: " << out.dump() << ", "
@@ -303,52 +303,12 @@ void Liveness::optimize(Instr::List &instrs, int numVars) {
   compile_data.target_code_before_optimization = instrs.dump();
 #endif // OUTPUT_COMPILEDATA
   
-  MAYBE_UNUSED auto reg_warn = [] (Instr::List const &instrs) {
-    for (int i = 0; i < instrs.size(); ++i) {
-      auto const &instr = instrs[i];
-
-      if (instr.ALU.srcB.is_reg()) {
-        auto id = instr.ALU.srcB.reg().regId;
-        if ((60 <= id && id <= 65)) {
-          warn << "optimize: " << i << ": " <<  instr.dump();
-        }
-      }
-    }
-
-    warn << "----";
-  };
-
-  //reg_warn(instrs);
-
   Liveness live(numVars);
   live.compute(instrs);
-
-  //warn << "live: " << live.dump();
-/*  
-  for (int i = 0; i <= live.size(); ++i) {
-    auto const &item = live[i];
-
-    bool has_reg = false;
-    for (int j = 60; j <= 65; ++j) {
-      if (item.member(j)) {
-        has_reg = true;
-        break;
-      }
-    }
-
-    if (has_reg) {
-      warn << "live set " << i << ": " << item.dump();
-    }
-  }
-*/
-
-  //warn << "live reg_usage: " << live.reg_usage().dump();
 
   if (combineImmediates(live, instrs)) {
     live.compute(instrs);  // instructions have changed, redo liveness
   }
-
-  //reg_warn(instrs);
 
   //
   // vc7 has no general purpose accumulators,

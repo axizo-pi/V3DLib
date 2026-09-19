@@ -15,6 +15,7 @@ struct CompileData {
   std::string liveness_dump;
   std::string target_code_before_optimization;
   std::string target_code_before_regalloc;
+  std::string target_code_after_regalloc;
   std::string target_code_before_liveness;
   std::string allocated_registers_dump;
   std::string reg_usage_dump;

@@ -187,7 +187,16 @@ std::string Compile::dump_compile_data() const {
   // vc7 has no accumulators, don't display
   if (!Platform::compiling_for_vc7()) {
     ret << ::title("ACC usage")
-        << code_struct().m_targetCode.check_acc_usage();
+        << " - This is for final Target source.\n"
+        << " - Index is line number, digits are accumulator indexes.\n";
+
+  	if (Platform::compiling_for_vc6()) {
+      ret  << " - vc6: The load immediate instruction can potentially also use acc 0 and 1.\n"
+           << "   Logic requires that these acc's are always flagged.\n";
+		}
+
+    ret << "\n"
+        << code_struct().m_targetCode.dump_acc_usage();
   }
 
   return ret;

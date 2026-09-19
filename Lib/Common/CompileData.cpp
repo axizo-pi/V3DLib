@@ -11,21 +11,23 @@ namespace V3DLib {
 CompileData compile_data;
 
 std::string CompileData::dump() const {
-  std::string register_blurb;
-  register_blurb
-      << "Line Layout:\n"
-      << "\n"
-      << "  l: r;src(first, last, count);dst: {list}; live(first, last, count)\n"
-      << "\n"
-      << "       l: Index of variable in Target code.\n"
-      << "       r: Index of assigned register, '_' if not assigned.\n"
-      << "     src: Range of line numbers where variable is used as source,\n"
-      << "          and number of times it is used as source in that range;\n"
-      << "          'src(none)' if not used as source.\n"
-      << "     dst: List of line numbers where variable is used as destination, may be empty.\n"
-      << "    live: Range of line numbers where variable is live and line count;\n"
-      << "          'live(none)' if no range.\n"
-      << "\n";
+  std::string register_blurb =
+      "- Line Layout:\n"
+      "\n"
+      "  l: r;src(first, last, count);dst: {list}; live(first, last, count)\n"
+      "\n"
+      "       l: Index of variable in Target code.\n"
+      "       r: Index of assigned register, '_' if not assigned.\n"
+      "     src: Range of line numbers where variable is used as source,\n"
+      "          and number of times it is used as source in that range;\n"
+      "          'src(none)' if not used as source.\n"
+      "     dst: List of line numbers where variable is used as destination, may be empty.\n"
+      "    live: Range of line numbers where variable is live and line count;\n"
+      "          'live(none)' if no range.\n"
+      "\n"
+      "- Missing variable indexes or indexes flagged as 'Not used' are most likely "
+        "replaced by accumulators.\n"
+      "\n";
 
   std::string ret;
   ret << title("Liveness dump")
@@ -58,6 +60,11 @@ std::string CompileData::dump() const {
         << " - Before liveness, after peepholes.\n"
         << "\n"
         << target_code_before_liveness;
+  }
+
+  if (!target_code_after_regalloc.empty()) {
+    ret << title("Target code after regAlloc()")
+        << target_code_after_regalloc;
   }
 
   return ret;

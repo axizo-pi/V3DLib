@@ -104,7 +104,7 @@ struct Instr : public InstructionComment {
     int lastUniformOffset();
     int tag_index(InstrTag tag, bool ensure_one = true);
     int tag_count(InstrTag tag);
-    std::string check_acc_usage(int first = -1, int last = -1) const;
+    std::string dump_acc_usage(int first = -1, int last = -1) const;
     int get_free_acc(int first, int last) const;
   };
 

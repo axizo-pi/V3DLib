@@ -47,6 +47,8 @@ void SourceTranslate::regAlloc(Instr::List &instrs) {
   liveWith.init(instrs, live);
 
   // Step 3 - Allocate a register to each variable
+	warn << "numVars: " << numVars;
+
   for (int i = 0; i < numVars; i++) {
     auto &reg = live.reg_usage()[i].reg;
 
@@ -59,12 +61,13 @@ void SourceTranslate::regAlloc(Instr::List &instrs) {
     reg.regId = regId;
   }
 
-#ifdef OUTPUT_COMPILEDATA
-  compile_data.allocated_registers_dump = live.reg_usage().dump(true);
-#endif // OUTPUT_COMPILEDATA
-
   // Step 4 - Apply the allocation to the code
   allocate_registers(instrs, live.reg_usage());
+
+#ifdef OUTPUT_COMPILEDATA
+  compile_data.allocated_registers_dump   = live.reg_usage().dump(true);
+  compile_data.target_code_after_regalloc = instrs.dump();
+#endif // OUTPUT_COMPILEDATA
 }
 
 

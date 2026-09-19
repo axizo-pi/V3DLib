@@ -551,7 +551,6 @@ std::string Instr::dump() const {
  * NOTES
  * =====
  *
- *
  * 1. Somewhat of a hack: LI for v3d can potentially use r0 and r1, flag as used here.
  *    See encode_int_immediate() and convert_int_powers() in v3d KernelDriver. 
  *    This could be further specified.
@@ -726,7 +725,7 @@ int Instr::List::tag_index(InstrTag tag, bool ensure_one) {
  * @param first First line to check. If -1, start at beginning of instruction list
  * @param last  Last line to check. If -1, fo till end of instruction list
  */
-std::string Instr::List::check_acc_usage(int first, int last) const {
+std::string Instr::List::dump_acc_usage(int first, int last) const {
   if (first == -1) first = 0;
   if (last  == -1) last = size() -1;
   assert(first <= last);
@@ -734,27 +733,27 @@ std::string Instr::List::check_acc_usage(int first, int last) const {
   std::string ret;
 
   for (int index = first; index <= last; ++index) {
-    auto const &line = (*this)[index];
+    auto const &instr = (*this)[index];
 
-    uint32_t accs = line.get_acc_usage();
+    uint32_t accs = instr.get_acc_usage();
     assert(accs < 64);
 
     if (accs == 0) continue;
 
     ret << index << ": ";
 
-    if (accs &  1) ret << "0, ";
-    if (accs &  2) ret << "1, ";
-    if (accs &  4) ret << "2, ";
-    if (accs &  8) ret << "3, ";
-    if (accs & 16) ret << "4, ";
-    if (accs & 32) ret << "5, ";
+    if (accs &  1) ret << "0";
+    if (accs &  2) ret << "1";
+    if (accs &  4) ret << "2";
+    if (accs &  8) ret << "3";
+    if (accs & 16) ret << "4";
+    if (accs & 32) ret << "5";
 
-    if (line.isRot()) {
-      ret << " - Rot instruction.";
-    }
+    if (instr.isRot())               ret << " - Rot instruction.";
+    if (instr.is_branch())           ret << " - branch";   // vc6 Doesn't register
+    if (instr.tag == InstrTag::LI )  ret << " - Load imm";
 
-    //ret << "   " << line.mnemonic();
+    //ret << "   " << instr.mnemonic();
     ret << "\n";
   }
 

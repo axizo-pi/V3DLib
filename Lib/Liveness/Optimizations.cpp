@@ -333,11 +333,10 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
 
 
 /**
- * Optimisation passes that introduce accumulators
+ * @brief Optimisation passes that introduce accumulators
  *
  * @param allocated_vars write param; note which vars have an accumulator registered
- *
- * @return Number of substitutions performed;
+ * @return               Number of substitutions performed
  *
  * ============================================================================
  * NOTES
@@ -354,10 +353,11 @@ int introduceAccum(Liveness &live, Instr::List &instrs) {
   RegUsage &allocated_vars = live.reg_usage();
 
 #ifdef DEBUG
+	// Paranoia safeguard; reg's should not be allocated already
   for (int i = 0; i < (int) allocated_vars.size(); i++) {
-    assert(allocated_vars[i].reg.tag == NONE);  // Safeguard for the time being
+    assert(allocated_vars[i].reg.tag == NONE);
   }
-#endif  // DEBUG
+#endif // DEBUG
 
   int subst_count = 0;
   int const MAX_RANGE_SIZE = 15;  // 10 -> so that tmp var in sin_v3d() gets replaced
