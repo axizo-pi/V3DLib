@@ -261,23 +261,24 @@ std::string Liveness::dump() {
   std::string ret;
 
   for (int i = 0; i < (int) m_set.size(); ++i) {
-    std::string line;
-    line += std::to_string(i) + ": ";
-
     auto &item = m_set[i];
+
+    std::string line;
+    line << i << ": (" << item.size() << ") ";
+
     bool did_first = false;
 
     for (auto it : item) {
       if (did_first) {
-        line += ", ";
+        line << ", ";
       } else {
         did_first = true;
       }
-      line += std::to_string(it);
+      line << it;
     }
 
-    ret += line;
-    ret += "\n";
+    ret << line
+        << "\n";
   }
 
   if (ret.empty()) ret += "<Empty>";

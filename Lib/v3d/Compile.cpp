@@ -244,13 +244,13 @@ bool translateOpcode(Target::Instr const &src, Instructions &ret) {
   if (did_something) {
     prev_is_tmud = (*dst_reg == tmud);
     return true;
-  } else {
-    warn << "NOT did_something";
   }
 
+  warn << "NOT did_something";
   auto const &src_alu = src.ALU;
-  cerr  << "op: " << src_alu.op.value()
-        << ", instr: " << src.dump()
+
+  cerr  << "op: "    << src_alu.op.value() << ", "
+        << "instr: " << src.dump()
         << thrw;
 
   return false;

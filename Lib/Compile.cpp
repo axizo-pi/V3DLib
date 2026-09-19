@@ -181,9 +181,16 @@ std::string Compile::dump() {
 #ifdef OUTPUT_COMPILEDATA
 
 std::string Compile::dump_compile_data() const {
-  return m_compile_data.dump()
-    + ::title("ACC usage")
-    + m_targetCode.check_acc_usage();
+	std::string ret;
+  ret = m_compile_data.dump();
+
+	// vc7 has no accumulators, don't display
+	if (!Platform::compiling_for_vc7()) {
+    ret << ::title("ACC usage")
+        << code_struct().m_targetCode.check_acc_usage();
+	}
+
+	return ret;
 }
 
 #endif // OUTPUT_COMPILEDATA

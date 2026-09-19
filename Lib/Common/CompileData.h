@@ -1,6 +1,8 @@
 #ifndef _V3DLIB_COMMON_COMPILEDATA_H_
 #define _V3DLIB_COMMON_COMPILEDATA_H_
 
+#define OUTPUT_COMPILEDATA
+
 #ifdef OUTPUT_COMPILEDATA
 
 #include <string>

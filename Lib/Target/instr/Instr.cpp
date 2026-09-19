@@ -540,7 +540,7 @@ std::string Instr::dump() const {
 
 
 /**
- * Determine the accumulators used in this instruction
+ * @brief Determine the accumulators used in this instruction
  *
  * There is no distinguishing dst and src here.
  *
@@ -717,7 +717,14 @@ int Instr::List::tag_index(InstrTag tag, bool ensure_one) {
 
 
 /**
- * Debug function for displaying the used accumulators in the instruction list
+ * @brief Display the used accumulators in the instruction list
+ *
+ * Only lines using accumulators are displayed
+ *
+ * Intended for debugging.
+ *
+ * @param first First line to check. If -1, start at beginning of instruction list
+ * @param last  Last line to check. If -1, fo till end of instruction list
  */
 std::string Instr::List::check_acc_usage(int first, int last) const {
   if (first == -1) first = 0;
@@ -727,7 +734,9 @@ std::string Instr::List::check_acc_usage(int first, int last) const {
   std::string ret;
 
   for (int index = first; index <= last; ++index) {
-    uint32_t accs = (*this)[index].get_acc_usage();
+		auto const &line = (*this)[index];
+
+    uint32_t accs = line.get_acc_usage();
     assert(accs < 64);
 
     if (accs == 0) continue;
@@ -741,10 +750,11 @@ std::string Instr::List::check_acc_usage(int first, int last) const {
     if (accs & 16) ret << "4, ";
     if (accs & 32) ret << "5, ";
 
-    if ((*this)[index].isRot()) {
-      ret << " - Rot instruction";
+    if (line.isRot()) {
+      ret << " - Rot instruction.";
     }
 
+		//ret << "   " << line.mnemonic();
     ret << "\n";
   }
 

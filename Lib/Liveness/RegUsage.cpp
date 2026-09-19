@@ -76,19 +76,19 @@ std::string RegUsageItem::dump() const {
     return ret;
   }
 
-  ret << reg.dump() << "; ";
-
-  ret << "use(src_first, src_last, src_count, dst): ("
-      << src_range.dump() << ", {";
-
+	std::string dst_list;
   for (int i = 0; i < (int) use_dst.size(); ++i) {
     if (i != 0) {
-      ret << ", ";
+      dst_list << ", ";
     }
-    ret << use_dst[i];
+    dst_list << use_dst[i];
   }
 
-  ret << "}); live(first, last, count): (" << m_live_range.dump() << ")";
+  ret << reg.dump() << "; "
+      << "src(" << src_range.dump() << "); "
+      << "dst: {" << dst_list << "}; "
+      << "live(" << m_live_range.dump() << ")";
+
   return ret;
 }
 

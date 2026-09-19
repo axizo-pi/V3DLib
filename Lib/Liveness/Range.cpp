@@ -94,7 +94,11 @@ bool Range::is_embedded(Range const &rhs) const {
 std::string Range::dump() const {
   std::string ret;
 
-  ret << m_first << ", " << m_last << ", " << m_count;
+	if (empty()) {
+		ret << "none";
+	} else {
+  	ret << m_first << ", " << m_last << ", " << m_count;
+	}
 
   return ret;
 }

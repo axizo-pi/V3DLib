@@ -465,19 +465,6 @@ Mnemonic tmuwt() {
   return instr;
 }
 
-/*
-Mnemonic tmuwt(Location const &dst) {
-  Mnemonic instr;
-  instr.alu.add.op = V3D_QPU_A_TMUWT;
-
-  // Ignore dst for vc4, vc6
-  if (Platform::compiling_for_vc7()) {
-    instr.alu_add_dst(dst);
-  }
-  return instr;
-}
-*/
-
 
 Mnemonic ldvpmg_in(Location const &dst, Location const &a, Location const &b) {
   return Mnemonic(V3D_QPU_A_LDVPMG_IN, dst, a, b);
