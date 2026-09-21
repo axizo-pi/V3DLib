@@ -5,6 +5,13 @@
 namespace V3DLib {
 namespace Platform {
 
+enum VideoCoreType {
+  UNKNOWN,
+  vc4,
+  vc6,
+  vc7
+};
+
 enum Tag {
   not_pi,
   pi1,
@@ -33,6 +40,8 @@ int  max_qpus();
 int  gather_limit();
 void running_emulator(bool val);
 bool running_emulator();
+
+VideoCoreType vc_type();
 
 
 class main_mem {

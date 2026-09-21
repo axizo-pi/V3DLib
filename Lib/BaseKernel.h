@@ -83,11 +83,11 @@ public:
   int numQPUs() const { return m_settings.num_qpus; }
 
   void run(bool wait_complete = true);
-
   void emu(bool do_debug = false);
   void interpret();
   void qpu(bool wait_complete = true);
-  void wait_complete() { compile().wait_complete(); }
+
+  void wait_complete();
 
   IntList const &params() const { return uniforms; }  // Can't name it uniforms because the data member is called that
 

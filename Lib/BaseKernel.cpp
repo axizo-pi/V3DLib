@@ -130,7 +130,7 @@ void BaseKernel::run(bool wait_complete) {
     }
   }
 
-  m_settings.startPerfCounters();
+	bool do_execute = true;
 
   if (m_settings.compile_only) {
     // A kernel can be called multiple times, show warning only on first attempt
@@ -140,16 +140,25 @@ void BaseKernel::run(bool wait_complete) {
       warn << "BaseKernel::run(): Compile-only selected, not running.";
       showed_msg = true;
     }
-  } else {
+
+		do_execute = false;
+  }
+
+	//warn << "here is_v3d: " << compile().is_v3d() << ", vc_type: " << Platform::vc_type();
+
+	if (do_execute) {
+  	m_settings.startPerfCounters();
+
     switch (m_settings.run_type) {
       case 0: qpu(wait_complete); break;
       case 1: interpret();        break;
       case 2: emu();              break;
       case 3: emu(true);          break;
     }
+
+  	m_settings.stopPerfCounters();
   }
 
-  m_settings.stopPerfCounters();
   m_settings.dump_code(*this);
 }
 
@@ -201,11 +210,31 @@ void BaseKernel::interpret() {
  * Invoke kernel on physical QPU hardware
  */
 void BaseKernel::qpu(bool wait_complete) {
-  assert(!m_settings.compile_only);    // Paranoia
+	bool do_execute = true;
+	std::string err;
+
+  if (m_settings.compile_only) {
+    err << "BaseKernel::qpu(): Compile-only selected, not running.";
+		do_execute = false;
+	} else
+	if (compile().is_v3d() && Platform::vc_type() == Platform::vc4) {
+    err << "BaseKernel::qpu(): Trying to run v3d code on vc4 platform, not running.";
+		do_execute = false;
+	} else
+	if (!compile().is_v3d() && Platform::vc_type() != Platform::vc4) {
+    err << "BaseKernel::qpu(): Trying to run vc4 code on v3d platform, not running.";
+		do_execute = false;
+	}
+
+	if (!do_execute) assert(!err.empty());
+	assertq(do_execute, err);
 
   s_qpu_call_count++;
   compile().invoke(numQPUs(), uniforms, wait_complete);
 }
+
+
+void BaseKernel::wait_complete() { compile().wait_complete(); }
 
 
 int BaseKernel::qpu_call_count() {

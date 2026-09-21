@@ -143,13 +143,6 @@ bool get_chip_version(std::string &model, std::string &revision) {
   return !model.empty();
 }
 
-enum VideoCoreType {
-  UNKNOWN,
-  vc4,
-  vc6,
-  vc7
-};
-
 
 ///////////////////////////////////////////////////////////////////////////////
 // Class PlatformInfo
@@ -430,6 +423,21 @@ void running_emulator(bool val) { instance().m_running_emulator = val; }
  * @return true if emulator running, false otherwise.
  */
 bool running_emulator() { return instance().m_running_emulator; }
+
+
+/**
+ * @brief return the actual hardware VideoCore type.
+ *
+ * The `run_` and `compile_` calls are now confusing me,
+ * better to be more explicit with the platform type.
+ *
+ * **TODO:** Clean up `run_` and `compile_` calls.
+ */
+VideoCoreType vc_type() {
+	auto type = instance().vc_type;
+	assert(type != UNKNOWN);
+	return type;
+}
 
 
 main_mem::main_mem(bool val) {
