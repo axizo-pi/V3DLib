@@ -153,6 +153,20 @@ Instr::Instr(uint64_t in_code) {
 }
 
 
+std::string Instr::emit_comments(int line_number) const {
+  std::string ret;
+
+  std::string line;
+  if (LibSettings::dump_line_numbers()) {
+    line << line_number << ": ";
+  }
+  line << mnemonic(false);
+
+  ret << InstructionComment::emit_comments(line);
+  return ret;
+}
+
+
 bool Instr::is_branch() const {
   return (type == V3D_QPU_INSTR_TYPE_BRANCH);
 }
@@ -424,17 +438,16 @@ std::string Instr::dump_internal() const {
 
 
 std::string Instr::mnemonic(bool with_comments) const {
-  std::string ret;
-
-  if (with_comments) {
-    ret << emit_header();
-  }
+  warn << "Called v3d Instr::mnemonic()";
 
   std::string out = dump_internal();
-  ret << out;
+  std::string ret;
+
 
   if (with_comments) {
-    ret << emit_comment((int) out.size());
+    ret << InstructionComment::emit_comments(out);
+  } else {
+    ret << out;
   }
 
   return ret;
@@ -1466,26 +1479,13 @@ ByteCode Instructions::bytecode() const {
 
 
 std::string Instructions::dump() const {
-  //warn << "Called Instructions::dump()";
   if (empty()) return "<No opcodes to print>\n";
 
-  bool do_line_numbers = LibSettings::dump_line_numbers();
   std::string ret;
 
   int count = 0;
   for (auto const &instr : *this) {
-    auto buf = instr.mnemonic(false);
-    int size = (int) buf.size();
-
-    ret << instr.emit_header();
-
-    if (do_line_numbers) {
-      ret << count << ": ";
-    }
-
-    ret << buf 
-        << instr.emit_comment(size)
-        << "\n";
+    ret << instr.emit_comments(count);
     count++;
   }
 

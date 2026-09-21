@@ -2,50 +2,6 @@
 #include "Support/basics.h"
 
 namespace V3DLib {
-
-InstructionComment::InstructionComment() :
-  m_header_1(""),
-  m_header_2(""),
-  m_comment("")
-{}
-
-
-void InstructionComment::transfer_comments(InstructionComment const &rhs) {
-  header(rhs.m_header_1);
-  sub_header(rhs.m_header_2);
-  comment(rhs.comment());
-  rhs.m_transferred = true;
-}
-
-
-bool InstructionComment::transferred() const {
-  // Don't bother if no comments present
-  if (header().empty() && comment().empty()) return true;
-
-  return m_transferred;
-}
-
-
-void InstructionComment::clear_comments() {
-  m_header_1.clear();
-  m_header_2.clear();
-  m_comment.clear();
-  assert(!m_transferred);
-}
-
-
-bool InstructionComment::has_comments() const {
-  return !m_header_1.empty() || !m_header_2.empty() || !m_comment.empty();
-}
-
-
-/**
- * Note that only top-level header is returned.
- */
-std::string const &InstructionComment::header()  const { return m_header_1; }
-
-std::string const &InstructionComment::comment() const { return m_comment; }
-
 namespace {
 
 void assign_header(std::string &header, std::string const &msg) {
@@ -68,7 +24,73 @@ void assign_header(std::string &header, std::string const &msg) {
   header <<  msg;
 }
 
+
+void append_comment(std::string &dst, std::string const &msg) {
+  //warn << "append_comment";
+
+  if (msg.empty()) return;
+
+  auto prev = dst;
+  dst = msg;
+
+   if (!prev.empty()) {
+    dst <<  "; " << prev;
+  }
+}
+
 } // anon namespace
+
+
+InstructionComment::InstructionComment() :
+  m_header_1(""),
+  m_header_2(""),
+  m_comment(""),
+  m_footer("")
+{}
+
+
+void InstructionComment::transfer_comments(InstructionComment const &rhs) {
+  header(rhs.m_header_1);
+  sub_header(rhs.m_header_2);
+  comment(rhs.m_comment);
+  footer(rhs.m_footer);
+  rhs.m_transferred = true;
+}
+
+
+bool InstructionComment::transferred() const {
+  // Don't bother if no comments present
+  if (header().empty() && comment().empty()) return true;
+
+  return m_transferred;
+}
+
+
+void InstructionComment::clear_comments() {
+  m_header_1.clear();
+  m_header_2.clear();
+  m_comment.clear();
+  m_footer.clear();
+  assert(!m_transferred);
+}
+
+
+bool InstructionComment::has_comments() const {
+  return !(
+       m_header_1.empty()
+    && m_header_2.empty() 
+    && m_comment.empty()
+    && m_footer.empty()
+  );
+}
+
+
+/**
+ * Note that only top-level header is returned.
+ */
+std::string const &InstructionComment::header()  const { return m_header_1; }
+
+std::string const &InstructionComment::comment() const { return m_comment; }
 
 
 void InstructionComment::header(std::string const &msg) {
@@ -82,22 +104,19 @@ void InstructionComment::sub_header(std::string const &msg) {
 
 
 /**
- * Assign comment to current instance
+ * @brief Assign comment to current instance
  *
  * If a comment is already present, the new comment will be appended.
  *
  * For display purposes only, when generating a dump of the opcodes.
  */
 void InstructionComment::comment(std::string msg) {
-  if (msg.empty()) return;
+  append_comment(m_comment, msg);
+}
 
-  auto prev = m_comment;
-  m_comment = msg;
 
-   if (!prev.empty()) {
-    //warn << "comment() comment already present: '" << prev << "'; adding: '" << msg << "'";
-    m_comment <<  "; " << prev;
-  }
+void InstructionComment::footer(std::string msg) {
+  append_comment(m_footer, msg);
 }
 
 
@@ -128,6 +147,21 @@ std::string InstructionComment::emit_header(std::string const &comment_prefix) c
 }
 
 
+std::string InstructionComment::emit_footer(std::string const &comment_prefix) const {
+  if (m_footer.empty()) return "";
+
+  auto c = comment_prefix;
+
+  std::string ret;
+
+  if (!m_footer.empty()) {
+    ret << "\n" << c << " --- " << m_footer << "--- \n";
+  }
+
+  return ret;
+}
+
+
 /**
  * Return comment as string with leading spaces
  *
@@ -148,6 +182,29 @@ std::string InstructionComment::emit_comment(int instr_size, int max_size, std::
 
   std::string ret;
   ret << tabs(spaces) << comment_prefix << " " << m_comment;
+  return ret;
+}
+
+
+/**
+ *
+ * @param line           String to add comments to
+ * @param comment_prefix Delimiter for comments, default `#`
+ */
+std::string InstructionComment::emit_comments(
+  std::string const &line,
+  std::string const &comment_prefix,
+  int max_size
+) const {
+  std::string ret;
+
+  ret << emit_header(comment_prefix)
+      << line
+      << emit_comment((int) line.size(), max_size, comment_prefix)
+      << emit_footer(comment_prefix)
+      << "\n"
+  ;
+
   return ret;
 }
 

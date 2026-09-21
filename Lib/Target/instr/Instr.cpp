@@ -338,6 +338,16 @@ Instr &Instr::setCondFlag(Flag flag) {
 }
 
 
+std::string Instr::emit_comments(int line_number) const {
+  std::string pre;
+  if (LibSettings::dump_line_numbers()) {
+    pre << line_number << ": ";
+  }
+
+  return mnemonic(true, pre);
+}
+
+
 /**
  * Check if this statement should be skipped.
  *
@@ -630,19 +640,11 @@ uint32_t Instr::get_acc_usage() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 std::string Instr::List::dump() const {
-  bool with_line_numbers = LibSettings::dump_line_numbers();
   std::string ret;
 
   for (int i = 0; i < size(); ++i ) {
     auto const &instr = (*this)[i];
-
-    ret << instr.emit_header();
-
-    if (with_line_numbers) {
-      ret << i << ": ";
-    }
-
-    ret << instr.mnemonic(false) << instr.emit_comment() << "\n";
+    ret << instr.emit_comments(i);
   }
 
   return ret;
@@ -760,7 +762,6 @@ std::string Instr::List::dump_acc_usage(int first, int last) const {
     if (instr.is_branch())           ret << " - branch";   // vc6 Doesn't register
     if (instr.tag == InstrTag::LI )  ret << " - Load imm";
 
-    //ret << "   " << instr.mnemonic();
     ret << "\n";
   }
 
@@ -862,15 +863,13 @@ void check_instruction_tag_for_platform(InstrTag tag, bool for_vc4) {
 std::string Instr::mnemonic(bool with_comments, std::string const &prefix) const {
   std::string ret;
 
-  if (with_comments) {
-    ret << emit_header();
-  }
-
-  std::string out = dump_instr(*this);
-  ret << prefix << out;
+  std::string line;
+  line << prefix << dump_instr(*this);
 
   if (with_comments) {
-    ret << InstructionComment::emit_comment((int) (out.size() + prefix.size()));
+    ret << InstructionComment::emit_comments(line);
+  } else {
+    ret << line;
   }
 
   return ret;

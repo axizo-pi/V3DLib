@@ -33,7 +33,7 @@ const char *dump_stmt_tag(Stmt::Tag tag) {
 
 Stmt::~Stmt() {}
 
-std::string Stmt::dump()                   const { return disp_intern(true, 0, false);         }
+std::string Stmt::dump() const { return disp_intern(true, 0, false); }
 
 std::string Stmt::dump(bool show_comments, int indent) const {
   return disp_intern(true, indent, show_comments);
@@ -130,13 +130,8 @@ bool Stmt::check_blocks() const {
 
 /**
  * @brief Return then block, if any.
- *
- * Then-blocks can appear for at least IF, WHERE and WHILE (TODO you sure?).
- * **TODO**: check if this list is exhaustive
  */
 Stmt::Array const &Stmt::then_block() const {
-  // Following is bullshit. then_block can also appear for WHILE
-  //assertq(tag == IF || tag == WHERE, "Then-statement only valid for IF, and WHERE");
   assert(check_blocks());
 
   return m_stmts_a;
@@ -171,6 +166,7 @@ Stmt::Array const &Stmt::else_block() const {
   assertq(tag == IF || tag == WHERE, "Else-statement only valid for IF and WHERE");
   // where and else stmt may not both be empty
   assert(!m_stmts_a.empty() || !m_stmts_b.empty());
+
   return m_stmts_b;
 }
 
@@ -248,6 +244,50 @@ void Stmt::inc(Array const &arr) {
   m_stmts_b = arr;
 }
 
+namespace {
+
+/**
+ * **TODO**: move to Helpers.cpp
+ */
+std::string indent(std::string const &src, int num_spaces) {
+  if (src.empty()) return ""; 
+
+  auto tmp = split(src, "\n");
+
+  std::string out;
+  for (int i = 0; i < (int) tmp.size(); i++) {
+    auto const &line = tmp[i];
+
+    if (!line.empty()) {
+      out << tabs(num_spaces) << line;
+    }
+
+    out << "\n";
+
+    //if (i < (int) tmp.size() - 1) {
+    //  out << "\n";
+    //}
+  }
+
+  //out << tabs(num_spaces);
+
+  //if (!src.empty()) {
+  //  out << "\n" ;
+  //}
+
+  return out;
+}
+
+} // anon namespace
+
+
+std::string Stmt::disp_comments(std::string const &line, bool with_linebreaks, int seq_depth) const {
+  //warn << "Stmt disp_comments";
+  auto instr = InstructionComment::emit_comments(line, ";");
+
+  return indent(instr, 2*seq_depth);
+}
+
 
 /**
  * Dump output for current statement.
@@ -258,65 +298,40 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_com
   std::string ret;
 
   switch (tag) {
-    case NOP:  ret << "NOP(" << rhs()->dump() << ")"; break;
-    case SKIP: ret << "SKIP";                         break;
+    case NOP: {
+      std::string index = rhs()->dump();
+      if (index == "Int 1") {
+        ret << "NOP";
+      } else {
+        ret << "NOP(" << index << ")";
+      }
+    }
+    break;
+
+    case SKIP: ret << "SKIP"; break;
 
     case ASSIGN:
       ret << "ASSIGN " << assign_lhs()->dump() << " = " << assign_rhs()->dump();
     break;
 
     case SEQ:
+      assertq(false, "SEQ encountered in Source dump");  // Appears to never be called, warn me if this happens
       assert(!m_stmts_a.empty());
       assert(m_stmts_b.empty());
+      ret << m_stmts_a.disp_intern(with_linebreaks, seq_depth, show_comments);
 
-      if (with_linebreaks) {
-        std::string tmp;
-
-        for (int i = 0; i < (int) m_stmts_a.size(); i++) {
-          tmp << "  " << m_stmts_a[i]->disp_intern(with_linebreaks, seq_depth + 1, show_comments) << "\n";
-        }
-
-        // Remove all superfluous whitespace
-        if (seq_depth == 0) {
-          std::string tmp2;
-          bool changed = true;
-
-          while (changed)  {
-            tmp2 = tmp;
-            findAndReplaceAll(tmp2, "    ", "  ");
-            findAndReplaceAll(tmp2, "\n\n", "\n");
-
-            changed = (tmp2 != tmp);
-            tmp = tmp2;
-          }
-
-          // TODO make indent based on sequence depth
-          ret << "SEQ*: {\n" << tmp << "} END SEQ*\n";
-        } else {
-          ret << tmp;
-        }
-  
-      } else {
-        ret << "SEQ {";
-
-        for (int i = 0; i < (int) m_stmts_a.size(); i++) {
-          ret << m_stmts_a[i]->disp_intern(with_linebreaks, seq_depth + 1, show_comments) << "; ";
-        }
-
-        ret << "}";
-      }
     break;
 
     case WHERE:
       assert(m_where_cond.get() != nullptr);
       ret << "WHERE (" << m_where_cond->dump() << ")\n"
-          << tabs(2*seq_depth) << "THEN\n"
-          << then_block().dump(show_comments, seq_depth + 1);
+          << "THEN\n"
+          << then_block().dump(show_comments, /*seq_depth + */ 1);
 
       if (!else_block_empty()) {
         ret << "\n"
-            << tabs(2*seq_depth) << "ELSE\n"
-            << else_block().dump(show_comments, seq_depth + 1);
+            << "ELSE\n"
+            << else_block().dump(show_comments, /* seq_depth + */ 1);
       }
     break;
 
@@ -344,8 +359,7 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_com
       if (then_block_empty()) {
         ret << "  <<NO THEN-BLOCK PRESENT>>";
       } else {
-        ret << tabs(2*seq_depth)
-            << then_block().dump(show_comments, seq_depth + 1);
+        ret << then_block().dump(show_comments, /* seq_depth + */ 1);
       }
 
       // There is no ELSE for while. TODO: check, code elsewhere says otherwise
@@ -363,8 +377,7 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_com
         ret << tmp;
       } else {                                // Unknown tag
         std::string msg;
-        msg << "Stmt::disp_intern() "
-            << "Unknown tag '" << tag << "'";
+        msg << "Stmt::disp_intern() " << "Unknown tag '" << tag << "'";
 
         if (tag < 0 || tag >= NUM_TAGS) {
           msg << "; tag out of range";
@@ -377,42 +390,10 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_com
   }
 
   if (show_comments) {
-    auto header = InstructionComment::emit_header(";"); 
-
-    std::string out;
-
-    if (!header.empty()) {
-      auto tmp = split(header, "\n");
-      for (int i = 0; i < (int) tmp.size(); i++) {
-        auto const &line = tmp[i];
-
-        if (!line.empty()) {
-          out << tabs(2*seq_depth);
-          out << line;
-        }
-
-          if (i < (int) tmp.size() - 1) {
-            out << "\n";
-          }
-      }
-
-      out << tabs(2*seq_depth);
-    }
-
-    out << ret
-        << InstructionComment::emit_comment((int) ret.size(), -1, ";");
-
-    if (!header.empty()) {
-        out << "\n" ;
-    }
-
-    return out;
+    return disp_comments(ret, with_linebreaks, seq_depth);
   }
 
-  if (ret.empty()) {
-    breakpoint;
-  }
-
+  assert(ret.empty()); // Warn me when this happens
   return ret;
 }
 
@@ -488,26 +469,49 @@ CExpr::Ptr Stmt::loop_cond() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
- * Stmt::dump() can return Stmt::Array;
- * Collect the values in a string before outputting.
  *
- * This is relevant for adding line numbers.
  */
 std::string Stmt::Array::dump(bool show_comments, int indent) const {
   if (empty()) return "<Empty>";
 
+  // Count the number of endlines at end of string
+  auto ending_newlines = [] (std::string const &s) -> int {
+    int count = 0;
+
+    for (int i = (int) s.size() - 1; i >= 0; i--) {
+      if (s[i] == '\n') {
+        ++count;
+      } else {
+        break;
+      }
+    }
+
+    return count;
+  };
+
   std::string ret;
 
   for (int i = 0; i < (int) size(); i++) {
-    auto const &item = *(*this)[i];
-    auto tmp = item.dump(show_comments, indent);
-    ret << tabs(2*indent) << tmp;
+    // a line can actually be multiple output lines if it contains arrays.
+    // Internal arrays have their own newlines, which can result in multiple endlines per line
+    auto const &line = *(*this)[i];
+    auto tmp = line.dump(show_comments, indent);
 
-    if ((num_newlines(tmp) - num_empty(tmp, ";")) < 1) {
-      ret << "\n";
-    //} else {
-    //  warn << "multiline: '" << tmp << "'";
+    // Replace multiple ending newlines with a single newline
+    int nl_count = ending_newlines(tmp);
+    if (nl_count > 1) {
+      tmp.erase(tmp.length() - (nl_count - 1));
     }
+
+    ret << tmp;
+
+/*
+    // DEBUG: check for final empty lines
+    if ((size() > 1) && (i >= (int) (size() - 3))) {
+      warn << "final line " << i << ": \"" << tmp << "\"";
+      warn << "nl count: " << ending_newlines(tmp);
+    }
+*/
   }
 
   return ret;
@@ -521,6 +525,63 @@ Stmt::Array &Stmt::Array::operator<<(Array const &b) {
 }
 
 
+// Apparently only called for SEQ dump, which is never called
+std::string Stmt::Array::disp_intern(bool with_linebreaks, int seq_depth, bool show_comments) const {
+  warn << "Array::disp_intern";
+
+  std::string ret;
+
+      if (with_linebreaks) {
+        warn << "with_linebreaks";
+
+        std::string tmp;
+
+        for (int i = 0; i < (int) size(); i++) {
+          auto const &stmt = *((*this)[i]);
+          tmp << "  " << stmt.disp_intern(with_linebreaks, seq_depth + 1, show_comments) << "\n";
+        }
+
+        // Remove all superfluous whitespace
+        if (seq_depth == 0) {
+          std::string tmp2;
+          bool changed = true;
+
+          while (changed)  {
+            tmp2 = tmp;
+            findAndReplaceAll(tmp2, "    ", "  ");
+            findAndReplaceAll(tmp2, "\n\n", "\n");
+
+            changed = (tmp2 != tmp);
+            tmp = tmp2;
+          }
+
+          // TODO make indent based on sequence depth
+          ret << "SEQ*: {\n" << tmp << "} END SEQ*\n";
+        } else {
+          ret << tmp;
+        }
+  
+      } else {
+        ret << "SEQ {";
+
+        for (int i = 0; i < (int) size(); i++) {
+          auto const &stmt = *((*this)[i]);
+          ret << stmt.disp_intern(with_linebreaks, seq_depth + 1, show_comments) << "; ";
+        }
+
+        ret << "}";
+      }
+
+  return ret;
+}
+
+
+/**
+ * @brief Ouput a text dump for a Stmt instruction list.
+ *
+ * This instruction dump is different from the others, because
+ * Stmt instances have internal structure, which is indented in the output.
+ */
 std::string Stmts::dump() const {
   if (empty()) return "<Empty>";
 
@@ -534,31 +595,29 @@ std::string Stmts::dump() const {
   std::string sp = "  ";
 
   for (int i = 0; i < (int) lines.size(); i++) {
+    auto const &line = lines[i];
+
+    std::string count_str;
+    if (do_line_numbers) {
+      count_str << count << ": ";
+    }
+
     // Skip empty lines
-    if (trim_s(lines[i]).empty()) {
+    if (trim_s(line).empty()) {
+    //if (line.empty()) {
       ret << "\n";
       continue;
     }
-/*
-    // TODO: Is this still necessary? Perhaps for SEQ output
 
-    // Skip line numbers for lines starting with spaces
-    if (lines[i].compare(0, sp.size(), sp) == 0) {
-      ret << lines[i] << "\n";
-      continue;
-    }
-*/
     // Skip line numbers for comment lines
-    if (lines[i].compare(0, pre.size(), pre) == 0) {
-      ret << lines[i] << "\n";
+    // Tests for indented lines starting with comment character
+    if (trim_s(line).compare(0, pre.size(), pre) == 0) {
+      ret << indentBy((int) count_str.size()) << line << "\n";
       continue;
     }
 
-    if (do_line_numbers) {
-      ret << count << ": ";
-    }
+    ret << count_str << line << "\n";
 
-    ret << lines[i] << "\n";
     count++;
   }
 

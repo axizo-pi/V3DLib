@@ -150,6 +150,8 @@ void Compile::compile_intern() {
 
 
 std::string Compile::emit_opcodes() {
+  warn << "vc4 emit_opcodes";
+
   auto &cs = code_struct();
   encode();
 
@@ -164,6 +166,7 @@ std::string Compile::emit_opcodes() {
     ;
   }
 
+  // Determine the max length of all lines
   int max_size = 0;
   for (int i = 0; i < (int) list.size(); ++i) {
     if (max_size < (int) list[i].size()) {
@@ -174,7 +177,8 @@ std::string Compile::emit_opcodes() {
   std::string ret;
   int t_i = 0;
   for (int i = 0; i < (int) list.size(); ++i, ++t_i) {
-    auto t = cs.m_targetCode[t_i];
+    auto t    = cs.m_targetCode[t_i];
+    auto line = list[i];
 
     if (t.tag == INIT_BEGIN || t.tag == INIT_END) {
       cdebug << "emit_opcodes() detected INIT marker";
@@ -182,15 +186,14 @@ std::string Compile::emit_opcodes() {
       t = cs.m_targetCode[t_i];
     }
 
-    ret << t.emit_header();
-
     if (LibSettings::dump_line_numbers()) {
-      ret << i << ": ";
+      std::string tmp;
+      tmp << i << ": " << line;
+      line = tmp;
     }
 
-    ret << list[i]
-        << t.emit_comment((int) list[i].size(), max_size)
-        << "\n";
+    // Use the Target instruction to generate the comments for the vc4 instruction
+    ret << t.InstructionComment::emit_comments(line, "#", max_size);
   }
 
   return ret;

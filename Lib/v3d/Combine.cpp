@@ -842,7 +842,7 @@ int find_program_start(Instructions const &instr) {
   int start = -1;
 
   for (int i = 0; i < (int) instr.size(); ++i) {
-    if (instr[i].header() == "Main program") {
+    if (instr[i].InstructionComment::header() == "Main program") {  // Grumbl parent prefix
       start = i;
       break;
     }

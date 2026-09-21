@@ -289,7 +289,7 @@ bool compiling_for_vc7() {
 
 
 bool compiling_for_vc6() {
-	return !compiling_for_vc4() && (instance().vc_type == vc6);
+  return !compiling_for_vc4() && (instance().vc_type == vc6);
 }
 
 
@@ -434,9 +434,9 @@ bool running_emulator() { return instance().m_running_emulator; }
  * **TODO:** Clean up `run_` and `compile_` calls.
  */
 VideoCoreType vc_type() {
-	auto type = instance().vc_type;
-	assert(type != UNKNOWN);
-	return type;
+  auto type = instance().vc_type;
+  assert(type != UNKNOWN);
+  return type;
 }
 
 

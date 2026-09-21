@@ -65,10 +65,9 @@ public:
 
   Instr &header(std::string const &msg) { InstructionComment::header(msg);  return *this; }
   Instr &comment(std::string msg)       { InstructionComment::comment(msg); return *this; }
+  Instr &footer(std::string msg)        { InstructionComment::footer(msg);  return *this; }
 
-  // Grumbl
-  std::string const &header() const     { return InstructionComment::header();}
-  std::string const &comment() const    { return InstructionComment::comment();}
+  std::string emit_comments(int line_number) const;
 
   bool is_branch()  const;
   bool has_signal(bool all_signals = false) const;

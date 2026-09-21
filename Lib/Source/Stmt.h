@@ -84,6 +84,9 @@ struct Stmt : public InstructionComment {
   public:
     std::string dump(bool show_comments = false, int indent = 0) const;
     Array &operator<<(Array const &b);
+
+    // Apparently only called for SEQ dump
+    std::string disp_intern(bool with_linebreaks, int seq_depth, bool show_comments) const;
   };
 
   Stmt(Tag in_tag) : tag(in_tag) {}
@@ -97,9 +100,9 @@ struct Stmt : public InstructionComment {
   Stmt &sub_header(std::string const &msg) { InstructionComment::sub_header(msg);  return *this; }
   Stmt &comment(std::string msg)           { InstructionComment::comment(msg); return *this; }
 
-  std::string disp() const { return disp_intern(false, 0); }
   std::string dump() const;
   std::string dump(bool show_comments, int indent = 0) const;
+
   void append(Array const &rhs);
 
   //
@@ -155,6 +158,8 @@ private:
   CExpr::Ptr m_cond;
 
   static Ptr create(Tag in_tag, Ptr s0, Ptr s1);
+
+  std::string disp_comments(std::string const &line, bool with_linebreaks, int seq_depth) const;
   std::string disp_intern(bool with_linebreaks, int seq_depth = 0, bool show_comments = false) const;
   bool check_blocks() const;
 };

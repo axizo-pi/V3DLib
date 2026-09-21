@@ -421,12 +421,12 @@ namespace v3d {
 bool open() {
   static bool did_first = false;
 
-  if (Platform::compiling_for_vc4()) {
+  if (Platform::vc_type() == Platform::vc4) {
     if (!did_first) {
       cerr << "Running on vc4, not opening the v3d card.";
       did_first = true;
     }
-    return true;
+    return false;
   }
 
   if (fd_is_open()) return true;  // Already open, all is well

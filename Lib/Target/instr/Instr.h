@@ -120,18 +120,12 @@ struct Instr : public InstructionComment {
 
   Instr clone() const { return Instr(*this); }
 
-  // grumbl hating that following is needed
-  std::string header()  const  { return InstructionComment::header();  }
-  std::string comment() const  { return InstructionComment::comment(); }
-  std::string emit_comment(int instr_size, int max_size = -1) const {
-    return InstructionComment::emit_comment(instr_size, max_size);
-  }
+  Instr &header(std::string const &msg)     { InstructionComment::header(msg);     return *this; }
+  Instr &sub_header(std::string const &msg) { InstructionComment::sub_header(msg); return *this; }
+  Instr &comment(std::string msg)           { InstructionComment::comment(msg);    return *this; }
+  Instr &footer(std::string msg)            { InstructionComment::footer(msg);     return *this; }
 
-  Instr &header(std::string const &msg) { InstructionComment::header(msg);  return *this; }
-  Instr &comment(std::string msg)       { InstructionComment::comment(msg); return *this; }
-  std::string emit_comment() const {
-    return InstructionComment::emit_comment((int) mnemonic(false).size());
-  }
+  std::string emit_comments(int line_number) const;
 
   bool skip() const;
   void set_skip();

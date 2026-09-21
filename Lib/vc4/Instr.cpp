@@ -675,13 +675,18 @@ std::string Instr::dump_instr() const {
 
 
 std::string Instr::dump(bool show_comments) const {
+  warn << "Called vc4 Instr::dump()";
+
   std::string tmp = dump_instr();
   std::string ret;
 
   if (show_comments) {
+/*
     ret << emit_header()
         << tmp
         << emit_comment((int) tmp.size());
+*/
+    ret << emit_comments(tmp);
   } else {
     ret = tmp;
   }

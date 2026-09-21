@@ -113,22 +113,13 @@ std::string BranchCond::dump() const {
 // Class SetCond
 ///////////////////////////////////////////////////////////////////////////////
 
-/*
-SetCond::SetCond(CmpOp const &cmp_op) {
-  setOp(cmp_op);
-}
-*/
-
-
 const char *SetCond::to_string() const {
   switch (m_tag) {
     case NO_COND: return "None";
     case Z:       return "Z";
     case N:       return "N";
     case C:       return "C";
-    default:
-      assert(false);
-      return "<UNKNOWN>";
+    default: assert(false); return "<UNKNOWN>";
   }
 }
 
@@ -167,7 +158,6 @@ void SetCond::setFlag(Flag flag) {
 // Class AssignCond
 ///////////////////////////////////////////////////////////////////////////////
 
-
 AssignCond::AssignCond(CmpOp const &cmp_op) :
   m_tag(FLAG),
   m_flag(cmp_op.assign_flag()),
@@ -183,7 +173,6 @@ AssignCond::AssignCond(Tag in_tag, Flag in_flag) : m_tag(in_tag), m_flag(in_flag
 bool AssignCond::operator==(AssignCond rhs) const {
   return (m_tag == rhs.m_tag && m_flag == rhs.m_flag);
 }
-
 
 
 AssignCond AssignCond::negate() const {

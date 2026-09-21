@@ -190,10 +190,10 @@ std::string Compile::dump_compile_data() const {
         << " - This is for final Target source.\n"
         << " - Index is line number, digits are accumulator indexes.\n";
 
-  	if (Platform::compiling_for_vc6()) {
+    if (Platform::compiling_for_vc6()) {
       ret  << " - vc6: The load immediate instruction can potentially also use acc 0 and 1.\n"
            << "   Logic requires that these acc's are always flagged.\n";
-		}
+    }
 
     ret << "\n"
         << code_struct().m_targetCode.dump_acc_usage();

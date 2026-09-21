@@ -2,6 +2,7 @@
 #include "Support/basics.h"
 #include "Support/Helpers.h"
 #include "Support/Platform.h"
+//#include <iostream>   // cout
 #include <filesystem>
 #include <thread>
 #include <fstream>
@@ -309,7 +310,9 @@ bool hasEnding (std::string const &fullString, std::string const &ending) {
 
 
 /**
- * Split a string into substrings at a given delimiter.
+ * @brief Split a string into substrings at a given delimiter.
+ *
+ * `s` is destroyed internally
  *
  * Source: https://stackoverflow.com/a/14266139/1223531
  *
@@ -318,18 +321,27 @@ bool hasEnding (std::string const &fullString, std::string const &ending) {
  * @return          Array of strings split on delimiter. The delimiter is left out.
  */
 std::vector<std::string> split(std::string s, std::string const &delimiter) {
-  // s is destroyed internally
+  //std::cout << "split: \"" << s << "\"" << "\n";
 
   std::vector<std::string> tokens;
   size_t pos = 0;
   std::string token;
+  //int count = 0;
+
   while ((pos = s.find(delimiter)) != std::string::npos) {
     token = s.substr(0, pos);
     tokens.push_back(token);
     s.erase(0, pos + delimiter.length());
+    //count++;
   }
-  tokens.push_back(s);
 
+  // Following adds any part at the end, which does not end with delimiter
+  if (!s.empty()) {
+    tokens.push_back(s);
+  }
+
+  //std::cout << "count: " << count << "\n";
+  //std::cout << "size : " << tokens.size() << "\n";
   return tokens;
 }
 

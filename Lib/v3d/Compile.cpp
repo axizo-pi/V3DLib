@@ -292,7 +292,7 @@ void handle_condition_tags(V3DLib::Instr const &src_instr, Instructions &ret) {
   //
   assertq(cond.is_always(), "Currently expecting only ALWAYS here");
 
-  auto str = src_instr.comment();
+  auto str = src_instr.InstructionComment::comment(); // Grumbl parent prefix
   bool is_final_where_cond = contains(str, "where condition final");
 
   if (!is_final_where_cond) {

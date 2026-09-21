@@ -26,7 +26,7 @@ MAYBE_UNUSED bool debug_warn(std::string const &prefix, Expr &e) {
 
 // Forward declarations
 void encode_target(Instr::List &target, Stmt::Array const &source);
-Expr::Ptr simplify(Instr::List *seq, Expr::Ptr e);
+Expr::Ptr simplify(Instr::List &seq, Expr::Ptr e);
 
 
 // ============================================================================
@@ -93,14 +93,12 @@ Instr::List varAssign(AssignCond cond, Var v, Expr::Ptr expr) {
     case Expr::APPLY: {                                              // 'v := x op y'
       //bool found = debug_warn("varAssign apply rhs: ", *e.rhs());
       if (!e.lhs()->isSimple()) {                                    // x not simple
-        e.lhs(simplify(&ret, e.lhs()));
+        e.lhs(simplify(ret, e.lhs()));
       }
 
       if (!e.rhs()->isSimple()) {                                    // y not simple
-        e.rhs(simplify(&ret, e.rhs()));
+        e.rhs(simplify(ret, e.rhs()));
       }
-
-      //if (found) { warn << "varAssign apply rhs post: " << e.rhs()->dump(); }
 
       if (e.lhs()->isLit() && e.rhs()->isLit()) {                    // x and y are both literals
         Var tmpVar = VarGen::fresh();
@@ -142,7 +140,7 @@ Instr::List varAssign(AssignCond cond, Var v, Expr::Ptr expr) {
     case Expr::DEREF:                                                // 'v := *w'
       if (e.deref_ptr()->tag() != Expr::VAR) {                       // w is not a variable
         assert(!e.deref_ptr()->isLit());
-        e.deref_ptr(simplify(&ret, e.deref_ptr()));
+        e.deref_ptr(simplify(ret, e.deref_ptr()));
       }
                                                                      // w is a variable
       //
@@ -170,7 +168,7 @@ Instr::List varAssign(AssignCond cond, Var v, Expr::Ptr expr) {
  * Translate an expression to a simple expression, generating
  * instructions along the way.
  */
-Expr::Ptr simplify(Instr::List *seq, Expr::Ptr e) {
+Expr::Ptr simplify(Instr::List &seq, Expr::Ptr e) {
   if (e->isSimple()) {
     return e;
   }
@@ -179,9 +177,7 @@ Expr::Ptr simplify(Instr::List *seq, Expr::Ptr e) {
 
   Instr::List tmp;
   tmp << varAssign(tmp_var, e);
-  //tmp.front().comment("simplify varAssign");
-  //warn << "simplify tmp: " << tmp.dump();
-  *seq << tmp;
+  seq << tmp;
 
   return mkVar(tmp_var);
 }
@@ -234,7 +230,7 @@ void assign(Instr::List &target, Expr::Ptr lhs, Expr::Ptr rhs) {
   // ---------------------------------------------------------
   if (lhs->tag() == Expr::DEREF && (lhs->deref_ptr()->tag() != Expr::VAR || rhs->tag() != Expr::VAR)) {
     assert(!lhs->deref_ptr()->isLit());
-    lhs->deref_ptr(simplify(&target, lhs->deref_ptr()));
+    lhs->deref_ptr(simplify(target, lhs->deref_ptr()));
     rhs = putInVar(&target, rhs);
   }
 
@@ -309,7 +305,7 @@ void assign(Instr::List &target, Expr::Ptr lhs, Expr::Ptr rhs) {
  *
  * The comparison is internally implemented as a subtract-operation.
  */
-void cmpExp(Instr::List *seq, BExpr::Ptr bexpr, Var v) {
+void cmpExp(Instr::List &seq, BExpr::Ptr bexpr, Var v) {
   BExpr b = *bexpr;
   assert(b.tag() == CMP);
 
@@ -340,7 +336,7 @@ void cmpExp(Instr::List *seq, BExpr::Ptr bexpr, Var v) {
 
   if (b.cmp_rhs()->isLit() && b.cmp_rhs()->isLit()) {  // 'x op y', where x and y are both literals
     Var tmpVar = VarGen::fresh();
-    *seq << varAssign(tmpVar, b.cmp_lhs());
+    seq << varAssign(tmpVar, b.cmp_lhs());
     b.cmp_lhs(mkVar(tmpVar));
   }
 
@@ -371,14 +367,12 @@ void cmpExp(Instr::List *seq, BExpr::Ptr bexpr, Var v) {
   auto instr2 = sub(Dummy, v, 0);
   instr2.setCondFlag(Flag::ZC);    // Reset flags so that Z-flag is used
 
-  *seq << li(v, 0).comment("Store condition as Bool var")
-       << instr
-       << mov1
-       << instr2;
+  seq << li(v, 0).sub_header("Store condition as Bool var")
+      << instr
+      << mov1
+      << instr2;
 
-  seq->back().comment("End store condition as Bool var");
-
-  //warn << "cmpExp() seq:\n" << seq->dump();
+  seq.back().footer("End store condition as Bool var"); //comment(
 }
 
 
@@ -430,7 +424,7 @@ AssignCond boolExp(Instr::List *seq, BExpr::Ptr bexpr, Var v) {
 
   switch (b.tag()) {
     case CMP:
-      cmpExp(seq, bexpr, v);
+      cmpExp(*seq, bexpr, v);
     break;
     case NOT: {          // '!b', where b is a boolean expression
       boolExp(seq, b.neg(), v);
@@ -841,7 +835,7 @@ void encode_target(Instr::List &target, Stmt::Array const &source) {
  * @param init   list of operations for the init block
  */
 void insert_init_block(Instr::List &code, Instr::List &init) {
-  init.front().header("Init block!");
+  init.front().header("Init block");
 
   int begin_index = code.tag_index(INIT_BEGIN);
   assertq(begin_index >= 0, "Expecting init begin marker");
