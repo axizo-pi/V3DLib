@@ -2,6 +2,7 @@
 #include "Source/GlobalConstants.h"
 #include "Support/Helpers.h"
 #include "Support/Timer.h"
+#include "Support/Settings.h"
 
 namespace kernel {
 namespace {
@@ -404,8 +405,8 @@ void sphere_hit_partial(
 
       // if (!ray_t.surrounds(root))
       Where (!(ray_t_min < root && root < ray_t_max))
-      	// auto root = (h + sqrtd) / a;
-      	root = (h + sqrtd) / a;
+        // auto root = (h + sqrtd) / a;
+        root = (h + sqrtd) / a;
 
         //if (!ray_t.surrounds(root)) return false;
         Where (!(ray_t_min < root && root < ray_t_max))
@@ -550,7 +551,10 @@ void init() {
 
   timers.start("kernel::init()");
 
-  s_sphere_hit.reset(new BaseKernel(compile(sphere_hit_kernel)));
+  Settings settings;
+  settings.run_type = RunType::Emulator;
+
+  s_sphere_hit.reset(new BaseKernel(compile(sphere_hit_kernel, settings)));
   to_file("sphere_hit_kernel.txt", s_sphere_hit->dump());
   to_file("sphere_compile_data.txt", s_sphere_hit->dump_compile_data());
 
@@ -572,6 +576,8 @@ void sphere_hit(
   Float::Array &rec_front_face,
   Int::Array   &rec_sphere_index
 ) {
+  //warn << "Running sphere_hit_kernel";
+
   int sphere_blocks = resize_16(N_spheres) >> 4;
 
   s_sphere_hit->load(
