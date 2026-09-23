@@ -155,7 +155,7 @@ std::string InstructionComment::emit_footer(std::string const &comment_prefix) c
   std::string ret;
 
   if (!m_footer.empty()) {
-    ret << "\n" << c << " --- " << m_footer << "--- \n";
+    ret << "\n" << c << " --- " << m_footer << " ---\n";
   }
 
   return ret;

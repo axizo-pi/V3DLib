@@ -77,7 +77,7 @@ public:
   bool flag_cond_set() const;
   bool flag_uf_set() const;
   void set_cond_tag(AssignCond cond);
-  void set_push_tag(SetCond set_cond);
+  Instr &set_push_tag(SetCond set_cond);
 
   std::string mnemonic(bool with_comments = false) const;
   std::string dump() const;

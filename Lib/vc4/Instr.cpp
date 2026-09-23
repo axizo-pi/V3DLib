@@ -681,11 +681,6 @@ std::string Instr::dump(bool show_comments) const {
   std::string ret;
 
   if (show_comments) {
-/*
-    ret << emit_header()
-        << tmp
-        << emit_comment((int) tmp.size());
-*/
     ret << emit_comments(tmp);
   } else {
     ret = tmp;

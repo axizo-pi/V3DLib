@@ -33,10 +33,10 @@ const char *dump_stmt_tag(Stmt::Tag tag) {
 
 Stmt::~Stmt() {}
 
-std::string Stmt::dump() const { return disp_intern(true, 0, false); }
+std::string Stmt::dump() const { return disp_intern(0, false); }
 
 std::string Stmt::dump(bool show_comments, int indent) const {
-  return disp_intern(true, indent, show_comments);
+  return disp_intern(indent, show_comments);
 }
 
 
@@ -281,7 +281,7 @@ std::string indent(std::string const &src, int num_spaces) {
 } // anon namespace
 
 
-std::string Stmt::disp_comments(std::string const &line, bool with_linebreaks, int seq_depth) const {
+std::string Stmt::disp_comments(std::string const &line, int seq_depth) const {
   //warn << "Stmt disp_comments";
   auto instr = InstructionComment::emit_comments(line, ";");
 
@@ -294,7 +294,7 @@ std::string Stmt::disp_comments(std::string const &line, bool with_linebreaks, i
  *
  * @return Text representation of current statement.
  */
-std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_comments) const {
+std::string Stmt::disp_intern(int seq_depth, bool show_comments) const {
   std::string ret;
 
   switch (tag) {
@@ -315,11 +315,11 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_com
     break;
 
     case SEQ:
-      assertq(false, "SEQ encountered in Source dump");  // Appears to never be called, warn me if this happens
+      // At time of writing, only reached within DFT unit test [20260924]
       assert(!m_stmts_a.empty());
       assert(m_stmts_b.empty());
-      ret << m_stmts_a.disp_intern(with_linebreaks, seq_depth, show_comments);
-
+      ret << "SEQ\n"
+          << m_stmts_a.dump(show_comments, 1);
     break;
 
     case WHERE:
@@ -390,7 +390,7 @@ std::string Stmt::disp_intern(bool with_linebreaks, int seq_depth, bool show_com
   }
 
   if (show_comments) {
-    return disp_comments(ret, with_linebreaks, seq_depth);
+    return disp_comments(ret, seq_depth);
   }
 
   assert(ret.empty()); // Warn me when this happens
@@ -504,14 +504,6 @@ std::string Stmt::Array::dump(bool show_comments, int indent) const {
     }
 
     ret << tmp;
-
-/*
-    // DEBUG: check for final empty lines
-    if ((size() > 1) && (i >= (int) (size() - 3))) {
-      warn << "final line " << i << ": \"" << tmp << "\"";
-      warn << "nl count: " << ending_newlines(tmp);
-    }
-*/
   }
 
   return ret;
@@ -522,57 +514,6 @@ Stmt::Array &Stmt::Array::operator<<(Array const &b) {
   auto &a = *this;
   a.insert(a.end(), b.begin(), b.end());
   return *this;
-}
-
-
-// Apparently only called for SEQ dump, which is never called
-std::string Stmt::Array::disp_intern(bool with_linebreaks, int seq_depth, bool show_comments) const {
-  warn << "Array::disp_intern";
-
-  std::string ret;
-
-      if (with_linebreaks) {
-        warn << "with_linebreaks";
-
-        std::string tmp;
-
-        for (int i = 0; i < (int) size(); i++) {
-          auto const &stmt = *((*this)[i]);
-          tmp << "  " << stmt.disp_intern(with_linebreaks, seq_depth + 1, show_comments) << "\n";
-        }
-
-        // Remove all superfluous whitespace
-        if (seq_depth == 0) {
-          std::string tmp2;
-          bool changed = true;
-
-          while (changed)  {
-            tmp2 = tmp;
-            findAndReplaceAll(tmp2, "    ", "  ");
-            findAndReplaceAll(tmp2, "\n\n", "\n");
-
-            changed = (tmp2 != tmp);
-            tmp = tmp2;
-          }
-
-          // TODO make indent based on sequence depth
-          ret << "SEQ*: {\n" << tmp << "} END SEQ*\n";
-        } else {
-          ret << tmp;
-        }
-  
-      } else {
-        ret << "SEQ {";
-
-        for (int i = 0; i < (int) size(); i++) {
-          auto const &stmt = *((*this)[i]);
-          ret << stmt.disp_intern(with_linebreaks, seq_depth + 1, show_comments) << "; ";
-        }
-
-        ret << "}";
-      }
-
-  return ret;
 }
 
 
@@ -604,8 +545,6 @@ std::string Stmts::dump() const {
 
     // Skip empty lines
     if (trim_s(line).empty()) {
-    //if (line.empty()) {
-      ret << "\n";
       continue;
     }
 

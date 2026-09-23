@@ -7,12 +7,26 @@ namespace V3DLib {
 namespace v3d {
 namespace instr {
 
+DestReg::DestReg(uint8_t waddr, bool magic_write) :
+  m_used(true),
+  m_waddr(waddr),
+  m_magic_write(magic_write)
+{}
+
+
 bool DestReg::operator==(Register const &rhs) const {
   if (!m_used) return false;
   if (is_magic() != rhs.is_special()) return false;
       
   return (m_waddr == rhs.to_waddr());
 }
+
+
+bool DestReg::is_devnull() const {
+  assert(m_used);
+  return m_magic_write && m_waddr == V3D_QPU_WADDR_NOP;
+}
+
 
 std::string DestReg::dump() const {
   std::string ret;

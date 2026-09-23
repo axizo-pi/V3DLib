@@ -154,14 +154,14 @@ Instr::Instr(uint64_t in_code) {
 
 
 std::string Instr::emit_comments(int line_number) const {
-  std::string ret;
 
   std::string line;
   if (LibSettings::dump_line_numbers()) {
     line << line_number << ": ";
   }
-  line << mnemonic(false);
+  line << dump();
 
+  std::string ret;
   ret << InstructionComment::emit_comments(line);
   return ret;
 }
@@ -325,8 +325,8 @@ void Instr::set_cond_tag(AssignCond cond) {
 }
 
 
-void Instr::set_push_tag(SetCond set_cond) {
-  if (set_cond.tag() == SetCond::NO_COND) return;
+Instr &Instr::set_push_tag(SetCond set_cond) {
+  if (set_cond.tag() == SetCond::NO_COND) return *this;
   assertq(flags.apf == V3D_QPU_PF_NONE, "Not expecting add alu push tag to be set");
   assertq(flags.mpf == V3D_QPU_PF_NONE, "Not expecting mul alu push tag to be set");
   assertq(set_cond.tag() == SetCond::Z || set_cond.tag() == SetCond::N, "Unhandled SetCond flag");
@@ -346,6 +346,8 @@ void Instr::set_push_tag(SetCond set_cond) {
   if (alu.mul.op != V3D_QPU_M_NOP) {
     flags.mpf = tag_value;
   }
+
+  return *this;
 }
 
 
@@ -369,22 +371,32 @@ bool Instr::check_dst() const {
   DestReg add_dst = add_dest();
   DestReg mul_dst = mul_dest();
 
+  //
+  // TODO:  Allow dual dst on Dummy
+  //
   if (sig_dst == add_dst) {
-    breakpoint
     cerr << "signal dst register same as add alu dst register";
+    breakpoint
     ret = false;
   }
 
   if (sig_dst == mul_dst) {
-    breakpoint
     cerr << "signal dst register same as mul alu dst register";
+    breakpoint
     ret = false;
   }
 
   if (add_dst == mul_dst) {
-    breakpoint
-    cerr << "add alu dst register same as mul alu dst register";
-    ret = false;
+    if (add_dst.is_devnull()) {
+      warn << "add_dst is devnull";
+    } else {
+      warn << "add_dst: " << add_dst.dump();
+      warn << "mul_dst: " << mul_dst.dump();
+
+      cerr << "add alu dst register same as mul alu dst register";
+      breakpoint
+      ret = false;
+    }
   }
 
   return ret;
@@ -438,7 +450,7 @@ std::string Instr::dump_internal() const {
 
 
 std::string Instr::mnemonic(bool with_comments) const {
-  warn << "Called v3d Instr::mnemonic()";
+  //warn << "Called v3d Instr::mnemonic()";
 
   std::string out = dump_internal();
   std::string ret;
@@ -1239,8 +1251,6 @@ bool Instr::alu_mul_set(Target::Instr const &src_instr) {
     // TODO shouldn't push tag be done as well? Check
     // Normally set with set_push_tag()
     //this->alu.mul.m_setCond = alu.m_setCond;
-
-    //std::cout << "alu_mul_set(ALU) result: " << mnemonic(true) << std::endl;
     return true;
   }
 

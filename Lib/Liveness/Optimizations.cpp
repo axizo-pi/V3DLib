@@ -1,11 +1,11 @@
 #include "Optimizations.h"
-#include <iostream>
 #include "Liveness.h"
 #include "Support/Platform.h"
 #include "Target/Subst.h"
 #include "Support/Timer.h"
 #include "Support/basics.h"
 #include "Support/Helpers.h"  // contains()
+#include <iostream>
 
 namespace V3DLib {
 
@@ -308,8 +308,8 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
 
       if (num_subsitutions > 0) {
         last_use = j;
+        Log::debug << "Setting skip on instruction at " << j;
 
-        warn /*Log::debug*/ << "Setting skip on instruction at " << j; // TODO revert to debug when checked
         instrs.set_skip(j);
       }
     }
