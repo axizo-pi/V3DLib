@@ -92,9 +92,10 @@ struct Stmt : public InstructionComment {
   //
   // Need to be defined explicitly because of the necessity to return a reference.
   //
-  Stmt &header(std::string const &msg)     { InstructionComment::header(msg);  return *this; }
-  Stmt &sub_header(std::string const &msg) { InstructionComment::sub_header(msg);  return *this; }
-  Stmt &comment(std::string msg)           { InstructionComment::comment(msg); return *this; }
+  Stmt &header(std::string const &msg)     { InstructionComment::header(msg);     return *this; }
+  Stmt &sub_header(std::string const &msg) { InstructionComment::sub_header(msg); return *this; }
+  Stmt &comment(std::string msg)           { InstructionComment::comment(msg);    return *this; }
+  Stmt &footer(std::string msg)            { InstructionComment::footer(msg);     return *this; }
 
   std::string dump() const;
   std::string dump(bool show_comments, int indent = 0) const;

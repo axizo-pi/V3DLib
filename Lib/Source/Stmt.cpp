@@ -393,7 +393,7 @@ std::string Stmt::disp_intern(int seq_depth, bool show_comments) const {
     return disp_comments(ret, seq_depth);
   }
 
-  assert(ret.empty()); // Warn me when this happens
+  assert(!ret.empty());
   return ret;
 }
 

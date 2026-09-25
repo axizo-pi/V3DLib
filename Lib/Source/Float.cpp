@@ -387,9 +387,8 @@ namespace {
 /**
  * @brief For the Float parameter `x` return `tanh(x)`.
  *
- * This is a library function which internally uses `SFU` operation `exp()`.
- *
- * This fails at least on `vc7` for big numbers and returns NaN.
+ * This is a library function which internally uses `exp()`.
+ * `exp()` is an `SFU` operation on `vc4`.
  */
 FloatExpr tanh_sfu(FloatExpr x)      { return mkFloatApply(x, Op(TANH     , FLOAT)); }
 
@@ -401,7 +400,7 @@ FloatExpr tanh_sfu(FloatExpr x)      { return mkFloatApply(x, Op(TANH     , FLOA
  *
  * SFU call fails for large values of x.
  * For this reason, return +-1 in this case.
- * Cutoff value empirically determined to be abs(13.37).
+ * Cutoff value is empirically determined to be `abs(13.37)`.
  */
 FloatExpr tanh(FloatExpr x) {
   Float CUTOFF = 13.37f;

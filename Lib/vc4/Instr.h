@@ -9,8 +9,68 @@
 namespace V3DLib {
 namespace vc4 {
 
+  enum Registers {
+    MUX_A           = 6,
+    MUX_B           = 7,
+
+    NUM_RF          = 32,
+    UNIFORM_READ    = 32,      // rfA/B rd
+
+    ACC_START       = 32,
+    ACC_END         = 37,
+
+    ELEMENT_NUMBER  = 38,      // rfA rd
+    QPU_NUMBER      = 38,      // rfB rd
+    HOST_INT        = 38,      // rfA/B wr
+    NOP_R           = 39,      // NOP, rfA/B rd/wr
+    VPM_READ        = 48,      // rfA/B rd
+    VPM_WRITE       = 48,      // rfA/B wr
+    VPMVCD_RD_SETUP = 49,      // rfA wr
+    VPMVCD_WR_SETUP = 49,      // rfB wr
+    VPM_LD_WAIT     = 50,      // rfA rd
+    VPM_ST_WAIT     = 50,      // rfB rd
+    VPM_LD_ADDR     = 50,      // rfA wr
+    VPM_ST_ADDR     = 50,      // rfB wr
+    MUTEX_ACQUIRE   = 51,      // rfA/B rd
+    MUTEX_RELEASE   = 51,      // rfA/B wr
+    SFU_RECIP       = 52,      // rfA/B wr
+    SFU_RECIPSQRT   = 53,      // "
+    SFU_EXP         = 54,      // "
+    SFU_LOG         = 55,      // "
+    TMU0_S          = 56,      // "
+  };
+
+
+  enum ConditionCode {
+    COND_NEVER = 0, // (NB gates ALU – useful for LDI instructions to save ALU power)
+    COND_ALWAYS,
+    COND_ZS,        // (Z set)
+    COND_ZC,        // (Z clear)
+    COND_NS,        // (N set)
+    COND_NC,        // (N clear)
+    COND_CS,        // (C set)
+    COND_CC,        // (C clear)
+  };
+
+
+struct VC4ALU {    // Name conflict with other definitions of `ALU`
+  VC4ALU(bool in_is_add) : is_add(in_is_add) {}
+
+  uint8_t op    = 0;
+  uint8_t waddr = NOP_R;
+  uint8_t a     = 0;
+  uint8_t b     = 0;
+
+  ConditionCode cond = COND_ALWAYS;
+
+private:
+  bool const is_add;
+};
+
+
 class Instr : public InstructionComment {
 public:
+  Instr() : add(true), mul(false) {}
 
   enum Encoding {
     NONE, 
@@ -41,38 +101,6 @@ public:
                                       // or vector rotate
     LOAD_IMMEDIATE             = 14,
     BRANCH                     = 15
-  };
-
-
-  enum Registers {
-    MUX_A           = 6,
-    MUX_B           = 7,
-
-    NUM_RF          = 32,
-    UNIFORM_READ    = 32,      // rfA/B rd
-
-    ACC_START       = 32,
-    ACC_END         = 37,
-
-    ELEMENT_NUMBER  = 38,      // rfA rd
-    QPU_NUMBER      = 38,      // rfB rd
-    HOST_INT        = 38,      // rfA/B wr
-    NOP_R           = 39,      // NOP for register read/writes
-    VPM_READ        = 48,      // rfA/B rd
-    VPM_WRITE       = 48,      // rfA/B wr
-    VPMVCD_RD_SETUP = 49,      // rfA wr
-    VPMVCD_WR_SETUP = 49,      // rfB wr
-    VPM_LD_WAIT     = 50,      // rfA rd
-    VPM_ST_WAIT     = 50,      // rfB rd
-    VPM_LD_ADDR     = 50,      // rfA wr
-    VPM_ST_ADDR     = 50,      // rfB wr
-    MUTEX_ACQUIRE   = 51,      // rfA/B rd
-    MUTEX_RELEASE   = 51,      // rfA/B wr
-    SFU_RECIP       = 52,      // rfA/B wr
-    SFU_RECIPSQRT   = 53,      // "
-    SFU_EXP         = 54,      // "
-    SFU_LOG         = 55,      // "
-    TMU0_S          = 56,      // "
   };
 
 
@@ -115,17 +143,6 @@ public:
     PACK_SIZE     = 14,
   };
 
-  enum ConditionCode {
-    COND_NEVER = 0, // (NB gates ALU – useful for LDI instructions to save ALU power)
-    COND_ALWAYS,
-    COND_ZS,        // (Z set)
-    COND_ZC,        // (Z clear)
-    COND_NS,        // (N set)
-    COND_NC,        // (N clear)
-    COND_CS,        // (C set)
-    COND_CC,        // (C clear)
-  };
-
   enum BranchCondition {
     ALL_Z_FLAGS_SET   =  0, // &{Z[15:0]}  All Z flags set
     ALL_Z_FLAGS_CLEAR =  1, // &{~Z[15:0]} All Z flags clear
@@ -154,8 +171,6 @@ public:
 
   bool    pm       = false;
   Pack    pack     = NO_PACK;
-  ConditionCode cond_add = COND_ALWAYS;
-  ConditionCode cond_mul = COND_ALWAYS;
 
   bool sf   = false;
   bool ws   = false;
@@ -165,19 +180,11 @@ public:
   bool            rel     = false;
   bool            reg     = false;
 
-  uint8_t waddr_add = NOP_R;
-  uint8_t waddr_mul = NOP_R;
-
-  uint8_t op_mul = 0;
-  uint8_t op_add = 0;
+  VC4ALU add;
+  VC4ALU mul;
 
   uint8_t raddr_a = NOP_R;
   uint8_t raddr_b = NOP_R;  // Doubles as small_int for ALU_IMMEDIATE
-
-  uint8_t add_a = 0;
-  uint8_t add_b = 0;
-  uint8_t mul_a = 0;
-  uint8_t mul_b = 0;
 
   uint32_t immediate = 0;
 
@@ -185,7 +192,7 @@ public:
   bool     sa        = false;  // increment if false, decrement if true
   uint32_t semaphore = 0;
 
-  void encode(Target::Instr const &instr);
+  bool encode(Target::Instr const &instr);
   uint64_t encode() const;
   std::string dump(bool show_comments = false) const;
 

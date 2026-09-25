@@ -1,8 +1,8 @@
 #include "Compile.h"
 #include "../CodeStruct.h"
 #include "../LibSettings.h"
-#include "Functions.h"
 #include "Instr.h"
+#include "Functions.h"
 #include "Source/Translate.h"
 #include "SourceTranslate.h"
 #include "Target/RemoveLabels.h"
@@ -92,6 +92,18 @@ void Compile::encode() {
   if (!cs.m_code.empty()) return;      // Don't bother if already encoded
   if (has_errors())    return;      // Don't do this if compile errors occured
 
+#if 0
+  // DOES NOT WORK YET; Not all target instructions encoded
+  // Generate vc4 instructions. Not required in the flow.
+  for (int i = 0; i < cs.m_targetCode.size(); ++i) {
+    vc4::Instr instr;
+
+    if (instr.encode(cs.m_targetCode[i])) {
+      m_vc4_instrs.push_back(instr);
+    }
+  }
+#endif  
+
   CodeList code = V3DLib::vc4::encode(cs.m_targetCode);
 
   // Allocate memory for QPU code
@@ -150,8 +162,6 @@ void Compile::compile_intern() {
 
 
 std::string Compile::emit_opcodes() {
-  warn << "vc4 emit_opcodes";
-
   auto &cs = code_struct();
   encode();
 
@@ -195,6 +205,23 @@ std::string Compile::emit_opcodes() {
     // Use the Target instruction to generate the comments for the vc4 instruction
     ret << t.InstructionComment::emit_comments(line, "#", max_size);
   }
+
+#if 0
+  // DOES NOT WORK YET; Not all target instructions encoded
+  {
+    std::string ret2;
+
+    for(int i = 0; i < (int) m_vc4_instrs.size(); ++i) {
+      ret2 << m_vc4_instrs[i].dump() << "\n";
+    }
+
+    ret << "\n"
+        << "=============================================\n"
+        << "\n"
+        << ret2
+        << "\n";
+  }
+#endif  
 
   return ret;
 }

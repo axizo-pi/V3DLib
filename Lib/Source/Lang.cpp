@@ -128,29 +128,26 @@ Stmt::Ptr cur_stmt() {
 
 void header(std::string const &str) {
   auto stmt = cur_stmt();
-
-  if (stmt != nullptr) {
-    stmt->header(str);
-  }
+  if (stmt != nullptr) stmt->header(str);
 }
 
 
 void sub_header(std::string const &str) {
   auto stmt = cur_stmt();
-
-  if (stmt != nullptr) {
-    stmt->sub_header(str);
-  }
+  if (stmt != nullptr) stmt->sub_header(str);
 }
-
 
 
 void comment(std::string const &str) {
   auto stmt = cur_stmt();
+  if (stmt != nullptr) stmt->comment(str);
+}
 
-  if (stmt != nullptr) {
-    stmt->comment(str);
-  }
+
+
+void footer(std::string const &str) {
+  auto stmt = cur_stmt();
+  if (stmt != nullptr) stmt->footer(str);
 }
 
 }  // namespace V3DLib

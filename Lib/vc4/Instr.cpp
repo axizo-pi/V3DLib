@@ -55,18 +55,18 @@ void encode_operands(vc4::Instr &instr, RegOrImm const &srcA, RegOrImm const &sr
         "srcA and srcB can not both be immediates with different values");
 
       raddr_b = srcA.encode();  // srcB is the same
-      muxa   = vc4::Instr::MUX_B;
-      muxb   = vc4::Instr::MUX_B;
+      muxa   = vc4::Registers::MUX_B;
+      muxb   = vc4::Registers::MUX_B;
     } else if (srcB.is_imm()) {
       // Second operand is a small immediate
       raddr_a = vc4::Instr::encodeSrcReg(srcA.reg(), REG_A, muxa);
       raddr_b = srcB.encode();
-      muxb   = vc4::Instr::MUX_B;
+      muxb   = vc4::Registers::MUX_B;
     } else if (srcA.is_imm()) {
       // First operand is a small immediate
       raddr_a = vc4::Instr::encodeSrcReg(srcB.reg(), REG_A, muxb);
       raddr_b = srcA.encode();
-      muxa   = vc4::Instr::MUX_B;
+      muxa   = vc4::Registers::MUX_B;
     } else {
       assert(false);  // Not expecting this
     }
@@ -78,11 +78,11 @@ void encode_operands(vc4::Instr &instr, RegOrImm const &srcA, RegOrImm const &sr
   instr.raddr_b  = raddr_b;
 
   if (is_mul) {
-    instr.mul_a    = muxa;
-    instr.mul_b    = muxb;
+    instr.mul.a    = muxa;
+    instr.mul.b    = muxb;
   } else {
-    instr.add_a    = muxa;
-    instr.add_b    = muxb;
+    instr.add.a    = muxa;
+    instr.add.b    = muxb;
   }
 }
 
@@ -104,18 +104,18 @@ string enc_to_str(Instr::Encoding enc) {
   return ret;
 }
 
-string cond_code_to_str(Instr::ConditionCode cond) {
+string cond_code_to_str(ConditionCode cond) {
   string ret;
 
   switch (cond) {
-    case Instr::COND_NEVER:  ret << ".never()"; break;
-    case Instr::COND_ALWAYS:                    break;
-    case Instr::COND_ZS:     ret << ".zs()";    break;
-    case Instr::COND_ZC:     ret << ".zc()";    break;
-    case Instr::COND_NS:     ret << ".ns()";    break;
-    case Instr::COND_NC:     ret << ".nc()";    break;
-    case Instr::COND_CS:     ret << ".cs()";    break;
-    case Instr::COND_CC:     ret << ".cc()";    break;
+    case COND_NEVER:  ret << ".never()"; break;
+    case COND_ALWAYS:                    break;
+    case COND_ZS:     ret << ".zs()";    break;
+    case COND_ZC:     ret << ".zc()";    break;
+    case COND_NS:     ret << ".ns()";    break;
+    case COND_NC:     ret << ".nc()";    break;
+    case COND_CS:     ret << ".cs()";    break;
+    case COND_CC:     ret << ".cc()";    break;
   }
 
   return ret;
@@ -165,11 +165,11 @@ uint32_t Instr::high() const {
     case SEMAPHORE:              ret |= (0b1110100 << 25); break;
   }
 
-  assert(waddr_add < 64);
-  assert(waddr_mul < 64);
+  assert(add.waddr < 64);
+  assert(mul.waddr < 64);
 
   ret |= (ws ?(1 << 12):0) 
-      |  (waddr_add <<  6) | (waddr_mul);
+      |  (add.waddr <<  6) | (mul.waddr);
 
   if (enc == BRANCH_ENC) {
     assert(cond_br < BR_SIZE);
@@ -180,17 +180,17 @@ uint32_t Instr::high() const {
         |  (reg    ?(1 << 18):0) 
         |  (raddr_a    << 13)
         |  (ws     ?(1 << 12):0) 
-        |  (waddr_add  <<  6)
-        |  (waddr_mul)
+        |  (add.waddr  <<  6)
+        |  (mul.waddr)
     ;
   } else {
-    assert(cond_add < 8);
-    assert(cond_mul < 8);
+    assert(add.cond < 8);
+    assert(mul.cond < 8);
     assert(pack < PACK_SIZE);
 
     ret |= (pm ?(1 << 24):0)
         |  (pack      << 20)
-        |  (cond_add  << 17) | (cond_mul << 14)
+        |  (add.cond  << 17) | (mul.cond << 14)
         |  (sf ?(1 << 13):0);
   }
 
@@ -210,17 +210,17 @@ uint32_t Instr::low() const {
   if (enc == NONE) return ret;
 
   if (enc == ALU || enc == ALU_SMALL_IMM) {
-    assert(add_a < 8);
-    assert(add_b < 8);
-    assert(mul_a < 8);
-    assert(mul_b < 8);
+    assert(add.a < 8);
+    assert(add.b < 8);
+    assert(mul.a < 8);
+    assert(mul.b < 8);
     assert(raddr_a < 64);
     assert(raddr_b < 64);
-    assert(op_mul < 8);
-    assert(op_add < 32);
+    assert(mul.op < 8);
+    assert(add.op < 32);
 
-    ret |= (add_a   << 9)  | (add_b  <<  6) | (mul_a << 3) | (mul_b)
-        |  (op_mul  << 29) | (op_add << 24)
+    ret |= (add.a   << 9)  | (add.b  <<  6) | (mul.a << 3) | (mul.b)
+        |  (mul.op  << 29) | (add.op << 24)
         |  (raddr_a << 18) | (raddr_b << 12);
   }
 
@@ -332,7 +332,7 @@ uint8_t Instr::encodeDestReg(Reg reg, RegTag* file) {
  *              In specific cases where both regfile A and B are valid (e.g. NONE),
  *               it is used to select the regfile.
  * @param mux   out-parameter; value in ALU instruction encoding for fields
- *              `add_a`, `add_b`, `mul_a` and `mul_b`.
+ *              `add.a`, `add.b`, `mul.a` and `mul.b`.
  *
  * @return index into regfile (A, B or both) of the passed register.
  *
@@ -350,7 +350,7 @@ uint8_t Instr::encodeDestReg(Reg reg, RegTag* file) {
  *
  * * References in VideoCore IV Reference document:
  *
- *   - Fields `add_a`, `add_b`, `mul_a` and `mul_b`: "Figure 4: ALU Instruction Encoding", page 26
+ *   - Fields `add.a`, `add.b`, `mul.a` and `mul.b`: "Figure 4: ALU Instruction Encoding", page 26
  *   - mux value: "Table 3: ALU Input Mux Encoding", page 28
  *   - Index regfile: "Table 14: 'QPU Register Addess Map'", page 37.
  *
@@ -412,9 +412,18 @@ uint8_t Instr::encodeSrcReg(Reg reg, RegTag file, uint8_t &mux) {
 }
 
 
-void Instr::encode(Target::Instr const &instr) {
+/**
+ * **TODO:** Not complete, not all instructions encode, eg. IRQ
+ *
+ * @return true if instruction encoded, false otherwie
+ */
+bool Instr::encode(Target::Instr const &instr) {
 
   switch (instr.tag) {
+    case Target::INIT_BEGIN:
+    case Target::INIT_END:
+      return false;
+
     case Target::NO_OP:
     break;               // Use default value for instr, which is a full NOP
 
@@ -425,12 +434,12 @@ void Instr::encode(Target::Instr const &instr) {
       uint8_t dest = encodeDestReg(instr.dest(), &file);
 
       if (alu.op.isMul()) {
-        cond_mul  = (ConditionCode) instr.assign_cond().encode();
-        waddr_mul = dest;
+        mul.cond  = (ConditionCode) instr.assign_cond().encode();
+        mul.waddr = dest;
         ws        = (file != REG_B);
       } else {
-        cond_add  = (ConditionCode) instr.assign_cond().encode();
-        waddr_add = dest;
+        add.cond  = (ConditionCode) instr.assign_cond().encode();
+        add.waddr = dest;
         ws        = (file != REG_A);
       }
 
@@ -453,7 +462,7 @@ void Instr::encode(Target::Instr const &instr) {
         }
 
         enc     = ALU_SMALL_IMM;
-        op_mul  = ALUOp(Enum::M_V8MIN).vc4_encodeMulOp();
+        mul.op  = ALUOp(Enum::M_V8MIN).vc4_encodeMulOp();
         raddr_b = _raddr_b;
       } else {
         if (instr.hasImm()) {
@@ -462,8 +471,8 @@ void Instr::encode(Target::Instr const &instr) {
           enc  = ALU;
         }
 
-        op_add = (alu.op.isMul() ? 0 : alu.op.vc4_encodeAddOp());
-        op_mul = (alu.op.isMul() ? alu.op.vc4_encodeMulOp() : 0);
+        add.op = (alu.op.isMul() ? 0 : alu.op.vc4_encodeAddOp());
+        mul.op = (alu.op.isMul() ? alu.op.vc4_encodeMulOp() : 0);
         encode_operands(*this, alu.srcA, alu.srcB, alu.op.isMul());
       }
     }
@@ -474,8 +483,8 @@ void Instr::encode(Target::Instr const &instr) {
       RegTag file;
 
       enc       = vc4::Instr::LOAD_IMM;
-      cond_add  = (ConditionCode) instr.assign_cond().encode();
-      waddr_add = vc4::Instr::encodeDestReg(instr.dest(), &file);
+      add.cond  = (ConditionCode) instr.assign_cond().encode();
+      add.waddr = vc4::Instr::encodeDestReg(instr.dest(), &file);
       ws        = (file != REG_A);
       immediate = li.imm.encode();
       sf        = instr.set_cond().flags_set();
@@ -510,7 +519,7 @@ void Instr::encode(Target::Instr const &instr) {
     case Target::END: {       // Halt
       enc     = Instr::ALU;
       sig     = Instr::PROGRAM_END;
-      raddr_b = Instr::NOP_R;
+      raddr_b = Registers::NOP_R;
     }
     break;
 
@@ -518,16 +527,18 @@ void Instr::encode(Target::Instr const &instr) {
       assert(instr.dest() == Reg(ACC,4));  // ACC4 is the only value allowed as dest
       enc     = Instr::ALU;
       sig     = Instr::LOAD_FROM_TMU0;
-      raddr_b = Instr::NOP_R;
+      raddr_b = Registers::NOP_R;
     }
     break;
 
     default:
       // Deal with other options as they come
-      warn << "Target tag not dealt with yet, examine";
+      warn << "vc4::Instr.encode() Target tag not dealt with yet, examine; Target instr: " << instr.dump();
       breakpoint;
-      break;
+      return false;
   }
+
+  return true;
 }
 
 
@@ -612,15 +623,15 @@ std::string Instr::dump_instr() const {
 
     if (reg) ret << "+rfa" << raddr_a;
 
-    if (waddr_add > 0) ret << " " << waddr_to_str(waddr_add, true) << ", ";
-    if (waddr_mul > 0) ret << " " << waddr_to_str(waddr_mul, true) << ", ";
+    if (add.waddr > 0) ret << " " << waddr_to_str(add.waddr, true) << ", ";
+    if (mul.waddr > 0) ret << " " << waddr_to_str(mul.waddr, true) << ", ";
 
   } else if (enc == LOAD_IMM) {
     ret << "("
-        << waddr_to_str(waddr_add, true) << ", "
-        << waddr_to_str(waddr_mul, true) << ", "
+        << waddr_to_str(add.waddr, true) << ", "
+        << waddr_to_str(mul.waddr, true) << ", "
         << immediate
-        << ")" << cond_code_to_str(cond_add);
+        << ")" << cond_code_to_str(add.cond);
   } else if (enc == ALU || enc == ALU_SMALL_IMM) {
     switch(sig) {
       case NO_SIGNAL: break;
@@ -631,27 +642,29 @@ std::string Instr::dump_instr() const {
     }
 
     if (sig != LOAD_FROM_TMU0) {
+      warn << "Dump ALU's";
+
       bool found_it;
       std::string op;
 
-      if (op_add != 0) {
-        op = dump_add_op(op_add, found_it);
+      if (add.op != 0) {
+        op = dump_add_op(add.op, found_it);
         ret << op << "("
-            << waddr_to_str(waddr_add, true) << ", "
-            << mux_to_str(add_a)             << ", "
-            << mux_to_str(add_b)             << ")"
-            << cond_code_to_str(cond_add);
+            << waddr_to_str(add.waddr, true) << ", "
+            << mux_to_str(add.a)             << ", "
+            << mux_to_str(add.b)             << ")"
+            << cond_code_to_str(add.cond);
       } else {
         ret << " nop";
       }
 
-      if (op_mul != 0) {
-        op = dump_mul_op(op_mul, found_it);
+      if (mul.op != 0) {
+        op = dump_mul_op(mul.op, found_it);
         ret << ", " << op << "("
-            << waddr_to_str(waddr_mul, false) << ", "
-            << mux_to_str(mul_a)              << ", "
-            << mux_to_str(mul_b)              << ")"
-            << cond_code_to_str(cond_mul)
+            << waddr_to_str(mul.waddr, false) << ", "
+            << mux_to_str(mul.a)              << ", "
+            << mux_to_str(mul.b)              << ")"
+            << cond_code_to_str(mul.cond)
             << ";";
       } else {
         ret << ", nop;";
@@ -700,13 +713,12 @@ std::vector<std::string> opcodes(uint64_t const *data, int size) {
     return ret;
   }
 
-  std::string tmp_file;
-  tmp_file << fs::temp_directory_path() << "/vc4_code_tmp.txt";
-  //warn << "opcodes() filename: " << filename;
-
   //
   // dump_instr() is redirected to a file, make it first
   //
+  std::string tmp_file;
+  tmp_file << fs::temp_directory_path() << "/vc4_code_tmp.txt";
+
   FILE *f = fopen(tmp_file.c_str(), "w");
   assert(f != nullptr);
 
@@ -717,6 +729,7 @@ std::vector<std::string> opcodes(uint64_t const *data, int size) {
   // Load redirected file into ret
   ret = load_file_vec(tmp_file);
 
+  // Remove the temp file
   std::remove(tmp_file.c_str());
   return ret;
 }

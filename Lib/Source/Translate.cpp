@@ -364,13 +364,9 @@ void cmpExp(Instr::List &seq, BExpr::Ptr bexpr, Var v) {
   assert(mov1.size() == 1);
   mov1.back().cond(assign_cond);
 
-  //auto instr2 = sub(Dummy, v, 0);
-  //instr2.setCondFlag(Flag::ZC);    // Reset flags so that Z-flag is used
-
   seq << li(v, 0).sub_header("Store condition as Bool var")
-      << instr
+      << instr   .comment("set Bool var")
       << mov1;
-      //<< instr2;
 
   seq.back().footer("End store condition as Bool var"); //comment(
 }
@@ -828,9 +824,17 @@ void encode_target(Instr::List &target, Stmt::Array const &source) {
   if (source.empty()) { return; }  // Nothing to do, happens if source is empty init block
 
   for (int i = 0; i < (int) source.size(); i++) {
-    auto ret = encode(source[i]);
-    target << ret;
+    auto const &stmt = source[i];
+    //warn << "encode_target source " << i << ": " << stmt->dump();
+
+    target << encode(stmt);
   }
+/*
+  for (int i = 0; i < (int) target.size(); i++) {
+    auto const &instr = target[i];
+    warn << "encode_target target " << i << ": " << instr.dump();
+  }
+*/  
 }
 
 }  // anon namespace

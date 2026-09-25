@@ -41,6 +41,7 @@ void ForBody_();
 void header(std::string const &str);
 void sub_header(std::string const &str);
 void comment(std::string const &str);
+void footer(std::string const &str);
 
 }  // namespace V3DLib
 

@@ -2,6 +2,8 @@
 #define _V3DLIB_VC4_COMPILE_H
 #include "../Compile.h"
 #include "KernelDriver.h"
+//#include "Instr.h"
+//#include <vector>
 
 namespace V3DLib {
 namespace vc4 {
@@ -17,6 +19,9 @@ public:
 
 private:
   V3DLib::vc4::KernelDriver m_driver;
+
+  // Does not work yet
+  //std::vector<vc4::Instr> m_vc4_instrs;
 
   void compile_intern() override;
   std::string emit_opcodes() override;

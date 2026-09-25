@@ -54,6 +54,7 @@ bool same(float *in_ptr, int offset, int length = 16) {
 
 
 void sfu_kernel(Float x, Float::Ptr r) {
+
   // Basic operations
   *r = 0.0f;                 r.inc();
   *r = 2.0f*x;               r.inc();  // Float mult
@@ -72,7 +73,11 @@ void sfu_kernel(Float x, Float::Ptr r) {
   *r = V3DLib::exp_e(1);     r.inc();  // Not really required, 1.0f is one of the test parameters
   *r = V3DLib::exp_e(x);     r.inc();
   *r = V3DLib::ln(x);        r.inc();
-  *r = V3DLib::tanh(x);      r.inc();
+
+  nop(1);                              sub_header("calc tanh");
+  *r = V3DLib::tanh(x);
+  nop(1);                              footer("End calc tanh");
+                             r.inc();
   *r = V3DLib::sqrt_f(x);    r.inc();
   *r = -x;                   r.inc();
 }
@@ -85,22 +90,28 @@ void sfu_kernel(Float x, Float::Ptr r) {
  */
 void check(float val, Float::Array &results, int max_bit = 1) {
 
-  auto check_bits = [max_bit, &results] (int index, double in_val2, int bit_val = -1) {
+  auto check_bits = [max_bit, &results, val] (int index, double in_val2, int bit_val = -1) -> bool {
     if (bit_val == -1) {
       bit_val = max_bit;
     }
 
-    float val1 = results[index];
-    float val2 = (float) in_val2;
-    int   bits = bit_diff(val1, val2, bit_val);
+    float result   = results[index];
+    float expected = (float) in_val2;
+    int   bits     = bit_diff(result, expected, bit_val);
+    bool  ret      = (bits == -1);
 
-    INFO("index: " << index/16 << ", val1: " << val1 << ", val2: " << val2 << ", exp bit_diff: " << bits);
-    if (bits != -1) {
-      uint32_t u1 = *((uint32_t *) &val1);
-      uint32_t u2 = *((uint32_t *) &val2);
+    if (!ret) {
+      warn << "index: "    << index/16                             << ", "
+           << "val: "      << val                                  << ", "
+           << "result: "   << result << ", expected: " << expected << ", "
+           << "bit_diff: " << bits;
+
+      uint32_t u1 = *((uint32_t *) &result);
+      uint32_t u2 = *((uint32_t *) &expected);
       warn << "u1: " << hex << u1 << ", u2: " << hex << u2;
     }
-    REQUIRE(bits == -1);
+
+    return ret;
   };
 
   REQUIRE(results[0]    == 0.0f);
@@ -108,17 +119,11 @@ void check(float val, Float::Array &results, int max_bit = 1) {
   REQUIRE(results[16*2] == 2*val);
   REQUIRE(results[16*3] == -2*val);
 
-  check_bits(16*4, 8.0);
-  check_bits(16*5, exp2(val));
+  REQUIRE(check_bits(16*4, 8.0));
+  REQUIRE(check_bits(16*5, exp2(val)));
 
   // Note that indexes for Nan and inf tests are non-consecutive
   if (val < 0) {
-/*
-    warn << "(1/sqrt(" << val << ")) : " << (1/sqrt(val));
-    warn << "results[16* 7]: " << results[16* 7];
-    warn << "(sqrt(" << val << "))   : " << sqrt(val);
-    warn << "results[16*13]: " << results[16*13];
-*/
     REQUIRE(std::isnan(results[16* 7]));
     REQUIRE(std::isnan(results[16*13]));
   } else if (val == 0) {
@@ -127,17 +132,17 @@ void check(float val, Float::Array &results, int max_bit = 1) {
     REQUIRE(std::isinf(results[16* 8]));
     REQUIRE(std::isinf(results[16*11]));
   } else {
-    check_bits(16*6, 1/(val));
-    check_bits(16*7, 1/sqrt(val));
-    check_bits(16*8, log2(val));
-    check_bits(16*11, log(val));
-    check_bits(16*13, sqrt(val));
+    REQUIRE(check_bits(16*6, 1/(val)));
+    REQUIRE(check_bits(16*7, 1/sqrt(val)));
+    REQUIRE(check_bits(16*8, log2(val)));
+    REQUIRE(check_bits(16*11, log(val)));
+    REQUIRE(check_bits(16*13, sqrt(val)));
   }
 
-  check_bits(16*9, exp(1));
-  check_bits(16*10, exp(val));  // bit_diff() works much better than precision for exp()
-  check_bits(16*12, tanh(val));
-  check_bits(16*14, -val);
+  REQUIRE(check_bits(16*9, exp(1)));
+  REQUIRE(check_bits(16*10, exp(val)));  // bit_diff() works much better than precision for exp()
+  REQUIRE(check_bits(16*12, tanh(val)));
+  REQUIRE(check_bits(16*14, -val));
 }
 
 
@@ -282,10 +287,13 @@ void element_at_kernel(Float::Ptr in_ptr, Float::Ptr result) {
 
 TEST_CASE("Test SFU functions [sfu]") {
   int N = 15;  // Number of results returned
+  const int max_bit_diff = Platform::compiling_for_vc4()?13:2;
 
   Float::Array results(16*N);
 
   auto k = compile(sfu_kernel);
+  to_file("sfu_kernel.txt", k.dump());
+  to_file("sfu_kernel_compile_data.txt", k.dump_compile_data());
 
   INFO("Running qpu");
   //
@@ -300,8 +308,6 @@ TEST_CASE("Test SFU functions [sfu]") {
 
   auto test = [&] (float val, int bit_val = -1) {
     if (bit_val == -1) {
-      const int max_bit_diff = Platform::compiling_for_vc4()?13:2;
-
       bit_val = max_bit_diff;
     }
 
@@ -311,27 +317,25 @@ TEST_CASE("Test SFU functions [sfu]") {
     check(val, results, bit_val);
   };
 
+  // Bit diff is different for exp() for large negative values.
+  // For v3d, this is consistently 3.
+  const int bit_diff_exp = Platform::compiling_for_vc4()?13:3;
+
   test(1.0f);
   test(0.5f);
   test(1.1f);
   test(2.5f);
   test(PI);
+  test(6.373127e+03f);         // Failed in Raytracing for sqrt(); works fine here
 
-  test(6.373127e+03f);   // Failed in Raytracing for sqrt(); works fine here
-
-  // Test cutoff tanh()
-  test( 13.36f);
+  test( 13.36f);               // Test cutoff tanh()
   test(-13.36f);
   test( 13.37f);
 
-  // Bit diff is different for exp() for large negative values.
-  // For v3d, this is consistently 3.
-  const int bit_diff = Platform::compiling_for_vc4()?13:3;
-  test(-13.37f, bit_diff);
+  test(-13.37f, bit_diff_exp);
 
-  // Nan and Inf for various operations
-  test(0.0f);
-  test(-0.0f);  // param converted to '0' on compile; value '-0' is relevant for vc4
+  test(0.0f);                  // Nan and Inf for various operations
+  test(-0.0f);                 // param converted to '0' on compile; value '-0' is relevant for vc4
   test(-1.0f);
 }
 
@@ -384,12 +388,12 @@ TEST_CASE("Test library functions [sfu][rotate]") {
       float res = result[start_index + 16*i];
 
       if (bit_diff(res,  expected[i], tmp_bit_diff) != -1) {
-        cerr << "check_expected failed for "
+        INFO("check_expected failed for "
              << "start_index: " << start_index << ", "
              << "index: " << i << ", "
              << "result: " << res << ", "
              << "expected: " << expected[i] << ", "
-        ;
+        );
 
         REQUIRE(false);
       }
