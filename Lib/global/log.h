@@ -88,11 +88,6 @@ void log_to_cout(bool val);
 
 void assertq(bool condition, const std::string &msg = "", bool do_break = false);
 
-inline void assertq(const std::string &msg) {
-  assertq(false, msg);
-}
-
-
 // Duplicates of several instances to avoid error "reference to ‘error’ is ambiguous"
 // Eventually, these should be leading, but then we'll have to get rid of debug.h
 extern Logger debug;

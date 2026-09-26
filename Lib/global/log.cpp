@@ -4,6 +4,7 @@
  *
  * Highest is current.
  *
+ * 12 - removed `void assertq(const std::string &msg)`, didn't fire
  * 11 - Added call enable_log_file() to init default file logging
  * 10 - Added parameter `do_break` to assertq()
  *  9 - Prevent segfault on global shutdown, see Note 1 of Logger:msg()
@@ -528,6 +529,14 @@ void log_to_cout(bool val) {
 
 /**
  * @brief Alternative for `assert` that throws passed string.
+ *
+ * =============================================================
+ *
+ * Following didn't work as expected, inline or otherwise:
+ *
+ *     void assertq(const std::string &msg);
+ *
+ * The goal was to fail always; this didn't happen.
  */
 void assertq(bool condition, const std::string &msg, bool do_break) {
   if (condition) return;

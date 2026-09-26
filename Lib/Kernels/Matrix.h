@@ -61,13 +61,13 @@ void init_result_array(Array2D &result) {
       std::string msg = "init_result_array(): result array "
                         "should have the same number of rows as matrix a ";
       msg << "(" << settings.rows << ")";
-      assertq(msg);
+      assertq(false, msg);
     }
 
     if (result.columns() != settings.cols_result()) {
       std::string msg = "init_result_array(): result array should have a columns size of ";
       msg << settings.cols_result();
-      assertq(msg);
+      assertq(false, msg);
     }
   }
 }

@@ -63,7 +63,7 @@ void var_to_reg(Var var, Reg &r) {
       break;
 
     default:
-      assertq("srcReg(): Unhandled Var-tag");
+      assertq(false, "srcReg(): Unhandled Var-tag");
       break;
   }
 }
@@ -150,7 +150,7 @@ bool Reg::can_read(bool check) const {
   if (!ret && check) {
     std::string msg = "Can not read from register ";
     msg << dump();
-    assertq(msg);
+    assertq(false, msg);
   }
 
   return ret;
@@ -170,7 +170,7 @@ bool Reg::can_write(bool check) const {
   if (!ret && check) {
     std::string msg = "Can not write to register ";
     msg << dump();
-    assertq(msg);
+    assertq(false, msg);
   }
 
   return ret;
@@ -181,13 +181,16 @@ std::string Reg::dump() const {
   std::string ret;
 
   switch (tag) {
-    case REG_A:   ret <<   "A" << regId; break;
-    case REG_B:   ret <<   "B" << regId; break;
-    case ACC:     ret << "ACC" << regId; break;
+    case REG_A:   ret <<   "A" << regId;                    break;
+    case REG_B:   ret <<   "B" << regId;                    break;
+    case ACC:     ret << "ACC" << regId;                    break;
     case SPECIAL: ret <<  "S[" << specialStr(regId) << "]"; break;
-    case NONE:    ret <<   "_"; break;
+    case NONE:    ret <<   "_";                             break;
 
-    default: assertq("Reg::dump() failed"); break;
+    default:
+      ret << "??";
+      assertq(false, "Reg::dump() failed");
+      break;
   }
 
   return ret;
