@@ -25,14 +25,12 @@ void replace_acc(Instr::List &instrs, RegUsageItem &item, int var_id, int acc_id
     renameUses(instr, current, replace_with);
   }
 
-  // DANGEROUS! Do not use this value downstream.   
-  // Currently stored for debug display purposes only! 
   item.reg = replace_with;    
 }
 
 
 /**
- * Not as useful as I would have hoped. range_size > 1 in practice happens, but seldom.
+ *
  */
 int peephole_0(int range_size, Instr::List &instrs, RegUsage &allocated_vars) {
   if (range_size == 0) {
@@ -57,21 +55,23 @@ int peephole_0(int range_size, Instr::List &instrs, RegUsage &allocated_vars) {
       continue;
     }
 
-    //
-    // NOTE: There may be a slight issue here:
-    //       in line of first use, src acc's may be used for vars which have
-    //       last use in this line. I.e. they would be free for usage in this line.
-    //
-    // This is a small thing, perhaps for later optimization
-    //
+    // Check instructions for unused accumulator
     int acc_id = instrs.get_free_acc(item.first_usage(), item.last_usage());
+    if (acc_id == -1) continue;
 
-    if (acc_id == -1) {
+    warn << "peephole_0 var_id: " << var_id      << ", "
+         << "item: "              << item.dump() << ", "
+         << "acc_id: "            << acc_id;
+
+    // Check if the given ACC has not been assigned in the meantime
+    if (allocated_vars.check_overlap_usage(Reg(ACC, acc_id), item)) {
+      warn << "acc_id: " << acc_id << " already in use, can't assign";
       continue;
     }
 
     Reg replace_with(ACC, acc_id);
 
+    // This also writes the used accumulator to the RegUsage list.
     replace_acc(instrs, item, var_id, acc_id);
 
     subst_count++;
@@ -139,7 +139,11 @@ int peephole_1(Liveness &live, Instr::List &instrs, RegUsage &allocated_vars) {
     renameUses(instr, current, replace_with);
     instrs[i-1] = prev;
     instrs[i]   = instr;
-
+/*
+    warn << "peephole_1 post:\n"
+         << "  " << instrs[i-1].dump()
+         << "  " << instrs[i].dump();
+*/
     // DANGEROUS! Do not use this value downstream.   
     // Currently stored for debug display purposes only! 
     allocated_vars[def].reg = replace_with;    
@@ -349,23 +353,42 @@ int introduceAccum(Liveness &live, Instr::List &instrs) {
 #endif // DEBUG
 
   int subst_count = 0;
-  int const MAX_RANGE_SIZE = 15;  // 10 -> so that tmp var in sin_v3d() gets replaced
 
-  // Picks up a lot usually, but range_size > 1 seldom results in something
+  int const MAX_RANGE_SIZE = 3; //= 8; //= 15;  // >= 10 so that tmp var in sin_v3d() gets replaced
+
+  // Picks up a lot usually
   for (int range_size = 1; range_size <= MAX_RANGE_SIZE; range_size++) {
     int count = peephole_0(range_size, instrs, allocated_vars);
+
+    if (count > 0) {
+      warn << "peephole_0 range_size: " << range_size << ", " << count << " substitutions";
+    } 
+
     subst_count += count;
   }
 
-  // This peephole still does a lot of useful stuff
+
+  // This peephole still does useful stuff
+  // Plenty of substitutions when peephole_0 disabled.
   {
     int count = peephole_1(live, instrs, allocated_vars);
+
+    if (count > 0) {
+      warn << "peephole_1: " << count << " substitutions";
+    } 
+
     subst_count += count;
   }
+
 
   // And some things still get done with this peephole, regularly 1 or 2 per compile
   {
     int count = peephole_2(live, instrs, allocated_vars);
+
+    if (count > 0) {
+      warn << "peephole_2: " << count << " substitutions";
+    } 
+
     subst_count += count;
   }
 

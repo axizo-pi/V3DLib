@@ -56,7 +56,7 @@ struct RegUsage : private std::vector<RegUsageItem> {
   std::string dump(bool verbose = false) const;
   void check() const;
   std::string dump_use_ranges() const;
-  void check_overlap_usage(Reg acc, RegUsageItem const &item) const;
+  bool check_overlap_usage(Reg acc, RegUsageItem const &item) const;
 
 private:
   RegUsageItem &get(int i);

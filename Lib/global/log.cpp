@@ -512,9 +512,9 @@ std::string log_file() {
  * @brief Enable logging to default logfile
  */
 void enable_log_file() {
-	// Only do this if not set yet
-	assert(log_dir().empty());
-	assert(log_file().empty());
+  // Only do this if not set yet
+  assert(log_dir().empty());
+  assert(log_file().empty());
 
   std::filesystem::path cwd = std::filesystem::current_path() / "log";
   set_log_dir(cwd.string());

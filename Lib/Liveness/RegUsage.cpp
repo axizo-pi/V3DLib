@@ -216,7 +216,14 @@ int RegUsageItem::first_dst() const {
 int RegUsageItem::first_usage() const {
   assert(src_range.first() == -1 || src_range.first() >= first_dst());
   assert(!use_dst.empty());
-  return use_dst[0];
+
+  bool fail = false;
+  fail = !(use_dst[0] == m_live_range.first() + 1);
+  fail = fail | !(src_range.first() >= m_live_range.first() && src_range.last() == m_live_range.last());
+  if (fail) {
+    warn << "RegUsageItem::first_usage fail: " << dump() << thrw;
+  }
+  return use_dst[0];         // This assumes that first dst is lowest number
 }
 
 
@@ -229,8 +236,23 @@ int RegUsageItem::last_usage() const {
 }
 
 
+/**
+ * @return true if ranges overlap, false otherwise.
+ */
 bool RegUsageItem::use_overlaps(RegUsageItem const &rhs) const {
-  return !((first_usage() > rhs.last_usage()) || (last_usage() < rhs.first_usage()));
+  warn << "use_overlaps lhs: " << dump() << ", rhs: " << rhs.dump();
+
+  if (first_usage() > rhs.last_usage()) {
+    return false;
+  }
+
+  if (first_usage() < rhs.first_usage()) {
+    return last_usage() > rhs.first_usage();
+  }
+
+  // All other cases overlap
+  assert(first_usage() >= rhs.first_usage() && first_usage() <= rhs.last_usage()); 
+  return true;
 }
 
 
@@ -449,22 +471,29 @@ std::string RegUsage::dump_use_ranges() const {
 
 
 /**
- * Check if found acc does not conflict with other uses of this acc.
+ * @brief Check if found acc does not conflict with other uses of this acc.
+ *
  * It may have been assigned to another var whose use-range overlaps with current var.
  *
- * This is something waiting to happen. It has not occured yet.
- * This test serves as a canary; if it fires, we need to do something about the situation.
+ * @return true if overlap detected, false otherwise
  */
-void RegUsage::check_overlap_usage(Reg acc, RegUsageItem const &item) const {
+bool RegUsage::check_overlap_usage(Reg acc, RegUsageItem const &item) const {
+  warn << "check_overlap_usage checking " << acc.dump();
   assert(acc.tag == ACC);
   assert(acc.regId >= 0);
 
   for (int i = 0; i < (int) size(); ++i) {
     auto const &cur = (*this)[i];
     if (cur.reg != acc) continue;
+    //warn << "Same ACC: " << cur.reg.dump();
 
-    assertq(!cur.use_overlaps(item), "Detected conflicting usage of replacement acc");
+    if (cur.use_overlaps(item)) {
+      warn << "check_overlap_usage: Detected conflicting usage of replacement acc";
+      return true;
+    }
   }
+
+  return false;
 }
 
 }  // namespace V3DLib

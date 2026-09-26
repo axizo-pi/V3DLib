@@ -285,7 +285,7 @@ void element_at_kernel(Float::Ptr in_ptr, Float::Ptr result) {
 }  // anon namespace
 
 
-TEST_CASE("Test SFU functions [sfu]") {
+TEST_CASE("Test SFU functions [sfu][kernel]") {
   int N = 15;  // Number of results returned
   const int max_bit_diff = Platform::compiling_for_vc4()?13:2;
 

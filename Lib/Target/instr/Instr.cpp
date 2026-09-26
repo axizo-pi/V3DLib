@@ -167,13 +167,13 @@ Instr::Instr(InstrTag in_tag) {
 
 
 Reg Instr::dest() const {
-  assertq(has_dest(), "oops");
+  assertq(has_dest(), "Dest register has no value");
   return m_dest;
 }
 
 
 void Instr::dest(Reg const &rhs) {
-  assertq(has_dest(), "oops");
+  assertq(has_dest(), "Dest register already has a value");
   m_dest = rhs;
 }
 
@@ -770,8 +770,8 @@ std::string Instr::List::dump_acc_usage(int first, int last) const {
 
 
 /**
- * Return index of accumulator which is free for the given
- * range in the instruction list.
+ * @brief Return index of accumulator which is free for the given
+ *        range in the instruction list.
  *
  * If none can be found, return -1.
  */

@@ -169,6 +169,8 @@ Instr::List varAssign(AssignCond cond, Var v, Expr::Ptr expr) {
  * instructions along the way.
  */
 Expr::Ptr simplify(Instr::List &seq, Expr::Ptr e) {
+  //warn << "simplify e: " << e->dump();
+
   if (e->isSimple()) {
     return e;
   }
@@ -192,7 +194,7 @@ Expr::Ptr simplify(Instr::List &seq, Expr::Ptr e) {
  * Similar to 'simplify' but ensure that the result is a variable.
  */
 Expr::Ptr putInVar(Instr::List *seq, Expr::Ptr e) {
-  //Log::cdebug << "Called putInVar()";
+  warn /*Log::cdebug */ << "Called putInVar()";
 
   if (e->tag() == Expr::VAR) {
     return e;
@@ -360,6 +362,13 @@ void cmpExp(Instr::List &seq, BExpr::Ptr bexpr, Var v) {
   instr.ALU.srcB = operand(b.cmp_rhs());
   instr.dest(Dummy);
 
+  //static bool did_first = false;
+  //if (!did_first) {
+  //  warn << "instr: " << instr.dump();
+  //  breakpoint;
+  //  did_first = true;
+  //}
+
   auto mov1 = mov(v, 1);
   assert(mov1.size() == 1);
   mov1.back().cond(assign_cond);
@@ -488,6 +497,7 @@ Instr::List translate_block(
 
 
 Instr::List translate_stmt(Stmt::Ptr s_ptr, Var condVar, AssignCond cond, bool saveRestore) {
+  //warn << "translate_stmt s_ptr: " << s_ptr->dump();
   using namespace V3DLib::Target::instr;
   Instr::List ret;
 
