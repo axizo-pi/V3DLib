@@ -32,7 +32,7 @@ class CFG : public std::vector<Succs> {
   using Parent = std::vector<Succs>;
 
 public:
-  void build(Target::Instr::List &instrs);
+  void build(Target::Instr::List const &instrs);
   int  block_at(InstrId line_num) const;
   int  block_end(InstrId line_num) const { return blocks.end(line_num);}
   bool is_parent_block(InstrId line_num, int block) const;

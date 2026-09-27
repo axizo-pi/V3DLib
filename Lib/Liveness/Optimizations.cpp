@@ -26,6 +26,7 @@ void replace_acc(Instr::List &instrs, RegUsageItem &item, int var_id, int acc_id
   }
 
   item.reg = replace_with;    
+  //warn << "replace_acc replaced item: " << item.dump();
 }
 
 
@@ -33,10 +34,7 @@ void replace_acc(Instr::List &instrs, RegUsageItem &item, int var_id, int acc_id
  *
  */
 int peephole_0(int range_size, Instr::List &instrs, RegUsage &allocated_vars) {
-  if (range_size == 0) {
-    warn << "peephole_0(): range_size == 0 passed in. This does nothing, not bothering";
-    return 0;
-  }
+  if (range_size == 0) return 0;  // Does nothing, not bothering
 
   int subst_count = 0;
 
@@ -57,19 +55,23 @@ int peephole_0(int range_size, Instr::List &instrs, RegUsage &allocated_vars) {
 
     // Check instructions for unused accumulator
     int acc_id = instrs.get_free_acc(item.first_usage(), item.last_usage());
-    if (acc_id == -1) continue;
+    if (acc_id == -1) {
+      warn << "peephole_0: All accumulators used";
+      continue;
+    }
+/*
+    if (acc_id >= 0) {
+      warn << "peephole_0 var_id: " << var_id      << ", "
+           << "acc_id: "            << acc_id      << ", "
+           << "item: "              << item.dump();
 
-    warn << "peephole_0 var_id: " << var_id      << ", "
-         << "item: "              << item.dump() << ", "
-         << "acc_id: "            << acc_id;
-
+    }
+*/
     // Check if the given ACC has not been assigned in the meantime
     if (allocated_vars.check_overlap_usage(Reg(ACC, acc_id), item)) {
       warn << "acc_id: " << acc_id << " already in use, can't assign";
       continue;
     }
-
-    Reg replace_with(ACC, acc_id);
 
     // This also writes the used accumulator to the RegUsage list.
     replace_acc(instrs, item, var_id, acc_id);
@@ -346,17 +348,39 @@ int introduceAccum(Liveness &live, Instr::List &instrs) {
   RegUsage &allocated_vars = live.reg_usage();
 
 #ifdef DEBUG
-  // Paranoia safeguard; reg's should not be allocated already
   for (int i = 0; i < (int) allocated_vars.size(); i++) {
-    assert(allocated_vars[i].reg.tag == NONE);
+    auto &item = allocated_vars[i];
+
+    //
+    // Paranoia safeguards
+    //
+
+    //reg's should not be allocated already
+    assert(item.reg.tag == NONE);
+
+    // Single range has only a dst register set
+    if (item.use_range() == 1) {
+      assert(item.assigned_once());
+      //warn << "range 1 " << i << ": " << item.dump();
+    }
+
+/*
+    if (item.unused()) {
+      warn << "unused " << i << ": " << item.dump();
+    }
+*/    
   }
 #endif // DEBUG
 
   int subst_count = 0;
 
-  int const MAX_RANGE_SIZE = 3; //= 8; //= 15;  // >= 10 so that tmp var in sin_v3d() gets replaced
+  // Should be >= 2 for any effective use
+  // >= 10 so that tmp var in sin_v3d() gets replaced
+  int const MAX_RANGE_SIZE = 4; //= 8; //= 15;
 
+  //
   // Picks up a lot usually
+  //
   for (int range_size = 1; range_size <= MAX_RANGE_SIZE; range_size++) {
     int count = peephole_0(range_size, instrs, allocated_vars);
 
@@ -367,7 +391,19 @@ int introduceAccum(Liveness &live, Instr::List &instrs) {
     subst_count += count;
   }
 
+//#ifdef DEBUG
+#if 0
+  for (int i = 0; i < instrs.size(); ++i) {
+    auto const &instr = instrs[i];
+    uint32_t acc_mask = instr.get_acc_usage();  // Remember, get_acc_usage() returns *used* acc's
+    if (acc_mask != 0) {
+      warn << "peephole_0 mask: " << acc_mask << ", instr " << i << ": " << trim_s(instr.dump());
+    }
+  }
+#endif
 
+
+#if 0
   // This peephole still does useful stuff
   // Plenty of substitutions when peephole_0 disabled.
   {
@@ -391,6 +427,7 @@ int introduceAccum(Liveness &live, Instr::List &instrs) {
 
     subst_count += count;
   }
+#endif
 
   return subst_count;
 }

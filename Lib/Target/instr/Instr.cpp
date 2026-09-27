@@ -166,6 +166,10 @@ Instr::Instr(InstrTag in_tag) {
 }
 
 
+bool Instr::has_dest() const {
+  return (tag == InstrTag::LI || tag == InstrTag::ALU || tag == InstrTag::RECV);
+}
+
 Reg Instr::dest() const {
   assertq(has_dest(), "Dest register has no value");
   return m_dest;
@@ -206,8 +210,10 @@ Reg Instr::dst_a_reg() const {
 
 
 Reg Instr::src_a_reg() const {
-  if (ALU.srcA.is_reg()) {
-    return ALU.srcA.reg();
+  if (has_registers()) {
+    if (tag != InstrTag::LI && ALU.srcA.is_reg()) {
+      return ALU.srcA.reg();
+    }
   }
 
   return Reg(NONE, 0);
@@ -215,8 +221,10 @@ Reg Instr::src_a_reg() const {
 
 
 Reg Instr::src_b_reg() const {
-  if (ALU.srcB.is_reg()) {
-    return ALU.srcB.reg();
+  if (has_registers()) {
+    if (tag != InstrTag::LI && ALU.srcB.is_reg()) {
+      return ALU.srcB.reg();
+    }
   }
 
   return Reg(NONE, 0);
@@ -243,7 +251,7 @@ bool Instr::is_dst_reg(Reg const &rhs) const {
 
 
 /**
- * Return all source registers in this instruction
+ * @brief Return all source registers in this instruction
  *
  * Param 'set_use_where' need only be true during liveness analysis.
  *
@@ -783,16 +791,17 @@ int Instr::List::get_free_acc(int first, int last) const {
   uint32_t acc_use = 0xffffffff;  // Keeps track of free acc's, default all free
 
   for (int i = first; i <= last; ++i) {
-    acc_use = acc_use & ~(*this)[i].get_acc_usage();  // Remember, get_acc_usage() returns *used* acc's
+    auto const &instr = (*this)[i];
+
+    uint32_t acc_mask = instr.get_acc_usage();  // Remember, get_acc_usage() returns *used* acc's
+    //warn << "get_free_acc checking mask: " << acc_mask << ", instr: " << instr.dump();
+    acc_use = acc_use & ~acc_mask;
   }
 
   // Mask out unused bits and also r5, because it has special usage.
-  // NOTE, r3 (sfu) and r4 (tmu read) have special usages as well, 
+  // NOTE: r3 (sfu) and r4 (tmu read) have special usages as well.
   if (Platform::compiling_for_vc4()) {
     // It appears to be required for vc4 to not use r4 (unit test [cond] fails)
-    // Translation:
-    // Target     : LI ACC4 <- 0
-    // vc4 opcodes: load_imm tmu_noswap, nop, 0x00000000 (0.000000)
     acc_use = acc_use & 0xf;   // r0-r3
   } else {
     acc_use = acc_use & 0x1f;  // r0-r4

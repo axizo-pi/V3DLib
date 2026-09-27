@@ -11,6 +11,7 @@
 #include "Optimizations.h"
 #include "UseDef.h"
 #include "Support/Helpers.h"  // contains()
+#include "Support/Timer.h"
 
 namespace V3DLib {
 namespace {
@@ -59,7 +60,7 @@ void allocate_registers(Instr &instr, RegUsage const &alloc) {
     return false;
   };
 
-  UseDef useDefSet(instr);  // Registers only usage REG_A
+  UseDef useDefSet(instr, false, false);  // Registers only usage REG_A
 
   if (useDefSet.def.tag != NONE) {
     RegId r = useDefSet.def.regId; 
@@ -121,9 +122,9 @@ Instr::List remove_skips(Instr::List &instrs) {
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
- * Determine the liveness sets for each instruction.
+ * @brief Determine the liveness sets for each instruction.
  */
-void Liveness::compute_liveness(Instr::List &instrs) {
+void Liveness::compute_liveness(Instr::List const &instrs) {
   // Initialise live mapping to have one entry per instruction
   setSize(instrs.size());
 
@@ -140,7 +141,8 @@ void Liveness::compute_liveness(Instr::List &instrs) {
 
     // Propagate live variables backwards
     for (int i = instrs.size() - 1; i >= 0; i--) {
-      auto &instr = instrs[i];
+      auto const &instr = instrs[i];
+      //warn << "compute instr " << i << ": " << instr.dump();
 
       bool also_set_used = false;
 
@@ -151,42 +153,25 @@ void Liveness::compute_liveness(Instr::List &instrs) {
           auto &item = m_reg_usage[dst.regId];
 
           // If the dst variable is not used before, it should not be set as used as well
-          assert(item.first_dst() <= i);
-          also_set_used = (item.first_dst() < i);
-/*
-  Fails on Pi3 unit test - I actually don't think it is necessary
-
-          if (!also_set_used) {
-            //
-            // Sanity check: in this case, we expect the variable to be in the condition assign block only
-            //
-            // Notably, this assertion fails for init of variables without an explicit init value.
-            // This can be extremely confusing, hence this comment.
-            //
-            AssignCond assign_cond = instr.assign_cond();
-            for (int j = item.first_usage(); j <= item.last_usage(); j++) {
-              if (instrs[j].isNop()) continue;
-
-              assertq((assign_cond == instrs[j].assign_cond())            // expected usage
-                   || (instrs[j].is_always() && !instrs[j].is_branch()),  // Interim basic usage allowed (happens)
-                "Expected variable to be in condition assign block only", true
-              );
-            }
-          }
-*/
+          int first = item.first_dst();
+          assert(first != -1 && first <= i);
+          also_set_used = (first < i);
         }
       }
 
       // Compute 'use' and 'def' sets
-      UseDef useDef(instr, also_set_used);
+      UseDef useDef(instr, false, also_set_used);
+      //warn << "useDef " << i << ": " <<  useDef.dump() << "instr: " << instr.mnemonic();
 
       computeLiveOut(i, liveOut);
+      //warn << "liveOut " << i << ": " <<  liveOut.dump() << ", instr: " << instr.mnemonic();
 
       liveIn = liveOut;
       if (useDef.def.tag != NONE) {
         liveIn.remove(useDef.def.regId);  // Remove the 'def' set from the live-out set to give live-in set
       }
       liveIn.add(useDef.use);
+      //warn << "liveIn " << i << ": " <<  liveIn.dump() << ", instr: " << instr.mnemonic();
 
       if (insert(i, liveIn)) {
         changed = true;
@@ -205,23 +190,25 @@ void Liveness::clear() {
 }
 
 
-void Liveness::compute(Instr::List &instrs) {
+void Liveness::compute(Instr::List const &instrs, bool do_accumulators) {
   clear();
 
   m_cfg.build(instrs);
-  m_reg_usage.set_used(instrs);
+  m_reg_usage.set_used(instrs, do_accumulators);
 
-  compute_liveness(instrs); // performance hog 23/28s
-  assert(instrs.size() == size());
 
-  m_reg_usage.set_live(*this);
+  // Don't bother with liveness for accumulators, it is useless
+  if (!do_accumulators) {
+    compute_liveness(instrs); // performance hog 23/28s
+    assert(instrs.size() == size());
+    m_reg_usage.set_live(*this);
+    m_reg_usage.check();
+  }
 
 #ifdef OUTPUT_COMPILEDATA
   compile_data.reg_usage_dump = m_reg_usage.dump(true);
   compile_data.liveness_dump = dump();
 #endif // OUTPUT_COMPILEDATA
-
-  m_reg_usage.check();
 }
 
 
@@ -334,6 +321,39 @@ void Liveness::optimize(Instr::List &instrs, int numVars) {
 #ifdef OUTPUT_COMPILEDATA
   compile_data.target_code_before_liveness = instrs.dump();
 #endif // OUTPUT_COMPILEDATA
+}
+
+
+Reg get_free_acc(Instr::List const &instrs, int line_number) {
+  assert(0 <= line_number && line_number < instrs.size());
+  timers.start("::get_free_acc");
+
+  warn << "Called ::get_free_acc(), line: " << line_number;
+
+  auto const &instr = instrs[line_number];
+
+  warn << "Current "
+       << "dest: " << instr.dest().dump() << ", "
+       << "src's: ("
+       << instr.src_a_reg().dump() << ", "
+       << instr.src_b_reg().dump() << "), "
+       << "instr: "
+       << instr.mnemonic(false);
+
+  // Determine usage of accumulators
+  Liveness live(6);
+  live.compute(instrs, true);
+
+  RegUsage const &allocated_vars = live.reg_usage();
+  //warn << "reg_usage:\n" << allocated_vars.dump(true);
+
+  int acc_id = allocated_vars.dst_range(line_number);
+  assertq(acc_id >= 0, "get_free_acc no accumulators available");
+
+  Reg ret(ACC, acc_id);
+
+  timers.stop("::get_free_acc");
+  return ret;
 }
 
 
