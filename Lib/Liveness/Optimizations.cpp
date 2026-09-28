@@ -56,17 +56,10 @@ int peephole_0(int range_size, Instr::List &instrs, RegUsage &allocated_vars) {
     // Check instructions for unused accumulator
     int acc_id = instrs.get_free_acc(item.first_usage(), item.last_usage());
     if (acc_id == -1) {
-      warn << "peephole_0: All accumulators used";
+      warn << "peephole_0: No accumulators available";
       continue;
     }
-/*
-    if (acc_id >= 0) {
-      warn << "peephole_0 var_id: " << var_id      << ", "
-           << "acc_id: "            << acc_id      << ", "
-           << "item: "              << item.dump();
 
-    }
-*/
     // Check if the given ACC has not been assigned in the meantime
     if (allocated_vars.check_overlap_usage(Reg(ACC, acc_id), item)) {
       warn << "acc_id: " << acc_id << " already in use, can't assign";
@@ -147,46 +140,6 @@ int peephole_1(Liveness &live, Instr::List &instrs, RegUsage &allocated_vars) {
          << "  " << instrs[i].dump();
 */
     // DANGEROUS! Do not use this value downstream.   
-    // Currently stored for debug display purposes only! 
-    allocated_vars[def].reg = replace_with;    
-
-    subst_count++;
-  }
-
-  return subst_count;
-}
-
-/**
- * Replace assign-only variables with an accumulator
- */
-int peephole_2(Liveness &live, Instr::List &instrs, RegUsage &allocated_vars) {
-  int subst_count = 0;
-
-  for (int i = 1; i < instrs.size(); i++) {
-    Instr instr = instrs[i];
-    if (!instr.has_registers()) continue;  // Doesn't help much
-
-    // Guard for this special case for the time being.
-    // It should actually be possible to load a uniform in an accumulator,
-    // not bothering right now.
-    if (instr.isUniformLoad()) {
-      continue;
-    }
-
-    Reg dst = instr.dst_a_reg();
-    if (dst.tag == NONE) continue;
-    RegId def = dst.regId;
-
-    if (!allocated_vars[def].only_assigned()) continue;
-
-    Reg current(REG_A, def);
-    Reg replace_with(ACC, instrs.get_free_acc(i, i));
-    assert(replace_with.regId != -1);
-
-    instr.rename_dest(current, replace_with);
-    instrs[i] = instr;
-
-    // DANGEROUS! Do not use this value downstream (remember why, old fart?).   
     // Currently stored for debug display purposes only! 
     allocated_vars[def].reg = replace_with;    
 
@@ -372,62 +325,49 @@ int introduceAccum(Liveness &live, Instr::List &instrs) {
   }
 #endif // DEBUG
 
+  std::string subst_buf;
+
   int subst_count = 0;
 
   // Should be >= 2 for any effective use
   // >= 10 so that tmp var in sin_v3d() gets replaced
-  int const MAX_RANGE_SIZE = 4; //= 8; //= 15;
+  int const MAX_RANGE_SIZE = 4; // 8; //= 15;
 
   //
   // Picks up a lot usually
   //
+  subst_buf << "peephole_0 max: " << MAX_RANGE_SIZE << "\n";
+
   for (int range_size = 1; range_size <= MAX_RANGE_SIZE; range_size++) {
     int count = peephole_0(range_size, instrs, allocated_vars);
 
-    if (count > 0) {
-      warn << "peephole_0 range_size: " << range_size << ", " << count << " substitutions";
-    } 
-
+    subst_buf << "  " << range_size << ": " << count << "\n";
     subst_count += count;
   }
+  subst_buf << "\n";
 
-//#ifdef DEBUG
-#if 0
-  for (int i = 0; i < instrs.size(); ++i) {
-    auto const &instr = instrs[i];
-    uint32_t acc_mask = instr.get_acc_usage();  // Remember, get_acc_usage() returns *used* acc's
-    if (acc_mask != 0) {
-      warn << "peephole_0 mask: " << acc_mask << ", instr " << i << ": " << trim_s(instr.dump());
-    }
-  }
-#endif
-
-
-#if 0
-  // This peephole still does useful stuff
-  // Plenty of substitutions when peephole_0 disabled.
+  // 
+  // This peephole still does useful stuff.
+  // Tons of substitutions when peephole_0 disabled.
+  // 
   {
+
     int count = peephole_1(live, instrs, allocated_vars);
 
-    if (count > 0) {
-      warn << "peephole_1: " << count << " substitutions";
-    } 
+    if (MAX_RANGE_SIZE > 4 && count > 0) {
+      warn << "peephole_1 fired! count: " << count;
+    }
+    subst_buf << "peephole_1: " << count << "\n";
 
     subst_count += count;
   }
 
 
-  // And some things still get done with this peephole, regularly 1 or 2 per compile
-  {
-    int count = peephole_2(live, instrs, allocated_vars);
-
-    if (count > 0) {
-      warn << "peephole_2: " << count << " substitutions";
-    } 
-
-    subst_count += count;
-  }
-#endif
+  info << "\n===========================================\n"
+       << "introduceAccum substitution counts\n"
+       << "----------------------------------\n"
+       << subst_buf
+       << "===========================================\n";
 
   return subst_count;
 }

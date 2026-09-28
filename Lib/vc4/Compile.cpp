@@ -120,7 +120,10 @@ void Compile::encode() {
 
 void Compile::invoke(int numQPUs, IntList &params, bool wait_complete) {
   if (has_errors()) {
-    fatal("Errors during kernel compilation/encoding, can't continue.");
+    // Log::fatal will internally throw an exception,
+    // instead of abruptly stopping like `fatal()`.
+    // The hope is that shared memory is properly deallocated.
+    Log::fatal << "Errors during kernel compilation/encoding, can't continue." << thrw;
   }
 
   auto &cs = code_struct();

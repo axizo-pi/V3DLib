@@ -308,6 +308,10 @@ Timers timers;
  * @return The started timer
  */
 Timer &Timers::start(std::string const &label) {
+  if (!m_total.started()) {
+    m_total.start();
+  }
+
   int index = find(label);
 
   if (index == -1) {
@@ -406,6 +410,10 @@ std::vector<int> Timers::sort_indexes() {
 
 
 void Timers::end(bool show_minmax) {
+  if (m_total.started()) {
+    m_total.stop();
+  }
+
   if (m_list.empty()) {
     warn << "Timers end: No global timers, nothing to show";
     return;
@@ -420,7 +428,9 @@ void Timers::end(bool show_minmax) {
     buf << "  " << m_list[indexes[i]].dump(widths, show_minmax) << "\n";
   }
 
-  warn << "Timers end:\n" << buf;
+  warn << "Timers end:\n"
+       << "  " << m_total.dump(widths, show_minmax) << " (Since first call to timers)\n"
+       << buf;
 }
 
 

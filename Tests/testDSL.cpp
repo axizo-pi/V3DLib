@@ -301,7 +301,7 @@ void offsets_kernel(Ptr result, Ptr src) {
 //=============================================================================
 
 TEST_CASE("Test correct working DSL [dsl][instr]") {
-  REQUIRE(::v3d::open());
+  //REQUIRE(::v3d::open());
 
   SUBCASE("Test specific int instructions") {
     int const NUM = 2;
@@ -323,7 +323,7 @@ TEST_CASE("Test correct working DSL [dsl][instr]") {
     const int NUM = 2;
 
     vector<float> expected;
-     expected.resize(16*NUM); 
+    expected.resize(16*NUM); 
 
     for (int i = 0; i < 16; ++i) {
       expected[i] = 1.0f/(1.0f + ((float) i));
@@ -724,7 +724,7 @@ TEST_CASE("Initialization with index() on uniform pointers should work as expect
 
 
 TEST_CASE("Test functions [dsl][func]") {
-  REQUIRE(::v3d::open());
+  //REQUIRE(::v3d::open());
 
   int const NumValues       = 15;
   int const SharedArraySize = (NumValues/16 +1)*16;

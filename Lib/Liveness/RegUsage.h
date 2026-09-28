@@ -7,6 +7,24 @@
 
 namespace V3DLib {
 
+/**
+ * =============================================
+ * Notes
+ * -----
+ *
+ * - Live range is **not** used for accumulator liveness.
+ * - Following is true most of the time, but _not_ always:
+ *
+ *     (m_use_dst[0] + 1 == m_live_range.first())
+ *
+ *   Register writes need not be followed by a read.
+ *
+ * - Following is also not always true:
+ *
+ *     (m_src_range.last() == m_live_range.last());
+ *
+ *   In blocks and loops, the liveness range can be extended to well beyond the last assignment.
+ */
 struct RegUsageItem {
   Reg reg;
 
@@ -41,7 +59,7 @@ private:
   std::vector<int> m_use_dst;  // List of line numbers where var is set
   Range m_live_range;
 
-  bool valid(bool disp) const;
+  bool check_valid(bool do_throw = true) const;
 };
 
 
@@ -57,7 +75,8 @@ struct RegUsage : private std::vector<RegUsageItem> {
   void reset();
   void set_used(Target::Instr::List const &instrs, bool do_accumulators);
   void set_live(Liveness &live);
-  std::string dump(bool verbose = false) const;
+  std::string dump(bool verbose) const;
+  std::string dump() const { return dump(true); }
   void check() const;
   std::string dump_use_ranges() const;
   bool check_overlap_usage(Reg acc, RegUsageItem const &item) const;

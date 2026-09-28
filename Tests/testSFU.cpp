@@ -3,6 +3,7 @@
 #include "support/check.h"
 #include "support/support.h"
 #include "Support/Helpers.h"        // bit_diff()
+#include "LibSettings.h"
 #include <iostream>
 #include <cmath>
 
@@ -127,6 +128,7 @@ void check(float val, Float::Array &results, int max_bit = 1) {
     REQUIRE(std::isnan(results[16* 7]));
     REQUIRE(std::isnan(results[16*13]));
   } else if (val == 0) {
+    INFO("result: " << results[16*6]);
     REQUIRE(std::isinf(results[16* 6]));
     REQUIRE(std::isinf(results[16* 7]));
     REQUIRE(std::isinf(results[16* 8]));
@@ -286,6 +288,9 @@ void element_at_kernel(Float::Ptr in_ptr, Float::Ptr result) {
 
 
 TEST_CASE("Test SFU functions [sfu][kernel]") {
+  //LibSettings::dump_line_numbers(false);
+  //Platform::use_main_memory(true);
+
   int N = 15;  // Number of results returned
   const int max_bit_diff = Platform::compiling_for_vc4()?13:2;
 
@@ -293,7 +298,7 @@ TEST_CASE("Test SFU functions [sfu][kernel]") {
 
   auto k = compile(sfu_kernel);
   to_file("sfu_kernel.txt", k.dump());
-  to_file("sfu_kernel_compile_data.txt", k.dump_compile_data());
+  //to_file("sfu_kernel_compile_data.txt", k.dump_compile_data());
 
   INFO("Running qpu");
   //
@@ -337,6 +342,9 @@ TEST_CASE("Test SFU functions [sfu][kernel]") {
   test(0.0f);                  // Nan and Inf for various operations
   test(-0.0f);                 // param converted to '0' on compile; value '-0' is relevant for vc4
   test(-1.0f);
+
+  //Platform::use_main_memory(false);
+  //LibSettings::dump_line_numbers(true);
 }
 
 

@@ -325,13 +325,12 @@ void Liveness::optimize(Instr::List &instrs, int numVars) {
 
 
 Reg get_free_acc(Instr::List const &instrs, int line_number) {
+  //warn << "Called ::get_free_acc(), line: " << line_number;
   assert(0 <= line_number && line_number < instrs.size());
   timers.start("::get_free_acc");
 
-  warn << "Called ::get_free_acc(), line: " << line_number;
-
   auto const &instr = instrs[line_number];
-
+/*
   warn << "Current "
        << "dest: " << instr.dest().dump() << ", "
        << "src's: ("
@@ -339,7 +338,7 @@ Reg get_free_acc(Instr::List const &instrs, int line_number) {
        << instr.src_b_reg().dump() << "), "
        << "instr: "
        << instr.mnemonic(false);
-
+*/
   // Determine usage of accumulators
   Liveness live(6);
   live.compute(instrs, true);
@@ -348,7 +347,7 @@ Reg get_free_acc(Instr::List const &instrs, int line_number) {
   //warn << "reg_usage:\n" << allocated_vars.dump(true);
 
   int acc_id = allocated_vars.dst_range(line_number);
-  assertq(acc_id >= 0, "get_free_acc no accumulators available");
+  assertq(acc_id >= 0, "::get_free_acc no accumulators available");
 
   Reg ret(ACC, acc_id);
 

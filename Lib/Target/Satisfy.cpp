@@ -44,22 +44,22 @@ Instr::List insertMoves(Instr::List &instrs) {
 
     if (instr.tag == ALU && instr.ALU.srcA.is_imm() &&
         instr.ALU.srcB.is_reg() && instr.ALU.srcB.reg().regfile() == REG_B) {
-
-      Reg acc = get_free_acc(instrs, i);
-      warn << "insertMoves 1 acc: " << acc.dump();
-
+      //
       // Insert moves for an operation with a small immediate whose
       // register operand must reside in reg file B.
+      //
+      Reg acc = get_free_acc(instrs, i);
+
       newInstrs << mov(acc, instr.ALU.srcB)
                 << instr.clone().src_b(acc);
     } else if (instr.tag == ALU && instr.ALU.srcB.is_imm() &&
                instr.ALU.srcA.is_reg() && instr.ALU.srcA.reg().regfile() == REG_B) {
-
-      Reg acc = get_free_acc(instrs, i);
-      warn << "insertMoves 2 acc: " << acc.dump();
-
+      //
       // Insert moves for an operation with a small immediate whose
       // register operand must reside in reg file B.
+      //
+      Reg acc = get_free_acc(instrs, i);
+
       newInstrs << mov(acc, instr.ALU.srcA)
                 << instr.clone().src_a(acc);
     } else if (hasRegFileConflict(instr)) {
@@ -70,7 +70,6 @@ Instr::List insertMoves(Instr::List &instrs) {
       // to the same register file, then remap one of them to an accumulator.
       //
       Reg acc = get_free_acc(instrs, i);
-      warn << "insertMoves 3 acc: " << acc.dump();
 
       newInstrs << mov(acc, instr.ALU.srcA)
                 << instr.clone().src_a(acc);

@@ -1,6 +1,7 @@
 #include "Instr.h"         // Location of definition struct Instr
 #include "Support/basics.h"
 #include "Support/Platform.h"
+#include "Support/Timer.h"
 #include "Source/BExpr.h"   // class CmpOp
 #include "LibSettings.h"
 
@@ -787,6 +788,8 @@ int Instr::List::get_free_acc(int first, int last) const {
   assert(first <= last);
   assert(first >= 0);
   assert(last  < size());
+  assert(last  != -1);
+  timers.start("Instr::List:get_free_acc");
 
   uint32_t acc_use = 0xffffffff;  // Keeps track of free acc's, default all free
 
@@ -817,6 +820,7 @@ int Instr::List::get_free_acc(int first, int last) const {
     }
   }
 
+  timers.stop("Instr::List:get_free_acc");
   return ret;
 }
 
