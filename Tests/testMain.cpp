@@ -24,6 +24,11 @@ int main(int argc, char** argv) {
   Log::set_log_dir("log");
   Log::set_log_file("unit_tests.log");
 
+  Log::info << "\n"
+            << "==========================================\n"
+            << "= Start Unit Test Run\n"
+            << "==========================================\n";
+
   doctest::Context context;
   context.applyCommandLine(argc, argv);
 

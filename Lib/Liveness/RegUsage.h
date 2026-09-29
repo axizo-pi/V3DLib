@@ -12,18 +12,33 @@ namespace V3DLib {
  * Notes
  * -----
  *
- * - Live range is **not** used for accumulator liveness.
- * - Following is true most of the time, but _not_ always:
+ * 1. Special case: multiple dst's, no live range.
  *
- *     (m_use_dst[0] + 1 == m_live_range.first())
+ *    The register is only written to.
+ *    Better would be to write to reg NOP here; however at time of writing
+ *    it still occurs and the spec's allow it, so this case must be taken into account.
  *
- *   Register writes need not be followed by a read.
+ *    So we lie a bit and handle only the final write.
+ *    Occurances _will_ be logged, however. See `introduceAccum()`.
  *
- * - Following is also not always true:
+ *    **NOTE:** This case occurs often on `vc6` for the initial handling of QPU Id and QPU Num.
+ *              This is actually benevolent and fixed later with optimization and acc replacement.
+ *              Will not be flagged as a special case.
  *
- *     (m_src_range.last() == m_live_range.last());
+ * 2. Live range is **not** used for accumulator liveness.
  *
- *   In blocks and loops, the liveness range can be extended to well beyond the last assignment.
+ * 3. Special assertion cases which have been disproved:
+ *   - Following is true most of the time, but _not_ always:
+ *
+ *       (m_use_dst[0] + 1 == m_live_range.first())
+ *
+ *     Register writes need not be followed by a read.
+ *
+ *   - Following is also not always true:
+ *
+ *       (m_src_range.last() == m_live_range.last());
+ *
+ *     In blocks and loops, the liveness range can be extended to well beyond the last assignment.
  */
 struct RegUsageItem {
   Reg reg;
@@ -32,7 +47,7 @@ struct RegUsageItem {
   void add_src(int n);
   void add_live(int n);
   bool unused() const;
-  bool only_assigned() const  { return !m_use_dst.empty() && m_src_range.count() == 0; }
+  bool only_assigned() const;
   bool never_assigned() const { return !unused() && m_use_dst.empty(); }
   bool assigned_once() const;
   std::string dump() const;
@@ -44,10 +59,7 @@ struct RegUsageItem {
   int first_usage() const;
   int last_usage() const;
   bool use_overlaps(RegUsageItem const &rhs) const;
-
-  bool regular_use() const {
-    return !(unused() || only_assigned());
-  }
+  bool regular_use() const { return !(unused() || only_assigned()); }
 
   void reset();
   bool empty() const;

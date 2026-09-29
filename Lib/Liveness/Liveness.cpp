@@ -298,8 +298,7 @@ void Liveness::optimize(Instr::List &instrs, int numVars) {
   }
 
   //
-  // vc7 has no general purpose accumulators,
-  // So we won't bother replacing variables with them
+  // vc7 has no general purpose accumulators, don't bother replacing variables with them
   //
   if (!Platform::compiling_for_vc7()) {
     int prev_count_skips = count_skips(instrs);

@@ -169,7 +169,8 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
       auto const &reg_usage = live.reg_usage()[instr.dest().regId];
 
       if (instr.dest().is_special()) {
-        info << "combineImmediates special dest register, not combinining, instr: " << instr.dump();
+        info << "combineImmediates special dest register, not combinining, "
+             << " instr: " << instr.mnemonic(false);
         continue;
       }
 
@@ -204,7 +205,9 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
         }
 
         if (can_remove) {
-          info << "combineImmediates can_remove, instr: " << instr.dump();
+          // Enable this log when working on this function
+          //info << "combineImmediates can_remove, "
+          //     << "instr: " << instr.mnemonic(false);
           instrs.set_skip(i);
         }
       }
@@ -281,7 +284,9 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
 
 
 /**
- * @brief Optimisation passes that introduce accumulators
+ * @brief Optimisation passes that introduce accumulators.
+ *
+ * This is not called for `vc7`, which has no accumulators.
  *
  * @param allocated_vars write param; note which vars have an accumulator registered
  * @return               Number of substitutions performed
@@ -301,32 +306,50 @@ int introduceAccum(Liveness &live, Instr::List &instrs) {
   RegUsage &allocated_vars = live.reg_usage();
 
 #ifdef DEBUG
+  //
+  // Paranoia safeguards
+  //
   for (int i = 0; i < (int) allocated_vars.size(); i++) {
     auto &item = allocated_vars[i];
 
-    //
-    // Paranoia safeguards
-    //
-
     //reg's should not be allocated already
     assert(item.reg.tag == NONE);
-
+/*
+    // TODO fix this on vc6
     // Single range has only a dst register set
     if (item.use_range() == 1) {
       assert(item.assigned_once());
-      //warn << "range 1 " << i << ": " << item.dump();
     }
+*/
 
-/*
-    if (item.unused()) {
-      warn << "unused " << i << ": " << item.dump();
+    //
+    // Warn me when a variable is dst-only and has multiple dst's.
+    // See class RegUsageItem Note 1.
+    //
+    // vc6: QPU Id and QPU Num will not be flagged as a special case, where possible.
+    //
+    const int QPU_MAX = 15;  // Top of QPU Id/Num test. Value empirically determined
+
+    if (item.only_assigned() && item.use_dst().size() > 1) {
+      // vc6: QPU Id and QPU Num special case
+      if (Platform::compiling_for_vc6() && item.use_dst()[0] == 0 && item.use_dst().back() <= QPU_MAX) {
+        continue;
+      }
+
+      std::string buf;
+      buf << "Multiple dst's: " << i << ": " << item.dump() << "\n";
+
+      // Show the lines where this happens
+      for (int dst: item.use_dst()) {
+        buf << "  Line " << dst << ": " << instrs[dst].mnemonic(false) << "\n";
+      }
+
+      info << buf;
     }
-*/    
   }
 #endif // DEBUG
 
   std::string subst_buf;
-
   int subst_count = 0;
 
   // Should be >= 2 for any effective use
@@ -348,7 +371,9 @@ int introduceAccum(Liveness &live, Instr::List &instrs) {
 
   // 
   // This peephole still does useful stuff.
+  //
   // Tons of substitutions when peephole_0 disabled.
+  // Works great on vc4, on vc6 less so but cases still get caught.
   // 
   {
 

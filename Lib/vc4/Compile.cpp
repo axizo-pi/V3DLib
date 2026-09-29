@@ -57,7 +57,9 @@ void compile_postprocess(Target::Instr::List &targetCode) {
   assertq(!targetCode.empty(), "compile_postprocess(): passed target code is empty");
 
   loadStorePass(targetCode);
-  //compile_data.target_code_before_regalloc = targetCode.dump();
+#ifdef OUTPUT_COMPILEDATA
+  compile_data.target_code_before_regalloc = targetCode.dump();
+#endif
 
   regAlloc(targetCode);      // Perform register allocation
   vc4_satisfy(targetCode);   // Satisfy target code constraints

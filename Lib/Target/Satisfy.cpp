@@ -29,12 +29,21 @@ bool hasRegFileConflict(Instr const &instr) {
 
 
 /**
- * First pass for satisfy constraints: insert move-to-accumulator instructions
+ * @brief Insert move-to-accumulator instructions.
+ *
+ * First pass for satisfy constraints.
+ *
+ * This only needs to be done for `vc4`:
+ * - Only `vc4` has two register files
+ * - Only `vc4` needs a NOP for combined read/write to same register in one instruction
  */
 Instr::List insertMoves(Instr::List &instrs) {
   assert(Platform::compiling_for_vc4());  // Not an issue for v3d
-
   using namespace V3DLib::Target::instr;
+
+  int subst_count_1 = 0;
+  int subst_count_2 = 0;
+  int subst_count_3 = 0;
 
   Instr::List newInstrs(instrs.size() * 2);
 
@@ -52,6 +61,8 @@ Instr::List insertMoves(Instr::List &instrs) {
 
       newInstrs << mov(acc, instr.ALU.srcB)
                 << instr.clone().src_b(acc);
+
+      subst_count_1++;
     } else if (instr.tag == ALU && instr.ALU.srcB.is_imm() &&
                instr.ALU.srcA.is_reg() && instr.ALU.srcA.reg().regfile() == REG_B) {
       //
@@ -62,6 +73,8 @@ Instr::List insertMoves(Instr::List &instrs) {
 
       newInstrs << mov(acc, instr.ALU.srcA)
                 << instr.clone().src_a(acc);
+
+      subst_count_2++;
     } else if (hasRegFileConflict(instr)) {
       //
       // Insert moves for operands that are mapped to the same reg file.
@@ -73,10 +86,20 @@ Instr::List insertMoves(Instr::List &instrs) {
 
       newInstrs << mov(acc, instr.ALU.srcA)
                 << instr.clone().src_a(acc);
+
+      subst_count_3++;
     } else {
       newInstrs << instr;
     }
   }
+
+  info << "\n===========================================\n"
+       << "insertMoves substitution counts\n"
+       << "-------------------------------\n"
+       << "Count 1: " << subst_count_1 << "\n"
+       << "Count 2: " << subst_count_2 << "\n"
+       << "Count 3: " << subst_count_3 << "\n"
+       << "===========================================\n";
 
   return newInstrs;
 }
@@ -563,7 +586,7 @@ void vc4_satisfy(Instr::List &instrs) {
 
   newInstrs = insertMoves(newInstrs);
   newInstrs = insertNops(newInstrs);
-  instrs = removeVPMStall(newInstrs);
+  instrs    = removeVPMStall(newInstrs);
 }
 
 
@@ -574,7 +597,7 @@ void v3d_satisfy(Instr::List &instrs) {
   Instr::List newInstrs = instrs;
 
   newInstrs = insertNops(newInstrs);
-  instrs = removeVPMStall(newInstrs);
+  instrs    = removeVPMStall(newInstrs);
 }
 
 }  // namespace V3DLib

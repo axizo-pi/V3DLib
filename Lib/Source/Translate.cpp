@@ -194,14 +194,13 @@ Expr::Ptr simplify(Instr::List &seq, Expr::Ptr e) {
  * Similar to 'simplify' but ensure that the result is a variable.
  */
 Expr::Ptr putInVar(Instr::List *seq, Expr::Ptr e) {
-  warn /*Log::cdebug */ << "Called putInVar()";
+  Log::cdebug << "Called putInVar()";
 
   if (e->tag() == Expr::VAR) {
     return e;
   }
 
   Var tmp = VarGen::fresh();
-  //warn << "putInVar tmp: " << tmp.dump();
   *seq << varAssign(tmp, e);
   return mkVar(tmp);
 }

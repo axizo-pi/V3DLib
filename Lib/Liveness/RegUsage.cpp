@@ -63,6 +63,15 @@ bool RegUsageItem::unused() const {
 }
 
 
+bool RegUsageItem::only_assigned() const  {
+  bool ret =!m_use_dst.empty() && m_src_range.count() == 0;
+  if (ret) {
+    assert(m_live_range.empty());
+  }
+
+  return ret;
+}
+
 bool RegUsageItem::assigned_once() const {
   assert(!unused());
   return m_use_dst.size() == 1;
@@ -119,16 +128,19 @@ int RegUsageItem::live_range() const {
 
 /**
  * @brief Get number of instructions from first assignment till last usage, inclusive.
- *
- * Following is mostly, _but not always_, true:
- *
- *     assertq(m_use_dst[0] + 1 == m_live_range.first(), "dst does not match live range", true);
  */
 int RegUsageItem::use_range() const {
   if (unused()) return 0;
 
   if (m_live_range.empty()) {
-    assertq(m_use_dst.size() == 1, "Live range empty, multiple dst's", true);
+/*
+    // Canary in introduceAccum()
+    if (m_use_dst.size() > 1) {
+      // see class Note 1.
+      info << "use_range live range empty, multiple dst's: " << dump();
+    }
+*/
+
     return 1;
   }
 
@@ -156,6 +168,12 @@ int RegUsageItem::first_dst() const {
  */
 int RegUsageItem::first_usage() const {
   assert(!m_use_dst.empty());
+
+  if (m_live_range.empty() && m_use_dst.size() > 1) {
+    //info << "first_usage live range empty, multiple dst's";
+    return m_use_dst.back(); // This is a lie; see class Note 1.
+  }
+
   return m_use_dst[0];         // This assumes that first dst is lowest number
 }
 
@@ -166,7 +184,11 @@ int RegUsageItem::first_usage() const {
 int RegUsageItem::last_usage() const {
   assert(m_src_range.first() == -1 || m_src_range.first() >= first_dst());
 
-  if (only_assigned())       return first_dst();
+  if (only_assigned()) {
+    // In this case this is the correct response; see class Note 1 anyway.
+    return m_use_dst.back();
+  }
+
   if (!m_live_range.empty()) return m_live_range.last();
   if (!m_src_range.empty())  return m_src_range.last();
 
