@@ -296,7 +296,8 @@ void handle_condition_tags(V3DLib::Instr const &src_instr, Instructions &ret) {
   bool is_final_where_cond = contains(str, "where condition final");
 
   if (!is_final_where_cond) {
-    ret.back().set_push_tag(setCond);
+    //warn << "!is_final_where_cond";
+    ret.back().set_push_tag(setCond).comment("v3d final where cond");;
     return;
   }
 
@@ -304,6 +305,9 @@ void handle_condition_tags(V3DLib::Instr const &src_instr, Instructions &ret) {
   // Process final where condition
   // In this case, condition flag must be pushed for both add and mul alu.
   //
+  warn << "Process final where condition";
+  breakpoint;  // Looks like this is never reached? Warn me when it happens
+
   ret.back().set_push_tag(setCond);
 
   Instr tmp_instr;
@@ -313,7 +317,8 @@ void handle_condition_tags(V3DLib::Instr const &src_instr, Instructions &ret) {
   assert(src_instr.ALU.srcA.is_reg());
   auto reg = encodeSrcReg(src_instr.ALU.srcA.reg());
   assert(reg);
-  tmp_instr = nop().sub(*dst, *reg, SmallImm(0)).pushz();
+  tmp_instr = sub(*dst, *reg, SmallImm(0)).pushz();
+             //nop().sub(*dst, *reg, SmallImm(0)).pushz();
 
   ret << tmp_instr;
 }

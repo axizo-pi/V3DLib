@@ -1,11 +1,11 @@
 #include "Optimizations.h"
-#include <iostream>
 #include "Liveness.h"
 #include "Support/Platform.h"
 #include "Target/Subst.h"
 #include "Support/Timer.h"
 #include "Support/basics.h"
 #include "Support/Helpers.h"  // contains()
+#include <iostream>
 
 namespace V3DLib {
 
@@ -25,20 +25,16 @@ void replace_acc(Instr::List &instrs, RegUsageItem &item, int var_id, int acc_id
     renameUses(instr, current, replace_with);
   }
 
-  // DANGEROUS! Do not use this value downstream.   
-  // Currently stored for debug display purposes only! 
   item.reg = replace_with;    
+  //warn << "replace_acc replaced item: " << item.dump();
 }
 
 
 /**
- * Not as useful as I would have hoped. range_size > 1 in practice happens, but seldom.
+ *
  */
 int peephole_0(int range_size, Instr::List &instrs, RegUsage &allocated_vars) {
-  if (range_size == 0) {
-    warn << "peephole_0(): range_size == 0 passed in. This does nothing, not bothering";
-    return 0;
-  }
+  if (range_size == 0) return 0;  // Does nothing, not bothering
 
   int subst_count = 0;
 
@@ -57,21 +53,20 @@ int peephole_0(int range_size, Instr::List &instrs, RegUsage &allocated_vars) {
       continue;
     }
 
-    //
-    // NOTE: There may be a slight issue here:
-    //       in line of first use, src acc's may be used for vars which have
-    //       last use in this line. I.e. they would be free for usage in this line.
-    //
-    // This is a small thing, perhaps for later optimization
-    //
+    // Check instructions for unused accumulator
     int acc_id = instrs.get_free_acc(item.first_usage(), item.last_usage());
-
     if (acc_id == -1) {
+      warn << "peephole_0: No accumulators available";
       continue;
     }
 
-    Reg replace_with(ACC, acc_id);
+    // Check if the given ACC has not been assigned in the meantime
+    if (allocated_vars.check_overlap_usage(Reg(ACC, acc_id), item)) {
+      warn << "acc_id: " << acc_id << " already in use, can't assign";
+      continue;
+    }
 
+    // This also writes the used accumulator to the RegUsage list.
     replace_acc(instrs, item, var_id, acc_id);
 
     subst_count++;
@@ -139,48 +134,12 @@ int peephole_1(Liveness &live, Instr::List &instrs, RegUsage &allocated_vars) {
     renameUses(instr, current, replace_with);
     instrs[i-1] = prev;
     instrs[i]   = instr;
-
+/*
+    warn << "peephole_1 post:\n"
+         << "  " << instrs[i-1].dump()
+         << "  " << instrs[i].dump();
+*/
     // DANGEROUS! Do not use this value downstream.   
-    // Currently stored for debug display purposes only! 
-    allocated_vars[def].reg = replace_with;    
-
-    subst_count++;
-  }
-
-  return subst_count;
-}
-
-/**
- * Replace assign-only variables with an accumulator
- */
-int peephole_2(Liveness &live, Instr::List &instrs, RegUsage &allocated_vars) {
-  int subst_count = 0;
-
-  for (int i = 1; i < instrs.size(); i++) {
-    Instr instr = instrs[i];
-    if (!instr.has_registers()) continue;  // Doesn't help much
-
-    // Guard for this special case for the time being.
-    // It should actually be possible to load a uniform in an accumulator,
-    // not bothering right now.
-    if (instr.isUniformLoad()) {
-      continue;
-    }
-
-    Reg dst = instr.dst_a_reg();
-    if (dst.tag == NONE) continue;
-    RegId def = dst.regId;
-
-    if (!allocated_vars[def].only_assigned()) continue;
-
-    Reg current(REG_A, def);
-    Reg replace_with(ACC, instrs.get_free_acc(i, i));
-    assert(replace_with.regId != -1);
-
-    instr.rename_dest(current, replace_with);
-    instrs[i] = instr;
-
-    // DANGEROUS! Do not use this value downstream (remember why, old fart?).   
     // Currently stored for debug display purposes only! 
     allocated_vars[def].reg = replace_with;    
 
@@ -210,7 +169,8 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
       auto const &reg_usage = live.reg_usage()[instr.dest().regId];
 
       if (instr.dest().is_special()) {
-        info << "combineImmediates special dest register, not combinining, instr: " << instr.dump();
+        info << "combineImmediates special dest register, not combinining, "
+             << " instr: " << instr.mnemonic(false);
         continue;
       }
 
@@ -245,7 +205,9 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
         }
 
         if (can_remove) {
-          info << "combineImmediates can_remove, instr: " << instr.dump();
+          // Enable this log when working on this function
+          //info << "combineImmediates can_remove, "
+          //     << "instr: " << instr.mnemonic(false);
           instrs.set_skip(i);
         }
       }
@@ -308,8 +270,8 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
 
       if (num_subsitutions > 0) {
         last_use = j;
+        Log::debug << "Setting skip on instruction at " << j;
 
-        warn /*Log::debug*/ << "Setting skip on instruction at " << j; // TODO revert to debug when checked
         instrs.set_skip(j);
       }
     }
@@ -322,7 +284,9 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
 
 
 /**
- * @brief Optimisation passes that introduce accumulators
+ * @brief Optimisation passes that introduce accumulators.
+ *
+ * This is not called for `vc7`, which has no accumulators.
  *
  * @param allocated_vars write param; note which vars have an accumulator registered
  * @return               Number of substitutions performed
@@ -342,32 +306,93 @@ int introduceAccum(Liveness &live, Instr::List &instrs) {
   RegUsage &allocated_vars = live.reg_usage();
 
 #ifdef DEBUG
-  // Paranoia safeguard; reg's should not be allocated already
+  //
+  // Paranoia safeguards
+  //
   for (int i = 0; i < (int) allocated_vars.size(); i++) {
-    assert(allocated_vars[i].reg.tag == NONE);
+    auto &item = allocated_vars[i];
+
+    //reg's should not be allocated already
+    assert(item.reg.tag == NONE);
+/*
+    // TODO fix this on vc6
+    // Single range has only a dst register set
+    if (item.use_range() == 1) {
+      assert(item.assigned_once());
+    }
+*/
+
+    //
+    // Warn me when a variable is dst-only and has multiple dst's.
+    // See class RegUsageItem Note 1.
+    //
+    // vc6: QPU Id and QPU Num will not be flagged as a special case, where possible.
+    //
+    const int QPU_MAX = 15;  // Top of QPU Id/Num test. Value empirically determined
+
+    if (item.only_assigned() && item.use_dst().size() > 1) {
+      // vc6: QPU Id and QPU Num special case
+      if (Platform::compiling_for_vc6() && item.use_dst()[0] == 0 && item.use_dst().back() <= QPU_MAX) {
+        continue;
+      }
+
+      std::string buf;
+      buf << "Multiple dst's: " << i << ": " << item.dump() << "\n";
+
+      // Show the lines where this happens
+      for (int dst: item.use_dst()) {
+        buf << "  Line " << dst << ": " << instrs[dst].mnemonic(false) << "\n";
+      }
+
+      info << buf;
+    }
   }
 #endif // DEBUG
 
+  std::string subst_buf;
   int subst_count = 0;
-  int const MAX_RANGE_SIZE = 15;  // 10 -> so that tmp var in sin_v3d() gets replaced
 
-  // Picks up a lot usually, but range_size > 1 seldom results in something
+  // Should be >= 2 for any effective use
+  // >= 10 so that tmp var in sin_v3d() gets replaced
+  int const MAX_RANGE_SIZE = 4; // 8; //= 15;
+
+  //
+  // Picks up a lot usually
+  //
+  subst_buf << "peephole_0 max: " << MAX_RANGE_SIZE << "\n";
+
   for (int range_size = 1; range_size <= MAX_RANGE_SIZE; range_size++) {
     int count = peephole_0(range_size, instrs, allocated_vars);
+
+    subst_buf << "  " << range_size << ": " << count << "\n";
     subst_count += count;
   }
+  subst_buf << "\n";
 
-  // This peephole still does a lot of useful stuff
+  // 
+  // This peephole still does useful stuff.
+  //
+  // Tons of substitutions when peephole_0 disabled.
+  // Works great on vc4, on vc6 less so but cases still get caught.
+  // 
   {
+
     int count = peephole_1(live, instrs, allocated_vars);
+
+    if (MAX_RANGE_SIZE > 4 && count > 0) {
+      warn << "peephole_1 fired! count: " << count;
+    }
+    subst_buf << "peephole_1: " << count << "\n";
+
     subst_count += count;
   }
 
-  // And some things still get done with this peephole, regularly 1 or 2 per compile
-  {
-    int count = peephole_2(live, instrs, allocated_vars);
-    subst_count += count;
-  }
+
+  info << "\n===========================================\n"
+       << "introduceAccum substitution counts\n"
+       << "----------------------------------\n"
+       << subst_buf
+       << "===========================================\n";
 
   return subst_count;
 }

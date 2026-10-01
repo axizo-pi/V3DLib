@@ -204,7 +204,7 @@ void HeapManager::dealloc_array(FreeRange const in_range) {
     msg << "HeapManager::dealloc_array(): "
         << "range to deallocate " << in_range.dump() << " "
         << "overlaps with free range " << cur.dump();
-    assertq(msg);
+    assertq(false, msg);
   }
 #endif
 /*  

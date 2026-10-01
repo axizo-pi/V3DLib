@@ -53,18 +53,28 @@ std::string get_assigned_only_list(RegUsage const &alloc_list) {
 
 }  // anon namespace
 
+
 ///////////////////////////////////////////////////////////////////////////////
 // Class RegUsageItem
 ///////////////////////////////////////////////////////////////////////////////
 
 bool RegUsageItem::unused() const {
-  return (use_dst.empty() && src_range.count() == 0);
+  return (m_use_dst.empty() && m_src_range.count() == 0);
 }
 
 
+bool RegUsageItem::only_assigned() const  {
+  bool ret =!m_use_dst.empty() && m_src_range.count() == 0;
+  if (ret) {
+    assert(m_live_range.empty());
+  }
+
+  return ret;
+}
+
 bool RegUsageItem::assigned_once() const {
   assert(!unused());
-  return use_dst.size() == 1;
+  return m_use_dst.size() == 1;
 }
 
 
@@ -77,15 +87,15 @@ std::string RegUsageItem::dump() const {
   }
 
   std::string dst_list;
-  for (int i = 0; i < (int) use_dst.size(); ++i) {
+  for (int i = 0; i < (int) m_use_dst.size(); ++i) {
     if (i != 0) {
       dst_list << ", ";
     }
-    dst_list << use_dst[i];
+    dst_list << m_use_dst[i];
   }
 
   ret << reg.dump() << "; "
-      << "src(" << src_range.dump() << "); "
+      << "src(" << m_src_range.dump() << "); "
       << "dst: {" << dst_list << "}; "
       << "live(" << m_live_range.dump() << ")";
 
@@ -94,21 +104,13 @@ std::string RegUsageItem::dump() const {
 
 
 void RegUsageItem::add_dst(int n, bool is_cond_assign) {
-  assertq(use_dst.empty() || use_dst.back() < n, "RegUsageItem::add_dst() failed");
-/*
-  // See disabled code where this is used
+  assertq(m_use_dst.empty() || m_use_dst.back() < n, "RegUsageItem::add_dst() failed");
 
-  if (is_cond_assign && !use_dst.empty()) {
-    // Conditional assign counts as src access as well (remember why, old man?)
-    add_src(n);
-  }
-*/
-
-  use_dst << n;
+  m_use_dst << n;
 }
 
 
-void RegUsageItem::add_src(int n)  { src_range.add(n); }
+void RegUsageItem::add_src(int n)  { m_src_range.add(n); }
 void RegUsageItem::add_live(int n) { m_live_range.add(n); }
 
 
@@ -125,98 +127,54 @@ int RegUsageItem::live_range() const {
 
 
 /**
- * Number of instructions from first assignment till last usage, inclusive.
+ * @brief Get number of instructions from first assignment till last usage, inclusive.
  */
 int RegUsageItem::use_range() const {
   if (unused()) return 0;
 
-#if 0
-  if (only_assigned()) return 0;  // This is wrong for the normal case, used to solve issue with this code 
-
-  //
-  // Alternate way of calculating use range, without touching live range
-  //
-  // The idea here is to get rid of liveness analysis before optimization.
-  // However, there are just so many cases to handle. The last one I ran into is (pseudo code):
-  //
-  //    A0 = 0
-  //    If something
-  //      A0 = 1
-  //    End
-  //
-  //    dst = cmd A0,...
-  //
-  //  - As far as liveness is concerned, A0 is live from 'A0 = 0' onward, which is correct
-  //  - src/dst analysis, however, does not see the If and infers that liveness is from `A0 = 1` onwards.
-  //  - As far as dst-use is concerned, this is a non-issue, because A0 is used way past any assignments to it.
-  //    Question is, how to handle?
-  //
-  // Stopped this for now because it is burning my brain cells.
-  //
-
-  // determine first write before src usage (there might be a dummy write before
-  assertq(src_range.first() != -1, "oops");
-  int first_write = -1;
-  for (auto dst : use_dst) {
-    if (dst >= src_range.first()) break;  // >= because instr can have reg as src as well as dst (eg. add src, src, 1)
-    first_write = dst;
-  }
-  assert(first_write != -1);
-
-  // Live range goes in after found dst
-  int first_1 = first_write + 1;
-  int last_1 = src_range.last();
-  if (last_1 == -1) {                        // Guard for case where var is write only (eg. dummy output)
-    last_1 = first_1;
-  }
-#endif
-
-  //
-  // Original way of determining use range
-  //
-  int first = m_live_range.first();
-  //if (!use_dst.empty()) first = use_dst[0];  // Guard for case where var is read only (eg. dummy input)
-  if (first == -1) {
-    if (!use_dst.empty()) {
-      first = use_dst[0] + 1;  // Guard for case where var is read only (eg. dummy input)
+  if (m_live_range.empty()) {
+/*
+    // Canary in introduceAccum()
+    if (m_use_dst.size() > 1) {
+      // see class Note 1.
+      info << "use_range live range empty, multiple dst's: " << dump();
     }
+*/
+
+    return 1;
   }
 
-  int last = m_live_range.last();
-  if (last == -1) {                        // Guard for case where var is write only (eg. dummy output)
-    last = first;
-  }
+  assertq(!m_use_dst.empty(), "No dst's", true);
 
-#if 0
-  assert(first_1 == first);
-  assert(last_1 <= last);  // Inequality: live range need not be the same as src usage.
-                           // This happens with liveness analysis with conditional loop, where var is used
-                           // only within that loop. The liveness of that var goes until the end of the loop,
-                           // past last src usage.
-                           //
-                           // This looks like a bug in liveness, not sure.
-                           // But then again, liveness is something of a black magic for me.
-#endif
-
-  int ret = (last - first + 1);
-  assert(ret > 0);  // really expecting something here
+  int first = m_use_dst[0];
+  int last  = m_live_range.last();
+  int ret   = (last - first + 1);
+  assert(ret > 0);
   return ret;
 }
 
 
+/**
+ * @return first dst if present, -1 otherwise
+ */
 int RegUsageItem::first_dst() const {
-  assert(!use_dst.empty());
-  return use_dst[0];
+  if (m_use_dst.empty()) return -1;
+  return m_use_dst[0];
 }
 
 
 /**
- * Return the first line in which this variable is used (either as src or dst)
+ * @brief Return the first line in which this variable is used (either as src or dst)
  */
 int RegUsageItem::first_usage() const {
-  assert(src_range.first() == -1 || src_range.first() >= first_dst());
-  assert(!use_dst.empty());
-  return use_dst[0];
+  assert(!m_use_dst.empty());
+
+  if (m_live_range.empty() && m_use_dst.size() > 1) {
+    //info << "first_usage live range empty, multiple dst's";
+    return m_use_dst.back(); // This is a lie; see class Note 1.
+  }
+
+  return m_use_dst[0];         // This assumes that first dst is lowest number
 }
 
 
@@ -224,28 +182,52 @@ int RegUsageItem::first_usage() const {
  * Get last line number for which variable is used (either as src or dst)
  */
 int RegUsageItem::last_usage() const {
-  if (only_assigned()) return first_dst();
-  return src_range.last();
+  assert(m_src_range.first() == -1 || m_src_range.first() >= first_dst());
+
+  if (only_assigned()) {
+    // In this case this is the correct response; see class Note 1 anyway.
+    return m_use_dst.back();
+  }
+
+  if (!m_live_range.empty()) return m_live_range.last();
+  if (!m_src_range.empty())  return m_src_range.last();
+
+  return -1;
 }
 
 
+/**
+ * @return true if ranges overlap, false otherwise.
+ */
 bool RegUsageItem::use_overlaps(RegUsageItem const &rhs) const {
-  return !((first_usage() > rhs.last_usage()) || (last_usage() < rhs.first_usage()));
+  if (first_usage() > rhs.last_usage()) {
+    return false;
+  }
+
+  if (first_usage() < rhs.first_usage()) {
+    return last_usage() > rhs.first_usage();
+  }
+
+  warn << "use_overlaps lhs: " << dump() << ", rhs: " << rhs.dump();
+
+  // All other cases overlap
+  assert(first_usage() >= rhs.first_usage() && first_usage() <= rhs.last_usage()); 
+  return true;
 }
 
 
 void RegUsageItem::reset() {
   reg.tag = NONE;
-  src_range.reset();
-  use_dst.clear();
+  m_src_range.reset();
+  m_use_dst.clear();
   m_live_range.reset();
 }
 
 
 bool RegUsageItem::empty() const {
   return ( reg.tag == NONE
-        && src_range.empty()
-        && use_dst.empty()
+        && m_src_range.empty()
+        && m_use_dst.empty()
         && m_live_range.empty()
   );
 }
@@ -275,16 +257,21 @@ RegUsageItem &RegUsage::get(int i) {
   }
 
 #ifdef DEBUG
-  // at() is useful because it does bounds checking, which
-  // is also the reason it is inefficient
+  // at() is useful because it does bounds checking,
+  // which is also the reason it is inefficient
   return at(i);
 #else
   return (*this)[i];
 #endif
 }
 
+RegUsageItem const &RegUsage::get(int i) const {
+  assert(i < (int) size());
+  return (*this)[i];
+}
 
-void RegUsage::set_used(Instr::List &instrs) {
+
+void RegUsage::set_used(Instr::List const &instrs, bool do_accumulators) {
 #ifdef DEBUG
   //Log::warn << "RegUsage.set_used() size: " << (int) size();
 
@@ -296,17 +283,24 @@ void RegUsage::set_used(Instr::List &instrs) {
   for (int i = 0; i < instrs.size(); i++) {
     if (!instrs[i].has_registers()) continue;
 
-    UseDef out(instrs[i]);
+    UseDef out(instrs[i], do_accumulators, false);
+    //warn << "set_used out " << i << ": " << out.dump();
 
     if (out.def.tag != NONE) {
-      //assert(out.def.regId < (int) size());
-      get(out.def.regId).add_dst(i, instrs[i].isCondAssign());
+      //warn << "add_dst: " << i;
+      assert(out.def.regId < (int) size());
+
+      auto &item = get(out.def.regId);
+      item.add_dst(i, instrs[i].isCondAssign());
     }
 
     for (auto r : out.use) {
       //warn << "add_src: " << i;
-      //assert(r < (int) size());
-      get(r).add_src(i);
+      assert(r < (int) size());
+
+      auto &item = get(r);
+      item.add_src(i);
+      //warn << "add_src item: " << item.dump();
     }
   }
 }
@@ -314,10 +308,13 @@ void RegUsage::set_used(Instr::List &instrs) {
 
 void RegUsage::set_live(Liveness &live) {
   for (int i = 0; i < live.size(); i++) {
-    auto &item = live[i];
+    auto &item = live[i];  // item holds list of accumulator indexes.
+    //warn << "set_live " << i << ": " << item.dump();
 
     for (auto it : item) {
       auto &item2 = (*this)[it];
+      //warn << "item2: " << item2.dump();
+
       item2.add_live(i);
     }
   }
@@ -328,16 +325,19 @@ void RegUsage::set_live(Liveness &live) {
  * Check internal consistency of used variables
  *
  * If anything is detected here, it is a compile error.
+ *
+ * ===================================================
+ *
+ * - Case 'instruction variables which are assigned but never used'
+ *   is pretty common and not much of an issue any more.
+ *   E.g. It occurs if condition flags need to be set and the result of the 
+ *   operation is discarded.  
+ *   In all honesty, it would be better to write to the NOP register in this case (TODO).
+ *
+ *   Does not need to be tested.
  */
 void RegUsage::check() const {
   std::string ret;
-
-  // Case 'instruction variables which are assigned but never used'
-  // is pretty common and not much of an issue (any more).
-  // E.g. It occurs if condition flags need to be set and the result of the 
-  // operation is discarded.
-  //
-  // Does not need to be tested.
 
   {
     std::string tmp = get_never_assigned_list(*this);
@@ -449,22 +449,117 @@ std::string RegUsage::dump_use_ranges() const {
 
 
 /**
- * Check if found acc does not conflict with other uses of this acc.
+ * @brief Check if found acc does not conflict with other uses of this acc.
+ *
  * It may have been assigned to another var whose use-range overlaps with current var.
  *
- * This is something waiting to happen. It has not occured yet.
- * This test serves as a canary; if it fires, we need to do something about the situation.
+ * @return true if overlap detected, false otherwise
  */
-void RegUsage::check_overlap_usage(Reg acc, RegUsageItem const &item) const {
+bool RegUsage::check_overlap_usage(Reg acc, RegUsageItem const &item) const {
+  //warn << "check_overlap_usage checking " << acc.dump();
   assert(acc.tag == ACC);
   assert(acc.regId >= 0);
 
   for (int i = 0; i < (int) size(); ++i) {
     auto const &cur = (*this)[i];
     if (cur.reg != acc) continue;
+    //warn << "Same ACC: " << cur.reg.dump();
 
-    assertq(!cur.use_overlaps(item), "Detected conflicting usage of replacement acc");
+    if (cur.use_overlaps(item)) {
+      warn << "check_overlap_usage: Detected conflicting usage of replacement acc";
+      return true;
+    }
   }
+
+  return false;
+}
+
+
+/**
+ * @brief Determine dst usage range per accumulator.
+ *
+ * Find the largest dst before instruction and lowest after.
+ *
+ * **TODO:** To do it properly, you need the explicit src lines as well.
+ *
+ * @return index of (lowest) available accumulator if found, -1 otherwise.
+ */
+int RegUsage::dst_range(int line_number) const {
+  //info << "Called dst_range line_number: " << line_number;
+
+  int first_unused_acc = -1;
+
+  // This loop checks dst's only! Should really be checking src's as well (TODO)
+  for (int i = 0; i < (int) size(); ++i) {
+    auto const &item = get(i);
+    if (item.unused()) {
+      first_unused_acc = i;  // Found available acc
+      break;
+    }
+
+    auto &use_dst = item.use_dst();
+    if (use_dst.empty()) continue;
+
+    int bottom_dst = -1;
+    int top_dst = -1;
+
+    for (int j = 0; j < (int) use_dst.size(); ++j) {
+      int val = use_dst[j];
+
+      if (val <= line_number && (bottom_dst == -1 || val > bottom_dst)) {
+        bottom_dst = val;
+      }
+
+      if (val > line_number && (top_dst == -1 || val < top_dst)) {
+        top_dst = val;
+      }
+    }
+
+    bool available = true;
+
+    if (bottom_dst == -1) {
+      // This is is fine; no assignment to current acc before this line.
+      // It is free for use.
+    } else if (top_dst != -1) {
+      available = false;
+    } else if (top_dst == -1) {
+      // Check src range to see if acc is valid; this can be done better.
+      // This is a patch-up job; better would be to test explicit src line numbers (TODO)
+      if (item.src_range().last() >= line_number) {
+        available = false;
+      }
+    } else {
+      // Not expecting this to be ever called again,
+      // but we're paranoid so keeping it in.
+      std::string msg = "RegUsage::dst_range(): Handle this case when encountered";
+
+      warn << msg << "\n  "
+           << "acc" << i << " "
+           << "bottom: " << bottom_dst << ", "
+           << "top: "    << top_dst    << "\n  "
+           << "item: "   << item.dump();
+
+      assertq(false, msg);
+    }
+
+    if (available) {
+      // Found available accumulator
+      info << "dst_range: acc" << i << " available";
+      first_unused_acc = i;
+      break;
+    }
+  }
+
+  if (first_unused_acc > 4) {
+    warn << "dst_range blocking special accumulator acc5 for now.";
+    first_unused_acc = -1;
+  }
+
+  if (first_unused_acc > 3) {
+    warn << "dst_range returning special accumulator acc4 or acc5; check for conflicts.";
+  }
+
+  return first_unused_acc;
 }
 
 }  // namespace V3DLib

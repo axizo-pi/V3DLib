@@ -1758,7 +1758,8 @@ void combine_old(Instructions &instructions) {
       bool success = alu_to_mul_alu(mul_instr, dst);
 
       if (success) {
-        Log::debug << "Converted: " << dst.mnemonic(false);
+				// This log only useful when working on this function
+        //Log::debug << "Converted: " << dst.mnemonic(false);
 
         instr1.skip(true);
         instr2 = dst;
@@ -1784,7 +1785,7 @@ void combine_old(Instructions &instructions) {
 
 
   if (combine_count > 0) {
-    cdebug << "Combined " << combine_count << " v3d instructions";
+    cdebug << "combine_old() combined " << combine_count << " v3d instructions";
   }
 }
 

@@ -65,7 +65,7 @@ private:
  *    ...
  *    timers.stop("label");
  *    ...
- *    timers.end();
+ *    timers.end();         // Display recorded values
  *
  * Timers can be started and stopped as often as needed.
  */
@@ -78,6 +78,7 @@ public:
     Average
   };
 
+  Timers() : m_total("Total") {}
   Timer &start(std::string const &label);
   void stop(std::string const &label);
   void end(bool show_minmax = false);
@@ -91,6 +92,7 @@ private:
     bool       ignore_case = true;
   } m_sort_data;
 
+  Timer m_total;
   std::vector<Timer> m_list;
 
   int find(std::string const &label);

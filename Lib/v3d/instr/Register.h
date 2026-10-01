@@ -12,7 +12,7 @@ class Register;
 class DestReg {
 public:
   DestReg() : m_used(false) {}
-  DestReg(uint8_t waddr, bool magic_write) : m_used(true),  m_waddr(waddr), m_magic_write(magic_write) {}
+  DestReg(uint8_t waddr, bool magic_write);
 
   bool used() const { return m_used; }
 
@@ -25,6 +25,7 @@ public:
 
   bool is_magic() const { return m_magic_write; }
   uint8_t raddr() const { return  m_waddr; }
+  bool is_devnull() const;
 
   std::string dump() const;
 

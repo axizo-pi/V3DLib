@@ -3,6 +3,7 @@
 #include "v3d/instr/SmallImm.h"  // float_to_opcode_value()
 #include "Support/Platform.h"
 #include "Support/basics.h"
+#include "Liveness/Liveness.h"  // ::get_free_acc()
 
 using namespace V3DLib::Target::instr;
 using V3DLib::v3d::instr::SmallImm;
@@ -28,46 +29,77 @@ bool hasRegFileConflict(Instr const &instr) {
 
 
 /**
- * First pass for satisfy constraints: insert move-to-accumulator instructions
+ * @brief Insert move-to-accumulator instructions.
+ *
+ * First pass for satisfy constraints.
+ *
+ * This only needs to be done for `vc4`:
+ * - Only `vc4` has two register files
+ * - Only `vc4` needs a NOP for combined read/write to same register in one instruction
  */
 Instr::List insertMoves(Instr::List &instrs) {
   assert(Platform::compiling_for_vc4());  // Not an issue for v3d
-
   using namespace V3DLib::Target::instr;
 
-  Instr::List newInstrs(instrs.size() * 2);
+  int subst_count_1 = 0;
+  int subst_count_2 = 0;
+  int subst_count_3 = 0;
 
-  Reg acc = ACC0();
+  Instr::List newInstrs(instrs.size() * 2);
 
   for (int i = 0; i < instrs.size(); i++) {
     using namespace Target::instr;
     Instr instr = instrs[i];
 
     if (instr.tag == ALU && instr.ALU.srcA.is_imm() &&
-      instr.ALU.srcB.is_reg() && instr.ALU.srcB.reg().regfile() == REG_B) {
-
+        instr.ALU.srcB.is_reg() && instr.ALU.srcB.reg().regfile() == REG_B) {
+      //
       // Insert moves for an operation with a small immediate whose
       // register operand must reside in reg file B.
+      //
+      Reg acc = get_free_acc(instrs, i);
+
       newInstrs << mov(acc, instr.ALU.srcB)
                 << instr.clone().src_b(acc);
+
+      subst_count_1++;
     } else if (instr.tag == ALU && instr.ALU.srcB.is_imm() &&
                instr.ALU.srcA.is_reg() && instr.ALU.srcA.reg().regfile() == REG_B) {
+      //
       // Insert moves for an operation with a small immediate whose
       // register operand must reside in reg file B.
+      //
+      Reg acc = get_free_acc(instrs, i);
+
       newInstrs << mov(acc, instr.ALU.srcA)
                 << instr.clone().src_a(acc);
+
+      subst_count_2++;
     } else if (hasRegFileConflict(instr)) {
+      //
       // Insert moves for operands that are mapped to the same reg file.
       //
       // When an instruction uses two (different) registers that are mapped
       // to the same register file, then remap one of them to an accumulator.
+      //
+      Reg acc = get_free_acc(instrs, i);
+
       newInstrs << mov(acc, instr.ALU.srcA)
                 << instr.clone().src_a(acc);
+
+      subst_count_3++;
     } else {
       newInstrs << instr;
     }
-    
   }
+
+  info << "\n===========================================\n"
+       << "insertMoves substitution counts\n"
+       << "-------------------------------\n"
+       << "Count 1: " << subst_count_1 << "\n"
+       << "Count 2: " << subst_count_2 << "\n"
+       << "Count 3: " << subst_count_3 << "\n"
+       << "===========================================\n";
 
   return newInstrs;
 }
@@ -113,29 +145,6 @@ Instr::List translate_rot(Instr::List &instrs) {
 Instr::List insertNops(Instr::List &instrs) {
   Instr::List newInstrs(instrs.size() * 2);
 
-/*
-  // NOT REQUIRED - Nice try, anyway. Might have use in the future
-
-  auto is_tmua_recv = [&instrs] (int i) -> bool {
-    if (i < 0) return false;
-    if (i + 1 >= instrs.size()) return false;  // Testing 2 instructions
-
-    // Detect S[TMUA] <- or(?, ?)
-    auto &n = instrs[i];
-    if (!(n.tag == ALU
-       && n.dst_reg() == Reg::TMUA
-       && n.ALU.op == A_BOR
-    )) return false;
-    //warn << "instr[" << i << "] TMUA: " << n.dump();
-
-    auto &n2 = instrs[i + 1];
-    if (n2.tag != RECV) return false;
-    //warn << "instr[" << i << " + 1] TMUA: " << n2.dump();
-
-    return true;
-  };
-*/  
-
   auto is_rf_dest = [&instrs] (int i) -> bool  {
     if (i < 0) return false;
     if (i + 1 >= instrs.size()) return false;  // Testing 2 instructions
@@ -157,17 +166,6 @@ Instr::List insertNops(Instr::List &instrs) {
     newInstrs << instr;
 
     if (Platform::compiling_for_vc4()) {
-/*
-      // Add wait cycles for TMU read.
-      // This happens elsewhere for v3d.
-      if (is_tmua_recv(i-1)) {
-        warn << i << ": TMUA RECV detected";
-
-        newInstrs << Instr::nop()
-                  << Instr::nop()
-                  << Instr::nop();
-      }
-*/    
       // 
       // For vc4, if an rf-register is set, you must wait one cycle before the value is available.
       // If an rf-register is set, and used immediately in the next instruction, insert a NOP in between.
@@ -588,7 +586,7 @@ void vc4_satisfy(Instr::List &instrs) {
 
   newInstrs = insertMoves(newInstrs);
   newInstrs = insertNops(newInstrs);
-  instrs = removeVPMStall(newInstrs);
+  instrs    = removeVPMStall(newInstrs);
 }
 
 
@@ -599,7 +597,7 @@ void v3d_satisfy(Instr::List &instrs) {
   Instr::List newInstrs = instrs;
 
   newInstrs = insertNops(newInstrs);
-  instrs = removeVPMStall(newInstrs);
+  instrs    = removeVPMStall(newInstrs);
 }
 
 }  // namespace V3DLib

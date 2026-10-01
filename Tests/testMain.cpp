@@ -12,6 +12,7 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 #include "Support/debug.h"
+#include "Support/Timer.h"
 #include "global/log.h"     // set_level()
 
 //#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
@@ -22,6 +23,11 @@
 int main(int argc, char** argv) {
   Log::set_log_dir("log");
   Log::set_log_file("unit_tests.log");
+
+  Log::info << "\n"
+            << "==========================================\n"
+            << "= Start Unit Test Run\n"
+            << "==========================================\n";
 
   doctest::Context context;
   context.applyCommandLine(argc, argv);
@@ -42,11 +48,13 @@ int main(int argc, char** argv) {
   //
   context.setOption("order-by", "name");
 
-  int res = context.run();              // run
+  int res = context.run();
+
+  V3DLib::timers.end();
 
   if(context.shouldExit()) {            // important - query flags (and --exit) rely on the user doing this
     return res;                         // propagate the result of the tests
   }
-   
+
   return 0;
 }

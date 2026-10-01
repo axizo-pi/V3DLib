@@ -167,7 +167,7 @@ struct Instr : public InstructionComment {
   RegIdSet src_a_regs(bool set_use_where = false) const;
   bool is_dst_reg(Reg const &rhs) const;
   bool is_src_reg(Reg const &rhs) const;
-  bool has_dest() const { return (tag == InstrTag::LI || tag == InstrTag::ALU || tag == InstrTag::RECV); }
+  bool has_dest() const;
   bool rename_dest(Reg const &current, Reg const &replace_with);
 
   Instr &src_a(RegOrImm const &rhs) { assert(tag == InstrTag::ALU); ALU.srcA = rhs;  return *this; }

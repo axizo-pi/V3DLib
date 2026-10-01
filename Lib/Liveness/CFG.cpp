@@ -227,7 +227,7 @@ std::string CFG::dump() const {
 /**
  * Build a CFG for a given instruction sequence.
  */
-void CFG::build(Instr::List &instrs) {
+void CFG::build(Instr::List const &instrs) {
   assert(empty());
   //set_size(instrs.size());
   resize(instrs.size());

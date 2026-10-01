@@ -51,7 +51,7 @@ public:
   RegUsage &reg_usage() { return m_reg_usage; }
   RegIdSet &operator[](int index) { return get(index); }
 
-  void compute(Instr::List &instrs);
+  void compute(Instr::List const &instrs, bool do_accumulators = false);
   void computeLiveOut(InstrId i, RegIdSet &liveOut);
   std::string dump();
 
@@ -64,12 +64,13 @@ private:
 
   RegIdSet &get(int index) { return m_set[index]; }
   void clear();
-  void compute_liveness(Instr::List &instrs);
+  void compute_liveness(Instr::List const &instrs);
   void setSize(int size);
   bool insert(int index, RegIdSet const &set);
 };
 
 
+Reg get_free_acc(Instr::List const &instrs, int line_number);
 void allocate_registers(Instr::List &instrs, RegUsage const &alloc);
 
 }  // namespace V3DLib

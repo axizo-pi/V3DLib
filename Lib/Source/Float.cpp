@@ -325,13 +325,47 @@ FloatExpr min(FloatExpr a, FloatExpr b)       { return mkFloatApply(a, Op(MIN, F
  */
 FloatExpr max(FloatExpr a, FloatExpr b)       { return mkFloatApply(a, Op(MAX, FLOAT), b); }
 
+namespace {
+
+void add_inf(Float &ret, FloatExpr &x) {
+  if (Platform::compiling_for_vc7()) return;
+
+  Where (x == 0)
+    ret = Inf();
+  End
+}
+
+/**
+ * @brief Compensate return values for vc4 SFU functions.
+ *
+ * Specific for SFU functions: these return 0.0f instead of NaN or Inf.
+ */
+void add_nan_inf(Float &ret, FloatExpr &x) {
+  if (Platform::compiling_for_vc7()) return;
+
+  Where (x < 0)
+    ret = NaN();
+  End
+
+  add_inf(ret, x);
+}
+
+} // anon namespace
+
 
 /**
  * @brief For the Float parameter `x` return `1/x`.
  *
  * This is an `SFU` operation.
  */
-FloatExpr recip(FloatExpr x) { return mkFloatApply(x, Op(RECIP    , FLOAT)); }
+FloatExpr recip(FloatExpr x) {
+  Float ret;
+  ret = mkFloatApply(x, Op(RECIP    , FLOAT));
+
+  //add_inf(ret, x);
+
+  return ret;
+}
 
 
 /**
@@ -344,20 +378,7 @@ FloatExpr recipsqrt(FloatExpr x) {
   Float ret;
   ret = mkFloatApply(x, Op(RECIPSQRT, FLOAT));
 
-  if (!Platform::compiling_for_vc7()) {
-    //
-    // Specific for SFU functions: these return 0.0f instead of NaN or Inf.
-    // Compensate for this.
-    //
-
-    Where (x < 0)
-      ret = NaN();
-    End
-
-    Where (x == 0)
-      ret = Inf();
-    End
-  }
+  add_nan_inf(ret, x);
 
   return ret;
 }
@@ -387,9 +408,8 @@ namespace {
 /**
  * @brief For the Float parameter `x` return `tanh(x)`.
  *
- * This is a library function which internally uses `SFU` operation `exp()`.
- *
- * This fails at least on `vc7` for big numbers and returns NaN.
+ * This is a library function which internally uses `exp()`.
+ * `exp()` is an `SFU` operation on `vc4`.
  */
 FloatExpr tanh_sfu(FloatExpr x)      { return mkFloatApply(x, Op(TANH     , FLOAT)); }
 
@@ -401,7 +421,7 @@ FloatExpr tanh_sfu(FloatExpr x)      { return mkFloatApply(x, Op(TANH     , FLOA
  *
  * SFU call fails for large values of x.
  * For this reason, return +-1 in this case.
- * Cutoff value empirically determined to be abs(13.37).
+ * Cutoff value is empirically determined to be `abs(13.37)`.
  */
 FloatExpr tanh(FloatExpr x) {
   Float CUTOFF = 13.37f;

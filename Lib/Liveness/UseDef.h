@@ -25,7 +25,7 @@ struct UseDef {
   RegIdSet use;
   Reg def;
 
-  UseDef(Target::Instr const &instr, bool set_use_where = false);
+  UseDef(Target::Instr const &instr, bool do_accumulators, bool set_use_where);
   std::string dump() const;
 };   
 

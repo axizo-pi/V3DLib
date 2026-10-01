@@ -84,21 +84,18 @@ struct Stmt : public InstructionComment {
   public:
     std::string dump(bool show_comments = false, int indent = 0) const;
     Array &operator<<(Array const &b);
-
-    // Apparently only called for SEQ dump
-    std::string disp_intern(bool with_linebreaks, int seq_depth, bool show_comments) const;
   };
 
   Stmt(Tag in_tag) : tag(in_tag) {}
-
   ~Stmt();
 
   //
   // Need to be defined explicitly because of the necessity to return a reference.
   //
-  Stmt &header(std::string const &msg)     { InstructionComment::header(msg);  return *this; }
-  Stmt &sub_header(std::string const &msg) { InstructionComment::sub_header(msg);  return *this; }
-  Stmt &comment(std::string msg)           { InstructionComment::comment(msg); return *this; }
+  Stmt &header(std::string const &msg)     { InstructionComment::header(msg);     return *this; }
+  Stmt &sub_header(std::string const &msg) { InstructionComment::sub_header(msg); return *this; }
+  Stmt &comment(std::string msg)           { InstructionComment::comment(msg);    return *this; }
+  Stmt &footer(std::string msg)            { InstructionComment::footer(msg);     return *this; }
 
   std::string dump() const;
   std::string dump(bool show_comments, int indent = 0) const;
@@ -159,8 +156,8 @@ private:
 
   static Ptr create(Tag in_tag, Ptr s0, Ptr s1);
 
-  std::string disp_comments(std::string const &line, bool with_linebreaks, int seq_depth) const;
-  std::string disp_intern(bool with_linebreaks, int seq_depth = 0, bool show_comments = false) const;
+  std::string disp_comments(std::string const &line, int seq_depth) const;
+  std::string disp_intern(int seq_depth = 0, bool show_comments = false) const;
   bool check_blocks() const;
 };
 

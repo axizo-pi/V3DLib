@@ -93,8 +93,6 @@ namespace GlobalConstants {
  * @brief Reset the global var's before each new kernel compile
  */
 void reset() {
-  //info << "Called GlobalConstants::reset()";
-
   tag_64 = -1;
   tag_NaN = -1;
   tag_Inf = -1;
@@ -115,7 +113,7 @@ void init(Stmt::Array &src) {
 
     if (tag_64 != -1) {
       _64() = 64;                comment("Bit-value for 64");
-      buf << "_64, ";
+      //buf << "_64, ";          // Skip this logging, happens often
     }
 
     if (tag_NaN != -1) {
