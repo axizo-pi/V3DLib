@@ -4,6 +4,35 @@
 
 # Known Issues
 
+## Shared memory not freed on fatal error (`vc4`)
+
+**NOTE:** This issue is specific to `vc4`.  
+`v3d` uses a different method of handling shared memory and does not have this issue;
+the shared memory appears to be freed even on a fatal error.
+
+**Shared memory** are parts of main memory which are made accessible to external hardware components;
+in our case, of course, the `VideoCore`.
+
+In the ideal case, shared memory is allocated before use and neatly deallocated when done.
+In the real world, however, fatal errors _may_ occur and the deallocation is skipped.
+The shared memory is not freed, even after the given program terminates.
+
+If fatal errors happen often enough, the following error occurs:
+
+    FATAL: Failed to allocate vc4 shared memory.
+
+This error will repeat on every subsequent execution of any program using `V3DLib`.
+The only way to avoid this, is to shutdown and physically disconnect and reconnect the power.
+
+To alleviate this, `V3DLib` _uses exceptions as much as possible_, so that stacks are unwound 
+and the chance of shared memory deallocation is increased. However:
+
+  - I can not yet guarantee that usage of fatal exceptions is exhaustive.
+  - `assert()` calls, which test state conditions that should _always_ hold, are used
+    extensively and will result in fatal errors.
+  - In any case, karma has a way of introducing new fatal errors.
+
+
 ## Using TMU input and DMA output on `vc4`  using same or overlapping pointers invalidates memory
 
 This is a `vc4`-only issue. `v3d` has no DMA and also supports TMU writes.

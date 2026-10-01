@@ -86,20 +86,20 @@ I'm trying out alternatives, eg:
 #### - Float multiplication has been improved.
 
 - On `vc4`, float multiplication on the QPU _always rounds downwards_
-- On `vc6`, float multiplication rounds to the nearest value of the result
+- On `v3d`, float multiplication rounds to the nearest value of the result
 
-In other words, `vc6` will multiply as you would normally expect.
+In other words, `v3d` will multiply as you would normally expect.
 The result will be identical to float multiplication on the `ARM` processor.  
 With `vc4` however, small differences creep in, which accumulate with continued computation.
 
 #### - Integer multiplication improved
 
-The following code yields different results for `vc4` and `vc6`
+The following code yields different results for `vc4` and `v3d`
 
     Int a = 16;
     Int b = -1 * a;
     # vc4: b = 268435440
-    # vc6: b = -16
+    # v3d: b = -16
 
 This has to do with the integer multiply instruction working only on the lower 24 bits of integers.
 As a consequence, a negative value gets its ones-complement prefix chopped off,
@@ -107,11 +107,13 @@ and whatever is left is treated as an integer.
 
 #### - Setting of condition flags has changed
   * `vc4` - all conditions are set together, on usage condition to test is specified
-  * `vc6` - a specific condition to set is specified, on usage a generic condition flag is read
+  * `v3d` - a specific condition to set is specified, on usage a generic condition flag is read
 
 To elaborate:
 
-**vc4**: Each vector element has three associated condition flags:
+**vc4**
+
+Each vector element has three associated condition flags:
 
 - `N` - Negative
 - `Z` - Zero
@@ -121,11 +123,24 @@ These are set with a single bitfield in an ALU instruction.
 Each flag is explicitly tested in conditions.  
 _See: "VideoCore IV Architecture Reference Guide", section "Condition Codes", p. 28._
 
-**v3d**: Each vector element has two associated condition flags: `a` and `b`.
+**v3d**
 
-To set, a specific condition is specified in an instruction and the result is stored in `a`.
-The previous value of `a` is put in `b`.  
-_See: My brain after finally figuring this out._
+_I figured it out. My brain was hurting._
+
+The ADD-ALU and MUL-ALU each have separate condition flags, `ac`, and `mc`[^1].  
+To set these flags, you need to explicitly select `Z`, `N` or `C` to set.
+
+[^1]: This was a major source of confusion; setting the condition flag in the MUL-ALU 
+      does **not** set the condition flags in the ADD-ALU. Add/MUL condition flags
+      are entirely separate. This is also true for test flags `pf` and `uf`.
+
+When testing the conditions flags, the result of the test is put in `apf` or `mpf`, depending
+on if you're testing on the ADD or MUL ALU. The previous condition test is moved to
+respectively `auf` and `muf`.
+
+The important difference with `vc4` is that there is only one condition code per ALU.
+`vc4` has separate condition flags for `Z`, `N` or `C`.
+For `v3d` the value depends on the explicit cases of `Z`, `N` or `C` tested.
 
 
 ## Further Changes
