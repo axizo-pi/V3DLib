@@ -60,12 +60,12 @@ std::string get_assigned_only_list(RegUsage const &alloc_list) {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool RegUsageItem::unused() const {
-  return (m_use_dst.empty() && m_src_range.count() == 0);
+  return (m_use_dst.empty() && m_use_src.size() == 0);
 }
 
 
 bool RegUsageItem::only_assigned() const  {
-  bool ret =!m_use_dst.empty() && m_src_range.count() == 0;
+  bool ret =!m_use_dst.empty() && m_use_src.size() == 0;
   if (ret) {
     assert(m_live_range.empty());
   }
@@ -99,15 +99,13 @@ std::string RegUsageItem::vec_dump(std::vector<int> const &vec) const {
 
 
 std::string RegUsageItem::dump() const {
-  std::string ret;
 
   if (unused()) {
-    ret << "Not used";
-    return ret;
+    return "Not used";
   }
 
+  std::string ret;
   ret << reg.dump() << "; "
-      << "src_range(" << m_src_range.dump() << "); "
       << "src: " << vec_dump(use_src()) << "; "
       << "dst: " << vec_dump(m_use_dst) << "; "
       << "live(" << m_live_range.dump() << ")";
@@ -124,13 +122,13 @@ void RegUsageItem::add_dst(int n, bool is_cond_assign) {
 
 
 /**
- *
  * **NOTE:** src input values are not monotonic.
+ *           This is resolved in a lazy read: if `m_src_sorted == false`,
+ *           redo sort (and uniqueness) on read.
  */
 void RegUsageItem::add_src(int n) {
   m_use_src << n;
   m_src_sorted = false;
-  m_src_range.add(n);
 }
 
 
@@ -140,6 +138,7 @@ std::vector<int> const &RegUsageItem::use_src() const {
     m_use_src.erase(unique(m_use_src.begin(), m_use_src.end()), m_use_src.end());
     m_src_sorted = true;
   }
+
   return m_use_src;
 }
 
@@ -215,7 +214,7 @@ int RegUsageItem::first_usage() const {
  * Get last line number for which variable is used (either as src or dst)
  */
 int RegUsageItem::last_usage() const {
-  assert(m_src_range.first() == -1 || m_src_range.first() >= first_dst());
+  assert(m_use_src.empty() || m_use_src.front() >= first_dst());
 
   if (only_assigned()) {
     // In this case this is the correct response; see class Note 1 anyway.
@@ -223,7 +222,7 @@ int RegUsageItem::last_usage() const {
   }
 
   if (!m_live_range.empty()) return m_live_range.last();
-  if (!m_src_range.empty())  return m_src_range.last();
+  if (!m_use_src.empty())  return m_use_src.back();
 
   return -1;
 }
@@ -256,7 +255,6 @@ bool RegUsageItem::use_overlaps(RegUsageItem const &rhs) const {
 
 void RegUsageItem::reset() {
   reg.tag = NONE;
-  m_src_range.reset();
   m_src_sorted = true;
   m_use_src.clear();
   m_use_dst.clear();
@@ -266,7 +264,6 @@ void RegUsageItem::reset() {
 
 bool RegUsageItem::empty() const {
   return ( reg.tag == NONE
-        && m_src_range.empty()
         && m_use_dst.empty()
         && m_live_range.empty()
   );
@@ -352,7 +349,6 @@ bool RegUsageItem::in_use(int line_number) const {
   Range range = dst_range(line_number);
 
   if (range.in(line_number)) {
-    //warn << "in_use line: " << line_number << ", range: " << range.dump();
     return true;
   } else {
     //warn << "in_use line: " << line_number << ", OUTSIDE range: " << range.dump();

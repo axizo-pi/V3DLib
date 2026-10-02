@@ -61,13 +61,15 @@ Instr::List insertMoves(Instr::List &instrs) {
       // Insert moves for an operation with a small immediate whose
       // register operand must reside in reg file B.
       //
+      // Fires, but seldom.
+      //
       //warn << "insertMoves 1 " << i << ": instr: " << instr.mnemonic();
       live.compute(instrs, true);
       Reg acc = get_free_acc(instrs, i, live);
 
-      // Strong suspicion that this case never does anything
-      // Tell me when it happens
-      warn << "insertMoves 1 acc: " << acc.dump();
+      if (acc.regId >= 3) {
+        info << "insertMoves 1 acc: " << acc.dump();
+      }
 
       newInstrs << mov(acc, instr.ALU.srcB)
                 << instr.clone().src_b(acc);

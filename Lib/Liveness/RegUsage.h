@@ -61,15 +61,12 @@ struct RegUsageItem {
   void reset();
   bool empty() const;
   std::vector<int> const &use_dst() const { return m_use_dst; }
-  Range const &src_range() const { return m_src_range; }
   Range usage() const;
   bool in_use(int line_number) const;
 
   std::string dump() const ;
 
 private:
-  Range m_src_range;                   // First and last instructions where var is used as src
-
   mutable bool m_src_sorted = true;
   mutable std::vector<int> m_use_src; // List of line numbers where var is read
                                       // Don't use directly! Needs to be sorted, use accessor
