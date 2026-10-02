@@ -16,8 +16,9 @@ namespace {
 void replace_acc(Instr::List &instrs, RegUsageItem &item, int var_id, int acc_id) {
   Reg current(REG_A, var_id);
   Reg replace_with(ACC, acc_id);
+  Range use_range = item.usage();
 
-  for (int i = item.first_usage(); i <= item.last_usage(); i++) {
+  for (int i = use_range.first(); i <= use_range.last(); i++) {
     auto &instr = instrs[i];
     if (!instr.has_registers()) continue;  // Doesn't help much
 
@@ -39,7 +40,7 @@ int peephole_0(int range_size, Instr::List &instrs, RegUsage &allocated_vars) {
   int subst_count = 0;
 
   for (int var_id = 0; var_id < (int) allocated_vars.size(); var_id++) {
-    auto &item = allocated_vars[var_id];
+    auto &item = allocated_vars.get(var_id);
 
     if (item.reg.tag != NONE) continue;
     if (item.unused()) continue;
@@ -54,7 +55,7 @@ int peephole_0(int range_size, Instr::List &instrs, RegUsage &allocated_vars) {
     }
 
     // Check instructions for unused accumulator
-    int acc_id = instrs.get_free_acc(item.first_usage(), item.last_usage());
+    int acc_id = get_free_acc(instrs, item.usage());
     if (acc_id == -1) {
       warn << "peephole_0: No accumulators available";
       continue;
@@ -127,7 +128,7 @@ int peephole_1(Liveness &live, Instr::List &instrs, RegUsage &allocated_vars) {
     }
 
     Reg current(REG_A, def);
-    Reg replace_with(ACC, instrs.get_free_acc(i - 1, i));
+    Reg replace_with(ACC, get_free_acc(instrs, Range(i - 1, i)));
     assert(replace_with.regId != -1);
 
     prev.rename_dest(current, replace_with);
@@ -141,7 +142,7 @@ int peephole_1(Liveness &live, Instr::List &instrs, RegUsage &allocated_vars) {
 */
     // DANGEROUS! Do not use this value downstream.   
     // Currently stored for debug display purposes only! 
-    allocated_vars[def].reg = replace_with;    
+    allocated_vars.get(def).reg = replace_with;    
 
     subst_count++;
   }
@@ -155,7 +156,7 @@ int peephole_1(Liveness &live, Instr::List &instrs, RegUsage &allocated_vars) {
 /**
  * @return true if any replacements were made, false otherwise
  */
-bool combineImmediates(Liveness &live, Instr::List &instrs) {
+bool combineImmediates(Liveness const &live, Instr::List &instrs) {
   bool found_something = false;
 
   int const LAST_USE_LIMIT = 50;
@@ -166,19 +167,20 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
     if (instr.tag != InstrTag::LI) continue;
 
     if (instr.LI.imm.is_small_imm()) {
-      auto const &reg_usage = live.reg_usage()[instr.dest().regId];
-
       if (instr.dest().is_special()) {
         info << "combineImmediates special dest register, not combinining, "
              << " instr: " << instr.mnemonic(false);
         continue;
       }
 
+      auto const &reg_usage = live.reg_usage().get(instr.dest().regId);
+      Range use_range = reg_usage.usage();
+
       if (reg_usage.assigned_once()) {
-        assert(reg_usage.first_usage() == reg_usage.first_dst());
+        assert(use_range.first() == reg_usage.first_dst());
         bool can_remove = true;
 
-        for (int j = reg_usage.first_usage() + 1; j <= reg_usage.last_usage(); j++) {
+        for (int j = use_range.first() + 1; j <= use_range.last(); j++) {
           auto &instr2 = instrs[j];
           if (instr2.tag != InstrTag::ALU) continue;
           if (!instr2.is_src_reg(instr.dest())) continue;
@@ -243,9 +245,9 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
       // Limit search range to reg usage, or until end of block
       int last = live.cfg().block_end(j);
       {
-        RegUsage &reg_usage = live.reg_usage();
-        assert(!reg_usage[current.regId].unused());
-        int last_usage = reg_usage[current.regId].last_usage();
+        RegUsage const &reg_usage = live.reg_usage();
+        assert(!reg_usage.get(current.regId).unused());
+        int last_usage = reg_usage.get(current.regId).usage().last();
        
         if (last > last_usage) last = last_usage;
       }
@@ -304,13 +306,14 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
  */
 int introduceAccum(Liveness &live, Instr::List &instrs) {
   RegUsage &allocated_vars = live.reg_usage();
+  //warn << "reg_usage:\n" << allocated_vars.dump();
 
 #ifdef DEBUG
   //
   // Paranoia safeguards
   //
   for (int i = 0; i < (int) allocated_vars.size(); i++) {
-    auto &item = allocated_vars[i];
+    auto &item = allocated_vars.get(i);
 
     //reg's should not be allocated already
     assert(item.reg.tag == NONE);
@@ -359,8 +362,6 @@ int introduceAccum(Liveness &live, Instr::List &instrs) {
   //
   // Picks up a lot usually
   //
-  subst_buf << "peephole_0 max: " << MAX_RANGE_SIZE << "\n";
-
   for (int range_size = 1; range_size <= MAX_RANGE_SIZE; range_size++) {
     int count = peephole_0(range_size, instrs, allocated_vars);
 
@@ -376,7 +377,6 @@ int introduceAccum(Liveness &live, Instr::List &instrs) {
   // Works great on vc4, on vc6 less so but cases still get caught.
   // 
   {
-
     int count = peephole_1(live, instrs, allocated_vars);
 
     if (MAX_RANGE_SIZE > 4 && count > 0) {
@@ -391,6 +391,7 @@ int introduceAccum(Liveness &live, Instr::List &instrs) {
   info << "\n===========================================\n"
        << "introduceAccum substitution counts\n"
        << "----------------------------------\n"
+       << "peephole_0 max: " << MAX_RANGE_SIZE << "\n"
        << subst_buf
        << "===========================================\n";
 

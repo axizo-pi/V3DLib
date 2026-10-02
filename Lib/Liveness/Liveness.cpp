@@ -64,8 +64,8 @@ void allocate_registers(Instr &instr, RegUsage const &alloc) {
 
   if (useDefSet.def.tag != NONE) {
     RegId r = useDefSet.def.regId; 
-    assert(!alloc[r].unused());
-    Reg replace_with = alloc[r].reg;
+    assert(!alloc.get(r).unused());
+    Reg replace_with = alloc.get(r).reg;
 
     if (check_regfile_register(replace_with, r)) {
       replace_with.tag = (replace_with.tag == REG_A)?TMP_A:TMP_B;
@@ -74,8 +74,8 @@ void allocate_registers(Instr &instr, RegUsage const &alloc) {
   }
 
   for (auto r: useDefSet.use) {
-    assert(!alloc[r].unused());
-    Reg replace_with = alloc[r].reg;
+    assert(!alloc.get(r).unused());
+    Reg replace_with = alloc.get(r).reg;
 
     if (!check_regfile_register(replace_with, r)) continue;
     replace_with.tag = (replace_with.tag == REG_A)?TMP_A:TMP_B;
@@ -141,16 +141,16 @@ void Liveness::compute_liveness(Instr::List const &instrs) {
 
     // Propagate live variables backwards
     for (int i = instrs.size() - 1; i >= 0; i--) {
+      // Instructions in liveness MUST be consecutive, don't skip any
       auto const &instr = instrs[i];
-      //warn << "compute instr " << i << ": " << instr.dump();
 
       bool also_set_used = false;
 
-      if (instr.isCondAssign()) {  // no performance impact ~ 1.5%
+      if (/* instr.has_registers() && */ instr.isCondAssign()) {  // no performance impact ~ 1.5%
         Reg dst = instr.dst_a_reg();
 
         if (dst.tag != NONE) {
-          auto &item = m_reg_usage[dst.regId];
+          auto &item = m_reg_usage.get(dst.regId);
 
           // If the dst variable is not used before, it should not be set as used as well
           int first = item.first_dst();
@@ -164,7 +164,7 @@ void Liveness::compute_liveness(Instr::List const &instrs) {
       //warn << "useDef " << i << ": " <<  useDef.dump() << "instr: " << instr.mnemonic();
 
       computeLiveOut(i, liveOut);
-      //warn << "liveOut " << i << ": " <<  liveOut.dump() << ", instr: " << instr.mnemonic();
+      //warn << "liveOut computeLiveOut post " << i << ": " <<  liveOut.dump() << ", instr: " << instr.mnemonic();
 
       liveIn = liveOut;
       if (useDef.def.tag != NONE) {
@@ -180,6 +180,8 @@ void Liveness::compute_liveness(Instr::List const &instrs) {
 
     count++;
   }
+
+  info << "compute_liveness " << count << " iterations.";
 }
 
 
@@ -198,14 +200,15 @@ void Liveness::compute(Instr::List const &instrs, bool do_accumulators) {
 
 
   // Don't bother with liveness for accumulators, it is useless
-  if (!do_accumulators) {
-    compute_liveness(instrs); // performance hog 23/28s
-    assert(instrs.size() == size());
-    m_reg_usage.set_live(*this);
-    m_reg_usage.check();
-  }
+  if (do_accumulators) return;
+
+  compute_liveness(instrs); // performance hog 23/28s
+  assert(instrs.size() == size());
+  m_reg_usage.set_live(*this);
+  m_reg_usage.check();
 
 #ifdef OUTPUT_COMPILEDATA
+  // Compile data only outputted for full liveness (not acc's)
   compile_data.reg_usage_dump = m_reg_usage.dump(true);
   compile_data.liveness_dump = dump();
 #endif // OUTPUT_COMPILEDATA
@@ -222,6 +225,7 @@ void Liveness::computeLiveOut(InstrId i, RegIdSet &liveOut) {
   liveOut.clear();
 
   for (auto const &val : m_cfg[i]) {
+    //warn << "computeLiveOut " << i << ": val: " << val;
     liveOut.add(get(val));
   }
 }
@@ -285,17 +289,18 @@ std::string Liveness::dump() {
  */
 void Liveness::optimize(Instr::List &instrs, int numVars) {
   assertq(count_skips(instrs) == 0, "optimize(): SKIPs detected in instruction list");
-
-#ifdef OUTPUT_COMPILEDATA
-  compile_data.target_code_before_optimization = instrs.dump();
-#endif // OUTPUT_COMPILEDATA
   
   Liveness live(numVars);
   live.compute(instrs);
 
   if (combineImmediates(live, instrs)) {
-    live.compute(instrs);  // instructions have changed, redo liveness
+    info << "instructions have changed, redo liveness";
+    live.compute(instrs);
   }
+
+#ifdef OUTPUT_COMPILEDATA
+  compile_data.target_code_after_immediates = instrs.dump();
+#endif // OUTPUT_COMPILEDATA
 
   //
   // vc7 has no general purpose accumulators, don't bother replacing variables with them
@@ -323,7 +328,51 @@ void Liveness::optimize(Instr::List &instrs, int numVars) {
 }
 
 
-Reg get_free_acc(Instr::List const &instrs, int line_number) {
+/**
+ * @brief Return index of accumulator which is free for the given
+ *        range in the instruction list.
+ *
+ * If none can be found, return -1.
+ */
+int get_free_acc(Instr::List const &instrs, Range const &use_range) {
+  assert(use_range.last() < instrs.size());
+  timers.start("get_free_acc(Range)");
+
+  uint32_t acc_use = 0xffffffff;  // Keeps track of free acc's, default all free
+
+  for (int i = use_range.first(); i <= use_range.last(); ++i) {
+    auto const &instr = instrs[i];
+
+    uint32_t acc_mask = instr.get_acc_usage();  // Remember, get_acc_usage() returns *used* acc's
+    //warn << "get_free_acc checking mask: " << acc_mask << ", instr: " << instr.dump();
+    acc_use = acc_use & ~acc_mask;
+  }
+
+  // Mask out unused bits and also r5, because it has special usage.
+  // NOTE: r3 (sfu) and r4 (tmu read) have special usages as well.
+  if (Platform::compiling_for_vc4()) {
+    // It appears to be required for vc4 to not use r4 (unit test [cond] fails)
+    acc_use = acc_use & 0xf;   // r0-r3
+  } else {
+    acc_use = acc_use & 0x1f;  // r0-r4
+  }
+
+  // Determine first non-zero bit
+  int ret = -1;
+
+  for (int i = 0; i < 5; ++i) {
+    if ((acc_use & (1 << i)) != 0) {
+      ret = i;
+      break;
+    }
+  }
+
+  timers.stop("get_free_acc(Range)");
+  return ret;
+}
+
+
+Reg get_free_acc(Instr::List const &instrs, int line_number, Liveness const &live) {
   //warn << "Called ::get_free_acc(), line: " << line_number;
   assert(0 <= line_number && line_number < instrs.size());
   timers.start("::get_free_acc");
@@ -338,9 +387,6 @@ Reg get_free_acc(Instr::List const &instrs, int line_number) {
        << "instr: "
        << instr.mnemonic(false);
 */
-  // Determine usage of accumulators
-  Liveness live(6);
-  live.compute(instrs, true);
 
   RegUsage const &allocated_vars = live.reg_usage();
   //warn << "reg_usage:\n" << allocated_vars.dump(true);

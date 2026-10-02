@@ -60,7 +60,7 @@ RegIdSet &LiveSets::operator[](int index) {
  * @return        Array with flags for which registers are present;i
  *                if element is true, register is available, otherwise not available.
  */
-std::vector<bool> LiveSets::possible_registers(int index, RegUsage &alloc, RegTag reg_tag) {
+std::vector<bool> LiveSets::possible_registers(int index, RegUsage const &alloc, RegTag reg_tag) {
   assert(reg_tag == REG_A || reg_tag == REG_B);
 
   const int NUM_REGS = Platform::size_regfile();
@@ -74,8 +74,17 @@ std::vector<bool> LiveSets::possible_registers(int index, RegUsage &alloc, RegTa
 
   // Eliminate impossible choices of register for this variable
   for (auto j : set) {
-    Reg neighbour = alloc[j].reg;
-    if (neighbour.tag == reg_tag) possible[neighbour.regId] = false;
+    //warn << "possible_registers j: " << j;
+
+    Reg neighbour = alloc.get(j).reg;
+    if (neighbour.tag == reg_tag) {
+/*
+      warn << "possible_registers var A" << index << ": "
+           << "Reg " << neighbour.dump() << " in use "
+           << "by var A" << j;
+*/
+      possible[neighbour.regId] = false;
+    }
   }
 
   return possible;

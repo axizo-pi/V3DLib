@@ -3,6 +3,7 @@
 #include "v3d/instr/SmallImm.h"  // float_to_opcode_value()
 #include "Support/Platform.h"
 #include "Support/basics.h"
+#include "Support/Timer.h"
 #include "Liveness/Liveness.h"  // ::get_free_acc()
 
 using namespace V3DLib::Target::instr;
@@ -40,10 +41,13 @@ bool hasRegFileConflict(Instr const &instr) {
 Instr::List insertMoves(Instr::List &instrs) {
   assert(Platform::compiling_for_vc4());  // Not an issue for v3d
   using namespace V3DLib::Target::instr;
+  timers.start("insertMoves");
 
   int subst_count_1 = 0;
   int subst_count_2 = 0;
   int subst_count_3 = 0;
+
+  Liveness live(6);
 
   Instr::List newInstrs(instrs.size() * 2);
 
@@ -57,7 +61,13 @@ Instr::List insertMoves(Instr::List &instrs) {
       // Insert moves for an operation with a small immediate whose
       // register operand must reside in reg file B.
       //
-      Reg acc = get_free_acc(instrs, i);
+      //warn << "insertMoves 1 " << i << ": instr: " << instr.mnemonic();
+      live.compute(instrs, true);
+      Reg acc = get_free_acc(instrs, i, live);
+
+      // Strong suspicion that this case never does anything
+      // Tell me when it happens
+      warn << "insertMoves 1 acc: " << acc.dump();
 
       newInstrs << mov(acc, instr.ALU.srcB)
                 << instr.clone().src_b(acc);
@@ -69,7 +79,12 @@ Instr::List insertMoves(Instr::List &instrs) {
       // Insert moves for an operation with a small immediate whose
       // register operand must reside in reg file B.
       //
-      Reg acc = get_free_acc(instrs, i);
+      //warn << "insertMoves 2 " << i << ": instr: " << instr.mnemonic();
+      live.compute(instrs, true);
+      Reg acc = get_free_acc(instrs, i, live);
+      if (acc.regId >= 3) {
+        info << "insertMoves 2 acc: " << acc.dump();
+      }
 
       newInstrs << mov(acc, instr.ALU.srcA)
                 << instr.clone().src_a(acc);
@@ -82,7 +97,12 @@ Instr::List insertMoves(Instr::List &instrs) {
       // When an instruction uses two (different) registers that are mapped
       // to the same register file, then remap one of them to an accumulator.
       //
-      Reg acc = get_free_acc(instrs, i);
+      //warn << "insertMoves 3 " << i << ": instr: " << instr.mnemonic();
+      live.compute(instrs, true);
+      Reg acc = get_free_acc(instrs, i, live);
+      if (acc.regId >= 3) {
+        info << "insertMoves 3 acc: " << acc.dump();
+      }
 
       newInstrs << mov(acc, instr.ALU.srcA)
                 << instr.clone().src_a(acc);
@@ -92,6 +112,8 @@ Instr::List insertMoves(Instr::List &instrs) {
       newInstrs << instr;
     }
   }
+
+  timers.stop("insertMoves");
 
   info << "\n===========================================\n"
        << "insertMoves substitution counts\n"

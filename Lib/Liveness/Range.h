@@ -9,16 +9,22 @@ namespace V3DLib {
  */
 class Range {
 public:
+  Range() = default;
+  Range(int first, int last);
+
   void add(int val);
   int first() const;
   int last() const;
   int count() const;
   int range() const;
   bool empty() const;
+  bool in(int rhs) const;
   bool overlaps(Range const &rhs) const;
   bool is_embedded(Range const &rhs) const;
   std::string dump() const;
   void reset();
+
+  void unsafe_assign(int first, int last);
 
 private:
   int m_first = -1;

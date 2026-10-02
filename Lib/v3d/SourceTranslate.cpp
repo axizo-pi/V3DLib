@@ -50,7 +50,7 @@ void SourceTranslate::regAlloc(Instr::List &instrs) {
   //warn << "numVars: " << numVars;
 
   for (int i = 0; i < numVars; i++) {
-    auto &reg = live.reg_usage()[i].reg;
+    auto &reg = live.reg_usage().get(i).reg;
 
     if (reg.tag != NONE) continue;  // Already allocated
 

@@ -50,28 +50,39 @@ struct RegUsageItem {
   bool only_assigned() const;
   bool never_assigned() const { return !unused() && m_use_dst.empty(); }
   bool assigned_once() const;
-  std::string dump() const;
   int live_range() const;
   int use_range() const;
   int first_dst() const;
   int first_live() const      { return m_live_range.first(); }
   int last_live() const       { return m_live_range.last(); }
-  int first_usage() const;
-  int last_usage() const;
   bool use_overlaps(RegUsageItem const &rhs) const;
   bool regular_use() const { return !(unused() || only_assigned()); }
 
   void reset();
   bool empty() const;
-  std::vector<int>  const &use_dst() const { return m_use_dst; }
+  std::vector<int> const &use_dst() const { return m_use_dst; }
   Range const &src_range() const { return m_src_range; }
+  Range usage() const;
+  bool in_use(int line_number) const;
+
+  std::string dump() const ;
 
 private:
-  Range m_src_range;           // First and last instructions where var is used as src
-  std::vector<int> m_use_dst;  // List of line numbers where var is set
+  Range m_src_range;                   // First and last instructions where var is used as src
+
+  mutable bool m_src_sorted = true;
+  mutable std::vector<int> m_use_src; // List of line numbers where var is read
+                                      // Don't use directly! Needs to be sorted, use accessor
+  std::vector<int> m_use_dst;         // List of line numbers where var is set
   Range m_live_range;
 
+  std::vector<int> const &use_src() const;
+  int first_usage() const;
+  int last_usage() const;
+
   bool check_valid(bool do_throw = true) const;
+  std::string vec_dump(std::vector<int> const &vec) const;
+  Range dst_range(int line_number) const;
 };
 
 
@@ -80,10 +91,12 @@ class Liveness;
 struct RegUsage : private std::vector<RegUsageItem> {
   using Parent = std::vector<RegUsageItem>;
   using Parent::size;
-  using Parent::operator[];
+  //using Parent::operator[];  // Disabled because index needs to be checked
 
   RegUsage(int numVars);
 
+  RegUsageItem &get(int i);
+  RegUsageItem const &get(int i) const;
   void reset();
   void set_used(Target::Instr::List const &instrs, bool do_accumulators);
   void set_live(Liveness &live);
@@ -96,8 +109,6 @@ struct RegUsage : private std::vector<RegUsageItem> {
   int dst_range(int line_number) const;
 
 private:
-  RegUsageItem &get(int i);
-  RegUsageItem const &get(int i) const;
   std::string allocated_registers_dump() const;
 };
 

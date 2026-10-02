@@ -158,13 +158,16 @@ void regAlloc(Instr::List &instrs) {
   // Step 2 - For each variable, determine all variables ever live at same time
   LiveSets liveWith(numVars);
   liveWith.init(instrs, live);
+  //warn << "regAlloc liveWith:\n" << liveWith.dump();
 
   // Step 3 - Allocate a register to each variable
   RegTag prevChosenRegFile = REG_B;
 
   for (int i = 0; i < numVars; i++) {
-    if (live.reg_usage()[i].reg.tag != NONE) continue;
-    if (live.reg_usage()[i].unused()) continue;
+    auto &live_reg = live.reg_usage().get(i);
+    if (live_reg.reg.tag != NONE) continue;
+    if (live_reg.unused()) continue;
+    //warn << "regAlloc handling live reg " << i << ": " << live_reg.dump();
 
     auto possibleA = liveWith.possible_registers(i, live.reg_usage());
     auto possibleB = liveWith.possible_registers(i, live.reg_usage(), REG_B);
@@ -176,7 +179,7 @@ void regAlloc(Instr::List &instrs) {
     // Choose a register file
     RegTag chosenRegFile;
     if (chosenA < 0 && chosenB < 0) {
-      cerr << "regAlloc(): register allocation failed, insufficient capacity" << thrw;
+      cerr << "regAlloc(): register allocation failed, insufficient capacity in all regfiles." << thrw;
     }
     else if (chosenA < 0) chosenRegFile = REG_B;
     else if (chosenB < 0) chosenRegFile = REG_A;
@@ -188,7 +191,14 @@ void regAlloc(Instr::List &instrs) {
     prevChosenRegFile = chosenRegFile;
 
     // Finally, allocate a register to the variable
-    live.reg_usage()[i].reg = Reg(chosenRegFile, (chosenRegFile == REG_A)? chosenA : chosenB);
+    {
+      Reg reg(chosenRegFile, (chosenRegFile == REG_A)? chosenA : chosenB);
+      live_reg.reg = reg;
+/*
+      warn << "regAlloc allocated Reg " << reg.dump() << " to var A" << i << ", "
+           << "live_reg : " << live_reg.dump();
+*/
+    }
   }
   
 #ifdef OUTPUT_COMPILEDATA

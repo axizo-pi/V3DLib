@@ -1,5 +1,6 @@
 #ifndef _V3DLIB_BASEKERNEL_H_
 #define _V3DLIB_BASEKERNEL_H_
+#include "defines.h"
 #include "Compile.h"
 #include "Params.h"
 #include "Support/BaseSettings.h"

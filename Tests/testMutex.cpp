@@ -326,6 +326,10 @@ TEST_CASE("Test While-loop emulator[mutex][while]") {
  * for QPU and is off-by-1 one for emulator.
  */
 TEST_CASE("Test For-loop[mutex][for]") {
+  //if (Platform::vc_type() == Platform::vc4) { 
+  //  warn << "Test for kernel for_kernel blocked for now on vc4; TODO fix";
+  //  return;
+  //}
   LibSettings::tmu_load tmu(false);
 
   SUBCASE("Emulator with DMA load") {
@@ -339,7 +343,8 @@ TEST_CASE("Test For-loop[mutex][for]") {
     expected.fill(4);
 
     auto k = compile(for_kernel);
-    //to_file("for_kernel.txt", k.dump());
+    to_file("for_kernel.txt", k.dump());
+    to_file("for_compile_data.txt", k.dump_compile_data());
     k.load(&result);
     k.setNumQPUs(numQPUs);
     k.emu();
@@ -348,6 +353,7 @@ TEST_CASE("Test For-loop[mutex][for]") {
     REQUIRE(result == expected);
   }
 
+  //if (false) {
   SUBCASE("QPU with DMA load") {
     int numQPUs = 1;
     Int::Array result(16);
