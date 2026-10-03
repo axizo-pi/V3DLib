@@ -57,13 +57,13 @@ int peephole_0(int range_size, Instr::List &instrs, RegUsage &allocated_vars) {
     // Check instructions for unused accumulator
     int acc_id = get_free_acc(instrs, item.usage());
     if (acc_id == -1) {
-      info << "peephole_0 range " << range_size << ": No accumulators available";
+      //info << "peephole_0 range " << range_size << ": No accumulators available";
       continue;
     }
 
     // Check if the given ACC has not been assigned in the meantime
     if (allocated_vars.check_overlap_usage(Reg(ACC, acc_id), item)) {
-      warn << "acc_id: " << acc_id << " already in use, can't assign";
+      info << "peephole_0 acc_id: " << acc_id << " already in use, can't assign";
       continue;
     }
 
@@ -301,20 +301,26 @@ bool combineImmediates(Liveness const &live, Instr::List &instrs) {
  *    and to ignore the variable replacement due to acc usage later on. There may still be instances
  *    of the variable that need replacing.
  *
- * 2. MAX_RANGE_SIZE (for vc4):
- *    - Should be >= 2 for any effective use
- *    - >  4: Unit tests fail, various locations. No free accumulators.
- *    - >= 8: `insertMoves()` fails, no acc's 
- *    - >= 9: `peephole_1()` apparently does nothing
+ * 2. MAX_RANGE_SIZE:
+ *
+ *    - == 0: does nothing, should be >= 2 for any effective use
+ *    - >  4: vc4 Unit tests fail, various locations. No free accumulators.
+ *    - >= 8: vc4 `insertMoves()` fails, no acc's.
+ *    - >= 9: vc4 `peephole_1()` does nothing. Call still works <=12 for vc6.
  *    - >= 10
  *      * tmp var in sin_v3d() gets replaced
  *      * still picks up something >= 10, but not much
+ *    - > 12: vc6 barely any hits, not bothering 
  */
 int introduceAccum(Liveness &live, Instr::List &instrs) {
+	assert(!Platform::compiling_for_vc7());
   timers.start("introduceAccum");
   RegUsage &allocated_vars = live.reg_usage();
 
-  int const MAX_RANGE_SIZE = 4;  // Num iterations peephole_0. See Note 2.
+  // Num iterations peephole_0. See Note 2.
+  int const MAX_RANGE_SIZE = Platform::compiling_for_vc4()?
+     4: // vc4
+    12; // vc6
 
 #ifdef DEBUG
   //
@@ -346,15 +352,22 @@ int introduceAccum(Liveness &live, Instr::List &instrs) {
         continue;
       }
 
-      std::string buf;
-      buf << "Multiple dst's: " << i << ": " << item.dump() << "\n";
+      {
+        bool found_something = false;
+        std::string buf;
+        buf << "Multiple dst's: " << i << ": " << item.dump() << "\n";
 
-      // Show the lines where this happens
-      for (int dst: item.use_dst()) {
-        buf << "  Line " << dst << ": " << instrs[dst].mnemonic(false) << "\n";
+        // Show the lines where this happens
+        for (int dst: item.use_dst()) {
+			    // RECV _does_ occur and is benign. Warn me of other cases.
+          if (instrs[dst].tag != RECV) {
+            buf << "  Line " << dst << ": " << instrs[dst].mnemonic(false) << "\n";
+            found_something = true;
+          }
+        }
+
+        if (found_something) warn << buf;
       }
-
-      info << buf;
     }
   }
 #endif // DEBUG
@@ -379,14 +392,11 @@ int introduceAccum(Liveness &live, Instr::List &instrs) {
   // Tons of substitutions when peephole_0 disabled.
   // Reversing peephole_0 and _1 introduces more issues than it resolves.
   //
-  // Works great on vc4, depending on value `MAX_RANGE_SIZE`.
-  // On vc6 less so but cases still get caught.
+  // Does something, depending on value `MAX_RANGE_SIZE` (vc4 and vc6).
   // 
   {
     int count = peephole_1(live, instrs, allocated_vars);
-    if (count > 0) {
-      warn << "peephole_1 did something! count: " << count;
-    }
+    //if (count > 0) warn << "peephole_1 did something! count: " << count;
     subst_buf << "peephole_1: " << count << "\n";
     subst_count += count;
   }

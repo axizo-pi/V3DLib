@@ -357,11 +357,12 @@ int get_free_acc(Instr::List const &instrs, Range const &use_range) {
   }
 
   // Also masks out unused bits. See Note 1.
+	//
   if (Platform::compiling_for_vc4()) {
     acc_use = acc_use & 0xf;   // r0-r3
   } else {
-    // TODO: examine if restrictions r4-r5 still true for vc6.
-    acc_use = acc_use & 0x1f;  // r0-r4
+    // vc6 all acc's appear to be available
+    acc_use = acc_use & 0x3f;  // r0-r5
   }
 
   // Determine first non-zero bit

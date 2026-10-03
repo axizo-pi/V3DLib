@@ -52,7 +52,7 @@ Instr::List insertMoves(Instr::List const &instrs) {
   // There is no potential issue here, since a single acc is inserted for a single line.
   Liveness live(6);
   live.compute(instrs, true);
-  //info << "insertMoves live:\n" << live.reg_usage().dump();
+  //warn << "insertMoves live:\n" << live.reg_usage().dump();
 
   Instr::List ret(instrs.size() * 2);  // `* 2` to ensure adequate space in output list; excessive
 
@@ -69,7 +69,10 @@ Instr::List insertMoves(Instr::List const &instrs) {
     }
 
     Reg acc = get_free_acc(instrs, i, live);
-    // info << "insertMoves 1 acc: " << acc.dump();
+    if (acc.regId >= 4) {
+     info << "insertMoves 1 acc: " << acc.dump();
+    }
+
     return acc;
   };
 
@@ -85,9 +88,11 @@ Instr::List insertMoves(Instr::List const &instrs) {
       // Insert moves for an operation with a small immediate whose
       // register operand must reside in reg file B.
       //
-      // Fires, but seldom. vc4 only 4 times in unit tests.
+      // Fires in unit tests, but seldom. 
+      //  - vc4: 4 times
+      //  - vc6: 2 times
       //
-      warn  << "insertMoves 1 called!";
+      //warn  << "insertMoves 1 called!";
       Reg acc = get_acc(i, 1);
 
       newInstrs << mov(acc, instr.ALU.srcB)
