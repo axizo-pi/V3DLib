@@ -357,7 +357,7 @@ int get_free_acc(Instr::List const &instrs, Range const &use_range) {
   }
 
   // Also masks out unused bits. See Note 1.
-	//
+  //
   if (Platform::compiling_for_vc4()) {
     acc_use = acc_use & 0xf;   // r0-r3
   } else {

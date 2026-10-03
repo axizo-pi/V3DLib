@@ -604,7 +604,7 @@ bool RegUsage::check_overlap_usage(Reg acc, RegUsageItem const &item) const {
  */
 int RegUsage::dst_range(int line_number) const {
   //info << "Called dst_range line_number: " << line_number;
-	assert(!Platform::compiling_for_vc7());
+  assert(!Platform::compiling_for_vc7());
 
   int first_unused_acc = -1;
 
@@ -627,25 +627,25 @@ int RegUsage::dst_range(int line_number) const {
     }
   }
 
-	//
+  //
   // Incredibly, following exclusion works for vc6. This might fail in the future
   //
-	if (Platform::compiling_for_vc4()) {
-	  if (first_unused_acc == 5) {
-	    warn << "dst_range blocking special accumulator ACC5.";
-	    first_unused_acc = -1;
-	  }
+  if (Platform::compiling_for_vc4()) {
+    if (first_unused_acc == 5) {
+      warn << "dst_range blocking special accumulator ACC5.";
+      first_unused_acc = -1;
+    }
 
-	  //
-	  // Defiant testing indicates that acc4 _can_ actually be used as a general purpose register.
-	  // Unit tests pass just fine.
-	  // However, we will respect the vc4 doc (for now TODO).
-	  //
-	  if (first_unused_acc == 4) {
-	    //warn << "dst_range returning special accumulator ACC " << first_unused_acc << "; check for conflicts.";
-	    warn << "dst_range blocking special accumulator ACC4.";
-	    first_unused_acc = -1;
-	  }
+    //
+    // Defiant testing indicates that acc4 _can_ actually be used as a general purpose register.
+    // Unit tests pass just fine.
+    // However, we will respect the vc4 doc (for now TODO).
+    //
+    if (first_unused_acc == 4) {
+      //warn << "dst_range returning special accumulator ACC " << first_unused_acc << "; check for conflicts.";
+      warn << "dst_range blocking special accumulator ACC4.";
+      first_unused_acc = -1;
+    }
   }
 
   return first_unused_acc;

@@ -314,7 +314,7 @@ bool combineImmediates(Liveness const &live, Instr::List &instrs) {
  *    - > 12: vc6 barely any hits, not bothering 
  */
 int introduceAccum(Liveness &live, Instr::List &instrs) {
-	assert(!Platform::compiling_for_vc7());
+  assert(!Platform::compiling_for_vc7());
   timers.start("introduceAccum");
   RegUsage &allocated_vars = live.reg_usage();
 
@@ -360,7 +360,7 @@ int introduceAccum(Liveness &live, Instr::List &instrs) {
 
         // Show the lines where this happens
         for (int dst: item.use_dst()) {
-			    // RECV _does_ occur and is benign. Warn me of other cases.
+          // RECV _does_ occur and is benign. Warn me of other cases.
           if (instrs[dst].tag != RECV) {
             buf << "  Line " << dst << ": " << instrs[dst].mnemonic(false) << "\n";
             found_something = true;
