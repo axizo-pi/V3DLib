@@ -63,7 +63,7 @@ int peephole_0(int range_size, Instr::List &instrs, RegUsage &allocated_vars) {
 
     // Check if the given ACC has not been assigned in the meantime
     if (allocated_vars.check_overlap_usage(Reg(ACC, acc_id), item)) {
-      info << "peephole_0 acc_id: " << acc_id << " already in use, can't assign";
+      //info << "peephole_0 acc_id: " << acc_id << " already in use, can't assign";
       continue;
     }
 
@@ -166,8 +166,8 @@ bool combineImmediates(Liveness const &live, Instr::List &instrs) {
 
     if (instr.LI.imm.is_small_imm()) {
       if (instr.dest().is_special()) {
-        info << "combineImmediates special dest register, not combinining, "
-             << " instr: " << instr.mnemonic(false);
+        //info << "combineImmediates special dest register, not combinining, "
+        //     << " instr: " << instr.mnemonic(false);
         continue;
       }
 
@@ -305,6 +305,7 @@ bool combineImmediates(Liveness const &live, Instr::List &instrs) {
  *
  *    - == 0: does nothing, should be >= 2 for any effective use
  *    - >  4: vc4 Unit tests fail, various locations. No free accumulators.
+ *    - >  6: vc6 picks up not much. Might be a better cutoff choice.
  *    - >= 8: vc4 `insertMoves()` fails, no acc's.
  *    - >= 9: vc4 `peephole_1()` does nothing. Call still works <=12 for vc6.
  *    - >= 10

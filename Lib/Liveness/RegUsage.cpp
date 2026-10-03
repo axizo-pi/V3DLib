@@ -242,9 +242,8 @@ bool RegUsageItem::use_overlaps(RegUsageItem const &rhs) const {
     return last_usage() > rhs.first_usage();
   }
 
-  info << "use_overlaps lhs: " << dump() << ", rhs: " << rhs.dump();
-
   // All other cases overlap
+  //info << "use_overlaps lhs: " << dump() << ", rhs: " << rhs.dump();
   assert(first_usage() >= rhs.first_usage() && first_usage() <= rhs.last_usage()); 
   return true;
 }
