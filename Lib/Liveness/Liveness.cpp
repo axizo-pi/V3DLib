@@ -198,7 +198,6 @@ void Liveness::compute(Instr::List const &instrs, bool do_accumulators) {
   m_cfg.build(instrs);
   m_reg_usage.set_used(instrs, do_accumulators);
 
-
   // Don't bother with liveness for accumulators, it is useless
   if (do_accumulators) return;
 
@@ -209,7 +208,7 @@ void Liveness::compute(Instr::List const &instrs, bool do_accumulators) {
 
 #ifdef OUTPUT_COMPILEDATA
   // Compile data only outputted for full liveness (not acc's)
-  compile_data.reg_usage_dump = m_reg_usage.dump(true);
+  compile_data.reg_usage_dump = m_reg_usage.dump();
   compile_data.liveness_dump = dump();
 #endif // OUTPUT_COMPILEDATA
 }
@@ -268,20 +267,18 @@ std::string Liveness::dump() {
       line << it;
     }
 
-    ret << line
-        << "\n";
+    ret << line << "\n";
   }
 
   if (ret.empty()) ret += "<Empty>";
 
   ret += "\n";
-
   return ret;
 }
 
 
 /**
- * Introduce optimizations where possible in the instruction list
+ * @brief Introduce optimizations where possible in the instruction list
  *
  * This is done before the actual liveness analysis.
  * The idea is to minimize beforehand the number of variables considered
@@ -309,16 +306,14 @@ void Liveness::optimize(Instr::List &instrs, int numVars) {
     int prev_count_skips = count_skips(instrs);
 
 #ifdef OUTPUT_COMPILEDATA
-    compile_data.num_accs_introduced = introduceAccum(live, instrs);
-#else  
-    introduceAccum(live, instrs);
+    compile_data.num_accs_introduced =
 #endif // OUTPUT_COMPILEDATA
+    introduceAccum(live, instrs);
 
     assertq(prev_count_skips == count_skips(instrs), "SKIP count changed after introduceAccum()");
   }
 
   // Times for following (now) insignificant
-
   instrs = remove_skips(instrs);
   assertq(count_skips(instrs) == 0, "optimize(): SKIPs detected in instruction list after cleanup");
 
@@ -332,7 +327,21 @@ void Liveness::optimize(Instr::List &instrs, int numVars) {
  * @brief Return index of accumulator which is free for the given
  *        range in the instruction list.
  *
- * If none can be found, return -1.
+ * @return Index of first free accumulator, -1 if none found.
+ *
+ * ================================================================
+ * Notes
+ * -----
+ *
+ * 1. From VC4 Architecture Guide:
+ *   - p.18:
+ *     r4 (acc4): Receives data from most of the closely coupled hardware units (notably SFU, TMU read).
+ *                r4 is a read only register from the processors perspective.
+ *     r5 (acc5): Used for fragment shading and can not be used as a general purpose register.
+ *
+ *   - p.28:
+ *     "The accumulators r4 and r5 have special functions and cannot be used
+ *     as general-purpose accumulator registers."
  */
 int get_free_acc(Instr::List const &instrs, Range const &use_range) {
   assert(use_range.last() < instrs.size());
@@ -344,16 +353,14 @@ int get_free_acc(Instr::List const &instrs, Range const &use_range) {
     auto const &instr = instrs[i];
 
     uint32_t acc_mask = instr.get_acc_usage();  // Remember, get_acc_usage() returns *used* acc's
-    //warn << "get_free_acc checking mask: " << acc_mask << ", instr: " << instr.dump();
     acc_use = acc_use & ~acc_mask;
   }
 
-  // Mask out unused bits and also r5, because it has special usage.
-  // NOTE: r3 (sfu) and r4 (tmu read) have special usages as well.
+  // Also masks out unused bits. See Note 1.
   if (Platform::compiling_for_vc4()) {
-    // It appears to be required for vc4 to not use r4 (unit test [cond] fails)
     acc_use = acc_use & 0xf;   // r0-r3
   } else {
+    // TODO: examine if restrictions r4-r5 still true for vc6.
     acc_use = acc_use & 0x1f;  // r0-r4
   }
 

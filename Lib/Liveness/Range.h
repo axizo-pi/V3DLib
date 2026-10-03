@@ -15,7 +15,6 @@ public:
   void add(int val);
   int first() const;
   int last() const;
-  int count() const;
   int range() const;
   bool empty() const;
   bool in(int rhs) const;
@@ -29,7 +28,6 @@ public:
 private:
   int m_first = -1;
   int m_last  = -1;
-  int m_count =  0;  // Number of items within this range
 };
 
 }  // namespace V3DLib

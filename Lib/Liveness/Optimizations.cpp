@@ -49,7 +49,7 @@ int peephole_0(int range_size, Instr::List &instrs, RegUsage &allocated_vars) {
 
     // Guard for this special case for the time being.
     // It should actually be possible to load a uniform in an accumulator,
-    // not bothering right now.
+    // not bothering right now (TODO test).
     if (instrs[item.first_dst()].isUniformLoad()) {
       continue;
     }
@@ -57,7 +57,7 @@ int peephole_0(int range_size, Instr::List &instrs, RegUsage &allocated_vars) {
     // Check instructions for unused accumulator
     int acc_id = get_free_acc(instrs, item.usage());
     if (acc_id == -1) {
-      warn << "peephole_0: No accumulators available";
+      info << "peephole_0 range " << range_size << ": No accumulators available";
       continue;
     }
 
@@ -110,7 +110,7 @@ int peephole_1(Liveness &live, Instr::List &instrs, RegUsage &allocated_vars) {
 
     // Guard for this special case for the time being.
     // It should actually be possible to load a uniform in an accumulator,
-    // not bothering right now.
+    // not bothering right now (TODO test).
     if (instr.isUniformLoad()) {
       continue;
     }
@@ -123,23 +123,21 @@ int peephole_1(Liveness &live, Instr::List &instrs, RegUsage &allocated_vars) {
     // Can't remove this test.
     // Reason: There may be a preceding instruction which sets the var to be replaced.
     //         If 'prev' is conditional, replacing the var with an acc will ignore the previously set value.
-    if (!prev.is_always()) {
-      continue;
-    }
+    if (!prev.is_always()) continue;
 
     Reg current(REG_A, def);
     Reg replace_with(ACC, get_free_acc(instrs, Range(i - 1, i)));
-    assert(replace_with.regId != -1);
+    if(replace_with.regId == -1) {
+      warn << "peephole_1: No accumulators available";
+      continue;
+    }
 
     prev.rename_dest(current, replace_with);
     renameUses(instr, current, replace_with);
     instrs[i-1] = prev;
     instrs[i]   = instr;
-/*
-    warn << "peephole_1 post:\n"
-         << "  " << instrs[i-1].dump()
-         << "  " << instrs[i].dump();
-*/
+    //warn << "peephole_1 post:\n" << "  " << instrs[i-1].dump() << "  " << instrs[i].dump();
+
     // DANGEROUS! Do not use this value downstream.   
     // Currently stored for debug display purposes only! 
     allocated_vars.get(def).reg = replace_with;    
@@ -259,12 +257,12 @@ bool combineImmediates(Liveness const &live, Instr::List &instrs) {
         if (instr3.is_dst_reg(current)) {
           break;  // Stop if var to replace is rewritten
         }
-
+/*
         Log::debug << "Renaming instr:\n"
                    << "current     : " << i << ": " << current.dump()         << "\n"
                    << "instr3      : " << k << ": " << instr3.mnemonic(false) << "\n"
                    << "replace_with:   "    << ": " << replace_with.dump()    << "\n";
-
+*/
         if (renameUses(instr3, current, replace_with)) {
           num_subsitutions++;
         }
@@ -272,8 +270,7 @@ bool combineImmediates(Liveness const &live, Instr::List &instrs) {
 
       if (num_subsitutions > 0) {
         last_use = j;
-        Log::debug << "Setting skip on instruction at " << j;
-
+        //Log::debug << "Setting skip on instruction at " << j;
         instrs.set_skip(j);
       }
     }
@@ -286,7 +283,7 @@ bool combineImmediates(Liveness const &live, Instr::List &instrs) {
 
 
 /**
- * @brief Optimisation passes that introduce accumulators.
+ * @brief Optimization passes that introduce accumulators.
  *
  * This is not called for `vc7`, which has no accumulators.
  *
@@ -297,16 +294,27 @@ bool combineImmediates(Liveness const &live, Instr::List &instrs) {
  * NOTES
  * =====
  *
- * * It is possible that a variable gets used multiple times, and the last usage of it
- *   is replaced by an accumulator.
+ * 1. It is possible that a variable gets used multiple times, and the last usage of it
+ *    is replaced by an accumulator.
  *
- *   For this reason, it is dangerous to keep track of the substitutions in `allocated_vars`,
- *   and to ignore the variable replacement due to acc usage later on. There may still be instances
- *   of the variable that need replacing.
+ *    For this reason, it is dangerous to keep track of the substitutions in `allocated_vars`,
+ *    and to ignore the variable replacement due to acc usage later on. There may still be instances
+ *    of the variable that need replacing.
+ *
+ * 2. MAX_RANGE_SIZE (for vc4):
+ *    - Should be >= 2 for any effective use
+ *    - >  4: Unit tests fail, various locations. No free accumulators.
+ *    - >= 8: `insertMoves()` fails, no acc's 
+ *    - >= 9: `peephole_1()` apparently does nothing
+ *    - >= 10
+ *      * tmp var in sin_v3d() gets replaced
+ *      * still picks up something >= 10, but not much
  */
 int introduceAccum(Liveness &live, Instr::List &instrs) {
+  timers.start("introduceAccum");
   RegUsage &allocated_vars = live.reg_usage();
-  //warn << "reg_usage:\n" << allocated_vars.dump();
+
+  int const MAX_RANGE_SIZE = 4;  // Num iterations peephole_0. See Note 2.
 
 #ifdef DEBUG
   //
@@ -324,7 +332,6 @@ int introduceAccum(Liveness &live, Instr::List &instrs) {
       assert(item.assigned_once());
     }
 */
-
     //
     // Warn me when a variable is dst-only and has multiple dst's.
     // See class RegUsageItem Note 1.
@@ -355,10 +362,6 @@ int introduceAccum(Liveness &live, Instr::List &instrs) {
   std::string subst_buf;
   int subst_count = 0;
 
-  // Should be >= 2 for any effective use
-  // >= 10 so that tmp var in sin_v3d() gets replaced
-  int const MAX_RANGE_SIZE = 4; // 8; //= 15;
-
   //
   // Picks up a lot usually
   //
@@ -374,27 +377,29 @@ int introduceAccum(Liveness &live, Instr::List &instrs) {
   // This peephole still does useful stuff.
   //
   // Tons of substitutions when peephole_0 disabled.
-  // Works great on vc4, on vc6 less so but cases still get caught.
+  // Reversing peephole_0 and _1 introduces more issues than it resolves.
+  //
+  // Works great on vc4, depending on value `MAX_RANGE_SIZE`.
+  // On vc6 less so but cases still get caught.
   // 
   {
     int count = peephole_1(live, instrs, allocated_vars);
-
-    if (MAX_RANGE_SIZE > 4 && count > 0) {
-      warn << "peephole_1 fired! count: " << count;
+    if (count > 0) {
+      warn << "peephole_1 did something! count: " << count;
     }
     subst_buf << "peephole_1: " << count << "\n";
-
     subst_count += count;
   }
 
 
   info << "\n===========================================\n"
-       << "introduceAccum substitution counts\n"
-       << "----------------------------------\n"
+          "introduceAccum substitution counts\n"
+          "----------------------------------\n"
        << "peephole_0 max: " << MAX_RANGE_SIZE << "\n"
        << subst_buf
        << "===========================================\n";
 
+  timers.stop("introduceAccum");
   return subst_count;
 }
 

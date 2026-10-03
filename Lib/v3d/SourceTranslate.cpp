@@ -65,7 +65,7 @@ void SourceTranslate::regAlloc(Instr::List &instrs) {
   allocate_registers(instrs, live.reg_usage());
 
 #ifdef OUTPUT_COMPILEDATA
-  compile_data.allocated_registers_dump   = live.reg_usage().dump(true);
+  compile_data.allocated_registers_dump   = live.reg_usage().dump();
   compile_data.target_code_after_regalloc = instrs.dump();
 #endif // OUTPUT_COMPILEDATA
 }

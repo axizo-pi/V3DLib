@@ -139,7 +139,6 @@ namespace vc4 {
  */
 void regAlloc(Instr::List &instrs) {
   assert(count_reg_types(instrs).safe_for_regalloc());
-  //std::cout << count_reg_types(instrs).dump() << std::endl;
 
   int numVars = VarGen::count();
 
@@ -202,7 +201,7 @@ void regAlloc(Instr::List &instrs) {
   }
   
 #ifdef OUTPUT_COMPILEDATA
-  compile_data.allocated_registers_dump = live.reg_usage().dump(true);
+  compile_data.allocated_registers_dump = live.reg_usage().dump();
 #endif // OUTPUT_COMPILEDATA
 
   // Step 4 - Apply the allocation to the code

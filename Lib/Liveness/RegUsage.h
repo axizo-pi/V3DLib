@@ -43,7 +43,7 @@ namespace V3DLib {
 struct RegUsageItem {
   Reg reg;
 
-  void add_dst(int n, bool is_cond_assign);
+  void add_dst(int n);
   void add_src(int n);
   void add_live(int n);
   bool unused() const;
@@ -64,7 +64,7 @@ struct RegUsageItem {
   Range usage() const;
   bool in_use(int line_number) const;
 
-  std::string dump() const ;
+  std::string dump() const;
 
 private:
   mutable bool m_src_sorted = true;
@@ -97,16 +97,13 @@ struct RegUsage : private std::vector<RegUsageItem> {
   void reset();
   void set_used(Target::Instr::List const &instrs, bool do_accumulators);
   void set_live(Liveness &live);
-  std::string dump(bool verbose) const;
-  std::string dump() const { return dump(true); }
+  std::string dump() const;
   void check() const;
   std::string dump_use_ranges() const;
   bool check_overlap_usage(Reg acc, RegUsageItem const &item) const;
 
   int dst_range(int line_number) const;
-
-private:
-  std::string allocated_registers_dump() const;
+  bool empty() const;
 };
 
 }  // namespace V3DLib
