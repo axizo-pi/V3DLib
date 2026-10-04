@@ -10,7 +10,7 @@ void mandelbrot_multi(
   Int numStepsWidth, Int numStepsHeight,
   Int numIterations,
   Int::Ptr result,
-  Int count
+  Int num_repeats
 );
 
 } // namespace V3DLib
