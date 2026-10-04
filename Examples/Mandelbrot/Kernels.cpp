@@ -18,49 +18,31 @@ void mandelbrotCore(Complex const &c, Int &numIterations, Int::Ptr &dst) {
   FloatExpr condition = (4.0f - mag)*toFloat(numIterations - count);
   Float checkvar = condition;
 
-	/////////////////////////////////////
-	// Succeeds - all with -dim=768
-	/////////////////////////////////////
-/*	
-  For (Int i = 0, i < 128 , i++)  // als max = 64
-  End
-
-  For (Int i = 0, i < 128, i++)
-    Where (checkvar > 0.5f)
-      count++;
-    End
-  End
-*/		
-
-	/////////////////////////////////////
-	// Partial success
-	/////////////////////////////////////
 /*
-	// Default kernel is also partial success
+	vc6 1 QPU
+  ---------
+	i < 1024 : black
+	i <  512 : black
+	i <  256 : black
+	i <  128 : about 25% done
+	i <   96 : about 45% done
+	i <   64 : about 66% done
+	i <   32 : full when eyeballing
 
-  For (Int i = 0, i < 1024, i++)  // also max = 512
-  End
-
-  For (Int i = 0, i < 128, i++)
-    Where (checkvar > 0.5f)
+*/
+  For (Int i = 0, i < 96, i++)
+    Where (checkvar > 0.0f)
       x = x*x + c;
 
       mag = x.mag_square();
       count++;
+
       checkvar = condition; 
     End
   End
-*/	
+	
 
-	/////////////////////////////////////
-	// Fails 
-	/////////////////////////////////////
-/*	
-  For (Int i = 0, i < 128, i++)
-      count++;
-  End
-*/	
-
+/*
   While (any(checkvar > 0.0f))
     Where (checkvar > 0.0f)
       x = x*x + c;
@@ -70,7 +52,7 @@ void mandelbrotCore(Complex const &c, Int &numIterations, Int::Ptr &dst) {
       checkvar = condition; 
     End
   End
-
+*/
 	
   *dst = count;
 }
