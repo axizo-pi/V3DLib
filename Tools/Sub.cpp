@@ -35,8 +35,8 @@ void vc4_branch() {
   instr1.reg       = true;
   instr1.raddr_a   = 8;
   instr1.immediate = 1234;
-  instr1.waddr_add = 7;    // value 0 registers as NOP
-  instr1.waddr_mul = 8;    // value 0 registers as NOP
+  instr1.add.waddr = 7;    // value 0 registers as NOP
+  instr1.mul.waddr = 8;    // value 0 registers as NOP
 	std::cout << "  " << instr1.dump() << "\n";
 
   vc4::Instr instr2;
@@ -44,8 +44,8 @@ void vc4_branch() {
   instr2.immediate = 0x1234;
   //instr2.ws        = true;  // If false, waddr_add writes to rega and waddr_mul writes to regb
                             // If true, rega and regb are reversed
-  instr2.waddr_add = 12;    // value 0 registers as NOP
-  instr2.waddr_mul = 11;    // idem
+  instr2.add.waddr = 12;    // value 0 registers as NOP
+  instr2.mul.waddr = 11;    // idem
 	std::cout << "  " << instr2.dump() << "\n";
 
   std::vector<uint64_t> code;

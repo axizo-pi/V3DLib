@@ -96,7 +96,7 @@ bool Reg::operator<(Reg const &rhs) const {
  * Determine reg file of current register
  */
 RegTag Reg::regfile() const {
-  if (!Platform::compiling_for_vc4()) return REG_A;  // There is no REG_B for v3d, only REG_A
+  if (!Platform::compile::for_vc4()) return REG_A;  // There is no REG_B for v3d, only REG_A
 
   if (tag > SPECIAL) {
     Log::cerr << "Reg::regfile() invalid tag: " << dump();

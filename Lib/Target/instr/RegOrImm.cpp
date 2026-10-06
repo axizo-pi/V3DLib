@@ -12,7 +12,7 @@ RegOrImm::RegOrImm(Var const &rhs) { set_reg(rhs); }
 RegOrImm::RegOrImm(Reg const &rhs) { set_reg(rhs); }
 
 RegOrImm::RegOrImm(float rhs) : m_is_reg(false), m_imm(rhs) {
-  if (Platform::compiling_for_vc4()) return; 
+  if (Platform::compile::for_vc4()) return; 
 
   Imm dummy(rhs);
   if (dummy.encode_imm() != -1) {
@@ -32,7 +32,7 @@ Imm RegOrImm::imm() const             { assert(is_imm()); return m_imm; }
 
 
 uint8_t RegOrImm::encode() const {
-  assert(Platform::compiling_for_vc4() || Platform::running_emulator());
+  assert(Platform::running_emulator() || Platform::compile::for_vc4());
   assert(is_imm());
 
   int ret = m_imm.encode_imm();

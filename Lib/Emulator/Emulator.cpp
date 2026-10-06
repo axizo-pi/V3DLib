@@ -82,7 +82,7 @@ Vec read_special_register(QPUState &s, State &g, Reg reg) {
 
   switch(reg.regId) {
     case SPECIAL_ELEM_NUM:
-      return EmuState::index_vec;
+      return index_vec;
 
     case SPECIAL_UNIFORM:
       assertq(false, "read_special_register(): not expecting SPECIAL_UNIFORM to be handled any more");
@@ -513,7 +513,6 @@ void emulate(
 ) {
   //warn << "Running emulator";
 
-  Platform::running_emulator(true);
   Instr::List const &instrs = cs.targetCode();
   State state(numQPUs, uniforms);
   state.emuHeap.heap_view(heap);
@@ -555,8 +554,6 @@ void emulate(
       }
     }
   }
-
-  Platform::running_emulator(false);
 }
 
 }  // namespace V3DLib

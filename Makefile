@@ -140,6 +140,8 @@ make_test: runTests ID Hello Rot3D ReqRecv GCD Tri detectPlatform OET
 #
 # "*[pass*" - sic, intentional
 #
+# TODO: get rid of extra passes.
+#
 test : make_test
 	@echo Running unit tests with \'$(SUDO) $(UNIT_TESTS)\'
 	@$(SUDO) $(UNIT_TESTS) -tce="*[pass*"

@@ -107,7 +107,7 @@ bool Driver::execute(Code const &code, Data *uniforms, uint32_t thread, bool wai
   bool do_special_flags = true;
 
   if ((code_phyaddr & 0x7) != 0) {
-    if (Platform::compiling_for_vc7()) {  // Fails often on vc6, now also on vc7
+    if (Platform::compile::for_vc7()) {  // Fails often on vc6, now also on vc7
       cdebug << "Test on room for special flags fails. phyaddr: " << hex << code_phyaddr;
     }
     do_special_flags = false;
@@ -134,7 +134,7 @@ bool Driver::execute(Code const &code, Data *uniforms, uint32_t thread, bool wai
   WorkGroup workgroup;
   uint32_t wgs_per_sg = 16;
 
-  if (!Platform::compiling_for_vc7()) {
+  if (Platform::vc_type() == Platform::vc6) {
     thread--;   // This is what vc6 expects
   }
 

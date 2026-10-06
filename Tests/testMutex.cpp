@@ -168,7 +168,7 @@ TEST_CASE("Test mutexes emulator[mutex]") {
   }
 
   SUBCASE("Test QPU") {
-    if (!Platform::compiling_for_vc4()) {
+    if (!Platform::run_vc4()) {
       warn << "Doing mutexes only for vc4";
       return;
     }

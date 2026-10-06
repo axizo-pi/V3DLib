@@ -109,7 +109,7 @@ void add_init_block(Instr::List &code) {
 
   Instr::List ret;
 
-  if (Platform::compiling_for_vc7()) {
+  if (Platform::compile::for_vc7()) {
     // vc7: No restriction on #QPU's, max is 16
     ret << mov(acc, QPU_ID)
         << shr(acc, acc, 2)

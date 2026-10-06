@@ -91,7 +91,7 @@ ISourceTranslate &v3d_SourceTranslate() {
 
 
 ISourceTranslate &getSourceTranslate() {
-  if (Platform::compiling_for_vc4()) {
+  if (Platform::compile::for_vc4()) {
     return vc4_SourceTranslate();
   } else {
     return v3d_SourceTranslate();

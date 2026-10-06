@@ -72,7 +72,7 @@ std::string sub_dump(Instructions &instrs, int start, int length) {
  * @return true if there are no conflicts with small imm, false otherwise.
  */
 bool check_small_imm_usage(Instr const &top, Instr const &bottom) {
-  if (Platform::compiling_for_vc7()) {
+  if (Platform::compile::for_vc7()) {
     // Small imm's currently only handled for vc6
 
     // If I enable this, combine() catches the exception
@@ -192,7 +192,7 @@ bool add_register_conflict(Instr const &top, Instr const &bottom, bool check_sur
   It works better to attempt the conversion and just let it fail.
 */
   // Specific for vc6: have only 2 raddr values for the whole instr
-  if (!Platform::compiling_for_vc7()) {
+  if (!Platform::compile::for_vc7()) {
     int count = 0;
     std::set<BaseSource> rf_set;
 
@@ -242,7 +242,7 @@ bool add_op_to_mul_op(v3d_qpu_mul_op &mul_op, v3d::instr::Instr const &add_instr
   // Op's are common to both vc6 and vc7 unless otherwise specified
   switch (add_instr.alu.add.op) {
     case V3D_QPU_A_OR: {
-      if (Platform::compiling_for_vc7()) {
+      if (Platform::compile::for_vc7()) {
         assert(add_instr.alu.add.a.mux == add_instr.alu.add.b.mux);
       } else {
         assert(add_instr.alu.add.a.raddr == add_instr.alu.add.b.raddr);
@@ -531,14 +531,14 @@ bool combine_instruction(Instr &ret, Instr const &instr1, Instr const &instr2) {
 
   //sig_addr and sig_magic intentionally skipped, will be picked up when sig assert above fires.
 
-  if (!Platform::compiling_for_vc7()) {
+  if (!Platform::compile::for_vc7()) {
     // vc6: Needs special tests for raddr fields
     // raddr_a/b can be ignored for vc7
     assert(false);  // Deal with this when it happens
   }
 
   // Handle small imm
-  if (Platform::compiling_for_vc7()) {
+  if (Platform::compile::for_vc7()) {
     // vc7
     if (ret.has_small_imm()) {
       if (mul.has_small_imm()) return false;   // multiple small imm's can *never* be combined
@@ -1026,7 +1026,7 @@ bool add_can_equal(Instr const &top, Instr const &bottom) {
   if (bottom.has_small_imm() && top.has_small_imm() ) {
     // Can be surpassed for both vc6 and vc7.
 
-    if (Platform::compiling_for_vc7()) {
+    if (Platform::compile::for_vc7()) {
       // Never equal; small imm's can never be combined for vc7.
       return false;
     } else {
@@ -1108,7 +1108,7 @@ bool bottom_add_to_top_mul(Instr &ret, Instr const &bottom, Instr const &top) {
   // Following are to warn me when it happens
   assert(!bottom.has_small_imm());
   assert(!top.has_small_imm());
-  assert(Platform::compiling_for_vc7());  // vc6 must be handled separately
+  assert(Platform::compile::for_vc7());  // vc6 must be handled separately
 
   if (!(top.mul_nop() && alu_add_could_be_mul(bottom))) return false;
 
@@ -1467,7 +1467,7 @@ bool have_dependency(v3d::instr::Instr const &first, v3d::instr::Instr const &se
  */
 template<typename AddAlu>
 bool can_be_mul_alu(AddAlu const &add_alu) {
-  if (Platform::compiling_for_vc7()) {
+  if (Platform::compile::for_vc7()) {
     // Block write to special registers for now
     // Actually, this should be possible (on vc7 at least), as long as the special registers aren't the same
     // on add and mul.
@@ -1535,7 +1535,7 @@ bool can_combine(v3d::instr::Instr const &instr1, v3d::instr::Instr const &instr
 
 
   // Output instr1 should not be used as input instr2
-  if (Platform::compiling_for_vc7()) {
+  if (Platform::compile::for_vc7()) {
     // vc7 - no mux's, add/mul.a can also be small imm, raddr's in different location
     //cdebug << "can_combine() - vc7";
 
@@ -1976,23 +1976,7 @@ int optimize(Instructions &instrs) {
 try {
   count += remove_useless(instrs);
 
-  if (Platform::compiling_for_vc7()) {
-/*    
-    int tmua_count = 0;
-
-    if (tmu_reads(instrs)) {
-      tmua_count += remove_skips(instrs);
-      //check_branches(instrs);
-    }
-
-    if (tmua_count > 0) {
-      warn << "tmu_reads removed " << tmua_count << " instructions";
-      count += tmua_count;
-    }
-
-    warn << "Done tmu_reads()";
-*/    
-  } else {
+  if (!Platform::compile::for_vc7()) {
     // Doesn't work (any more) on vc7
     combine_old(instrs);
     count += remove_skips(instrs);

@@ -5,7 +5,7 @@
 namespace V3DLib {
 namespace Platform {
 
-enum VideoCoreType {
+enum VCType {
   UNKNOWN,
   vc4,
   vc6,
@@ -29,19 +29,32 @@ std::string pi_version();
 bool run_vc4();
 bool run_vc7();
 Tag tag();
-void compiling_for_vc4(bool val);
-bool compiling_for_vc4();
-bool compiling_for_vc7();
-bool compiling_for_vc6();
+
+namespace compile {
+
+void start(VCType in_type);
+bool for_vc4(bool do_break = true);
+bool for_vc7();
+bool for_vc6();
+bool running();
+void done();
+
+} // namespace compile
+
+void run_emulator(VCType in_type);
+VCType emulating_for();
+bool running_emulator();
+void done_emulating();
+
 void use_main_memory(bool val);
 bool use_main_memory();
 int  size_regfile();
 int  max_qpus();
 int  gather_limit();
-void running_emulator(bool val);
-bool running_emulator();
 
-VideoCoreType vc_type();
+VCType vc_type();
+std::string vc_type_str(VCType type);
+std::string vc_type_str();
 
 
 class main_mem {

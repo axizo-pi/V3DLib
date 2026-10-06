@@ -39,7 +39,7 @@ bool hasRegFileConflict(Instr const &instr) {
  * - Only `vc4` needs a NOP for combined read/write to same register in one instruction
  */
 Instr::List insertMoves(Instr::List const &instrs) {
-  assert(Platform::compiling_for_vc4());  // Not an issue for v3d
+  assert(Platform::compile::for_vc4());  // Not an issue for v3d
   using namespace V3DLib::Target::instr;
   info << "=== insertMoves start ===";
   timers.start("insertMoves");
@@ -150,7 +150,7 @@ Instr::List insertMoves(Instr::List const &instrs) {
 
 
 Instr::List translate_rot(Instr::List &instrs) {
-  assert(Platform::compiling_for_vc4());
+  assert(Platform::compile::for_vc4());
 
   Instr::List newInstrs(instrs.size() * 2);
 
@@ -209,7 +209,7 @@ Instr::List insertNops(Instr::List &instrs) {
     Instr instr = instrs[i];
     newInstrs << instr;
 
-    if (Platform::compiling_for_vc4()) {
+    if (Platform::compile::for_vc4()) {
       // 
       // For vc4, if an rf-register is set, you must wait one cycle before the value is available.
       // If an rf-register is set, and used immediately in the next instruction, insert a NOP in between.
@@ -592,7 +592,7 @@ Instr::List encode_imm(V3DLib::Instr &instr) {
 
 
 void adjust_immediates(Instr::List &instrs) {
-  assert(!Platform::compiling_for_vc4());  // v3d only
+  assert(!Platform::compile::for_vc4());  // v3d only
 
   Instr::List res;
 

@@ -2,6 +2,7 @@
 #define _V3DLIB_COMPILE_H
 #include "Common/CompileData.h"
 #include "Common/Seq.h"           // IntList
+#include "Support/Platform.h"     // VCType
 #include <functional>
 
 namespace V3DLib {
@@ -17,17 +18,13 @@ class CompileData;
  */
 class Compile {
 public:
-  enum KernelType {
-    vc4,
-    vc6,
-    vc7
-  };
+  using VCType = V3DLib::Platform::VCType;
 
   Compile();
   virtual ~Compile(); // `virtual` required to call dtor's derived types
 
-  bool        is_v3d()      const { return m_type == vc6 || m_type == vc7; }
-  KernelType  kernel_type() const { return m_type; }
+  bool        is_v3d()      const { return m_type == VCType::vc6 || m_type == VCType::vc7; }
+  VCType      kernel_type() const { return m_type; }
   std::string kernel_type_str() const;
 
   virtual int kernel_size() const = 0; 
@@ -49,7 +46,7 @@ public:
   CodeStruct &code_struct();
 
 protected:
-  KernelType  m_type;
+  VCType  m_type;
 
   void init_compile();
   std::vector<std::string> &errors() { return m_errors; }  // TODO remove when done

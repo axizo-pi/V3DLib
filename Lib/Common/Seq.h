@@ -6,7 +6,6 @@
 #define _V3DLIB_COMMON_SEQ_H_
 #include "Support/basics.h"
 #include <stdlib.h>
-#include <string>
 
 namespace V3DLib {
 
@@ -185,6 +184,21 @@ public:
     }
 
     return *this;
+  }
+
+
+  std::string dump() const { 
+    bool did_first = false;
+    std::string ret = "(";
+
+    for (int j = 0; j < size(); j++) {
+      if (did_first) ret << ", ";
+      ret << elems[j];
+      did_first = true;
+    }
+
+    ret << ")";
+    return ret;
   }
 
 

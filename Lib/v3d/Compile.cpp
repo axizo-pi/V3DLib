@@ -135,7 +135,7 @@ Instructions tmua_brainfart(Mnemonic &instr, bool prev_is_tmud) {
 
   bool changed = false;
 
-  if (Platform::compiling_for_vc7() && instr.add_dest() == tmua) {
+  if (Platform::compile::for_vc7() && instr.add_dest() == tmua) {
     if (!prev_is_tmud) {
       // Following thrsw and nop's absolutely required on vc7, verified
       instr.thrsw();
@@ -206,7 +206,7 @@ bool translateOpcode(Target::Instr const &src, Instructions &ret) {
 
       bool changed = false;
 
-      if (Platform::compiling_for_vc7() && *dst_reg == tmua) {
+      if (Platform::compile::for_vc7() && *dst_reg == tmua) {
         assert(!reg_a.is_imm());
 
         if (op == Enum::A_ADD && reg_b.is_imm()) {
@@ -354,7 +354,7 @@ bool translateRotate(V3DLib::Instr const &instr, Instructions &ret) {
   auto reg_b = instr.ALU.srcB;                  // reg b is either r5 or small imm
 
 
-  if (Platform::compiling_for_vc7()) {
+  if (Platform::compile::for_vc7()) {
     // Assumptions
     //  - waddr is an rf register (logical)
     //  - Thing to rotate is in add a
@@ -650,14 +650,14 @@ void _encode(V3DLib::Instr::List const &instrs, Instructions &dst) {
 }  // anon namespace
 
 Compile::Compile() {
-  assert(!Platform::compiling_for_vc4());
+  assert(!Platform::compile::for_vc4());
 
-  if(Platform::compiling_for_vc7()) {
+  if(Platform::compile::for_vc7()) {
     cdebug << "selecting vc7 as kernel type";
-    m_type = vc7;
+    m_type = VCType::vc7;
   } else {
     cdebug << "selecting vc6 as kernel type";
-    m_type = vc6;
+    m_type = VCType::vc6;
   }
 
   init_compile();

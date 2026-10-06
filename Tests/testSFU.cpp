@@ -295,7 +295,7 @@ TEST_CASE("Test SFU functions [sfu][kernel]") {
   //Platform::use_main_memory(true);
 
   int N = 15;  // Number of results returned
-  const int max_bit_diff = Platform::compiling_for_vc4()?13:2;
+  const int max_bit_diff = Platform::run_vc4()?13:2;
 
   Float::Array results(16*N);
 
@@ -327,7 +327,7 @@ TEST_CASE("Test SFU functions [sfu][kernel]") {
 
   // Bit diff is different for exp() for large negative values.
   // For v3d, this is consistently 3.
-  const int bit_diff_exp = Platform::compiling_for_vc4()?13:3;
+  const int bit_diff_exp = Platform::run_vc4()?13:3;
 
   test(1.0f);
   test(0.5f);
@@ -497,6 +497,6 @@ TEST_CASE("Test Nan/Inf [sfu][nan]") {
   //warn << showResult(result, 0, SIZE);
 
   // vc4 convergence is kind of crappy here
-  int max_bit_diff = Platform::compiling_for_vc4()?12:2;
+  int max_bit_diff = Platform::run_vc4()?12:2;
   check_vector_b(result, 0, expected, max_bit_diff);
 }

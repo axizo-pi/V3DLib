@@ -36,8 +36,6 @@ void BaseSettings::startPerfCounters() {
 
   using PC = V3DLib::vc4::PerformanceCounters;
  
-  // TODO add vc7\n
-
   if (Platform::run_vc4()) {
     PC::enable({
       PC::QPU_INSTRUCTIONS,

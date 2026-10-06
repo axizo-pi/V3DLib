@@ -61,7 +61,6 @@ public:
    * Construct kernel out of C++ function
    */
   Kernel(KernelFunction f, BaseSettings const &settings) : BaseKernel(settings) {
-    bool prev = Platform::compiling_for_vc4();
     compile_init();
 
     compile().compile([this, f] () {
@@ -77,7 +76,7 @@ public:
     }
     Log::warn << buf;
 */
-    Platform::compiling_for_vc4(prev);
+    Platform::compile::done();
   }
 };
 

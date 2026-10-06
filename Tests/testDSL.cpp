@@ -584,7 +584,7 @@ TEST_CASE("Test specific operations in DSL [dsl][ops]") {
     };
 
     float Precision = 0;
-    if (Platform::compiling_for_vc4()) {
+    if (Platform::run_vc4()) {
       // This is specifically for  integer_division_f(), index == 10 in result and expected.
       // In this case, off-by-1 downward is common.
       Precision = 1;
@@ -789,7 +789,7 @@ TEST_CASE("Test functions [dsl][func]") {
     }
 
     {
-      if (!Platform::compiling_for_vc4()) {
+      if (!Platform::run_vc4()) {
         result.fill(-1.0f);
 
         BaseSettings settings;
@@ -1159,7 +1159,7 @@ void tmu_kernel(Int::Ptr result) {
  * It might be that the longest running QPU gets to write last.
  */
 TEST_CASE("Test edge cases of TMU [dsl][tmu]") {
-  if (Platform::compiling_for_vc4()) {
+  if (Platform::run_vc4()) {
     warn << "Skipping TMU write for vc4";
   } else {
     Int::Array result(2*16);

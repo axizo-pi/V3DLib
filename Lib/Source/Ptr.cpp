@@ -65,7 +65,7 @@ Pointer &Pointer::self() {
 
 
 void Pointer::inc() {
-  if (Platform::compiling_for_vc4()) {
+  if (Platform::compile::for_vc4()) {
     int const INC = 16*4;  // for getting next block for a sequential pointer
     self() = bare_addself(*this, IntExpr(INC));
   } else {
@@ -107,7 +107,7 @@ uint32_t Pointer::param_value(BaseSharedArray const *p) {
 
 
 PointerExpr devnull() {
-  assertq(!Platform::compiling_for_vc4(), "devnull() is for v3d only");
+  assertq(!Platform::compile::for_vc4(), "devnull() is for v3d only");
   Expr::Ptr e = std::make_shared<Expr>(Var(STANDARD, RSV_DEVNULL));
   return PointerExpr(e);
 }

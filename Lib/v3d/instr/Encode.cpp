@@ -76,7 +76,7 @@ void check_unhandled_registers(Reg reg, bool do_src_regs) {
         case SPECIAL_ELEM_NUM:
         case SPECIAL_QPU_NUM:
           // These can occur for vc7
-          assertq(Platform::compiling_for_vc7(), "check_unhandled_registers(): Not expecting this SPECIAL regId, should be handled before call()");
+          assertq(Platform::compile::for_vc7(), "check_unhandled_registers(): Not expecting this SPECIAL regId, should be handled before call()");
         break;
 
         default: break;

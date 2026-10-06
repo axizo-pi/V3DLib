@@ -186,7 +186,7 @@ uint32_t Int::param_value(int val) {
  * On `vc4` this is a special register, on `v3d` this is an instruction.
  */
 IntExpr index() {
-  if (Platform::compiling_for_vc4()) {
+  if (Platform::compile::for_vc4()) {
     Expr::Ptr e = std::make_shared<Expr>(Var(ELEM_NUM));
     return IntExpr(e);
   } else {
@@ -276,7 +276,7 @@ IntExpr clz(IntExpr a) {
 void barrier() {
   using namespace functions;
 
-  if (Platform::compiling_for_vc4()) {
+  if (Platform::compile::for_vc4()) {
     vc4::barrier();  // Stmt::BARRIER is not passed on for `vc4`
   } else {
     v3d::barrier();

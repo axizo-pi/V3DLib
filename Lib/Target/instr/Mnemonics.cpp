@@ -109,7 +109,7 @@ Reg const None(NONE, 0);
  =================================================================*/
 
 Reg ACC0() {
-  if (Platform::compiling_for_vc7()) {
+  if (Platform::compile::for_vc7()) {
     assert(V3DLib::VarGen::count() != 0);
     return Reg(V3DLib::VarGen::fresh());
   } else {
@@ -129,7 +129,7 @@ Reg ACC0() {
  * This is a special purpose register on `vc4`, `vc6`. It is not on `vc7`.
  */
 Reg ACC4() {
-  if (Platform::compiling_for_vc7()) {
+  if (Platform::compile::for_vc7()) {
     // Just create a new Reg for vc7
     assert(V3DLib::VarGen::count() != 0);
     return Reg(V3DLib::VarGen::fresh());
@@ -231,7 +231,7 @@ Instr::List mov(Reg dst, RegOrImm const &src) {
     // The logic for special reg's is under bor(), so we 
     // need to redirect there
     ret <<  bor(dst, src, src);
-  } else if (Platform::compiling_for_vc7()) {
+  } else if (Platform::compile::for_vc7()) {
     ret <<  _mov(dst, src);
   } else if (src.is_imm()) {
     ret << li(dst, src.imm());
@@ -360,7 +360,7 @@ Instr barrier() {
 
 
 Instr::List recipsqrt(Var dst, Var srcA) {
-  if (Platform::compiling_for_vc7()) {
+  if (Platform::compile::for_vc7()) {
     Instr::List ret;
 
     // TODO: `Enum::A_RSQRT2d` also exists, examine
@@ -377,7 +377,7 @@ Instr::List recipsqrt(Var dst, Var srcA) {
  * @brief Return the log2 of the given value
  */
 Instr::List blog(Reg dst, RegOrImm const &srcA) {
-  if (Platform::compiling_for_vc7()) {
+  if (Platform::compile::for_vc7()) {
     Instr::List ret;
     ret << genInstr(Enum::A_LOG, dst, srcA);
     return ret;
@@ -388,7 +388,7 @@ Instr::List blog(Reg dst, RegOrImm const &srcA) {
 
 
 Instr::List recip(Reg dst, RegOrImm const &srcA) {
-  if (Platform::compiling_for_vc7()) {
+  if (Platform::compile::for_vc7()) {
     Instr::List ret;
     ret << genInstr(Enum::A_RECIP, dst, srcA);
     return ret;
@@ -413,7 +413,7 @@ Instr::List fdiv(Var dst, RegOrImm const &srcA ,RegOrImm const &srcB) {
  * @brief Return 2 to the power of srcA.
  */
 Instr::List bexp(Var dst, RegOrImm const &srcA) {
-  if (Platform::compiling_for_vc7()) {
+  if (Platform::compile::for_vc7()) {
     Instr::List ret;
     ret << genInstr(Enum::A_EXP, dst, srcA);
     return ret;

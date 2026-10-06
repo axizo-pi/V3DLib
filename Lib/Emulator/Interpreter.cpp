@@ -2,6 +2,7 @@
 #include "../CodeStruct.h"
 #include "EmuState.h"
 #include "Source/Stmt.h"
+#include "Support/Timer.h"
 #include "Support/basics.h"
 #include <algorithm>            // reverse()
 
@@ -13,10 +14,12 @@ namespace {
 
 Vec const Always(1);
 
-// State of a single core.
+/**
+ * @brief State of a single core.
+ */
 struct CoreState {
   int id;                        // Core id
-  int nextUniform = -2;          // Pointer to next uniform to read
+  int nextUniform = -2;          // Pointer to next uniform to read; default value for vc4
   Seq<Vec> loadBuffer;           // Load buffer
 
   int readStride = 0;            // Read stride
@@ -62,11 +65,21 @@ int CoreState::load_show_count = 0;
 int CoreState::store_show_count = 0;
 
 
-// State of the Interpreter.
+/**
+ * @brief State of the Interpreter.
+ */
 struct InterpreterState : public EmuState {
   CoreState core[MAX_QPUS];  // State of each core
 
-  InterpreterState(int in_num_qpus, IntList const &in_uniforms) : EmuState(in_num_qpus, in_uniforms) {} 
+  InterpreterState(int in_num_qpus, IntList const &in_uniforms, bool is_v3d) :
+    EmuState(in_num_qpus, in_uniforms, is_v3d, false)
+  {
+    if (is_v3d) {
+			for (int i = 0; i < MAX_QPUS; ++i) {
+        core[i].nextUniform = -3;
+			}
+		}
+  } 
 };
 
 
@@ -149,8 +162,12 @@ Vec eval(InterpreterState &is, CoreState* s, Expr::Ptr e) {
 
       switch (var.tag()) {
         case STANDARD: v = s->env(var.id()); break;
-        case UNIFORM:  v = is.get_uniform(s->id, s->nextUniform); break;
-        case ELEM_NUM: v = EmuState::index_vec; break;
+        case UNIFORM: {
+          //warn << "nextUniform: " << s->nextUniform;
+          v = is.get_uniform(s->id, s->nextUniform);
+          break;
+        }
+        case ELEM_NUM: v = index_vec; break;
 
         default:
           assertq("eval(): unhandled var tag");
@@ -537,7 +554,7 @@ void exec(InterpreterState &is, int core_index) {
 // ============================================================================
 
 /**
- * Run the interpreter
+ * @brief Run the interpreter.
  *
  * The interpreter parses the CFG ('source code') directly.
  *
@@ -559,8 +576,10 @@ void interpreter(
   IntList &uniforms,
   BufferObject &heap
 ) {
+	Timer("Interpreter", true);
+
   Stmts const &stmts = cs.sourceCode();
-  InterpreterState state(numCores, uniforms);
+  InterpreterState state(numCores, uniforms, Platform::emulating_for() != Platform::VCType::vc4);
 
   // Initialise state
   for (int i = 0; i < numCores; i++) {

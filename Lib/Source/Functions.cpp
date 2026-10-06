@@ -456,7 +456,7 @@ FloatExpr sin(FloatExpr x_in) {
  *   is much more convenient.
  */
 void barrier() {
-  assert(Platform::compiling_for_vc4());
+  assert(Platform::compile::for_vc4());
 
   //
   // 'I' refers to the QPU that grabbed the mutex.
@@ -504,7 +504,7 @@ void barrier() {
  * It is not used in the `V3DLib` code, but it does feature in the unit tests.
  */
 void mutex_acquire() {
-  assert(Platform::compiling_for_vc4());
+  assert(Platform::compile::for_vc4());
 
   Expr::Ptr dummy = mkVar(Var(DUMMY));
   Expr::Ptr mutex = mkVar(Var(MUTEX_ACQUIRE));  // Read A/B
@@ -523,7 +523,7 @@ void mutex_acquire() {
  * **NOTE:** Can't use DUMMY as src var. Fails on Target translation.
  */
 void mutex_release() {
-  assert(Platform::compiling_for_vc4());
+  assert(Platform::compile::for_vc4());
 
   Expr::Ptr mutex = mkVar(Var(MUTEX_RELEASE));  // Write A/B
 
@@ -636,7 +636,7 @@ FloatExpr sin(FloatExpr x_in) {
  * most likely with semaphores.
  */
 void barrier() {
-  assertq(!Platform::compiling_for_vc4(), "This version of barrier runs only on v3d");
+  assertq(!Platform::compile::for_vc4(), "This version of barrier runs only on v3d");
   stmtStack().push(Stmt::create(Stmt::BARRIER));
 }
 

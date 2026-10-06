@@ -153,7 +153,7 @@ TEST_CASE("Test Buffer Objects [bo]") {
 
 
 TEST_CASE("Multiple BO's should work [bo][multi]") {
-  if (Platform::compiling_for_vc4()) {
+  if (Platform::run_vc4()) {
     warn << "Skipping v3d multi BO for vc4";
     return;
   }

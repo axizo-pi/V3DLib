@@ -511,7 +511,7 @@ void RegUsage::check() const {
  
   if (!ret.empty()) {
     std::string prefix = "RegUsage internal error(s) ";
-    if (Platform::compiling_for_vc4()) {
+    if (Platform::compile::for_vc4()) {
       prefix << "vc4";
     } else {
       prefix << "v3d";
@@ -605,7 +605,7 @@ bool RegUsage::check_overlap_usage(Reg acc, RegUsageItem const &item) const {
  */
 int RegUsage::dst_range(int line_number) const {
   //info << "Called dst_range line_number: " << line_number;
-  assert(!Platform::compiling_for_vc7());
+  assert(!Platform::compile::for_vc7());
 
   int first_unused_acc = -1;
 
@@ -631,7 +631,7 @@ int RegUsage::dst_range(int line_number) const {
   //
   // Incredibly, following exclusion works for vc6. This might fail in the future
   //
-  if (Platform::compiling_for_vc4()) {
+  if (Platform::compile::for_vc4()) {
     if (first_unused_acc == 5) {
       warn << "dst_range blocking special accumulator ACC5.";
       first_unused_acc = -1;

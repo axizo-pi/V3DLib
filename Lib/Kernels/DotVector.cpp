@@ -96,7 +96,7 @@ void pre_write(Float::Ptr &dst, Float &src, bool add_result) {
  * Write first j values of src vector to dst
  */
 void pre_write(Float::Ptr &dst, Float &src, bool add_result, Int const &j) {
-  if (Platform::compiling_for_vc4()) {
+  if (Platform::compile::for_vc4()) {
     Float tmp = 0;
 
     if (add_result) {

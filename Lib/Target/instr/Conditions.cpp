@@ -57,7 +57,7 @@ BranchCond BranchCond::negate() const {
 
 
 uint8_t BranchCond::encode() const {
-  assertq(Platform::compiling_for_vc4(), "BranchCond::encode(): this call is vc4 only");
+  assertq(Platform::compile::for_vc4(), "BranchCond::encode(): this call is vc4 only");
 
   switch (tag) {
     case COND_NEVER:
@@ -220,7 +220,7 @@ std::string AssignCond::dump() const {
 
 
 uint8_t AssignCond::encode() const {
-  assertq(Platform::compiling_for_vc4(), "AssignCond::encode(): this call is vc4 only");
+  assertq(Platform::compile::for_vc4(), "AssignCond::encode(): this call is vc4 only");
 
   switch (m_tag) {
     case NEVER:  return 0;

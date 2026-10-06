@@ -935,7 +935,7 @@ void tiny_fft(Complex::Ptr &b, Complex::Ptr &devnull) {
  *     
  */
 void fft_kernel(Complex::Ptr b, Complex::Ptr devnull) {
-  assertq(!Platform::compiling_for_vc4(), "FFT kernel runs only on v3d");
+  assertq(!Platform::run_vc4(), "FFT kernel runs only on v3d");
 
   b -= index();
 

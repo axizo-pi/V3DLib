@@ -214,7 +214,7 @@ TEST_CASE("Check v3d condition codes [v3d][cond]") {
 
   SUBCASE("Test condition push a") {
     if (!running_on_v3d()) return;
-    if (V3DLib::Platform::compiling_for_vc7()) return;  // kernel contains acc's, not supported on vc7
+    if (V3DLib::Platform::run_vc7()) return;  // kernel contains acc's, not supported on vc7
 
     const int DATA_SIZE = 16;
 

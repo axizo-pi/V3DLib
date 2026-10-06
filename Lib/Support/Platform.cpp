@@ -154,12 +154,13 @@ public:
 
   std::string model_number;
   std::string revision;
-  VideoCoreType vc_type = UNKNOWN;
+  VCType      vc_type         = UNKNOWN;
+  VCType      m_compiling_for = UNKNOWN;
+  VCType      emulating_for   = UNKNOWN;
   std::string platform_id; 
 
   bool is_pi_platform;
   bool m_use_main_memory   = false;
-  bool m_compiling_for_vc4 = true;
   bool m_running_emulator  = false;
 
   int size_regfile() const;
@@ -185,10 +186,11 @@ PlatformInfo::PlatformInfo() {
      platform_contains("Pi 5")? vc7:
     vc4;
   }
-
+/*
   // As default, select compiling for the platform you are on.
   // If you want to compile to vc4, you need to explicitly set this.
   m_compiling_for_vc4 = (vc_type == vc4);
+*/
 }
 
 
@@ -258,20 +260,58 @@ void use_main_memory(bool val) {
 
 bool use_main_memory() { return instance().m_use_main_memory; }
 
+/**
+ * Compilation is only enabled if an actual compile is taking place.
+ */
+namespace compile {
 
 /**
- * Sets the target platform to compile to.
+ * @brief Sets the target platform to compile to.
  *
  * This is distinct from the platform we are actually running on.
  * The compilation can occur on any platform, including non-pi.
  */
-void compiling_for_vc4(bool val) { 
-  //Log::debug << "compiling_for_vc4 val: " << val;
-  instance().m_compiling_for_vc4 = val;
+void start(VCType in_type) {
+	assert(in_type != UNKNOWN);
+	instance().m_compiling_for = in_type;
 }
 
 
-bool compiling_for_vc4() { return instance().m_compiling_for_vc4; }
+void compiling(bool do_vc4) { 
+	if (do_vc4) {
+  	Log::warn << "Compiling forcing vc4";
+	}
+
+	if (do_vc4) {
+  	instance().m_compiling_for = vc4;
+	} else {
+  	instance().m_compiling_for = instance().vc_type;
+	}
+}
+
+
+
+bool running() { return instance().m_compiling_for != UNKNOWN; }
+
+void done() {
+	assertq(instance().m_compiling_for != UNKNOWN, "Stopping compiling for Unknown");
+	instance().m_compiling_for = UNKNOWN;
+}
+
+
+
+bool for_vc4(bool do_break) {
+	assert(!running_emulator());
+
+	if (do_break) {
+		if (instance().m_compiling_for == UNKNOWN) {
+ 			warn << "compiling_for_vc4 compiling for Unknown";
+   		breakpoint;
+		}
+	}
+
+	return instance().m_compiling_for == vc4;
+}
 
 
 /**
@@ -283,22 +323,43 @@ bool compiling_for_vc4() { return instance().m_compiling_for_vc4; }
  * we are running on. It is possible to compile for any platform on any
  * platform.
  */
-bool compiling_for_vc7() {
+bool for_vc7() {
+	assert(!running_emulator());
+/*
   // This overrides any device selection, due to emulator and interpreter
   if (instance().m_compiling_for_vc4) return false;
   return (instance().vc_type == vc7);  // This option is way easier
+*/
+	if (instance().m_compiling_for == UNKNOWN) {
+ 		warn << "compiling_for_vc7 compiling for Unknown";
+    breakpoint;
+	}
+
+  return (instance().m_compiling_for == vc7);
 }
 
 
-bool compiling_for_vc6() {
-  return !compiling_for_vc4() && (instance().vc_type == vc6);
+bool for_vc6() {
+	assert(!running_emulator());
+  return !for_vc4() && (instance().vc_type == vc6);
 }
+
+} // namespace compile
 
 
 std::string platform_info() { return instance().output(); }
 bool is_pi_platform()       { return instance().is_pi_platform; }
-bool run_vc4()              { return instance().vc_type == vc4; }
-bool run_vc7()              { return instance().vc_type == vc7; }
+
+bool run_vc4() {
+	//assert(!running_emulator());
+	return instance().vc_type == vc4;
+}
+
+
+bool run_vc7() {
+	//assert(!running_emulator());
+	return instance().vc_type == vc7;
+}
 
 
 /**
@@ -346,7 +407,8 @@ Tag tag() {
  * concept can actually be convoluted as f*** underwater.
  */
 int size_regfile() {
-  if (compiling_for_vc4()) return 32;
+	assert(!running_emulator()); // Warn me
+  if (run_vc4()) return 32;
   return 64;  // v3d
 }
 
@@ -363,7 +425,8 @@ int gather_limit() {
     showed = true;
   }
 
-  if (compiling_for_vc4()) {
+	assert(!running_emulator());  // Warn me
+  if (run_vc4()) {
     return 4;
   } else {
     return 8;
@@ -409,21 +472,26 @@ std::string pi_version() {
 }
 
 
-void running_emulator(bool val) { instance().m_running_emulator = val; }
+void run_emulator(VCType in_type) {
+	assert(in_type != UNKNOWN);
+	instance().emulating_for = in_type;
+}
+
+VCType emulating_for() {
+	return instance().emulating_for;
+}
 
 
 /**
- * @brief Check if emulator is running
+ * @brief Check if emulator or interpreter is running.
  *
- * This is only set if the emulator is actually running;
- * as such it is not useful for detecting if emulator is selected.
- * Thus, it has limited use.
+ * This is only set if the emulator/interpreter is actually running.
  *
- * **TODO**: determine if useful, remove otherwise.
- *
- * @return true if emulator running, false otherwise.
+ * @return true if emulator or interpreter is running, false otherwise.
  */
-bool running_emulator() { return instance().m_running_emulator; }
+bool running_emulator() { return instance().emulating_for != UNKNOWN; }
+
+void done_emulating() { instance().emulating_for = UNKNOWN; }
 
 
 /**
@@ -434,10 +502,26 @@ bool running_emulator() { return instance().m_running_emulator; }
  *
  * **TODO:** Clean up `run_` and `compile_` calls.
  */
-VideoCoreType vc_type() {
+VCType vc_type() {
   auto type = instance().vc_type;
   assert(type != UNKNOWN);
   return type;
+}
+
+
+std::string vc_type_str(VCType type) {
+  switch(type) {
+    case UNKNOWN: return "Unknown";
+    case vc4: return "vc4";
+    case vc6: return "vc6";
+    case vc7: return "vc7";
+    default:  assert(false); return "none";  // Should never occur
+  }
+}
+
+
+std::string vc_type_str() {
+  return vc_type_str(instance().vc_type);
 }
 
 

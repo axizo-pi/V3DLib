@@ -4,6 +4,8 @@
 #include "Emulator/Interpreter.h"  // interpreter()
 #include "Emulator/Emulator.h"     // emulate()
 
+using VCType = V3DLib::Platform::VCType;
+
 /**
  * /file
  * Basic Kernel class.
@@ -41,16 +43,17 @@ void BaseKernel::compile_init() {
   //warn << "Called compile_init()";
   assert(m_compile.get() == nullptr);
 
-  enum SelectKernel {
-    None,
-    vc4,
-    v3d
-  };
+  VCType select_kernel = VCType::UNKNOWN;
 
-  SelectKernel select_kernel = None;
-
+#ifdef V3D_ALLOW_INTERPRET
+  if (Platform::run_vc4()) {
+    select_kernel = VCType::vc4;
+  } else {
+    select_kernel = v3d;
+  }
+#else
   if (m_settings.run_type != QPU) {
-    select_kernel = vc4;
+    select_kernel = VCType::vc4;
   }
 
   if (!m_settings.compile_only) {
@@ -64,26 +67,28 @@ void BaseKernel::compile_init() {
       }
 
       m_settings.run_type = Emulator;
-      select_kernel = vc4;
+      select_kernel = VCType::vc4;
     }
   }
 
-  if (m_settings.run_type != QPU || Platform::run_vc4()) {   // Compile vc4
-    select_kernel = vc4;
-  } else {                                                   // Compile v3d
-    select_kernel = v3d;
+  if (m_settings.run_type != QPU) {
+    select_kernel = VCType::vc4;
+  } else {
+    select_kernel = Platform::vc_type();
   }
+#endif
 
-  assert(select_kernel != None);  
+  assert(select_kernel != VCType::UNKNOWN);  
 
-  if (select_kernel == vc4) {
-    //warn << "BaseKernel compiling for vc4";
-    Platform::compiling_for_vc4(true);
+  if (select_kernel == VCType::vc4) {
+    Platform::compile::start(select_kernel);
     m_compile.reset(new vc4::Compile);
   } else {
-    Platform::compiling_for_vc4(false);
+    warn << "BaseKernel compiling for v3d";
+    Platform::compile::start(select_kernel);
     m_compile.reset(new v3d::Compile);
   }
+  warn << "compile_init compiling_for_vc4: " << Platform::compile::for_vc4();
 }
 
 
@@ -116,6 +121,12 @@ void BaseKernel::run(bool wait_complete) {
   assert(m_compile.get() != nullptr);
 
   if (Platform::use_main_memory()) {
+#ifdef V3D_ALLOW_INTERPRET
+    if (m_settings.run_type == QPU) {
+      warn << "Main memory selected in QPU mode, running on emulator instead of QPU.";
+      m_settings.run_type = Emulator;
+    }
+#else
     if (compile().is_v3d()) {
        if (!m_settings.compile_only) {
         fatal("Main memory selected in QPU mode and not compiled for vc4, can not run.");
@@ -128,6 +139,7 @@ void BaseKernel::run(bool wait_complete) {
         m_settings.run_type = Emulator;
       }
     }
+#endif
   }
 
   bool do_execute = true;
@@ -143,8 +155,6 @@ void BaseKernel::run(bool wait_complete) {
 
     do_execute = false;
   }
-
-  //warn << "here is_v3d: " << compile().is_v3d() << ", vc_type: " << Platform::vc_type();
 
   if (do_execute) {
     m_settings.startPerfCounters();
@@ -176,7 +186,10 @@ void BaseKernel::emu(bool do_debug) {
     return;
   }
 
+  assertq(compile().kernel_type() == VCType::vc4, "Can not run interpreter for v3d");
   assert(uniforms.size() != 0);
+
+	Platform::run_emulator(compile().kernel_type());
 
   emulate(
     numQPUs(),
@@ -186,6 +199,8 @@ void BaseKernel::emu(bool do_debug) {
     getBufferObject(),
     do_debug
   );
+
+	Platform::done_emulating();
 }
 
 
@@ -193,16 +208,36 @@ void BaseKernel::emu(bool do_debug) {
  * Invoke the interpreter
  */
 void BaseKernel::interpret() {
+  assert(!uniforms.empty());
   assert(!m_settings.compile_only);    // Paranoia
-  assertq(!compile().is_v3d(), "Can not run interpreter on v3d");
 
   if (compile().has_errors()) {
-    warn << "Not running interpreter, there were errors during compile.";
+    cerr << "Not running interpreter, there were errors during compile.";
     return;
   }
 
-  assert(uniforms.size() != 0);
-  interpreter(numQPUs(), compile().code_struct(), compile().numVars(), uniforms, getBufferObject());
+#ifdef V3D_ALLOW_INTERPRET
+  warn << "interpret allowing v3d";
+
+  warn << "interpret() "
+       << "is_v3d: "  << compile().is_v3d()  << ", "
+       << "run vc4: " << Platform::run_vc4();
+#else
+  assertq(compile().kernel_type() == VCType::vc4, "Can not run interpreter for v3d");
+#endif
+
+
+	Platform::run_emulator(compile().kernel_type());
+
+  interpreter(
+    numQPUs(),
+    compile().code_struct(),
+    compile().numVars(),
+    uniforms,
+    getBufferObject()
+  );
+
+	Platform::done_emulating();
 }
 
 

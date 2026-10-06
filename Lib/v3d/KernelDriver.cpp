@@ -90,7 +90,7 @@ void KernelDriver::invoke(
       cerr << "Zero or negative QPU's selected" << thrw;
   }
 
-  if (Platform::compiling_for_vc7()) {
+  if (Platform::vc_type() == Platform::vc7) {
     if (numQPUs > 16) {
       cerr << "Num QPU's exceeded; Max QPU's is 16 for vc7" << thrw;
     }

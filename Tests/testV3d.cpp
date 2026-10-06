@@ -76,6 +76,18 @@ Instructions output(Location const &src) {
   return ret;
 }
 
+
+bool check_precompile_vc6() {
+  if (!v3d_init()) return false;
+
+  if (V3DLib::Platform::run_vc7()) {
+    Log::warn << "Precompiled kernels are for vc6, blocking for vc7";
+    return false;
+  }
+
+	return true;
+}
+
 }  // anon namespace
 
 
@@ -95,7 +107,7 @@ Instructions output(Location const &src) {
 TEST_CASE("Test SFU opcodes [v3d][code][SFU]") {
   if (!v3d_init()) return;
 
-  if (V3DLib::Platform::compiling_for_vc7()) {
+  if (V3DLib::Platform::run_vc7()) {
     //warn << "SFU functions not applicable for vc7, skipping";
     return;
   }
@@ -226,12 +238,12 @@ TEST_CASE("Test v3d opcodes [v3d][code][opcodes]") {
     // Keep in mind that on vc7 rf's are used instead of acc's
     auto a = rf(17);     // rf should be free
     auto b = r2;
-    Location const &_r2 = V3DLib::Platform::compiling_for_vc7()?((Location const &) a):((Location const &) b);
+    Location const &_r2 = V3DLib::Platform::run_vc7()?((Location const &) a):((Location const &) b);
 
     auto c = rf(18);     // rf should be free
     auto d = r3;
 
-    Location const &_r3 = V3DLib::Platform::compiling_for_vc7()?((Location const &) c):((Location const &) d);
+    Location const &_r3 = V3DLib::Platform::run_vc7()?((Location const &) c):((Location const &) d);
 
     instrs << nop().ldunifrf(rf(0))       // value to operate on
            << nop().ldunifrf(rf(1))       // ptr to location to store
@@ -337,11 +349,7 @@ TEST_CASE("Check v3d code is working properly [v3d][code]") {
 
 
 TEST_CASE("Driver call for v3d should work [v3d][driver]") {
-  if (!v3d_init()) return;
-  if (V3DLib::Platform::compiling_for_vc7()) {
-    Log::debug << "Precompiled kernels are for vc6, will not run (correctly) on vc7";
-    return;
-  }
+	if (!check_precompile_vc6()) return;
 
   SUBCASE("Summation example should work from bytecode") {
     uint8_t num_qpus = 8;  // Don't change these values! That's how the summation kernel bytecode
@@ -380,11 +388,7 @@ TEST_CASE("Driver call for v3d should work [v3d][driver]") {
 TEST_CASE("Check v3d rotate assembly/disassembly [v3d][asm]") {
   using namespace V3DLib::v3d::instr;
 
-  if (!v3d_init()) return;
-  if (V3DLib::Platform::compiling_for_vc7()) {
-    //Log::debug << "Precompiled kernels are for vc6, will not run (correctly) on vc7";
-    return;
-  }
+	if (!check_precompile_vc6()) return;
 
   SUBCASE("rotate kernel generates correctly encoded output") {
     std::vector<uint64_t> arr = rotate_kernel();
@@ -400,7 +404,7 @@ TEST_CASE("Check v3d assembly/disassembly [v3d][asm]") {
   using namespace V3DLib::v3d::instr;
 
   if (!v3d_init()) return;
-  if (V3DLib::Platform::compiling_for_vc7()) {
+  if (V3DLib::Platform::run_vc7()) {
     // The expected output is vc6-specific
     return;
   }
@@ -433,7 +437,7 @@ TEST_CASE("Check v3d opcodes [v3d][opcodes]") {
   using namespace V3DLib::v3d::instr;
 
   SUBCASE("For opcode with two small immediates values, value should be the same") {
-    if (V3DLib::Platform::compiling_for_vc7()) {
+    if (V3DLib::Platform::run_vc7()) {
       warn << "Skipping tests with two immediate values, always forbidden for vc7.";
     } else {
       REQUIRE_THROWS(shl(r0, 1, 5));
@@ -444,7 +448,7 @@ TEST_CASE("Check v3d opcodes [v3d][opcodes]") {
   }
 
   SUBCASE("Selected opcode should be encoded correctly") {
-    if (!V3DLib::Platform::compiling_for_vc7()) {
+    if (!V3DLib::Platform::run_vc7()) {
       // acc's, vc6
       std::vector<std::string> expected = {
         "and  rf0, r0, 15     ; nop",
@@ -453,7 +457,7 @@ TEST_CASE("Check v3d opcodes [v3d][opcodes]") {
 
       Instructions instrs; 
       instrs << band(rf(0), r0, 0b1111)
-              << band(r1, r0, 0b1111);
+             << band(r1, r0, 0b1111);
     
       for (int n = 0; n < (int) instrs.size(); ++n) {
         // The whitespace layout changed in mesa2; condense_whitespace() nullifies different spaces
@@ -493,7 +497,7 @@ TEST_CASE("Check v3d opcodes [v3d][opcodes]") {
   SUBCASE("Opcodes not in qpu_disasm kernel assembled correctly") {
     Instructions ret;
 
-    if (V3DLib::Platform::compiling_for_vc7()) {
+    if (V3DLib::Platform::run_vc7()) {
       ret
         << nop().smul24(rf(1), SmallImm(2), rf(0))
         << rotate(rf(1), rf(0), rf(15))

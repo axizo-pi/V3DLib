@@ -19,7 +19,7 @@ void pre_write(Complex::Ptr &dst, Complex &src, bool add_result) {
 
 
 void pre_write(Complex::Ptr &dst, Complex &src, bool add_result, Int const &j) {
-  if (Platform::compiling_for_vc4()) {
+  if (Platform::compile::for_vc4()) {
     pre_write(dst.re(), src.re(), add_result, j);
     pre_write(dst.im(), src.im(), add_result, j);
   } else {

@@ -6,18 +6,17 @@ namespace V3DLib {
 
 class EmuState {
 public:
+  const bool run_v3d;
   int num_qpus;
   Word vpm[VPM_SIZE];      // Shared VPM memory
 
-  EmuState(int in_num_qpus, IntList const &in_uniforms, bool add_dummy = false);
+  EmuState(int in_num_qpus, IntList const &in_uniforms, bool in_run_v3d,  bool add_dummy);
   Vec get_uniform(int id, int &next_uniform);
   bool sema_inc(int sema_id);
   bool sema_dec(int sema_id);
 
   std::string dump_vpm() const;
   std::string dump_sema() const;
-
-  static Vec const index_vec;
 
 private:
   IntList uniforms;               // Kernel parameters

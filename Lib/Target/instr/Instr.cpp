@@ -591,7 +591,7 @@ uint32_t Instr::get_acc_usage() const {
         ret |=  (1 << dest().regId);
       }
 
-      if (!Platform::compiling_for_vc4()) {  // See Note 1.
+      if (!Platform::compile::for_vc4()) {  // See Note 1.
         ret |= 3;  //debug("LI block acc0 and acc1");
       }
 
@@ -613,7 +613,7 @@ uint32_t Instr::get_acc_usage() const {
       }
 
       if (ALU.op == Enum::A_FSIN) {
-        if (!Platform::compiling_for_vc4()) {
+        if (!Platform::compile::for_vc4()) {
           // SIN using special reg always returns result in r4
           assertq((ret & (1 << 4)) == 0, "get_acc_usage(): Not really expecting r4 to be already in use for sin");
           ret |=  (1 << 4);
@@ -634,7 +634,7 @@ uint32_t Instr::get_acc_usage() const {
   // ACC 0 and 1 are used rot v3d, add
   // dst r1 and src r0 might be explicitly set beforehand, this is fine.
   // Generation of rot-instruction checks for this
-  if (!Platform::compiling_for_vc4()) {
+  if (!Platform::compile::for_vc4()) {
     if (isRot()) {
       ret |= 3;
     }

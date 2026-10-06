@@ -68,9 +68,9 @@ void compile_postprocess(Target::Instr::List &targetCode) {
 }  // anon namespace
 
 Compile::Compile() {
-  assert(Platform::compiling_for_vc4());
+  assert(Platform::compile::for_vc4());
   Log::debug << "selecting vc4 as kernel type";
-  m_type = vc4;
+  m_type = VCType::vc4;
 
   init_compile();
 }

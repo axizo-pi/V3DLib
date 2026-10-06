@@ -354,8 +354,15 @@ bool Vec::apply(ALUOp const &op, Vec a, Vec b) {
     }
     break;
 
-    case Enum::A_MOV:  // v3d
+		//
+    // v3d
+    //
+    case Enum::A_MOV:
       *this = a;
+    break;
+
+    case Enum::A_EIDX:
+      *this = index_vec;
     break;
 
     default:
@@ -363,7 +370,9 @@ bool Vec::apply(ALUOp const &op, Vec a, Vec b) {
     break;
   }
 
-  assertq(handled, "Vec::apply(): Unhandled op value");
+	std::string buf = "Vec::apply(): Unhandled op value: ";
+	buf << op.dump();
+  assertq(handled, buf);
   return handled;
 }
 
@@ -439,5 +448,7 @@ void vpm_write(VPMStoreReq &req, Word *vpm, Vec const &v) {
 
   req.addr += req.stride;
 }
+
+Vec const index_vec({0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15});
 
 }  // namespace V3DLib

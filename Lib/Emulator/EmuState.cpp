@@ -14,10 +14,9 @@ namespace {
 
 } // anon namespace
 
-Vec const EmuState::index_vec({0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15});
 
-
-EmuState::EmuState(int in_num_qpus, IntList const &in_uniforms, bool add_dummy) :
+EmuState::EmuState(int in_num_qpus, IntList const &in_uniforms, bool in_run_v3d, bool add_dummy) :
+  run_v3d(in_run_v3d),
   num_qpus(in_num_qpus),
   uniforms(in_uniforms)
 {
@@ -31,17 +30,53 @@ EmuState::EmuState(int in_num_qpus, IntList const &in_uniforms, bool add_dummy) 
   }
 }
 
-
+/**
+ * Uniforms vc4:
+ *   - me()
+ *   - num QPU's
+ *   - uniform values
+ *   - dummy
+ *
+ * Uniforms v3d:
+ *   - me()
+ *   - num QPU's
+ *   - devnull
+ *   - uniform values
+ */ 
 Vec EmuState::get_uniform(int id, int &next_uniform) {
+	//warn << "next_uniform: " << next_uniform << ", uniforms.size(): " << uniforms.size();
+  assert(next_uniform < uniforms.size());
+
   Vec a;
 
-  assert(next_uniform < uniforms.size());
-  if (next_uniform == -2)
-    a = id;
-  else if (next_uniform == -1)
-    a = num_qpus;
-  else
-    a = uniforms[next_uniform];
+	if (run_v3d) {
+		switch(next_uniform) {
+		case -3:
+    	a = id;
+			break;
+		case -2:
+    	a = num_qpus;
+			break;
+		case -1:
+      // Dummy
+			break;
+    default:
+    	a = uniforms[next_uniform];
+			break;
+  	}
+  } else {
+		switch(next_uniform) {
+		case -2:
+    	a = id;
+			break;
+		case -1:
+    	a = num_qpus;
+			break;
+    default:
+    	a = uniforms[next_uniform];
+			break;
+  	}
+	}
 
   next_uniform++;
   return a;

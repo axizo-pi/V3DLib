@@ -79,7 +79,7 @@ void init_expected(Int::Array &expected, int numQPUs) {
 bool check_VPM_usage() {
   static int warn_count = 0;
 
-  if (!Platform::compiling_for_vc4()) {
+  if (!Platform::run_vc4()) {
     if (warn_count == 0) {
       warn << "Not running VPM mem on QPU's for v3d";
       warn_count++;

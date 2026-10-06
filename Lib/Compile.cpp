@@ -30,12 +30,7 @@ Compile::~Compile() {
 }
 
 std::string Compile::kernel_type_str() const {
-  switch(kernel_type()) {
-    case vc4: return "vc4";
-    case vc6: return "vc6";
-    case vc7: return "vc7";
-    default:  assert(false); return "none";  // Should never occur
-  }
+	return Platform::vc_type_str(kernel_type());
 }
 
 
@@ -58,6 +53,8 @@ CodeStruct const &Compile::code_struct() const {
  */
 void Compile::compile(std::function<void()> create_ast) {
   try {
+		warn << "Compile::compile() compiling for: " << kernel_type_str();
+
     create_ast();
     compile_intern();
 
@@ -200,12 +197,12 @@ std::string Compile::dump_compile_data() const {
   ret = m_compile_data->dump();
 
   // vc7 has no accumulators, don't display
-  if (!Platform::compiling_for_vc7()) {
+  if (!Platform::compile::for_vc7()) {
     ret << ::title("ACC usage")
         << " - This is for final Target source.\n"
         << " - Index is line number, digits are accumulator indexes.\n";
 
-    if (Platform::compiling_for_vc6()) {
+    if (Platform::compile::for_vc6()) {
       ret  << " - vc6: The load immediate instruction can potentially also use acc 0 and 1.\n"
            << "   Logic requires that these acc's are always flagged.\n";
     }

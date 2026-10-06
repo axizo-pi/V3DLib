@@ -84,7 +84,7 @@ MAYBE_UNUSED std::string dump_check(CheckSrc val) {
 
 
 bool check_small_imm(Instr const &dst, BaseSource const &src) {
-  assert(!Platform::compiling_for_vc7());
+  assert(!Platform::run_vc7());
 
   if (dst.sig.small_imm_b) {
     // If the src value is the same as the local small int, this is fine
@@ -105,7 +105,7 @@ bool set_mul_small_imm(
   v3d_qpu_input &input,
   CheckSrc check_src
 ) {
-  assert(!Platform::compiling_for_vc7());
+  assert(!Platform::run_vc7());
   assert(imm.is_small_imm());
 
   if (dst.sig.small_imm_b) {
@@ -176,7 +176,7 @@ bool Instr::is_branch() const {
  * Return true if any of the small_imm flags are set (there are four).
  */
 bool Instr::has_small_imm() const {
-  if (Platform::compiling_for_vc7()) {
+  if (Platform::run_vc7()) {
      // vc7: Check any of the small_imm flags are set
     return sig.small_imm_a
         || sig.small_imm_b
@@ -205,7 +205,7 @@ int Instr::small_imm_value() const {
 
   if (!has_small_imm()) return NO_SMALL_IMM;
 
-  if (Platform::compiling_for_vc7()) {
+  if (Platform::run_vc7()) {
      // vc7
     if (sig.small_imm_a) return alu.add.a.raddr;
     if (sig.small_imm_b) return alu.add.b.raddr;
@@ -424,7 +424,7 @@ std::string Instr::dump_internal() const {
   if (sig.rotate) {
     if (!is_branch()) {  // Assumption: rotate signal irrelevant for branch
 
-      if (Platform::compiling_for_vc7()) {
+      if (Platform::run_vc7()) {
         // Ref. see: mesa2/src/broadcom/qpu/qpu_instr.h
         assert("Don't know how to deal with vc7");
       } else {
@@ -725,7 +725,7 @@ DestReg Instr::mul_dest() const {
  *                      Ignored for vc6.
  */
 DestReg Instr::add_src_dest(v3d_qpu_input src, bool is_small_imm) const {
-  if (Platform::compiling_for_vc7()) {
+  if (Platform::run_vc7()) {
     if (!is_small_imm) {
       return DestReg(src.raddr, false);
     }
@@ -818,7 +818,7 @@ bool Instr::mux_in_use(CheckSrc check_src, v3d_qpu_mux mux) const {
 
 
 bool Instr::raddr_a_is_safe(uint8_t raddr, CheckSrc check_src) const {
-  if (Platform::compiling_for_vc7()) return true;  // Always safe for vc7
+  if (Platform::run_vc7()) return true;  // Always safe for vc7
 
   if (!mux_in_use(check_src, V3D_QPU_MUX_A)) return true;
   return (raddr_a == raddr);
@@ -826,7 +826,7 @@ bool Instr::raddr_a_is_safe(uint8_t raddr, CheckSrc check_src) const {
 
 
 bool Instr::raddr_b_is_safe(uint8_t raddr, CheckSrc check_src) const {
-  if (Platform::compiling_for_vc7()) return true;  // Always safe for vc7
+  if (Platform::run_vc7()) return true;  // Always safe for vc7
 
   if (!mux_in_use(check_src, V3D_QPU_MUX_B)) return true;
   if (sig.small_imm_b) return false; 
@@ -838,7 +838,7 @@ bool Instr::raddr_b_is_safe(uint8_t raddr, CheckSrc check_src) const {
  * Following for vc6
  */
 bool Instr::alu_set_src(Source const &src, v3d_qpu_input &input, CheckSrc check_src) {
-  assert(!Platform::compiling_for_vc7());
+  assert(!Platform::run_vc7());
 
   auto &mux = input.mux;
 
@@ -898,7 +898,7 @@ bool Instr::alu_add_set(Location const &dst, Source const &in_a, Source const &i
 
   // TODO: Likely need this on alu_mul_set as well
   //       Better would be to test alu/mul together
-  if (Platform::compiling_for_vc7()) {
+  if (Platform::run_vc7()) {
     if (a.is_small_imm() && b.is_small_imm()) {
       breakpoint;
       cerr << "alu_add_set(): can not pass in two immediates: " 
@@ -937,7 +937,7 @@ bool Instr::alu_add_a(BaseSource const &src, bool overwrite) {
   }
 
   if (src.is_small_imm()) {
-    if (Platform::compiling_for_vc7()) {
+    if (Platform::run_vc7()) {
       sig.small_imm_a = true;
       alu.add.a.raddr = src.val();
     } else {
@@ -965,7 +965,7 @@ bool Instr::alu_add_b(BaseSource const &src, bool overwrite) {
   }
 
   if (src.is_small_imm()) {
-    if (Platform::compiling_for_vc7()) {
+    if (Platform::run_vc7()) {
       sig.small_imm_b = true;
       alu.add.b.raddr = src.val();
     } else {
@@ -1021,7 +1021,7 @@ bool Instr::alu_mul_a(BaseSource const &src, bool overwrite) {
   }
 
   if (src.is_small_imm()) {
-    if (Platform::compiling_for_vc7()) {
+    if (Platform::run_vc7()) {
       sig.small_imm_c = true;
       alu.mul.a.raddr = src.val();
     } else {
@@ -1047,11 +1047,11 @@ bool Instr::check_safe(BaseSource const &src, CheckSrc check_src) const {
   assert(src.is_set());
 
   if (src.is_small_imm()) {
-    if (!Platform::compiling_for_vc7()) {
+    if (!Platform::run_vc7()) {
       return check_small_imm(*this, src);
     }
   } else if (src.is_reg()) {
-    if (Platform::compiling_for_vc7()) {
+    if (Platform::run_vc7()) {
       warn << "check_safe: can not use registers on vc7";
       return false;
     }
@@ -1066,11 +1066,11 @@ bool Instr::check_safe(BaseSource const &src, CheckSrc check_src) const {
 
 bool Instr::alu_set_src(BaseSource const &src, v3d_qpu_input &input, CheckSrc check_src) {
   if (src.is_reg()) {
-    assertq(!Platform::compiling_for_vc7(), "alu_set_src: can not use registers on vc7");
+    assertq(!Platform::run_vc7(), "alu_set_src: can not use registers on vc7");
     // src.val() is a mux value
     input.mux = (v3d_qpu_mux) src.val();
   } else {
-    if (Platform::compiling_for_vc7()) {
+    if (Platform::run_vc7()) {
       input.raddr = src.val();
     } else {
       if (raddr_a_is_safe(src.val(), check_src)) {
@@ -1108,7 +1108,7 @@ bool Instr::alu_mul_b(BaseSource const &src, bool overwrite) {
   }
 
   if (src.is_small_imm()) {
-    if (Platform::compiling_for_vc7()) {
+    if (Platform::run_vc7()) {
       // Assumption: only one of the 4 source registers can have a small imm
       // If the assumption is correct, also add to the other src assignments.
       if (has_small_imm()) {
@@ -1140,7 +1140,7 @@ bool Instr::alu_mul_set(Location const &dst, Source const &a) {
 
   bool ret = true;
 
-  if (Platform::compiling_for_vc7()) {
+  if (Platform::run_vc7()) {
     ret = alu_mul_a(a);
     assert(ret);
   } else {
@@ -1258,7 +1258,7 @@ bool Instr::alu_mul_set(Target::Instr const &src_instr) {
 
 
 bool Instr::alu_set(Target::Instr src) {
-  if (Platform::compiling_for_vc7() && src.ALU.num_operands() == 2) {
+  if (Platform::run_vc7() && src.ALU.num_operands() == 2) {
     auto a  = src.ALU.srcA;
     auto b  = src.ALU.srcB;
     auto op = src.ALU.op.value();

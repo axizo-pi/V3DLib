@@ -165,12 +165,28 @@ bool SmallImm::int_to_opcode_value(int value, int &rep_value) {
 
 
 /**
- * @return true if conversion succeeded, false otherwise
+ *
+ * Gets called from class `EmuSupport` as well.
+ * It also gets called for direct translation of encoded code, see unit tests [v3d]/
+ *
+ * @return true if conversion succeeded, false otherwise.
  */
 bool SmallImm::float_to_opcode_value(float value, int &rep_value) {
   bool found_it  = false;
 
-  auto const &encodings = Platform::compiling_for_vc4()?float_encodings:float_encodings_v3d;
+	bool is_v3d;
+
+	if (Platform::running_emulator()) {
+		is_v3d = Platform::emulating_for() != Platform::VCType::vc4;
+		assert(!is_v3d);  // Block v3d for emulator for the time being.
+		//warn << "float_to_opcode_value running emulator v3d:"  << is_v3d;
+	} else if (Platform::compile::running()) {
+    is_v3d = !Platform::compile::for_vc4();
+  } else {
+    is_v3d = !Platform::run_vc4();
+	}
+
+  auto const &encodings = is_v3d?float_encodings_v3d:float_encodings;
 
   for (auto &item : encodings) {
     if (item.val == value) {
@@ -252,7 +268,7 @@ bool SmallImm::is_legal_encoded_value(int value) {
     }
   }
 
-  auto const &encodings = Platform::compiling_for_vc4()?float_encodings:float_encodings_v3d;
+  auto const &encodings = Platform::compile::for_vc4()?float_encodings:float_encodings_v3d;
 
   for (auto &item : encodings) {
     if (item.encoding == value) {
@@ -273,7 +289,7 @@ std::string SmallImm::print_encoded_value(int value) {
     }
   }
 
-  auto const &encodings = Platform::compiling_for_vc4()?float_encodings:float_encodings_v3d;
+  auto const &encodings = Platform::compile::for_vc4()?float_encodings:float_encodings_v3d;
 
   for (auto &item : encodings) {
     if (item.encoding == value) {

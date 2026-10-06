@@ -19,6 +19,7 @@ const int NUM_LANES =   16;
 const int MAX_QPUS  =   12;
 const int VPM_SIZE  = 1024;
 
+
 /**
  * @brief Type for representing the values in a vector
  */
@@ -86,6 +87,8 @@ private:
 
   void assign(Vec const &rhs);
 };
+
+extern Vec const index_vec;
 
 
 /**

@@ -45,7 +45,7 @@ void allocate_registers(Instr &instr, RegUsage const &alloc) {
 
   auto check_regfile_register = [&instr] (Reg const &replace_with, RegId r) -> bool {
     if (replace_with.tag == REG_A) return true;
-    if (Platform::compiling_for_vc4() && replace_with.tag == REG_B) return true;
+    if (Platform::compile::for_vc4() && replace_with.tag == REG_B) return true;
 
     UseDefReg out(instr);
 
@@ -302,7 +302,7 @@ void Liveness::optimize(Instr::List &instrs, int numVars) {
   //
   // vc7 has no general purpose accumulators, don't bother replacing variables with them
   //
-  if (!Platform::compiling_for_vc7()) {
+  if (!Platform::compile::for_vc7()) {
     int prev_count_skips = count_skips(instrs);
 
 #ifdef OUTPUT_COMPILEDATA
@@ -358,7 +358,7 @@ int get_free_acc(Instr::List const &instrs, Range const &use_range) {
 
   // Also masks out unused bits. See Note 1.
   //
-  if (Platform::compiling_for_vc4()) {
+  if (Platform::compile::for_vc4()) {
     acc_use = acc_use & 0xf;   // r0-r3
   } else {
     // vc6 all acc's appear to be available

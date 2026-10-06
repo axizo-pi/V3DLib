@@ -101,10 +101,10 @@ void BaseSharedArray::dealloc() {
  */
 uint32_t BaseSharedArray::getAddress() const {
   // Not sure if 4-bit alignment is required for vc4, it might go well automatically
-  // TODO: check this
-  if (!Platform::compiling_for_vc4()) { // v3d
+  warn << "SharedArray::getAddress: check assertion";
+  //if (!Platform::compiling_for_vc4()) { // v3d
     assert((m_phyaddr & 0xf) == 0);
-  }
+  //}
 
   return m_phyaddr;
 }

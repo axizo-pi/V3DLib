@@ -241,7 +241,7 @@ op_item::op_item(Enum in_op, v3d_qpu_add_op in_add_op, v3d_qpu_mul_op in_mul_op)
 
 
 op_item const *op_items_find_by_op(Enum op, bool strict) {
-  assert(!Platform::compiling_for_vc4());
+  assert(!Platform::compile::for_vc4());
 
   op_items_check_sorted();
 

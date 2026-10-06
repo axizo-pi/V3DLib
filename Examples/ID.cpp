@@ -1,5 +1,6 @@
 #include <V3DLib.h>
 #include "Support/Settings.h"
+#include "Support/Helpers.h"  // to_file()
 
 using namespace V3DLib;
 
@@ -20,6 +21,7 @@ int main(int argc, const char *argv[]) {
   settings.init(argc, argv);
 
   auto k = compile(id_kernel, settings);          // Construct kernel
+	to_file("id_kernel.txt", k.dump());
   k.setNumQPUs(numQPUs);
 
  	// Allocate and initialise array shared between ARM and GPU

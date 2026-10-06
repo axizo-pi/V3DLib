@@ -8,7 +8,7 @@ namespace instr {
 namespace {
 
 void set_muxes_add(v3d_qpu_alu_instr &alu, v3d_qpu_mux mux_a, v3d_qpu_mux mux_b) {
-  if (!Platform::compiling_for_vc7()) {  // No mux's on vc7
+  if (!Platform::run_vc7()) {  // No mux's on vc7
     alu.add.a.mux = mux_a;
     alu.add.b.mux = mux_b;
   }
@@ -16,7 +16,7 @@ void set_muxes_add(v3d_qpu_alu_instr &alu, v3d_qpu_mux mux_a, v3d_qpu_mux mux_b)
 
 
 void set_muxes_mul(v3d_qpu_alu_instr &alu, v3d_qpu_mux mux_a, v3d_qpu_mux mux_b) {
-  if (!Platform::compiling_for_vc7()) {  // No mux's on vc7
+  if (!Platform::run_vc7()) {  // No mux's on vc7
     alu.mul.a.mux = mux_a;
     alu.mul.b.mux = mux_b;
   }
@@ -69,7 +69,7 @@ Mnemonic &Mnemonic::thrsw()   { sig.thrsw   = true; return *this; }
 Mnemonic &Mnemonic::ldvary()  { sig.ldvary  = true; return *this; }
 
 Mnemonic &Mnemonic::ldunif() {
-  if (Platform::compiling_for_vc7() ) {
+  if (Platform::run_vc7() ) {
     Log::warn << "ldunif called on vc7.\n"
               << "  On vc6, this implicitly uses r5. r5 still exists on vc7 but is renamed to QUAD.\n"
               << "  Consider changing this call to ldunifrf."
@@ -159,7 +159,7 @@ Mnemonic &Mnemonic::mov(Location const &dst, Source const &src) {
  * Can't consolidate this yet, required for special register vpm
  */
 Mnemonic &Mnemonic::mov(uint8_t rf_addr, Register const &reg) {
-  assertq(!Platform::compiling_for_vc7(), "Mnemonic::mov(): don't call this on vc7");
+  assertq(!Platform::run_vc7(), "Mnemonic::mov(): don't call this on vc7");
   m_doing_add = false;
 
   alu.mul.op    = V3D_QPU_M_MOV;
@@ -237,7 +237,7 @@ Mnemonic &Mnemonic::mov(uint8_t rf_addr, Register const &reg) {
  *   - TODO: try to understand the newfangled quad rotate shit.
  */
 Mnemonic &Mnemonic::rotate(Location const &dst, Location const &a, SmallImm const &b) {
-  assertq(!Platform::compiling_for_vc7(), "rotate on mul is for vc6 only");
+  assertq(!Platform::run_vc7(), "rotate on mul is for vc6 only");
 
   assertq(dst.to_mux()  == V3D_QPU_MUX_R1, "rotate dest can only be r1");
   assertq(a.to_mux() == V3D_QPU_MUX_R0,    "rotate src a can only be r0");
@@ -262,7 +262,7 @@ Mnemonic &Mnemonic::rotate(Location const &dst, Location const &a, SmallImm cons
  * See notes in header comment of rotate overload above.
  */
 Mnemonic &Mnemonic::rotate(Location const &dst, Location const &a, Location const &b) {
-  assertq(!Platform::compiling_for_vc7(), "rotate on mul is for vc6 only");
+  assertq(!Platform::run_vc7(), "rotate on mul is for vc6 only");
 
   assertq(dst.to_mux()  == V3D_QPU_MUX_R1, "rotate dest can only be r1");
   assertq(a.to_mux() == V3D_QPU_MUX_R0,    "rotate src a can only be r0");
@@ -363,7 +363,7 @@ Mnemonic ftoi(Location const &dst, Location const &a) {
 
 
 Mnemonic mov(Location const &dst, Source const &a) {
-  if (Platform::compiling_for_vc7()) {
+  if (Platform::run_vc7()) {
     Mnemonic instr;
     instr.alu_add_dst(dst);
     instr.alu_add_a(a);
@@ -402,7 +402,7 @@ Mnemonic barrierid(v3d_qpu_waddr waddr, bool magic_write) {
 
 
 Mnemonic ffloor(Location const &dst, Source const &srca) {
-  if (Platform::compiling_for_vc7()) {
+  if (Platform::run_vc7()) {
     // src_b is not used but for the  logic should not be an acc
     Mnemonic instr(V3D_QPU_A_FFLOOR, dst, srca, Source(RFAddress(0)));
 
@@ -459,7 +459,7 @@ Mnemonic tmuwt() {
   instr.alu.add.op = V3D_QPU_A_TMUWT;
 
   // Ignore dst for vc4, vc6
-  if (Platform::compiling_for_vc7()) {
+  if (Platform::run_vc7()) {
     instr.alu_add_dst(devnull);
 	}
   return instr;
@@ -490,7 +490,7 @@ Mnemonic sampid(Location const &dst) {
  * For vc6, this call is redirected to mul rotate
  */
 Mnemonic rotate(Location const &dst, Location const &a, Location const &b) {
-  if (Platform::compiling_for_vc7()) {
+  if (Platform::run_vc7()) {
     return Mnemonic(V3D_QPU_A_ROT, dst, a, b);
   } else {
     Mnemonic instr;
@@ -503,7 +503,7 @@ Mnemonic rotate(Location const &dst, Location const &a, Location const &b) {
  * 
  */
 Mnemonic rotate(Location const &dst, Location const &a, SmallImm const &b) {
-  if (Platform::compiling_for_vc7()) {
+  if (Platform::run_vc7()) {
     return Mnemonic(V3D_QPU_A_ROT, dst, a, b);
   } else {
     Mnemonic instr;
@@ -716,7 +716,7 @@ Mnemonic blog(Location const &dst, Location const &a) { return Mnemonic(V3D_QPU_
 
 
 Mnemonic bexp(Location const &dst, Location const &a) { 
-  if (Platform::compiling_for_vc7()) {
+  if (Platform::run_vc7()) {
     Mnemonic instr;
     instr.alu_add_dst(dst);
     instr.alu_add_a(a);
@@ -741,7 +741,7 @@ Mnemonic bexp(Location const &dst, Location const &a) {
 Mnemonics fsin(Location const &dst, Source const &a) {
   Mnemonics ret;
 
-  if (Platform::compiling_for_vc7()) {
+  if (Platform::run_vc7()) {
     Mnemonic instr;
     instr.alu_add_dst(dst);
     instr.alu_add_a(a);

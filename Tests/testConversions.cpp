@@ -333,19 +333,9 @@ TEST_CASE("Test conversion of unsigned to float [convert]") {
 
   auto k = compile(unsigned_to_float_kernel);
   k.load(&result, &input, Blocks).run();
-  //warn << "result: " << dump_array(result);
-
-/*
-  std::string buf;
-  buf << "result unsigned: ";
-  for (int i = 0; i < 16*Blocks; ++i) {
-    buf << ((unsigned) result[i]) << ", ";
-  }
-  warn << buf;
-*/
 
   float Precision = 0.0f;
-  if (Platform::compiling_for_vc4()) {
+  if (Platform::run_vc4()) {
     Precision = 256.0f;  // vc4 not precise
   }
 

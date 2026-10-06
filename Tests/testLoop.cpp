@@ -122,7 +122,7 @@ void loop_kernel(Int::Ptr dst, Float::Ptr in_dummy_ptr) {
 // This is a testbed for sorting out what is happening.
 //
 TEST_CASE("Test loop counter [loop]") {
-  if (Platform::compiling_for_vc4()) {
+  if (Platform::run_vc4()) {
     // The used version of barrier() is only for v3d
     return;
   }
@@ -133,7 +133,6 @@ TEST_CASE("Test loop counter [loop]") {
     result.fill(-1);
 
     auto k = compile(loop_kernel);
-    //to_file("loop_kernel.txt", k.dump());
     k.load(&result, &dummy).run();
 
     for (int i = 0; i < (int) result.size(); ++i) {

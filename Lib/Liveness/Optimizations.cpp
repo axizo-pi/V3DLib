@@ -314,12 +314,12 @@ bool combineImmediates(Liveness const &live, Instr::List &instrs) {
  *    - > 12: vc6 barely any hits, not bothering 
  */
 int introduceAccum(Liveness &live, Instr::List &instrs) {
-  assert(!Platform::compiling_for_vc7());
+  assert(!Platform::compile::for_vc7());
   timers.start("introduceAccum");
   RegUsage &allocated_vars = live.reg_usage();
 
   // Num iterations peephole_0. See Note 2.
-  int const MAX_RANGE_SIZE = Platform::compiling_for_vc4()?
+  int const MAX_RANGE_SIZE = Platform::compile::for_vc4()?
      4: // vc4
     12; // vc6
 
@@ -349,7 +349,7 @@ int introduceAccum(Liveness &live, Instr::List &instrs) {
 
     if (item.only_assigned() && item.use_dst().size() > 1) {
       // vc6: QPU Id and QPU Num special case
-      if (Platform::compiling_for_vc6() && item.use_dst()[0] == 0 && item.use_dst().back() <= QPU_MAX) {
+      if (Platform::compile::for_vc6() && item.use_dst()[0] == 0 && item.use_dst().back() <= QPU_MAX) {
         continue;
       }
 

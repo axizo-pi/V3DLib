@@ -13,7 +13,7 @@ struct State : public EmuState {
   QPUState qpu[MAX_QPUS];  // State of each QPU
   Data emuHeap;
 
-  State(int in_num_qpus, IntList const &in_uniforms) : EmuState(in_num_qpus, in_uniforms, true) {}
+  State(int in_num_qpus, IntList const &in_uniforms) : EmuState(in_num_qpus, in_uniforms, false, true) {}
 };
 
 

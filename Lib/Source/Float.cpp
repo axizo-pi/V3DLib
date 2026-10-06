@@ -328,7 +328,7 @@ FloatExpr max(FloatExpr a, FloatExpr b)       { return mkFloatApply(a, Op(MAX, F
 namespace {
 
 void add_inf(Float &ret, FloatExpr &x) {
-  if (Platform::compiling_for_vc7()) return;
+  if (Platform::compile::for_vc7()) return;
 
   Where (x == 0)
     ret = Inf();
@@ -341,7 +341,7 @@ void add_inf(Float &ret, FloatExpr &x) {
  * Specific for SFU functions: these return 0.0f instead of NaN or Inf.
  */
 void add_nan_inf(Float &ret, FloatExpr &x) {
-  if (Platform::compiling_for_vc7()) return;
+  if (Platform::compile::for_vc7()) return;
 
   Where (x < 0)
     ret = NaN();
@@ -474,7 +474,7 @@ FloatExpr sqrt_f(FloatExpr x) {
   Float ret;
   ret = recip(recipsqrt(x));
 
-  if (!Platform::compiling_for_vc7()) {
+  if (!Platform::compile::for_vc7()) {
     //
     // Specific for SFU functions: these return 0.0f instead of NaN or Inf.
     // Compensate for this.
@@ -497,7 +497,7 @@ FloatExpr sqrt_f(FloatExpr x) {
 FloatExpr UnsignedtoFloat(IntExpr a) {
   using namespace functions;
 
-  if (Platform::compiling_for_vc4()) {
+  if (Platform::compile::for_vc4()) {
     return vc4::u_to_f(a);
   } else {
     return v3d::u_to_f(a);
@@ -515,7 +515,7 @@ FloatExpr ffloor(FloatExpr x) {
 
   Float ret;
 
-  if (Platform::compiling_for_vc4()) {
+  if (Platform::compile::for_vc4()) {
     ret = vc4::ffloor(x);
   } else {
     // v3d
@@ -535,7 +535,7 @@ FloatExpr ffloor(FloatExpr x) {
 FloatExpr cos(FloatExpr x) {
   using namespace functions;
 
-  if (Platform::compiling_for_vc4()) {
+  if (Platform::compile::for_vc4()) {
     return vc4::cos(x);
   } else {
     return v3d::sin(0.25f - x);
@@ -552,7 +552,7 @@ FloatExpr cos(FloatExpr x) {
 FloatExpr sin(FloatExpr x) {
   using namespace functions;
 
-  if (Platform::compiling_for_vc4()) {
+  if (Platform::compile::for_vc4()) {
     return vc4::sin(x);
   } else {
     return v3d::sin(x);
