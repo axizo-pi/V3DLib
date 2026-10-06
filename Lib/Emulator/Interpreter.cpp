@@ -75,10 +75,10 @@ struct InterpreterState : public EmuState {
     EmuState(in_num_qpus, in_uniforms, is_v3d, false)
   {
     if (is_v3d) {
-			for (int i = 0; i < MAX_QPUS; ++i) {
+      for (int i = 0; i < MAX_QPUS; ++i) {
         core[i].nextUniform = -3;
-			}
-		}
+      }
+    }
   } 
 };
 
@@ -571,12 +571,12 @@ void exec(InterpreterState &is, int core_index) {
  */
 void interpreter(
   int numCores,
-	CodeStruct const &cs,
+  CodeStruct const &cs,
   int numVars,
   IntList &uniforms,
   BufferObject &heap
 ) {
-	Timer("Interpreter", true);
+  Timer("Interpreter", true);
 
   Stmts const &stmts = cs.sourceCode();
   InterpreterState state(numCores, uniforms, Platform::emulating_for() != Platform::VCType::vc4);

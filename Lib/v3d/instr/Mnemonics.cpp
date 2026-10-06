@@ -461,7 +461,7 @@ Mnemonic tmuwt() {
   // Ignore dst for vc4, vc6
   if (Platform::run_vc7()) {
     instr.alu_add_dst(devnull);
-	}
+  }
   return instr;
 }
 

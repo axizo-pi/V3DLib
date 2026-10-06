@@ -44,39 +44,39 @@ EmuState::EmuState(int in_num_qpus, IntList const &in_uniforms, bool in_run_v3d,
  *   - uniform values
  */ 
 Vec EmuState::get_uniform(int id, int &next_uniform) {
-	//warn << "next_uniform: " << next_uniform << ", uniforms.size(): " << uniforms.size();
+  //warn << "next_uniform: " << next_uniform << ", uniforms.size(): " << uniforms.size();
   assert(next_uniform < uniforms.size());
 
   Vec a;
 
-	if (run_v3d) {
-		switch(next_uniform) {
-		case -3:
-    	a = id;
-			break;
-		case -2:
-    	a = num_qpus;
-			break;
-		case -1:
+  if (run_v3d) {
+    switch(next_uniform) {
+    case -3:
+      a = id;
+      break;
+    case -2:
+      a = num_qpus;
+      break;
+    case -1:
       // Dummy
-			break;
+      break;
     default:
-    	a = uniforms[next_uniform];
-			break;
-  	}
+      a = uniforms[next_uniform];
+      break;
+    }
   } else {
-		switch(next_uniform) {
-		case -2:
-    	a = id;
-			break;
-		case -1:
-    	a = num_qpus;
-			break;
+    switch(next_uniform) {
+    case -2:
+      a = id;
+      break;
+    case -1:
+      a = num_qpus;
+      break;
     default:
-    	a = uniforms[next_uniform];
-			break;
-  	}
-	}
+      a = uniforms[next_uniform];
+      break;
+    }
+  }
 
   next_uniform++;
   return a;

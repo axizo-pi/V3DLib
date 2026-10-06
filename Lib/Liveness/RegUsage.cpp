@@ -67,7 +67,7 @@ bool RegUsageItem::unused() const {
 bool RegUsageItem::only_assigned() const  {
   bool ret =!m_use_dst.empty() && m_use_src.size() == 0;
   if (ret) {
-		//warn << "only_assigned: " << dump();
+    //warn << "only_assigned: " << dump();
     assert(m_live_range.empty());
   }
 

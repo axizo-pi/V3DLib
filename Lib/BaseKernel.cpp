@@ -189,7 +189,7 @@ void BaseKernel::emu(bool do_debug) {
   assertq(compile().kernel_type() == VCType::vc4, "Can not run interpreter for v3d");
   assert(uniforms.size() != 0);
 
-	Platform::run_emulator(compile().kernel_type());
+  Platform::run_emulator(compile().kernel_type());
 
   emulate(
     numQPUs(),
@@ -200,7 +200,7 @@ void BaseKernel::emu(bool do_debug) {
     do_debug
   );
 
-	Platform::done_emulating();
+  Platform::done_emulating();
 }
 
 
@@ -227,7 +227,7 @@ void BaseKernel::interpret() {
 #endif
 
 
-	Platform::run_emulator(compile().kernel_type());
+  Platform::run_emulator(compile().kernel_type());
 
   interpreter(
     numQPUs(),
@@ -237,7 +237,7 @@ void BaseKernel::interpret() {
     getBufferObject()
   );
 
-	Platform::done_emulating();
+  Platform::done_emulating();
 }
 
 

@@ -1758,7 +1758,7 @@ void combine_old(Instructions &instructions) {
       bool success = alu_to_mul_alu(mul_instr, dst);
 
       if (success) {
-				// This log only useful when working on this function
+        // This log only useful when working on this function
         //Log::debug << "Converted: " << dst.mnemonic(false);
 
         instr1.skip(true);

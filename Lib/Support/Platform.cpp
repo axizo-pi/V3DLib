@@ -272,21 +272,21 @@ namespace compile {
  * The compilation can occur on any platform, including non-pi.
  */
 void start(VCType in_type) {
-	assert(in_type != UNKNOWN);
-	instance().m_compiling_for = in_type;
+  assert(in_type != UNKNOWN);
+  instance().m_compiling_for = in_type;
 }
 
 
 void compiling(bool do_vc4) { 
-	if (do_vc4) {
-  	Log::warn << "Compiling forcing vc4";
-	}
+  if (do_vc4) {
+    Log::warn << "Compiling forcing vc4";
+  }
 
-	if (do_vc4) {
-  	instance().m_compiling_for = vc4;
-	} else {
-  	instance().m_compiling_for = instance().vc_type;
-	}
+  if (do_vc4) {
+    instance().m_compiling_for = vc4;
+  } else {
+    instance().m_compiling_for = instance().vc_type;
+  }
 }
 
 
@@ -294,23 +294,23 @@ void compiling(bool do_vc4) {
 bool running() { return instance().m_compiling_for != UNKNOWN; }
 
 void done() {
-	assertq(instance().m_compiling_for != UNKNOWN, "Stopping compiling for Unknown");
-	instance().m_compiling_for = UNKNOWN;
+  assertq(instance().m_compiling_for != UNKNOWN, "Stopping compiling for Unknown");
+  instance().m_compiling_for = UNKNOWN;
 }
 
 
 
 bool for_vc4(bool do_break) {
-	assert(!running_emulator());
+  assert(!running_emulator());
 
-	if (do_break) {
-		if (instance().m_compiling_for == UNKNOWN) {
- 			warn << "compiling_for_vc4 compiling for Unknown";
-   		breakpoint;
-		}
-	}
+  if (do_break) {
+    if (instance().m_compiling_for == UNKNOWN) {
+       warn << "compiling_for_vc4 compiling for Unknown";
+       breakpoint;
+    }
+  }
 
-	return instance().m_compiling_for == vc4;
+  return instance().m_compiling_for == vc4;
 }
 
 
@@ -324,23 +324,23 @@ bool for_vc4(bool do_break) {
  * platform.
  */
 bool for_vc7() {
-	assert(!running_emulator());
+  assert(!running_emulator());
 /*
   // This overrides any device selection, due to emulator and interpreter
   if (instance().m_compiling_for_vc4) return false;
   return (instance().vc_type == vc7);  // This option is way easier
 */
-	if (instance().m_compiling_for == UNKNOWN) {
- 		warn << "compiling_for_vc7 compiling for Unknown";
+  if (instance().m_compiling_for == UNKNOWN) {
+     warn << "compiling_for_vc7 compiling for Unknown";
     breakpoint;
-	}
+  }
 
   return (instance().m_compiling_for == vc7);
 }
 
 
 bool for_vc6() {
-	assert(!running_emulator());
+  assert(!running_emulator());
   return !for_vc4() && (instance().vc_type == vc6);
 }
 
@@ -351,14 +351,14 @@ std::string platform_info() { return instance().output(); }
 bool is_pi_platform()       { return instance().is_pi_platform; }
 
 bool run_vc4() {
-	//assert(!running_emulator());
-	return instance().vc_type == vc4;
+  //assert(!running_emulator());
+  return instance().vc_type == vc4;
 }
 
 
 bool run_vc7() {
-	//assert(!running_emulator());
-	return instance().vc_type == vc7;
+  //assert(!running_emulator());
+  return instance().vc_type == vc7;
 }
 
 
@@ -407,7 +407,7 @@ Tag tag() {
  * concept can actually be convoluted as f*** underwater.
  */
 int size_regfile() {
-	assert(!running_emulator()); // Warn me
+  assert(!running_emulator()); // Warn me
   if (run_vc4()) return 32;
   return 64;  // v3d
 }
@@ -425,7 +425,7 @@ int gather_limit() {
     showed = true;
   }
 
-	assert(!running_emulator());  // Warn me
+  assert(!running_emulator());  // Warn me
   if (run_vc4()) {
     return 4;
   } else {
@@ -473,12 +473,12 @@ std::string pi_version() {
 
 
 void run_emulator(VCType in_type) {
-	assert(in_type != UNKNOWN);
-	instance().emulating_for = in_type;
+  assert(in_type != UNKNOWN);
+  instance().emulating_for = in_type;
 }
 
 VCType emulating_for() {
-	return instance().emulating_for;
+  return instance().emulating_for;
 }
 
 

@@ -21,30 +21,30 @@ void mandelbrotCore(Complex const &c, Int &numIterations, Int &count) {
 /*
   Examination of reason why kernel does not do complete output.
 
-	My best hypothesis for now is that there is a maximum number of instructions
-	that can be executed per kernel call.
+  My best hypothesis for now is that there is a maximum number of instructions
+  that can be executed per kernel call.
 
-	This doesn't make sense, because Gravity can run indefinitely; perhaps there 
-	are other conditions.
+  This doesn't make sense, because Gravity can run indefinitely; perhaps there 
+  are other conditions.
 
   vc7: Looking a performance counters here doesn't help; they don't appear to be updated (TODO)
 
-	vc6 1 QPU
+  vc6 1 QPU
   ---------
-	i < 1024 : black
-	i <  512 : black
-	i <  256 : black
-	i <  128 : about 25% done
-	i <   96 : about 45% done
-	i <   64 : about 66% done
-	i <   56 : about 75% done
-	i <   48 : full when eyeballing
-	i <   32 : full when eyeballing
+  i < 1024 : black
+  i <  512 : black
+  i <  256 : black
+  i <  128 : about 25% done
+  i <   96 : about 45% done
+  i <   64 : about 66% done
+  i <   56 : about 75% done
+  i <   48 : full when eyeballing
+  i <   32 : full when eyeballing
 
- 	- vc7 not same but comparable
+   - vc7 not same but comparable
 * /
   For (Int i = 0, i < 256, i++)
-  	//Where((4.0f > mag) && (numIterations > count))
+    //Where((4.0f > mag) && (numIterations > count))
     Where (checkvar > 0.0f)
       count++;
 
@@ -53,8 +53,8 @@ void mandelbrotCore(Complex const &c, Int &numIterations, Int &count) {
       checkvar = condition; 
     End
   End
-	*/
-	
+  */
+  
 
   While (any(checkvar > 0.0f))
     Where (checkvar > 0.0f)
@@ -91,12 +91,12 @@ void mandelbrot_multi(
 
       For (Int xStep = 0, xStep < numStepsWidth, xStep += 16)
         Int xIndex = xStep + index();
-			  Int count;
+        Int count;
         Complex c(topLeftReal + offsetX*toFloat(xIndex), topLeftIm - offsetY*toFloat(yIndex));
 
         mandelbrotCore(c, numIterations, count);
 
-				*dst = count;
+        *dst = count;
         dst.inc();
       End
     End

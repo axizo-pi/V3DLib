@@ -30,7 +30,7 @@ Compile::~Compile() {
 }
 
 std::string Compile::kernel_type_str() const {
-	return Platform::vc_type_str(kernel_type());
+  return Platform::vc_type_str(kernel_type());
 }
 
 
@@ -53,7 +53,7 @@ CodeStruct const &Compile::code_struct() const {
  */
 void Compile::compile(std::function<void()> create_ast) {
   try {
-		warn << "Compile::compile() compiling for: " << kernel_type_str();
+    warn << "Compile::compile() compiling for: " << kernel_type_str();
 
     create_ast();
     compile_intern();

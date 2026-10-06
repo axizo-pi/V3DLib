@@ -165,7 +165,7 @@ void Settings::init(int argc, const char *argv[]) {
 
   check_params(m_all_params, argc, argv);
 
-	Log::enable_log_file();
+  Log::enable_log_file();
 }
 
 
@@ -271,7 +271,7 @@ bool Settings::process() {
       setMaxQPUs();
     }
 
-		// Here, it is assumed that interpreter and emulator run vc4 code only.
+    // Here, it is assumed that interpreter and emulator run vc4 code only.
     // TODO: Examine if this needs to be fixed.
     if (run_type != 0 || Platform::run_vc4()) {
       if (num_qpus < 0 || num_qpus > 12) {

@@ -782,9 +782,9 @@ TEST_CASE("Profile block matrix multiplication [matrix][block][profile]") {
 
 
 TEST_CASE("Test matrix mult on emulator [matrix][emu]") {
-	// TODO: fix
-	warn << "Test matrix mult on emulator [matrix][emu] blocked for now. ";
-	return;
+  // TODO: fix
+  warn << "Test matrix mult on emulator [matrix][emu] blocked for now. ";
+  return;
 
   Platform::use_main_memory(true);
 

@@ -21,10 +21,10 @@ int main(int argc, const char *argv[]) {
   settings.init(argc, argv);
 
   auto k = compile(id_kernel, settings);          // Construct kernel
-	to_file("id_kernel.txt", k.dump());
+  to_file("id_kernel.txt", k.dump());
   k.setNumQPUs(numQPUs);
 
- 	// Allocate and initialise array shared between ARM and GPU
+   // Allocate and initialise array shared between ARM and GPU
   Int::Array result(16*numQPUs);                  // QPU index
   result.fill(-1);
 
@@ -37,6 +37,6 @@ int main(int argc, const char *argv[]) {
     printf("%3i: %2i, %2i\n", i, result[i], index_array[i]);
   }
 
-	//k.dump_compile_data(false, "ID_dump.txt");
+  //k.dump_compile_data(false, "ID_dump.txt");
   return 0;
 }

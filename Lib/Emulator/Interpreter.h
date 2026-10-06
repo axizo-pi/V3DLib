@@ -12,7 +12,7 @@ class Seq;
 
 void interpreter(
   int numCores,
-	CodeStruct const &cs,
+  CodeStruct const &cs,
   int numVars,
   IntList &uniforms,
   BufferObject &heap

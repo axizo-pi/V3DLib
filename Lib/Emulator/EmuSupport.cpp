@@ -354,7 +354,7 @@ bool Vec::apply(ALUOp const &op, Vec a, Vec b) {
     }
     break;
 
-		//
+    //
     // v3d
     //
     case Enum::A_MOV:
@@ -370,8 +370,8 @@ bool Vec::apply(ALUOp const &op, Vec a, Vec b) {
     break;
   }
 
-	std::string buf = "Vec::apply(): Unhandled op value: ";
-	buf << op.dump();
+  std::string buf = "Vec::apply(): Unhandled op value: ";
+  buf << op.dump();
   assertq(handled, buf);
   return handled;
 }

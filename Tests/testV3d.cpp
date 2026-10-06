@@ -85,7 +85,7 @@ bool check_precompile_vc6() {
     return false;
   }
 
-	return true;
+  return true;
 }
 
 }  // anon namespace
@@ -349,7 +349,7 @@ TEST_CASE("Check v3d code is working properly [v3d][code]") {
 
 
 TEST_CASE("Driver call for v3d should work [v3d][driver]") {
-	if (!check_precompile_vc6()) return;
+  if (!check_precompile_vc6()) return;
 
   SUBCASE("Summation example should work from bytecode") {
     uint8_t num_qpus = 8;  // Don't change these values! That's how the summation kernel bytecode
@@ -388,7 +388,7 @@ TEST_CASE("Driver call for v3d should work [v3d][driver]") {
 TEST_CASE("Check v3d rotate assembly/disassembly [v3d][asm]") {
   using namespace V3DLib::v3d::instr;
 
-	if (!check_precompile_vc6()) return;
+  if (!check_precompile_vc6()) return;
 
   SUBCASE("rotate kernel generates correctly encoded output") {
     std::vector<uint64_t> arr = rotate_kernel();
