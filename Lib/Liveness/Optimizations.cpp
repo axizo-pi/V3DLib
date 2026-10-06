@@ -16,8 +16,9 @@ namespace {
 void replace_acc(Instr::List &instrs, RegUsageItem &item, int var_id, int acc_id) {
   Reg current(REG_A, var_id);
   Reg replace_with(ACC, acc_id);
+  Range use_range = item.usage();
 
-  for (int i = item.first_usage(); i <= item.last_usage(); i++) {
+  for (int i = use_range.first(); i <= use_range.last(); i++) {
     auto &instr = instrs[i];
     if (!instr.has_registers()) continue;  // Doesn't help much
 
@@ -39,7 +40,7 @@ int peephole_0(int range_size, Instr::List &instrs, RegUsage &allocated_vars) {
   int subst_count = 0;
 
   for (int var_id = 0; var_id < (int) allocated_vars.size(); var_id++) {
-    auto &item = allocated_vars[var_id];
+    auto &item = allocated_vars.get(var_id);
 
     if (item.reg.tag != NONE) continue;
     if (item.unused()) continue;
@@ -48,21 +49,21 @@ int peephole_0(int range_size, Instr::List &instrs, RegUsage &allocated_vars) {
 
     // Guard for this special case for the time being.
     // It should actually be possible to load a uniform in an accumulator,
-    // not bothering right now.
+    // not bothering right now (TODO test).
     if (instrs[item.first_dst()].isUniformLoad()) {
       continue;
     }
 
     // Check instructions for unused accumulator
-    int acc_id = instrs.get_free_acc(item.first_usage(), item.last_usage());
+    int acc_id = get_free_acc(instrs, item.usage());
     if (acc_id == -1) {
-      warn << "peephole_0: No accumulators available";
+      //info << "peephole_0 range " << range_size << ": No accumulators available";
       continue;
     }
 
     // Check if the given ACC has not been assigned in the meantime
     if (allocated_vars.check_overlap_usage(Reg(ACC, acc_id), item)) {
-      warn << "acc_id: " << acc_id << " already in use, can't assign";
+      //info << "peephole_0 acc_id: " << acc_id << " already in use, can't assign";
       continue;
     }
 
@@ -109,7 +110,7 @@ int peephole_1(Liveness &live, Instr::List &instrs, RegUsage &allocated_vars) {
 
     // Guard for this special case for the time being.
     // It should actually be possible to load a uniform in an accumulator,
-    // not bothering right now.
+    // not bothering right now (TODO test).
     if (instr.isUniformLoad()) {
       continue;
     }
@@ -122,26 +123,24 @@ int peephole_1(Liveness &live, Instr::List &instrs, RegUsage &allocated_vars) {
     // Can't remove this test.
     // Reason: There may be a preceding instruction which sets the var to be replaced.
     //         If 'prev' is conditional, replacing the var with an acc will ignore the previously set value.
-    if (!prev.is_always()) {
-      continue;
-    }
+    if (!prev.is_always()) continue;
 
     Reg current(REG_A, def);
-    Reg replace_with(ACC, instrs.get_free_acc(i - 1, i));
-    assert(replace_with.regId != -1);
+    Reg replace_with(ACC, get_free_acc(instrs, Range(i - 1, i)));
+    if(replace_with.regId == -1) {
+      warn << "peephole_1: No accumulators available";
+      continue;
+    }
 
     prev.rename_dest(current, replace_with);
     renameUses(instr, current, replace_with);
     instrs[i-1] = prev;
     instrs[i]   = instr;
-/*
-    warn << "peephole_1 post:\n"
-         << "  " << instrs[i-1].dump()
-         << "  " << instrs[i].dump();
-*/
+    //warn << "peephole_1 post:\n" << "  " << instrs[i-1].dump() << "  " << instrs[i].dump();
+
     // DANGEROUS! Do not use this value downstream.   
     // Currently stored for debug display purposes only! 
-    allocated_vars[def].reg = replace_with;    
+    allocated_vars.get(def).reg = replace_with;    
 
     subst_count++;
   }
@@ -155,7 +154,7 @@ int peephole_1(Liveness &live, Instr::List &instrs, RegUsage &allocated_vars) {
 /**
  * @return true if any replacements were made, false otherwise
  */
-bool combineImmediates(Liveness &live, Instr::List &instrs) {
+bool combineImmediates(Liveness const &live, Instr::List &instrs) {
   bool found_something = false;
 
   int const LAST_USE_LIMIT = 50;
@@ -166,19 +165,20 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
     if (instr.tag != InstrTag::LI) continue;
 
     if (instr.LI.imm.is_small_imm()) {
-      auto const &reg_usage = live.reg_usage()[instr.dest().regId];
-
       if (instr.dest().is_special()) {
-        info << "combineImmediates special dest register, not combinining, "
-             << " instr: " << instr.mnemonic(false);
+        //info << "combineImmediates special dest register, not combinining, "
+        //     << " instr: " << instr.mnemonic(false);
         continue;
       }
 
+      auto const &reg_usage = live.reg_usage().get(instr.dest().regId);
+      Range use_range = reg_usage.usage();
+
       if (reg_usage.assigned_once()) {
-        assert(reg_usage.first_usage() == reg_usage.first_dst());
+        assert(use_range.first() == reg_usage.first_dst());
         bool can_remove = true;
 
-        for (int j = reg_usage.first_usage() + 1; j <= reg_usage.last_usage(); j++) {
+        for (int j = use_range.first() + 1; j <= use_range.last(); j++) {
           auto &instr2 = instrs[j];
           if (instr2.tag != InstrTag::ALU) continue;
           if (!instr2.is_src_reg(instr.dest())) continue;
@@ -243,9 +243,9 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
       // Limit search range to reg usage, or until end of block
       int last = live.cfg().block_end(j);
       {
-        RegUsage &reg_usage = live.reg_usage();
-        assert(!reg_usage[current.regId].unused());
-        int last_usage = reg_usage[current.regId].last_usage();
+        RegUsage const &reg_usage = live.reg_usage();
+        assert(!reg_usage.get(current.regId).unused());
+        int last_usage = reg_usage.get(current.regId).usage().last();
        
         if (last > last_usage) last = last_usage;
       }
@@ -257,12 +257,12 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
         if (instr3.is_dst_reg(current)) {
           break;  // Stop if var to replace is rewritten
         }
-
+/*
         Log::debug << "Renaming instr:\n"
                    << "current     : " << i << ": " << current.dump()         << "\n"
                    << "instr3      : " << k << ": " << instr3.mnemonic(false) << "\n"
                    << "replace_with:   "    << ": " << replace_with.dump()    << "\n";
-
+*/
         if (renameUses(instr3, current, replace_with)) {
           num_subsitutions++;
         }
@@ -270,8 +270,7 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
 
       if (num_subsitutions > 0) {
         last_use = j;
-        Log::debug << "Setting skip on instruction at " << j;
-
+        //Log::debug << "Setting skip on instruction at " << j;
         instrs.set_skip(j);
       }
     }
@@ -284,7 +283,7 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
 
 
 /**
- * @brief Optimisation passes that introduce accumulators.
+ * @brief Optimization passes that introduce accumulators.
  *
  * This is not called for `vc7`, which has no accumulators.
  *
@@ -295,22 +294,41 @@ bool combineImmediates(Liveness &live, Instr::List &instrs) {
  * NOTES
  * =====
  *
- * * It is possible that a variable gets used multiple times, and the last usage of it
- *   is replaced by an accumulator.
+ * 1. It is possible that a variable gets used multiple times, and the last usage of it
+ *    is replaced by an accumulator.
  *
- *   For this reason, it is dangerous to keep track of the substitutions in `allocated_vars`,
- *   and to ignore the variable replacement due to acc usage later on. There may still be instances
- *   of the variable that need replacing.
+ *    For this reason, it is dangerous to keep track of the substitutions in `allocated_vars`,
+ *    and to ignore the variable replacement due to acc usage later on. There may still be instances
+ *    of the variable that need replacing.
+ *
+ * 2. MAX_RANGE_SIZE:
+ *
+ *    - == 0: does nothing, should be >= 2 for any effective use
+ *    - >  4: vc4 Unit tests fail, various locations. No free accumulators.
+ *    - >  6: vc6 picks up not much. Might be a better cutoff choice.
+ *    - >= 8: vc4 `insertMoves()` fails, no acc's.
+ *    - >= 9: vc4 `peephole_1()` does nothing. Call still works <=12 for vc6.
+ *    - >= 10
+ *      * tmp var in sin_v3d() gets replaced
+ *      * still picks up something >= 10, but not much
+ *    - > 12: vc6 barely any hits, not bothering 
  */
 int introduceAccum(Liveness &live, Instr::List &instrs) {
+  assert(!Platform::compiling_for_vc7());
+  timers.start("introduceAccum");
   RegUsage &allocated_vars = live.reg_usage();
+
+  // Num iterations peephole_0. See Note 2.
+  int const MAX_RANGE_SIZE = Platform::compiling_for_vc4()?
+     4: // vc4
+    12; // vc6
 
 #ifdef DEBUG
   //
   // Paranoia safeguards
   //
   for (int i = 0; i < (int) allocated_vars.size(); i++) {
-    auto &item = allocated_vars[i];
+    auto &item = allocated_vars.get(i);
 
     //reg's should not be allocated already
     assert(item.reg.tag == NONE);
@@ -321,7 +339,6 @@ int introduceAccum(Liveness &live, Instr::List &instrs) {
       assert(item.assigned_once());
     }
 */
-
     //
     // Warn me when a variable is dst-only and has multiple dst's.
     // See class RegUsageItem Note 1.
@@ -336,15 +353,22 @@ int introduceAccum(Liveness &live, Instr::List &instrs) {
         continue;
       }
 
-      std::string buf;
-      buf << "Multiple dst's: " << i << ": " << item.dump() << "\n";
+      {
+        bool found_something = false;
+        std::string buf;
+        buf << "Multiple dst's: " << i << ": " << item.dump() << "\n";
 
-      // Show the lines where this happens
-      for (int dst: item.use_dst()) {
-        buf << "  Line " << dst << ": " << instrs[dst].mnemonic(false) << "\n";
+        // Show the lines where this happens
+        for (int dst: item.use_dst()) {
+          // RECV _does_ occur and is benign. Warn me of other cases.
+          if (instrs[dst].tag != RECV) {
+            buf << "  Line " << dst << ": " << instrs[dst].mnemonic(false) << "\n";
+            found_something = true;
+          }
+        }
+
+        if (found_something) warn << buf;
       }
-
-      info << buf;
     }
   }
 #endif // DEBUG
@@ -352,15 +376,9 @@ int introduceAccum(Liveness &live, Instr::List &instrs) {
   std::string subst_buf;
   int subst_count = 0;
 
-  // Should be >= 2 for any effective use
-  // >= 10 so that tmp var in sin_v3d() gets replaced
-  int const MAX_RANGE_SIZE = 4; // 8; //= 15;
-
   //
   // Picks up a lot usually
   //
-  subst_buf << "peephole_0 max: " << MAX_RANGE_SIZE << "\n";
-
   for (int range_size = 1; range_size <= MAX_RANGE_SIZE; range_size++) {
     int count = peephole_0(range_size, instrs, allocated_vars);
 
@@ -373,27 +391,26 @@ int introduceAccum(Liveness &live, Instr::List &instrs) {
   // This peephole still does useful stuff.
   //
   // Tons of substitutions when peephole_0 disabled.
-  // Works great on vc4, on vc6 less so but cases still get caught.
+  // Reversing peephole_0 and _1 introduces more issues than it resolves.
+  //
+  // Does something, depending on value `MAX_RANGE_SIZE` (vc4 and vc6).
   // 
   {
-
     int count = peephole_1(live, instrs, allocated_vars);
-
-    if (MAX_RANGE_SIZE > 4 && count > 0) {
-      warn << "peephole_1 fired! count: " << count;
-    }
+    //if (count > 0) warn << "peephole_1 did something! count: " << count;
     subst_buf << "peephole_1: " << count << "\n";
-
     subst_count += count;
   }
 
 
   info << "\n===========================================\n"
-       << "introduceAccum substitution counts\n"
-       << "----------------------------------\n"
+          "introduceAccum substitution counts\n"
+          "----------------------------------\n"
+       << "peephole_0 max: " << MAX_RANGE_SIZE << "\n"
        << subst_buf
        << "===========================================\n";
 
+  timers.stop("introduceAccum");
   return subst_count;
 }
 

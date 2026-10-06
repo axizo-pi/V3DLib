@@ -39,7 +39,7 @@ uint32_t BOList::add_handle(uint32_t size, bool warn_on_error) {
 
   if (bo == nullptr) {
     if (warn_on_error) {
-      warn << "BOList::add_handle: alloc failed";
+      cerr << "BOList::add_handle: alloc failed";
     }
     return 0;
   }
@@ -48,8 +48,8 @@ uint32_t BOList::add_handle(uint32_t size, bool warn_on_error) {
   // It might have been mapped already.
   //
   // mesa bufmgr unmaps when it sees fit.
-  // Warn me if this happens.
-  if (bo->map != nullptr) cdebug << "BOList::add_handle: already mapped ";
+  //
+  //if (bo->map != nullptr) info << "BOList::add_handle: already mapped ";
 
   push_back(bo);
   return bo->handle;

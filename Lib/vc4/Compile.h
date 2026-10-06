@@ -2,8 +2,6 @@
 #define _V3DLIB_VC4_COMPILE_H
 #include "../Compile.h"
 #include "KernelDriver.h"
-//#include "Instr.h"
-//#include <vector>
 
 namespace V3DLib {
 namespace vc4 {

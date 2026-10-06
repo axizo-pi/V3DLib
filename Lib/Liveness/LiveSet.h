@@ -19,7 +19,7 @@ public:
 
   void init(Instr::List &instrs, Liveness &live);
   RegIdSet &operator[](int index);
-  std::vector<bool> possible_registers(int index, RegUsage &alloc, RegTag reg_tag = REG_A);
+  std::vector<bool> possible_registers(int index, RegUsage const &alloc, RegTag reg_tag = REG_A);
 
   static RegId choose_register(std::vector<bool> &possible, bool check_limit = true);  
   static void  dump_possible(std::vector<bool> &possible, int index = -1);

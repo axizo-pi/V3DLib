@@ -256,6 +256,8 @@ void use_main_memory(bool val) {
   instance().m_use_main_memory = val;
 }
 
+bool use_main_memory() { return instance().m_use_main_memory; }
+
 
 /**
  * Sets the target platform to compile to.
@@ -293,7 +295,6 @@ bool compiling_for_vc6() {
 }
 
 
-bool use_main_memory()      { return instance().m_use_main_memory; }
 std::string platform_info() { return instance().output(); }
 bool is_pi_platform()       { return instance().is_pi_platform; }
 bool run_vc4()              { return instance().vc_type == vc4; }

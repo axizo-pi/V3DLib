@@ -920,7 +920,6 @@ bool Instr::alu_add_set(Location const &dst, Source const &in_a, Source const &i
          << "add_a: " << a.dump() << ", "
          << "add_b: " << b.dump()
          << thrw;
-    //breakpoint;  // Warn me when this happens
   }
 
   return ret;

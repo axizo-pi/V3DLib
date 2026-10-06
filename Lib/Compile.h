@@ -1,12 +1,16 @@
 #ifndef _V3DLIB_COMPILE_H
 #define _V3DLIB_COMPILE_H
-#include "Common/Seq.h"           // IntList
 #include "Common/CompileData.h"
+#include "Common/Seq.h"           // IntList
 #include <functional>
 
 namespace V3DLib {
 
-class CodeStruct; // Forward declaration
+// Forward declarations
+class CodeStruct;
+#ifdef OUTPUT_COMPILEDATA
+class CompileData;
+#endif // OUTPUT_COMPILEDATA
 
 /**
  * @brief Creation and storage of `VideoCore` code on all levels.
@@ -67,9 +71,9 @@ public:
   std::string dump_compile_data() const;
 
 private:
-  CompileData m_compile_data;
+  CompileData *m_compile_data;
 
-  int numAccs() const { return m_compile_data.num_accs_introduced; }
+  int numAccs() const;
 #endif // OUTPUT_COMPILEDATA
 };
 

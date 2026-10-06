@@ -151,7 +151,7 @@ void BaseSharedArray::heap_view(BufferObject &heap) {
  */
 uint32_t BaseSharedArray::phy(uint32_t val) {
   assert(m_phyaddr % m_element_size == 0);
-  int index = (int) (val - ((uint32_t) m_phyaddr/m_element_size));
+  int index = (int) ( val - ((uint32_t) m_phyaddr/m_element_size));
   assert(index >= 0);
   return (uint32_t) index;
 }

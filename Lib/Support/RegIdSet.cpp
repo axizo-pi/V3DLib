@@ -3,7 +3,12 @@
 
 namespace V3DLib {
 
-void RegIdSet::add(RegIdSet const &rhs)    { insert(rhs.begin(), rhs.end());     }
+void RegIdSet::add(RegIdSet const &rhs) {
+  //warn << "RegIdSet::add adding " << rhs.dump();
+  insert(rhs.begin(), rhs.end());
+}
+
+
 void RegIdSet::remove(RegIdSet const &rhs) { erase(rhs.begin(), rhs.end());      }
 int RegIdSet::first() const                { assert(!empty()); return *cbegin(); }
 

@@ -519,12 +519,10 @@ void test_complex_matrix_multiplication(
   auto k = compile(kernels::matrix_mult_decorator(a, b, result), settings);
   //to_file("mult_complex.txt", k.dump());
   k.setNumQPUs(num_qpus);
-  //result.fill({-2.0f, -2.0f});
 
   k.load(&result, &a, &b).run();
 
-  INFO("num QPUs:" << num_qpus << ", num blocks: " << num_blocks);
-  //INFO("Doing matrix_mult_decorator");
+  INFO("num QPUs: " << num_qpus << ", num blocks: " << num_blocks);
   check_complex_matrix_multiplication(rows, inner, cols, result, init_a*init_b);
 
   //
@@ -535,18 +533,10 @@ void test_complex_matrix_multiplication(
 
   m.setNumQPUs(num_qpus);
   m.num_blocks(num_blocks);
+  if (do_emulate) Log::info << "Doing emulate";
 
-  //if (do_emulate) {
-  //  Log::warn << "Doing emulate";
-  //}
   m.call(do_emulate?EMULATE:CALL);
-  //Log::warn << "Matrix after call()";
   INFO("Matrix info:\n" << m.info());
-  //to_file("matrix_k.txt", m.k_dump());  // m_k is compiled in call(), need to call dump() here
-  //m.result().fill({-2.0f, -1.0f});
-  //Log::warn << "\n" << m.dump();
-  //Log::warn << m.result().dump();
-
   check_complex_matrix_multiplication(rows, inner, cols, m.result(), init_a*init_b);
 }
 
@@ -613,7 +603,7 @@ TEST_CASE("Test complex matrix algebra with varying sizes [matrix][complex][dot]
 }
 
 
-TEST_CASE("Check complex matrix multiplication [matrix][complex]") {
+TEST_CASE("Check complex matrix multiplication [matrix][complex][complete]") {
   
   auto test = [] (int num_qpus, int num_blocks = 1) {
     // num_blocks factor for inner dimension is there to ensure block sizes are always valid
@@ -642,8 +632,6 @@ bool profile_block_mult(int dimension) {
 
   ProfileOutput profile_output;
   profile_output.show_compile(false);
-  //profile_output.use_max_qpus(true);
-  //profile_output.use_single_qpu(true);
 
   // Prepare input and expected result
   Float::Array2D a(dimension);

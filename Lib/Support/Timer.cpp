@@ -49,6 +49,7 @@ struct MaxWidths {
   std::string min_str(std::string const &str) const;
   std::string max_str(std::string const &str) const;
 
+  void update(Timer const &timer);
   void update(Timers const &timers);
 };
 
@@ -91,42 +92,34 @@ std::string MaxWidths::max_str(std::string const &str) const {
 }  
 
 
+void MaxWidths::update(Timer const &timer) {
+  int tmp = (int) timer.label().length();
+  if (label < tmp) label = tmp;
+
+  tmp = (int) timer.total_str().length();
+  if (total < tmp) total = tmp;
+
+  std::string tmp2;
+  tmp2 << timer.count();
+
+  tmp = (int) tmp2.length();
+  if (steps < tmp) steps = tmp;
+
+  tmp = (int) timer.avg_str().length();
+  if (avg < tmp) avg = tmp;
+
+  tmp = (int) timer.min_str().length();
+  if (min < tmp) min = tmp;
+
+  tmp = (int) timer.max_str().length();
+  if (max < tmp) max = tmp;
+}
+
+
 void MaxWidths::update(Timers const &timers) {
   for (int i = 0; i < (int) timers.list().size(); ++i) {
     auto const &n = timers.list()[i];
-
-    int tmp = (int) n.label().length();
-    if (label < tmp) {
-      label = tmp;
-    }
-
-    tmp = (int) n.total_str().length();
-    if (total < tmp) {
-      total = tmp;
-    }
-
-    std::string tmp2;
-    tmp2 << n.count();
-
-    tmp = (int) tmp2.length();
-    if (steps < tmp) {
-      steps = tmp;
-    }
-
-    tmp = (int) n.avg_str().length();
-    if (avg < tmp) {
-      avg = tmp;
-    }
-
-    tmp = (int) n.min_str().length();
-    if (min < tmp) {
-      min = tmp;
-    }
-
-    tmp = (int) n.max_str().length();
-    if (max < tmp) {
-      max = tmp;
-    }
+    update(n);
   }
 }
 
@@ -422,6 +415,7 @@ void Timers::end(bool show_minmax) {
   auto indexes = sort_indexes();
   MaxWidths widths;
   widths.update(*this);
+  widths.update(m_total);
 
   std::string buf;
   for (int i = 0; i < (int) indexes.size(); ++i) {

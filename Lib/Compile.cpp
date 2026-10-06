@@ -1,6 +1,9 @@
 #include "Compile.h"
 #include "CodeStruct.h"
 #include "Source/Lang.h"  // comment()
+#ifdef OUTPUT_COMPILEDATA
+#include "Common/CompileData.h"
+#endif // OUTPUT_COMPILEDATA
 
 namespace V3DLib {
 
@@ -8,12 +11,22 @@ using ::operator<<;  // C++ weirdness
 
 Compile::Compile() {
   m_code_struct = new CodeStruct;
+#ifdef OUTPUT_COMPILEDATA
+  m_compile_data = new CompileData;
+#endif // OUTPUT_COMPILEDATA
 }
 
-
+/**
+ * @brief class dtor
+ *
+ * Thankfully, this is also called after derived virtual dtor's.
+ */
 Compile::~Compile() {
-  //warn << "Called Compile dtor";
+  //warn << "Called Compile base dtor";
   delete m_code_struct;
+#ifdef OUTPUT_COMPILEDATA
+  delete m_compile_data;
+#endif // OUTPUT_COMPILEDATA
 }
 
 std::string Compile::kernel_type_str() const {
@@ -50,8 +63,7 @@ void Compile::compile(std::function<void()> create_ast) {
 
     m_numVars = VarGen::count();
   } catch (V3DLib::Exception const &e) {
-    // TODO: Looks like this one is not used, cleanup?
-    breakpoint; // Warn me when this happens, TODO test on all platforms
+    // Catches (at least) "FATAL: Failed to allocate vc4 shared memory."
 
     std::string e_msg = e.what();
     Log::warn << "V3DLib::Exception caught: " << e_msg;
@@ -65,7 +77,8 @@ void Compile::compile(std::function<void()> create_ast) {
       m_errors << msg;
     } else {
 #ifdef OUTPUT_COMPILEDATA
-      m_compile_data = compile_data;
+      delete m_compile_data;
+      m_compile_data = new CompileData(compile_data);
 #endif // OUTPUT_COMPILEDATA
       throw;  // Must be a fatal()
     }
@@ -81,7 +94,8 @@ void Compile::compile(std::function<void()> create_ast) {
   handle_errors();
 
 #ifdef OUTPUT_COMPILEDATA
-  m_compile_data = compile_data;
+  delete m_compile_data;
+  m_compile_data = new CompileData(compile_data);
 #endif // OUTPUT_COMPILEDATA
 }
 
@@ -182,7 +196,8 @@ std::string Compile::dump() {
 
 std::string Compile::dump_compile_data() const {
   std::string ret;
-  ret = m_compile_data.dump();
+  assert(m_compile_data != nullptr);
+  ret = m_compile_data->dump();
 
   // vc7 has no accumulators, don't display
   if (!Platform::compiling_for_vc7()) {
@@ -200,6 +215,12 @@ std::string Compile::dump_compile_data() const {
   }
 
   return ret;
+}
+
+
+int Compile::numAccs() const {
+  assert(m_compile_data != nullptr);
+  return m_compile_data->num_accs_introduced;
 }
 
 #endif // OUTPUT_COMPILEDATA

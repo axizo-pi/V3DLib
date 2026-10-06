@@ -319,11 +319,8 @@ TEST_CASE("Test While-loop emulator[mutex][while]") {
  * This tests issues with load/store timing.
  * The trigger was an off-by-one error in the emulator.
  *
- * Result contained 5 instead of 4.
- * Problem fixed, these tests are for regression.
- *
- * Not bothering with testing TMU load, doesn't work for
- * for QPU and is off-by-1 one for emulator.
+ * Result contained 5 instead of 4. Problem fixed, these tests are for regression.  
+ * Not bothering with testing TMU load, doesn't work for for QPU and is off-by-1 one for emulator.
  */
 TEST_CASE("Test For-loop[mutex][for]") {
   LibSettings::tmu_load tmu(false);
@@ -340,11 +337,13 @@ TEST_CASE("Test For-loop[mutex][for]") {
 
     auto k = compile(for_kernel);
     //to_file("for_kernel.txt", k.dump());
+    //to_file("for_compile_data.txt", k.dump_compile_data());
     k.load(&result);
     k.setNumQPUs(numQPUs);
     k.emu();
 
-    //warn << "result For: " << result.dump();
+    INFO("result: "   << result.dump());
+    INFO("expected: " << expected.dump());
     REQUIRE(result == expected);
   }
 

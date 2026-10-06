@@ -1,19 +1,19 @@
 #ifndef _V3DLIB_COMMON_COMPILEDATA_H_
 #define _V3DLIB_COMMON_COMPILEDATA_H_
 
-#define OUTPUT_COMPILEDATA
+#include "defines.h"
 
 #ifdef OUTPUT_COMPILEDATA
 
+#include "Target/instr/Reg.h"
 #include <string>
 #include <vector>
-#include "Target/instr/Reg.h"
 
 namespace V3DLib {
 
 struct CompileData {
   std::string liveness_dump;
-  std::string target_code_before_optimization;
+  std::string target_code_after_immediates;
   std::string target_code_before_regalloc;
   std::string target_code_after_regalloc;
   std::string target_code_before_liveness;

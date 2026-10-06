@@ -105,7 +105,6 @@ struct Instr : public InstructionComment {
     int tag_index(InstrTag tag, bool ensure_one = true);
     int tag_count(InstrTag tag);
     std::string dump_acc_usage(int first = -1, int last = -1) const;
-    int get_free_acc(int first, int last) const;
     void set_skip(int index);
   };
 

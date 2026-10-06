@@ -3,6 +3,7 @@
 #include "v3d/instr/SmallImm.h"  // float_to_opcode_value()
 #include "Support/Platform.h"
 #include "Support/basics.h"
+#include "Support/Timer.h"
 #include "Liveness/Liveness.h"  // ::get_free_acc()
 
 using namespace V3DLib::Target::instr;
@@ -37,19 +38,49 @@ bool hasRegFileConflict(Instr const &instr) {
  * - Only `vc4` has two register files
  * - Only `vc4` needs a NOP for combined read/write to same register in one instruction
  */
-Instr::List insertMoves(Instr::List &instrs) {
+Instr::List insertMoves(Instr::List const &instrs) {
   assert(Platform::compiling_for_vc4());  // Not an issue for v3d
   using namespace V3DLib::Target::instr;
+  info << "=== insertMoves start ===";
+  timers.start("insertMoves");
 
   int subst_count_1 = 0;
   int subst_count_2 = 0;
   int subst_count_3 = 0;
 
-  Instr::List newInstrs(instrs.size() * 2);
+  // Input instr list does not change internally, therefore liveness doesn't change.
+  // There is no potential issue here, since a single acc is inserted for a single line.
+  Liveness live(6);
+  live.compute(instrs, true);
+  //warn << "insertMoves live:\n" << live.reg_usage().dump();
+
+  Instr::List ret(instrs.size() * 2);  // `* 2` to ensure adequate space in output list; excessive
+
+  auto get_acc = [&instrs, &live] (int i, int index) -> Reg {
+    Instr const &instr = instrs[i];
+    info << "insertMoves " << index << " " << i << ": instr: " << instr.mnemonic(false);
+
+    auto dst = instr.dest();
+    if (dst.tag == ACC) {
+      // Reuse the acc already used as destination
+      //info << "dst is ACC!";
+      assert(instr.src_a_reg() != dst && instr.src_b_reg() != dst); // Handle this when it happens
+      return dst;
+    }
+
+    Reg acc = get_free_acc(instrs, i, live);
+    if (acc.regId >= 4) {
+     info << "insertMoves 1 acc: " << acc.dump();
+    }
+
+    return acc;
+  };
 
   for (int i = 0; i < instrs.size(); i++) {
     using namespace Target::instr;
     Instr instr = instrs[i];
+
+    Instr::List newInstrs(2);
 
     if (instr.tag == ALU && instr.ALU.srcA.is_imm() &&
         instr.ALU.srcB.is_reg() && instr.ALU.srcB.reg().regfile() == REG_B) {
@@ -57,7 +88,12 @@ Instr::List insertMoves(Instr::List &instrs) {
       // Insert moves for an operation with a small immediate whose
       // register operand must reside in reg file B.
       //
-      Reg acc = get_free_acc(instrs, i);
+      // Fires in unit tests, but seldom. 
+      //  - vc4: 4 times
+      //  - vc6: 2 times
+      //
+      //warn  << "insertMoves 1 called!";
+      Reg acc = get_acc(i, 1);
 
       newInstrs << mov(acc, instr.ALU.srcB)
                 << instr.clone().src_b(acc);
@@ -69,7 +105,7 @@ Instr::List insertMoves(Instr::List &instrs) {
       // Insert moves for an operation with a small immediate whose
       // register operand must reside in reg file B.
       //
-      Reg acc = get_free_acc(instrs, i);
+      Reg acc = get_acc(i, 2);
 
       newInstrs << mov(acc, instr.ALU.srcA)
                 << instr.clone().src_a(acc);
@@ -82,16 +118,24 @@ Instr::List insertMoves(Instr::List &instrs) {
       // When an instruction uses two (different) registers that are mapped
       // to the same register file, then remap one of them to an accumulator.
       //
-      Reg acc = get_free_acc(instrs, i);
+      Reg acc = get_acc(i, 3);
 
       newInstrs << mov(acc, instr.ALU.srcA)
                 << instr.clone().src_a(acc);
 
       subst_count_3++;
     } else {
-      newInstrs << instr;
+    }
+
+    if (newInstrs.empty()) {
+      ret << instr;
+    } else {
+      info << "insertMoves post:\n" << newInstrs.dump();
+      ret << newInstrs;
     }
   }
+
+  timers.stop("insertMoves");
 
   info << "\n===========================================\n"
        << "insertMoves substitution counts\n"
@@ -101,7 +145,7 @@ Instr::List insertMoves(Instr::List &instrs) {
        << "Count 3: " << subst_count_3 << "\n"
        << "===========================================\n";
 
-  return newInstrs;
+  return ret;
 }
 
 

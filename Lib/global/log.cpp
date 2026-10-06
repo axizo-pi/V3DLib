@@ -447,7 +447,7 @@ std::string Logger::msg() {
 
   switch (m_level) {
     case DDEBUG:  prefix = "DEBUG: ";   break;
-    case INFO:    prefix = "INFO: ";    break;
+    case INFO:    prefix = " INFO: ";    break;
     case WARNING: prefix = "WARNING: "; break;
     case ERROR:   prefix = "ERROR: ";   break;
     case FATAL:   prefix = "FATAL: ";   break;

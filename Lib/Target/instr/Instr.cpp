@@ -172,7 +172,7 @@ bool Instr::has_dest() const {
 }
 
 Reg Instr::dest() const {
-  assertq(has_dest(), "Dest register has no value");
+  assertq(has_dest(), "Dest register has no value", true);
   return m_dest;
 }
 
@@ -774,53 +774,6 @@ std::string Instr::List::dump_acc_usage(int first, int last) const {
     ret << "\n";
   }
 
-  return ret;
-}
-
-
-/**
- * @brief Return index of accumulator which is free for the given
- *        range in the instruction list.
- *
- * If none can be found, return -1.
- */
-int Instr::List::get_free_acc(int first, int last) const {
-  assert(first <= last);
-  assert(first >= 0);
-  assert(last  < size());
-  assert(last  != -1);
-  timers.start("Instr::List:get_free_acc");
-
-  uint32_t acc_use = 0xffffffff;  // Keeps track of free acc's, default all free
-
-  for (int i = first; i <= last; ++i) {
-    auto const &instr = (*this)[i];
-
-    uint32_t acc_mask = instr.get_acc_usage();  // Remember, get_acc_usage() returns *used* acc's
-    //warn << "get_free_acc checking mask: " << acc_mask << ", instr: " << instr.dump();
-    acc_use = acc_use & ~acc_mask;
-  }
-
-  // Mask out unused bits and also r5, because it has special usage.
-  // NOTE: r3 (sfu) and r4 (tmu read) have special usages as well.
-  if (Platform::compiling_for_vc4()) {
-    // It appears to be required for vc4 to not use r4 (unit test [cond] fails)
-    acc_use = acc_use & 0xf;   // r0-r3
-  } else {
-    acc_use = acc_use & 0x1f;  // r0-r4
-  }
-
-  // Determine first non-zero bit
-  int ret = -1;
-
-  for (int i = 0; i < 5; ++i) {
-    if ((acc_use & (1 << i)) != 0) {
-      ret = i;
-      break;
-    }
-  }
-
-  timers.stop("Instr::List:get_free_acc");
   return ret;
 }
 

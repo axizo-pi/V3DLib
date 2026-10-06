@@ -49,6 +49,7 @@ public:
   CFG const &cfg() const { return m_cfg; }
   int size() const { return (int) m_set.size(); }
   RegUsage &reg_usage() { return m_reg_usage; }
+  RegUsage const &reg_usage() const { return m_reg_usage; }
   RegIdSet &operator[](int index) { return get(index); }
 
   void compute(Instr::List const &instrs, bool do_accumulators = false);
@@ -70,7 +71,8 @@ private:
 };
 
 
-Reg get_free_acc(Instr::List const &instrs, int line_number);
+int get_free_acc(Instr::List const &instrs, Range const &use_range);
+Reg get_free_acc(Instr::List const &instrs, int line_number, Liveness const &live);
 void allocate_registers(Instr::List &instrs, RegUsage const &alloc);
 
 }  // namespace V3DLib

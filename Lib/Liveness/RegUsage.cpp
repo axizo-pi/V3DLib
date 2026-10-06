@@ -3,6 +3,7 @@
 #include "Support/Platform.h"  // size_regfile()
 #include "Liveness.h"
 #include "UseDef.h"
+#include <algorithm>           // std::sort()
 
 namespace V3DLib {
 
@@ -10,11 +11,11 @@ using namespace Target;
 
 namespace {
 
-std::string get_unused_list(RegUsage const &alloc_list) {
+MAYBE_UNUSED std::string get_unused_list(RegUsage const &alloc_list) {
   std::string ret;
 
   for (int i = 0; i < (int) alloc_list.size(); i++) {
-    if (alloc_list[i].unused()) {
+    if (alloc_list.get(i).unused()) {
       ret << i << ",";
     }
   }
@@ -27,7 +28,7 @@ std::string get_never_assigned_list(RegUsage const &alloc_list) {
   std::string ret;
 
   for (int i = 0; i < (int) alloc_list.size(); i++) {
-    if (alloc_list[i].never_assigned()) {
+    if (alloc_list.get(i).never_assigned()) {
       ret << i << ",";
     }
   }
@@ -43,7 +44,7 @@ std::string get_assigned_only_list(RegUsage const &alloc_list) {
   //       but often does not get used.
 
   for (int i = 1; i < (int) alloc_list.size(); i++) {
-    if (alloc_list[i].only_assigned()) {
+    if (alloc_list.get(i).only_assigned()) {
       ret << i << ",";
     }
   }
@@ -59,18 +60,20 @@ std::string get_assigned_only_list(RegUsage const &alloc_list) {
 ///////////////////////////////////////////////////////////////////////////////
 
 bool RegUsageItem::unused() const {
-  return (m_use_dst.empty() && m_src_range.count() == 0);
+  return (m_use_dst.empty() && m_use_src.size() == 0);
 }
 
 
 bool RegUsageItem::only_assigned() const  {
-  bool ret =!m_use_dst.empty() && m_src_range.count() == 0;
+  bool ret =!m_use_dst.empty() && m_use_src.size() == 0;
   if (ret) {
+		//warn << "only_assigned: " << dump();
     assert(m_live_range.empty());
   }
 
   return ret;
 }
+
 
 bool RegUsageItem::assigned_once() const {
   assert(!unused());
@@ -78,39 +81,66 @@ bool RegUsageItem::assigned_once() const {
 }
 
 
-std::string RegUsageItem::dump() const {
+std::string RegUsageItem::vec_dump(std::vector<int> const &vec) const {
   std::string ret;
+  ret << "{";
 
-  if (unused()) {
-    ret << "Not used";
-    return ret;
-  }
-
-  std::string dst_list;
-  for (int i = 0; i < (int) m_use_dst.size(); ++i) {
+  for (int i = 0; i < (int) vec.size(); ++i) {
     if (i != 0) {
-      dst_list << ", ";
+      ret << ", ";
     }
-    dst_list << m_use_dst[i];
+
+    ret << vec[i];
   }
 
+  ret << "}";
+
+  return ret;
+}
+
+
+std::string RegUsageItem::dump() const {
+  if (unused()) return "Not used";
+
+  std::string ret;
   ret << reg.dump() << "; "
-      << "src(" << m_src_range.dump() << "); "
-      << "dst: {" << dst_list << "}; "
+      << "src: " << vec_dump(use_src()) << "; "
+      << "dst: " << vec_dump(m_use_dst) << "; "
       << "live(" << m_live_range.dump() << ")";
 
   return ret;
 }
 
 
-void RegUsageItem::add_dst(int n, bool is_cond_assign) {
+void RegUsageItem::add_dst(int n) {
+  // input values expected to be monotonic
   assertq(m_use_dst.empty() || m_use_dst.back() < n, "RegUsageItem::add_dst() failed");
-
   m_use_dst << n;
 }
 
 
-void RegUsageItem::add_src(int n)  { m_src_range.add(n); }
+/**
+ * **NOTE:** src input values are not monotonic.
+ *           This is resolved in a lazy read: if `m_src_sorted == false`,
+ *           redo sort (and uniqueness) on read.
+ */
+void RegUsageItem::add_src(int n) {
+  m_use_src << n;
+  m_src_sorted = false;
+}
+
+
+std::vector<int> const &RegUsageItem::use_src() const {
+  if (!m_src_sorted) {
+    std::sort(m_use_src.begin(), m_use_src.end());
+    m_use_src.erase(unique(m_use_src.begin(), m_use_src.end()), m_use_src.end());
+    m_src_sorted = true;
+  }
+
+  return m_use_src;
+}
+
+
 void RegUsageItem::add_live(int n) { m_live_range.add(n); }
 
 
@@ -182,7 +212,7 @@ int RegUsageItem::first_usage() const {
  * Get last line number for which variable is used (either as src or dst)
  */
 int RegUsageItem::last_usage() const {
-  assert(m_src_range.first() == -1 || m_src_range.first() >= first_dst());
+  assert(m_use_src.empty() || m_use_src.front() >= first_dst());
 
   if (only_assigned()) {
     // In this case this is the correct response; see class Note 1 anyway.
@@ -190,9 +220,14 @@ int RegUsageItem::last_usage() const {
   }
 
   if (!m_live_range.empty()) return m_live_range.last();
-  if (!m_src_range.empty())  return m_src_range.last();
+  if (!m_use_src.empty())  return m_use_src.back();
 
   return -1;
+}
+
+
+Range RegUsageItem::usage() const {
+  return Range(first_usage(), last_usage());
 }
 
 
@@ -208,9 +243,8 @@ bool RegUsageItem::use_overlaps(RegUsageItem const &rhs) const {
     return last_usage() > rhs.first_usage();
   }
 
-  warn << "use_overlaps lhs: " << dump() << ", rhs: " << rhs.dump();
-
   // All other cases overlap
+  //info << "use_overlaps lhs: " << dump() << ", rhs: " << rhs.dump();
   assert(first_usage() >= rhs.first_usage() && first_usage() <= rhs.last_usage()); 
   return true;
 }
@@ -218,7 +252,8 @@ bool RegUsageItem::use_overlaps(RegUsageItem const &rhs) const {
 
 void RegUsageItem::reset() {
   reg.tag = NONE;
-  m_src_range.reset();
+  m_src_sorted = true;
+  m_use_src.clear();
   m_use_dst.clear();
   m_live_range.reset();
 }
@@ -226,11 +261,103 @@ void RegUsageItem::reset() {
 
 bool RegUsageItem::empty() const {
   return ( reg.tag == NONE
-        && m_src_range.empty()
         && m_use_dst.empty()
         && m_live_range.empty()
   );
 }
+
+
+/**
+ * @brief Get closest range for current item to line number
+ *
+ * Find the highest dst _before_ `line_number`
+ * and highest src _before_ lowest dst after `line_number`.
+ *
+ * The bottom dst is _always_ below the line, the top of the range _may_ be below line.
+ */
+Range RegUsageItem::dst_range(int line_number) const {
+  Range ret;
+
+  if (m_use_dst.empty()) return ret;
+
+  //
+  // Determine dst's encompassing `line_number`
+  //
+  int bottom_dst = -1;
+  int top_dst = -1;
+
+  for (int j = 0; j < (int) m_use_dst.size(); ++j) {
+    int val = m_use_dst[j];
+
+    if (val <= line_number && (bottom_dst == -1 || val > bottom_dst)) {
+      bottom_dst = val;
+    }
+
+    if (val > line_number && (top_dst == -1 || val < top_dst)) {
+      top_dst = val;
+    }
+  }
+
+  //
+  // Determine highest src _below_ top dst
+  //
+  int top_src = -1;
+
+  if (!use_src().empty()) {
+    if (top_dst == -1) {
+      // Just grab the highest src
+      top_src = use_src().back();
+    } else {
+      for (int j = 0; j < (int) use_src().size(); ++j) {
+        int val = use_src()[j];
+
+        // NOTE: read reg can be in same operation as write, hence `<=`
+        if (val > top_src && (top_src == -1 || val <= top_dst)) {
+          top_src = val;
+        }
+      }
+    }
+  }
+
+  if (top_src < bottom_dst) { // Also handles top_src == -1
+    // If no read after bottom write, range is only on write
+    top_dst = bottom_dst;
+  } else {
+    top_dst = top_src;
+  }
+
+
+  if (bottom_dst == -1) {
+    if (top_src != -1 && top_src < line_number) {
+      warn << "Edge case: last read is without preceding write and before line_number";
+      return Range();
+    }
+
+    // If no bottom write, the first write is after the line.
+    // This is perfectly safe.
+    assert(top_dst == -1 || top_dst > line_number); // Paranoia
+    return Range();
+  }
+
+  ret.unsafe_assign(bottom_dst, top_dst);
+  return ret;
+}
+
+
+/**
+ * @return true if current var in use at given line number, false otherwise
+ */
+bool RegUsageItem::in_use(int line_number) const {
+  Range range = dst_range(line_number);
+
+  if (range.in(line_number)) {
+    return true;
+  } else {
+    //warn << "in_use line: " << line_number << ", OUTSIDE range: " << range.dump();
+    return false;
+  }
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////
 // Class RegUsage
@@ -250,11 +377,16 @@ void RegUsage::reset() {
 }
 
 
+/**
+ * TODO: Consider renaming to `operator[]`.
+ */
 RegUsageItem &RegUsage::get(int i) {
-  if (i > (int) size()) {
+  if (i >= (int) size()) {
     Log::warn << "RegUsage::get(): resizing from " << (int) size() << " to " << (i + 1);
     resize(i + 1);
   }
+
+  assertq(0 <= i && i < (int) size(), "RegUsage::get() index out of range", true);
 
 #ifdef DEBUG
   // at() is useful because it does bounds checking,
@@ -265,43 +397,54 @@ RegUsageItem &RegUsage::get(int i) {
 #endif
 }
 
+
 RegUsageItem const &RegUsage::get(int i) const {
-  assert(i < (int) size());
+  assertq(0 <= i && i < (int) size(), "RegUsage::get() index out of range", true);
   return (*this)[i];
 }
 
 
-void RegUsage::set_used(Instr::List const &instrs, bool do_accumulators) {
-#ifdef DEBUG
-  //Log::warn << "RegUsage.set_used() size: " << (int) size();
-
+bool RegUsage::empty() const {
   for (auto &a : *this) {
-    assert(a.empty());
+    if (!a.empty()) return false;
   }
-#endif
+
+  return true;
+}
+
+
+void RegUsage::set_used(Instr::List const &instrs, bool do_accumulators) {
+  assert(empty());
 
   for (int i = 0; i < instrs.size(); i++) {
-    if (!instrs[i].has_registers()) continue;
+    auto const &instr = instrs[i];
 
-    UseDef out(instrs[i], do_accumulators, false);
-    //warn << "set_used out " << i << ": " << out.dump();
+    if (!instr.has_registers()) continue;
+
+    UseDef out(instr, do_accumulators, false);
+
+    MAYBE_UNUSED bool added = false;
 
     if (out.def.tag != NONE) {
-      //warn << "add_dst: " << i;
       assert(out.def.regId < (int) size());
-
       auto &item = get(out.def.regId);
-      item.add_dst(i, instrs[i].isCondAssign());
+      item.add_dst(i);
+      added = true;
     }
 
     for (auto r : out.use) {
-      //warn << "add_src: " << i;
       assert(r < (int) size());
-
       auto &item = get(r);
       item.add_src(i);
-      //warn << "add_src item: " << item.dump();
+      added = true;
     }
+
+#if 0
+    if (do_accumulators && added) {
+      warn << "RegUsage::set_used instr has acc's; "
+           << i << ": " << instr.mnemonic(false);
+    }
+#endif    
   }
 }
 
@@ -309,12 +452,9 @@ void RegUsage::set_used(Instr::List const &instrs, bool do_accumulators) {
 void RegUsage::set_live(Liveness &live) {
   for (int i = 0; i < live.size(); i++) {
     auto &item = live[i];  // item holds list of accumulator indexes.
-    //warn << "set_live " << i << ": " << item.dump();
 
     for (auto it : item) {
       auto &item2 = (*this)[it];
-      //warn << "item2: " << item2.dump();
-
       item2.add_live(i);
     }
   }
@@ -383,47 +523,29 @@ void RegUsage::check() const {
 }
 
 
-std::string RegUsage::allocated_registers_dump() const {
-  std::string ret;
-
-  for (int i = 0; i < (int) size(); i++) {
-    ret << i << ": " << (*this)[i].reg.dump() << "\n";
-  }
-
-  return ret;
-}
-
-
-std::string RegUsage::dump(bool verbose) const {
+std::string RegUsage::dump() const {
   if (empty()) return "<Empty>";
-
-  if (!verbose) return allocated_registers_dump();
-
-  bool const ShowUnused = false;
 
   std::string ret;
 
   for (int i = 0; i < (int) size(); i++) {
     auto const &item = (*this)[i];
-
-    if (ShowUnused || !item.unused()) {
-      ret << i << ": " << item.dump() << "\n";
-    }
+    ret << i << ": " << item.dump() << "\n";
   }
 
-  std::string tmp = get_unused_list(*this);
+  std::string buf;
+  auto tmp = get_assigned_only_list(*this);
   if (!tmp.empty()) {
-    ret << "\nNot used: " << tmp << "\n";
-  }
-
-  tmp = get_assigned_only_list(*this);
-  if (!tmp.empty()) {
-    ret << "\nOnly assigned: " << tmp << "\n";
+    buf << "Only assigned: " << tmp << "\n";
   }
 
   tmp = get_never_assigned_list(*this);
   if (!tmp.empty()) {
-    ret << "\nNever assigned: " << tmp << "\n";
+    buf << "Never assigned: " << tmp << "\n";
+  }
+
+  if (!buf.empty()) {
+    ret << "\n" << buf;
   }
 
   return ret;
@@ -463,10 +585,9 @@ bool RegUsage::check_overlap_usage(Reg acc, RegUsageItem const &item) const {
   for (int i = 0; i < (int) size(); ++i) {
     auto const &cur = (*this)[i];
     if (cur.reg != acc) continue;
-    //warn << "Same ACC: " << cur.reg.dump();
 
     if (cur.use_overlaps(item)) {
-      warn << "check_overlap_usage: Detected conflicting usage of replacement acc";
+      //info << "check_overlap_usage: Detected conflicting usage of replacement acc";
       return true;
     }
   }
@@ -480,16 +601,14 @@ bool RegUsage::check_overlap_usage(Reg acc, RegUsageItem const &item) const {
  *
  * Find the largest dst before instruction and lowest after.
  *
- * **TODO:** To do it properly, you need the explicit src lines as well.
- *
  * @return index of (lowest) available accumulator if found, -1 otherwise.
  */
 int RegUsage::dst_range(int line_number) const {
   //info << "Called dst_range line_number: " << line_number;
+  assert(!Platform::compiling_for_vc7());
 
   int first_unused_acc = -1;
 
-  // This loop checks dst's only! Should really be checking src's as well (TODO)
   for (int i = 0; i < (int) size(); ++i) {
     auto const &item = get(i);
     if (item.unused()) {
@@ -498,65 +617,36 @@ int RegUsage::dst_range(int line_number) const {
     }
 
     auto &use_dst = item.use_dst();
-    if (use_dst.empty()) continue;
+    if (use_dst.empty()) continue;  // TODO move to in_use
 
-    int bottom_dst = -1;
-    int top_dst = -1;
-
-    for (int j = 0; j < (int) use_dst.size(); ++j) {
-      int val = use_dst[j];
-
-      if (val <= line_number && (bottom_dst == -1 || val > bottom_dst)) {
-        bottom_dst = val;
-      }
-
-      if (val > line_number && (top_dst == -1 || val < top_dst)) {
-        top_dst = val;
-      }
-    }
-
-    bool available = true;
-
-    if (bottom_dst == -1) {
-      // This is is fine; no assignment to current acc before this line.
-      // It is free for use.
-    } else if (top_dst != -1) {
-      available = false;
-    } else if (top_dst == -1) {
-      // Check src range to see if acc is valid; this can be done better.
-      // This is a patch-up job; better would be to test explicit src line numbers (TODO)
-      if (item.src_range().last() >= line_number) {
-        available = false;
-      }
-    } else {
-      // Not expecting this to be ever called again,
-      // but we're paranoid so keeping it in.
-      std::string msg = "RegUsage::dst_range(): Handle this case when encountered";
-
-      warn << msg << "\n  "
-           << "acc" << i << " "
-           << "bottom: " << bottom_dst << ", "
-           << "top: "    << top_dst    << "\n  "
-           << "item: "   << item.dump();
-
-      assertq(false, msg);
-    }
+    bool available = !item.in_use(line_number);
 
     if (available) {
       // Found available accumulator
-      info << "dst_range: acc" << i << " available";
       first_unused_acc = i;
       break;
     }
   }
 
-  if (first_unused_acc > 4) {
-    warn << "dst_range blocking special accumulator acc5 for now.";
-    first_unused_acc = -1;
-  }
+  //
+  // Incredibly, following exclusion works for vc6. This might fail in the future
+  //
+  if (Platform::compiling_for_vc4()) {
+    if (first_unused_acc == 5) {
+      warn << "dst_range blocking special accumulator ACC5.";
+      first_unused_acc = -1;
+    }
 
-  if (first_unused_acc > 3) {
-    warn << "dst_range returning special accumulator acc4 or acc5; check for conflicts.";
+    //
+    // Defiant testing indicates that acc4 _can_ actually be used as a general purpose register.
+    // Unit tests pass just fine.
+    // However, we will respect the vc4 doc (for now TODO).
+    //
+    if (first_unused_acc == 4) {
+      //warn << "dst_range returning special accumulator ACC " << first_unused_acc << "; check for conflicts.";
+      warn << "dst_range blocking special accumulator ACC4.";
+      first_unused_acc = -1;
+    }
   }
 
   return first_unused_acc;
