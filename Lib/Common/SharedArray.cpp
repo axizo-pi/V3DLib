@@ -97,15 +97,8 @@ void BaseSharedArray::dealloc() {
 }
 
 
-/**
- */
 uint32_t BaseSharedArray::getAddress() const {
-  // Not sure if 4-bit alignment is required for vc4, it might go well automatically
-  warn << "SharedArray::getAddress: check assertion";
-  //if (!Platform::compiling_for_vc4()) { // v3d
-    assert((m_phyaddr & 0xf) == 0);
-  //}
-
+  assert((m_phyaddr & 0xf) == 0);
   return m_phyaddr;
 }
 
@@ -128,7 +121,6 @@ std::string BaseSharedArray::dump() const {
 
 
 void BaseSharedArray::heap_view(BufferObject &heap) {
-  //warn << "BaseSharedArray::heap_view() called";
   assert(!allocated());
   assert(m_heap == nullptr);
   assert(m_element_size > 0);

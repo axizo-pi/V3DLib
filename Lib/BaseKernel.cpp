@@ -40,7 +40,6 @@ V3DLib::Compile &BaseKernel::compile() {
 
 
 void BaseKernel::compile_init() {
-  //warn << "Called compile_init()";
   assert(m_compile.get() == nullptr);
 
   VCType select_kernel = VCType::UNKNOWN;
@@ -88,7 +87,8 @@ void BaseKernel::compile_init() {
     Platform::compile::start(select_kernel);
     m_compile.reset(new v3d::Compile);
   }
-  warn << "compile_init compiling_for_vc4: " << Platform::compile::for_vc4();
+
+  //warn << "compile_init compiling_for_vc4: " << Platform::compile::for_vc4();
 }
 
 

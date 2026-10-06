@@ -53,8 +53,7 @@ CodeStruct const &Compile::code_struct() const {
  */
 void Compile::compile(std::function<void()> create_ast) {
   try {
-    warn << "Compile::compile() compiling for: " << kernel_type_str();
-
+    //warn << "Compile::compile() compiling for: " << kernel_type_str();
     create_ast();
     compile_intern();
 
