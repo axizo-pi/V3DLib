@@ -604,11 +604,6 @@ struct {
       } else if (item.step != -1) {
         assert(item.step/2 == k_diff.first());
       }
-/*
-      if (item.step/2 != k_diff.first()) {
-        std::cout << "i " << i << ": step " << item.step << " " << k_diff.dump() << std::endl;
-      }
-*/
     }
   }
 
@@ -635,11 +630,7 @@ struct {
         break;
       }
     }
-/*
-    if (same_count > 1) {  // True for log2n >= 6
-      std::cout << "same_count: " << same_count << std::endl;
-    }
-*/
+
     return same_count;
   }
 
@@ -1159,13 +1150,6 @@ TEST_CASE("FFT test with DFT [fft][test2][pass2]") {
     for (int c = 0; c < Dim; ++c) {
       a[c] = wavelet_function(c, Dim);
     }
-/*
-    std::cout << "Input wavelet: ";
-    for (int c = 0; c < Dim; ++c) {
-      std::cout << a[c] << ", ";
-    }
-    std::cout << std::endl;
-*/
 
     // Run scalar FFT for results comparison
     cx scalar_result[Dim];
@@ -1190,19 +1174,10 @@ TEST_CASE("FFT test with DFT [fft][test2][pass2]") {
     //
     if (log2n <= 9) {  // Reg allocation fails above this
       Complex::Array2D result_dft;
-      Timer timer1("DFT compile time");
       auto k = compile(kernels::dft_decorator(a, result_dft));
-      //to_file("obj/test/dft_compare_v3d.txt", k.dump());
-      timer1.end();
-      //std::cout << "DFT kernel size: " << k.v3d_kernel_size() << std::endl;
-      //std::cout << "combined " << compile_data.num_instructions_combined << " instructions" << std::endl;
 
-      Timer timer2("DFT run time");
       k.load(&result_dft, &a);
       k.run();
-      timer2.end();
-
-      //std::cout << "DFT result: " << result_dft.dump() << std::endl;
 
       INFO("comparing DFT with scalar");
       check_result1(scalar_result, result_dft, Dim, precision);
@@ -1427,7 +1402,6 @@ TEST_CASE("FFT Support [fft][support]") {
       k.load(&result);
       k.run();
 
-      //std::cout << "16vec output: " << result.dump() << std::endl;
       for (int i = 0; i < (int) k_index.size(); ++i) {
         REQUIRE(k_index[i] == result[i]);
       }
@@ -1440,7 +1414,6 @@ TEST_CASE("FFT Support [fft][support]") {
       k.load(&result);
       k.run();
 
-      //std::cout << "16vec output: " << result.dump() << std::endl;
       for (int i = 0; i < (int) k_m2_index.size(); ++i) {
         REQUIRE(k_m2_index[i] == result[i]);
       }
@@ -1468,8 +1441,6 @@ TEST_CASE("FFT Support [fft][support]") {
     auto k = compile(vecoffset_kernel);
     k.load(&result, &a, &devnull);
     k.run();
-
-    //std::cout << "16vec output: " << result.dump() << std::endl;
 
     REQUIRE(expected.size() == result.size());
     for (int i = 0; i < (int) expected.size(); ++i) {

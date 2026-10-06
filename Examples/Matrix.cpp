@@ -82,11 +82,10 @@ void run_scalar_kernel() {
     b[i] = random_float();
   }
 
-  Timer timer;
+  Timer timer("matrix_mult_scalar", !settings.silent);
   for (int i = 0; i < settings.repeats; ++i) {
     kernels::matrix_mult_scalar(settings.dimension, result, a, b);
   }
-  timer.end(!settings.silent);
 
   delete [] a;
   delete [] b;
@@ -111,11 +110,10 @@ void run_qpu_kernel() {
     }
   }
 
-  Timer timer;
+  Timer timer("matrix qpu_kernel", !settings.silent);
   for (int i = 0; i < settings.repeats; ++i) {
     k.load(&result, &a, &b).run();
   }
-  timer.end(!settings.silent);
 }
 
 

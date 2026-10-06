@@ -31,7 +31,7 @@ public:
   std::string max_str() const;
 
   std::string dump(MaxWidths const &widths, bool show_extended = false);
-  std::string end(bool show_output = true);
+  std::string dump();
 
 private:
   const int HISTORY_SIZE = 0;

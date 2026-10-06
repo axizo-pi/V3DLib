@@ -69,30 +69,26 @@ void run_kernel() {
   auto k = compile(heatmap_kernel, settings);
   k.setNumQPUs(settings.num_qpus);
 
-  Timer timer("QPU run time");
-
   for (int i = 0; i < settings.num_steps; i++) {
     if (i & 1) {
-			// Load the uniforms and invoke the kernel
+      // Load the uniforms and invoke the kernel
       k.load(&mapB, &mapA, settings.HEIGHT, settings.WIDTH).run();
     } else {
-			// Load the uniforms and invoke the kernel
+      // Load the uniforms and invoke the kernel
       k.load(&mapA, &mapB, settings.HEIGHT, settings.WIDTH).run();
 
-			if (settings.animate) {
-				std::string filename;
-				filename << (i/2) << "_heatmap.bmp";
-  			output_bmp(mapB, settings.WIDTH, settings.HEIGHT, 255, filename.c_str(), false);
-			}
+      if (settings.animate) {
+        std::string filename;
+        filename << (i/2) << "_heatmap.bmp";
+        output_bmp(mapB, settings.WIDTH, settings.HEIGHT, 255, filename.c_str(), false);
+      }
     }
   }
 
-  timer.end(!settings.silent);
-
-	if (!settings.animate) {
-	  // Output results
-  	output_bmp(mapB, settings.WIDTH, settings.HEIGHT, 255, "heatmap.bmp", false);
-	}
+  if (!settings.animate) {
+    // Output results
+    output_bmp(mapB, settings.WIDTH, settings.HEIGHT, 255, "heatmap.bmp", false);
+  }
 }
 
 

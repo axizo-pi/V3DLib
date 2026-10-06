@@ -59,9 +59,8 @@ void run_scalar_kernel() {
   data.disp("Data pre");
 
   if (!settings.compile_only) {
-    Timer timer;  // Time the run only
+    Timer timer("scalar_rot3D", !settings.silent);  // Time the run only
     scalar_rot3D(data.size(), settings.rot_x, settings.rot_y, settings.rot_z, data.x, data.y, data.z);
-    timer.end(!settings.silent);
   }
 
   data.disp("Data post");

@@ -11,17 +11,17 @@ namespace {
  * This avoids recalculating them within loops.
  */
 struct Context {
-	Context(Int &in_num_entities) {
-	  DIST_FACTOR   = 1e-12f;         comment("Init DIST_FACTOR");
-  	MASS_FACTOR   = 1e-18f;         comment("Init MASS_FACTOR");
+  Context(Int &in_num_entities) {
+    DIST_FACTOR   = 1e-12f;         comment("Init DIST_FACTOR");
+    MASS_FACTOR   = 1e-18f;         comment("Init MASS_FACTOR");
 
-  	ACC_CONSTANT  = ((float) BIG_G) * DIST_FACTOR / MASS_FACTOR * DIST_FACTOR;
-		comment("Init ACC_CONSTANT");
+    ACC_CONSTANT  = ((float) BIG_G) * DIST_FACTOR / MASS_FACTOR * DIST_FACTOR;
+    comment("Init ACC_CONSTANT");
 
-  	Count        = batch_steps();
-		num_entities = in_num_entities; // Must be multiple of 16
-  	delta_t      = (float) dt;      comment("init delta_t");
-	}
+    Count        = batch_steps();
+    num_entities = in_num_entities; // Must be multiple of 16
+    delta_t      = (float) dt;      comment("init delta_t");
+  }
 
   //
   // These conversion factors exist to prevent Inf values.
@@ -34,7 +34,7 @@ struct Context {
 
   Int   Count;          // Number of times to do the complete calculation per kernel call
   Int   num_entities;
-  Float delta_t;				// Time between full calculations. Default is 1 day
+  Float delta_t;        // Time between full calculations. Default is 1 day
 };
 
 
@@ -64,7 +64,7 @@ void vector_calc_acc(
   Float &accum_x, Float &accum_y, Float &accum_z,
   Int &entity_index,
   Float::Ptr &px, Float::Ptr &py, Float::Ptr &pz, Float::Ptr &pmass,
-	Context &c
+  Context &c
 ) {
   header("Start vector_calc_acc");
 
@@ -158,7 +158,7 @@ void kernel_calc_acc(
   Float::Ptr &in_x, Float::Ptr &in_y, Float::Ptr &in_z,
   Float::Ptr &out_acc_x, Float::Ptr &out_acc_y, Float::Ptr &out_acc_z,
   Float::Ptr &in_mass,
-	Context &c
+  Context &c
 ) {
   nop(1); header("Start loop kernel_calc_acc");
 
@@ -189,15 +189,15 @@ void kernel_calc_acc(
       x0_acc, y0_acc, z0_acc,
       cur_index,
       px, py, pz, pmass,
-			c
+      c
     );
 
     //
     // Sum up and return the acceleration. See Note 1.
     //
 
-		// Following works for TMU, not for VPM(DMA).
-		// VPM can not deal with vector offsets
+    // Following works for TMU, not for VPM(DMA).
+    // VPM can not deal with vector offsets
 /*
     Float::Ptr pacc_x = out_acc_x + ptr_offset;
     *pacc_x = x0_acc;
@@ -209,18 +209,18 @@ void kernel_calc_acc(
     *pacc_z = z0_acc;
 */
 
-		{
-			Int offset = (cur_index << 4);
+    {
+      Int offset = (cur_index << 4);
 
-	    Float::Ptr pacc_x = out_acc_x + offset;
-	    *pacc_x = x0_acc;
+      Float::Ptr pacc_x = out_acc_x + offset;
+      *pacc_x = x0_acc;
 
-	    Float::Ptr pacc_y = out_acc_y + offset;
-	    *pacc_y = y0_acc;
+      Float::Ptr pacc_y = out_acc_y + offset;
+      *pacc_y = y0_acc;
 
-	    Float::Ptr pacc_z = out_acc_z + offset;
-	    *pacc_z = z0_acc;
-		}
+      Float::Ptr pacc_z = out_acc_z + offset;
+      *pacc_z = z0_acc;
+    }
   End
 }
 
@@ -232,7 +232,7 @@ void kernel_step(
   Float::Ptr &p_x    , Float::Ptr &p_y    , Float::Ptr &p_z,
   Float::Ptr &p_v_x  , Float::Ptr &p_v_y  , Float::Ptr &p_v_z,
   Float::Ptr &p_acc_x, Float::Ptr &p_acc_y, Float::Ptr &p_acc_z,
-	Context &c
+  Context &c
 ) {
   header("Start kernel_step");
 
@@ -370,7 +370,7 @@ void kernel_gravity(
   Float::Ptr in_mass,
   Int in_num_entities
 ) {
-	Context c(in_num_entities);
+  Context c(in_num_entities);
   comment("Start Count loop");
 
   For (Int i = 0, i < c.Count, i++)
@@ -378,13 +378,11 @@ void kernel_gravity(
       in_x, in_y, in_z,
       in_acc_x, in_acc_y, in_acc_z,
       in_mass,
-			c
+      c
     );
 
-    if (!Platform::compiling_for_vc4()) {
+    if (!Platform::compile::for_vc4()) {
       barrier();
-    //} else {
-    //  Log::warn << "Gravity kernel: not adding barrier for vc4";
     }
 
     // kernel_step() adjusts pointers, reset to start before calling  
@@ -405,7 +403,7 @@ void kernel_gravity(
       c
     );
 
-    if (!Platform::compiling_for_vc4()) {
+    if (!Platform::compile::for_vc4()) {
       barrier();
     }
   End

@@ -64,7 +64,7 @@ void ProfileOutput::add_compile(std::string const &label, std::string const &tim
 
 
 void ProfileOutput::add_compile(std::string const &label, Timer &timer, int Dim) {
-  ProfileOutput::add_compile(label, timer.end(false), Dim);
+  ProfileOutput::add_compile(label, timer.dump(), Dim);
 }
 
 
@@ -72,7 +72,7 @@ void ProfileOutput::add_call(std::string const &label, Timer &timer, int Dim, in
   std::string str;
   str << "\"" << label << "\"";
 
-  output << out_data(str, timer.end(false), Dim, num_qpus);
+  output << out_data(str, timer.dump(), Dim, num_qpus);
 }
 
 

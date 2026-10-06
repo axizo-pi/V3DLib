@@ -12,7 +12,7 @@ using namespace V3DLib;
 int main(int argc, const char *argv[]) {
   settings.init(argc, argv);
 
-  Timer timer("Total time");
+  Timer timer("Total time", !settings.silent);
 
   switch (settings.kernel) {
     case 0: run_kernel();  break;  
@@ -22,7 +22,6 @@ int main(int argc, const char *argv[]) {
   if (!settings.silent) {
     printf("Ran kernel '%s' with %d QPU's\n", settings.kernel_name.c_str(), settings.num_qpus);
   }
-  timer.end(!settings.silent);
 
   return 0;
 }

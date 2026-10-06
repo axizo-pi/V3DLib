@@ -83,12 +83,9 @@ void BaseKernel::compile_init() {
     Platform::compile::start(select_kernel);
     m_compile.reset(new vc4::Compile);
   } else {
-    warn << "BaseKernel compiling for v3d";
     Platform::compile::start(select_kernel);
     m_compile.reset(new v3d::Compile);
   }
-
-  //warn << "compile_init compiling_for_vc4: " << Platform::compile::for_vc4();
 }
 
 

@@ -653,7 +653,7 @@ bool profile_block_mult(int dimension) {
   if (true) {
     Timer timer1;
     m.compile();
-    profile_output.add_compile(label1, timer1.end(false), dimension);
+    profile_output.add_compile(label1, timer1.dump(), dimension);
 
     if (!m.has_errors()) {
       compiled += 1;
@@ -674,7 +674,7 @@ bool profile_block_mult(int dimension) {
 
   Timer timer2;
   m.compile();
-  profile_output.add_compile(label2, timer2.end(false), dimension);
+  profile_output.add_compile(label2, timer2.dump(), dimension);
 
   if (!m.has_errors()) {
     compiled += 2;

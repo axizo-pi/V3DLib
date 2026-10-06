@@ -576,7 +576,7 @@ void interpreter(
   IntList &uniforms,
   BufferObject &heap
 ) {
-  Timer("Interpreter", true);
+  Timer timer("Interpreter", true);
 
   Stmts const &stmts = cs.sourceCode();
   InterpreterState state(numCores, uniforms, Platform::emulating_for() != Platform::VCType::vc4);

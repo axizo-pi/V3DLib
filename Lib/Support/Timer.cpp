@@ -133,14 +133,13 @@ Timer::Timer(std::string const &label, bool disp_in_dtor) :
   m_label(label)
 {
   gettimeofday(&tvStart, NULL);
-
   tvMin = tvStart;
 }
 
 
 Timer::~Timer() {
   if (m_disp_in_dtor) {  // Allows RAII usage
-    end();
+    info << "Timer " << m_label << ": " << dump();
   }
 }
 
@@ -272,12 +271,7 @@ std::string Timer::dump(MaxWidths const &widths, bool show_extended) {
 }
 
 
-std::string Timer::end(bool show_output) {
-  if (show_output) {
-    MaxWidths dummy;
-    warn << dump(dummy);
-  }
-
+std::string Timer::dump() {
   return time_to_str(diff_time());
 }
 

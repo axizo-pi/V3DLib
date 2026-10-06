@@ -186,11 +186,6 @@ PlatformInfo::PlatformInfo() {
      platform_contains("Pi 5")? vc7:
     vc4;
   }
-/*
-  // As default, select compiling for the platform you are on.
-  // If you want to compile to vc4, you need to explicitly set this.
-  m_compiling_for_vc4 = (vc_type == vc4);
-*/
 }
 
 
@@ -290,7 +285,6 @@ void compiling(bool do_vc4) {
 }
 
 
-
 bool running() { return instance().m_compiling_for != UNKNOWN; }
 
 void done() {
@@ -299,13 +293,12 @@ void done() {
 }
 
 
-
 bool for_vc4(bool do_break) {
   assert(!running_emulator());
 
   if (do_break) {
     if (instance().m_compiling_for == UNKNOWN) {
-       warn << "compiling_for_vc4 compiling for Unknown";
+       warn << "compiling::for_vc4 compiling for Unknown";
        breakpoint;
     }
   }
@@ -325,11 +318,7 @@ bool for_vc4(bool do_break) {
  */
 bool for_vc7() {
   assert(!running_emulator());
-/*
-  // This overrides any device selection, due to emulator and interpreter
-  if (instance().m_compiling_for_vc4) return false;
-  return (instance().vc_type == vc7);  // This option is way easier
-*/
+
   if (instance().m_compiling_for == UNKNOWN) {
      warn << "compiling_for_vc7 compiling for Unknown";
     breakpoint;

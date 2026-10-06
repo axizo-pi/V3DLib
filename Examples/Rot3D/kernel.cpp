@@ -46,14 +46,14 @@ void run_qpu_kernel(KernelType &kernel) {
   data.init();
   data.disp("Data pre");
 
-  Timer timer;
-  k.load(
-    data.size(),
-    settings.rot_x/2, settings.rot_y/2, settings.rot_z/2,
-    &data.x, &data.y, &data.z
-  ).run();
-  timer.end(!settings.silent);
-
+  {
+    Timer timer("Rot3D kernel", !settings.silent);
+    k.load(
+      data.size(),
+      settings.rot_x/2, settings.rot_y/2, settings.rot_z/2,
+      &data.x, &data.y, &data.z
+    ).run();
+  }
   data.disp("Data post");
 
   if (settings.save_stl) {

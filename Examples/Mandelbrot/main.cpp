@@ -45,25 +45,10 @@ void run_qpu_kernel(KernelType &kernel) {
   auto const &s = settings();
 
   assertq(0 == s.numStepsWidth % 16, "Width dimension must be a multiple of 16");
+  assertq((settings().run_type != 0) || (4 <= s.num_qpus), "Num QPU's must be at least 4 for vc4");
 
-  //
-  // Allowed to run if:
-  // - v3d QPU
-  // - vc4 interpreter or emulator
-  // - vc4 QPU with #QPU's >= 0
-  //
-  // TODO recheck following condition
-  //
-  // - Verified: nothing to do with semaphores and wait_qpu()
-  // - Runs fine in emulator
-  //
-  assertq(!Platform::compiling_for_vc4() || (settings().run_type != 0) || (4 <= s.num_qpus),
-    "Num QPU's must be at least 4 for vc4"
-  );
-
-  Timer timer("Kernel compile");
+  Timer timer("Kernel compile", !s.silent);
   auto k = compile(kernel, s);
-  timer.end(!s.silent);
 
   k.setNumQPUs(s.num_qpus);
 
@@ -75,7 +60,6 @@ void run_qpu_kernel(KernelType &kernel) {
 
     while (!animate::done()) {
       MandRange r = animate::next();
-      //Log::warn << "MandRange r:\n" << r.dump();
       if (index % 100 == 0) {
         warn << "index: " << index;
       }
@@ -130,8 +114,6 @@ void run_kernel(int kernel_index) {
   }
 
   auto name = MandSettings::kernels()[kernel_index];
-
-  timer.end(!settings().silent);
 
   if (!settings().silent) {
     printf("Ran kernel '%s' with %d QPU's\n", name, settings().num_qpus);

@@ -81,7 +81,7 @@ bool check_precompile_vc6() {
   if (!v3d_init()) return false;
 
   if (V3DLib::Platform::run_vc7()) {
-    Log::warn << "Precompiled kernels are for vc6, blocking for vc7";
+    Log::info << "Precompiled kernels are for vc6, blocking for vc7";
     return false;
   }
 
