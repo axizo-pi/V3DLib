@@ -443,7 +443,7 @@ bool open() {
   }
 
   int fd = (fd1 <= 0)? fd0: fd1;
-  cdebug << "Got fd: " << fd;
+  //cdebug << "Got fd: " << fd;
   assert(fd > 0);
 
   set_fd(fd);

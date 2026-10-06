@@ -579,7 +579,7 @@ void interpreter(
   Timer timer("Interpreter", true);
 
   Stmts const &stmts = cs.sourceCode();
-  InterpreterState state(numCores, uniforms, Platform::emulating_for() != Platform::VCType::vc4);
+  InterpreterState state(numCores, uniforms, Platform::emulate::type() != Platform::VCType::vc4);
 
   // Initialise state
   for (int i = 0; i < numCores; i++) {

@@ -41,10 +41,15 @@ void done();
 
 } // namespace compile
 
-void run_emulator(VCType in_type);
-VCType emulating_for();
-bool running_emulator();
-void done_emulating();
+
+namespace emulate {
+
+void start(VCType in_type);
+VCType type();
+bool running();
+void done();
+
+} // namespace emulate
 
 void use_main_memory(bool val);
 bool use_main_memory();

@@ -16,13 +16,11 @@ RegOrImm::RegOrImm(float rhs) : m_is_reg(false), m_imm(rhs) {
 
   Imm dummy(rhs);
   if (dummy.encode_imm() != -1) {
-    //warn << "Value " << rhs << " can be encoded as small Imm";
     return;
   }
 
   int index = v3d::uniform_constants.get(rhs);
   set_reg(Var(STANDARD, index));
-  //info << "Called RegOrImm(float): " << rhs << " -> " << dump();
 }
 
 Reg &RegOrImm::reg()                  { assert(is_reg()); return m_reg; }
@@ -32,15 +30,12 @@ Imm RegOrImm::imm() const             { assert(is_imm()); return m_imm; }
 
 
 uint8_t RegOrImm::encode() const {
-  assert(Platform::running_emulator() || Platform::compile::for_vc4());
+  assert(Platform::emulate::running() || Platform::compile::for_vc4());
   assert(is_imm());
 
   int ret = m_imm.encode_imm();
-  assert(ret != -1);  // Not expecting this
 
-  // input should be in the encode range for target platforms
   assert(v3d::instr::SmallImm::is_legal_encoded_value(ret));
-
   assert(ret >= 0);
   return (uint8_t) ret;
 }

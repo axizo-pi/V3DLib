@@ -18,17 +18,11 @@ namespace {
  */
 bool loadFileInString(const char *filename, std::string & out_str) {
   std::ifstream t(filename);
-  if (!t.is_open()) {
-    return false;
-  }
+  if (!t.is_open()) return false;
 
-  std::string str((std::istreambuf_iterator<char>(t)),
-                   std::istreambuf_iterator<char>());
+  std::string str((std::istreambuf_iterator<char>(t)), std::istreambuf_iterator<char>());
 
-  if (str.empty()) {
-    return false;
-  }
-
+  if (str.empty()) return false;
   out_str = str;
   return true;
 }
@@ -47,10 +41,7 @@ bool get_platform_string(std::string &content) {
   const char *filename = "/sys/firmware/devicetree/base/model";
 
   bool success = loadFileInString(filename, content);
-  if (!success) {
-    content = "";
-  }
-
+  if (!success) content = "";
   return success;
 }
 
@@ -190,23 +181,23 @@ PlatformInfo::PlatformInfo() {
 
 
 std::string PlatformInfo::output() const {
-  std::string ret;
+  std::string ret = "Platform    : ";
 
   if (!platform_id.empty()) {
-    ret << "Platform    : " << platform_id.c_str() << "\n";
+    ret << platform_id.c_str() << "\n";
   } else {
-    ret << "Platform    : " << "Unknown" << "\n";
+    ret << "Unknown" << "\n";
   }
 
-  ret << "Model Number: " << model_number.c_str() << "\n";
-  ret << "Revision    : " << revision.c_str() << "\n";
+  ret << "Model Number: " << model_number.c_str() << "\n"
+      << "Revision    : " << revision.c_str() << "\n";
 
 
   if (!is_pi_platform) {
     ret << "This is NOT a pi platform!\n";
   } else {
-    ret << "This is a pi platform.\n";
-    ret << "GPU: ";
+    ret << "This is a pi platform.\n"
+        << "GPU: ";
 
     switch (vc_type) {
       case UNKNOWN: ret << "Unknown";             break;
@@ -239,21 +230,16 @@ std::unique_ptr<PlatformInfo> local_instance;
 
 
 PlatformInfo &instance() {
-  if (!local_instance) {
-    local_instance.reset(new PlatformInfo);
-  }
-
+  if (!local_instance) local_instance.reset(new PlatformInfo);
   return *local_instance;
 }
 
 }  // anon namespace
 
 
-void use_main_memory(bool val) {
-  instance().m_use_main_memory = val;
-}
+void use_main_memory(bool val) { instance().m_use_main_memory = val; }
+bool use_main_memory()         { return instance().m_use_main_memory; }
 
-bool use_main_memory() { return instance().m_use_main_memory; }
 
 /**
  * Compilation is only enabled if an actual compile is taking place.
@@ -294,7 +280,7 @@ void done() {
 
 
 bool for_vc4(bool do_break) {
-  assert(!running_emulator());
+  assert(!emulate::running());
 
   if (do_break) {
     if (instance().m_compiling_for == UNKNOWN) {
@@ -317,19 +303,15 @@ bool for_vc4(bool do_break) {
  * platform.
  */
 bool for_vc7() {
-  assert(!running_emulator());
-
-  if (instance().m_compiling_for == UNKNOWN) {
-     warn << "compiling_for_vc7 compiling for Unknown";
-    breakpoint;
-  }
+  assert(!emulate::running());
+  assertq(instance().m_compiling_for != UNKNOWN, "compiling_for_vc7 compiling for Unknown");
 
   return (instance().m_compiling_for == vc7);
 }
 
 
 bool for_vc6() {
-  assert(!running_emulator());
+  assert(!emulate::running());
   return !for_vc4() && (instance().vc_type == vc6);
 }
 
@@ -339,16 +321,8 @@ bool for_vc6() {
 std::string platform_info() { return instance().output(); }
 bool is_pi_platform()       { return instance().is_pi_platform; }
 
-bool run_vc4() {
-  //assert(!running_emulator());
-  return instance().vc_type == vc4;
-}
-
-
-bool run_vc7() {
-  //assert(!running_emulator());
-  return instance().vc_type == vc7;
-}
+bool run_vc4() { return instance().vc_type == vc4; }
+bool run_vc7() { return instance().vc_type == vc7; }
 
 
 /**
@@ -356,7 +330,6 @@ bool run_vc7() {
  */
 Tag tag() {
   auto tmp = pi_version();
-  //warn << "pi_version: '" << tmp << "'";
 
   Tag tag = not_pi;
        if (tmp == "pi1")    { tag = pi1;     }
@@ -370,7 +343,6 @@ Tag tag() {
   else {
     warn << "Unknown pi_version: '" << tmp << "'" << thrw;
   }
-
 
   return tag;
 }
@@ -396,15 +368,13 @@ Tag tag() {
  * concept can actually be convoluted as f*** underwater.
  */
 int size_regfile() {
-  assert(!running_emulator()); // Warn me
+  assert(!emulate::running()); // Warn me
   if (run_vc4()) return 32;
   return 64;  // v3d
 }
 
 
-int max_qpus() {
-  return instance().max_qpus();
-}
+int max_qpus() { return instance().max_qpus(); }
 
 
 int gather_limit() {
@@ -414,7 +384,7 @@ int gather_limit() {
     showed = true;
   }
 
-  assert(!running_emulator());  // Warn me
+  assert(!emulate::running());  // Warn me
   if (run_vc4()) {
     return 4;
   } else {
@@ -437,7 +407,7 @@ std::string pi_version() {
   std::string const prefix = "Raspberry Pi ";
 
   if (val.find(prefix) != 0) {
-    ret = "Not RPi";
+    ret = "Not Pi";
     return ret;
   }
 
@@ -448,10 +418,10 @@ std::string pi_version() {
   } else if (version == 'Z') {
     // OK; 'Z' in 'Raspberry Pi Zero W Rev 1.1'
   }
-  ret = "pi";
+  ret  = "pi";
   ret += version;
 
-  assertq(('1' <= version && version <= '5') || (version == 'Z'),"Unknown pi version number");
+  assertq(('1' <= version && version <= '5') || (version == 'Z'), "Unknown pi version number");
 
 #ifdef ARM64
   ret += "-64";
@@ -461,26 +431,29 @@ std::string pi_version() {
 }
 
 
-void run_emulator(VCType in_type) {
+/**
+ * This is only set if the interpreter or emulator is actually running.
+ */
+namespace emulate {
+
+void start(VCType in_type) {
   assert(in_type != UNKNOWN);
   instance().emulating_for = in_type;
 }
 
-VCType emulating_for() {
-  return instance().emulating_for;
-}
+VCType type() { return instance().emulating_for; }
 
 
 /**
  * @brief Check if emulator or interpreter is running.
  *
- * This is only set if the emulator/interpreter is actually running.
- *
  * @return true if emulator or interpreter is running, false otherwise.
  */
-bool running_emulator() { return instance().emulating_for != UNKNOWN; }
+bool running() { return instance().emulating_for != UNKNOWN; }
 
-void done_emulating() { instance().emulating_for = UNKNOWN; }
+void done() { instance().emulating_for = UNKNOWN; }
+
+} // namespace emulate
 
 
 /**
@@ -509,9 +482,7 @@ std::string vc_type_str(VCType type) {
 }
 
 
-std::string vc_type_str() {
-  return vc_type_str(instance().vc_type);
-}
+std::string vc_type_str() { return vc_type_str(instance().vc_type); }
 
 
 main_mem::main_mem(bool val) {
@@ -520,9 +491,7 @@ main_mem::main_mem(bool val) {
 }
 
 
-main_mem::~main_mem() {
-  use_main_memory(m_prev);
-}
+main_mem::~main_mem() { use_main_memory(m_prev); }
 
 }  // namespace Platform
 }  // namespace V3DLib

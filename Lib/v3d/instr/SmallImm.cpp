@@ -22,6 +22,7 @@ struct float_encoding {
   uint32_t hex;
 };
 
+
 std::vector<float_encoding> float_encodings = {
  {     0,   0.0f      }, // 0, same as int 0
  {    32,   1.0f      }, // 0x3f800000
@@ -73,6 +74,7 @@ std::vector<float_encoding> float_encodings_v3d = {
  { 46,  64          , 0x42800000 },  // 2.0^6
  { 47, 128          , 0x43000000 },  // 2.0^7
 };
+
 
 //
 // From  vc4 reference
@@ -144,6 +146,7 @@ int SmallImm::to_int() const {
 
 }
 
+
 /**
  * @return true if conversion succeeded, false otherwise
  */
@@ -176,8 +179,8 @@ bool SmallImm::float_to_opcode_value(float value, int &rep_value) {
 
   bool is_v3d;
 
-  if (Platform::running_emulator()) {
-    is_v3d = Platform::emulating_for() != Platform::VCType::vc4;
+  if (Platform::emulate::running()) {
+    is_v3d = Platform::emulate::type() != Platform::VCType::vc4;
     assert(!is_v3d);  // Block v3d for emulator for the time being.
     //warn << "float_to_opcode_value running emulator v3d:"  << is_v3d;
   } else if (Platform::compile::running()) {
