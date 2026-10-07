@@ -46,11 +46,7 @@ void BaseKernel::compile_init() {
   VCType select_kernel = VCType::UNKNOWN;
 
 #ifdef V3D_ALLOW_INTERPRET
-  if (Platform::run_vc4()) {
-    select_kernel = VCType::vc4;
-  } else {
-    select_kernel = v3d;
-  }
+  select_kernel = Platform::vc_type();
 #else
   if (m_settings.run_type != QPU) {
     select_kernel = VCType::vc4;
@@ -218,8 +214,8 @@ void BaseKernel::interpret() {
   warn << "interpret allowing v3d";
 
   warn << "interpret() "
-       << "is_v3d: "  << compile().is_v3d()  << ", "
-       << "run vc4: " << Platform::run_vc4();
+       << "is_v3d: "  << compile().is_v3d() << " (" << compile().kernel_type_str() << "), "
+       << "run_vc4: " << Platform::run_vc4();
 #else
   assertq(compile().kernel_type() == VCType::vc4, "Can not run interpreter for v3d");
 #endif

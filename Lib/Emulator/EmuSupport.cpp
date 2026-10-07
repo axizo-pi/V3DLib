@@ -257,33 +257,43 @@ bool Vec::apply(ALUOp const &op, Vec a, Vec b) {
   bool handled = true;
   if (op.value() == Enum::NOP) return true;
 
-  // Floating-point operations
+  //
+  // Float operations
+  //
   for (int i = 0; i < NUM_LANES; i++) {
     float  x = a[i].floatVal;
     float  y = b[i].floatVal;
     float &d = elems[i].floatVal;
 
     switch (op.value()) {
-    case Enum::A_FADD:    d = x+y;                       break;
-    case Enum::A_FSUB:    d = x-y;                       break;
-    case Enum::A_FMIN:    d = x<y?x:y;                   break;
-    case Enum::A_FMAX:    d = x>y?x:y;                   break;
-    case Enum::A_FMINABS: d = fabs(x) < fabs(y) ? x : y; break; // min of absolute values
-    case Enum::A_FMAXABS: d = fabs(x) > fabs(y) ? x : y; break; // max of absolute values
-    case Enum::A_FtoI:    elems[i].intVal = (int) x;     break;
-    case Enum::A_ItoF:    d = (float) a[i].intVal;       break;
-    case Enum::M_FMUL:    d = x*y;                       break;
+      case Enum::A_FADD:    d = x+y;                       break;
+      case Enum::A_FSUB:    d = x-y;                       break;
+      case Enum::A_FMIN:    d = x<y?x:y;                   break;
+      case Enum::A_FMAX:    d = x>y?x:y;                   break;
+      case Enum::A_FMINABS: d = fabs(x) < fabs(y) ? x : y; break; // min of absolute values
+      case Enum::A_FMAXABS: d = fabs(x) > fabs(y) ? x : y; break; // max of absolute values
+      case Enum::A_FtoI:    elems[i].intVal = (int) x;     break;
+      case Enum::A_ItoF:    d = (float) a[i].intVal;       break;
+      case Enum::M_FMUL:    d = x*y;                       break;
 
-    default:
-      handled = false;
-      break;
+      //
+      // v3d
+      //
+      case Enum::A_FFLOOR: d = std::floor(x); break;
+      case Enum::A_FSIN:   d = std::sin(x);   break;
+
+      default:
+        handled = false;
+        break;
     }
   }
 
   if (handled) return handled;
   handled = true;
 
+  //
   // Integer operations
+  //
   for (int i = 0; i < NUM_LANES; i++) {
     int  x = a[i].intVal;
     int  y = b[i].intVal;
@@ -357,13 +367,8 @@ bool Vec::apply(ALUOp const &op, Vec a, Vec b) {
     //
     // v3d
     //
-    case Enum::A_MOV:
-      *this = a;
-    break;
-
-    case Enum::A_EIDX:
-      *this = index_vec;
-    break;
+    case Enum::A_MOV:  *this = a;         break;
+    case Enum::A_EIDX: *this = index_vec; break;
 
     default:
       handled = false;

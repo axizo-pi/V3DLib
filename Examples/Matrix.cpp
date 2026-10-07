@@ -1,6 +1,6 @@
 /* ============================================================================
  *
- *	TODO: Discrepancy between qpu and scalar output. Examine and fix.
+ *  TODO: Discrepancy between qpu and scalar output. Examine and fix.
  *
  *  Input matrices verified to be the same.
  *  Outputs of qpu and interpreter _do_ check out.
@@ -81,17 +81,17 @@ struct MatrixSettings : public Settings {
 // ============================================================================
 
 std::string arr_dump(float *arr, int dim) {
-	std::string buf;
+  std::string buf;
 
   for (int r = 0; r < dim; ++r) {
     buf << "(";
-  	for (int c = 0; c < dim; ++c) {
+    for (int c = 0; c < dim; ++c) {
       buf << arr[r*dim + c] << ", ";
-   	}
+     }
     buf << ")\n";
   }
 
-	return buf;
+  return buf;
 }
 
 
@@ -116,15 +116,15 @@ void run_scalar_kernel() {
     }
   }
 
-	{
+  {
     Timer timer("matrix_mult_scalar", !settings.silent);
     for (int i = 0; i < settings.repeats; ++i) {
       kernels::matrix_mult_scalar(settings.dimension, result, a, b);
     }
   }
 
-	if (settings.do_output && !settings.silent) {
-		std::cout << arr_dump(result, dim);
+  if (settings.do_output && !settings.silent) {
+    std::cout << arr_dump(result, dim);
   }
 
   delete [] a;
@@ -151,15 +151,15 @@ void run_qpu_kernel() {
     }
   }
 
-	{
+  {
     Timer timer("matrix qpu_kernel", !settings.silent);
     for (int i = 0; i < settings.repeats; ++i) {
       k.load(&result, &a, &b).run();
     }
   }
 
-	if (settings.do_output && !settings.silent) {
-	  std::cout << result.dump();
+  if (settings.do_output && !settings.silent) {
+    std::cout << result.dump();
   }
 }
 

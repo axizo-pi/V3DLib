@@ -51,6 +51,13 @@ void done();
 
 } // namespace emulate
 
+namespace running {
+
+bool vc4();
+
+} // namespace running
+
+
 void use_main_memory(bool val);
 bool use_main_memory();
 int  size_regfile();

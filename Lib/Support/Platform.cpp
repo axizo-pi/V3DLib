@@ -280,7 +280,7 @@ void done() {
 
 
 bool for_vc4(bool do_break) {
-  assert(!emulate::running());
+  if (!running()) return false;  // final return should actually be enough
 
   if (do_break) {
     if (instance().m_compiling_for == UNKNOWN) {
@@ -454,6 +454,26 @@ bool running() { return instance().emulating_for != UNKNOWN; }
 void done() { instance().emulating_for = UNKNOWN; }
 
 } // namespace emulate
+
+
+/**
+ * @brief State checks during execution of code.
+ *
+ * This takes interpret and emulate into account.
+ */
+namespace running {
+
+bool vc4() {
+  if (compile::running()) return false;
+
+  if (emulate::running()) {
+    return emulate::type() == VCType::vc4;
+  }
+
+  return instance().vc_type == VCType::vc4;
+}
+
+} // namespace running
 
 
 /**
