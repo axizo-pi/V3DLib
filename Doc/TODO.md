@@ -6,6 +6,7 @@
 
 ## Current
 
+- [ ] Example program `Matrix`, discrepancy between qpu and scalar output. Examine and fix.
 - [ ] Use external memory-mapped buffer objects.
 - [ ] Fix emulator, errors occur during execution.  
       **TODO:** Find kernels in unit tests that fail (`testConvert.cpp`?).

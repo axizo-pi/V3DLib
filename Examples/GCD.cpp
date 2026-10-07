@@ -7,12 +7,6 @@ using namespace V3DLib;
 V3DLib::Settings settings;
 
 void gcd(Int::Ptr p, Int::Ptr q, Int::Ptr r) {
-  Log::warn << "gcd first:\n" << stmtStack().dump();
-  Log::warn << "gcd start";
-  Log::warn << "gcd p: " << p.dump();
-  Log::warn << "gcd q: " << q.dump();
-  Log::warn << "gcd r: " << r.dump();
-
   Int a = *p;
   Int b = *q;
 
@@ -43,8 +37,9 @@ int main(int argc, const char *argv[]) {
 
   k.load(&a, &b, &r).run();                       // Invoke the kernel
 
-  for (int i = 0; i < 16; i++)                    // Display the result
+  for (int i = 0; i < 16; i++) {                  // Display the result
     printf("gcd(%i, %i) = %i\n", a[i], b[i], r[i]);
+  }
   
   return 0;
 }
