@@ -79,9 +79,10 @@ public:
   };
 
   Timers() : m_total("Total") {}
+  ~Timers();
   Timer &start(std::string const &label);
   void stop(std::string const &label);
-  void end(bool show_minmax = false);
+  void end(bool log_info = false,bool show_minmax = false);
   Timers &sort(SortColumn sort_column, bool desc = false);
   std::vector<Timer> const &list() const { return m_list; }
 

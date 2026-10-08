@@ -43,9 +43,22 @@ void init_platform() {
 ///////////////////////////////////////////////////////////////
 
 /**
+ * @brief Entry point for program.
  *
  * ==================================================
  *
+ * - cpu: works fine on all platforms
+ * - qpu: Only works properly for vc7
+ * - interpreter: Works but does less iterations than cpu/qpu for default 250 years.
+ *                Completes for 32 years.
+ *
+ *   A multitude of the following logs:
+ *
+ *       load_from_heap(): index does not have all same values
+ *
+ *  This appears to be benign.
+ *
+ * - emulator: not tested
  */
 int main(int argc, const char *argv[]) {
   settings.init(argc, argv);
@@ -75,13 +88,14 @@ int main(int argc, const char *argv[]) {
     // Run kernel version
     //
     warn << "Run GPU kernel";
+
     init_orbital_entities();
     Model m;
     m.init();
     m.plot();
 
     auto k = compile(kernel_gravity, settings);
-    to_file("barrier_kernel.txt", k.dump());
+    //to_file("barrier_kernel.txt", k.dump());
     k.setNumQPUs(settings.num_qpus);
 
     k.load(
@@ -93,7 +107,7 @@ int main(int argc, const char *argv[]) {
     );
 
     {
-      Timer timer("QPU timer", true);
+      timers.start("QPU gravity");
 
       double t = 0;
       while (t < t_end) {
@@ -103,15 +117,15 @@ int main(int argc, const char *argv[]) {
         t += batch_steps()*dt;
       }
 
-      //warn << m.dump_acc();
-      //warn << m.dump_pos();
-
       // The plot image is always filled in, output is optional.
       if (settings.output_orbits) {
         m.save_img();
       }
+
+      timers.stop("QPU gravity");
     }
   }
 
+	timers.end(true);
   return 0;
 }

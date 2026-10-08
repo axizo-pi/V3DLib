@@ -1,4 +1,5 @@
 #include "settings.h"
+#include "defaults.h"
 #include "global/log.h"
 
 using namespace Log;
@@ -6,8 +7,9 @@ using namespace Log;
 namespace {
 
 CmdParameters params = {
-  "Gravity Simulator",
-
+  "Gravity Simulator\n"
+  "\n"
+  "Gravity is calculated for every day in the simulation\n",
   {{
 		"Output orbit image",
     "-orbits",
@@ -18,6 +20,12 @@ CmdParameters params = {
     "-k=",
 		{ "gpu", "cpu" },
     "Select the kernel to use"
+	 }, {
+		"Number of years",
+		{ "-years=", "-y=" },
+    ParamType::POSITIVE_INTEGER,
+    "Set the number of years to run the simulation",
+		250
 	}}
 };
 
@@ -30,6 +38,7 @@ bool GravitySettings::init_params() {
 
   output_orbits = p["Output orbit image" ]->get_bool_value();
   kernel        = p["Kernel"]->get_int_value();
+	set_num_years(p["Number of years"]->get_int_value());
 
   return true;
 }

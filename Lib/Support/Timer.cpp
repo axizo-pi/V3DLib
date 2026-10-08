@@ -280,7 +280,19 @@ std::string Timer::dump() {
 // Timers
 /////////////////////////////////////////////////
 
+namespace {
+
+bool timers_did_end = true;
+
+}  // anon namespace
+
 Timers timers;
+
+Timers::~Timers() {
+	if (!timers_did_end) {
+		warn << "Global timers set but not outputted.";
+	}
+}
 
 
 /**
@@ -313,6 +325,7 @@ Timer &Timers::start(std::string const &label) {
   }
 
   m_list[index].start();
+	timers_did_end = false;
 
   return m_list[index];
 }
@@ -396,13 +409,13 @@ std::vector<int> Timers::sort_indexes() {
 }  
 
 
-void Timers::end(bool show_minmax) {
+void Timers::end(bool log_info, bool show_minmax) {
   if (m_total.started()) {
     m_total.stop();
   }
 
   if (m_list.empty()) {
-    warn << "Timers end: No global timers, nothing to show";
+    info << "Timers end: No global timers, nothing to show";
     return;
   }
 
@@ -416,9 +429,18 @@ void Timers::end(bool show_minmax) {
     buf << "  " << m_list[indexes[i]].dump(widths, show_minmax) << "\n";
   }
 
-  warn << "Timers end:\n"
+	std::string buf2;
+  buf2 << "Timers end:\n"
        << "  " << m_total.dump(widths, show_minmax) << " (Since first call to timers)\n"
        << buf;
+
+	if (log_info) {
+		info << buf2;
+	} else {
+		warn << buf2;
+	}
+
+	timers_did_end = true;
 }
 
 

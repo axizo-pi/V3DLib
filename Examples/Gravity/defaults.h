@@ -27,12 +27,12 @@ const int N_ASTEROIDS = 23;
 const int NUM         = N_PLANETS + N_ASTEROIDS; // Total number of gravitational entities
 
 double const dt    = 86400;                      // 1 day
-double const DECADE = 86400 * 365 * 10;          // approximately a decade in seconds
-double const t_end = ((double) 25) * DECADE;     // End time for calculation. Default: 250 years.
+extern double t_end;                             // End time for calculation. Default: 250 years.
 double const BIG_G = 6.67e-11;                   // gravitational constant, (m^3⋅kg^−1⋅s^−2)
 
 int const BATCH_STEPS = 2;                       // for v3d, vc4 always uses 1
 
+void set_num_years(int val);
 int batch_steps();
 
 #endif //  _V3DLIB_GRAVITY_DEFAULTS_H

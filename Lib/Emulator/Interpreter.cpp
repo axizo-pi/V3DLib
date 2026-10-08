@@ -116,10 +116,10 @@ Vec CoreState::load_from_heap(Vec const &index) {
     msg << "load_from_heap(): index does not have all same values: " << index.dump();
 
     if (load_show_count == (show_count - 1)) {
-      msg << "\n(this message not shown for further occurences)";
+      msg << "\n(this message not shown for further occurences in kernel call)";
     }
     if (load_show_count < show_count) {
-      warn << msg;
+      info << msg;
     }
     load_show_count ++;
     // The human has been warned, assume that she knows what she's doing
@@ -576,7 +576,7 @@ void interpreter(
   IntList &uniforms,
   BufferObject &heap
 ) {
-  Timer timer("Interpreter", true);
+  timers.start("Interpreter");
 
   Stmts const &stmts = cs.sourceCode();
   InterpreterState state(numCores, uniforms, Platform::emulate::type() != Platform::VCType::vc4);
@@ -610,6 +610,8 @@ void interpreter(
       }
     }
   }
+
+  timers.stop("Interpreter");
 }
 
 }  // namespace V3DLib

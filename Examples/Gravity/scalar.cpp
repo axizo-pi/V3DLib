@@ -1,9 +1,11 @@
 #include "scalar.h"
 #include "tools.h"
-#include <cmath>
+#include "Support/Timer.h"
 #include "Support/basics.h"
+#include <cmath>
 
 using namespace std;
+using namespace V3DLib;
 
 
 /////////////////////////////////////////////////////////////////
@@ -204,6 +206,8 @@ void plot_orbital_entities(Image &img) {
 
 
 void scalar_run(Image &img) {
+	timers.start("cpu gravity");
+
 	double t = 0;
 
 	while (t < t_end) {
@@ -214,4 +218,6 @@ void scalar_run(Image &img) {
 
     t += BATCH_STEPS*dt;
 	}
+
+	timers.stop("cpu gravity");
 }
