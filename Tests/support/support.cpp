@@ -209,7 +209,7 @@ std::string condense_whitespace(std::string str) {
   std::copy(str.begin(), i, std::ostream_iterator<char>(ss /*std::cout*/, ""));
 
   auto ret = ss.str();
-  return trim_s(ret);
+  return trim(ret);
 }
 
 

@@ -227,12 +227,12 @@ std::string Compile::emit_opcodes() {
     }
 
     auto mul_op = v[1];
-    if (begins_with(trim_s(mul_op), "nop")) {
+    if (begins_with(trim(mul_op), "nop")) {
       v[1] = "nop";
     }
 
     std::string n2;
-    n2 << v[0] << indentBy(max_left  - (int) v[0].size()) << "; " << trim_s(v[1]);
+    n2 << v[0] << indentBy(max_left  - (int) v[0].size()) << "; " << trim(v[1]);
     n = n2;
   }
 

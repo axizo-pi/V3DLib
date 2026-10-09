@@ -393,7 +393,7 @@ int num_empty(std::string const &s, std::string const prefix) {
  * @brief Version of trim which does not change the input string
  *
  */
-std::string trim_s(std::string const &s) {
+std::string trim(std::string const &s) {
   std::string tmp = s;
   trim_d(tmp);
   return tmp;

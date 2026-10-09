@@ -28,7 +28,7 @@ bool hasEnding (std::string const &fullString, std::string const &ending);
 std::vector<std::string> split(std::string s, std::string const &delimiter);
 int num_newlines(std::string const &s);
 int num_empty(std::string const &s, std::string const prefix = "");
-std::string trim_s(std::string const &s);
+std::string trim(std::string const &s);
 
 //
 // Debug Functions

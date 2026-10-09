@@ -544,13 +544,13 @@ std::string Stmts::dump() const {
     }
 
     // Skip empty lines
-    if (trim_s(line).empty()) {
+    if (trim(line).empty()) {
       continue;
     }
 
     // Skip line numbers for comment lines
     // Tests for indented lines starting with comment character
-    if (trim_s(line).compare(0, pre.size(), pre) == 0) {
+    if (trim(line).compare(0, pre.size(), pre) == 0) {
       ret << indentBy((int) count_str.size()) << line << "\n";
       continue;
     }
