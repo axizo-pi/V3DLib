@@ -14,14 +14,18 @@
 namespace V3DLib {
 namespace {
 
-// Bitwise rotate-right
+/**
+ * @brief Bitwise rotate-right
+ */
 inline int32_t rotRight(int32_t x, int32_t n) {
   uint32_t ux = (uint32_t) x;
   return (ux >> n) | (x << (32-n));
 }
 
 
-// Count leading zeros
+/**
+ * @brief Count leading zeros
+ */
 inline int32_t clz(int32_t x) {
   int32_t count = 0;
   int32_t n = (int32_t) (sizeof(int)*8);
@@ -36,7 +40,7 @@ inline int32_t clz(int32_t x) {
 
 
 /**
- * Rotate a vector
+ * @brief Rotate a vector
  */
 Vec rotate(Vec v, int n) {
   Vec w;
@@ -305,7 +309,6 @@ bool Vec::apply(ALUOp const &op, Vec a, Vec b) {
     case Enum::A_ROR:   d = rotRight(x, y); break;
     case Enum::A_SHL: {
       d = x << y;
-      //warn << "Vec::apply() A_SHL: d = x << y: " << d << " = " << x << " << " <<  y;
     }
     break;
     case Enum::A_SHR:   d = (int32_t) (((uint32_t) x) >> y); break;
@@ -322,10 +325,12 @@ bool Vec::apply(ALUOp const &op, Vec a, Vec b) {
 
       if (x != x2) {
         cerr << "EmuSupport MUL24: var x, clipped value "  << x2 << " is different from input value " << x;
+				breakpoint;
       }
 
       if (y != y2) {
         cerr << "EmuSupport MUL24: var y, clipped value "  << y2 << " is different from input value " << y;
+				breakpoint;
       }
 
       d = x2*y2;
