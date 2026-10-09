@@ -2,7 +2,6 @@
 #include "Support/basics.h"
 #include "Support/Helpers.h"
 #include "Support/Platform.h"
-//#include <iostream>   // cout
 #include <filesystem>
 #include <thread>
 #include <fstream>
@@ -140,6 +139,17 @@ void rtrim(std::string &s) {
   s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
     return !std::isspace(ch);
   }).base(), s.end());
+}
+
+
+/**
+ * @brief Trim input string
+ *
+ * This changes the input string directly
+ */
+void trim_d(std::string &s) {
+  rtrim(s);
+  ltrim(s);
 }
 
 } // anon namespace
@@ -378,20 +388,6 @@ int num_empty(std::string const &s, std::string const prefix) {
 }
 
 
-namespace {
-
-/**
- * @brief Trim input string
- *
- * This changes the input string directly
- */
-void trim(std::string &s) {
-  rtrim(s);
-  ltrim(s);
-}
-
-} // anon namespace
-
 
 /**
  * @brief Version of trim which does not change the input string
@@ -399,7 +395,7 @@ void trim(std::string &s) {
  */
 std::string trim_s(std::string const &s) {
   std::string tmp = s;
-  trim(tmp);
+  trim_d(tmp);
   return tmp;
 }
 

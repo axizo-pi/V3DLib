@@ -30,10 +30,10 @@ void mul24_kernel(Int::Ptr res) {
 }  // anon namespace
 
 TEST_CASE("Test Mul24 values [mul24]") {
-	if (!Platform::run_vc4()) {
-		warn << "Unit test [mul24] only for vc4";
-		return;
-	}
+  if (!Platform::run_vc4()) {
+    warn << "Unit test [mul24] only for vc4";
+    return;
+  }
   warn << "Test Mul24 values [mul24]";
 
   int N = 4;  // Number of results returned

@@ -119,9 +119,7 @@ std::string OpItem::disp(std::string const &lhs, std::string const &rhs) const {
 
 std::string OpItem::dump() const {
   std::string ret;
-  warn << "trim_s 2!";
   std::string tmp = trim_s(str);
-
   ret << "Op " << tag << " '" << tmp << "'";
   return ret;
 }

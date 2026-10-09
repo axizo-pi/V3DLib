@@ -174,7 +174,7 @@ std::string Compile::emit_opcodes() {
   auto list = vc4::opcodes(cs.m_code);
 
   //
-	// Check if generated code is as expected
+  // Check if generated code is as expected
   //
   // '+ 2' takes tags INIT_BEGIN/INIT_END into account
   //
