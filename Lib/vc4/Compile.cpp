@@ -172,7 +172,11 @@ std::string Compile::emit_opcodes() {
 
   auto list = vc4::opcodes(cs.m_code);
 
-  // Following takes tags INIT_BEGIN/INIT_END into account
+  //
+	// Check if generated code is as expected
+  //
+  // '+ 2' takes tags INIT_BEGIN/INIT_END into account
+  //
   if ((int) (list.size() + 2) != cs.m_targetCode.size()) {
     Log::cerr << "vc4 emit_opcodes() discrepancy in opcode and target code size. "
               << "opcode size: " << list.size() << " (plus INIT), "
@@ -211,8 +215,13 @@ std::string Compile::emit_opcodes() {
     ret << t.InstructionComment::emit_comments(line, "#", max_size);
   }
 
+
 #if 0
-  // DOES NOT WORK YET; Not all target instructions encoded
+  //
+  // Use Lib instruction definitions to create an output dump
+  //
+  // DOES NOT WORK (YET); Not all target instructions encoded
+  //
   {
     std::string ret2;
 
