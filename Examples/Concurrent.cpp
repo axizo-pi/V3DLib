@@ -15,7 +15,7 @@
 using namespace V3DLib;
 
 V3DLib::Settings settings(
-	"Concurrent - Run multiple kernels in parallel.\n"
+  "Concurrent - Run multiple kernels in parallel.\n"
   "\n"
   "This only works on vc4 hardware. Interpreter and emulator are also not supported.\n",
   false
@@ -60,15 +60,15 @@ int main(int argc, const char *argv[]) {
 
   settings.init(argc, argv);
 
-	if (settings.run_type != QPU) {
+  if (settings.run_type != QPU) {
     std::cerr << "Can not run interpreter or emulator\n";
     return -1;
-	}
+  }
 
-	if (!Platform::run_vc4()) {
+  if (!Platform::run_vc4()) {
     std::cerr << "Only runs on vc4 hardware\n";
     return -1;
-	}
+  }
 
   auto k_1 = compile(kernel_1, settings);              // Construct the kernels
   auto k_2 = compile(kernel_2, settings);

@@ -300,8 +300,6 @@ TEST_CASE("Test SFU functions [sfu][kernel]") {
   Float::Array results(16*N);
 
   auto k = compile(sfu_kernel);
-  to_file("sfu_kernel.txt", k.dump());
-  //to_file("sfu_kernel_compile_data.txt", k.dump_compile_data());
 
   INFO("Running qpu");
   //
@@ -353,7 +351,6 @@ TEST_CASE("Test SFU functions [sfu][kernel]") {
 
 TEST_CASE("Test library functions [sfu][rotate]") {
   auto k = compile(lib_kernel);
-  to_file("lib_kernel.txt", k.dump());
 
   const int N_ops   = 4;  // Number of operations tested
   const int N_input = 4;  // Number of test vectors
@@ -492,7 +489,6 @@ TEST_CASE("Test Nan/Inf [sfu][nan]") {
   Float::Array result(SIZE);
 
   auto k = compile(naninf_kernel);
-  //to_file("naninf_kernel.txt", k.dump());
   k.load(&result).run();
   //warn << showResult(result, 0, SIZE);
 

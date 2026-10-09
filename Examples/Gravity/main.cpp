@@ -126,6 +126,6 @@ int main(int argc, const char *argv[]) {
     }
   }
 
-	timers.end(true);
+  timers.end(true);
   return 0;
 }

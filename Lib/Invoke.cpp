@@ -67,7 +67,7 @@ void run() {
   assertq(!s_jobs.empty(), "No scheduled jobs to run");
   assertq(Platform::max_qpus() >= (int) s_jobs.size(), "More scheduled jobs than QPU's present");
 
-  if (Platform::compile::for_vc4()) {
+  if (Platform::running::vc4()) {
     vc4_invoke::run(s_jobs);
   } else {
     assertq(false, "Still need to implement scheduling for v3d");

@@ -10,6 +10,7 @@
 #include "Target/Satisfy.h"
 #include "Target/instr/Mnemonics.h"
 #include "RegAlloc.h"
+#include "Support/Helpers.h"
 
 namespace V3DLib {
 namespace vc4 {
@@ -181,15 +182,70 @@ std::string Compile::emit_opcodes() {
     Log::cerr << "vc4 emit_opcodes() discrepancy in opcode and target code size. "
               << "opcode size: " << list.size() << " (plus INIT), "
               << "target code size: " << cs.m_targetCode.size()
-              << thrw
-    ;
+              << thrw;
   }
 
-  // Determine the max length of all lines
-  int max_size = 0;
+  //
+  // Format ALU and MUL instructions
+  //
+
+  // Determine max widths of ALU and MUL instructions
+  int max_left = 0;
+
   for (int i = 0; i < (int) list.size(); ++i) {
-    if (max_size < (int) list[i].size()) {
-      max_size = (int) list[i].size();
+    auto const &n = list[i];
+
+    auto v = split(n, ";");
+    int num = (int) v.size();
+    assert(num <= 2);
+    if (num != 2) continue; 
+
+    if (max_left < (int) v[0].size()) {
+      max_left = (int) v[0].size();
+    }
+  }
+
+  // Format the ALU and MUL instructions
+  // Also, replace nop's with shorter representations
+  for (int i = 0; i < (int) list.size(); ++i) {
+    auto &n = list[i];
+
+    auto v = split(n, ";");
+    int num = (int) v.size();
+    assert(num <= 2);
+    if (num == 1) {
+      if (begins_with(n, "load_imm nop")) {
+        n = "nop";
+      }
+    }
+
+    if (num != 2) continue; 
+
+    auto add_op = v[0];
+    if (begins_with(add_op, "sig_small_imm nop")) {
+      v[0] = "nop";
+    }
+
+    auto mul_op = v[1];
+    if (begins_with(trim_s(mul_op), "nop")) {
+      v[1] = "nop";
+    }
+
+    std::string n2;
+    n2 << v[0] << indentBy(max_left  - (int) v[0].size()) << "; " << trim_s(v[1]);
+    n = n2;
+  }
+
+  //
+  // Determine the max length of all lines
+  //
+  int max_size = 0;
+
+  for (int i = 0; i < (int) list.size(); ++i) {
+    auto const &n = list[i];
+
+    if (max_size < (int) n.size()) {
+      max_size = (int) n.size();
     }
   }
 

@@ -297,6 +297,11 @@ bool contains(std::string const &s1, std::string const &s2) {
 }
 
 
+bool begins_with(std::string const &rhs, std::string const &prefix) {
+  return (rhs.rfind(prefix, 0) == 0);
+}
+
+
 /**
  * Source: https://stackoverflow.com/a/874160/1223531
  */
@@ -373,10 +378,19 @@ int num_empty(std::string const &s, std::string const prefix) {
 }
 
 
+namespace {
+
+/**
+ * @brief Trim input string
+ *
+ * This changes the input string directly
+ */
 void trim(std::string &s) {
   rtrim(s);
   ltrim(s);
 }
+
+} // anon namespace
 
 
 /**
