@@ -320,20 +320,12 @@ bool Vec::apply(ALUOp const &op, Vec a, Vec b) {
     case Enum::A_BXOR:  d = x^y;            break;
     case Enum::A_BNOT:  d = ~x; break;
     case Enum::M_MUL24: {                           // Integer multiply (24-bit)
-      int x2 = (x & 0xffffff);  // Clip to 24 bits
-      int y2 = (y & 0xffffff);
+      int d2 = x * y;
+      d = d2 & 0xfffffff;  // Top nibble is missing in output
 
-      if (x != x2) {
-        cerr << "EmuSupport MUL24: var x, clipped value "  << x2 << " is different from input value " << x;
-				breakpoint;
-      }
-
-      if (y != y2) {
-        cerr << "EmuSupport MUL24: var y, clipped value "  << y2 << " is different from input value " << y;
-				breakpoint;
-      }
-
-      d = x2*y2;
+      //if (d != d2) {
+      //  warn << "EmuSupport MUL24: d clipped value "  << d2 << " to " << d;
+      //}
     }
     break;
 
