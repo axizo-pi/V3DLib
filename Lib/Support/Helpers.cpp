@@ -218,7 +218,7 @@ float random_float() {
 std::string indentBy(int indent) {
   std::string ret;
 
-  if (indent == -1) return ret;
+  if (indent < 0) return ret;
 
   for (int i = 0; i < indent; i++) ret += " ";
   return ret;
@@ -397,6 +397,31 @@ std::string trim(std::string const &s) {
   std::string tmp = s;
   trim_d(tmp);
   return tmp;
+}
+
+
+/**
+ * @brief Left-pad string to specified width
+ */
+std::string pad(std::string const &s, int width) {
+  assert(width >= 0);
+  int w = width - (int) s.length();
+
+  std::string ret;
+  ret << indentBy(w) << s;
+  return ret;
+}
+
+
+/**
+ * @brief Left-pad integer string output to specified width.
+ *
+ * Default value `width = 10` is decent for integer values.
+ */
+std::string pad(int val, int width) {
+  std::string buf;
+  buf << val;
+  return pad(buf, width);
 }
 
 

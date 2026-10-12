@@ -2,6 +2,7 @@
 #include "Source/Op.h"
 #include "v3d/instr/SmallImm.h"
 #include "Target/instr/RegOrImm.h"
+#include "Support/Platform.h"
 #include <cmath>
 
 /** \file 
@@ -320,12 +321,27 @@ bool Vec::apply(ALUOp const &op, Vec a, Vec b) {
     case Enum::A_BXOR:  d = x^y;            break;
     case Enum::A_BNOT:  d = ~x; break;
     case Enum::M_MUL24: {                           // Integer multiply (24-bit)
-      int d2 = x * y;
-      d = d2 & 0xfffffff;  // Top nibble is missing in output
+      if (Platform::running::vc4()) {
+        //
+        // This is apparently what happens:
+        // Only the bottom 24 bits are taken into account, irrespective of sign.
+        // The top 8 bits are totally ignored.
+        //
+        // The multiplication is basically unsigned.
+        // The result is 32-bit, so it can accidentaly become negative.
+        //
+        d = (x & 0xffffff) * (y & 0xffffff);
 
-      //if (d != d2) {
-      //  warn << "EmuSupport MUL24: d clipped value "  << d2 << " to " << d;
-      //}
+/*
+        // Following happens often
+        int d2 = x * y;
+        if (d != d2) {
+          warn << "M_MUL24: output value differs from regular mult.";
+        }
+*/        
+      } else {
+        d = x * y;
+      }
     }
     break;
 

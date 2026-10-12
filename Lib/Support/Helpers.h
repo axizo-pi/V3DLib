@@ -29,6 +29,8 @@ std::vector<std::string> split(std::string s, std::string const &delimiter);
 int num_newlines(std::string const &s);
 int num_empty(std::string const &s, std::string const prefix = "");
 std::string trim(std::string const &s);
+std::string pad(std::string const &s, int width);
+std::string pad(int val, int width = 10);
 
 //
 // Debug Functions

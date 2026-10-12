@@ -111,4 +111,7 @@ void check_vector_b(
   int bit_precision = 0
 );
 
+
+void check_vector_ptr(int *a, int *b, int size);
+
 #endif // _TEST_SUPPORT_CHECK_H
