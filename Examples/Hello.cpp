@@ -1,5 +1,6 @@
 #include "V3DLib.h"
 #include "Support/Settings.h"
+#include "Support/Timer.h"
 #include "vc4/RegisterMap.h"
 #include "vc4/PerformanceCounters.h"
 
@@ -22,7 +23,11 @@ int main(int argc, const char *argv[]) {
   Int::Array array(16);                           // Allocate and initialise the array shared between ARM and GPU
   array.fill(100);
 
-  k.load(&array).run();                           // Invoke the kernel
+  k.load(&array);                                 // Invoke the kernel
+
+  Timer timer("Kernel run");
+  k.run();                                        // Run the kernel
+  warn << "Kernel run: " << timer.dump();
 
   for (int i = 0; i < (int) array.size(); i++) {  // Display the result
     printf("%i: %i\n", i, array[i]);
