@@ -47,8 +47,9 @@ void run_qpu_kernel(KernelType &kernel) {
   assertq(0 == s.numStepsWidth % 16, "Width dimension must be a multiple of 16");
   assertq((settings().run_type != 0) || (4 <= s.num_qpus), "Num QPU's must be at least 4 for vc4");
 
-  Timer timer("Kernel compile", !s.silent);
+  Timer timer("Kernel compile");
   auto k = compile(kernel, s);
+  warn << "Kernel compile: " << timer.dump();
 
   k.setNumQPUs(s.num_qpus);
 
@@ -87,7 +88,11 @@ void run_qpu_kernel(KernelType &kernel) {
       s.num_iterations,
       &result,
       s.count
-    ).run();
+    );
+  
+    Timer timer("Kernel run");
+    k.run();
+    warn << "Kernel run: " << timer.dump();
   }
 
   output_image(result);
@@ -98,8 +103,6 @@ void run_qpu_kernel(KernelType &kernel) {
  * Run a kernel as specified by the passed kernel index
  */
 void run_kernel(int kernel_index) {
-  Timer timer;
-
   switch (kernel_index) {
     case 0: run_qpu_kernel(mandelbrot_multi);  break;  
     case 1: {
@@ -107,7 +110,6 @@ void run_kernel(int kernel_index) {
 
         mandelbrot_cpu(result);
         output_image(result);
-
         delete result;
       }
       break;
