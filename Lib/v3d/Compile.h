@@ -27,9 +27,10 @@ private:
   UniformConstants  m_uc;
   v3d::KernelDriver m_driver;
 
-  void compile_intern() override;
-  std::string emit_opcodes() override;
-  void init_uniforms() override;
+  void compile_intern()         override;
+  std::string emit_opcodes()    override;
+  std::string opcode(int index) override;
+  void init_uniforms()          override;
 
   ByteCode to_opcodes();
 };

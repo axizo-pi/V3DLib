@@ -764,6 +764,11 @@ std::string Compile::emit_opcodes() {
 }
 
 
+std::string Compile::opcode(int index) {
+	return instructions[index].mnemonic();
+} 
+
+
 void Compile::init_uniforms()  {
   //warn << "Called v3d::KernelDriver::init_uniforms()";
   Int devnull = getUniformInt();  comment("devnull");

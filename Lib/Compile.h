@@ -35,9 +35,10 @@ public:
 
   int numVars() const { return m_numVars; }
 
-  std::string dump();
+  std::string dump() ;
   bool has_errors() const { return !m_errors.empty(); }
   std::string compile_info() const;
+	std::string dump_kernel_hex();
 
   virtual void invoke(int numQPUs, IntList &params, bool wait_complete = true) = 0;
   virtual void wait_complete() {}  // For v3d
@@ -62,6 +63,7 @@ private:
   virtual void compile_intern() = 0;
   virtual void init_uniforms() {}
   virtual std::string emit_opcodes() { return ""; } 
+  virtual std::string opcode(int index) { return "<NOT DONE YET>"; }
 
 #ifdef OUTPUT_COMPILEDATA
 public:  

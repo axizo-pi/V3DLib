@@ -11,6 +11,7 @@ obj*
 *.org~
 .~lock.*
 *_code.txt
+*_kernel.cpp
 /*.txt
 github
 generated

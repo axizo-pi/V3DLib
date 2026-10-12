@@ -1,6 +1,7 @@
 #include "V3DLib.h"
 #include "Support/Settings.h"
 #include "Support/Timer.h"
+#include "Support/Helpers.h"         // to_file()
 #include "vc4/RegisterMap.h"
 #include "vc4/PerformanceCounters.h"
 
@@ -19,6 +20,7 @@ int main(int argc, const char *argv[]) {
   settings.init(argc, argv);
 
   auto k = compile(hello, settings);              // Construct the kernel
+	to_file("Hello_kernel.cpp", k.compile().dump_kernel_hex());
 
   Int::Array array(16);                           // Allocate and initialise the array shared between ARM and GPU
   array.fill(100);

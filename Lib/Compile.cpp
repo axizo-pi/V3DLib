@@ -4,6 +4,7 @@
 #ifdef OUTPUT_COMPILEDATA
 #include "Common/CompileData.h"
 #endif // OUTPUT_COMPILEDATA
+#include <sstream>
 
 namespace V3DLib {
 
@@ -49,7 +50,7 @@ CodeStruct const &Compile::code_struct() const {
 /**
  * Entry point for compilation of source code to target code.
  *
- * This method is here to just handle thrown exceptions.
+ * This method is here just to handle thrown exceptions.
  */
 void Compile::compile(std::function<void()> create_ast) {
   try {
@@ -211,6 +212,39 @@ std::string Compile::dump_compile_data() const {
   }
 
   return ret;
+}
+
+
+std::string Compile::dump_kernel_hex() {
+  assert(!has_errors());
+  assert(m_code_struct != nullptr);
+
+	allocate(); // For v3d
+	auto const &code = m_code_struct->code();
+
+	std::stringstream ret;
+	ret << "// kernel hex output for " << kernel_type_str() << "\n\n"
+		  << "std::vector<uint64_t> kernel_" << kernel_type_str() << " = {\n";
+
+	for (int i = 0; i < (int) code.size(); ++i) {
+		auto val = code[i];
+		ret << "  0x" << std::hex << val;
+
+		bool is_last = (i == (int) (code.size() - 1));
+		if (!is_last) ret << ",";
+
+		auto o = opcode(i);
+		if (!o.empty()) {
+			if (is_last) ret << " ";
+			ret << "  // " << o;
+		}
+
+		ret << "\n";
+	}
+
+	ret << "};\n";
+
+	return ret.str();
 }
 
 
