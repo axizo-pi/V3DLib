@@ -14,6 +14,7 @@
 
 ### v3d
 
+- [ ] Examine usage `MULTOP` and `UMUL24`. See [this comment](https://github.com/intel/external-mesa/blob/86597e7bce4d18b4026fcbaf57e13a4a0ee5d5cb/src/broadcom/compiler/qpu_schedule.c#L324) in the Mesa lib.
 - [ ] Has the timeout hang been fixed yet in the kernel driver? [Check](https://github.com/raspberrypi/linux/pull/3816) from time to time
 
 ### Other
@@ -48,10 +49,15 @@
 
 ### vc4
 
-- [ ] Warning (at least)  in interpreter/emulator for 24-bit multiply overflow
-- [ ] Consider using device driver interface for vc4 - this will get rid of need for `sudo`
-- [ ] Enforce acc4 (r4) as a read-only register, notably in emulator
-- [ ] Enforce non-usage of acc4 (r4) during sfu-call, notably in emulator
+- [x] Warning (at least)  in interpreter/emulator for 24-bit multiply overflow.
+      Bad idea, overflow occurs often.
+- [x] Consider using device driver interface for vc4 - this will get rid of need for `sudo`
+      Examined it, will only start a single QPU.
+- [x] Enforce acc4 (r4) as a read-only register, notably in emulator.
+      See next point/
+- [x] Enforce non-usage of `acc4` (r4) during sfu-call, notably in emulator.
+      Disabled usage of `acc4` as a general-purpose accumulator. This is explicitly
+      discouraged in the `vc4` doc.
 
 
 ### Compile source code
@@ -95,18 +101,18 @@
       [This document](http://graphics.cs.cmu.edu/nsp/course/15-464/Fall09/papers/StamFluidforGames.pdf)
       looks promising.
  * [ ] [Cyclic Cellular Automaton](https://www.arnevogel.com/cyclic-cellular-automaton/) - That spiral thing of long ago.
- * [ ] [Simple Fluid Simulation](https://w-shadow.com/blog/2009/09/01/simple-fluid-simulation/)
  * [ ] [Lattice gas automaton](https://en.wikipedia.org/wiki/Lattice_gas_automaton)
 - [ ] [GAN Models](https://machinelearningmastery.com/what-are-generative-adversarial-networks-gans/)
 - [ ] Enhanced precision using [correction of rounding errors](http://andrewthall.org/papers/df64_qf128.pdf)
 - [ ] Option for disabling L2 cache, for decent cooperation with `OpenGL`.
-      **NOTE:** Perhaps needs  kernel built for L2 cache disabled. 
-      **TODO** profile this!
+      - Call to disable L2 cache present
+      - Try with OpenGL
+      - Profile this!
 - [ ] Make [ARCHITECTURE.md](https://matklad.github.io//2021/02/06/ARCHITECTURE.md.html) - [example](https://github.com/rust-analyzer/rust-analyzer/blob/master/docs/dev/architecture.md)
 - [ ] Use [inherited enums](https://stackoverflow.com/questions/644629/base-enum-class-inheritance#644651) - for isolating DMA stuff
 - [ ] Fourier Transform
   * [x] Implement DFT
-  * [ ] Implement FFT - [O'Reilly](https://www.oreilly.com/library/view/c-cookbook/0596007612/ch11s18.html), [[https://scistatcalc.blogspot.com/2013/12/fft-calculator.html][Online FFT Calculator]], for comparison
+  * [x] Implement FFT - [O'Reilly](https://www.oreilly.com/library/view/c-cookbook/0596007612/ch11s18.html), [[https://scistatcalc.blogspot.com/2013/12/fft-calculator.html][Online FFT Calculator]], for comparison
   * [ ]  consider [sliding windows](https://github.com/glidernet/ogn-rf/issues/36#issuecomment-775688969)
 - [ ] Etherium mining - [Proof of Work algorithm](https://github.com/chfast/ethash), [ethash spec revision 23](https://eth.wiki/en/concepts/ethash/ethash)
   * [ ] Keccak - derive from PoW project
