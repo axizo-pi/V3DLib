@@ -52,3 +52,38 @@ void check_vector_b(
   INFO(showExpected(expected));
   REQUIRE(passed);
 }
+
+
+/**
+ * @brief Compare contents of two integer matrices.
+ *
+ * **TODO:** Consider replacing other vector check functions with this.
+ */
+void check_vector_ptr(int *a, int *b, int size) {
+  assert(a != nullptr);
+  assert(b != nullptr);
+  assert(size > 0);
+  REQUIRE(size % 16 == 0);  // size must match 16-vectors
+
+  bool passed = true;
+
+  for (int i = 0; i < size; ++i) {
+    int val1 = a[i];
+    int val2 = b[i];
+
+    // ignore special values if they match
+    if ((std::isnan(val1) && std::isnan(val2))
+     || (std::isinf(val1) && std::isinf(val2))
+    ) {
+      continue;
+    }
+
+    if (val1 != val2) {
+      warn << "Fail! " << i << "(" << (i/16) << "): " << ": val1: " << val1 << ", val2: " << val2;
+      INFO("i: " << i << " val1: " << val1 << ", val2: " << val2);
+      passed = false;
+    }
+  }
+
+  REQUIRE(passed);
+}
