@@ -338,7 +338,7 @@ bool Vec::apply(ALUOp const &op, Vec a, Vec b) {
         if (d != d2) {
           warn << "M_MUL24: output value differs from regular mult.";
         }
-*/        
+*/ 
       } else {
         d = x * y;
       }

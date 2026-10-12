@@ -54,6 +54,11 @@ void check_vector_b(
 }
 
 
+/**
+ * @brief Compare contents of two integer matrices.
+ *
+ * **TODO:** Consider replacing other vector check functions with this.
+ */
 void check_vector_ptr(int *a, int *b, int size) {
   assert(a != nullptr);
   assert(b != nullptr);
