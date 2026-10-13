@@ -167,20 +167,22 @@ void Compile::compile_intern() {
 }
 
 
-std::string Compile::emit_opcodes() {
+void Compile::generate_opcodes() {
+  if (!m_opcodes.empty()) return; // Don't bother is already done
+
   auto &cs = code_struct();
   encode();
 
-  auto list = vc4::opcodes(cs.m_code);
+  m_opcodes = vc4::opcodes(cs.m_code);
 
   //
   // Check if generated code is as expected
   //
   // '+ 2' takes tags INIT_BEGIN/INIT_END into account
   //
-  if ((int) (list.size() + 2) != cs.m_targetCode.size()) {
+  if ((int) (m_opcodes.size() + 2) != cs.m_targetCode.size()) {
     Log::cerr << "vc4 emit_opcodes() discrepancy in opcode and target code size. "
-              << "opcode size: " << list.size() << " (plus INIT), "
+              << "opcode size: " << m_opcodes.size() << " (plus INIT), "
               << "target code size: " << cs.m_targetCode.size()
               << thrw;
   }
@@ -192,8 +194,8 @@ std::string Compile::emit_opcodes() {
   // Determine max widths of ALU and MUL instructions
   int max_left = 0;
 
-  for (int i = 0; i < (int) list.size(); ++i) {
-    auto const &n = list[i];
+  for (int i = 0; i < (int) m_opcodes.size(); ++i) {
+    auto const &n = m_opcodes[i];
 
     auto v = split(n, ";");
     int num = (int) v.size();
@@ -207,8 +209,8 @@ std::string Compile::emit_opcodes() {
 
   // Format the ALU and MUL instructions
   // Also, replace nop's with shorter representations
-  for (int i = 0; i < (int) list.size(); ++i) {
-    auto &n = list[i];
+  for (int i = 0; i < (int) m_opcodes.size(); ++i) {
+    auto &n = m_opcodes[i];
 
     auto v = split(n, ";");
     int num = (int) v.size();
@@ -235,25 +237,32 @@ std::string Compile::emit_opcodes() {
     n2 << v[0] << indentBy(max_left  - (int) v[0].size()) << "; " << trim(v[1]);
     n = n2;
   }
+}
+
+
+std::string Compile::emit_opcodes() {
+  generate_opcodes();
+  assert(!m_opcodes.empty());
+
+  auto &cs = code_struct();
+  std::string ret;
 
   //
   // Determine the max length of all lines
   //
   int max_size = 0;
 
-  for (int i = 0; i < (int) list.size(); ++i) {
-    auto const &n = list[i];
+  for (int i = 0; i < (int) m_opcodes.size(); ++i) {
+    auto const &n = m_opcodes[i];
 
     if (max_size < (int) n.size()) {
       max_size = (int) n.size();
     }
   }
-
-  std::string ret;
   int t_i = 0;
-  for (int i = 0; i < (int) list.size(); ++i, ++t_i) {
+  for (int i = 0; i < (int) m_opcodes.size(); ++i, ++t_i) {
     auto t    = cs.m_targetCode[t_i];
-    auto line = list[i];
+    auto line = m_opcodes[i];
 
     if (t.tag == INIT_BEGIN || t.tag == INIT_END) {
       cdebug << "emit_opcodes() detected INIT marker";
@@ -271,6 +280,7 @@ std::string Compile::emit_opcodes() {
     ret << t.InstructionComment::emit_comments(line, "#", max_size);
   }
 
+  return ret;
 
 #if 0
   //
@@ -278,6 +288,8 @@ std::string Compile::emit_opcodes() {
   //
   // DOES NOT WORK (YET); Not all target instructions encoded
   //
+  std::string ret;
+
   {
     std::string ret2;
 
@@ -291,9 +303,15 @@ std::string Compile::emit_opcodes() {
         << ret2
         << "\n";
   }
-#endif  
 
   return ret;
+#endif  
+}
+
+
+std::string Compile::opcode(int index)  {
+  assert(!m_opcodes.empty());
+  return m_opcodes[index];
 }
 
 } // namespace V3DLib

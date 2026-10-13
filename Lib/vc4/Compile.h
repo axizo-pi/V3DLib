@@ -17,12 +17,15 @@ public:
 
 private:
   V3DLib::vc4::KernelDriver m_driver;
+  std::vector<std::string> m_opcodes;
 
   // Does not work yet
   //std::vector<vc4::Instr> m_vc4_instrs;
 
-  void compile_intern() override;
-  std::string emit_opcodes() override;
+  void compile_intern()         override;
+  std::string emit_opcodes()    override;
+  std::string opcode(int index) override;
+  void generate_opcodes();
 };
 
 } // namespace V3DLib
