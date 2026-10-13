@@ -707,7 +707,7 @@ TEST_CASE("Test nested Where's [where][nested]") {
   auto k = compile(nested_where_kernel);
   //to_file("nested_where_kernel.txt", k.dump());
   k.load(&result).run();
-  warn << dump_array(result, 16);
+  //warn << dump_array(result, 16);
 
   std::vector<int> expected = {
     5, 3, 5, 3, 7, 3, 6, 3, 0, 0, 0, 0, 0, 0, 0, 0, 
