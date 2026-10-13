@@ -5,6 +5,7 @@
 #include "Common/CompileData.h"
 #endif // OUTPUT_COMPILEDATA
 #include <sstream>
+#include <iomanip>
 
 namespace V3DLib {
 
@@ -223,12 +224,13 @@ std::string Compile::dump_kernel_hex() {
 	auto const &code = m_code_struct->code();
 
 	std::stringstream ret;
+
 	ret << "// kernel hex output for " << kernel_type_str() << "\n\n"
 		  << "std::vector<uint64_t> kernel_" << kernel_type_str() << " = {\n";
 
 	for (int i = 0; i < (int) code.size(); ++i) {
 		auto val = code[i];
-		ret << "  0x" << std::hex << val;
+		ret << "  0x" << std::setfill('0') << std::setw(16) << std::hex << val;
 
 		bool is_last = (i == (int) (code.size() - 1));
 		if (!is_last) ret << ",";
