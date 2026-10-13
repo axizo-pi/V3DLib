@@ -68,9 +68,9 @@ void vector_calc_acc(
 ) {
   header("Start vector_calc_acc");
 
-  x0    *= c.DIST_FACTOR;
-  y0    *= c.DIST_FACTOR;
-  z0    *= c.DIST_FACTOR;
+  x0 *= c.DIST_FACTOR;
+  y0 *= c.DIST_FACTOR;
+  z0 *= c.DIST_FACTOR;
 
   // Accumulated acceleration vector
   Float x0_acc = 0;
@@ -84,7 +84,7 @@ void vector_calc_acc(
     Float mass = *pmass * c.MASS_FACTOR;
 
     // Acceleration vector
-    Float nx1 = x0 - x;                comment("Calc acceleration vector");
+    Float nx1 = x0 - x;                  comment("Calc acceleration vector");
     Float ny1 = y0 - y; 
     Float nz1 = z0 - z; 
 
@@ -93,25 +93,26 @@ void vector_calc_acc(
     Float dy1 = ny1 * ny1;
     Float dz1 = nz1 * nz1;
 
-    Float d1 = dx1 + dy1 + dz1;        comment("Calc distance denominator");
+    Float d1 = dx1 + dy1 + dz1;          comment("Calc distance denominator");
 
     // Set the force/acceleration to zero for current entity,
     // calculate the rest.
     Float denom        = 0;
     Float acceleration = 0;
 
-    Where (((cur_block << 4) + index()) != entity_index)
-      denom = recipsqrt(d1);
+		// Exclude current entity from acceleration calculation
+    Int cur_index = (cur_block << 4) + index();
+    Where (cur_index != entity_index)
+      denom        = recipsqrt(d1);
       acceleration = -1 * mass * c.ACC_CONSTANT * recip(d1);
     End
 
     // Post vc4: denom nonzero, acceleration zero for all intents and purposes
 
-    //acceleration *= c.ACC_CONSTANT;
-    comment("Calc force factor");
+    nop(1);                              comment("Calc force factor");
 
     // Normalize the acceleration vector
-    nx1 *= denom;  comment("Normalize the acc vector"); 
+    nx1 *= denom;                        comment("Normalize the acc vector"); 
     ny1 *= denom; 
     nz1 *= denom; 
 
@@ -135,20 +136,21 @@ void vector_calc_acc(
   //
   // Sum up and store in acc accumulators
   //
-  rotate_sum(x0_acc, accum_x);  // NB second param is the output (result) param
+  rotate_sum(x0_acc, accum_x);  // Second param is the output (result) param
   rotate_sum(y0_acc, accum_y);
   rotate_sum(z0_acc, accum_z);
 }
 
 
 /**
+ * @brief Calculate acceleration per entity.
  *
  * -------------------
  *
  * Notes
  * =====
  *
- * 1. For _Sum up and return the acceleration_:  
+ * 1. For section `Sum up and return the acceleration`:  
  *    I tried updating speed and position for entity 0 here, the result is completely distorted.  
  *    This is unfortunate; I was hoping to make using multiple QPU's easier.  
  *    An option might be to use double buffering for speed and position.
@@ -195,20 +197,6 @@ void kernel_calc_acc(
     //
     // Sum up and return the acceleration. See Note 1.
     //
-
-    // Following works for TMU, not for VPM(DMA).
-    // VPM can not deal with vector offsets
-/*
-    Float::Ptr pacc_x = out_acc_x + ptr_offset;
-    *pacc_x = x0_acc;
-
-    Float::Ptr pacc_y = out_acc_y + ptr_offset;
-    *pacc_y = y0_acc;
-
-    Float::Ptr pacc_z = out_acc_z + ptr_offset;
-    *pacc_z = z0_acc;
-*/
-
     {
       Int offset = (cur_index << 4);
 
@@ -221,6 +209,20 @@ void kernel_calc_acc(
       Float::Ptr pacc_z = out_acc_z + offset;
       *pacc_z = z0_acc;
     }
+
+/*
+    // Following works for TMU, not for VPM(DMA).
+    // VPM can not deal with vector offsets
+
+    Float::Ptr pacc_x = out_acc_x + ptr_offset;
+    *pacc_x = x0_acc;
+
+    Float::Ptr pacc_y = out_acc_y + ptr_offset;
+    *pacc_y = y0_acc;
+
+    Float::Ptr pacc_z = out_acc_z + ptr_offset;
+    *pacc_z = z0_acc;
+*/
   End
 }
 
@@ -363,9 +365,9 @@ void handle_vector(
 /**
  * Main entry point kernel
  */
-void kernel_gravity(
-  Float::Ptr in_x, Float::Ptr in_y, Float::Ptr in_z,
-  Float::Ptr in_v_x, Float::Ptr in_v_y, Float::Ptr in_v_z,
+void gravity_kernel(
+  Float::Ptr in_x    , Float::Ptr in_y    , Float::Ptr in_z,
+  Float::Ptr in_v_x  , Float::Ptr in_v_y  , Float::Ptr in_v_z,
   Float::Ptr in_acc_x, Float::Ptr in_acc_y, Float::Ptr in_acc_z,
   Float::Ptr in_mass,
   Int in_num_entities

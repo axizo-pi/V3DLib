@@ -20,8 +20,6 @@ int main(int argc, const char *argv[]) {
   settings.init(argc, argv);
 
   auto k = compile(hello, settings);              // Construct the kernel
-	to_file("Hello_kernel.txt", k.dump());
-	to_file("Hello_kernel.cpp", k.compile().dump_kernel_hex());
 
   Int::Array array(16);                           // Allocate and initialise the array shared between ARM and GPU
   array.fill(100);

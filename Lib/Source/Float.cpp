@@ -336,11 +336,11 @@ void add_inf(Float &ret, FloatExpr &x) {
 }
 
 /**
- * @brief Compensate return values for vc4 SFU functions.
+ * @brief Compensate return values for SFU functions.
  *
  * Specific for SFU functions: these return 0.0f instead of NaN or Inf.
  */
-void add_nan_inf(Float &ret, FloatExpr &x) {
+MAYBE_UNUSED void add_nan_inf(Float &ret, FloatExpr &x) {
   if (Platform::compile::for_vc7()) return;
 
   Where (x < 0)
@@ -363,7 +363,6 @@ FloatExpr recip(FloatExpr x) {
   ret = mkFloatApply(x, Op(RECIP    , FLOAT));
 
   //add_inf(ret, x);
-
   return ret;
 }
 
@@ -378,8 +377,7 @@ FloatExpr recipsqrt(FloatExpr x) {
   Float ret;
   ret = mkFloatApply(x, Op(RECIPSQRT, FLOAT));
 
-  add_nan_inf(ret, x);
-
+  //add_nan_inf(ret, x);
   return ret;
 }
 

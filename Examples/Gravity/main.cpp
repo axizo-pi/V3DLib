@@ -78,8 +78,7 @@ int main(int argc, const char *argv[]) {
     init_orbital_entities();
     scalar_run(img);
 
-    // The plot image is always filled in,
-    // output is optional.
+    // The plot image is always filled in, output is optional.
     if (settings.output_orbits) {
       img.save("gravity.bmp");
     }
@@ -94,8 +93,9 @@ int main(int argc, const char *argv[]) {
     m.init();
     m.plot();
 
-    auto k = compile(kernel_gravity, settings);
-    //to_file("barrier_kernel.txt", k.dump());
+    auto k = compile(gravity_kernel, settings);
+    to_file("Gravity_kernel.txt", k.dump());
+		//to_file("Gravity_kernel.cpp", k.compile().dump_kernel_hex());
     k.setNumQPUs(settings.num_qpus);
 
     k.load(
@@ -112,8 +112,16 @@ int main(int argc, const char *argv[]) {
       double t = 0;
       while (t < t_end) {
         k.run();
+
+				{
+					int index = (NUM - 1)/2 - 1;
+					warn << "acc[" << index << "]"
+          	   << " x: " << m.acc_x[index]
+            	 << " y: " << m.acc_y[index]
+            	 << " z: " << m.acc_z[index];
+				}
+
         m.plot();
-  
         t += batch_steps()*dt;
       }
 

@@ -8,9 +8,9 @@ using namespace V3DLib;
 // Kernel version 
 ///////////////////////////////////////////////////////////////
 
-void kernel_gravity(
-  Float::Ptr in_x, Float::Ptr in_y, Float::Ptr in_z,
-  Float::Ptr in_v_x, Float::Ptr in_v_y, Float::Ptr in_v_z,
+void gravity_kernel(
+  Float::Ptr in_x    , Float::Ptr in_y    , Float::Ptr in_z,
+  Float::Ptr in_v_x  , Float::Ptr in_v_y  , Float::Ptr in_v_z,
   Float::Ptr in_acc_x, Float::Ptr in_acc_y, Float::Ptr in_acc_z,
   Float::Ptr in_mass,
   Int num_entities
