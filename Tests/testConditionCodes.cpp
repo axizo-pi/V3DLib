@@ -702,7 +702,7 @@ TEST_CASE("Test nested Where's [where][nested]") {
   Int::Array result(Size);
 
   auto k = compile(nested_where_kernel);
-  to_file("nested_where_kernel.txt", k.dump());
+  //to_file("nested_where_kernel.txt", k.dump());
   k.load(&result).run();
   //warn << dump_array(result, 16);
 
