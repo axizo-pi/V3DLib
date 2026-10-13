@@ -85,11 +85,19 @@ void test(BoolExpr cond, Int::Ptr &result) {
 
 void kernel_specific_instructions(Int::Ptr result) {
   Int a = index();
-  Int b = a ^ 1;
+
+  Int b = a + 1;
+  b *= 3;
   out(b, result);
 
-  b = a  + 1;
-  b *= 3;
+  b = a ^ 1;
+  out(b, result);
+
+  b = a ^ 0xf;
+  out(b, result);
+
+  b = -1*a;
+	b = ~b;
   out(b, result);
 }
 
@@ -304,16 +312,20 @@ TEST_CASE("Test correct working DSL [dsl][instr]") {
   //REQUIRE(::v3d::open());
 
   SUBCASE("Test specific int instructions") {
-    int const NUM = 2;
+    int const NUM = 4;
+
     vector<int> expected = {
-      1, 0, 3,  2,  5,  4,  7,  6,  9,  8, 11, 10, 13, 12, 15, 14,
-      3, 6, 9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45, 48
+      3,  6,  9, 12, 15, 18, 21, 24, 27, 30, 33, 36, 39, 42, 45, 48,
+      1,  0,  3,  2,  5,  4,  7,  6,  9,  8, 11, 10, 13, 12, 15, 14,
+     15, 14, 13, 12, 11, 10,  9,  8,  7,  6,  5,  4,  3,  2,  1,  0,
+     -1,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14
     };
 
     Int::Array result(16*NUM);
     result.fill(-2);  // Initialize to unexpected value
 
     auto k = compile(kernel_specific_instructions);
+    //to_file("kernel_specific_instructions.txt", k.dump());
     k.load(&result).run();
     check_vector(result, 0, expected);
   }
