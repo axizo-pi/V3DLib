@@ -138,11 +138,6 @@ Stmt::Array const &Stmt::then_block(bool do_assert) const {
 }
 
 
-bool Stmt::then_block_empty() const {
-  return m_stmts_a.empty();
-}
-
-
 bool Stmt::else_block_empty() const {
   return m_stmts_b.empty();
 }
@@ -281,14 +276,6 @@ std::string indent(std::string const &src, int num_spaces) {
 } // anon namespace
 
 
-std::string Stmt::disp_comments(std::string const &line, int seq_depth) const {
-  //warn << "Stmt disp_comments";
-  auto instr = InstructionComment::emit_comments(line, ";");
-
-  return indent(instr, 2*seq_depth);
-}
-
-
 /**
  * Dump output for current statement.
  *
@@ -319,19 +306,19 @@ std::string Stmt::disp_intern(int seq_depth, bool show_comments) const {
       assert(!m_stmts_a.empty());
       assert(m_stmts_b.empty());
       ret << "SEQ\n"
-          << m_stmts_a.dump(show_comments, 1);
+          << m_stmts_a.dump(false, show_comments, 1);
     break;
 
     case WHERE:
       assert(m_where_cond.get() != nullptr);
       ret << "WHERE (" << m_where_cond->dump() << ")\n"
           << "THEN\n"
-          << then_block(false).dump(show_comments, 1);
+          << then_block(false).dump(false, show_comments, 1);
 
       if (!else_block_empty()) {
         ret << "\n"
             << "ELSE\n"
-            << else_block().dump(show_comments, 1);
+            << else_block().dump(false, show_comments, 1);
       }
     break;
 
@@ -340,15 +327,15 @@ std::string Stmt::disp_intern(int seq_depth, bool show_comments) const {
       ret << "IF (" << m_cond->dump() << ") THEN\n"
           << "  ";
 
-      if (then_block_empty()) {
+      if (then_block(false).empty()) {
         ret << "<<NO THEN-BLOCK PRESENT>>";
       } else {
-        ret << then_block().dump(show_comments);
+        ret << then_block().dump(false, show_comments);
       }
 
       if (!else_block_empty()) {
         ret << "\nELSE\n"
-            << "  " << else_block().dump(show_comments);
+            << "  " << else_block().dump(false, show_comments);
       }
     break;
 
@@ -356,10 +343,10 @@ std::string Stmt::disp_intern(int seq_depth, bool show_comments) const {
       assert(m_cond.get() != nullptr);
       ret << "WHILE (" << m_cond->dump() << ")\n";
 
-      if (then_block_empty()) {
+      if (then_block(false).empty()) {
         ret << "  <<NO THEN-BLOCK PRESENT>>";
       } else {
-        ret << then_block().dump(show_comments, 1);
+        ret << then_block().dump(false, show_comments, 1);
       }
 
       // There is no ELSE for while. TODO: check, code elsewhere says otherwise
@@ -389,12 +376,13 @@ std::string Stmt::disp_intern(int seq_depth, bool show_comments) const {
     break;
   }
 
+  assert(!ret.empty());
+
   if (show_comments) {
-    return disp_comments(ret, seq_depth);
+    ret = InstructionComment::emit_comments(ret, ";");
   }
 
-  assert(!ret.empty());
-  return ret;
+  return indent(ret, 2*seq_depth);
 }
 
 
@@ -471,8 +459,11 @@ CExpr::Ptr Stmt::loop_cond() const {
 /**
  *
  */
-std::string Stmt::Array::dump(bool show_comments, int indent) const {
-  if (empty()) return "<Empty>";
+std::string Stmt::Array::dump_1(bool show_comments, int indent) const {
+  if (empty()) {
+    return "<Empty>";
+    //return V3DLib::indent("<Empty>", 2*indent);
+	}
 
   // Count the number of endlines at end of string
   auto ending_newlines = [] (std::string const &s) -> int {
@@ -499,11 +490,11 @@ std::string Stmt::Array::dump(bool show_comments, int indent) const {
 
     // Replace multiple ending newlines with a single newline
     int nl_count = ending_newlines(tmp);
-    if (nl_count > 1) {
-      tmp.erase(tmp.length() - (nl_count - 1));
+    if (nl_count > 0) {
+      tmp.erase(tmp.length() - nl_count);
     }
 
-    ret << tmp;
+    ret << tmp << "\n";
   }
 
   return ret;
@@ -523,11 +514,10 @@ Stmt::Array &Stmt::Array::operator<<(Array const &b) {
  * This instruction dump is different from the others, because
  * Stmt instances have internal structure, which is indented in the output.
  */
-std::string Stmts::dump() const {
+std::string Stmt::Array::dump(bool do_line_numbers, bool show_comments, int indent) const {
   if (empty()) return "<Empty>";
 
-  bool do_line_numbers = LibSettings::dump_line_numbers();
-  std::string buf = Array::dump(true);
+  std::string buf = dump_1(show_comments, indent);
   std::vector<std::string> lines = split(buf, "\n");
 
   int count = 0;
@@ -594,6 +584,12 @@ int Stmts::lastUniform(bool do_dump) {
     warn << "lastUniform: \n" << buf;
   }
   return (i - 1);
+}
+
+
+std::string Stmts::dump() const {
+  bool do_line_numbers = LibSettings::dump_line_numbers();
+	return Parent::dump(do_line_numbers);
 }
 
 }  // namespace V3DLib
