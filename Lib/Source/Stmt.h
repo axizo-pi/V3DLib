@@ -82,7 +82,8 @@ struct Stmt : public InstructionComment {
 
   class Array : public std::vector<Ptr> {
   public:
-    std::string dump(bool show_comments = false, int indent = 0) const;
+    std::string dump(bool do_line_numbers, bool show_comments = true, int indent = 0) const;
+    std::string dump_1(bool show_comments, int indent) const;
     Array &operator<<(Array const &b);
   };
 
@@ -120,13 +121,13 @@ struct Stmt : public InstructionComment {
   Expr::Ptr address();
 
   Array const &then_block(bool do_assert = true) const;
-private:
-  bool then_block_empty() const;
   bool then_block(Array const &in_block);
-
-public:  
   Array const &else_block() const;
+
+private:
   bool else_block_empty() const;
+
+public:
   bool add_block(Array const &in_block);
   Array const &body() const;
 
@@ -159,16 +160,17 @@ private:
 
   static Ptr create(Tag in_tag, Ptr s0, Ptr s1);
 
-  std::string disp_comments(std::string const &line, int seq_depth) const;
   std::string disp_intern(int seq_depth = 0, bool show_comments = false) const;
   bool check_blocks() const;
 };
 
 
 class Stmts : public Stmt::Array {
+	using Parent = Stmt::Array;
+
 public:
-  std::string dump() const;
   int lastUniform(bool do_dump = true);
+	std::string dump() const;
 };
 
 }  // namespace V3DLib

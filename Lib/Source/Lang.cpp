@@ -48,6 +48,11 @@ void Else_() {
 
 void End_() {
   stmtStack().merge_top_block();
+
+  Stmt::Ptr s = stmtStack().last_stmt();
+  if (s->tag == Stmt::WHERE) {
+    warn << "End_ top WHERE-block:\n" << s->dump();
+  }
 }
 
 
@@ -70,6 +75,7 @@ void While_(Cond c) {
   prepare_stack(s);
 }
 
+
 void While_(BoolExpr c) { While_(any(c)); }
 
 
@@ -87,7 +93,7 @@ void Where__(BExpr::Ptr b) {
   Stmt::Ptr s = Stmt::create(Stmt::WHERE);
   s->where_cond(b);
 
-  warn << "Where__ adding: " << s->dump();
+  warn << "Where__ adding:\n" << s->dump();
   prepare_stack(s);
 }
 
