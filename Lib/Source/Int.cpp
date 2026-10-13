@@ -319,7 +319,7 @@ IntExpr operator/(IntExpr a, IntExpr b) {
 
 
 /**
- * Return remainder of values
+ * @return Return remainder of values
  *
  * Integer division is costly; should you need both quotient and remainder,
  * It is better to call integer_division() directly.
@@ -327,9 +327,11 @@ IntExpr operator/(IntExpr a, IntExpr b) {
 IntExpr operator%(IntExpr a, IntExpr b) {
   // b == 0 a bad idea, assert() won't work for testing
   using functions::integer_division;
+
   Int quotient;
   Int remainder;
   integer_division(quotient, remainder, a, b);
+
   return remainder;
 }
 

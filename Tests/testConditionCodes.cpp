@@ -477,7 +477,6 @@ void check_pgm(std::string const &filename) {
   REQUIRE(!system(diff_cmd.c_str()));
 }
 
-
 }  // anon namespace
 
 
@@ -647,4 +646,69 @@ TEST_CASE("Test multiple and/or [andor][cond]") {
     k3.load(&result, width, height).run();
     check_output_pgm(result, "multi_if_qpu");
   }
+}
+
+
+namespace {
+
+/**
+ * @brief Test Where-blocks 4 levels deep
+ */
+void nested_where_kernel(Int::Ptr result) {
+  Int val  = -1;
+  Int val2 = 0;
+
+  Where (index() % 2 != 0)               // `%` is really heavy and uses While/Where
+    val2 = 1;
+  End
+
+  Where (index() < 8)
+    val = 1;  // Should be masked
+
+    nop(3); sub_header("Nested Where 1");  // Failed, keep it in
+    Where (index() % 2 == 0)               // `%` is really heavy and uses While/Where
+      val = 5;
+
+      nop(3); sub_header("Nested Where 2");
+      Where (index() > 2)
+        val = 6;
+
+        nop(3); sub_header("Nested Where 3");
+        Where (index() < 6)
+          val = 7;
+        End
+      End
+
+      //val = 2; // Test parent condition still active - works
+    Else
+      val = 3;
+    End
+
+    val2 = 4; // Test parent condition still active
+  Else
+    val = 0;
+  End
+
+  *result = val; result.inc();
+  *result = val2;
+}
+
+} // anon namespace
+
+
+TEST_CASE("Test nested Where's [where][nested]") {
+  const int Size = 2*16;
+
+  Int::Array result(Size);
+
+  auto k = compile(nested_where_kernel);
+  to_file("nested_where_kernel.txt", k.dump());
+  k.load(&result).run();
+  //warn << dump_array(result, 16);
+
+  std::vector<int> expected = {
+    5, 3, 5, 3, 7, 3, 6, 3, 0, 0, 0, 0, 0, 0, 0, 0, 
+    4, 4, 4, 4, 4, 4, 4, 4, 0, 1, 0, 1, 0, 1, 0, 1
+  };
+  check_vector_ptr(result.ptr(), expected.data(), Size);
 }

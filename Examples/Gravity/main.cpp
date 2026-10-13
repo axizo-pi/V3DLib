@@ -112,7 +112,7 @@ int main(int argc, const char *argv[]) {
       double t = 0;
       while (t < t_end) {
         k.run();
-
+/*
 				{
 					int index = (NUM - 1)/2 - 1;
 					warn << "acc[" << index << "]"
@@ -120,7 +120,7 @@ int main(int argc, const char *argv[]) {
             	 << " y: " << m.acc_y[index]
             	 << " z: " << m.acc_z[index];
 				}
-
+*/
         m.plot();
         t += batch_steps()*dt;
       }

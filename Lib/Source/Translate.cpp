@@ -473,36 +473,46 @@ BranchCond condExp(Instr::List &seq, CExpr &c) {
 // Where statements
 // ============================================================================
 
-Instr::List translate_stmt(Stmt::Ptr s, Var condVar, AssignCond cond, bool saveRestore);
+// Forward declarations
+Instr::List encode(Stmt::Ptr s);
+Instr::List translate_stmt(Stmt::Ptr s, Var condVar, AssignCond cond);
 
-Instr::List translate_block(
-  Stmt::Array const &src,
-  Var condVar,
-  AssignCond cond,
-  bool saveRestore,
-  bool first_true = false
-) {
+Instr::List translate_block(Stmt::Array const &src, Var condVar, AssignCond cond) {
   Instr::List ret;
 
   for (int i = 0; i < (int) src.size(); i++) {
-    Instr::List tmp = translate_stmt(src[i], condVar, cond, (i == 0 && first_true)?true:saveRestore);
+    Instr::List tmp = translate_stmt(src[i], condVar, cond);
     tmp.back().transfer_comments(*src[i]);
 
     ret << tmp;
   }
 
+  assert(!ret.empty());
   return ret;
 }
 
 
-Instr::List translate_stmt(Stmt::Ptr s_ptr, Var condVar, AssignCond cond, bool saveRestore) {
-  //warn << "translate_stmt s_ptr: " << s_ptr->dump();
+Instr::List translate_stmt(Stmt::Ptr s_ptr, Var condVar, AssignCond cond) {
   using namespace V3DLib::Target::instr;
   Instr::List ret;
 
   if (s_ptr.get() == nullptr) return ret;
   Stmt &s = *s_ptr;
   if (s.tag == Stmt::SKIP) return ret;
+
+  //
+  // Handle the simple cases.
+  // These do not use conditions.
+  //
+  {
+    bool handled = true;
+    switch (s.tag) {
+      case Stmt::NOP:   ret = encode(s_ptr); break;
+      case Stmt::WHILE: ret = encode(s_ptr); break;
+      default:        handled = false;
+    }
+    if (handled) return ret;
+  }
 
   // ------------------------------------------------------
   // Case: v = e, where v is a variable and e an expression
@@ -527,7 +537,7 @@ Instr::List translate_stmt(Stmt::Ptr s_ptr, Var condVar, AssignCond cond, bool s
   // ---------------------------------------------
   if (s.tag == Stmt::SEQ) {
     breakpoint  // TODO apparently never reached, verify
-    ret << translate_block(s.body(), condVar, cond, saveRestore, true);
+    ret << translate_block(s.body(), condVar, cond);
     return ret;
   }
 
@@ -536,7 +546,6 @@ Instr::List translate_stmt(Stmt::Ptr s_ptr, Var condVar, AssignCond cond, bool s
   //                        s0 and s1 are statements.
   // ----------------------------------------------------------
   if (s.tag == Stmt::WHERE) {
-    //warn << "top translate_stmt WHERE";
     using Target::instr::mov;
 
     AssignCond andCond(CmpOp(CmpOp::NEQ, INT32));  // Wonky syntax to get the flags right
@@ -549,14 +558,10 @@ Instr::List translate_stmt(Stmt::Ptr s_ptr, Var condVar, AssignCond cond, bool s
       boolExp(&seq, s.where_cond(), var_accumulator);
 
       seq << sub(Dummy, var_accumulator, 0).setCondFlag(Flag::ZC).comment("Final var_accumulator");
-
       assert(!seq.empty());
 
       std::string cmt;
-      cmt << "Start where "
-          << "("
-          << (cond.is_always()?"always":"nested")
-          << ")";
+      cmt << "Start where " << "(" << (cond.is_always()?"always":"nested") << ")";
       seq.front().comment(cmt);
 
       // This comment is used to signal downstream that this is the
@@ -576,8 +581,7 @@ Instr::List translate_stmt(Stmt::Ptr s_ptr, Var condVar, AssignCond cond, bool s
 
       // Compile 'then' statement
       if (!s.then_block().empty()) {
-        auto seq = translate_block(s.then_block(), var_accumulator, andCond, !s.else_block().empty());
-        assert(!seq.empty());
+        auto seq = translate_block(s.then_block(), var_accumulator, andCond);
         seq.front().comment("then-branch of where (always)");
         ret << seq;
       }
@@ -587,8 +591,7 @@ Instr::List translate_stmt(Stmt::Ptr s_ptr, Var condVar, AssignCond cond, bool s
         Var v2 = VarGen::fresh();
         ret << bxor(v2, var_accumulator, 1).setCondFlag(Flag::ZC);
 
-        auto seq = translate_block(s.else_block(), v2, andCond, false);
-        assert(!seq.empty());
+        auto seq = translate_block(s.else_block(), v2, andCond);
         seq.front().comment("else-branch of where (always)");
         ret << seq;
       }
@@ -598,12 +601,11 @@ Instr::List translate_stmt(Stmt::Ptr s_ptr, Var condVar, AssignCond cond, bool s
       if (!s.then_block().empty()) {
         // AND new boolean expression with original condition
         Var dummy   = VarGen::fresh();
-        ret << band(dummy, condVar, var_accumulator).setCondFlag(Flag::ZC);
+        ret << band(dummy, condVar, var_accumulator).setCondFlag(Flag::ZC).comment("Combined condition");
 
         // Compile 'then' statement
         {
-          auto seq = translate_block(s.then_block(), dummy, andCond, false);
-          assert(!seq.empty());
+          auto seq = translate_block(s.then_block(), dummy, andCond);
           seq.front().comment("then-branch of where (nested)");
           ret << seq;
         }
@@ -618,18 +620,32 @@ Instr::List translate_stmt(Stmt::Ptr s_ptr, Var condVar, AssignCond cond, bool s
 
         // Compile 'else' statement
         {
-          auto seq = translate_block(s.else_block(), dummy, andCond, false);
-          assert(!seq.empty());
+          auto seq = translate_block(s.else_block(), dummy, andCond);
           seq.front().comment("else-branch of where (nested)");
           ret << seq;
         }
       }
+
+      ret << sub(Dummy, condVar, 0).setCondFlag(Flag::ZC).comment("Restore previous condition");
     }
 
     ret.back().comment("End Where");
     return ret;
   }
 
+  {
+    std::string buf;
+    buf << "translate_stmt not expecting to get here\n"
+        << "s:\n" << s_ptr->dump() << "\n";
+
+    if (ret.empty()) {
+      buf << "ret: <Empty>\n"; 
+    } else {
+      buf << "ret:\n" << ret.dump(); 
+    }  
+
+    warn << buf;
+  }
   assert(false); // Not expecting to get here
   return ret;
 }
@@ -689,23 +705,18 @@ void translateWhile(Instr::List &seq, Stmt &s) {
 
 
 Instr::List translateNop(Stmt::Ptr s) {
-  //Log::warn << "translateNop s: " << s->dump();
   assert(s->lhs() == nullptr);
 
   Expr &e = *(s->rhs());
   assert(e.tag() == Expr::INT_LIT);
 
   int count = e.intLit;
-  //warn << "translateNop count: " << count;
   assert(count >= 0);
 
-  Instr cmd;  // Default tag is NO_OP
+  Instr cmd;                    // Default tag is NO_OP
   Instr::List ret;
 
-  if (count == 0) {
-    // Nothing to output
-    return ret;
-  }
+  if (count == 0) return ret;   // Nothing to output
 
   for (int i = 0; i < count; ++i) {
     ret << cmd;
@@ -735,9 +746,8 @@ Instr::List translateNop(Stmt::Ptr s) {
  * @return   list of encoded Target statements for passed Source statement
  */
 Instr::List encode(Stmt::Ptr s) {
-  assert(s != nullptr);
-
   using namespace Target::instr;
+  assert(s != nullptr);
 
   Instr::List ret;
 
@@ -765,8 +775,8 @@ Instr::List encode(Stmt::Ptr s) {
     case Stmt::WHERE: {                  // 'where (b) s0 s1', where c is a boolean expr,
                                          // and s0, s1 are statements
 
-      Var condVar = VarGen::fresh();   // This is the top-level definition of condVar
-      ret << translate_stmt(s, condVar, always, false);
+      Var condVar = VarGen::fresh();     // This is the top-level definition of condVar
+      ret << translate_stmt(s, condVar, always);
     }
     break;
 
@@ -785,7 +795,6 @@ Instr::List encode(Stmt::Ptr s) {
       break;
   }
 
-  //assert(!ret.empty());  // By the looks of it always true
   if (!ret.empty()) {
     ret.back().transfer_comments(*s);
   } else {
@@ -795,7 +804,6 @@ Instr::List encode(Stmt::Ptr s) {
     }
   }
 
-  //warn << "encode() ret:\n" << ret.dump();
   return ret;
 }
 
@@ -830,20 +838,12 @@ void insertInitBlock(Instr::List &code) {
  * @param source read-parameter; list of Source statements to convert 
  */
 void encode_target(Instr::List &target, Stmt::Array const &source) {
-  if (source.empty()) { return; }  // Nothing to do, happens if source is empty init block
+  if (source.empty()) return;  // Nothing to do, happens if source is empty init block
 
   for (int i = 0; i < (int) source.size(); i++) {
     auto const &stmt = source[i];
-    //warn << "encode_target source " << i << ": " << stmt->dump();
-
     target << encode(stmt);
   }
-/*
-  for (int i = 0; i < (int) target.size(); i++) {
-    auto const &instr = target[i];
-    warn << "encode_target target " << i << ": " << instr.dump();
-  }
-*/  
 }
 
 }  // anon namespace

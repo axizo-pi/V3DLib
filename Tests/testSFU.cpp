@@ -69,6 +69,12 @@ void sfu_kernel(Float x, Float::Ptr r) {
   *r = V3DLib::exp(x);       r.inc();
 
   nop(1);     sub_header("sfu_kernel testing recip, recipsqrt");
+  //
+  // Where added to test an encountered issue with nested Where's.
+  // This happens in Gravity; recipsqrt() add Where's for vc4/vc6 to address Nan/Inf
+  //
+  // Nested Where's will be explicitly tested elsewhere.
+  //
   Int a = 0;
   Where (a != 1)
     *r = V3DLib::recip(x);     r.inc();
