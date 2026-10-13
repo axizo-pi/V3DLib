@@ -201,7 +201,7 @@ TEST_CASE("Check while condition codes [while][cond]") {
   };
 
   auto k = compile(while_kernel);
-  to_file("while_kernel.txt", k.dump());
+  //to_file("while_kernel.txt", k.dump());
 
   int max = 123;
    k.load(&result, max, 15).run();
@@ -658,15 +658,18 @@ void nested_where_kernel(Int::Ptr result) {
   Int val  = -1;
   Int val2 = 0;
 
-  Where (index() % 2 != 0)               // `%` is really heavy and uses While/Where
+  Where (index() % 2 != 0)                 // `%` is really heavy and uses While/Where
     val2 = 1;
   End
+
+	Int mask = index() % 2;
 
   Where (index() < 8)
     val = 1;  // Should be masked
 
-    nop(3); sub_header("Nested Where 1");  // Failed, keep it in
-    Where (index() % 2 == 0)               // `%` is really heavy and uses While/Where
+    nop(1); sub_header("Nested Where 1");
+    //Where ((index() % 2) == 0)           // Works on vc6/vc4. not on vc7
+    Where (mask == 0)                      // Works on vc7
       val = 5;
 
       nop(3); sub_header("Nested Where 2");
@@ -702,9 +705,9 @@ TEST_CASE("Test nested Where's [where][nested]") {
   Int::Array result(Size);
 
   auto k = compile(nested_where_kernel);
-  to_file("nested_where_kernel.txt", k.dump());
+  //to_file("nested_where_kernel.txt", k.dump());
   k.load(&result).run();
-  //warn << dump_array(result, 16);
+  warn << dump_array(result, 16);
 
   std::vector<int> expected = {
     5, 3, 5, 3, 7, 3, 6, 3, 0, 0, 0, 0, 0, 0, 0, 0, 
