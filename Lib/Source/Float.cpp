@@ -377,7 +377,7 @@ FloatExpr recipsqrt(FloatExpr x) {
   Float ret;
   ret = mkFloatApply(x, Op(RECIPSQRT, FLOAT));
 
-  //add_nan_inf(ret, x);
+  add_nan_inf(ret, x);
   return ret;
 }
 

@@ -103,6 +103,7 @@ Expr::Ptr Stmt::address() {
 bool Stmt::check_blocks() const {
   // then and else blocks may not both be empty
   if (m_stmts_a.empty() && m_stmts_b.empty()) {
+    cerr << "check_blocks both a and b empty"; 
     return false;
   }
 
@@ -131,9 +132,8 @@ bool Stmt::check_blocks() const {
 /**
  * @brief Return then block, if any.
  */
-Stmt::Array const &Stmt::then_block() const {
-  assert(check_blocks());
-
+Stmt::Array const &Stmt::then_block(bool do_assert) const {
+  assert(!do_assert || check_blocks());
   return m_stmts_a;
 }
 
@@ -326,12 +326,12 @@ std::string Stmt::disp_intern(int seq_depth, bool show_comments) const {
       assert(m_where_cond.get() != nullptr);
       ret << "WHERE (" << m_where_cond->dump() << ")\n"
           << "THEN\n"
-          << then_block().dump(show_comments, /*seq_depth + */ 1);
+          << then_block(false).dump(show_comments, 1);
 
       if (!else_block_empty()) {
         ret << "\n"
             << "ELSE\n"
-            << else_block().dump(show_comments, /* seq_depth + */ 1);
+            << else_block().dump(show_comments, 1);
       }
     break;
 
@@ -359,7 +359,7 @@ std::string Stmt::disp_intern(int seq_depth, bool show_comments) const {
       if (then_block_empty()) {
         ret << "  <<NO THEN-BLOCK PRESENT>>";
       } else {
-        ret << then_block().dump(show_comments, /* seq_depth + */ 1);
+        ret << then_block().dump(show_comments, 1);
       }
 
       // There is no ELSE for while. TODO: check, code elsewhere says otherwise

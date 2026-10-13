@@ -86,6 +86,8 @@ void For_(BoolExpr b)   { For_(any(b)); }
 void Where__(BExpr::Ptr b) {
   Stmt::Ptr s = Stmt::create(Stmt::WHERE);
   s->where_cond(b);
+
+  warn << "Where__ adding: " << s->dump();
   prepare_stack(s);
 }
 

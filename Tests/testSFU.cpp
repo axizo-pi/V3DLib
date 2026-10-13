@@ -68,8 +68,14 @@ void sfu_kernel(Float x, Float::Ptr r) {
   *r = V3DLib::exp(3.0f);    r.inc();
   *r = V3DLib::exp(x);       r.inc();
 
-  *r = V3DLib::recip(x);     r.inc();
-  *r = V3DLib::recipsqrt(x); r.inc();
+  nop(1);     sub_header("sfu_kernel testing recip, recipsqrt");
+  Int a = 0;
+  Where (a != 1)
+    *r = V3DLib::recip(x);     r.inc();
+    *r = V3DLib::recipsqrt(x); r.inc();
+  End
+  footer("recip(sqrt) done");
+
   *r = V3DLib::log(x);       r.inc();
   *r = V3DLib::exp_e(1);     r.inc();  // Not really required, 1.0f is one of the test parameters
   *r = V3DLib::exp_e(x);     r.inc();
@@ -300,6 +306,7 @@ TEST_CASE("Test SFU functions [sfu][kernel]") {
   Float::Array results(16*N);
 
   auto k = compile(sfu_kernel);
+  to_file("sfu_kernel.txt", k.dump());
 
   INFO("Running qpu");
   //
