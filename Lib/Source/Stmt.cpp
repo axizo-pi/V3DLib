@@ -457,13 +457,12 @@ CExpr::Ptr Stmt::loop_cond() const {
 ///////////////////////////////////////////////////////////////////////////////
 
 /**
- *
+ * @brief Create a list of string opcodes per instruction, optionally adorned with
+ *        comments and indent.
  */
-std::string Stmt::Array::dump_1(bool show_comments, int indent) const {
-  if (empty()) {
-    return "<Empty>";
-    //return V3DLib::indent("<Empty>", 2*indent);
-	}
+std::vector<std::string> Stmt::Array::opcodes(bool show_comments, int indent) const {
+	std::vector<std::string> ret;
+  if (empty()) return ret; 
 
   // Count the number of endlines at end of string
   auto ending_newlines = [] (std::string const &s) -> int {
@@ -480,8 +479,6 @@ std::string Stmt::Array::dump_1(bool show_comments, int indent) const {
     return count;
   };
 
-  std::string ret;
-
   for (int i = 0; i < (int) size(); i++) {
     // a line can actually be multiple output lines if it contains arrays.
     // Internal arrays have their own newlines, which can result in multiple endlines per line
@@ -494,7 +491,7 @@ std::string Stmt::Array::dump_1(bool show_comments, int indent) const {
       tmp.erase(tmp.length() - nl_count);
     }
 
-    ret << tmp << "\n";
+    ret << tmp;
   }
 
   return ret;
@@ -517,8 +514,7 @@ Stmt::Array &Stmt::Array::operator<<(Array const &b) {
 std::string Stmt::Array::dump(bool do_line_numbers, bool show_comments, int indent) const {
   if (empty()) return "<Empty>";
 
-  std::string buf = dump_1(show_comments, indent);
-  std::vector<std::string> lines = split(buf, "\n");
+  auto lines = opcodes(show_comments, indent);
 
   int count = 0;
   std::string ret;

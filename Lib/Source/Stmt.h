@@ -83,8 +83,10 @@ struct Stmt : public InstructionComment {
   class Array : public std::vector<Ptr> {
   public:
     std::string dump(bool do_line_numbers, bool show_comments = true, int indent = 0) const;
-    std::string dump_1(bool show_comments, int indent) const;
     Array &operator<<(Array const &b);
+
+	private:
+		std::vector<std::string> opcodes(bool show_comments, int indent) const;
   };
 
   Stmt(Tag in_tag) : tag(in_tag) {}

@@ -21,7 +21,9 @@ int main(int argc, const char *argv[]) {
   settings.init(argc, argv);
 
   auto k = compile(id_kernel, settings);          // Construct kernel
-  to_file("id_kernel.txt", k.dump());
+  //to_file("id_kernel.txt", k.dump());
+	//to_file("ID_kernel.cpp", k.compile().dump_kernel_hex());
+
   k.setNumQPUs(numQPUs);
 
    // Allocate and initialise array shared between ARM and GPU
