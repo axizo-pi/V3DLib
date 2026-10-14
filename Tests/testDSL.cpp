@@ -96,7 +96,11 @@ void kernel_specific_instructions(Int::Ptr result) {
   b = a ^ 0xf;
   out(b, result);
 
-  b = -1*a;
+  if (Platform::compile::for_vc4()) {
+    b = (0xffffffff ^ a) + 1;  // 2's complement
+  } else {
+    b = -1*a;                  // vc4 fails due to mul24
+  }
 	b = ~b;
   out(b, result);
 }
@@ -266,8 +270,7 @@ void fabs_kernel(Float::Ptr result, Float::Ptr input, Int numValues) {
 
 
 /**
- * This should try out all the possible ways of reading and writing
- * main memory.
+ * @brief Try out all the possible ways of reading and writing main memory.
  */
 template<typename T, typename Ptr>
 void offsets_kernel(Ptr result, Ptr src) {
@@ -1025,21 +1028,30 @@ void int_div_kernel(Int::Ptr quotient, Int::Ptr remainder, Int a, Int b) {
 }
 
 
+/**
+ * @brief Test nested Where-blocks.
+ *
+ * **NOTE**: There is also a `nested_where_kernel` in testConditionCodes.
+ *
+ * =========================================================
+ * Notes
+ * -----
+ *
+ * 1. Doing `Where (index() % 2 == 0)` many blocks will use long integer division internally.
+ *    This is extremely heavy (resulting in a lot of generated code) and leads to wrong result;
+ *    it appears that first condition will then also be used for second block.
+ */
 void nested_where_kernel(Int::Ptr ret) {
-  Int tmp = 0;                comment("Before Where 1");
+  Int tmp = 0;                     comment("Before Where 1");
 
-  // Doing `Where (index() % 2 == 0)` both both blocks
-  // will use long integer division internally.
-  // This is extremely heavy (resulting in a lot of generated code) and leads to wrong result;
-  // it appears that first condition will then also be used for second block.
-  Where ((index() & 1) == 0)
-    tmp = 1;                  comment("Start Where 1, before Where 2");
+  Where ((index() & 1) == 0)       // See Note 1
+    tmp = 1;                       comment("Start Where 1, before Where 2");
 
     Where ((index() & 0x3) == 0)
-      tmp = 2;                comment("Start Where 2");
+      tmp = 2;                     comment("Start Where 2");
 
       Where ((index() & 0xf) == 0)
-        tmp = 3;                comment("Start Where 2");
+        tmp = 3;                   comment("Start Where 2");
       End
     End
   End

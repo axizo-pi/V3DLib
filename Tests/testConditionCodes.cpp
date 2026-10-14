@@ -652,7 +652,9 @@ TEST_CASE("Test multiple and/or [andor][cond]") {
 namespace {
 
 /**
- * @brief Test Where-blocks 4 levels deep
+ * @brief Test nested Where-blocks 4 levels deep.
+ *
+ * **NOTE**: There is also a `nested_where_kernel` in testDSL.
  */
 void nested_where_kernel(Int::Ptr result) {
   Int val  = -1;
@@ -668,6 +670,7 @@ void nested_where_kernel(Int::Ptr result) {
     val = 1;  // Should be masked
 
     nop(1); sub_header("Nested Where 1");
+
     //Where ((index() % 2) == 0)           // Works on vc6/vc4. not on vc7
     Where (mask == 0)                      // Works on vc7
       val = 5;
