@@ -186,16 +186,30 @@ public:
 
   std::string dump() const {
     using ::operator<<;
+
+		bool multi_line = size() > 16;
     std::string ret;
 
-    ret << "( ";
+		if (multi_line) {
+     ret << "(\n  ";
+		} else {
+     ret << "( ";
+		}
 
     for (int c = 0; c < (int) size(); ++c) {
-      if ( c != 0 && c % 16 == 0) ret << "\n";
+      if ( c != 0 && c % 16 == 0) {
+				ret << "\n";
+		    if (multi_line) {
+          ret << "  ";
+				}
+			}
 
       ret << (*this)[c] << ", ";
     }
 
+		if (multi_line) {
+    	ret << "\n";
+		}
     ret << ")";
 
     return ret;
