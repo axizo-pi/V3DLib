@@ -159,6 +159,49 @@ vc6
   // y=30 hangs but works after reset
   //k.load(x_count, 20, &result);
 
+vc4
+----------------
+
+## No y_loop
+
+  int x_count = 10000000; 0/1; execute_qpu(): mbox_property call failed
+  int x_count = 5000000; 0/1; execute_qpu(): mbox_property call failed
+  int x_count = 4950000; 4/5; execute_qpu(): mbox_property call failed
+  int x_count = 4900000; 7/7
+  int x_count = 4800000; 7/7
+  int x_count = 4500000; 7/7
+  int x_count = 4000000; 7/7
+  int x_count = 3000000; 7/7
+
+
+## y_loop = 1
+
+  int x_count = 10000000; 0/1; execute_qpu(): mbox_property call failed
+  int x_count = 5000000; 0/1; execute_qpu(): mbox_property call failed
+  int x_count = 3000000; 7/7
+  int x_count = 1500000; 7/7
+
+
+## y_loop = 10
+
+  int x_count = 3000000; 0/2; execute_qpu(): mbox_property call failed
+  int x_count = 5000000; 0/1; execute_qpu(): mbox_property call failed
+  int x_count = 2000000; 0/1; execute_qpu(): mbox_property call failed
+  int x_count = 1500000; 7/7
+  int x_count = 1000000; 7/7
+  int x_count = 150000; 7/7
+
+
+## y_loop = 100
+
+  int x_count = 1000000; execute_qpu(): mbox_property call failed
+  int x_count = 500000; first 0/1; execute_qpu(): mbox_property call failed
+  int x_count = 300000; 1/2; 3rd execute_qpu(): mbox_property call failed
+  int x_count = 200000; 7/8; first failed
+  int x_count = 150000; 7/7
+  int x_count = 100000; 7/7
+  int x_count = 10000; 7/7
+
    ================================================================= */
 #include <string>
 #include <V3DLib.h>
@@ -172,7 +215,7 @@ vc6
 using namespace V3DLib;
 using std::string;
 
-const int Do_YLoop = true;
+const int Do_YLoop = false;
 
 void kernel(Int x_count, Int y_count, Int::Ptr result) {
   Int count   = 0;
@@ -205,8 +248,8 @@ int main(int argc, const char *argv[]) {
   auto k = compile(kernel, settings);
   k.setNumQPUs(settings.num_qpus);
 
-  int x_count = 124000;
-  int y_count = 100;
+  int x_count = 4950000;
+  int y_count = 1;
 
   Int::Array result(3*16);
 
