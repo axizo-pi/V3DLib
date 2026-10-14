@@ -55,14 +55,14 @@ vc7
   int x_count = 750000;
   int x_count = 625000; 7/7
 
-## y_loop = 1;
+## y_loop = 1
 
   int x_count = 5000000; 0/7
   int x_count = 3000000; 5/7
   int x_count = 2000000; 7/7
   int x_count = 1000000; 7/7
 
-## y_loop = 10;
+## y_loop = 10
 
   int x_count = 2000000; 0/7
   int x_count = 1000000; 0/7
@@ -72,7 +72,7 @@ vc7
   int x_count = 600000; 7/7
   int x_count = 200000; 7/7
 
-## y_loop = 100;
+## y_loop = 100
 
   int x_count = 950000; 0/7
   int x_count = 500000; 0/7
@@ -98,6 +98,58 @@ vc7
 
 vc6
 ----------------
+
+## No y_loop
+
+  int x_count = 10000000; 0/7
+  int x_count = 8000000; 0/7
+  int x_count = 7000000; 0/7
+  int x_count = 6500000; 0/7
+  int x_count = 6300000; 0/7
+  int x_count = 6100000; 2/7
+  int x_count = 6000000; 7/7, 10,10
+  int x_count = 5000000; 7/7
+  int x_count = 1000000; 7/7
+  int x_count = 120000; 7/7
+
+## y_loop = 1
+
+  int x_count = 6100000; 0/7
+  int x_count = 4000000; 0/7
+  int x_count = 3500000; 0/7
+  int x_count = 3350000; 0/7
+  int x_count = 3300000; 2/7
+  int x_count = 3250000; 7/7
+  int x_count = 3000000; 7/7
+  int x_count = 2000000; 7/7
+  int x_count = 1000000; 7/7
+  int x_count = 600000; 7/7
+
+## y_loop = 10
+
+  int x_count = 3300000; 0/7
+  int x_count = 1000000; 2/7
+  int x_count = 990000; 6/7 (first failed)
+  int x_count = 980000; 7/7
+  int x_count = 950000; 7/7
+  int x_count = 900000; 7/7
+  int x_count = 700000; 7/7
+  int x_count = 100000; 7/7
+
+## y_loop = 100
+
+  int x_count = 990000; 0/7
+  int x_count = 500000; 0/7
+  int x_count = 300000; 0/7
+  int x_count = 200000; 0/7
+  int x_count = 150000; 0/7
+  int x_count = 135000; 0/7
+  int x_count = 127500; 0/7
+  int x_count = 124000; 4/7
+  int x_count = 122000; 7/7
+  int x_count = 120000; 7/7
+  int x_count = 100000; 7/7
+
 
 ## Previous comments
 
@@ -133,9 +185,7 @@ void kernel(Int x_count, Int y_count, Int::Ptr result) {
       End
 		}
 
-    //Where (count >= 0)
-      count += 1;
-    //End
+    count += 1;
 
     Int::Ptr r2 = result + 32;
     *r2  = count_y;
@@ -155,7 +205,7 @@ int main(int argc, const char *argv[]) {
   auto k = compile(kernel, settings);
   k.setNumQPUs(settings.num_qpus);
 
-  int x_count = 120000;
+  int x_count = 124000;
   int y_count = 100;
 
   Int::Array result(3*16);
