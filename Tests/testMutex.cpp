@@ -148,7 +148,6 @@ TEST_CASE("Test mutexes emulator[mutex]") {
     Int::Array expected(16);        // idem
 
     auto k = compile(mutex_kernel); // idem
-    //to_file("mutex_kernel.txt", k.dump());
 
     INFO("Single QPU");
     numQPUs = 1;
@@ -168,7 +167,7 @@ TEST_CASE("Test mutexes emulator[mutex]") {
   }
 
   SUBCASE("Test QPU") {
-    if (!Platform::run_vc4()) {
+    if (!Platform::hw::vc4()) {
       warn << "Doing mutexes only for vc4";
       return;
     }
@@ -214,7 +213,6 @@ TEST_CASE("Test barrier [mutex][barrier]") {
     Int::Array expected(16);
 
     auto k = compile(barrier_kernel);
-    //to_file("barrier_kernel.txt", k.dump());
 
     INFO("Single QPU");
     numQPUs = 1;
@@ -223,7 +221,6 @@ TEST_CASE("Test barrier [mutex][barrier]") {
     k.setNumQPUs(numQPUs);
     k.run();
 
-    //warn << "result: " << result.dump();
     REQUIRE(result == expected);
 
     INFO("Multiple QPU's");
@@ -231,10 +228,8 @@ TEST_CASE("Test barrier [mutex][barrier]") {
     init_arrays(result, expected, numQPUs);
     k.load(&result);
     k.setNumQPUs(numQPUs);
-    //k.emu(true);
     k.run();
 
-    //warn << "result:\n" << result.dump();
     REQUIRE(result == expected);
 
     Platform::use_main_memory(false);
@@ -245,7 +240,6 @@ TEST_CASE("Test barrier [mutex][barrier]") {
     Int::Array expected(16);
 
     auto k = compile(barrier_kernel);
-    //to_file("barrier_kernel_qpu.txt", k.dump());
 
     INFO("Single QPU");
     numQPUs = 1;
@@ -254,7 +248,6 @@ TEST_CASE("Test barrier [mutex][barrier]") {
     k.setNumQPUs(numQPUs);
     k.run();
 
-    //warn << "result:\n" << result.dump();
     REQUIRE(result == expected);
 
     INFO("Multiple QPU's");
@@ -264,7 +257,6 @@ TEST_CASE("Test barrier [mutex][barrier]") {
     k.setNumQPUs(numQPUs);
     k.run();
 
-    //warn << "result:\n" << result.dump();
     REQUIRE(result == expected);
   }
 }
@@ -284,12 +276,10 @@ TEST_CASE("Test While-loop emulator[mutex][while]") {
     expected.fill(4);
 
     auto k = compile(while_kernel);
-    //to_file("while_kernel.txt", k.dump());
     k.setNumQPUs(numQPUs);
     k.load(&result);
     k.run();
 
-    //warn << "result While: " << result.dump();
     REQUIRE(result == expected);
 
     Platform::use_main_memory(false);
@@ -336,8 +326,6 @@ TEST_CASE("Test For-loop[mutex][for]") {
     expected.fill(4);
 
     auto k = compile(for_kernel);
-    //to_file("for_kernel.txt", k.dump());
-    //to_file("for_compile_data.txt", k.dump_compile_data());
     k.load(&result);
     k.setNumQPUs(numQPUs);
     k.emu();

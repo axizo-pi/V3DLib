@@ -79,7 +79,7 @@ void init_expected(Int::Array &expected, int numQPUs) {
 bool check_VPM_usage() {
   static int warn_count = 0;
 
-  if (!Platform::run_vc4()) {
+  if (!Platform::hw::vc4()) {
     if (warn_count == 0) {
       warn << "Not running VPM mem on QPU's for v3d";
       warn_count++;
@@ -119,8 +119,6 @@ TEST_CASE("Test VPM memory [vpm]") {
     k.load(&result);
     k.emu();
 
-    //std::cout << result.dump() << "\n";
-    //std::cout << expected.dump() << "\n";
     REQUIRE(result == expected);
   }
 
@@ -134,7 +132,6 @@ TEST_CASE("Test VPM memory [vpm]") {
     init_expected(expected, numQPUs);
 
     auto k = compile(vpm_kernel);
-    //to_file("vpm_kernel.txt", k.dump());
     k.setNumQPUs(numQPUs);
     k.load(&result);
     k.run();
@@ -182,7 +179,6 @@ TEST_CASE("Test VPM array [vpm][arr]") {
     init_expected(expected, numQPUs);
 
     auto k = compile(vpm_array_kernel);
-    //to_file("vpm_array_kernel.txt", k.dump());
     k.setNumQPUs(numQPUs);
     k.load(&result);
     k.run();

@@ -65,7 +65,7 @@ int main(int argc, const char *argv[]) {
     return -1;
   }
 
-  if (!Platform::run_vc4()) {
+  if (!Platform::hw::vc4()) {
     std::cerr << "Only runs on vc4 hardware\n";
     return -1;
   }

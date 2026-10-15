@@ -46,7 +46,6 @@ void match_kernel_outputs(
     // Outputs should match exactly
     for (uint32_t n = 0; n < len; ++n) {
       if (skip_nops && (_nop == received[n])) {
-        //printf("nop at index %d\n", n);
         continue;
       }
 
@@ -79,7 +78,7 @@ void match_kernel_outputs(
 bool running_on_v3d() {
   static bool did_first = false;
 
-  if (V3DLib::Platform::run_vc4()) {
+  if (V3DLib::Platform::hw::vc4()) {
     if (!did_first) {
       printf("Skipping v3d tests\n");
       did_first = true;

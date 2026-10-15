@@ -241,6 +241,154 @@ void use_main_memory(bool val) { instance().m_use_main_memory = val; }
 bool use_main_memory()         { return instance().m_use_main_memory; }
 
 
+std::string platform_info() { return instance().output(); }
+bool is_pi_platform()       { return instance().is_pi_platform; }
+
+
+/**
+ * @brief Return an indicator for the current platform
+ */
+Tag tag() {
+  auto tmp = pi_version();
+
+  Tag tag = not_pi;
+       if (tmp == "pi1")    { tag = pi1;     }
+  else if (tmp == "pi2")    { tag = pi2;     }
+  else if (tmp == "pi3")    { tag = pi3;     }
+  else if (tmp == "piZ")    { tag = pi_zero; }
+  else if (tmp == "pi4-64") { tag = pi4;     }
+  else if (tmp == "pi4")    { tag = pi4;     }
+  else if (tmp == "pi5-64") { tag = pi5;     }
+  else if (tmp == "pi5")    { tag = pi5;     }
+  else {
+    warn << "Unknown pi_version: '" << tmp << "'" << thrw;
+  }
+
+  return tag;
+}
+
+
+/**
+ * Returns the number of available registers in a register file for the current
+ * target platform
+ *
+ * For `vc4`, which has two register files 'A' and 'B' per QPU, returns the size
+ * of each register file.
+ * `v3d` has one single dual-port register file 'A' per QPU.
+ *
+ * Current implementation assumes no multi-threading has been enabled on the
+ * QPU's. If that ever happens (not likely in this project), the size becomes
+ * `size/num_threads`.
+ *
+ * However, according to internet hearsay, the default and minimum number of
+ * threads for `v3d` is actually 2 per QPU. Still, 64 for `v3d` appears to be the
+ * correct return value in this case.
+ *
+ * This all goes to show that something that appears to be exceedingly simple in
+ * concept can actually be convoluted as f*** underwater.
+ */
+int size_regfile() {
+  assert(!emulate::running()); // Warn me
+  if (hw::vc4()) return 32;
+  return 64;  // v3d
+}
+
+
+int max_qpus() { return instance().max_qpus(); }
+
+
+int gather_limit() {
+  {
+    static bool showed = false;
+    if (!showed) cdebug << "Platform::gather_limit(): add vc7.";
+    showed = true;
+  }
+
+  assert(!emulate::running());  // Warn me
+  if (hw::vc4()) {
+    return 4;
+  } else {
+    return 8;
+  }
+}
+
+
+/**
+ * Return short string with main version of the current pi
+ */
+std::string pi_version() {
+  std::string ret = "Not Pi";
+  std::string val;
+
+  if (!get_platform_string(val)) {
+    return ret;
+  }
+
+  std::string const prefix = "Raspberry Pi ";
+
+  if (val.find(prefix) != 0) {
+    ret = "Not Pi";
+    return ret;
+  }
+
+  char version = val[prefix.length()];
+  // Pi1 and Zero have no explicit version numbers
+  if (version == 'M') {
+    version = '1';   // 'M' in 'Raspberry Pi Model B Rev 2'
+  } else if (version == 'Z') {
+    // OK; 'Z' in 'Raspberry Pi Zero W Rev 1.1'
+  }
+  ret  = "pi";
+  ret += version;
+
+  assertq(('1' <= version && version <= '5') || (version == 'Z'), "Unknown pi version number");
+
+#ifdef ARM64
+  ret += "-64";
+#endif
+
+  return ret;
+}
+
+
+/**
+ * @brief Convert VCType instance to string representation
+ */
+std::string vc_type_str(VCType type) {
+  switch(type) {
+    case UNKNOWN: return "Unknown";
+    case vc4: return "vc4";
+    case vc6: return "vc6";
+    case vc7: return "vc7";
+    default:  assert(false); return "none";  // Should never occur
+  }
+}
+
+
+/**
+ * @brief Return data on the physical GPU of the current platform.
+ *
+ * 'hw' is short for 'hardware'.
+ */
+namespace hw {
+
+/**
+ * @brief return the actual hardware VideoCore type.
+ */
+VCType type() {
+  auto type = instance().vc_type;
+  assert(type != UNKNOWN);
+  return type;
+}
+
+std::string type_str() { return vc_type_str(instance().vc_type); }
+
+bool vc4() { return instance().vc_type == VCType::vc4; }
+bool vc7() { return instance().vc_type == VCType::vc7; }
+
+}  // namespace hw
+
+
 /**
  * Compilation is only enabled if an actual compile is taking place.
  */
@@ -318,119 +466,6 @@ bool for_vc6() {
 } // namespace compile
 
 
-std::string platform_info() { return instance().output(); }
-bool is_pi_platform()       { return instance().is_pi_platform; }
-
-bool run_vc4() { return instance().vc_type == vc4; }
-bool run_vc7() { return instance().vc_type == vc7; }
-
-
-/**
- * @brief Return an indicator for the current platform
- */
-Tag tag() {
-  auto tmp = pi_version();
-
-  Tag tag = not_pi;
-       if (tmp == "pi1")    { tag = pi1;     }
-  else if (tmp == "pi2")    { tag = pi2;     }
-  else if (tmp == "pi3")    { tag = pi3;     }
-  else if (tmp == "piZ")    { tag = pi_zero; }
-  else if (tmp == "pi4-64") { tag = pi4;     }
-  else if (tmp == "pi4")    { tag = pi4;     }
-  else if (tmp == "pi5-64") { tag = pi5;     }
-  else if (tmp == "pi5")    { tag = pi5;     }
-  else {
-    warn << "Unknown pi_version: '" << tmp << "'" << thrw;
-  }
-
-  return tag;
-}
-
-
-/**
- * Returns the number of available registers in a register file for the current
- * target platform
- *
- * For `vc4`, which has two register files 'A' and 'B' per QPU, returns the size
- * of each register file.
- * `v3d` has one single dual-port register file 'A' per QPU.
- *
- * Current implementation assumes no multi-threading has been enabled on the
- * QPU's. If that ever happens (not likely in this project), the size becomes
- * `size/num_threads`.
- *
- * However, according to internet hearsay, the default and minimum number of
- * threads for `v3d` is actually 2 per QPU. Still, 64 for `v3d` appears to be the
- * correct return value in this case.
- *
- * This all goes to show that something that appears to be exceedingly simple in
- * concept can actually be convoluted as f*** underwater.
- */
-int size_regfile() {
-  assert(!emulate::running()); // Warn me
-  if (run_vc4()) return 32;
-  return 64;  // v3d
-}
-
-
-int max_qpus() { return instance().max_qpus(); }
-
-
-int gather_limit() {
-  {
-    static bool showed = false;
-    if (!showed) cdebug << "Platform::gather_limit(): add vc7.";
-    showed = true;
-  }
-
-  assert(!emulate::running());  // Warn me
-  if (run_vc4()) {
-    return 4;
-  } else {
-    return 8;
-  }
-}
-
-
-/**
- * Return short string with main version of the current pi
- */
-std::string pi_version() {
-  std::string ret = "Not Pi";
-  std::string val;
-
-  if (!get_platform_string(val)) {
-    return ret;
-  }
-
-  std::string const prefix = "Raspberry Pi ";
-
-  if (val.find(prefix) != 0) {
-    ret = "Not Pi";
-    return ret;
-  }
-
-  char version = val[prefix.length()];
-  // Pi1 and Zero have no explicit version numbers
-  if (version == 'M') {
-    version = '1';   // 'M' in 'Raspberry Pi Model B Rev 2'
-  } else if (version == 'Z') {
-    // OK; 'Z' in 'Raspberry Pi Zero W Rev 1.1'
-  }
-  ret  = "pi";
-  ret += version;
-
-  assertq(('1' <= version && version <= '5') || (version == 'Z'), "Unknown pi version number");
-
-#ifdef ARM64
-  ret += "-64";
-#endif
-
-  return ret;
-}
-
-
 /**
  * This is only set if the interpreter or emulator is actually running.
  */
@@ -474,35 +509,6 @@ bool vc4() {
 }
 
 } // namespace running
-
-
-/**
- * @brief return the actual hardware VideoCore type.
- *
- * The `run_` and `compile_` calls are now confusing me,
- * better to be more explicit with the platform type.
- *
- * **TODO:** Clean up `run_` and `compile_` calls.
- */
-VCType vc_type() {
-  auto type = instance().vc_type;
-  assert(type != UNKNOWN);
-  return type;
-}
-
-
-std::string vc_type_str(VCType type) {
-  switch(type) {
-    case UNKNOWN: return "Unknown";
-    case vc4: return "vc4";
-    case vc6: return "vc6";
-    case vc7: return "vc7";
-    default:  assert(false); return "none";  // Should never occur
-  }
-}
-
-
-std::string vc_type_str() { return vc_type_str(instance().vc_type); }
 
 
 main_mem::main_mem(bool val) {

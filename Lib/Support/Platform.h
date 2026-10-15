@@ -26,9 +26,22 @@ enum Tag {
 bool is_pi_platform();
 std::string platform_info();
 std::string pi_version();
-bool run_vc4();
-bool run_vc7();
 Tag tag();
+
+std::string vc_type_str(VCType type);
+int  size_regfile();
+int  max_qpus();
+int  gather_limit();
+
+
+namespace hw {
+
+VCType type();
+std::string type_str();
+bool vc4();
+bool vc7();
+
+}  // namespace hw
 
 namespace compile {
 
@@ -60,13 +73,6 @@ bool vc4();
 
 void use_main_memory(bool val);
 bool use_main_memory();
-int  size_regfile();
-int  max_qpus();
-int  gather_limit();
-
-VCType vc_type();
-std::string vc_type_str(VCType type);
-std::string vc_type_str();
 
 
 class main_mem {

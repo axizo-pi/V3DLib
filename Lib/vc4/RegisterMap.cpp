@@ -169,7 +169,7 @@ enum V3D_L2CACTL_bits {
 
 
 RegisterMapClass &instance() {
-  if (!Platform::run_vc4()) {
+  if (!Platform::hw::vc4()) {
     cerr << "RegisterMap can only be accessed on a platform having VideoCore4" << thrw;
   }
 

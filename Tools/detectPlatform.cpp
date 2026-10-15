@@ -70,8 +70,6 @@ struct Settings {
     reset_scheduler = params.parameters()["Reset Scheduler Registers"]->get_bool_value();
     reset_gpu       = params.parameters()["Reset GPU"]->get_bool_value();
 
-//    output();
-
     return CmdParameters::ALL_IS_WELL;
   }
 
@@ -212,7 +210,6 @@ void detect_vc4() {
   int mb = getMailbox();  
   unsigned revision = get_version(mb);
   printf("Hardware revision        : %04x\n", revision);
-
   printf("Tech version             : %d\n", RegisterMap::TechnologyVersion());
   printf("Number of slices         : %d\n", RegisterMap::numSlices());
   printf("Number of QPU's per slice: %d\n", RegisterMap::numQPUPerSlice());
@@ -237,7 +234,7 @@ int main(int argc, char const *argv[]) {
 
   printf(Platform::platform_info().c_str());
 
-  if (!Platform::run_vc4()) {
+  if (!Platform::hw::vc4()) {
     printf("\n");
     std::string ret =  v3d_device_info();
     printf(ret.c_str());
@@ -246,7 +243,7 @@ int main(int argc, char const *argv[]) {
   if (settings.extended) {
     printf("\n");
 
-    if (Platform::run_vc4()) {
+    if (Platform::hw::vc4()) {
       detect_vc4();
     } else {
       detect_v3d();

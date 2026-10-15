@@ -1,7 +1,6 @@
 #include <V3DLib.h>
 #include "support/support.h"
 #include "support/check.h"
-#include "Support/Helpers.h"  // to_file()
 #include "v3d/v3d.h"
 #include "LibSettings.h"
 #include <cmath>
@@ -328,7 +327,6 @@ TEST_CASE("Test correct working DSL [dsl][instr]") {
     result.fill(-2);  // Initialize to unexpected value
 
     auto k = compile(kernel_specific_instructions);
-    //to_file("kernel_specific_instructions.txt", k.dump());
     k.load(&result).run();
     check_vector(result, 0, expected);
   }
@@ -352,10 +350,9 @@ TEST_CASE("Test correct working DSL [dsl][instr]") {
 
     auto k = compile(kernel_specific_float_instructions);
     k.load(&result).run();
-    //Log::warn << "result: " << result.dump();
 
     float precision = 0;
-    if (Platform::run_vc4()) {
+    if (Platform::hw::vc4()) {
       precision = 0.5e-4f;
     }
 
@@ -563,7 +560,6 @@ TEST_CASE("Test specific operations in DSL [dsl][ops]") {
     int const N = 16;  // Number of expected results
 
     auto k = compile(int_ops_kernel);
-    //to_file("int_ops_kernel.txt", k.dump());
 
     Int::Array result(16*N);
     result.fill(-1);
@@ -599,7 +595,7 @@ TEST_CASE("Test specific operations in DSL [dsl][ops]") {
     };
 
     float Precision = 0;
-    if (Platform::run_vc4()) {
+    if (Platform::hw::vc4()) {
       // This is specifically for  integer_division_f(), index == 10 in result and expected.
       // In this case, off-by-1 downward is common.
       Precision = 1;
@@ -613,7 +609,6 @@ TEST_CASE("Test specific operations in DSL [dsl][ops]") {
     int const N = 5;  // Number of expected results
 
     auto k = compile(float_ops_kernel);
-    //to_file("float_ops_kernel.txt", k.dump());
 
     Float::Array results(16*N);
 
@@ -665,7 +660,6 @@ TEST_CASE("Test rotate on emulator [emu][rotate]") {
   auto reset = [&a] () {
     for (int i = 0; i < (int) a.size(); i++) {
       a[i] = (i + 1);
-      //a[i] = (float) (i + 1);
     }
   };
 
@@ -676,7 +670,7 @@ TEST_CASE("Test rotate on emulator [emu][rotate]") {
   reset();
   k.interpret();
 
-  std::cout << "\n";
+  //std::cout << "\n";
 
   reset();
   k.load(&result2, &a);
@@ -804,13 +798,12 @@ TEST_CASE("Test functions [dsl][func]") {
     }
 
     {
-      if (!Platform::run_vc4()) {
+      if (!Platform::hw::vc4()) {
         result.fill(-1.0f);
 
         BaseSettings settings;
         INFO("Doing ffloor on interpreter");
         settings.run_type = Interpreter;
-        //INFO("Doing ffloor on emulator");
         //settings.run_type = Emulator;  // TODO: fails on certain values
 
         auto k = compile(floor_kernel, settings);
@@ -919,7 +912,6 @@ TEST_CASE("Test issues [dsl][issues]") {
     std::vector<int> expected = {0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 44, 48, 52, 56, 60};
     check_vector(result, 4, expected);
     check_vector(result, 5, 7);
-    //std::cout << showResult(result, 5) << std::endl;
   }
 
 
@@ -1183,7 +1175,7 @@ void tmu_kernel(Int::Ptr result) {
  * It might be that the longest running QPU gets to write last.
  */
 TEST_CASE("Test edge cases of TMU [dsl][tmu]") {
-  if (Platform::run_vc4()) {
+  if (Platform::hw::vc4()) {
     warn << "Skipping TMU write for vc4";
   } else {
     Int::Array result(2*16);
@@ -1200,7 +1192,6 @@ TEST_CASE("Test edge cases of TMU [dsl][tmu]") {
     // Test single QPU
     //
     k.load(&result).run();
-    //warn << result.dump();
     check(result, expected, "TMU 1 QPU  write same address");
 
     //
@@ -1214,7 +1205,6 @@ TEST_CASE("Test edge cases of TMU [dsl][tmu]") {
 
     k.setNumQPUs(NumQPUs);
     k.load(&result).run();
-    //warn << result.dump();
     check(result, expected, "TMU multi QPU's  write same address");
   }
 }

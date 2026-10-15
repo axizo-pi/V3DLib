@@ -273,12 +273,12 @@ bool Settings::process() {
 
     // Here, it is assumed that interpreter and emulator run vc4 code only.
     // TODO: Examine if this needs to be fixed.
-    if (run_type != 0 || Platform::run_vc4()) {
+    if (run_type != 0 || Platform::hw::vc4()) {
       if (num_qpus < 0 || num_qpus > 12) {
         printf("ERROR: For vc4 and emulator, the number of QPU's selected must be between 1 and 12 inclusive.\n");
         return false;
       }
-    } else if (Platform::run_vc7()) {
+    } else if (Platform::hw::vc7()) {
       if (num_qpus < 0 || num_qpus > 16) {
         printf("ERROR: For vc7, the number of QPU's selected must be between 1 and 16 inclusive.\n");
         return false;

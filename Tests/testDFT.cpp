@@ -59,7 +59,6 @@ void create_dft_matrix(Complex::Array2D &arr, bool high_precision = true) {
     for (int c = 0; c < Dim; ++c) {
       float angle = ((float) (-r*c))/((float) Dim); 
       complex tmp(scalar::cos(angle, high_precision), scalar::sin(angle, high_precision));
-      //std::cout << tmp.dump();
 
       check_acceptable_precision(r, c, tmp);
 
@@ -71,7 +70,7 @@ void create_dft_matrix(Complex::Array2D &arr, bool high_precision = true) {
 
 
 /**
- * Create some visual output for DFT matrices
+ * @brief Create some visual output for DFT matrices
  */
 void output_dft(Complex::Array2D &input, Complex::Array2D &result, char const *file_prefix) {
   assert(file_prefix != nullptr);
@@ -108,7 +107,7 @@ void output_dft(Complex::Array2D &input, Complex::Array2D &result, char const *f
 
 
 /**
- * Helper function for compare_dfts()
+ * @brief Helper function for compare_dfts()
  */
 void compare_arrays_dft(
   V3DLib::Complex::Array2D &result,
@@ -232,7 +231,6 @@ bool compare_dfts(int Dim, bool do_profiling) {
 
     Timer timer1;
     auto k = compile(kernels::dft_decorator(input, result_complex));
-    //to_file("dft_complex_with_mult.txt", k.dump());
     profile_output.add_compile(label, timer1, Dim);
 
     if (!k.has_errors()) {
@@ -244,7 +242,7 @@ bool compare_dfts(int Dim, bool do_profiling) {
         INFO("Comparing " << label << " with mult");
         INFO("result: " << result_complex.dump() << ", expected: " << result_mult.dump());
 
-        float precision = Platform::run_vc4()? 0.2f : 0.02f;
+        float precision = Platform::hw::vc4()? 0.2f : 0.02f;
         compare_arrays(result_complex, result_mult, precision);
       }
     }
@@ -287,8 +285,6 @@ bool compare_dfts(int Dim, bool do_profiling) {
         k.call();
       });
 
-      //debug(k.info());
-
       if (!do_profiling) {
         INFO("Comparing " << label << " with float");
         INFO(k.result().dump());
@@ -308,13 +304,10 @@ bool compare_dfts(int Dim, bool do_profiling) {
 
     if (!k.has_errors()) {
       compiled += FLOAT_DFT_CLASS_BLOCKS;
-      //run(k, label);
-      //profile_output.use_single_qpu(true);
       profile_output.run(Dim, label, [&k] (int numQPUs) {
         k.setNumQPUs(numQPUs);
         k.call();
       });
-      //profile_output.use_single_qpu(false);
 
       if (!do_profiling) {
         INFO("num QPUs: " << k.numQPUs());
@@ -336,13 +329,10 @@ bool compare_dfts(int Dim, bool do_profiling) {
 
     if (!k.has_errors()) {
       compiled += FLOAT_DFT_CLASS_BLOCKS_MULTI;
-      //run(k, label);
-      //profile_output.use_single_qpu(true);
       profile_output.run(Dim, label, [&k] (int numQPUs) {
         k.setNumQPUs(numQPUs);
         k.call();
       });
-      //profile_output.use_single_qpu(false);
 
       if (!do_profiling) {
         INFO("num QPUs: " << k.numQPUs());
@@ -359,7 +349,6 @@ bool compare_dfts(int Dim, bool do_profiling) {
     REQUIRE(compiled == run_kernels);  // All bits for all kernels should be set
   }
 
-  //std::cout << "compiled: " << compiled;
   return (compiled != 0);
 }
 
@@ -468,9 +457,6 @@ TEST_CASE("Discrete Fourier Transform [dft]") {
       k.load(&result_switched, &input, &dft_matrix).run();
     }
 
-    //std::cout << result.dump() << std::endl;
-    //std::cout << result_switched.dump() << std::endl;
-
     REQUIRE(result_switched.columns() == Dim);
     compare_arrays(result, result_switched);
 
@@ -488,11 +474,7 @@ TEST_CASE("Discrete Fourier Transform tmp [dft][dft2]") {
 
     Complex::Array2D result;
 
-    //Timer timer1("DFT compile time");
     auto k = compile(kernels::dft_decorator(input, result));
-    //to_file("dft_decorator_code.txt", k.dump());
-    //timer1.end();
-
     k.load(&result, &input);
     k.run();
     output_dft(input, result, "dft");
@@ -511,7 +493,7 @@ TEST_CASE("Discrete Fourier Transform tmp [dft][dft2]") {
       // Profiling: try all sizes until compilation fails
       std::cout << "DFT compare" << ProfileOutput::header();
 
-      int Step = Platform::run_vc4()?2:4;
+      int Step = Platform::hw::vc4()?2:4;
       int N = 1;
       bool can_continue = true;
       while (can_continue) {

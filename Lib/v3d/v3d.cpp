@@ -421,7 +421,7 @@ namespace v3d {
 bool open() {
   static bool did_first = false;
 
-  if (Platform::vc_type() == Platform::vc4) {
+  if (Platform::hw::type() == Platform::vc4) {
     if (!did_first) {
       cerr << "Running on vc4, not opening the v3d card.";
       did_first = true;

@@ -46,7 +46,7 @@ void BaseKernel::compile_init() {
   VCType select_kernel = VCType::UNKNOWN;
 
 #ifdef V3D_ALLOW_INTERPRET
-  select_kernel = Platform::vc_type();
+  select_kernel = Platform::hw::type();
 #else
   if (m_settings.run_type != QPU) {
     select_kernel = VCType::vc4;
@@ -70,7 +70,7 @@ void BaseKernel::compile_init() {
   if (m_settings.run_type != QPU) {
     select_kernel = VCType::vc4;
   } else {
-    select_kernel = Platform::vc_type();
+    select_kernel = Platform::hw::type();
   }
 #endif
 
@@ -246,11 +246,11 @@ void BaseKernel::qpu(bool wait_complete) {
     err << "BaseKernel::qpu(): Compile-only selected, not running.";
     do_execute = false;
   } else
-  if (compile().is_v3d() && Platform::vc_type() == Platform::vc4) {
+  if (compile().is_v3d() && Platform::hw::type() == Platform::vc4) {
     err << "BaseKernel::qpu(): Trying to run v3d code on vc4 platform, not running.";
     do_execute = false;
   } else
-  if (!compile().is_v3d() && Platform::vc_type() != Platform::vc4) {
+  if (!compile().is_v3d() && Platform::hw::type() != Platform::vc4) {
     err << "BaseKernel::qpu(): Trying to run vc4 code on v3d platform, not running.";
     do_execute = false;
   }

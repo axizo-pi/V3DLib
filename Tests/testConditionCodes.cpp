@@ -201,7 +201,6 @@ TEST_CASE("Check while condition codes [while][cond]") {
   };
 
   auto k = compile(while_kernel);
-  //to_file("while_kernel.txt", k.dump());
 
   int max = 123;
    k.load(&result, max, 15).run();
@@ -214,14 +213,13 @@ TEST_CASE("Check v3d condition codes [v3d][cond]") {
 
   SUBCASE("Test condition push a") {
     if (!running_on_v3d()) return;
-    if (V3DLib::Platform::run_vc7()) return;  // kernel contains acc's, not supported on vc7
+    if (V3DLib::Platform::hw::vc7()) return;  // kernel contains acc's, not supported on vc7
 
     const int DATA_SIZE = 16;
 
     Instructions k = qpu_cond_push_a();
 
     ByteCode bytecode = k.bytecode();
-    //std::cout << Instr::mnemonics(bytecode) << std::endl;
 
     v3d::BufferObject heap;
     heap.alloc_bo(10*1024);  // arbitrary size, large enough
@@ -300,8 +298,6 @@ void int_where_kernel(Int::Ptr result) {
 
 
 void float_where_kernel(Int::Ptr result) {
-  //warn << "Compiling float_where_kernel";
-
   Float a = toFloat(index());
   Int r = 0;
 
@@ -602,7 +598,6 @@ TEST_CASE("Test multiple and/or [andor][cond]") {
   auto check_output_pgm = [width, height] (Float::Array &result, char const *label) {
     std::string filename = test_path();
     filename <<  "/andor_" << label << "_output.pgm";
-    //warn << "filename: " << filename;
 
     output_pgm_file(result, width, height, 255, filename.c_str());
     check_pgm(filename.c_str());
@@ -708,9 +703,7 @@ TEST_CASE("Test nested Where's [where][nested]") {
   Int::Array result(Size);
 
   auto k = compile(nested_where_kernel);
-  //to_file("nested_where_kernel.txt", k.dump());
   k.load(&result).run();
-  //warn << dump_array(result, 16);
 
   std::vector<int> expected = {
     5, 3, 5, 3, 7, 3, 6, 3, 0, 0, 0, 0, 0, 0, 0, 0, 

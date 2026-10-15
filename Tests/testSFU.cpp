@@ -303,16 +303,12 @@ void element_at_kernel(Float::Ptr in_ptr, Float::Ptr result) {
 
 
 TEST_CASE("Test SFU functions [sfu][kernel]") {
-  //LibSettings::dump_line_numbers(false);
-  //Platform::use_main_memory(true);
-
   int N = 15;  // Number of results returned
-  const int max_bit_diff = Platform::run_vc4()?13:2;
+  const int max_bit_diff = Platform::hw::vc4()?13:2;
 
   Float::Array results(16*N);
 
   auto k = compile(sfu_kernel);
-  to_file("sfu_kernel.txt", k.dump());
 
   INFO("Running qpu");
   //
@@ -321,7 +317,7 @@ TEST_CASE("Test SFU functions [sfu][kernel]") {
   //
   // v3d has same output as int and emu.
   //
-  //double precision = (Platform::run_vc4())?3e-4:1e-6;
+  //double precision = (Platform::hw::vc4())?3e-4:1e-6;
 
   results.fill(0.0);
 
@@ -338,7 +334,7 @@ TEST_CASE("Test SFU functions [sfu][kernel]") {
 
   // Bit diff is different for exp() for large negative values.
   // For v3d, this is consistently 3.
-  const int bit_diff_exp = Platform::run_vc4()?13:3;
+  const int bit_diff_exp = Platform::hw::vc4()?13:3;
 
   test(1.0f);
   test(0.5f);
@@ -356,9 +352,6 @@ TEST_CASE("Test SFU functions [sfu][kernel]") {
   test(0.0f);                  // Nan and Inf for various operations
   test(-0.0f);                 // Exists on ARM, OK on QPU
   test(-1.0f);
-
-  //Platform::use_main_memory(false);
-  //LibSettings::dump_line_numbers(true);
 }
 
 
@@ -384,7 +377,6 @@ TEST_CASE("Test library functions [sfu][rotate]") {
 
   k.load(&input, &result, N_input).run();
 
-  //warn << dump_array(result  , 16, false);
   elements_same(result, N);
 
   //
@@ -402,7 +394,7 @@ TEST_CASE("Test library functions [sfu][rotate]") {
       int tmp_bit_diff = -1;
 
       // Tiny differences can occur for vc4 (notably for rotate_sum)
-      if (!vc4_bit_diff.empty() && Platform::run_vc4()) {
+      if (!vc4_bit_diff.empty() && Platform::hw::vc4()) {
         tmp_bit_diff = vc4_bit_diff[i];
       }
 
@@ -494,7 +486,6 @@ TEST_CASE("Test Nan/Inf [sfu][nan]") {
   for (int i = 0; i < 16; ++i) {
     expected[i + 32] = (float) exp(i - 3);
   }
-  //warn << "Expected: " << dump_array(expected, 16);
 
   //
   // Compile and perform test
@@ -503,9 +494,8 @@ TEST_CASE("Test Nan/Inf [sfu][nan]") {
 
   auto k = compile(naninf_kernel);
   k.load(&result).run();
-  //warn << showResult(result, 0, SIZE);
 
   // vc4 convergence is kind of crappy here
-  int max_bit_diff = Platform::run_vc4()?12:2;
+  int max_bit_diff = Platform::hw::vc4()?12:2;
   check_vector_b(result, 0, expected, max_bit_diff);
 }

@@ -158,7 +158,7 @@ void mul24_kernel(Int::Ptr p_a, Int::Ptr p_b, Int::Ptr res) {
 
 
 TEST_CASE("Test Mul24 values immediates [mul24]") {
-  if (!Platform::run_vc4()) {
+  if (!Platform::hw::vc4()) {
     warn << "Unit test [mul24] only for vc4";
     return;
   }
@@ -167,18 +167,15 @@ TEST_CASE("Test Mul24 values immediates [mul24]") {
   Int::Array result_int(16*N);
 
   auto k = compile(mul24_imm_kernel);
-  //to_file("mul24_imm_kernel.txt", k.dump());
 
   {
     INFO("Run QPU");
     k.load(&result_qpu).run();
-    //warn << "Imm QPU: " << show_first(result_qpu.ptr(), N);
   }
 
   {
     INFO("Run Interpreter");
     k.load(&result_int).interpret();
-    //warn << "Imm Interpreter: " << show_first(result_int.ptr(), N);
   }
 
   // Output of QPU and interpreter should be the same.
@@ -187,7 +184,7 @@ TEST_CASE("Test Mul24 values immediates [mul24]") {
 
 
 TEST_CASE("Test Mul24 values [mul24]") {
-  if (!Platform::run_vc4()) {
+  if (!Platform::hw::vc4()) {
     warn << "Unit test [mul24] only for vc4";
     return;
   }
@@ -214,18 +211,15 @@ TEST_CASE("Test Mul24 values [mul24]") {
   b.copyFrom(input_b);
 
   auto k = compile(mul24_kernel);
-  //to_file("mul24_kernel.txt", k.dump());
 
   {
     INFO("Run QPU");
     k.load(&a, &b, &result_qpu).run();
-    //warn << "Val QPU: " << show_arr(result_qpu.ptr());
   }
 
   {
     INFO("Run Interpreter");
     k.load(&a, &b, &result_int).interpret();
-    //warn << "Val Interpreter: " << show_arr(result_int.ptr());
   }
 
   // Output of QPU and interpreter should be the same.

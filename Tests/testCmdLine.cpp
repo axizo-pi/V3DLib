@@ -16,7 +16,7 @@ enum RunType {
 
 
 void init_msg() {
-  if (!V3DLib::Platform::run_vc4()) {
+  if (!V3DLib::Platform::hw::vc4()) {
     static bool showed_msg = false;
     if (showed_msg) return;
 
@@ -43,7 +43,6 @@ std::string create_output_filename( std::string const &program, RunType run_type
   }
 
   output_filename << "_output.txt";
-
   return output_filename;
 }
 
@@ -114,15 +113,9 @@ std::vector<double> float_values(std::string const &filename) {
     }
   }
 
-/*
-  std::cout << "! ";
-  for(auto val : ret) {
-    std::cout << val << " ";
-  }
-  std::cout << "\n";
-*/
   return ret;
 }
+
 
 /**
  * Values are read in from the calculated and expected output files,
@@ -146,10 +139,10 @@ void check_rot3d_run(
 
   const double PRECISION = 3e-5;
   for (int i = 0; i < (int) output.size(); ++i) {
-     double diff = abs(output[i] - expected[i]);
+    double diff = abs(output[i] - expected[i]);
 
     INFO("Diff index: " << i << " different!");
-     REQUIRE(diff <= PRECISION);
+    REQUIRE(diff <= PRECISION);
   }
 }
 
@@ -188,7 +181,7 @@ void check_output_example(std::string const &program, std::string const &extra_p
 // This test is fairly useless; it just checks if both the shell script and the C++ program
 // fail or succeed at the same time.
 //
-// Better would be to check if the first line is the same
+// Better would be to check if the first line is the same. TODO fix
 //
 TEST_CASE("0: Detect platform scripts should both return the same thing [cmdline]") {
   // It is possible to compile QPU=0 on a Pi.

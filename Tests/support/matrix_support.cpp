@@ -9,7 +9,7 @@ void compare_arrays(Float::Array2D &a, float const *b, float precision) {
 
   // Values empirically determined - the bigger the matrices, the less precise
   if (precision == -1.0f) {
-    if (Platform::run_vc4()) {
+    if (Platform::hw::vc4()) {
       precision = 1.0e-3f;
     } else {
       precision = 2.5e-4f;  // This value works for 640x640 matrices
@@ -32,7 +32,6 @@ void compare_arrays(Float::Array2D &a, float const *b, float precision) {
   for (int r = 0; r < a.rows(); r++) {
     for (int c = 0; c < a.columns(); c++) {
       INFO("r: " << r << ", c: " << c);
-      //INFO("Result: " << a.dump());
       INFO("result: " << a[r][c] << ", expected: " << b[r*a.columns() + c]);
       REQUIRE(abs(a[r][c] - b[r*a.columns() + c]) < precision);
     }
@@ -52,7 +51,6 @@ void compare_arrays(Float::Array2D &a, Float::Array2D &b, float precision) {
   REQUIRE(a.columns() == b.columns());
 
   if ( precision == -1.0f) {
-    //precision = 1.0e-4f;   // for high precision sin/cos in kernels
     precision = 4.1e-1f;     // for low  precision sin/cos in vc4 kernels (yeah, it sucks)
   }
 
@@ -74,7 +72,6 @@ void compare_arrays(Complex::Array2D &a, Complex::Array2D &b, float precision) {
   REQUIRE(a.columns() == b.columns());
 
   if ( precision == -1.0f) {
-    //precision = 1.0e-4f;   // for high precision sin/cos in kernels
     precision = 4.0e-1f;     // for low  precision sin/cos in kernels
   }
 
@@ -112,7 +109,6 @@ void compare_arrays(Complex::Array2D &a, Complex::Array2D &b, float precision) {
       INFO(a[r][c].dump() << " == " << b[r][c].dump());
 
       // <= for dealing with precision 0.0f
-//        REQUIRE(abs(a[r][c].magnitude() - b[r][c].magnitude()) <= precision);
       REQUIRE(abs(a[r][c].re() - b[r][c].re()) <= precision);
       REQUIRE(abs(a[r][c].im() - b[r][c].im()) <= precision);
     }
@@ -215,4 +211,3 @@ void compare_array_scalar(Float::Array2D &arr, float scalar) {
     }
   }
 }
-

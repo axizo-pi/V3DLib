@@ -390,11 +390,6 @@ struct CombinedOffsets {
     m_k_count = 16/m_size;
 
     if (!valid_index(j)) {
-/*
-      std::string msg = "CombinedOffsets() size check failed: ";
-      msg << "j = " << j << ", k_count: " << m_k_count << ", size: " << offsets.size();
-      assertq(false, msg);
-*/
       return;
     }
 
@@ -424,9 +419,6 @@ struct CombinedOffsets {
       assert(verify_step(k_m2_vec, m_step, width));
 #endif  // DEBUG
     }
-/*
-    cdebug << "step for j = " << j << ": " << m_step;
-*/
   }
 
 
@@ -502,19 +494,17 @@ struct Indexes16 {
     Vec16 k_tmp = k_16 - rhs.k_16;
 
     if (k_tmp.is_uniform()) {
-      //std::cout << "uniform!\n";
       assert(k_tmp.first() != 0);
       return k_tmp.first();
     }
 
-    //std::cout << "Not uniform: " << k_tmp.dump() << "\n";
     return 0;
   }
 };
 
 
 /**
- * Rearrange the fft index into 16-vectors
+ * @brief Rearrange the fft index into 16-vectors
  */
 std::vector<Indexes16> indexes_to_16vectors(std::vector<Offsets> const &fft_indexes) {
   std::vector<Indexes16> ret;
@@ -570,10 +560,8 @@ std::vector<Indexes16> indexes_to_16vectors(std::vector<Offsets> const &fft_inde
   if (!(valid_count == 0 || valid_count == (int) ret.size())) {
     cerr << "Valid count failed: "
          << valid_count << " out of " << ret.size() << " valid"
-         << thrw
-    ;
+         << thrw;
   }
-  
 
   return ret;
 }
@@ -709,12 +697,9 @@ struct {
 
   std::string dump() const {
     std::string ret;
-
     ret << "log2n: " << log2n << ", size: " << vectors16.size() <<  "\n";
 
-    if (vectors16.empty()) {
-      return ret;
-    }
+    if (vectors16.empty()) return ret;
 
     //
     // Show counts
@@ -867,7 +852,6 @@ void fft_step(Complex::Ptr const &b_k, Complex const &w, int m2_offset) {
  * only one value is used in the 16-vec registers.
  */
 void tiny_fft(Complex::Ptr &b, Complex::Ptr &devnull) {
-  //debug("Fallback!");
 
   for (int i = 0; i < (int) fft_context.fft_indexes.size(); i++) {
     int s = i + 1;
@@ -926,7 +910,7 @@ void tiny_fft(Complex::Ptr &b, Complex::Ptr &devnull) {
  *     
  */
 void fft_kernel(Complex::Ptr b, Complex::Ptr devnull) {
-  assertq(!Platform::run_vc4(), "FFT kernel runs only on v3d");
+  assertq(!Platform::hw::vc4(), "FFT kernel runs only on v3d");
 
   b -= index();
 
@@ -1161,7 +1145,6 @@ TEST_CASE("FFT test with DFT [fft][test2][pass2]") {
       }
 
       fft(a_scalar, scalar_result, log2n);
-      //scalar_dump(scalar_result, Dim);
     }
 
     // Run DFT for time comparison
@@ -1193,8 +1176,6 @@ TEST_CASE("FFT test with DFT [fft][test2][pass2]") {
 
       fft_context.num_qpus = 8;
       auto k = compile(fft_kernel);
-      //to_file("./obj/test/fft_v3d.txt", k.dump());
-      //k.dump_compile_data("./obj/test/fft_dump_v3d.txt");
 
       k.setNumQPUs(fft_context.num_qpus);
       k.load(&result_fft, &devnull);

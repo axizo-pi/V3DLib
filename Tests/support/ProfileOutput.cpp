@@ -26,13 +26,13 @@ std::vector<int> ProfileOutput::num_qpus() const {
   std::vector<int> ret;
   
   if (m_use_max_qpus) {
-    if (Platform::run_vc4()) {
+    if (Platform::hw::vc4()) {
       ret = {12};
     } else {
       ret = {8};
     }
   } else {
-    if (Platform::run_vc4()) {
+    if (Platform::hw::vc4()) {
       ret = {1, 4, 8, 12};
     } else {
       ret = {1, 8};

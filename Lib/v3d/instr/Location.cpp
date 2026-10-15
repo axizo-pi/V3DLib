@@ -10,11 +10,9 @@ namespace instr {
  * General purpose acc's not present on vc7; block usage in this case.
  */
 bool Location::check_acc_usage(Location const &loc) {
-  if (V3DLib::Platform::run_vc7()) return true;
-
+  if (V3DLib::Platform::hw::vc7()) return true;
   if (loc.is_rf()) return true;
 
-  //Log::debug << "Checking Location with mux '" << loc.to_mux() << "'";
   auto mux = loc.to_mux();
 
   if (

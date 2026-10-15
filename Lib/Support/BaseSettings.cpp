@@ -36,7 +36,7 @@ void BaseSettings::startPerfCounters() {
 
   using PC = V3DLib::vc4::PerformanceCounters;
  
-  if (Platform::run_vc4()) {
+  if (Platform::hw::vc4()) {
     PC::enable({
       PC::QPU_INSTRUCTIONS,
       PC::QPU_STALLED_TMU,
@@ -75,7 +75,7 @@ void BaseSettings::stopPerfCounters() {
 
   printf("TODO Settings::stopPerfCounters: add vc7\n");
 
-  if (Platform::run_vc4()) {
+  if (Platform::hw::vc4()) {
     // Show values current counters
     using PC = V3DLib::vc4::PerformanceCounters;
 
@@ -90,9 +90,9 @@ void BaseSettings::stopPerfCounters() {
 
 
 void BaseSettings::setMaxQPUs() {
-  if (run_type != 0 || Platform::run_vc4()) {
+  if (run_type != 0 || Platform::hw::vc4()) {
     num_qpus = 12;
-  } else if (Platform::run_vc7()) {
+  } else if (Platform::hw::vc7()) {
     num_qpus = 16;
   } else {  // vc6
     num_qpus = 8;

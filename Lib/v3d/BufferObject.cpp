@@ -9,7 +9,6 @@ namespace V3DLib {
 namespace v3d {
 
 BufferObject::~BufferObject() {
-  //warn << "v3d BufferObject dtor called";
   dealloc_mem();
 }
 
@@ -110,7 +109,7 @@ std::unique_ptr<BufferObject> mainHeap;
 
 
 BufferObject &BufferObject::getHeap() {
-  assertq(!Platform::run_vc4(), "Trying to run v3d code on a vc4");
+  assertq(!Platform::hw::vc4(), "Trying to run v3d code on a vc4");
 
   if (!mainHeap) {
     mainHeap.reset(new BufferObject());

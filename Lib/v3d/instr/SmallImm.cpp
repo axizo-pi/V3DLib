@@ -186,7 +186,7 @@ bool SmallImm::float_to_opcode_value(float value, int &rep_value) {
   } else if (Platform::compile::running()) {
     is_v3d = !Platform::compile::for_vc4();
   } else {
-    is_v3d = !Platform::run_vc4();
+    is_v3d = !Platform::hw::vc4();
   }
 
   auto const &encodings = is_v3d?float_encodings_v3d:float_encodings;

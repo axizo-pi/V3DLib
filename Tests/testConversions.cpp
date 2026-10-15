@@ -1,12 +1,10 @@
 #include <V3DLib.h>
 #include "support/support.h"
 #include "support/check.h"
-#include "Support/Helpers.h"  // to_file()
 
 using namespace V3DLib;
 
 namespace {
-
 
 ///////////////////////////////////////////////////
 // Helpers
@@ -33,13 +31,11 @@ std::string dump_uint8_val(int val) {
 */
 MAYBE_UNUSED std::string dump_uint8(Int::Array const &values) {
   std::string ret;
-  //ret << "size: " << values.size() << " <";
 
   for (int i = 0; i < (int) values.size(); i++) {
     ret << dump_uint8_val(values[i]) << ", ";
   }
 
-  //ret << ">";
   return ret;
 }  
 
@@ -238,12 +234,6 @@ void Int_to_uint8_partial(Int &res, Int &val) {
     tmp = tmp1;
   End
 
-/*    
-  // Zap the trailing elements - doesn't do much
-  Where (index() > 3)
-    tmp = 0;
-  End
-*/
   res = tmp;
 }
 
@@ -258,20 +248,6 @@ void Int_to_uint8_partial(Int &res, Int &val) {
  * @param N       Number of incoming 4-byte values
  */
 void uint8_to_Int_kernel(Int::Ptr res_int, Int::Ptr res, Int::Ptr values, Int N) {
-/*  
-  res -= index();
-  Where (index() < 4)
-    res += index();
-  Else
-    res += 4;
-  End
-*/  
-/*  
-  Where (index() >4)
-    res -= index();
-    res += 4;
-  End
-*/  
 
   For (Int n = 0, n < N, n += 4)
     Int val = *values;
@@ -303,13 +279,11 @@ void uint8_to_Int_kernel(Int::Ptr res_int, Int::Ptr res, Int::Ptr values, Int N)
 TEST_CASE("Test conversion of signed to float [convert]") {
   Int::Array input(16*Blocks);
   input.copyFrom(values);
-  //warn << "input: " << dump_array(input);
 
   Float::Array result(16*Blocks);
 
   auto k = compile(signed_to_float_kernel);
   k.load(&result, &input, Blocks).run();
-  //warn << "result: " << dump_array(result);
 
   // Float result is compared to int values
   check_vector(result, 0, values);
@@ -319,7 +293,6 @@ TEST_CASE("Test conversion of signed to float [convert]") {
 TEST_CASE("Test conversion of unsigned to float [convert]") {
   Int::Array input(16*Blocks);
   input.copyFrom(values);
-  //warn << "input: " << dump_array(input);
 
   std::vector<unsigned> expected(16*Blocks);
   REQUIRE(expected.size() == values.size());
@@ -327,7 +300,6 @@ TEST_CASE("Test conversion of unsigned to float [convert]") {
   for (int i = 0; i < (int) values.size(); ++i) {
     expected[i] = *((unsigned *) &values[i]);
   }
-  //warn << "expected: " << dump_array(expected);
 
   Float::Array result(16*Blocks);
 
@@ -335,7 +307,7 @@ TEST_CASE("Test conversion of unsigned to float [convert]") {
   k.load(&result, &input, Blocks).run();
 
   float Precision = 0.0f;
-  if (Platform::run_vc4()) {
+  if (Platform::hw::vc4()) {
     Precision = 256.0f;  // vc4 not precise
   }
 
@@ -345,8 +317,6 @@ TEST_CASE("Test conversion of unsigned to float [convert]") {
 
 
 TEST_CASE("Test working of float_fields [convert]") {
-  //warn << "Doing float_fields";
-
   const int Blocks = 1;
 
   //
@@ -378,7 +348,6 @@ TEST_CASE("Test working of float_fields [convert]") {
   for (int i = 0; i < (int) values_u.size(); ++i) {
     values[i] = *((float *) &values_u[i]);
   }
-  //warn << "values: " << dump_array(values);
 
   Int::Array sign(16*Blocks);
   Int::Array exponent(16*Blocks);
@@ -386,10 +355,6 @@ TEST_CASE("Test working of float_fields [convert]") {
 
   auto k = compile(float_fields_kernel);
   k.load(&values, &sign, &exponent, &significand, Blocks).run();
-
-  //warn << "sign       : " << dump_array(sign);
-  //warn << "exponent   : " << dump_array(exponent);
-  //warn << "significand: " << dump_array(significand);
 
   // Reconstruct values to check
   for (int i = 0; i < 16; ++i) {
@@ -414,8 +379,6 @@ TEST_CASE("Test conversion uint8 -> float [convert]") {
 
     // Bitwise conversion to avoid issues with signs
     ret  = *((int *) & tmp);
-    //warn << "ret: " << hex << ret;
-
     return ret;
   };
 
@@ -451,8 +414,6 @@ TEST_CASE("Test conversion uint8 -> float [convert]") {
     values[i] = uint8_to_int(values_8, 4*i);
   }
 
-  //warn << "values         :  " << dump_uint8(values);
-
   //
   // Perform the actual test
   //
@@ -463,11 +424,7 @@ TEST_CASE("Test conversion uint8 -> float [convert]") {
   result.fill(-2);
 
   auto k = compile(uint8_to_Int_kernel);
-  //to_file("uint8_to_Int_kernel.txt", k.dump());
   k.load(&result_internal, &result, &values, (int) values.size()).run();
-
-  //warn << "result_internal: " << dump_array(result_internal);
-  //warn << "result         : " << dump_uint8(result);
 
   // Check internal values
   for (int i = 0; i < (int) values_8.size(); ++i) {

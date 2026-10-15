@@ -19,6 +19,7 @@ void multi_bo_kernel(Int::Ptr result, Int::Ptr arr1, Int::Ptr arr2) {
 
 } // anon namespace
 
+
 TEST_CASE("Test Buffer Objects [bo]") {
   using SharedArrays = std::vector<std::unique_ptr<Data>>;
 
@@ -153,7 +154,7 @@ TEST_CASE("Test Buffer Objects [bo]") {
 
 
 TEST_CASE("Multiple BO's should work [bo][multi]") {
-  if (Platform::run_vc4()) {
+  if (Platform::hw::vc4()) {
     warn << "Skipping v3d multi BO for vc4";
     return;
   }
@@ -195,8 +196,6 @@ TEST_CASE("Multiple BO's should work [bo][multi]") {
     }
 
     REQUIRE(bo2.offset() == 0);
-    //warn << "Main bo dump " << getBufferObject().dump();
-    //warn << "Main bo offset " << getBufferObject().offset();
     REQUIRE(getBufferObject().offset() == 0);
   }
 }

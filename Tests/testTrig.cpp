@@ -251,7 +251,6 @@ TEST_CASE("Test sin/cos instructions [dsl][sincos]") {
   auto lib_neg_sin = lib_neg_sin_values(N);
 
   auto k = compile(sincos_kernel);
-  //to_file("sincos_kernel.txt", k.dump());
   k.load(&result, N).run();
 
   float const hi_precision = 1.2e-3f;
@@ -259,7 +258,7 @@ TEST_CASE("Test sin/cos instructions [dsl][sincos]") {
 
   // vc4 will use the lo-res sin function,
   // v3d the will use hardware, which is precise
-  float const qpu_precision = (Platform::run_vc4())?lo_precision:1.0e-6f;
+  float const qpu_precision = (Platform::hw::vc4())?lo_precision:1.0e-6f;
 
   {
     float diff = max_abs_value(lib_sin, result.ptr());
@@ -279,10 +278,7 @@ TEST_CASE("Test sin/cos instructions [dsl][sincos]") {
     REQUIRE(diff <= qpu_precision);
   }
 
-  // There were issues here, check all vc's: working pi5
-  //
-  //Log::warn << showResult(lib_neg_sin, 0, N);
-  //Log::warn << showResult(result, 3, N);
+  // TODO: There were issues here, check all vc's: working pi5
   {
     float diff = max_abs_value(lib_neg_sin, result.ptr() + 3*N);
     INFO("max abs diff v3d sin: " << diff);
@@ -307,14 +303,9 @@ TEST_CASE("Test tanh [dsl][tanh]") {
   auto lib_tanh = lib_tanh_values(N, min_x, max_x);
 
   auto k = compile(tanh_kernel);
-  //to_file("tanh_kernel.txt", k.dump());
   k.load(&result, N, min_x, max_x).run();
 
-  //Log::warn << "\n  " << showExpected(lib_tanh)
-  //          << "\n  " << showResult(result, 0, N);
-  //Log::warn << "Max diff: " << calc_max_diff(lib_tanh, result, N);
-
-  const float PRECISION = Platform::run_vc4()?1.0e-4f:5.0e-7f;
+  const float PRECISION = Platform::hw::vc4()?1.0e-4f:5.0e-7f;
 
   float max_diff = calc_max_diff(lib_tanh, result, N);
   REQUIRE(max_diff < PRECISION);

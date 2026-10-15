@@ -71,7 +71,7 @@ bool BufferObject::is_cleared() const {
 BufferObject &getBufferObject() {
   if (Platform::use_main_memory()) {
     return emu::BufferObject::getHeap();
-  } else if (Platform::run_vc4()) {
+  } else if (Platform::hw::vc4()) {
     return vc4::BufferObject::getHeap();
   } else {
     return v3d::BufferObject::getHeap();

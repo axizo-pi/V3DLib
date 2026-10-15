@@ -38,7 +38,7 @@ void prepare_random(Float::Array2D &a, std::vector<float> &expected, int dimensi
 
 
 /**
- * Kernel to test correct working of `rotate_sum`
+ * @brief Kernel to test correct working of `rotate_sum`
  */
 void check_sum_kernel(Float::Ptr input, Float::Ptr result) {
   Float val = *input;
@@ -50,7 +50,7 @@ void check_sum_kernel(Float::Ptr input, Float::Ptr result) {
 
 
 /**
- * Kernel to test correct working of `set_at`
+ * @brief Kernel to test correct working of `set_at`
  */
 void check_set_at(Float::Ptr input, Float::Ptr result, Int index) {
   Float a = *input;
@@ -62,7 +62,7 @@ void check_set_at(Float::Ptr input, Float::Ptr result, Int index) {
 
 
 /**
- * Kernel for unit testing dot vectors
+ * @brief Kernel for unit testing dot vectors
  */
 template<int const N>
 void check_dotvector(Float::Ptr dst, Float::Ptr a, Float::Ptr result) {
@@ -301,7 +301,7 @@ TEST_CASE("Test matrix algebra components [matrix][comp]") {
     k.load(&vec, &result).run();
 
     float precision = 0.0f;
-    if (Platform::run_vc4()) {
+    if (Platform::hw::vc4()) {
       precision = 1e-5f;
     }
 
@@ -427,7 +427,6 @@ void test_complex_dotvector() {
   REQUIRE(a.size() == b.size());
 
   auto k = compile(check_complex_dotvector<N>);
-  //to_file("check_complex_dotvector.txt", k.dump());
   k.load(&b, &a, &result).run();
 
   for (int i = 0; i < (int) a.size(); i++) {
@@ -566,7 +565,6 @@ TEST_CASE("Test complex matrix algebra with varying sizes [matrix][complex][dot]
     Complex::Array2D result(Dim);
 
     auto k = compile(kernels::matrix_mult_decorator(a, a, result));
-    //to_file("obj/test/real_im_v3d.txt", k.dump());
 
     //
     // Compare real only
@@ -689,7 +687,6 @@ bool profile_block_mult(int dimension) {
     INFO("num QPUs: " << m.numQPUs());
     compare_arrays(m.result(), expected, precision);
   }
-
 
   std::cout << profile_output.dump();
   return (compiled != 0);
