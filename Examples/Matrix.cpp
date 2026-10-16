@@ -1,9 +1,6 @@
 /* ============================================================================
  *
- *  TODO: Discrepancy between qpu and scalar output. Examine and fix.
- *
- *  Input matrices verified to be the same.
- *  Outputs of qpu and interpreter _do_ check out.
+ * vc7: Differences between cpu and qpu on the order of 10e-6.
  *
  * ============================================================================ */
 #include <V3DLib.h>
@@ -81,17 +78,21 @@ struct MatrixSettings : public Settings {
 // ============================================================================
 
 std::string arr_dump(float *arr, int dim) {
-  std::string buf;
+  std::string ret;
 
   for (int r = 0; r < dim; ++r) {
-    buf << "(";
+    ret << "(";
+
     for (int c = 0; c < dim; ++c) {
-      buf << arr[r*dim + c] << ", ";
-     }
-    buf << ")\n";
+      if ( c != 0 && c % 16 == 0) ret << "\n";
+
+      ret << arr[r*dim + c] << ", ";
+    }
+
+    ret << ")\n";
   }
 
-  return buf;
+  return ret;
 }
 
 
@@ -141,21 +142,30 @@ void run_qpu_kernel() {
 
   // Allocate and initialise arrays shared between ARM and GPU
   Shared2DArray<float> a(dim);
+  Shared2DArray<float> b_tmp(dim);
   Shared2DArray<float> b(dim);
   Shared2DArray<float> result(dim);
 
   for (int r = 0; r < dim; r++) {
     for (int c = 0; c < dim; c++) {
-      a[r][c] = random_float();
-      b[r][c] = random_float();
+      a[r][c]     = random_float();
+      b_tmp[r][c] = random_float();
     }
   }
 
+	// b needs to be transposed
+	b.copy_transposed(b_tmp);
+
   {
-    Timer timer("matrix qpu_kernel", !settings.silent);
+    Timer timer("matrix qpu_kernel");
+
     for (int i = 0; i < settings.repeats; ++i) {
       k.load(&result, &a, &b).run();
     }
+
+		if (!settings.silent) {
+    	warn << "Timer matrix qpu_kernel: " << timer.dump();
+		}
   }
 
   if (settings.do_output && !settings.silent) {

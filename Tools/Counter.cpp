@@ -25,6 +25,12 @@ On a successful run, all result values will be non-zero.
 Magic number `7` in following is simply the number of runs whose results all fit on the screen.
 Max int: 2,147,483,647
 
+## Tentative Conclusions
+
+- There is either complete output or no output at all,
+    * Either the kernel does not run at all,
+	  * Or the output is completely blocked
+
 vc7
 ----------------
 
@@ -55,12 +61,33 @@ vc7
   int x_count = 750000;
   int x_count = 625000; 7/7
 
+- Write loop_y outside loop	
+  int x_count = 50000000; 0/7
+  int x_count = 30000000; 0/7
+  int x_count = 20000000; 0/7
+  int x_count = 15000000; 0/7
+  int x_count = 12500000; 2/7
+  int x_count = 12000000; 7/7
+  int x_count = 11000000; 7/7
+  int x_count = 10000000; 7/7
+  int x_count = 7500000; 7/7
+  int x_count = 5700000; 7/7
+  int x_count = 4950000 7/7;
+
 ## y_loop = 1
 
   int x_count = 5000000; 0/7
   int x_count = 3000000; 5/7
   int x_count = 2000000; 7/7
   int x_count = 1000000; 7/7
+
+- Write loop_y outside loop	
+  int x_count = 12000000; 0/7
+  int x_count = 6000000; 0/7
+  int x_count = 4500000; 0/7
+  int x_count = 4250000; 7/8, 5/7
+  int x_count = 4000000; 7/7
+  int x_count = 3000000; 7/7
 
 ## y_loop = 10
 
@@ -215,11 +242,20 @@ vc4
 using namespace V3DLib;
 using std::string;
 
-const int Do_YLoop = false;
+const int Do_YLoop = true;
 
 void kernel(Int x_count, Int y_count, Int::Ptr result) {
+  Int::Ptr r2 = result + 16;
+  Int::Ptr r3 = result + 32;
+
   Int count   = 0;
   Int count_y = -1;
+
+	// Has the kernel been entered?
+	// Write before the loop
+	// Answer: nothing written on fail
+  *r2  = 7;
+  *r3  = 9;
 
   For (Int x = 0, x < x_count, x++)
 		if (Do_YLoop) {
@@ -230,14 +266,18 @@ void kernel(Int x_count, Int y_count, Int::Ptr result) {
 
     count += 1;
 
-    Int::Ptr r2 = result + 32;
-    *r2  = count_y;
+		// Does any loop run?
+		// Answer:
+    // - No x_count: 4250000, y_count: 1
+    // - No x_count: 4000000, y_count: 1
+    // - All loops complete x_count: 3000000, y_count: 1
+  	//*r2 = 8;
   End
 
-  Int::Ptr r2 = result + 16;
-  *r2  = 10;
 
-  *result = count;   // vc7 This never returns a value? vc6 works
+  *result = count;
+  *r2  = 10;
+  *r3  = count_y;
 }
 
 
@@ -248,7 +288,7 @@ int main(int argc, const char *argv[]) {
   auto k = compile(kernel, settings);
   k.setNumQPUs(settings.num_qpus);
 
-  int x_count = 4950000;
+  int x_count = 3000000;
   int y_count = 1;
 
   Int::Array result(3*16);
@@ -259,8 +299,17 @@ int main(int argc, const char *argv[]) {
   k.run();
 
 	if (!settings.silent) {
-		std::cout << "Counter: " << timer.dump() << "\n";
-		std::cout << "result: " << result.dump() << "\n";
+		std::cout << "x_count: " << x_count << ", ";
+
+		if (Do_YLoop) {
+			std::cout << "y_count: " << y_count;
+		} else {
+			std::cout << "No y_loop";
+		}
+
+    std::cout << "\n"
+			        << "Counter: " << timer.dump()                       << "\n"
+		          << "result: "  << result.dump()                      << "\n";
 	}
 
 

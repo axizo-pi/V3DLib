@@ -300,7 +300,7 @@ public:
   int columns() const { return m_columns; }
 
   /**
-   * Copy values from square array `a` to array `b`, tranposing the array in the process
+   * Copy values from square array `rhs` to array `*this`, tranposing the array in the process
    */
   void copy_transposed(Shared2DArray const &rhs) {
     assertq(is_square() && rhs.is_square(), "copy_transposed(): can only transpose if both arrays are square");

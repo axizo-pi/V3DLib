@@ -183,8 +183,6 @@ template<
   typename T = typename std::conditional<std::is_same<Ptr, Float::Ptr>::value, Float, Complex>::type
 >
 void matrix_mult(Ptr dst, Ptr a, Ptr b) {
-  //Log::warn << "matrix_mult() &dst: " << Log::hex << (unsigned long) (&dst);
-
   using DotVecType = typename std::conditional<std::is_same<Ptr, Float::Ptr>::value, DotVector, ComplexDotVector>::type;
   auto &settings = get_matrix_settings();
 
@@ -215,8 +213,6 @@ void matrix_mult_scalar(int N, float *dst, float *a, float *b);
  * @param inner           inner dimension of matrixes used in multiplication,
  *                        must be a multiple of 16
  * @param columns         number of columns in second matrix
- * @param in_do_readwrite if true, read/write to/from main memory (what you
- *                        normally expect). Otherwise, do the kernel operations only.
  *
  * @return  pointer to the actual kernel function
  */
@@ -228,6 +224,7 @@ inline auto matrix_mult_decorator(int rows, int inner, int columns) -> decltype(
 
 
 using FuncType = void (Float::Ptr dst, Float::Ptr a, Float::Ptr b);
+
 inline FuncType *matrix_mult_decorator(int dimension) {
   return matrix_mult_decorator(dimension, dimension, dimension);
 }

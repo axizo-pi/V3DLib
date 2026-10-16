@@ -153,23 +153,24 @@ matrix_settings &get_matrix_settings() { return settings; }
 
 
 /**
- * CPU version of matrix multiplication, naive implementation
+ * @brief CPU version of matrix multiplication
  *
- * Matrixes are assumed to be square.
+ * Naive implementation.
+ * Matrices are assumed to be square.
  *
  * @param N  dimension of square matrices
  * @param c  Pointer to result array
  */
 void matrix_mult_scalar(int N, float *dst, float *a, float *b) {
-  for (int x = 0; x < N; x++) {
-    for (int y = 0; y < N; y++) {
+  for (int col_b = 0; col_b < N; col_b++) {
+    for (int row_a = 0; row_a < N; row_a++) {
       float result = 0;
 
       for (int i = 0; i < N; i++) {
-        result += a[i + y*N] * b [x + i*N];
+        result += a[row_a*N + i] * b[col_b + i*N];
       }
 
-      dst[x + y*N] = result;
+      dst[row_a*N + col_b] = result;
     }
   }
 }
