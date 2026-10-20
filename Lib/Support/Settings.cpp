@@ -44,9 +44,7 @@ std::string stem(const char *input) {
 // Settings 
 // ============================================================================
 
-const char *blurb =
-  "Example Program\n"      // TODO Perhaps fill this in dynamically
-;
+const char *blurb = "Example Program\n";
 
 
 CmdParameters base_params = {
@@ -199,7 +197,7 @@ void Settings::show_help() {
 
 
 /**
- * Parse the params from the commandline.
+ * @brief Parse the params from the commandline.
  * 
  * Also checks the params definition for correctness.
  *
@@ -207,16 +205,18 @@ void Settings::show_help() {
  * In other words, if it returns all is well.
  */
 void Settings::check_params(CmdParameters &params, int argc, char const *argv[]) {
+#ifdef DEBUG
+  static bool called_once = true;
+  assert(called_once);
+  called_once = false;
+#endif  
+
   if (params.has_errors()) {  // Prob not necessary. Keeping it in for now
     std::cout << params.get_errors();
     exit(CmdParameters::EXIT_ERROR);
   }
 
-  Args args;
-  for (int i = 1; i < argc; ++i) {  // Skip first param, which is the program name
-    args.push_back(argv[i]);
-  }
-
+  Args args(argc, argv);
   int ret = CmdParameters::EXIT_ERROR;
 
   //
@@ -225,7 +225,7 @@ void Settings::check_params(CmdParameters &params, int argc, char const *argv[])
   // The init() and reset() calls in handle_commandline() are skipped.
   // TODO check if this is OK
   //
-  if (params.has_help(args)) {
+  if (args.has_help()) {
     assert(!params.scan_action(args));  // No actions expected for V3DLib examples
     show_help();
     ret = CmdParameters::EXIT_NO_ERROR;
