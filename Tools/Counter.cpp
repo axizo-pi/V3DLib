@@ -29,7 +29,7 @@ Max int: 2,147,483,647
 
 - There is either complete output or no output at all,
     * Either the kernel does not run at all,
-	  * Or the output is completely blocked
+    * Or the output is completely blocked
 
 vc7
 ----------------
@@ -61,7 +61,7 @@ vc7
   int x_count = 750000;
   int x_count = 625000; 7/7
 
-- Write loop_y outside loop	
+- Write loop_y outside loop  
   int x_count = 50000000; 0/7
   int x_count = 30000000; 0/7
   int x_count = 20000000; 0/7
@@ -81,7 +81,7 @@ vc7
   int x_count = 2000000; 7/7
   int x_count = 1000000; 7/7
 
-- Write loop_y outside loop	
+- Write loop_y outside loop  
   int x_count = 12000000; 0/7
   int x_count = 6000000; 0/7
   int x_count = 4500000; 0/7
@@ -251,27 +251,27 @@ void kernel(Int x_count, Int y_count, Int::Ptr result) {
   Int count   = 0;
   Int count_y = -1;
 
-	// Has the kernel been entered?
-	// Write before the loop
-	// Answer: nothing written on fail
+  // Has the kernel been entered?
+  // Write before the loop
+  // Answer: nothing written on fail
   *r2  = 7;
   *r3  = 9;
 
   For (Int x = 0, x < x_count, x++)
-		if (Do_YLoop) {
+    if (Do_YLoop) {
       For (Int y = 0, y < y_count, y++)
-			  count_y++;
+        count_y++;
       End
-		}
+    }
 
     count += 1;
 
-		// Does any loop run?
-		// Answer:
+    // Does any loop run?
+    // Answer:
     // - No x_count: 4250000, y_count: 1
     // - No x_count: 4000000, y_count: 1
     // - All loops complete x_count: 3000000, y_count: 1
-  	//*r2 = 8;
+    //*r2 = 8;
   End
 
 
@@ -298,20 +298,19 @@ int main(int argc, const char *argv[]) {
   Timer timer("counter");
   k.run();
 
-	if (!settings.silent) {
-		std::cout << "x_count: " << x_count << ", ";
+  if (!settings.silent) {
+    std::cout << "x_count: " << x_count << ", ";
 
-		if (Do_YLoop) {
-			std::cout << "y_count: " << y_count;
-		} else {
-			std::cout << "No y_loop";
-		}
+    if (Do_YLoop) {
+      std::cout << "y_count: " << y_count;
+    } else {
+      std::cout << "No y_loop";
+    }
 
     std::cout << "\n"
-			        << "Counter: " << timer.dump()                       << "\n"
-		          << "result: "  << result.dump()                      << "\n";
-	}
-
+              << "Counter: " << timer.dump()                       << "\n"
+              << "result: "  << result.dump()                      << "\n";
+  }
 
   return 0;
 }

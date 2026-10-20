@@ -142,19 +142,15 @@ void run_qpu_kernel() {
 
   // Allocate and initialise arrays shared between ARM and GPU
   Shared2DArray<float> a(dim);
-  Shared2DArray<float> b_tmp(dim);
   Shared2DArray<float> b(dim);
   Shared2DArray<float> result(dim);
 
   for (int r = 0; r < dim; r++) {
     for (int c = 0; c < dim; c++) {
-      a[r][c]     = random_float();
-      b_tmp[r][c] = random_float();
+      a[r][c] = random_float();
+      b[c][r] = random_float();  // Transposed
     }
   }
-
-	// b needs to be transposed
-	b.copy_transposed(b_tmp);
 
   {
     Timer timer("matrix qpu_kernel");
@@ -163,9 +159,9 @@ void run_qpu_kernel() {
       k.load(&result, &a, &b).run();
     }
 
-		if (!settings.silent) {
-    	warn << "Timer matrix qpu_kernel: " << timer.dump();
-		}
+    if (!settings.silent) {
+      warn << "Timer matrix qpu_kernel: " << timer.dump();
+    }
   }
 
   if (settings.do_output && !settings.silent) {
