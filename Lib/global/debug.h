@@ -1,5 +1,5 @@
-#ifndef _V3DLIB_SUPPORT_DEBUG_H
-#define _V3DLIB_SUPPORT_DEBUG_H
+#ifndef _GLOBAL_DEBUG_H
+#define _GLOBAL_DEBUG_H
 #include <signal.h>  // raise(SIGTRAP)
 #include <string>
 
@@ -25,4 +25,4 @@ inline void debug_break(const char *str) {}
 
 #define MAYBE_UNUSED __attribute__((unused))
 
-#endif  // _V3DLIB_SUPPORT_DEBUG_H
+#endif  // _GLOBAL_DEBUG_H

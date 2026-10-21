@@ -1,9 +1,8 @@
 #ifndef _V3DLIB_SUPPORT_BASICS_H
 #define _V3DLIB_SUPPORT_BASICS_H
-#include "debug.h"
+#include "global/debug.h"
 #include "global/log.h"
 #include "Exception.h"
-#include <vector>
 #include <stdint.h>
 
 using namespace Log;
@@ -42,44 +41,5 @@ std::string tabbed(int tab_size, int val);
 inline std::string tabs(int tab_size) { return tabbed(tab_size, ""); }
 
 std::string title(std::string const &str);
-
-//
-// Convenience definitions
-//
-
-template<typename T>
-inline std::vector<T> &operator<<(std::vector<T> &a, T val) {
-  a.push_back(val);  
-  return a;
-}
-
-
-template<typename T>
-inline std::vector<T> &operator<<(std::vector<T> &a, std::vector<T> const &b) {
-  a.insert(a.end(), b.begin(), b.end());
-  return a;
-}
-
-
-inline std::vector<std::string> &operator<<(std::vector<std::string> &a, char const *str) {
-  a.push_back(str);  
-  return a;
-}
-
-
-inline std::string &operator<<(std::string &a, char const *str)        { a += str; return a; }
-inline std::string &operator<<(std::string &a, std::string const &str) { a += str; return a; }
-
-
-inline std::string &operator<<(std::string &a, int val)      { a += std::to_string(val); return a; }
-inline std::string &operator<<(std::string &a, long val)     { a += std::to_string(val); return a; }
-inline std::string &operator<<(std::string &a, uint32_t val) { a += std::to_string(val); return a; }
-inline std::string &operator<<(std::string &a, uint64_t val) { a += std::to_string(val); return a; }
-inline std::string &operator<<(std::string &a, bool val)     { a += val?"true":"false";  return a; }
-
-std::string &operator<<(std::string &a, float val);
-std::string &operator<<(std::string &a, double val);
-
-std::string int_hex(int val);
 
 #endif  // _V3DLIB_SUPPORT_BASICS_H

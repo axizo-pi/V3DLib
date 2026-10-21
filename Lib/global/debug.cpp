@@ -1,7 +1,6 @@
 #include "debug.h"
+#include "log.h"
 #include <iostream>
-#include "Exception.h"
-#include "global/log.h"
 
 #ifdef DEBUG
 

@@ -1,5 +1,6 @@
-#ifndef BASIC_LOG_H
-#define BASIC_LOG_H
+#ifndef _GLOBAL_LOG_H
+#define _GLOBAL_LOG_H
+#include "basics.h"
 #include <sstream>
 
 /**
@@ -115,4 +116,4 @@ private:
 #define assert(cond) Log::assertq(cond)
 #endif // assert
 
-#endif // BASIC_LOG_H
+#endif //  _GLOBAL_LOG_H

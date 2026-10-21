@@ -1,5 +1,6 @@
 #ifndef _V3DLIB_SUPPORT_HELPERS_H_
 #define _V3DLIB_SUPPORT_HELPERS_H_
+#include "global/helpers.h"
 #include <string>
 #include <vector>
 
@@ -13,7 +14,6 @@ std::vector<std::string> load_file_vec(std::string const &filename);
 std::string load_file(std::string const &filename);
 
 std::string sudo_prefix();
-bool ensure_path_exists(std::string const &path);
 float random_float();
 void sleep(int sec);
 int resize_16(int in_val, bool do_dump = false);
@@ -22,10 +22,8 @@ int resize_16(int in_val, bool do_dump = false);
 // String functions
 //
 std::string indentBy(int indent);
-bool contains(std::string const &s1, std::string const &s2);
 bool begins_with(std::string const &rhs, std::string const &prefix);
 bool hasEnding (std::string const &fullString, std::string const &ending);
-std::vector<std::string> split(std::string s, std::string const &delimiter);
 int num_newlines(std::string const &s);
 int num_empty(std::string const &s, std::string const prefix = "");
 std::string trim(std::string const &s);

@@ -1,10 +1,10 @@
 #ifndef _V3DLIB_COMMON_SHAREDARRAY_H_
 #define _V3DLIB_COMMON_SHAREDARRAY_H_
-#include <vector>
 #include "BufferObject.h"
 #include "Support/basics.h"
 #include "Support/Platform.h"  // has_vc4
 #include <cstring>             // memcpy
+//#include <vector>
 
 namespace V3DLib {
 

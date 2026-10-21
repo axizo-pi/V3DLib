@@ -4,6 +4,7 @@
  *
  * Highest is current.
  *
+ * 13 - Isolated log and constituent files. There are no more dependencies whatsoever on V3DLib.
  * 12 - removed `void assertq(const std::string &msg)`, didn't fire
  * 11 - Added call enable_log_file() to init default file logging
  * 10 - Added parameter `do_break` to assertq()
@@ -19,13 +20,11 @@
  *  3 - Added hex flag
  ******************************************************************/
 #include "log.h"
-#include "Support/Helpers.h"
-#include "Support/basics.h"
+#include "helpers.h"
+#include "debug.h"
 #include <iostream>
 #include <filesystem>
 #include <fstream>
-
-using namespace V3DLib;
 
 namespace Log {
 

@@ -1,10 +1,8 @@
-#include <assert.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include "vc4.h"
 #include "Mailbox.h"
 #include "Support/basics.h"  // fatal()
-#include "../Support/debug.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 namespace V3DLib {
 namespace {
