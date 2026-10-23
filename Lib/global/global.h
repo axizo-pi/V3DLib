@@ -5,5 +5,6 @@
 #include "debug.h"
 #include "basics.h"
 #include "Timer.h"
+#include "Log.h"
 
 #endif // _GLOBAL_GLOBAL_H_
