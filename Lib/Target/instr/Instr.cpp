@@ -1,7 +1,6 @@
 #include "Instr.h"         // Location of definition struct Instr
 #include "Support/basics.h"
 #include "Support/Platform.h"
-#include "Support/Timer.h"
 #include "Source/BExpr.h"   // class CmpOp
 #include "LibSettings.h"
 

@@ -1,6 +1,6 @@
 #include "LSTMCell.h"
 #include "lstm_kernel.h"
-#include "Support/Timer.h"
+#include "global/Timer.h"
 
 //
 // Define's to ease the transitioning to QPU
@@ -101,14 +101,14 @@ void Gate::check_same() {
 void Gate::update_gate(vector const &x_h, qpu::vector const &q_x_h, float learning_rate) {
 
 #ifndef SKIP_LSTM_CALCULATIONS  
-  V3DLib::timers.start("update_gate overhead1");
+  timers.start("update_gate overhead1");
   // q_Wi diverges from Wi by accumulated errors; Following for debugging
   q_W   = copy(W);    assert(same(q_W, W));
   q_b   = copy(m_b);  assert(same(q_b, m_b));
 
-  V3DLib::timers.stop("update_gate overhead1");
+  timers.stop("update_gate overhead1");
 
-  V3DLib::timers.start("update_gate LSTM");
+  timers.start("update_gate LSTM");
 
   for (int i = 0; i < m_height; i++) {
     for (int j = 0; j < m_width; j++) {
@@ -118,10 +118,10 @@ void Gate::update_gate(vector const &x_h, qpu::vector const &q_x_h, float learni
     m_b[i] -= learning_rate * d_t[i];
   }
 
-  V3DLib::timers.stop("update_gate LSTM");
+  timers.stop("update_gate LSTM");
 #endif // SKIP_LSTM_CALCULATIONS  
 
-  V3DLib::timers.start("update_gate QPU");
+  timers.start("update_gate QPU");
 
   assert(same(q_d_t, d_t));
   assert(same(q_x_h, x_h));
@@ -138,15 +138,15 @@ void Gate::update_gate(vector const &x_h, qpu::vector const &q_x_h, float learni
     learning_rate
   ).run();
 
-  V3DLib::timers.stop("update_gate QPU");
+  timers.stop("update_gate QPU");
 
 #ifndef SKIP_LSTM_CALCULATIONS  
-  V3DLib::timers.start("update_gate overhead2");
+  timers.start("update_gate overhead2");
 
   assert(same(q_W, W));
   assert(same(q_b, m_b));
 
-  V3DLib::timers.stop("update_gate overhead2");
+  timers.stop("update_gate overhead2");
 #endif // SKIP_LSTM_CALCULATIONS  
 }
 
@@ -167,7 +167,7 @@ LSTMCell::LSTMCell(int input_size, int hidden_size) :
  * **NOTE**: In default app, x is a vector of size 1
  */
 std::pair<vector, vector> LSTMCell::forward(vector const &x, vector const &h_prev, vector const &c_prev) {
-  V3DLib::timers.start("forward");
+  timers.start("forward");
 
   // Store for backpropagation
   this->x_t = x;
@@ -238,7 +238,7 @@ std::pair<vector, vector> LSTMCell::forward(vector const &x, vector const &h_pre
   warn << "q_c_t: " << q_c_t.dump();
 */  
         
-  V3DLib::timers.stop("forward");
+  timers.stop("forward");
 
 #ifdef USE_QPU_RESULTS
   lstm::vector out_h_t = copy(q_h_t);
@@ -407,7 +407,7 @@ std::tuple<vector, vector, vector> LSTMCell::backward(
   vector const &dc_next, 
   float learning_rate
 ) {
-  V3DLib::timers.start("backward");
+  timers.start("backward");
 
   auto q_dh_next = copy(dh_next);
 
@@ -416,7 +416,7 @@ std::tuple<vector, vector, vector> LSTMCell::backward(
   q_c_t = copy(c_t);  assert(same(q_c_t, c_t));
 #endif // SKIP_LSTM_CALCULATIONS
 
-  V3DLib::timers.start("backward gradient gates");
+  timers.start("backward gradient gates");
 
   gradient_output_gate(dh_next, q_dh_next);
   gradient_cell_state(dc_next, dh_next, q_dh_next);
@@ -424,7 +424,7 @@ std::tuple<vector, vector, vector> LSTMCell::backward(
   gradient_candidate();
   gradient_forget_gate();
 
-  V3DLib::timers.stop("backward gradient gates");
+  timers.stop("backward gradient gates");
 
   //  
   // Update weights using gradients
@@ -457,7 +457,7 @@ std::tuple<vector, vector, vector> LSTMCell::backward(
   vector dc_prev = candidate.d_t * forget.activation; // Gradient of previous cell state
 
 #ifndef SKIP_LSTM_CALCULATIONS  
-  V3DLib::timers.start("backward gradient LSTM");
+  timers.start("backward gradient LSTM");
 
   vector dx_t(input_size, 0.0);
   vector dh_prev(hidden_size, 0.0);
@@ -484,10 +484,10 @@ std::tuple<vector, vector, vector> LSTMCell::backward(
   candidate.check_same();
   output.check_same();
 
-  V3DLib::timers.stop("backward gradient LSTM");
+  timers.stop("backward gradient LSTM");
 #endif // SKIP_LSTM_CALCULATIONS  
 
-  V3DLib::timers.start("backward gradient QPU");
+  timers.start("backward gradient QPU");
 
   int columns = V3DLib::resize_16(input_size + hidden_size);
   qpu::vector result(columns, 0.0f);
@@ -506,7 +506,7 @@ std::tuple<vector, vector, vector> LSTMCell::backward(
     &result.arr()
   ).run();
 
-  V3DLib::timers.stop("backward gradient QPU");
+  timers.stop("backward gradient QPU");
 
 /*  
   warn << "dx_t  : " << dx_t.dump();
@@ -514,7 +514,7 @@ std::tuple<vector, vector, vector> LSTMCell::backward(
   warn << "result: " << result.dump();
 */  
         
-  V3DLib::timers.stop("backward");
+  timers.stop("backward");
 
 #ifdef USE_QPU_RESULTS
   lstm::vector q_dx_t    = copy(result, 0, input_size);

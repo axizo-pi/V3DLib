@@ -3,8 +3,6 @@
 // This tests the required components for matrix multiplication
 //
 ///////////////////////////////////////////////////////////////////////////////
-#include <string>
-#include <iostream>
 #include <V3DLib.h>
 #include "LibSettings.h"
 #include "support/support.h"
@@ -14,11 +12,13 @@
 #include "Kernels/Matrix.h"
 #include "support/matrix_support.h"
 #include "support/ProfileOutput.h"
-#include "Support/Timer.h"
+#include "global/Timer.h"
+#include <string>
+#include <iostream>
 
 namespace {
-using namespace V3DLib;
 
+using namespace V3DLib;
 
 // ============================================================================
 // Support routines
@@ -621,8 +621,6 @@ TEST_CASE("Check complex matrix multiplication [matrix][complex][complete]") {
 namespace {
 
 bool profile_block_mult(int dimension) {
-  using V3DLib::Timer;
-
   REQUIRE(dimension > 0);
   REQUIRE(dimension % 2*16 == 0);
   REQUIRE(ProfileOutput::num_iterations > 0);

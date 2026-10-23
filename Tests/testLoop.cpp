@@ -1,7 +1,6 @@
 #include <V3DLib.h>
 #include "support/support.h"
 #include "Support/Helpers.h"
-#include "global/log.h"
 
 using namespace Log;
 

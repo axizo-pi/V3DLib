@@ -1,9 +1,9 @@
 #include "V3DLib.h"
 #include "Support/Settings.h"
-#include "Support/Timer.h"
 #include "Support/Helpers.h"         // to_file()
 #include "vc4/RegisterMap.h"
 #include "vc4/PerformanceCounters.h"
+#include "global/Timer.h"
 
 using namespace V3DLib;
 using namespace Log;

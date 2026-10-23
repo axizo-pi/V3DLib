@@ -1,7 +1,6 @@
 #include "camera.h"
 #include "qpu.h"
 #include "material.h"
-#include "Support/Timer.h"
 
 using namespace V3DLib;
 

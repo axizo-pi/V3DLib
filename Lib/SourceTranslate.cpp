@@ -4,7 +4,7 @@
 #include "vc4/SourceTranslate.h"
 #include "v3d/SourceTranslate.h"
 #include "Target/instr/Mnemonics.h"
-#include "global/log.h"
+#include "global/Log.h"
 #include <memory>
 
 namespace {

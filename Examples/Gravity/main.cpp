@@ -1,11 +1,11 @@
 #include "model.h"
 #include "scalar.h"
 #include "kernel.h"
-#include "Support/Timer.h"
 #include "Support/Helpers.h"  // to_file()
 #include "vc4/RegisterMap.h"
 #include "LibSettings.h"
 #include "settings.h"
+#include "global/Timer.h"
 
 using namespace Log;
 

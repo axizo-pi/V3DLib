@@ -15,10 +15,8 @@
 #include "material.h"
 #include "sphere.h"
 #include "qpu.h"
-#include "./global.h"
-#include "global/log.h"
-#include "Support/Timer.h"
 #include "Support/dump.h"   // bitdiff_stats::dump()
+#include "global.h"
 
 using namespace V3DLib;
 using namespace Log;

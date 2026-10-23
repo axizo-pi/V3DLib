@@ -1,14 +1,10 @@
 #ifndef _TEST_SUPPORT_PROFILEOUTPUT_H
 #define _TEST_SUPPORT_PROFILEOUTPUT_H
-#include <cassert>
-#include <vector>
-#include <string>
-#include <functional>
-#include "Support/Timer.h"
+#include "global/Timer.h"
 #include "Support/Platform.h"
+#include <functional>
 
 class ProfileOutput {
-  using Timer = V3DLib::Timer;
 
   struct out_data {
     out_data(

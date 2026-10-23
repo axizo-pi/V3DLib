@@ -1,7 +1,6 @@
 #include "doctest.h"
 #include <V3DLib.h>
 #include "vc4/DMA/VPMArray.h"
-#include "global/log.h"
 #include "LibSettings.h"
 #include "vc4/DMA/Operations.h"
 #include "Support/Helpers.h"

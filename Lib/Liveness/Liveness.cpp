@@ -3,7 +3,6 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 #include "Liveness.h"
-#include <iostream>
 #include "Support/basics.h"
 #include "Support/Platform.h"
 #include "Target/Subst.h"
@@ -11,7 +10,8 @@
 #include "Optimizations.h"
 #include "UseDef.h"
 #include "Support/Helpers.h"  // contains()
-#include "Support/Timer.h"
+#include "global/Timer.h"
+#include <iostream>
 
 namespace V3DLib {
 namespace {

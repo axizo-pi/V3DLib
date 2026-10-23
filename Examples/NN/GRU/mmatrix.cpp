@@ -1,5 +1,5 @@
 #include "mmatrix.h"
-#include "./kernel.h"
+#include "kernel.h"
 #include "global.h"
 #include "model.h"
 #include "Support/Helpers.h"  // bit_diff()

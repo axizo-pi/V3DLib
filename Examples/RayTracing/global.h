@@ -1,6 +1,7 @@
 #ifndef _RAYTRACING_GLOBAL_H
 #define _RAYTRACING_GLOBAL_H
 #include "ray.h"
+#include "global/global.h"
 #include <functional>
 
 /**

@@ -4,8 +4,6 @@
 #include <vector>
 #include <string>
 
-namespace V3DLib {
-
 class MaxWidths;  // Forward declaration
 
 /**
@@ -100,8 +98,6 @@ private:
   std::vector<int> sort_indexes();
 };
 
-extern V3DLib::Timers timers;
-
-}  // V3DLib namespace
+extern Timers timers;
 
 #endif  // _EXAMPLE_SUPPORT_TIMER_H

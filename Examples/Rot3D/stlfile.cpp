@@ -1,7 +1,7 @@
 #include "stlfile.h"
 #include "settings.h"
 #include "stl_int.h"
-#include "global/log.h"
+#include "global/Log.h"
 #include <vector>
 
 using namespace std;

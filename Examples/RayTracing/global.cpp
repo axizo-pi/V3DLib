@@ -1,5 +1,4 @@
 #include "global.h"
-#include "Support/Timer.h"
 #include "rtweekend.h"
 #include "Support/Helpers.h"  // to_file();
 

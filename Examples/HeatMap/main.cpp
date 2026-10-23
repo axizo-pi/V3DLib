@@ -1,13 +1,7 @@
 #include "settings.h"
-#include "Support/Timer.h"
+#include "global/Timer.h"
 #include "scalar.h"
 #include "kernel.h"
-
-using namespace V3DLib;
-
-// ============================================================================
-// Main
-// ============================================================================
 
 int main(int argc, const char *argv[]) {
   settings.init(argc, argv);

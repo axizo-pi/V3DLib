@@ -1,11 +1,11 @@
 #include "Settings.h"
+#include <V3DLib.h>
 #include "Scalar.h"
 #include "Kernels.h"
 #include "animate.h"
-#include "V3DLib.h"
-#include <string>
-#include "Support/Timer.h"
 #include "Support/bmp.h"
+#include "global/Timer.h"
+#include <string>
 
 using namespace V3DLib;
 using namespace Log;

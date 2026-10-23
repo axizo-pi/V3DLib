@@ -21,7 +21,6 @@ int resize_16(int in_val, bool do_dump = false);
 //
 // String functions
 //
-std::string indentBy(int indent);
 bool begins_with(std::string const &rhs, std::string const &prefix);
 bool hasEnding (std::string const &fullString, std::string const &ending);
 int num_newlines(std::string const &s);

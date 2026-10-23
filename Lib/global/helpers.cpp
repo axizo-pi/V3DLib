@@ -1,5 +1,5 @@
 #include "helpers.h"
-#include "log.h"
+#include "Log.h"
 #include <filesystem>
 
 namespace fs = std::filesystem; // Alias for brevity
@@ -88,4 +88,19 @@ std::vector<std::string> split(std::string s, std::string const &delimiter) {
   //std::cout << "count: " << count << "\n";
   //std::cout << "size : " << tokens.size() << "\n";
   return tokens;
+}
+
+
+/**
+ * Return a string containing the passed number of spaces.
+ *
+ * @param indent Number of spaces to put in string.
+ */
+std::string indentBy(int indent) {
+  std::string ret;
+
+  if (indent < 0) return ret;
+
+  for (int i = 0; i < indent; i++) ret += " ";
+  return ret;
 }

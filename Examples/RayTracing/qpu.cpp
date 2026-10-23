@@ -3,8 +3,8 @@
 #include "kernel.h"
 #include "Support/Helpers.h"  // resize_16()
 #include "Support/dump.h"     // bitdiff_stats()
-#include "Support/Timer.h"
 #include "material.h"         // For default material
+#include "global/Timer.h"
 #include <limits>             // infinity
 
 using namespace V3DLib;

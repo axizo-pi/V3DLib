@@ -1,9 +1,9 @@
 #ifndef _V3DLIB_COMMON_STACK_H_
 #define _V3DLIB_COMMON_STACK_H_
+#include "global/Log.h"
 #include <memory>
 #include <functional>
 #include <utility>
-#include "global/log.h"
 
 namespace V3DLib {
 

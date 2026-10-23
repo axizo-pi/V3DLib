@@ -2,7 +2,6 @@
 #include <V3DLib.h>
 #include "vc4/RegisterMap.h"
 #include "LibSettings.h"
-#include "global/log.h"
 #include "Support/Helpers.h"
 
 using namespace Log;

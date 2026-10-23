@@ -2,9 +2,9 @@
 #include "Liveness.h"
 #include "Support/Platform.h"
 #include "Target/Subst.h"
-#include "Support/Timer.h"
 #include "Support/basics.h"
 #include "Support/Helpers.h"  // contains()
+#include "global/Timer.h"
 #include <iostream>
 
 namespace V3DLib {

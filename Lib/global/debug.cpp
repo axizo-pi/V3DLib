@@ -1,5 +1,5 @@
 #include "debug.h"
-#include "log.h"
+#include "Log.h"
 #include <iostream>
 
 #ifdef DEBUG

@@ -182,21 +182,6 @@ float random_float() {
 
 
 /**
- * Return a string containing the passed number of spaces.
- *
- * @param indent Number of spaces to put in string.
- */
-std::string indentBy(int indent) {
-  std::string ret;
-
-  if (indent < 0) return ret;
-
-  for (int i = 0; i < indent; i++) ret += " ";
-  return ret;
-}
-
-
-/**
  * Write the passed string to a file with the passed filename.
  *
  * The goal of this function is to simplify writing to file.  

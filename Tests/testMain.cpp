@@ -12,8 +12,8 @@
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 #include "Support/debug.h"
-#include "Support/Timer.h"
-#include "global/log.h"     // set_level()
+#include "global/Timer.h"
+#include "global/Log.h"     // set_level()
 
 //#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #define DOCTEST_CONFIG_IMPLEMENT
@@ -50,7 +50,7 @@ int main(int argc, char** argv) {
 
   int res = context.run();
 
-  V3DLib::timers.end();
+  timers.end();
 
   if(context.shouldExit()) {            // important - query flags (and --exit) rely on the user doing this
     return res;                         // propagate the result of the tests

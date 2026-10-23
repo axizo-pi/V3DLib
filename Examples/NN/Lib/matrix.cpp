@@ -3,7 +3,7 @@
 #include "helpers.h"          // frrand()
 #include "Support/dump.h"
 #include "Support/Helpers.h"  // to_file()
-#include "Support/Timer.h"
+#include "global/Timer.h"
 #include <cmath>              // std::exp()
 
 namespace qpu {
@@ -650,7 +650,7 @@ float matrix::sum() const {
 
 
 matrix matrix::transpose() const {
-  auto &t_3 = V3DLib::timers.start("matrix transpose");
+  auto &t_3 = timers.start("matrix transpose");
   matrix ret(m_columns, m_rows);
 
   for (int h = 0; h < m_rows; ++h) {

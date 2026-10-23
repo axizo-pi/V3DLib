@@ -1,15 +1,14 @@
-#include "support/support.h"
-#include <iostream>
-#include <cmath>
 #include <V3DLib.h>
+#include "support/support.h"
 #include "Support/Platform.h"
 #include "Support/Helpers.h"
-#include "Support/Timer.h"
 #include "Support/pgm.h"
 #include "support/dft_support.h"
 #include "Kernels/Matrix.h"
 #include "Source/gather.h"
 #include "Source/Functions.h"
+#include <iostream>
+#include <cmath>
 
 using namespace V3DLib;
 using namespace Log;

@@ -1,8 +1,8 @@
 #include "kernel.h"
 #include "Source/GlobalConstants.h"
 #include "Support/Helpers.h"
-#include "Support/Timer.h"
 #include "Support/Settings.h"
+#include "global/Timer.h"
 
 namespace kernel {
 namespace {

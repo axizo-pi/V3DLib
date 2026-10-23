@@ -1,8 +1,8 @@
 #include "scalar.h"
 #include "settings.h"
 #include "stlfile.h"
-#include "Support/Timer.h"
 #include "Kernels/Rot3D.h"
+#include "global/Timer.h"
 
 using namespace std;
 using namespace V3DLib;

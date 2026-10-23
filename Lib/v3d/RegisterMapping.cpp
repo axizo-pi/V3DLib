@@ -15,12 +15,12 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 #include "RegisterMapping.h"
-#include "vc4/Mailbox.h"  // for mapmem()
+#include "vc4/Mailbox.h"     // for mapmem()
 #include "Support/basics.h"
-#include "global/log.h"
+#include "global/Log.h"
 #include "v3d.h"
 #include <stdio.h>
-#include <unistd.h>  // usleep
+#include <unistd.h>          // usleep
 #include <memory>
 
 namespace {

@@ -5,9 +5,9 @@
  * ============================================================================ */
 #include <V3DLib.h>
 #include "Support/Settings.h"
-#include "Support/Timer.h"
 #include "Support/Helpers.h"   // random_float()
 #include "Kernels/Matrix.h"
+#include "global/Timer.h"
 #include <iostream>
 
 using namespace V3DLib;

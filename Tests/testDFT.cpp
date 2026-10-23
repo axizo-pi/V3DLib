@@ -10,7 +10,6 @@
 #include "support/support.h"
 #include "support/dft_support.h"
 #include "LibSettings.h"
-#include "Support/Timer.h"
 #include "support/ProfileOutput.h"
 #include "Support/Helpers.h"        // to_file()
 

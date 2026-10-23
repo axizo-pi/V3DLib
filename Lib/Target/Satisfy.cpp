@@ -3,7 +3,7 @@
 #include "v3d/instr/SmallImm.h"  // float_to_opcode_value()
 #include "Support/Platform.h"
 #include "Support/basics.h"
-#include "Support/Timer.h"
+#include "global/Timer.h"
 #include "Liveness/Liveness.h"  // ::get_free_acc()
 
 using namespace V3DLib::Target::instr;

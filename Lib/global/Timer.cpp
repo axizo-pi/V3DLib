@@ -15,16 +15,13 @@
 //
 ///////////////////////////////////////////////////////////////////////////////
 #include "Timer.h"
-#include "Support/basics.h"
-#include "Support/Helpers.h"
+#include "Log.h"
+#include "global.h"
 #include <algorithm> // sort
 #include <cstddef>   // NULL
 #include <cstdio>    // printf
 
 using namespace Log;
-
-namespace V3DLib {
-
 
 ////////////////////////////////////////////////////////////
 // Class MaxWidths
@@ -470,5 +467,3 @@ Timers &Timers::sort(SortColumn sort_column, bool desc) {
 
   return *this;
 }
-
-}  // namespace V3DLib

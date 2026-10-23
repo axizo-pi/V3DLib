@@ -1,9 +1,9 @@
 #include "model.h"
 #include "test.h"
 #include "Support/basics.h"
-#include "Support/Timer.h"
 #include "Source/Functions.h"  // rotate
 #include "helpers.h"
+#include "global/Timer.h"
 
 /**
  * /file
@@ -166,6 +166,6 @@ int main(int argc, const char *argv[]) {
   predict(inputs[1], k_model);
   predict(inputs[2], k_model);
 
-  V3DLib::timers.end();
+  timers.end();
   return 0;
 }
