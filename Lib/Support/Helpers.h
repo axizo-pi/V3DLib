@@ -9,10 +9,6 @@ namespace V3DLib {
 //
 // Basic functions
 //
-void to_file(std::string const &filename, std::string const &content);
-std::vector<std::string> load_file_vec(std::string const &filename);
-std::string load_file(std::string const &filename);
-
 std::string sudo_prefix();
 float random_float();
 void sleep(int sec);
@@ -21,13 +17,8 @@ int resize_16(int in_val, bool do_dump = false);
 //
 // String functions
 //
-bool begins_with(std::string const &rhs, std::string const &prefix);
-bool hasEnding (std::string const &fullString, std::string const &ending);
 int num_newlines(std::string const &s);
 int num_empty(std::string const &s, std::string const prefix = "");
-std::string trim(std::string const &s);
-std::string pad(std::string const &s, int width);
-std::string pad(int val, int width = 10);
 
 //
 // Debug Functions

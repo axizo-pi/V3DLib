@@ -1,6 +1,6 @@
 #include "support/support.h"  // running_on_v3d()
 #include "Support/Helpers.h"  // load_file(), sudo_prefix()
-#include <unistd.h>          // geteuid(); include required for g++ 8.3.0 , not required for 12.2.0
+#include <unistd.h>           // geteuid(); include required for g++ 8.3.0 , not required for 12.2.0
 #include <iostream>
 
 using namespace V3DLib;
@@ -92,7 +92,7 @@ void run_output_cmd(
   REQUIRE(!system(cmdline.c_str()));
 
   if (show_output) {
-    std::cout << "\n" << V3DLib::load_file(output_filename);
+    std::cout << "\n" << load_file(output_filename);
   }
 }
 

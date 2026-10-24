@@ -4,8 +4,7 @@
 #include "Support/Platform.h"
 #include <filesystem>
 #include <thread>
-#include <fstream>
-#include <algorithm>  // find_if()
+//#include <fstream>
 
 namespace fs = std::filesystem; // Alias for brevity
 
@@ -117,41 +116,6 @@ MAYBE_UNUSED int gnu_version(bool show = true) {
   return __GNUC__;
 }
 
-
-/**
- * @brief Trim from the start (in place)
- *
- * Source: https://stackoverflow.com/questions/216823/how-can-i-trim-a-stdstring
- */
-void ltrim(std::string &s) {
-  s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
-    return !std::isspace(ch);
-  }));
-}
-
-
-/**
- * @brief Trim from the end (in place)
- *
- * Source: https://stackoverflow.com/questions/216823/how-can-i-trim-a-stdstring
- */
-void rtrim(std::string &s) {
-  s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
-    return !std::isspace(ch);
-  }).base(), s.end());
-}
-
-
-/**
- * @brief Trim input string
- *
- * This changes the input string directly
- */
-void trim_d(std::string &s) {
-  rtrim(s);
-  ltrim(s);
-}
-
 } // anon namespace
 
 
@@ -182,83 +146,12 @@ float random_float() {
 
 
 /**
- * Write the passed string to a file with the passed filename.
- *
- * The goal of this function is to simplify writing to file.  
- * This implementation avoids having to pass a filename to any code
- * that wants to write to file. In addition, string output can be used
- * for other purposes, eg. logging.
- *
- * @param filename Name of file to write to.
- * @param content  String buffer to write to file.
- */
-void to_file(std::string const &filename, std::string const &content) {
-  assert(!filename.empty());
-  assert(!content.empty());
-
-  //Log::warn << "filename: "     << filename;
-  //Log::warn << "content size: " << content.length();
-
-  FILE *f = fopen(filename.c_str(), "w");
-  Log::assertq(f != nullptr, "to_file() could not open file " + filename);
-  fprintf(f, content.c_str());
-  fclose(f);
-
-}
-
-
-std::vector<std::string> load_file_vec(std::string const &filename) {
-  std::vector<std::string> ret;
-
-  std::ifstream file(filename);
-  assert(file.is_open());
-
-  // Read the file line by line into a string
-  std::string line;
-  while (getline(file, line)) {
-    ret << line;
-  }
-
-  file.close();
-  return ret;
-}
-
-
-std::string load_file(std::string const &filename) {
-  std::string ret;
-
-  for (auto const &line : load_file_vec(filename)) {
-    ret << line << "\n";
-  }
-
-  return ret;
-}
-
-
-/**
  * Suspend execution for the given number of seconds.
  *
  * @param sec Number of seconds to wait.
  */
 void sleep(int sec) {
   sleep_for(seconds(sec));
-}
-
-
-bool begins_with(std::string const &rhs, std::string const &prefix) {
-  return (rhs.rfind(prefix, 0) == 0);
-}
-
-
-/**
- * Source: https://stackoverflow.com/a/874160/1223531
- */
-bool hasEnding (std::string const &fullString, std::string const &ending) {
-  if (fullString.length() >= ending.length()) {
-    return (0 == fullString.compare (fullString.length() - ending.length(), ending.length(), ending));
-  } else {
-    return false;
-  }
 }
 
 
@@ -287,43 +180,6 @@ int num_empty(std::string const &s, std::string const prefix) {
   }
 
   return ret;
-}
-
-
-
-/**
- * @brief Version of trim which does not change the input string
- *
- */
-std::string trim(std::string const &s) {
-  std::string tmp = s;
-  trim_d(tmp);
-  return tmp;
-}
-
-
-/**
- * @brief Left-pad string to specified width
- */
-std::string pad(std::string const &s, int width) {
-  assert(width >= 0);
-  int w = width - (int) s.length();
-
-  std::string ret;
-  ret << indentBy(w) << s;
-  return ret;
-}
-
-
-/**
- * @brief Left-pad integer string output to specified width.
- *
- * Default value `width = 10` is decent for integer values.
- */
-std::string pad(int val, int width) {
-  std::string buf;
-  buf << val;
-  return pad(buf, width);
 }
 
 

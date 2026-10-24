@@ -1,9 +1,10 @@
 # Components which can be used in any project
 
-**Version:** 15
+**Version:** 16
 
 ## Version history
 
+  - 16: Moved more helper functions from V3DLib to global
   - 15: moved string functions to `string`; Added dump(vector), merged split()
   - 14: 
     * Added Timer class.

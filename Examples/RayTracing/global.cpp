@@ -1,6 +1,5 @@
 #include "global.h"
 #include "rtweekend.h"
-#include "Support/Helpers.h"  // to_file();
 
 using namespace V3DLib;
 
@@ -243,5 +242,5 @@ void PPM::write_color(const color& pixel_color) {
 
 
 void PPM::write() const {
-  V3DLib::to_file("out.ppm", ret);
+  to_file("out.ppm", ret);
 }

@@ -1,6 +1,7 @@
 #include "string.h"
 #include "global.h"
 #include <iostream>
+#include <algorithm>  // find_if()
 
 namespace {
 
@@ -76,6 +77,41 @@ std::vector<std::string> split_b(std::string s, std::string const &delimiter) {
   return tokens;
 }
 
+
+/**
+ * @brief Trim from the start (in place)
+ *
+ * Source: https://stackoverflow.com/questions/216823/how-can-i-trim-a-stdstring
+ */
+void ltrim(std::string &s) {
+  s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) {
+    return !std::isspace(ch);
+  }));
+}
+
+
+/**
+ * @brief Trim from the end (in place)
+ *
+ * Source: https://stackoverflow.com/questions/216823/how-can-i-trim-a-stdstring
+ */
+void rtrim(std::string &s) {
+  s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) {
+    return !std::isspace(ch);
+  }).base(), s.end());
+}
+
+
+/**
+ * @brief Trim input string
+ *
+ * This changes the input string.
+ */
+void trim_d(std::string &s) {
+  rtrim(s);
+  ltrim(s);
+}
+
 } // anon namespace
 
 
@@ -143,4 +179,56 @@ std::vector<std::string> split(std::string s, const std::string& delimiter, bool
   }
 
   return ret;
+}
+
+
+bool begins_with(std::string const &rhs, std::string const &prefix) {
+  return (rhs.rfind(prefix, 0) == 0);
+}
+
+
+/**
+ * Source: https://stackoverflow.com/a/874160/1223531
+ */
+bool hasEnding (std::string const &fullString, std::string const &ending) {
+  if (fullString.length() >= ending.length()) {
+    return (0 == fullString.compare (fullString.length() - ending.length(), ending.length(), ending));
+  } else {
+    return false;
+  }
+}
+
+
+/**
+ * @brief Version of trim which does not change the input string
+ */
+std::string trim(std::string const &s) {
+  std::string tmp = s;
+  trim_d(tmp);
+  return tmp;
+}
+
+
+/**
+ * @brief Left-pad string to specified width
+ */
+std::string pad(std::string const &s, int width) {
+  assert(width >= 0);
+  int w = width - (int) s.length();
+
+  std::string ret;
+  ret << indentBy(w) << s;
+  return ret;
+}
+
+
+/**
+ * @brief Left-pad integer string output to specified width.
+ *
+ * Default value `width = 10` is decent for integer values.
+ */
+std::string pad(int val, int width) {
+  std::string buf;
+  buf << val;
+  return pad(buf, width);
 }
