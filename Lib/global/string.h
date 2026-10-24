@@ -14,5 +14,7 @@ bool hasEnding (std::string const &fullString, std::string const &ending);
 std::string trim(std::string const &s);
 std::string pad(std::string const &s, int width);
 std::string pad(int val, int width = 10);
+int find_substring(std::string const &str, std::string const &sub, bool find_last = false);
+bool has_whitespace(std::string const &str);
 
 #endif //  _GLOBAL_STRING_H

@@ -1,11 +1,15 @@
 # Components which can be used in any project
 
-**Version:** 16
+**Version:** 17
 
 ## Version history
 
+  - 17: Moved more helper functions from Granlund to global
   - 16: Moved more helper functions from V3DLib to global
-  - 15: moved string functions to `string`; Added dump(vector), merged split()
+  - 15:
+    * moved string functions to `string`
+    * Added dump(vector)
+    * merged split()
   - 14: 
     * Added Timer class.
     * Renamed files of class `log` to `Log`.

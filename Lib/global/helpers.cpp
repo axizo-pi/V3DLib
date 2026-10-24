@@ -5,6 +5,7 @@
 
 namespace fs = std::filesystem; // Alias for brevity
 using namespace Log;
+using namespace std;
 
 /**
  * @brief Create a path with read/write permissions, if not already present
@@ -61,6 +62,26 @@ void to_file(std::string const &filename, std::string const &content) {
 }
 
 
+/**
+ * Source: https://stackoverflow.com/a/525103/1223531
+ *
+ * Functionally the same as `load_file()`.
+ * Consider consolidating (TODO).
+ */
+std::string from_file(std::string const &filename) {
+	ifstream ifs(filename.c_str(), ios::in | ios::binary | ios::ate);
+
+  ifs.seekg(0, ios::end);
+  ifstream::pos_type fileSize = ifs.tellg();
+  ifs.seekg(0, ios::beg);
+
+  vector<char> bytes(fileSize);
+  ifs.read(bytes.data(), fileSize);
+
+  return string(bytes.data(), fileSize);
+}
+
+
 std::string load_file(std::string const &filename) {
   std::string ret;
 
@@ -86,4 +107,35 @@ std::vector<std::string> load_file_vec(std::string const &filename) {
 
   file.close();
   return ret;
+}
+
+
+/**
+ * @return index of substring in string, -1 if not found
+ */
+int find_substring(std::string const &str, std::string const &sub, bool find_last) {
+  int pos = str.find(sub);
+
+  if (!find_last) {
+    if (pos == std::string::npos) return -1;
+    return pos;
+  }
+
+  int pos2 = pos;
+  int tmp;
+  while ((tmp = str.find(sub, pos2 + 1)) != std::string::npos) {
+    pos2 = tmp;
+  }
+
+  return pos2;
+}
+
+
+bool has_whitespace(const std::string &str) {
+  if (str.find(" ")  != std::string::npos) return true;
+  if (str.find("\t") != std::string::npos) return true;
+  if (str.find("\r") != std::string::npos) return true;
+  if (str.find("\n") != std::string::npos) return true;
+
+  return false;
 }
