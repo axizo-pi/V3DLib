@@ -114,17 +114,17 @@ std::vector<std::string> load_file_vec(std::string const &filename) {
  * @return index of substring in string, -1 if not found
  */
 int find_substring(std::string const &str, std::string const &sub, bool find_last) {
-  int pos = str.find(sub);
+  int pos = (int) str.find(sub);
 
   if (!find_last) {
-    if (pos == std::string::npos) return -1;
+    if (pos == (int) std::string::npos) return -1;
     return pos;
   }
 
   int pos2 = pos;
-  int tmp;
+  long unsigned tmp;
   while ((tmp = str.find(sub, pos2 + 1)) != std::string::npos) {
-    pos2 = tmp;
+    pos2 = (int) tmp;
   }
 
   return pos2;
