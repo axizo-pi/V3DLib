@@ -10,19 +10,16 @@ namespace {
 /**
  * @brief Retrieve last num lines of a logfile
  *
- * The timestamp and level prefix is removed from all lines
+ * The timestamp and level prefix is removed from all lines.
  */
 std::vector<std::string> last_log_lines(std::string const &path, int num_lines) {
   std::vector<std::string> ret;
-
   auto vec = load_file_vec(path);
-  //std::cout << "logfile:\n";
+
   for (int i = (int) vec.size() - num_lines; i < (int) vec.size(); ++i) {
     auto str = vec[i];
-    str = split(str, "DEBUG: ")[1];
+    str = split(str, "DEBUG: ", true)[1];
     ret << str;
-
-    //std::cout << "  '" << str << "'\n";
   }
 
   return ret;

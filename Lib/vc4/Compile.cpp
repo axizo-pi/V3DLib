@@ -197,7 +197,7 @@ void Compile::generate_opcodes() {
   for (int i = 0; i < (int) m_opcodes.size(); ++i) {
     auto const &n = m_opcodes[i];
 
-    auto v = split(n, ";");
+    auto v = split(n, ";", true);
     int num = (int) v.size();
     assert(num <= 2);
     if (num != 2) continue; 
@@ -212,7 +212,7 @@ void Compile::generate_opcodes() {
   for (int i = 0; i < (int) m_opcodes.size(); ++i) {
     auto &n = m_opcodes[i];
 
-    auto v = split(n, ";");
+    auto v = split(n, ";", true);
     int num = (int) v.size();
     assert(num <= 2);
     if (num == 1) {

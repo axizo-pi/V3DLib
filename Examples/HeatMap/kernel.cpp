@@ -2,8 +2,8 @@
 #include <V3DLib.h>
 #include "Kernels/Cursor.h"
 #include "support.h"
-#include "Support/Timer.h"
 #include "Support/bmp.h"
+#include "global/Timer.h"
 
 using namespace V3DLib;
 

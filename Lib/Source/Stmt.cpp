@@ -247,7 +247,7 @@ namespace {
 std::string indent(std::string const &src, int num_spaces) {
   if (src.empty()) return ""; 
 
-  auto tmp = split(src, "\n");
+  auto tmp = split(src, "\n", true);
 
   std::string out;
   for (int i = 0; i < (int) tmp.size(); i++) {

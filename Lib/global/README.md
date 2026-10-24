@@ -1,9 +1,10 @@
 # Components which can be used in any project
 
-**Version:** 14
+**Version:** 15
 
 ## Version history
 
+  - 15: moved string functions to `string`; Added dump(vector), merged split()
   - 14: 
     * Added Timer class.
     * Renamed files of class `log` to `Log`.

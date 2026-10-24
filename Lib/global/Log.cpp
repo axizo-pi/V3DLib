@@ -1,6 +1,4 @@
-#include "Log.h"
-#include "helpers.h"
-#include "debug.h"
+#include "global.h"
 #include <iostream>
 #include <filesystem>
 #include <fstream>
@@ -47,8 +45,6 @@ public:
 
 void Modifiers::handle(LogFlag f) {
   if (m_next_is_global) {
-    //std::cout << "Handling global: " << f << "\n";
-
     switch (f) {
       case none:       assert(false);    break; // Not expecting 'none' as input
       case dec:        s_hex         = false;
@@ -69,8 +65,6 @@ void Modifiers::handle(LogFlag f) {
 
     m_next_is_global = false;
   } else {
-    //std::cout << "Handling next\n";
-
     switch (f) {
       case none:       assert(false);            break; // Not expecting 'none' as input
       case dec:        m_next_is_hex    = false; break;
@@ -89,7 +83,6 @@ bool Modifiers::do_hex() {
   bool ret = s_hex;
 
   if (m_next_is_hex != s_hex) {
-    //std::cout << "do_hex() global != next\n";
     ret = m_next_is_hex;
     m_next_is_hex = !m_next_is_hex;
   }
@@ -102,7 +95,6 @@ bool Modifiers::do_fixed() {
   bool ret = s_fixed;
 
   if (m_next_is_fixed != s_fixed) {
-    //std::cout << "do_fixed() global != next\n";
     ret = m_next_is_fixed;
     m_next_is_fixed = !m_next_is_fixed;
   }
@@ -167,7 +159,7 @@ void rollover(std::string const &dir, std::string const &file) {
   fs::path p{outfile};
   auto size = fs::file_size(p);
 
-  std::string base = split(file, ".")[0];
+  std::string base = split(file, ".", false)[0];
   //std::cout << "File base: " << base << "\n";
   //std::cout << "size log '" << outfile << ": " << size << "\n";
 
@@ -177,15 +169,16 @@ void rollover(std::string const &dir, std::string const &file) {
 
   int index = -1;
   for (const auto & entry : fs::directory_iterator(dir)) {
-    std::string file = split(entry.path(), "/").back();
+    std::string file = split(entry.path(), "/", true).back();
 
     if (contains(file, base)) {
       //std::cout << "  " << entry.path() << std::endl;
 
       // Isolate the index
-      auto tmp = split(file, ".");
+      auto tmp = split(file, ".", true);
       assert(tmp.size() == 2);
-      tmp = split(tmp[0], "-");
+
+      tmp = split(tmp[0], "-", true);
       if (tmp.size() > 1) {
         int tmp_index = atoi(tmp[1].c_str());
         if (tmp_index > index) {
@@ -197,10 +190,11 @@ void rollover(std::string const &dir, std::string const &file) {
   }
 
   index++;
-  //std::cout << "Next index: " << index << "\n";
 
   // Create new filename
-  auto path = split(outfile, ".");
+  auto path = split(outfile, ".", true);
+  assert(path.size() == 2);
+
   std::string new_filename;
   new_filename << path[0] << "-" << index << ".log";
   std::cout << "New filename: " << new_filename << "\n";
@@ -553,4 +547,5 @@ cout_timestamp::cout_timestamp(bool val) {
 cout_timestamp::~cout_timestamp() {
   s_cout_show_timestamp = m_prev;
 }
+
 } // namespace Log

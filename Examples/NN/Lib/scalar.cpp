@@ -1,6 +1,6 @@
 #include "scalar.h"
-#include "global/log.h"
-#include <cmath>  // exp()
+#include "global/Log.h"
+#include <cmath>         // exp()
 
 namespace scalar {
 

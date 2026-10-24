@@ -78,7 +78,7 @@ MAYBE_UNUSED platform_info get_platform_info() {
 
       // Raspbian counts as debian
       p_i.is_debian = contains(s, "Debian") || contains(s, "Raspbian");
-      auto tmp = split(s, " ");
+      auto tmp = split(s, " ", true);
 
       // Get next-to last item, which is the version number
       int index = (int) tmp.size() - 2;
@@ -86,7 +86,7 @@ MAYBE_UNUSED platform_info get_platform_info() {
     }
 
     if (contains(s, "Architecture:")) {
-      auto tmp = split(s, ": ");
+      auto tmp = split(s, ": ", true);
       p_i.architecture = tmp[1];
     }
   }
@@ -263,7 +263,7 @@ bool hasEnding (std::string const &fullString, std::string const &ending) {
 
 
 int num_newlines(std::string const &s) {
-  auto tmp = split(s, "\n");
+  auto tmp = split(s, "\n", true);
   return (int) (tmp.size() - 1);
 }
 
@@ -275,11 +275,11 @@ int num_empty(std::string const &s, std::string const prefix) {
   int ret = 0;
 
   if (!prefix.empty()) {
-    auto tmp = split(s, ("\n" + prefix));
+    auto tmp = split(s, ("\n" + prefix), true);
     ret = (int) (tmp.size() - 1);
   }
 
-  auto tmp = split(s, "\n");
+  auto tmp = split(s, "\n", true);
   for (int i = 0; i < (int) tmp.size(); i++) {
     if (tmp[i].empty()) {
       ret++;

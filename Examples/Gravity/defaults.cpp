@@ -1,6 +1,6 @@
 #include "defaults.h"
 #include "Support/Platform.h"
-#include "global/log.h"
+#include "global/Log.h"
 
 using namespace V3DLib;
 

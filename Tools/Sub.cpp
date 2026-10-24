@@ -1,6 +1,6 @@
 #include <V3DLib.h>
 #include "vc4/Instr.h"
-#include "global/log.h"
+#include "global/Log.h"
 
 using namespace V3DLib;
 using namespace Log;

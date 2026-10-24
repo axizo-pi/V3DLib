@@ -1,5 +1,5 @@
 #include "tools.h"
-#include "global/log.h"
+#include "global/Log.h"
 #include <cmath>
 #include <random>
 
@@ -8,11 +8,10 @@ using namespace std;
 namespace {
 
 /**
- * Tried implementing random numberi generation withn Gaussian distribution
+ * Tried implementing random number generation with Gaussian distribution
  * (https://stackoverflow.com/a/9266488/1223531).
  *
  * No luck. Sticking to normal.
- *
  */
 
 // Source: https://stackoverflow.com/a/33389729/1223531

@@ -1,9 +1,12 @@
 #include "basics.h"
+#include "global.h"
 #include <sstream>
 
 
+/**
+ * @brief Convert float to scientific notation
+ */
 std::string &operator<<(std::string &a, float val) {
-  // Output in scientific notation
   std::stringstream out;
   out << std::scientific;
   out << val;

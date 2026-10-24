@@ -4,7 +4,6 @@
 #include <filesystem>
 #include <iterator>
 
-namespace fs = std::filesystem;
 using namespace V3DLib;
 
 

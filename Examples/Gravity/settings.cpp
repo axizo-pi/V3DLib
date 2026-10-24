@@ -1,6 +1,6 @@
 #include "settings.h"
 #include "defaults.h"
-#include "global/log.h"
+#include "global/Log.h"
 
 using namespace Log;
 

@@ -1,6 +1,6 @@
 #ifndef _V3DLIB_SUPPORT_HELPERS_H_
 #define _V3DLIB_SUPPORT_HELPERS_H_
-#include "global/helpers.h"
+#include "global/global.h"
 #include <string>
 #include <vector>
 

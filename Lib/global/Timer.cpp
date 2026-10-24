@@ -286,9 +286,9 @@ bool timers_did_end = true;
 Timers timers;
 
 Timers::~Timers() {
-	if (!timers_did_end) {
-		warn << "Global timers set but not outputted.";
-	}
+  if (!timers_did_end) {
+    warn << "Global timers set but not outputted.";
+  }
 }
 
 
@@ -322,7 +322,7 @@ Timer &Timers::start(std::string const &label) {
   }
 
   m_list[index].start();
-	timers_did_end = false;
+  timers_did_end = false;
 
   return m_list[index];
 }
@@ -344,16 +344,6 @@ std::vector<int> Timers::sort_indexes() {
 
     return data;
   };
-
-  MAYBE_UNUSED auto vec_dump = [](std::vector<int> const &indexes) -> std::string {
-    std::string buf;
-
-    for (int i = 0; i < (int) indexes.size(); ++i) {
-      buf << indexes[i] << ", ";
-    }
-    return buf;
-  };
-
 
   auto &list      = m_list;
   auto &sort_data = m_sort_data;
@@ -395,15 +385,33 @@ std::vector<int> Timers::sort_indexes() {
   for (int i = 0; i < (int) indexes.size(); ++i) {
     indexes[i] = i;
   }
-  //warn << "indexes: " << vec_dump(indexes);
 
   if (m_sort_data.sort_column != None) {
     std::sort(indexes.begin(), indexes.end(), comp);
-    //warn << "indexes sorted: " << vec_dump(indexes);
   }
 
   return indexes;
 }  
+
+
+std::string Timers::dump(bool show_minmax) {
+  auto indexes = sort_indexes();
+  MaxWidths widths;
+  widths.update(*this);
+  widths.update(m_total);
+
+  std::string buf;
+  for (int i = 0; i < (int) indexes.size(); ++i) {
+    buf << "  " << m_list[indexes[i]].dump(widths, show_minmax) << "\n";
+  }
+
+  std::string buf2;
+  buf2 << "Timers end:\n"
+       << "  " << m_total.dump(widths, show_minmax) << " (Since first call to timers)\n"
+       << buf;
+
+  return buf2;
+}
 
 
 void Timers::end(bool log_info, bool show_minmax) {
@@ -416,28 +424,15 @@ void Timers::end(bool log_info, bool show_minmax) {
     return;
   }
 
-  auto indexes = sort_indexes();
-  MaxWidths widths;
-  widths.update(*this);
-  widths.update(m_total);
+  auto buf2 = dump(show_minmax);
 
-  std::string buf;
-  for (int i = 0; i < (int) indexes.size(); ++i) {
-    buf << "  " << m_list[indexes[i]].dump(widths, show_minmax) << "\n";
+  if (log_info) {
+    info << buf2;
+  } else {
+    warn << buf2;
   }
 
-	std::string buf2;
-  buf2 << "Timers end:\n"
-       << "  " << m_total.dump(widths, show_minmax) << " (Since first call to timers)\n"
-       << buf;
-
-	if (log_info) {
-		info << buf2;
-	} else {
-		warn << buf2;
-	}
-
-	timers_did_end = true;
+  timers_did_end = true;
 }
 
 
