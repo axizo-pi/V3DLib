@@ -1,4 +1,5 @@
 #include "model.h"
+#include "settings.h"
 #include "scalar.h"
 
 /**
@@ -40,7 +41,7 @@ void Model::init() {
     mass[i] = (float) o[i].e[6];
   }
 
-  img.set_conversion_factor(IMG_CONVERSION_FACTOR);
+  orbit_img.set_conversion_factor(IMG_CONVERSION_FACTOR);
 
   acc_x.fill(0);
   acc_y.fill(0);
@@ -48,15 +49,59 @@ void Model::init() {
 }
 
 
-void Model::plot() {
+void Model::plot_img(Image &img) {
   for (int i = 0; i < (int) x.size(); ++i) {
     img.plot(x[i], y[i]);
   }
 }
 
 
-void Model::save_img() {
-  img.save("gravity_qpu.bmp");
+/**
+ * @brief Add current positions to the orbit image.
+ */
+void Model::plot() {
+	plot_img(orbit_img);
+}
+
+
+/**
+ * @brief If specified, output the orbit image
+ *
+ * Output of orbit image is optional, depends on settings.
+ */
+void Model::save_orbits() {
+  if (!settings.output_orbits) return;
+  orbit_img.save("gravity_qpu.bmp");
+}
+
+
+/**
+ * @brief If specified, output the next animation image
+ *
+ * Output of animations image is optional, depends on settings.
+ *
+ * @param force If true, output animate regardles of `animate_count`.
+ *              This is to output the final image.
+ *              It is possible that the final image is the same as the previous image, soit.
+ */
+void Model::save_animate(bool force) {
+  if (!settings.do_animate) return;
+	if (!force && (animate_count % ANIMATE_SKIP) != 0) {
+		animate_count++;
+		return;
+	}
+
+	std::string filename;
+	filename << index << "_gravity.bmp";
+	warn << "Model outputting animate to: " << filename;
+
+  Image img{512, 512};
+  img.set_conversion_factor(IMG_CONVERSION_FACTOR);
+	plot_img(img);
+  img.save(filename);
+
+	animate_count++;
+	index++;
 }
 
 

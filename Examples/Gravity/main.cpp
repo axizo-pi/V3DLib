@@ -27,9 +27,11 @@ using namespace Log;
  *
  */
 void init_platform() {
-  // Disable the cache - vc4 only
+	//
+  // Disable the L2 cache - vc4 only
+  // This ensures that DMA and TMU can work together
+	//
   if (Platform::compile::for_vc4() && settings.run_type == QPU) {
-    // Disable L2 cache: this ensure that DMA and TMU can work together
     LibSettings::L2Cache_enable(false);
   }
 
@@ -63,6 +65,7 @@ void init_platform() {
 int main(int argc, const char *argv[]) {
   settings.init(argc, argv);
   init_platform();
+
   warn << "Num qpu's: " << settings.num_qpus;
 
   Image img(512, 512);
@@ -73,6 +76,10 @@ int main(int argc, const char *argv[]) {
     // Run scalar version
     //
     warn << "Run scalar kernel";
+		if (settings.do_animate) {
+  		warn << "Animate not enabled for cpu";
+		}
+
     Timer timer("Scalar timer", true);
 
     init_orbital_entities();
@@ -89,12 +96,12 @@ int main(int argc, const char *argv[]) {
     warn << "Run GPU kernel";
 
     init_orbital_entities();
-    Model m;
+    Model m;  // Orbit image
     m.init();
     m.plot();
 
     auto k = compile(gravity_kernel, settings);
-    to_file("Gravity_kernel.txt", k.dump());
+    //to_file("Gravity_kernel.txt", k.dump());
 		//to_file("Gravity_kernel.cpp", k.compile().dump_kernel_hex());
     k.setNumQPUs(settings.num_qpus);
 
@@ -112,26 +119,17 @@ int main(int argc, const char *argv[]) {
       double t = 0;
       while (t < t_end) {
         k.run();
-/*
-				{
-					int index = (NUM - 1)/2 - 1;
-					warn << "acc[" << index << "]"
-          	   << " x: " << m.acc_x[index]
-            	 << " y: " << m.acc_y[index]
-            	 << " z: " << m.acc_z[index];
-				}
-*/
-        m.plot();
+
+        m.plot();                     // The orbit image is always updated 
+				m.save_animate();
         t += batch_steps()*dt;
       }
 
-      // The plot image is always filled in, output is optional.
-      if (settings.output_orbits) {
-        m.save_img();
-      }
-
+      m.save_orbits();
       timers.stop("QPU gravity");
     }
+
+		m.save_animate(true);
   }
 
   timers.end(true);

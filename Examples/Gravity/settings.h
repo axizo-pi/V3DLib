@@ -4,6 +4,7 @@
 
 struct GravitySettings : public V3DLib::Settings {
 
+	bool do_animate;
 	bool output_orbits;
 	int  kernel;
 
