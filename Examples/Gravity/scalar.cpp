@@ -1,5 +1,6 @@
 #include "scalar.h"
 #include "tools.h"
+#include "settings.h"       // num_entities
 #include "Support/basics.h"
 #include "global/Timer.h"
 #include <cmath>
@@ -97,7 +98,7 @@ std::string OrbitalEntity::dump() const {
   std::string ret;
   ret << "Position(" << (float) e[0] << ", " << (float) e[1] << ", " << (float) e[2] << "), "
       << "Velocity(" << (float) e[3] << ", " << (float) e[4] << ", " << (float) e[5] << "), "
-      << "Mass: " << (float) e[6];
+      << "Mass: "    << (float) e[6];
 
   return ret;
 }
@@ -108,10 +109,13 @@ std::string OrbitalEntity::dump() const {
 /////////////////////////////////////////////////////////////////
 
 
-std::vector<OrbitalEntity> orbital_entities(NUM);
+std::vector<OrbitalEntity> orbital_entities;
 
 void init_orbital_entities() {
   auto &o = orbital_entities;
+  o.resize(settings.num_entities);
+  int num_asteroids = (int) o.size() - N_PLANETS;
+  assert(num_asteroids >= 0);
 
   o[0] = { 0.0,0.0,0.0,        0.0,0.0,0.0,      1.989e30   };  // a star similar to the sun
   o[1] = { 57.909e9,0.0,0.0,   0.0,47.36e3,0.0,  0.33011e24 }; // a planet similar to mercury
@@ -123,12 +127,11 @@ void init_orbital_entities() {
   o[7] = { 2872.463e9,0.0,0.0, 0.0,6.80e3,0.0,   86.813e24  }; // a planet similar to uranus
   o[8] = { 4495.060e9,0.0,0.0, 0.0,5.43e3,0.0,   102.413e24 }; // a planet similar to neptune
 
-  assert(N_ASTEROIDS >= 0);
   double const Asteroid_Dist  = 8e12;
   double const Asteroid_Speed = 3.5e3;
   double const Asteroid_Mass  = 1e22;
 
-  for (int i = 0; i < N_ASTEROIDS; ++i) {
+  for (int i = 0; i < num_asteroids; ++i) {
 /*    
     // Chaos: random asteroid placement with random speeds
     o[N_PLANETS + i] = {
@@ -151,10 +154,10 @@ void init_orbital_entities() {
 void scalar_step() {
   auto &o = orbital_entities;
 
-  for (size_t m1_idx = 0; m1_idx < NUM; m1_idx++) {
+  for (size_t m1_idx = 0; m1_idx < o.size(); m1_idx++) {
     Vector3 a_g = { 0,0,0 };
 
-    for (size_t m2_idx = 0; m2_idx < NUM; m2_idx++) {
+    for (size_t m2_idx = 0; m2_idx < o.size(); m2_idx++) {
       if (m2_idx != m1_idx) {
         Vector3 r_vector;
 
@@ -188,7 +191,7 @@ void scalar_step() {
     o[m1_idx].e[5] += a_g.e[2] * dt;
   }
 
-  for (size_t entity_idx = 0; entity_idx < NUM; entity_idx++) {
+  for (size_t entity_idx = 0; entity_idx < o.size(); entity_idx++) {
     o[entity_idx].e[0] += o[entity_idx].e[3] * dt;
     o[entity_idx].e[1] += o[entity_idx].e[4] * dt;
     o[entity_idx].e[2] += o[entity_idx].e[5] * dt;

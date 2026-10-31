@@ -100,7 +100,7 @@ void vector_calc_acc(
     Float denom        = 0;
     Float acceleration = 0;
 
-		// Exclude current entity from acceleration calculation
+    // Exclude current entity from acceleration calculation
     Int cur_index = (cur_block << 4) + index();
     Where (cur_index != entity_index)
       denom        = recipsqrt(d1);

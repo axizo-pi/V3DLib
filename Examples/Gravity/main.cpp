@@ -1,3 +1,25 @@
+/**
+ * /file
+ *
+ * ## Timing `vc7`
+ *
+ * - Default 250 years
+ * - Ordered model with equidistant asteroids in the orbital plane
+ *
+ * |--------|--------|-----------|----------|-----------------------------------------|
+ * | Kernel | #QPU's | #Entities | Time (s) | Comment
+ * |--------|--------|-----------|----------|-----------------------------------------|
+ * | cpu    |      - |       128 |  110.814 |
+ * | qpu    |      1 |         " |   53.165 |
+ * |        |     16 |         " |    8.731 |
+ * | cpu    |      - |       288 |  561.344 |
+ * | qpu    |      1 |         " |  228.202 |
+ * |        |     16 |         " |   23.355 |
+ * | cpu    |      - |      1024 |        - | Previous test 20260127 was over 2 hours |
+ * | qpu    |      1 |         " |  |
+ * |        |     16 |         " |  205.503 |
+ * |--------|--------|-----------|----------|-----------------------------------------|
+ */
 #include "model.h"
 #include "scalar.h"
 #include "kernel.h"
@@ -27,10 +49,10 @@ using namespace Log;
  *
  */
 void init_platform() {
-	//
+  //
   // Disable the L2 cache - vc4 only
   // This ensures that DMA and TMU can work together
-	//
+  //
   if (Platform::compile::for_vc4() && settings.run_type == QPU) {
     LibSettings::L2Cache_enable(false);
   }
@@ -76,9 +98,9 @@ int main(int argc, const char *argv[]) {
     // Run scalar version
     //
     warn << "Run scalar kernel";
-		if (settings.do_animate) {
-  		warn << "Animate not enabled for cpu";
-		}
+    if (settings.do_animate) {
+      warn << "Animate not enabled for cpu";
+    }
 
     Timer timer("Scalar timer", true);
 
@@ -102,7 +124,7 @@ int main(int argc, const char *argv[]) {
 
     auto k = compile(gravity_kernel, settings);
     //to_file("Gravity_kernel.txt", k.dump());
-		//to_file("Gravity_kernel.cpp", k.compile().dump_kernel_hex());
+    //to_file("Gravity_kernel.cpp", k.compile().dump_kernel_hex());
     k.setNumQPUs(settings.num_qpus);
 
     k.load(
@@ -110,7 +132,7 @@ int main(int argc, const char *argv[]) {
       &m.v_x, &m.v_y, &m.v_z,
       &m.acc_x, &m.acc_y, &m.acc_z,
       &m.mass,
-      NUM
+      settings.num_entities
     );
 
     {
@@ -121,7 +143,7 @@ int main(int argc, const char *argv[]) {
         k.run();
 
         m.plot();                     // The orbit image is always updated 
-				m.save_animate();
+        m.save_animate();
         t += batch_steps()*dt;
       }
 
@@ -129,7 +151,7 @@ int main(int argc, const char *argv[]) {
       timers.stop("QPU gravity");
     }
 
-		m.save_animate(true);
+    m.save_animate(true);
   }
 
   timers.end(true);

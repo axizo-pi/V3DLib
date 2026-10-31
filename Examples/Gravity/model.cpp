@@ -12,26 +12,26 @@
  * Differences in output are inevitable.
  */
 void Model::init() {
-  assert(NUM % 16 == 0);  // Num entities must be a multiple of 16
+  int num = settings.num_entities;
 
-  x.alloc(NUM);
-  y.alloc(NUM);
-  z.alloc(NUM);
-  v_x.alloc(NUM);
-  v_y.alloc(NUM);
-  v_z.alloc(NUM);
-  mass.alloc(NUM);
+  x.alloc(num);
+  y.alloc(num);
+  z.alloc(num);
+  v_x.alloc(num);
+  v_y.alloc(num);
+  v_z.alloc(num);
+  mass.alloc(num);
 
-	// Stride 16 for DMA
-  acc_x.alloc(16*NUM);
-  acc_y.alloc(16*NUM);
-  acc_z.alloc(16*NUM);
+  // Stride 16 for DMA
+  acc_x.alloc(16*num);
+  acc_y.alloc(16*num);
+  acc_z.alloc(16*num);
 
   dummy.alloc(16);
 
   auto &o = orbital_entities;
 
-  for (int i = 0; i < NUM; i++) {
+  for (int i = 0; i < num; i++) {
     x[i]    = (float) o[i].x();
     y[i]    = (float) o[i].y();
     z[i]    = (float) o[i].z();
@@ -60,7 +60,7 @@ void Model::plot_img(Image &img) {
  * @brief Add current positions to the orbit image.
  */
 void Model::plot() {
-	plot_img(orbit_img);
+  plot_img(orbit_img);
 }
 
 
@@ -87,25 +87,25 @@ void Model::save_orbits() {
 void Model::save_animate(bool force) {
   if (!settings.do_animate) return;
 
-	if (force || (animate_count >= ANIMATE_SKIP)) {
-		std::string filename;
-		filename << index << "_gravity.bmp";
-		warn << "Model outputting animate to: " << filename;
+  if (force || (animate_count >= ANIMATE_SKIP)) {
+    std::string filename;
+    filename << index << "_gravity.bmp";
+    warn << "Model outputting animate to: " << filename;
 
-	  Image img{512, 512};
-	  img.set_conversion_factor(IMG_CONVERSION_FACTOR);
-		plot_img(img);
-	  img.save(filename);
-		index++;
-	}
+    Image img{512, 512};
+    img.set_conversion_factor(IMG_CONVERSION_FACTOR);
+    plot_img(img);
+    img.save(filename);
+    index++;
+  }
 
-	if (!force) {
-		if (animate_count >= ANIMATE_SKIP) {
-			animate_count -= ANIMATE_SKIP;
-		}
+  if (!force) {
+    if (animate_count >= ANIMATE_SKIP) {
+      animate_count -= ANIMATE_SKIP;
+    }
 
-		animate_count += batch_steps();
-	}
+    animate_count += batch_steps();
+  }
 }
 
 
@@ -124,21 +124,20 @@ std::string Model::dump_pos() const {
 std::string Model::dump_acc() const {
   std::string ret;
 
-	auto dump_with_stride = [] (Float::Array const &vec) -> std::string {
-		std::string ret;
+  auto dump_with_stride = [] (Float::Array const &vec) -> std::string {
+    std::string ret;
 
-		for (int i = 0; i < 16; ++i) {
-			ret << vec[i*16] << ", ";
-		}
+    for (int i = 0; i < 16; ++i) {
+      ret << vec[i*16] << ", ";
+    }
 
-		return ret;
-	};
+    return ret;
+  };
 
   ret << "\n"
       << "acc_x: " << dump_with_stride(acc_x) << "\n"
       << "acc_y: " << dump_with_stride(acc_y) << "\n"
-      << "acc_z: " << dump_with_stride(acc_z) << "\n"
-	;
+      << "acc_z: " << dump_with_stride(acc_z) << "\n";
 
   return ret;
 }
