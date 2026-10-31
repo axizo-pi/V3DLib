@@ -1,9 +1,8 @@
 #include "Instr.h"
-#include "Support/Helpers.h"  // load_file_vec()
 #include "dump_instr.h"
+#include "global/helpers.h"  // load_file_vec()
 #include <filesystem>
 
-using namespace std;
 namespace fs = std::filesystem; // Alias for brevity
 
 namespace V3DLib {
@@ -87,8 +86,8 @@ void encode_operands(vc4::Instr &instr, RegOrImm const &srcA, RegOrImm const &sr
 }
 
 
-string enc_to_str(Instr::Encoding enc) {
-  string ret;
+std::string enc_to_str(Instr::Encoding enc) {
+  std::string ret;
 
   switch (enc) {
     case Instr::NONE:          ret << "NOP";                       break;
@@ -104,8 +103,8 @@ string enc_to_str(Instr::Encoding enc) {
   return ret;
 }
 
-string cond_code_to_str(ConditionCode cond) {
-  string ret;
+std::string cond_code_to_str(ConditionCode cond) {
+  std::string ret;
 
   switch (cond) {
     case COND_NEVER:  ret << ".never()"; break;
@@ -121,8 +120,9 @@ string cond_code_to_str(ConditionCode cond) {
   return ret;
 }
 
-string brcond_to_str(Instr::BranchCondition cond, bool show_always = true) {
-  string ret;
+
+std::string brcond_to_str(Instr::BranchCondition cond, bool show_always = true) {
+  std::string ret;
 
   switch (cond) {
     case Instr::ALL_Z_FLAGS_SET:   ret << "all(Z)";  break;

@@ -1,6 +1,5 @@
 #include "PerformanceCounters.h"
 #include <sstream>
-#include "Support/debug.h"
 
 namespace V3DLib {
 namespace vc4 {

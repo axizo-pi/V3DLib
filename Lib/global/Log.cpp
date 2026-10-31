@@ -152,6 +152,8 @@ bool create_directory_if_missing(const fs::path& dir_path) {
  * @brief Rollover logfile when current is too large
  */
 void rollover(std::string const &dir, std::string const &file) {
+  using namespace string;
+
   std::string outfile;
   outfile << dir << "/" << file;
   if (!fs::exists(outfile)) return;
@@ -160,8 +162,6 @@ void rollover(std::string const &dir, std::string const &file) {
   auto size = fs::file_size(p);
 
   std::string base = split(file, ".", false)[0];
-  //std::cout << "File base: " << base << "\n";
-  //std::cout << "size log '" << outfile << ": " << size << "\n";
 
   if (size <= ROLLOVER) return;
 
@@ -172,8 +172,6 @@ void rollover(std::string const &dir, std::string const &file) {
     std::string file = split(entry.path(), "/", true).back();
 
     if (contains(file, base)) {
-      //std::cout << "  " << entry.path() << std::endl;
-
       // Isolate the index
       auto tmp = split(file, ".", true);
       assert(tmp.size() == 2);
@@ -181,9 +179,9 @@ void rollover(std::string const &dir, std::string const &file) {
       tmp = split(tmp[0], "-", true);
       if (tmp.size() > 1) {
         int tmp_index = atoi(tmp[1].c_str());
+
         if (tmp_index > index) {
           index = tmp_index;
-          //std::cout << "New highest index: " << index << "\n";
         }
       }
     }

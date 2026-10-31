@@ -86,22 +86,26 @@ void Model::save_orbits() {
  */
 void Model::save_animate(bool force) {
   if (!settings.do_animate) return;
-	if (!force && (animate_count % ANIMATE_SKIP) != 0) {
-		animate_count++;
-		return;
+
+	if (force || (animate_count >= ANIMATE_SKIP)) {
+		std::string filename;
+		filename << index << "_gravity.bmp";
+		warn << "Model outputting animate to: " << filename;
+
+	  Image img{512, 512};
+	  img.set_conversion_factor(IMG_CONVERSION_FACTOR);
+		plot_img(img);
+	  img.save(filename);
+		index++;
 	}
 
-	std::string filename;
-	filename << index << "_gravity.bmp";
-	warn << "Model outputting animate to: " << filename;
+	if (!force) {
+		if (animate_count >= ANIMATE_SKIP) {
+			animate_count -= ANIMATE_SKIP;
+		}
 
-  Image img{512, 512};
-  img.set_conversion_factor(IMG_CONVERSION_FACTOR);
-	plot_img(img);
-  img.save(filename);
-
-	animate_count++;
-	index++;
+		animate_count += batch_steps();
+	}
 }
 
 

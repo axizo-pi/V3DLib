@@ -7,6 +7,7 @@
 namespace V3DLib {
 
 using ::operator<<;  // C++ weirdness
+using namespace string;
 
 namespace {
 
@@ -461,7 +462,7 @@ CExpr::Ptr Stmt::loop_cond() const {
  *        comments and indent.
  */
 std::vector<std::string> Stmt::Array::opcodes(bool show_comments, int indent) const {
-	std::vector<std::string> ret;
+  std::vector<std::string> ret;
   if (empty()) return ret; 
 
   // Count the number of endlines at end of string
@@ -585,7 +586,7 @@ int Stmts::lastUniform(bool do_dump) {
 
 std::string Stmts::dump() const {
   bool do_line_numbers = LibSettings::dump_line_numbers();
-	return Parent::dump(do_line_numbers);
+  return Parent::dump(do_line_numbers);
 }
 
 }  // namespace V3DLib

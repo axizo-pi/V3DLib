@@ -11,9 +11,7 @@
 //    > sudo ./obj/qpu-debug/bin/runTests -tce=*[matrix]*        // Exclude all tags in list
 //
 /////////////////////////////////////////////////////////////////////////////////////////////////////
-#include "Support/debug.h"
-#include "global/Timer.h"
-#include "global/Log.h"     // set_level()
+#include "global/global.h"
 
 //#define DOCTEST_CONFIG_IMPLEMENT_WITH_MAIN
 #define DOCTEST_CONFIG_IMPLEMENT

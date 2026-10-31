@@ -505,7 +505,7 @@ std::string ErrorStatus() {
   for (int i = 0; i < ErrStatFields::MAX; ++i) {
     ErrStatFields val = (ErrStatFields) i;
     auto label = errStatLabel(val);
-    auto tabs = indentBy(max_length - (int) label.length());
+    auto tabs = string::indentBy(max_length - (int) label.length());
 
     ret << "  " << label << tabs << ": " << ((readRegister(V3D_ERRSTAT) >> val) & 1) << "\n";
   }

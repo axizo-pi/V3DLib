@@ -7,5 +7,6 @@
 #include "Timer.h"
 #include "string.h"
 #include "Log.h"
+#include "Exception.h"
 
 #endif // _GLOBAL_GLOBAL_H_

@@ -8,16 +8,16 @@ using namespace Log;
 namespace {
 
 void kernel(Int x, Int::Ptr result) {
-	*result = x;
+  *result = x;
 }
 
 
 MAYBE_UNUSED void run_kernel() {
-	Int::Array result(16);
+  Int::Array result(16);
 
   auto k = compile(kernel);
-	k.load(2, &result);
-	k.run();
+  k.load(2, &result);
+  k.run();
 
   std::string ret;
   for (int i = 0; i < (int) result.size(); i++) {
@@ -37,7 +37,7 @@ void vc4_branch() {
   instr1.immediate = 1234;
   instr1.add.waddr = 7;    // value 0 registers as NOP
   instr1.mul.waddr = 8;    // value 0 registers as NOP
-	std::cout << "  " << instr1.dump() << "\n";
+  std::cout << "  " << instr1.dump() << "\n";
 
   vc4::Instr instr2;
   instr2.enc       = vc4::Instr::LOAD_IMM;
@@ -46,18 +46,18 @@ void vc4_branch() {
                             // If true, rega and regb are reversed
   instr2.add.waddr = 12;    // value 0 registers as NOP
   instr2.mul.waddr = 11;    // idem
-	std::cout << "  " << instr2.dump() << "\n";
+  std::cout << "  " << instr2.dump() << "\n";
 
   std::vector<uint64_t> code;
   code.push_back(instr1.encode());
   code.push_back(instr2.encode());
 
-	std::cout << "\nEncoding:\n";
-	for (auto const &enc : code) {
-		std::cout << "  " << std::hex << "0x" << enc << "\n";
-	}
+  std::cout << "\nEncoding:\n";
+  for (auto const &enc : code) {
+    std::cout << "  " << std::hex << "0x" << enc << "\n";
+  }
 
-	std::cout << "\nOpcodes:\n" << vc4::opcodes(code);
+  std::cout << "\nOpcodes:\n" << vc4::opcodes(code);
 }
 
 } // anon namespace
@@ -65,7 +65,7 @@ void vc4_branch() {
 
 int main(int argc, const char *argv[]) {
   //run_kernel();
-	vc4_branch();
+  vc4_branch();
 
   return 0;
 }

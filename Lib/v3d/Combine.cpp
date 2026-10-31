@@ -1982,7 +1982,7 @@ try {
     count += remove_skips(instrs);
   }
 
-} catch(V3DLib::Exception const &e) {
+} catch(Exception const &e) {
   cerr << "\nV3DLib exception during Combine::combine(). Aborting further combination. err:\n"
        << e.what();
 } catch(std::runtime_error &e) {

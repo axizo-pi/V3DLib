@@ -1,6 +1,5 @@
 #include "BufferObject.h"
 #include "Support/basics.h"
-#include "Support/debug.h"
 #include "LibSettings.h"
 #include <cassert>
 #include <memory>

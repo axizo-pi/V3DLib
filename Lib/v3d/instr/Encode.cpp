@@ -1,8 +1,7 @@
 #include "Encode.h"
-#include "Support/Exception.h"
 #include "Mnemonics.h"
 #include "Support/Platform.h"
-#include "Support/basics.h"
+#include "global/global.h"
 
 namespace V3DLib {
 

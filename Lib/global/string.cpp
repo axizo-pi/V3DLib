@@ -1,82 +1,11 @@
 #include "string.h"
 #include "global.h"
 #include <iostream>
+#include <iterator>
 #include <algorithm>  // find_if()
 
+namespace string {
 namespace {
-
-/**
- * @brief Split string into substring at the delimiters in the string (if any).
- *
- * If no delimiter present, two substrings are returned with the second empty
- *
- * Source: https://stackoverflow.com/a/14266139/1223531
- *
- * Example:
- *
- *     std::string s = "scott>=tiger>=mushroom";
- *     std::string delimiter = ">=";
- *     
- *     split_a(s, delimiter, true); // ["scott", "tiger", "mushroom"]
- *
- * @param do_all If false, return only first split. Otherwise, return all splits.
- */
-std::vector<std::string> split_a(std::string s, const std::string& delimiter, bool do_all) {
-  std::vector<std::string> tokens;
-  size_t pos = 0;
-  std::string token;
-
-  while ((pos = s.find(delimiter)) != std::string::npos) {
-    token = s.substr(0, pos);
-    tokens.push_back(token);
-    s.erase(0, pos + delimiter.length());
-
-    if (!do_all) break; // only do a single split
-  }
-
-  // Following adds any part at the end, which does not end with delimiter
-  if (!s.empty()) {
-    tokens.push_back(s);
-  }
-
-  return tokens;
-}
-
-
-/**
- * @brief Split a string into substrings at a given delimiter.
- *
- * `s` is destroyed internally
- *
- * Source: https://stackoverflow.com/a/14266139/1223531
- *
- * @param s         String to split.
- * @param delimiter Substring to split on.
- * @return          Array of strings split on delimiter. The delimiter is left out.
- */
-std::vector<std::string> split_b(std::string s, std::string const &delimiter) {
-  std::vector<std::string> tokens;
-  size_t pos = 0;
-  std::string token;
-  //int count = 0;
-
-  while ((pos = s.find(delimiter)) != std::string::npos) {
-    token = s.substr(0, pos);
-    tokens.push_back(token);
-    s.erase(0, pos + delimiter.length());
-    //count++;
-  }
-
-  // Following adds any part at the end, which does not end with delimiter
-  if (!s.empty()) {
-    tokens.push_back(s);
-  }
-
-  //std::cout << "count: " << count << "\n";
-  //std::cout << "size : " << tokens.size() << "\n";
-  return tokens;
-}
-
 
 /**
  * @brief Trim from the start (in place)
@@ -125,11 +54,7 @@ void trim_d(std::string &s) {
  * @param s2 Substring to scan for.
  */
 bool contains(std::string const &s1, std::string const &s2) {  
-  if (s1.find(s2) != std::string::npos) {
-    return true;
-  }
-
-  return false;
+  return (s1.find(s2) != std::string::npos);
 }
 
 
@@ -149,36 +74,51 @@ std::string indentBy(int indent) {
 
 
 /**
- * @brief Adds timing and logging to split function.
+ * @brief Split string into substring at the delimiters in the string (if any).
  *
- * See `split_a()`
+ * If no delimiter present, two substrings are returned with the second empty
+ *
+ * Source: https://stackoverflow.com/a/14266139/1223531
+ *
+ * Example:
+ *
+ *     std::string s = "scott>=tiger>=mushroom";
+ *     std::string delimiter = ">=";
+ *     split_a(s, delimiter, true); // ["scott", "tiger", "mushroom"]
+ *
+ * @param do_all If false, return only first split. Otherwise, return all splits.
+ *
+ * ===============================================================
+ * Notes
+ * -----
+ *
+ * 1. Can NOT write to `Log` in this function, because `split()` is used within `Log`.
  */
 std::vector<std::string> split(std::string s, const std::string& delimiter, bool do_all) {
-  std::vector<std::string> ret;
+  std::vector<std::string> tokens;
 
   if (s.empty()) { // Nothing to split
-    ret.push_back(s);
-    return ret;
+    tokens.push_back(s);
+    return tokens;
   }
 
-  timers.start("split_a");
-  ret = split_a(s, delimiter, do_all);
-  timers.stop("split_a");
+  size_t pos = 0;
+  std::string token;
 
-  timers.start("split_b");
-  auto v1 = split_b(s, delimiter);
-  timers.stop("split_b");
+  while ((pos = s.find(delimiter)) != std::string::npos) {
+    token = s.substr(0, pos);
+    tokens.push_back(token);
+    s.erase(0, pos + delimiter.length());
 
-  // Can NOT write to log here, because split() is used within Log
-
-  if ((do_all && ret != v1) || ret[0] != v1[0]) {
-    std::cout << "split_c difference:\n"
-              << "  input: '" << s << "', '" << delimiter << "', doall: " << do_all << "\n"
-              << "  ret  : " << dump(ret) << "\n"
-              << "  v1   : " << dump(v1)  << "\n";
+    if (!do_all) break; // only do a single split
   }
 
-  return ret;
+  // Following adds any part at the end, which does not end with delimiter
+  if (!s.empty()) {
+    tokens.push_back(s);
+  }
+
+  return tokens;
 }
 
 
@@ -210,14 +150,22 @@ std::string trim(std::string const &s) {
 
 
 /**
- * @brief Left-pad string to specified width
+ * @brief pad string to specified width
+ *
+ * @param do_left If true (default), left-pad the input string.
+ *                Otherwise, right-pad.
  */
-std::string pad(std::string const &s, int width) {
+std::string pad(std::string const &s, int width, bool do_left) {
   assert(width >= 0);
   int w = width - (int) s.length();
 
   std::string ret;
-  ret << indentBy(w) << s;
+
+  if (do_left) {
+    ret << indentBy(w) << s;
+  } else {
+    ret << s << indentBy(w);
+  }
   return ret;
 }
 
@@ -232,3 +180,68 @@ std::string pad(int val, int width) {
   buf << val;
   return pad(buf, width);
 }
+
+
+/**
+ * @brief repeat the input string the given number of times.
+ */
+std::string rep(std::string const &rep, int repeats) {
+  std::string ret;
+
+  for (int i = 0; i < repeats; ++i) {
+    ret << rep;
+  }
+
+  return ret;
+}
+
+
+/**
+ * Source: http://stackoverflow.com/questions/5288396/c-ostream-out-manipulation/5289170#5289170
+ */
+std::string implode(const std::vector<std::string>& elements, const char* const separator) {
+  switch (elements.size()) {
+  case 0:
+    return "";
+  case 1:
+    return elements[0];
+  default:
+    std::ostringstream os;
+    copy(elements.begin(), elements.end() - 1, std::ostream_iterator<std::string>(os, separator));
+    os << *elements.rbegin();
+    return os.str();
+  }
+}
+
+
+/**
+ * @return index of substring in string, -1 if not found
+ */
+int find_substring(std::string const &str, std::string const &sub, bool find_last) {
+  int pos = (int) str.find(sub);
+
+  if (!find_last) {
+    if (pos == (int) std::string::npos) return -1;
+    return pos;
+  }
+
+  int pos2 = pos;
+  long unsigned tmp;
+  while ((tmp = str.find(sub, pos2 + 1)) != std::string::npos) {
+    pos2 = (int) tmp;
+  }
+
+  return pos2;
+}
+
+
+bool has_whitespace(const std::string &str) {
+  if (str.find(" ")  != std::string::npos) return true;
+  if (str.find("\t") != std::string::npos) return true;
+  if (str.find("\r") != std::string::npos) return true;
+  if (str.find("\n") != std::string::npos) return true;
+
+  return false;
+}
+
+} // namespace string

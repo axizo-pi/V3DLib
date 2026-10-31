@@ -16,7 +16,7 @@ using namespace Log;
  *
  * Empirically, following settings are best:
  * - Disable L2 cache (performance)
- * - Use TMu load (DMA load gives errors
+ * - Use TMU load (DMA load gives errors)
  *
  * Further for `vc4`:
  * - Use BATCH_STEPS == 1 only

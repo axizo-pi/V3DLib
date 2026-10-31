@@ -6,7 +6,6 @@
 #include "Target/Satisfy.h"
 #include "Target/RemoveLabels.h"
 #include "instr/Snippets.h"
-#include "Support/Helpers.h"        // contains()
 #include "Source/Lang.h"            // comment()
 
 namespace V3DLib {
@@ -293,10 +292,9 @@ void handle_condition_tags(V3DLib::Instr const &src_instr, Instructions &ret) {
   assertq(cond.is_always(), "Currently expecting only ALWAYS here");
 
   auto str = src_instr.InstructionComment::comment(); // Grumbl parent prefix
-  bool is_final_where_cond = contains(str, "where condition final");
+  bool is_final_where_cond = string::contains(str, "where condition final");
 
   if (!is_final_where_cond) {
-    //warn << "!is_final_where_cond";
     ret.back().set_push_tag(setCond).comment("v3d final where cond");;
     return;
   }
@@ -765,7 +763,7 @@ std::string Compile::emit_opcodes() {
 
 
 std::string Compile::opcode(int index) {
-	return instructions[index].mnemonic();
+  return instructions[index].mnemonic();
 } 
 
 

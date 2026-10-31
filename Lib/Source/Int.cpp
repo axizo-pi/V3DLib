@@ -1,8 +1,8 @@
 #include "Int.h"
-#include "Lang.h"             // only for assign()!
+#include "Lang.h"              // only for assign()!
 #include "Support/Platform.h"
-#include "Support/debug.h"
-#include "Functions.h"        // operator/
+#include "global/debug.h"
+#include "Functions.h"         // operator/
 
 /** @defgroup SourceLanguage Source Language Operations.
  *

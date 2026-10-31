@@ -107,8 +107,8 @@ std::vector<double> float_values(std::string const &filename) {
   auto buf = load_file_vec(filename);
 
   for(std::string line : buf) {
-    if (contains(line, "Data")) continue;
-    for (auto val : split(line, ",", true)) {
+    if (string::contains(line, "Data")) continue;
+    for (auto val : string::split(line, ",", true)) {
       ret.push_back(atof(val.c_str()));
     }
   }

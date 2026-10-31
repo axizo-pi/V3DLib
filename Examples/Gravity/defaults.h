@@ -16,8 +16,8 @@
  *   WARNING: QPU timer   : 217.725386s
  *
  * - 1048 entities for 25 decades:
- *	 WARNING: Scalar timer: 7360.986145s
- *	 WARNING: QPU timer   :  311.831073s  - No output, error?! Timeout I presume
+ *   WARNING: Scalar timer: 7360.986145s
+ *   WARNING: QPU timer   :  311.831073s  - No output, error?! Timeout I presume
  */
 
 float const IMG_CONVERSION_FACTOR = 2.5e13f;

@@ -10,8 +10,8 @@ double const DECADE = 86400 * 365 * 10;          // approximately a decade in se
 double t_end = ((double) 25) * DECADE;
 
 void set_num_years(int val) {
-	//Log::warn << "set_num_years val: " << val;
-	assert(val > 0);
+  //Log::warn << "set_num_years val: " << val;
+  assert(val > 0);
   t_end = ((double) val) * YEAR;
 }
 

@@ -76,59 +76,59 @@ std::string Stmt::dump(int indent, int in_tag) {
 
   switch (tag) {
     case V3DLib::Stmt::SET_READ_STRIDE:
-      ret << indentBy(indent) << "dmaSetReadPitch(" << stride_internal()->dump() << ");";
+      ret << string::indentBy(indent) << "dmaSetReadPitch(" << stride_internal()->dump() << ");";
       break;
 
     case V3DLib::Stmt::SET_WRITE_STRIDE:
-      ret << indentBy(indent) << "dmaSetWriteStride(" << stride_internal()->dump() << ")";
+      ret << string::indentBy(indent) << "dmaSetWriteStride(" << stride_internal()->dump() << ")";
       break;
 
     case V3DLib::Stmt::SEMA_INC:  // Increment semaphore
-      ret << indentBy(indent) << "semaInc(" << m_semaId << ");";
+      ret << string::indentBy(indent) << "semaInc(" << m_semaId << ");";
       break;
 
     case V3DLib::Stmt::SEMA_DEC: // Decrement semaphore
-      ret << indentBy(indent) << "semaDec(" << m_semaId << ");";
+      ret << string::indentBy(indent) << "semaDec(" << m_semaId << ");";
       break;
 
     case V3DLib::Stmt::SEND_IRQ_TO_HOST:
-      ret << indentBy(indent) << "hostIRQ();";
+      ret << string::indentBy(indent) << "hostIRQ();";
       break;
 
     case V3DLib::Stmt::SETUP_VPM_READ:
-      ret << indentBy(indent)
+      ret << string::indentBy(indent)
           << m_setupVPMRead.dump() << ", "
           << "address=" << address_internal()->dump()
           << ";";
       break;
 
     case V3DLib::Stmt::SETUP_VPM_WRITE:
-      ret << indentBy(indent)
+      ret << string::indentBy(indent)
           << m_setupVPMWrite.dump() << ", "
           << "address=" << address_internal()->dump()
           << ";";
       break;
 
     case V3DLib::Stmt::DMA_READ_WAIT:
-      ret << indentBy(indent) << "dmaReadWait();";
+      ret << string::indentBy(indent) << "dmaReadWait();";
       break;
 
     case V3DLib::Stmt::DMA_WRITE_WAIT:
-      ret << indentBy(indent) << "dmaWriteWait();";
+      ret << string::indentBy(indent) << "dmaWriteWait();";
       break;
 
     case V3DLib::Stmt::DMA_START_READ:
-      ret << indentBy(indent)
+      ret << string::indentBy(indent)
           << "dmaStartRead(" << address_internal()->dump() << ");";
       break;
 
     case V3DLib::Stmt::DMA_START_WRITE:
-      ret << indentBy(indent)
+      ret << string::indentBy(indent)
           << "dmaStartWrite(" << address_internal()->dump() << ");";
       break;
 
     case V3DLib::Stmt::SETUP_DMA_READ:
-      ret << indentBy(indent)
+      ret << string::indentBy(indent)
           << "dmaSetupRead("
           << "numRows=" << m_setupDMARead.numRows                  << ","
           << "rowLen=%" << m_setupDMARead.rowLen                   << ","
@@ -145,7 +145,7 @@ std::string Stmt::dump(int indent, int in_tag) {
         breakpoint
       }
 
-      ret << indentBy(indent)
+      ret << string::indentBy(indent)
           << "dmaSetupWrite("
           << "numRows=" << m_setupDMAWrite.numRows                  << ","
           << "rowLen="  << rle->dump()                              << ","

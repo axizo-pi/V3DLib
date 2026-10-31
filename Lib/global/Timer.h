@@ -6,8 +6,23 @@
 
 class MaxWidths;  // Forward declaration
 
+class TimeOut {
+public:
+  TimeOut(int seconds);
+
+  void set(int seconds);
+  bool timed_out(bool do_reset = false);
+
+private:
+  int     interval = -1;
+  timeval start;
+
+  void reset();
+};
+
+
 /**
- * Simple wrapper class for outputting run time for examples
+ * @brief Simple wrapper class for outputting run times for specific code.
  */
 class Timer {
 public:
@@ -28,7 +43,8 @@ public:
   std::string min_str() const;
   std::string max_str() const;
 
-  std::string dump(MaxWidths const &widths, bool show_extended = false);
+  std::string dump_g(MaxWidths const &widths, bool show_extended);
+  std::string dump(bool show_extended);
   std::string dump();
 
 private:
@@ -97,6 +113,7 @@ private:
 
   int find(std::string const &label);
   std::vector<int> sort_indexes();
+  std::string emit_headers(MaxWidths &widths, bool show_minmax);
 };
 
 extern Timers timers;

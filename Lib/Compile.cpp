@@ -60,11 +60,11 @@ void Compile::compile(std::function<void()> create_ast) {
     compile_intern();
 
     m_numVars = VarGen::count();
-  } catch (V3DLib::Exception const &e) {
+  } catch (Exception const &e) {
     // Catches (at least) "FATAL: Failed to allocate vc4 shared memory."
 
     std::string e_msg = e.what();
-    Log::warn << "V3DLib::Exception caught: " << e_msg;
+    Log::warn << "Exception caught: " << e_msg;
 
     std::string msg = "Exception occurred during compilation: ";
     msg << e_msg;

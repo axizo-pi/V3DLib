@@ -18,7 +18,7 @@ std::vector<std::string> last_log_lines(std::string const &path, int num_lines) 
 
   for (int i = (int) vec.size() - num_lines; i < (int) vec.size(); ++i) {
     auto str = vec[i];
-    str = split(str, "DEBUG: ", true)[1];
+    str = string::split(str, "DEBUG: ", true)[1];
     ret << str;
   }
 

@@ -6,7 +6,6 @@
 #define _V3DLIB_SOURCE_PTR_H_
 #include "Common/Seq.h"
 #include "CExpr.h"
-#include "Support/debug.h"
 
 namespace V3DLib {
 

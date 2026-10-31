@@ -1,9 +1,18 @@
 # Components which can be used in any project
 
-**Version:** 17
+**Version:** 19
 
 ## Version history
 
+  - 19:
+    * Moved Exception from V3DLib to global
+    * Added namespace 'string' to string functions
+  - 18:
+    * Refactored Time
+    * adjusted formatting for global timers
+    * Added TimeOut, working but not yet properly
+    * For split(), selected option a over b; faster and more flexible
+    * Timers in from_file()
   - 17: Moved more helper functions from Granlund to global
   - 16: Moved more helper functions from V3DLib to global
   - 15:

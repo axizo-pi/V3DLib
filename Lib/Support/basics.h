@@ -1,8 +1,6 @@
 #ifndef _V3DLIB_SUPPORT_BASICS_H
 #define _V3DLIB_SUPPORT_BASICS_H
-#include "global/debug.h"
-#include "global/Log.h"
-#include "Exception.h"
+#include "global/global.h"
 #include <stdint.h>
 
 using namespace Log;

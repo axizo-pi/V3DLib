@@ -4,9 +4,9 @@
 #include "Support/Platform.h"
 #include <filesystem>
 #include <thread>
-//#include <fstream>
 
 namespace fs = std::filesystem; // Alias for brevity
+using namespace string;
 
 /** \file 
  * Helper Functions

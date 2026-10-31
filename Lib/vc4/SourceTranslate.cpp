@@ -1,11 +1,11 @@
 #include "SourceTranslate.h"
 #include "Source/Translate.h"
-#include "Support/debug.h"
 #include "Target/instr/Mnemonics.h"
 #include "Target/Subst.h"
 #include "DMA/LoadStore.h"
 #include "RegAlloc.h"
 #include "LibSettings.h"
+#include "global/debug.h"
 
 namespace V3DLib {
 namespace vc4 {

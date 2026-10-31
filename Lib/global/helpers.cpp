@@ -1,4 +1,5 @@
 #include "helpers.h"
+#include "Timer.h"
 #include "Log.h"
 #include <filesystem>
 #include <fstream>
@@ -61,6 +62,7 @@ void to_file(std::string const &filename, std::string const &content) {
 
 }
 
+namespace {
 
 /**
  * Source: https://stackoverflow.com/a/525103/1223531
@@ -69,7 +71,7 @@ void to_file(std::string const &filename, std::string const &content) {
  * Consider consolidating (TODO).
  */
 std::string from_file(std::string const &filename) {
-	ifstream ifs(filename.c_str(), ios::in | ios::binary | ios::ate);
+  ifstream ifs(filename.c_str(), ios::in | ios::binary | ios::ate);
 
   ifs.seekg(0, ios::end);
   ifstream::pos_type fileSize = ifs.tellg();
@@ -82,13 +84,31 @@ std::string from_file(std::string const &filename) {
 }
 
 
-std::string load_file(std::string const &filename) {
+std::string load_file_a(std::string const &filename) {
   std::string ret;
 
   for (auto const &line : load_file_vec(filename)) {
     ret << line << "\n";
   }
 
+  return ret;
+}
+
+} // anon namespace
+
+
+std::string load_file(std::string const &filename) {
+  std::string ret;
+
+  timers.start("from_file");
+  ret = from_file(filename);
+  timers.stop("from_file");
+
+  timers.start("load_file_a");
+  std::string ret2 = load_file_a(filename);
+  timers.stop("load_file_a");
+
+  assert(ret == ret2);
   return ret;
 }
 
@@ -107,35 +127,4 @@ std::vector<std::string> load_file_vec(std::string const &filename) {
 
   file.close();
   return ret;
-}
-
-
-/**
- * @return index of substring in string, -1 if not found
- */
-int find_substring(std::string const &str, std::string const &sub, bool find_last) {
-  int pos = (int) str.find(sub);
-
-  if (!find_last) {
-    if (pos == (int) std::string::npos) return -1;
-    return pos;
-  }
-
-  int pos2 = pos;
-  long unsigned tmp;
-  while ((tmp = str.find(sub, pos2 + 1)) != std::string::npos) {
-    pos2 = (int) tmp;
-  }
-
-  return pos2;
-}
-
-
-bool has_whitespace(const std::string &str) {
-  if (str.find(" ")  != std::string::npos) return true;
-  if (str.find("\t") != std::string::npos) return true;
-  if (str.find("\r") != std::string::npos) return true;
-  if (str.find("\n") != std::string::npos) return true;
-
-  return false;
 }

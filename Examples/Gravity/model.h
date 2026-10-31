@@ -52,7 +52,7 @@ struct Model {
   std::string dump_acc() const;
 
 private:
-	const int ANIMATE_SKIP = 360;  //> Number of days to skip for every animate output
+	const int ANIMATE_SKIP = 720;  //> Number of days to skip for every animate output
 	int animate_count      = 0;    //> Number of times `save_animate()` is called
 	int index              = 0;    //> Prefix index for animate
 

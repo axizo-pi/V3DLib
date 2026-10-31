@@ -1,8 +1,8 @@
 #include "dft_support.h"
-#include <iostream>
-#include "Support/debug.h"
 #include "Source/Functions.h"
 #include "Support/Helpers.h"  // random_float()
+#include "global/debug.h"
+#include <iostream>
 
 /**
  * Wavelet function for testing

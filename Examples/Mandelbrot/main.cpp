@@ -5,11 +5,9 @@
 #include "animate.h"
 #include "Support/bmp.h"
 #include "global/Timer.h"
-#include <string>
 
 using namespace V3DLib;
 using namespace Log;
-using std::string;
 
 
 // ============================================================================

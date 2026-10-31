@@ -16,6 +16,7 @@ namespace V3DLib {
 namespace vc4 {
 
 using ::operator<<;  // C++ weirdness
+using namespace string;
 
 namespace {
 

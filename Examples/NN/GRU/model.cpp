@@ -1,6 +1,5 @@
-//#include "global/log.h"
+#include "model.h"
 #include "global.h"
-//#include "Support/Timer.h"
 #include <iostream>
 
 using namespace std;
@@ -25,8 +24,8 @@ void init_matrix(MatrixXf& X, int dimension_row, int dimension_col) {
 } // anon namespace
 
 
-void Model::read(string const &epoch, string const &loss) {
-  string postfix = "_epoch_" + epoch + "_loss_" + loss + ".bin";
+void Model::read(std::string const &epoch, std::string const &loss) {
+  std::string postfix = "_epoch_" + epoch + "_loss_" + loss + ".bin";
   MatrixXf tmp;
 
   read_binary_matrix("Weights/Uz" + postfix, tmp); U_z.set(tmp);
@@ -42,7 +41,7 @@ void Model::read(string const &epoch, string const &loss) {
 void Model::write(int epoch, float loss) {
   std::cout << "Writing weights to file. " << std::endl;
 
-  string postfix = "_epoch_" + std::to_string(epoch) + "_loss_" + std::to_string(loss) + ".bin";
+  std::string postfix = "_epoch_" + std::to_string(epoch) + "_loss_" + std::to_string(loss) + ".bin";
 
   write_binary_matrix("Weights/Uz" + postfix, U_z.Xf());
   write_binary_matrix("Weights/Uh" + postfix, U_h.Xf());

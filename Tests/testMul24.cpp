@@ -40,17 +40,17 @@ std::string show_val(int val) {
   };
 
   std::string ret;
-  ret << pad(val)          << " "
-      << pad(hex(val), 10) << " ";
+  ret << string::pad(val)          << " "
+      << string::pad(hex(val), 10) << " ";
 
 
   // Display what the value would be if negativity was extended/
   // This is only done if the top bit of a 24-bit value is set.
   if (val & 0x800000) {
     int min_val = val | 0xf0000000;
-    ret << pad(min_val);
+    ret << string::pad(min_val);
   } else {
-    ret << pad("", 10);
+    ret << string::pad("", 10);
   }
 
   return ret;

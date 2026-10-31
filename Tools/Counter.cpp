@@ -240,7 +240,6 @@ vc4
 #include <string>
 
 using namespace V3DLib;
-using std::string;
 
 const int Do_YLoop = true;
 

@@ -1,5 +1,5 @@
 #include "Helpers.h"
-#include "Support/debug.h"
+#include "global/debug.h"
 
 namespace V3DLib {
 namespace DMA {

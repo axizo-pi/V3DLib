@@ -1,9 +1,7 @@
-#ifndef _LIB_SUPPORT_EXCEPTION_H
-#define _LIB_SUPPORT_EXCEPTION_H
+#ifndef _GLOBAL_EXCEPTION_H
+#define _GLOBAL_EXCEPTION_H
 #include <string>
 #include <exception>
-
-namespace V3DLib {
 
 struct Exception : public std::exception {
   Exception(std::string ss) : s(ss) {}
@@ -16,6 +14,4 @@ private:
   std::string s;
 };
 
-}  // namespace V3DLib
-
-#endif  // _LIB_SUPPORT_EXCEPTION_H
+#endif  // _GLOBAL_EXCEPTION_H

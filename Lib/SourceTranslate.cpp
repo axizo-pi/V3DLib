@@ -1,10 +1,9 @@
 #include "SourceTranslate.h"
-#include "Support/debug.h"
 #include "Support/Platform.h"
 #include "vc4/SourceTranslate.h"
 #include "v3d/SourceTranslate.h"
 #include "Target/instr/Mnemonics.h"
-#include "global/Log.h"
+#include "global/global.h"
 #include <memory>
 
 namespace {

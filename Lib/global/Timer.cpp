@@ -17,11 +17,91 @@
 #include "Timer.h"
 #include "Log.h"
 #include "global.h"
-#include <algorithm> // sort
-#include <cstddef>   // NULL
-#include <cstdio>    // printf
+#include <algorithm>  // sort()
+#include <cstddef>    // NULL
+#include <cstdio>     // printf()
+#include <iostream>
 
 using namespace Log;
+
+namespace {
+
+std::vector<std::string> s_headers = {
+  "Label", 
+  "Total",
+  "Steps",
+  "Average",
+  "Min",
+  "Max"
+};
+
+
+/**
+ * @brief Return time passed from start, in seconds
+ */
+float diff_time(timeval const &tvStart, timeval &tvDiff) {
+  float ret;
+
+  timeval tvEnd;
+  gettimeofday(&tvEnd, NULL);
+  timersub(&tvEnd, &tvStart, &tvDiff);
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wconversion"
+  ret= 1.0f*tvDiff.tv_sec + (1.0f*tvDiff.tv_usec/1000000l);
+#pragma GCC diagnostic pop
+
+  return ret;
+}
+
+} // anon namespace
+
+////////////////////////////////////////////////////////////
+// Class TimeOut
+////////////////////////////////////////////////////////////
+
+TimeOut::TimeOut(int seconds) {
+  set(seconds);
+}
+
+void TimeOut::set(int seconds) {
+  interval = seconds;
+  reset();
+}
+
+
+/**
+ *
+ * ===========================================================================
+ * Notes
+ * -----
+ *
+ * 1. time_t, `clock()` **NOT WORKING PROPERLY**. Fires way too fast.
+ *    timeval, `diff_time()` works better.
+ */
+bool TimeOut::timed_out(bool do_reset) {
+  timeval tvDiff;
+  float diff = ::diff_time(start, tvDiff);
+
+  bool ret = (float) interval < diff;
+  if (ret && do_reset) reset();
+/*
+  if (ret) {
+    Log::warn << "Timed out" << ", interval: " << (interval - diff);
+  } else {
+    Log::warn << "interval: " << (interval - diff);
+  }
+*/
+  return ret;
+}
+
+
+void TimeOut::reset() {
+  assert(interval > 0);
+  //start = clock();
+  gettimeofday(&start, NULL);
+}
+
 
 ////////////////////////////////////////////////////////////
 // Class MaxWidths
@@ -33,83 +113,54 @@ using namespace Log;
  * Used internally only
  */
 struct MaxWidths {
-  int label = -1;
-  int total = -1;
-  int steps = -1;
-  int avg   = -1;
-  int min   = -1;
-  int max   = -1;
-
-  std::string total_str(std::string const &str) const;
-  std::string total_steps(int val) const;
-  std::string avg_str(std::string const &str) const;
-  std::string min_str(std::string const &str) const;
-  std::string max_str(std::string const &str) const;
+  int operator[] (int index) const { return m_widths[index]; }
+  int label() const { return m_widths[0]; }
+  int total() const { return m_widths[1]; }
+  int steps() const { return m_widths[2]; }
+  int avg()   const { return m_widths[3]; }
+  int min()   const { return m_widths[4]; }
+  int max()   const { return m_widths[5]; }
 
   void update(Timer const &timer);
   void update(Timers const &timers);
+  void update(int index, std::string const &str) {
+    adjust_width(index, str);
+  }
+
+private:
+  std::vector<int> m_widths = {
+    -1, //label
+    -1, //total
+    -1, //steps
+    -1, //avg
+    -1, //min
+    -1  //max
+  };
+
+
+  void adjust_width(int index, int val) {
+    if (m_widths[index] < val) m_widths[index] = val;
+  }
+
+
+  void adjust_width(int index, std::string const &str) {
+    int tmp = (int) str.length();
+    adjust_width(index, tmp);
+  }
 };
 
 
-std::string MaxWidths::total_str(std::string const &str) const {
-  std::string ret;
-  ret << indentBy(total - (int) str.length()) << str;
-  return ret;
-}
-
-
-std::string MaxWidths::total_steps(int val) const {
-  std::string tmp;
-  tmp << val;
-
-  std::string ret;
-  ret << indentBy(steps - (int) tmp.length()) << val;
-  return ret;
-}
-
-
-std::string MaxWidths::avg_str(std::string const &str) const {
-  std::string ret;
-  ret << indentBy(avg - (int) str.length()) << str;
-  return ret;
-}
-
-
-std::string MaxWidths::min_str(std::string const &str) const {
-  std::string ret;
-  ret << indentBy(min - (int) str.length()) << str;
-  return ret;
-}  
-
-
-std::string MaxWidths::max_str(std::string const &str) const {
-  std::string ret;
-  ret << indentBy(max - (int) str.length()) << str;
-  return ret;
-}  
-
-
 void MaxWidths::update(Timer const &timer) {
-  int tmp = (int) timer.label().length();
-  if (label < tmp) label = tmp;
+  adjust_width(0, timer.label());
+  adjust_width(1, timer.total_str());
 
-  tmp = (int) timer.total_str().length();
-  if (total < tmp) total = tmp;
+  std::string tmp_count;
+  tmp_count << timer.count();
+  adjust_width(2, tmp_count);
 
-  std::string tmp2;
-  tmp2 << timer.count();
-
-  tmp = (int) tmp2.length();
-  if (steps < tmp) steps = tmp;
-
-  tmp = (int) timer.avg_str().length();
-  if (avg < tmp) avg = tmp;
-
-  tmp = (int) timer.min_str().length();
-  if (min < tmp) min = tmp;
-
-  tmp = (int) timer.max_str().length();
-  if (max < tmp) max = tmp;
+  adjust_width(3, timer.avg_str());
+  adjust_width(4, timer.min_str());
+  adjust_width(5, timer.max_str());
 }
 
 
@@ -155,9 +206,9 @@ void Timer::stop() {
 
   // Update total
   timeval tvEnd, tvDiff;
+
   gettimeofday(&tvEnd, NULL);
   timersub(&tvEnd, &tvStart, &tvDiff);
-
   timeradd(&tvDiff, &tvTotal, &tvTotal);
 
   if (timercmp(&tvDiff, &tvMin, <)) {
@@ -177,14 +228,8 @@ void Timer::stop() {
 
 
 timeval Timer::diff_time() {
-  timeval tvEnd, tvDiff;
-  gettimeofday(&tvEnd, NULL);
-  timersub(&tvEnd, &tvStart, &tvDiff);
-
-#pragma GCC diagnostic push
-#pragma GCC diagnostic ignored "-Wconversion"
-  m_diff= 1.0f*tvDiff.tv_sec + (1.0f*tvDiff.tv_usec/1000000l);
-#pragma GCC diagnostic pop
+  timeval tvDiff;
+  m_diff = ::diff_time(tvStart, tvDiff);
 
   if (m_count == 0) {
     return tvDiff;
@@ -225,7 +270,32 @@ std::string Timer::min_str()   const { return time_to_str(tvMin); }
 std::string Timer::max_str()   const { return time_to_str(tvMax); }
 
 
-std::string Timer::dump(MaxWidths const &widths, bool show_extended) {
+std::string Timer::dump_g(MaxWidths const &widths, bool show_extended) {
+  using namespace string;
+  assert(!m_label.empty());
+
+  std::string buf2;
+
+  if (m_started) stop();
+
+  buf2 << pad(total_str(), widths.total(), false) << " "
+       << pad(m_count    , widths.steps())        << " "
+       << pad(avg_str()  , widths.avg()  , false) << " ";
+
+  if (show_extended) {
+    buf2 << pad(min_str()  , widths.min(), false) << " "
+         << pad(max_str()  , widths.max(), false);
+  }
+
+  std::string ret;
+
+  ret << pad(m_label, widths.label()) << " ";
+  ret << buf2;
+  return ret;
+}
+
+
+std::string Timer::dump(bool show_extended) {
   assert(!m_label.empty());
 
   std::string buf2;
@@ -236,20 +306,19 @@ std::string Timer::dump(MaxWidths const &widths, bool show_extended) {
   } else {
     if (m_started) stop();
 
-    buf2 << widths.total_str(total_str()) 
-         << " in " << widths.total_steps(m_count)  << " steps, "
-         << "average: " << widths.avg_str(avg_str());
+    buf2 << total_str() 
+         << " in "      << m_count << " steps, "
+         << "average: " << avg_str();
 
     if (show_extended) {
-      buf2 << " - Min: " << widths.min_str(min_str())
-           << ", Max: "  << widths.max_str(max_str());
+      buf2 << " - Min: " << min_str()
+           << ", Max: "  << max_str();
 
       if (HISTORY_SIZE > 0) {
-        buf2 << "\n" << indentBy(widths.label) << "    History: [";
+        buf2 << "\n    History: [";
 
         for (int i = 0; i < (int) m_history.size(); ++i) {
           if (i != 0) buf2 << ",";
-
           buf2 << time_to_str(m_history[i]);
         }
 
@@ -258,12 +327,10 @@ std::string Timer::dump(MaxWidths const &widths, bool show_extended) {
     }
   }
 
-  assert(!m_label.empty());
-  std::string ret = m_label;
+  std::string ret;
 
-  ret << indentBy(widths.label - (int) m_label.size());
-  ret << ": " << buf2;
-
+  ret << m_label << ": "
+      << buf2;
   return ret;
 }
 
@@ -391,7 +458,40 @@ std::vector<int> Timers::sort_indexes() {
   }
 
   return indexes;
-}  
+}
+
+
+/**
+ * @brief emit headers for global timers.
+ *
+ * Adjusts the widths if necessary, if the headers are larger than the values.
+ */
+std::string Timers::emit_headers(MaxWidths &widths, bool show_minmax) {
+  std::string buf = "  ";
+
+
+  int num = (int) s_headers.size();
+  if (!show_minmax) num -= 2;
+
+  for (int i = 0; i < num; ++i) {
+    auto const &label = s_headers[i];
+    widths.update(i, label);
+  }
+
+  for (int i = 0; i < num; ++i) {
+    auto const &label = s_headers[i];
+    bool do_left = (i > 0);
+    buf << string::pad(label, widths[i], do_left) << " ";
+  }
+  buf << "\n  ";
+
+  for (int i = 0; i < num; ++i) {
+    buf << string::rep("=", widths[i]) << " ";
+  }
+  buf << "\n";
+
+  return buf;
+}
 
 
 std::string Timers::dump(bool show_minmax) {
@@ -401,16 +501,16 @@ std::string Timers::dump(bool show_minmax) {
   widths.update(m_total);
 
   std::string buf;
+  buf << "Global Timers:\n"
+      << emit_headers(widths, show_minmax)
+      << "  " << m_total.dump_g(widths, show_minmax)   // Total is since first call to timers
+      << "\n";
+
   for (int i = 0; i < (int) indexes.size(); ++i) {
-    buf << "  " << m_list[indexes[i]].dump(widths, show_minmax) << "\n";
+    buf << "  " << m_list[indexes[i]].dump_g(widths, show_minmax) << "\n";
   }
 
-  std::string buf2;
-  buf2 << "Timers end:\n"
-       << "  " << m_total.dump(widths, show_minmax) << " (Since first call to timers)\n"
-       << buf;
-
-  return buf2;
+  return buf;
 }
 
 
@@ -446,7 +546,6 @@ int Timers::find(std::string const &label) {
 
   for (int i = 0; i < (int) m_list.size(); ++i) {
     if (label == m_list[i].label()) {
-      //warn << "Found timer";
       index = i;
       break;
     }

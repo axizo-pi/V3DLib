@@ -4,11 +4,12 @@
 
 struct GravitySettings : public V3DLib::Settings {
 
-	bool do_animate;
-	bool output_orbits;
-	int  kernel;
+  bool do_animate;
+  bool output_orbits;
+  int  kernel;
+  int  num_entities;
 
-	GravitySettings();
+  GravitySettings();
 
   bool init_params() override;
 };
