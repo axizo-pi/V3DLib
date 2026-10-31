@@ -131,22 +131,24 @@ void init_orbital_entities() {
   double const Asteroid_Speed = 3.5e3;
   double const Asteroid_Mass  = 1e22;
 
+	Log::warn << "Entity model: " << settings.model;
+
   for (int i = 0; i < num_asteroids; ++i) {
-/*    
-    // Chaos: random asteroid placement with random speeds
-    o[N_PLANETS + i] = {
-      Asteroid_Dist*Vector3::random(),
-      Asteroid_Speed*Vector3::random(),
-      Asteroid_Mass
-    };
-*/    
-    // Ordered model with equidistant asteroids in the orbital plane
-    o[N_PLANETS + i] = {
-      Asteroid_Dist + 9e10*i, 0, 0,
-      0, Asteroid_Speed, 0,
-      Asteroid_Mass
-    };
-    
+		if ( settings.model == "ordered") {
+      // Ordered model with equidistant asteroids in the orbital plane
+      o[N_PLANETS + i] = {
+        Asteroid_Dist + 9e10*i, 0, 0,
+        0, Asteroid_Speed, 0,
+        Asteroid_Mass
+      };
+		} else {
+      // Chaos: random asteroid placement with random speeds
+      o[N_PLANETS + i] = {
+        Asteroid_Dist*Vector3::random(),
+        Asteroid_Speed*Vector3::random(),
+        Asteroid_Mass
+      };
+		}
   }
 }
 

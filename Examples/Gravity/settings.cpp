@@ -40,6 +40,13 @@ CmdParameters params = {
     "Set the number of entities in the simulation\n"
     "The default value is the minimum value. The value must be a multiple of 32",
     32
+  }, {
+    "Entity model",
+    { "-model="},
+    { "ordered", "chaos"},
+    "Select how the entities are initialized. Options\n"
+    "  - ordered: Solar system with equidistant asteroids in the orbital plane\n"
+    "  - chaos  : Solar system with random asteroid placement with random speeds"
   }}
 };
 
@@ -54,6 +61,7 @@ bool GravitySettings::init_params() {
   output_orbits = p["Output orbit image" ]->get_bool_value();
   kernel        = p["Kernel"             ]->get_int_value();
   num_entities  = p["Number of entities" ]->get_int_value();
+  model         = p["Entity model"       ]->get_string_value();
 
   set_num_years(p["Number of years"]->get_int_value());
 
