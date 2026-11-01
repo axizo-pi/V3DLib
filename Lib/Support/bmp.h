@@ -18,6 +18,9 @@ public:
   void plot(double in_x, double in_y);
   void save(std::string const &filename) const;
 
+	int width()  const { return m_width; }
+	int height() const { return m_height; }
+
 private:  
   int    m_width;
   int    m_height;
