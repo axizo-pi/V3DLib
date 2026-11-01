@@ -1,4 +1,5 @@
 #include "scalar.h"
+#include "animate.h"
 #include "tools.h"
 #include "settings.h"       // num_entities
 #include "Support/basics.h"
@@ -201,17 +202,16 @@ void scalar_step() {
 }
 
 
-void plot_orbital_entities(Image &img) {
-  auto &o = orbital_entities;
-
-  for (int i = 0; i < (int) o.size(); ++i) {
-    img.plot(o[i].x(), o[i].y());
-  }
-}
-
-
 void scalar_run(Image &img) {
   timers.start("cpu gravity");
+  auto &o = orbital_entities;
+
+  auto plot_image = [&o] (Image &img) {
+    //Log::warn << "Called plot_image";
+     for (int i = 0; i < (int) o.size(); ++i) {
+       img.plot(o[i].x(), o[i].y());
+     }
+  };
 
   double t = 0;
 
@@ -219,10 +219,13 @@ void scalar_run(Image &img) {
     for (int i = 0; i < BATCH_STEPS; ++i) {  // Uses BATCH_STEPS directly, intentional
       scalar_step();
     }
-    plot_orbital_entities(img);
+
+    plot_image(img);           // Update orbits image
+    save_animate(plot_image);
 
     t += BATCH_STEPS*dt;
   }
 
+  save_animate(plot_image, true);
   timers.stop("cpu gravity");
 }

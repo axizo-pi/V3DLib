@@ -14,7 +14,7 @@
 namespace {
 
 /**
- * Get the base filename, without the extension, from a path
+ * @brief Get the base filename, without the extension, from a path
  *
  * Source: https://stackoverflow.com/a/8520815
  *
@@ -58,7 +58,8 @@ CmdParameters base_params = {
     "Compile Only",
     "-c",
     ParamType::NONE,
-    "Compile the kernel but do not run it"
+    "Compile the QPU kernel but do not run it.\n"
+    "May be ignored for scalar kernels."
   }, {
     "Select run type",
     "-r=",

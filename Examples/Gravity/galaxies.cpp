@@ -53,7 +53,7 @@ namespace galaxies {
 namespace {
 
 float random() {
-	return (float) rand() / (float) RAND_MAX;
+  return (float) rand() / (float) RAND_MAX;
 }
 
 }  // anon namespace
@@ -69,9 +69,9 @@ class Star {
 public:
   Star(Galaxy const &galaxy);
 
-	float pos[3];
-	float vel[3];
-	float size;
+  float pos[3];
+  float vel[3];
+  float size;
 };
 
 
@@ -80,19 +80,19 @@ public:
  */
 class Galaxy {
 public:
-	float mat[3][3];
-	float pos[3];
-	float vel[3];
-	std::vector<Star> stars;
+  float mat[3][3];
+  float pos[3];
+  float vel[3];
+  std::vector<Star> stars;
 
-	Galaxy(Universe const &universe);
+  Galaxy(Universe const &universe);
 
-	float mass() const { return m_mass;  }
-	float size() const { return m_size; }
+  float mass() const { return m_mass;  }
+  float size() const { return m_size; }
 
 private:
-	float m_mass;
-	float m_size;
+  float m_mass;
+  float m_size;
   static int   MAX_STARS();
   static float RANGE_SIZE();
   static float MIN_SIZE();
@@ -107,25 +107,25 @@ float Galaxy::MIN_SIZE()   { return 0.1f; }
  * A universe contains the galaxies, and some global-ish stuff.
  */
 class Universe {
-public:	
-	float deltat;
-	int hitIterations;
-	std::vector<Galaxy> galaxies;
+public:  
+  float deltat;
+  int hitIterations;
+  std::vector<Galaxy> galaxies;
 
   Universe(int galaxyCount) {
-	  reset(galaxyCount);
+    reset(galaxyCount);
   }
 
-	void reset(int galaxyCount) {
+  void reset(int galaxyCount) {
     hitIterations = 100;
     deltat = 0.005f;
 
-		galaxies.clear();
+    galaxies.clear();
 
     for (int i = 0; i < galaxyCount; i++) {
       galaxies.push_back(Galaxy(*this));
     }
-	}
+  }
 
   static int MAX_LIFETIME();
 };
@@ -166,12 +166,12 @@ Galaxy::Galaxy(Universe const &universe) {
 
   vel[0] = random() * 2 - 1;
   vel[1] = random() * 2 - 1;
-	vel[2] = random() * 2 - 1;
+  vel[2] = random() * 2 - 1;
 
   float hitIterations = (float) universe.hitIterations;
   pos[0] = (float) ( -vel[0] * universe.deltat * hitIterations + random() - 0.5);
-	pos[1] = (float) ( -vel[1] * universe.deltat * hitIterations + random() - 0.5);
-	pos[2] = (float) ((-vel[2] * universe.deltat * hitIterations + random() - 0.5) + Z_OFFSET);
+  pos[1] = (float) ( -vel[1] * universe.deltat * hitIterations + random() - 0.5);
+  pos[2] = (float) ((-vel[2] * universe.deltat * hitIterations + random() - 0.5) + Z_OFFSET);
 
   const float w1 = (float) (2.0 * M_PI * (double) random());
   const float w2 = (float) (2.0 * M_PI * (double) random());
@@ -287,8 +287,8 @@ void updateUniverse() {
 
 
 void draw(Image &img) {
-	float halfCanvasWidth  = (float) (img.width()  / 2);
-	float halfCanvasHeight = (float) (img.height() / 2);
+  float halfCanvasWidth  = (float) (img.width()  / 2);
+  float halfCanvasHeight = (float) (img.height() / 2);
 
   // Draw each galaxy
   for (int i = 0; i < (int) universe.galaxies.size(); ++i) {
@@ -301,11 +301,11 @@ void draw(Image &img) {
         float x = std::floor((150 * star.pos[0] / star.pos[2]) + halfCanvasWidth);
         float y = std::floor((150 * star.pos[1] / star.pos[2]) + halfCanvasHeight);
 
-				// TODO draw rect
+        // TODO draw rect
         //float z = std::min(std::floor(2 / (star.pos[2] + star.size)) + 1, 10.0f);
         //ctx.fillRect(x, y, z, z);
 
-				img.plot(x,y);
+        img.plot(x,y);
       }
     }
   }

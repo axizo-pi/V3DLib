@@ -45,18 +45,9 @@ struct Model {
   Image orbit_img{512, 512};    //> Orbit image
 
   void init();
-  void plot();
   void save_orbits();
-  void save_animate(bool force = false);
   std::string dump_pos() const;
   std::string dump_acc() const;
-
-private:
-	const int ANIMATE_SKIP = 720;  //> Number of days to skip for every animate output
-	int animate_count      = 0;    //> Number of times `save_animate()` is called
-	int index              = 0;    //> Prefix index for animate
-
-	void plot_img(Image &img);
 };
 
 #endif //  _V3DLIB_GRAVITY_MODEL_H

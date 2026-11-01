@@ -43,10 +43,11 @@ CmdParameters params = {
   }, {
     "Entity model",
     { "-model="},
-    { "ordered", "chaos"},
+    { "ordered", "chaos", "galaxy"},
     "Select how the entities are initialized. Options\n"
     "  - ordered: Solar system with equidistant asteroids in the orbital plane\n"
-    "  - chaos  : Solar system with random asteroid placement with random speeds"
+    "  - chaos  : Solar system with random asteroid placement with random speeds\n"
+    "  - galaxy : Stars organized galaxies, like the Galaxy screensaver"
   }}
 };
 
@@ -71,6 +72,14 @@ bool GravitySettings::init_params() {
 
   if (num_entities % 32 != 0) {
     throw Exception("Number of entities must be a multiple of 32");
+  }
+
+  if (model == "galaxy") {
+    if (kernel == 0) {
+      throw Exception("Gravity model not yet implemented for qpu");
+    }
+
+    throw Exception("Gravity model cpu TODO");
   }
 
   return true;

@@ -22,6 +22,7 @@
  * |--------|--------|-----------|----------|-----------------------------------------|
  */
 #include "model.h"
+#include "animate.h"
 #include "scalar.h"
 #include "kernel.h"
 #include "Support/Helpers.h"  // to_file()
@@ -63,6 +64,75 @@ void init_platform() {
 }
 
 
+/**
+ * @brief Run the scalar kernel
+ */
+void run_scalar_kernel(Image &img) {
+  warn << "Run scalar kernel";
+
+  Timer timer("Scalar timer", true);
+
+  init_orbital_entities();
+  scalar_run(img);
+
+  // The plot image is always filled in, output is optional.
+  if (settings.output_orbits) {
+    img.save("gravity.bmp");
+  }
+}
+
+
+/**
+ * @brief Run the gpu kernel
+ */
+void run_gpu_kernel(Image &img) {
+  warn << "Run GPU kernel" 
+       << ", num qpu's: " << settings.num_qpus;
+
+  init_orbital_entities();
+  Model m;  // Orbit image
+  m.init();
+
+  auto plot_image = [&m] (Image &img) {
+    for (int i = 0; i < (int) m.x.size(); ++i) {
+       img.plot(m.x[i], m.y[i]);
+     }
+  };
+
+  plot_image(m.orbit_img);        // Init the orbit image
+
+  auto k = compile(gravity_kernel, settings);
+  //to_file("Gravity_kernel.txt", k.dump());
+  //to_file("Gravity_kernel.cpp", k.compile().dump_kernel_hex());
+  k.setNumQPUs(settings.num_qpus);
+
+  k.load(
+    &m.x, &m.y, &m.z,
+    &m.v_x, &m.v_y, &m.v_z,
+    &m.acc_x, &m.acc_y, &m.acc_z,
+    &m.mass,
+    settings.num_entities
+  );
+
+  {
+    timers.start("QPU gravity");
+
+    double t = 0;
+    while (t < t_end) {
+      k.run();
+
+      plot_image(m.orbit_img);        // Update the orbit image - always done
+      save_animate(plot_image);
+      t += batch_steps()*dt;
+    }
+
+    m.save_orbits();                  // Save orbit image if specified
+    save_animate(plot_image, true);
+    timers.stop("QPU gravity");
+  }
+}
+
+
 ///////////////////////////////////////////////////////////////
 // Main 
 ///////////////////////////////////////////////////////////////
@@ -89,70 +159,13 @@ int main(int argc, const char *argv[]) {
   settings.init(argc, argv);
   init_platform();
 
-  warn << "Num qpu's: " << settings.num_qpus;
-
   Image img(512, 512);
   img.set_conversion_factor(IMG_CONVERSION_FACTOR);
 
   if (settings.kernel == 1) {
-    //
-    // Run scalar version
-    //
-    warn << "Run scalar kernel";
-    if (settings.do_animate) {
-      warn << "Animate not enabled for cpu";
-    }
-
-    Timer timer("Scalar timer", true);
-
-    init_orbital_entities();
-    scalar_run(img);
-
-    // The plot image is always filled in, output is optional.
-    if (settings.output_orbits) {
-      img.save("gravity.bmp");
-    }
+    run_scalar_kernel(img);
   } else {
-    //
-    // Run kernel version
-    //
-    warn << "Run GPU kernel";
-
-    init_orbital_entities();
-    Model m;  // Orbit image
-    m.init();
-    m.plot();
-
-    auto k = compile(gravity_kernel, settings);
-    //to_file("Gravity_kernel.txt", k.dump());
-    //to_file("Gravity_kernel.cpp", k.compile().dump_kernel_hex());
-    k.setNumQPUs(settings.num_qpus);
-
-    k.load(
-      &m.x, &m.y, &m.z,
-      &m.v_x, &m.v_y, &m.v_z,
-      &m.acc_x, &m.acc_y, &m.acc_z,
-      &m.mass,
-      settings.num_entities
-    );
-
-    {
-      timers.start("QPU gravity");
-
-      double t = 0;
-      while (t < t_end) {
-        k.run();
-
-        m.plot();                     // The orbit image is always updated 
-        m.save_animate();
-        t += batch_steps()*dt;
-      }
-
-      m.save_orbits();
-      timers.stop("QPU gravity");
-    }
-
-    m.save_animate(true);
+    run_gpu_kernel(img);
   }
 
   timers.end(true);
