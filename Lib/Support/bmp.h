@@ -15,7 +15,9 @@ public:
   Image(int width, int height);
 
   void set_conversion_factor(double val);
+  void set_color(unsigned rgb);
   void plot(double in_x, double in_y);
+  void plot_rect(double in_x, double in_y, int width, int height);
   void save(std::string const &filename) const;
 
   int width()  const { return m_width; }
@@ -24,9 +26,11 @@ public:
 private:  
   int    m_width;
   int    m_height;
-  double m_factor = 1.0;
+  double m_factor  = 1.0;
+  rgb_t  cur_color = {255, 255, 255};
 
   bitmap_image m_img;
+  bool convert_coords(int &x, int &y, double in_x, double in_y);
 };
 
 

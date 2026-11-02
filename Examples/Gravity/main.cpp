@@ -21,14 +21,15 @@
  * |        |     16 |         " |  205.503 |                                         |
  * |--------|--------|-----------|----------|-----------------------------------------|
  */
-#include "model.h"
+#include "settings.h"
 #include "animate.h"
+#include "model.h"
+#include "galaxies.h"
 #include "scalar.h"
 #include "kernel.h"
 #include "Support/Helpers.h"  // to_file()
 #include "vc4/RegisterMap.h"
 #include "LibSettings.h"
-#include "settings.h"
 #include "global/Timer.h"
 
 using namespace Log;
@@ -67,8 +68,11 @@ void init_platform() {
 /**
  * @brief Run the scalar kernel
  */
-void run_scalar_kernel(Image &img) {
+void run_scalar_kernel() {
   warn << "Run scalar kernel";
+
+  Image img(512, 512);
+  img.set_conversion_factor(IMG_CONVERSION_FACTOR);
 
   Timer timer("Scalar timer", true);
 
@@ -83,11 +87,50 @@ void run_scalar_kernel(Image &img) {
 
 
 /**
+ * Galaxies does not use the same physics constants as the other model.
+ * For this reason, the loop goes over number of years, not seconds per day.
+ */
+void galaxy_run(Image &img) {
+  timers.start("cpu galaxy");
+
+  for (int j = 0; j < settings.years; ++j) {
+    galaxies::step();
+
+    galaxies::draw(img);                 // Update orbits image
+    save_animate(galaxies::draw, true);  // 2nd param: always save, ignore animate skip
+  }
+
+  timers.stop("cpu galaxy");
+}
+
+
+void run_galaxy() {
+  warn << "Run galaxy";
+
+  Image img(512, 512);
+  img.set_conversion_factor(1000.0);
+  galaxies::determine_factor(img);
+
+  Timer timer("Galaxy timer", true);
+
+  galaxy_run(img);
+
+  // The plot image is always filled in, output is optional.
+  if (settings.output_orbits) {
+    img.save("gravity.bmp");
+  }
+}
+
+
+/**
  * @brief Run the gpu kernel
  */
-void run_gpu_kernel(Image &img) {
+void run_gpu_kernel() {
   warn << "Run GPU kernel" 
        << ", num qpu's: " << settings.num_qpus;
+
+  Image img(512, 512);
+  img.set_conversion_factor(IMG_CONVERSION_FACTOR);
 
   init_orbital_entities();
   Model m;  // Orbit image
@@ -159,13 +202,14 @@ int main(int argc, const char *argv[]) {
   settings.init(argc, argv);
   init_platform();
 
-  Image img(512, 512);
-  img.set_conversion_factor(IMG_CONVERSION_FACTOR);
-
   if (settings.kernel == 1) {
-    run_scalar_kernel(img);
+    if (settings.model == "galaxy") {
+      run_galaxy();
+    } else {
+      run_scalar_kernel();
+    }
   } else {
-    run_gpu_kernel(img);
+    run_gpu_kernel();
   }
 
   timers.end(true);

@@ -62,9 +62,10 @@ bool GravitySettings::init_params() {
   output_orbits = p["Output orbit image" ]->get_bool_value();
   kernel        = p["Kernel"             ]->get_int_value();
   num_entities  = p["Number of entities" ]->get_int_value();
+  years         = p["Number of years"    ]->get_int_value();
   model         = p["Entity model"       ]->get_string_value();
 
-  set_num_years(p["Number of years"]->get_int_value());
+  set_num_years(years);
 
   if (num_entities < 32) {
     throw Exception("Number of entities must be at least 32");
@@ -78,8 +79,6 @@ bool GravitySettings::init_params() {
     if (kernel == 0) {
       throw Exception("Gravity model not yet implemented for qpu");
     }
-
-    throw Exception("Gravity model cpu TODO");
   }
 
   return true;

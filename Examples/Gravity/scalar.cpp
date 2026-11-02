@@ -1,72 +1,11 @@
 #include "scalar.h"
 #include "animate.h"
-#include "tools.h"
 #include "settings.h"       // num_entities
 #include "Support/basics.h"
 #include "global/Timer.h"
-#include <cmath>
 
 using namespace std;
 using namespace V3DLib;
-
-
-/////////////////////////////////////////////////////////////////
-// Class Vector3
-/////////////////////////////////////////////////////////////////
-
-Vector3::Vector3(double e0, double e1, double e2) {
-  e[0] = e0;
-  e[1] = e1;
-  e[2] = e2;
-}
-
-
-std::string Vector3::dump() const {
-  std::string ret;
-  ret << "Vector3(" << (float) e[0] << ", " << (float) e[1] << ", " << (float) e[2] << ")";
-
-  return ret;
-}
-
-
-double Vector3::length() const {
-  double val = x()*x() + y()*y() + z()*z();
-  return sqrt(val);
-}
-
-
-Vector3 Vector3::operator*(double val) const {
-  auto  ret = *this;
-
-  ret.e[0] *= val;
-  ret.e[1] *= val;
-  ret.e[2] *= val;
-
-  return ret;
-}
-
-
-Vector3 operator*(double lhs, Vector3 const &rhs) {
-  return rhs * lhs;
-}
-
-
-/**
- * Return a unit vector with random coordinates
- *
- * The coordinates follow a Gaussian distribution.
- */
-Vector3 Vector3::random() {
-  Vector3 ret(frand(), frand(), frand());
-  //Log::warn << "Vector3::random() ret: " << ret.dump();
-
-  auto length = ret.length();
-  ret.e[0] /= length;
-  ret.e[1] /= length;
-  ret.e[2] /= length;
-
-  return ret;
-}
 
 
 /////////////////////////////////////////////////////////////////

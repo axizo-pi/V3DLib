@@ -1,52 +1,12 @@
 /**
- * galaxies.js
+ * /file
  *
- * Adapted from galaxy.c, the Galaxy Collision Screen Saver, originally written by Uli Siegmund
- * <uli@wombat.okapi.sub.org> on Amiga for EGS in Cluster.
- *
- * Port from Cluster/EGS to C/Intuition by Harald Backert.
- *
- * Port to X11 & incorporation into xlockmore by Hubert Feyrer <hubert.feyrer@rz.uni-regensburg.de>.
- *
- * Permission to use, copy, modify, and distribute this software and its documentation for any
- * purpose and without fee is hereby granted, provided that the above copyright notice appear in
- * all copies and that both that copyright notice and this permission notice appear in supporting
- * documentation.
- *
- * This file is provided AS IS with no warranties of any kind.  The author shall have no liability
- * with respect to the infringement of copyrights, trade secrets or any patents by this file or any
- * part thereof.  In no event will the author be liable for any lost revenue or profits or other
- * special, indirect and consequential damages.
- *
- * Revision History:
- *
- * 2016-08-14: Ported to ES2015 JavaScript by Ray Toal <rtoal@lmu.edu>
- * 2011-03-12: Ported to JavaScript by Ray Toal <rtoal@lmu.edu>
- * 2001-11-08: Converted to Java applet by Chris Stevenson <chris.stevenson@adelaide.on.net>
- *             http://www.users.on.net/zhcchz/java/galaxy/UniverseApplet.html with z axis
- *             information for star size, perspective view by Richard Loftin <rich@sevenravens.com>
- * 2000-11-14: Port to Win32 by Richard Loftin <rich@sevenravens.com>, now uses z axis information
- *             for star size, perspective view.
- * 1997-05-10: Compatible with xscreensaver
- * 1997-04-18: Memory leak fixed by Tom Schmidt <tschmidt@micron.com>
- * 1997-04-07: Modified by Dave Mitchell <davem@magnet.com>: random star sizes, colors change
- *             depending on velocity
- * 1994-10-23: Modified by David Bagley <bagleyd@tux.org>
- * 1994-10-10: Add colors by Hubert Feyer
- * 1994-09-30: Initial port by Hubert Feyer
- * 1994-03-09: VMS can generate a random number 0.0 which results in a division by zero,
- *             corrected by Jouk Jansen <joukj@hrem.stm.tudelft.nl>
- *
- * =================================================================================================
- * 
- * Source: https://github.com/rtoal/galaxies/blob/master/galaxies.js
+ * Derived from: https://github.com/rtoal/galaxies/blob/master/galaxies.js
+ * **TODO:** Consider adding licence info; is it necessary?
  */
 #include "galaxies.h"
-#include <math.h>        // M_PI
-#include <cmath>
-#include <cstdlib>       // rand();
-#include <vector>
-#include <cassert>
+#include "Vector3.h"
+#include "global/Log.h"
 
 
 namespace galaxies {
@@ -56,11 +16,27 @@ float random() {
   return (float) rand() / (float) RAND_MAX;
 }
 
+// Original colors are not very distinctive, replacing these.
+const unsigned colors[12] = {
+  0x0404cc, 0x04cc04, 0xcc0404,  /*0xffffcc, 0xccffff, 0xffccff, */
+  0xccffcc, 0xccccff, 0xffcccc,
+  0x80ffbf, 0xbf80ff, 0xffbf80, 0xbfff80, 0x80bfff, 0xff80bf
+};
+
+//
+// Default values, taken from original
+//
+const int   GALAXY_COUNT = 3;     // Number of galaxies to start up with
+const int   MAX_STARS    = 700;   // Amount of stars in a galaxy
+const float RANGE_SIZE   = 0.1f;
+const float MIN_SIZE     = 0.1f;
+
 }  // anon namespace
 
 
 class Universe;  // Forward declaration
 class Galaxy;    // Forward declaration
+
 
 /*
  * A star belongs to a galaxy and has a size, pos, and vel.
@@ -85,7 +61,7 @@ public:
   float vel[3];
   std::vector<Star> stars;
 
-  Galaxy(Universe const &universe);
+  Galaxy(Universe const &universe, int num_stars = MAX_STARS);
 
   float mass() const { return m_mass;  }
   float size() const { return m_size; }
@@ -93,14 +69,7 @@ public:
 private:
   float m_mass;
   float m_size;
-  static int   MAX_STARS();
-  static float RANGE_SIZE();
-  static float MIN_SIZE();
 };
-
-int Galaxy::MAX_STARS()    { return 700;  }
-float Galaxy::RANGE_SIZE() { return 0.1f; }
-float Galaxy::MIN_SIZE()   { return 0.1f; }
 
 
 /*
@@ -123,7 +92,7 @@ public:
     galaxies.clear();
 
     for (int i = 0; i < galaxyCount; i++) {
-      galaxies.push_back(Galaxy(*this));
+      galaxies.push_back(Galaxy(*this, 2000));
     }
   }
 
@@ -159,10 +128,10 @@ Star::Star(Galaxy const &galaxy) {
 }
 
 
-Galaxy::Galaxy(Universe const &universe) {
+Galaxy::Galaxy(Universe const &universe, int num_stars) {
   const float Z_OFFSET = 1.5f;
-  m_mass = (float) MAX_STARS();
-  m_size = RANGE_SIZE() * random() + MIN_SIZE();
+  m_mass = (float) num_stars;
+  m_size = RANGE_SIZE * random() + MIN_SIZE;
 
   vel[0] = random() * 2 - 1;
   vel[1] = random() * 2 - 1;
@@ -190,7 +159,7 @@ Galaxy::Galaxy(Universe const &universe) {
   mat[2][1] = -sinw1 * cosw2;
   mat[2][2] = cosw1 * cosw2;
 
-  for (int i = 0; i < MAX_STARS(); i++) {
+  for (int i = 0; i < num_stars; i++) {
     stars.push_back(Star(*this));
   }
 }
@@ -198,31 +167,11 @@ Galaxy::Galaxy(Universe const &universe) {
 
 namespace {
 
-// Global state, changed during simulation
-int galaxyCount = 3;
 int s_step = 0;
-Universe universe(galaxyCount);
-
-/*
-// UI
-const canvas = document.getElementById("galaxies");
-const canvasWidth = canvas.width;
-const canvasHeight = canvas.height;
-const halfCanvasWidth = canvasWidth / 2;
-const halfCanvasHeight = canvasHeight / 2;
-
-const unsigned colors[12] = {
-  0xffffcc, 0xccffff, 0xffccff, 0xccffcc, 0xccccff, 0xffcccc,
-  0x80ffbf, 0xbf80ff, 0xffbf80, 0xbfff80, 0x80bfff, 0xff80bf
-};
-
-const ctx = canvas.getContext("2d");
-*/
-}  // anon namespace
-
+Universe universe(GALAXY_COUNT);
 
 void updateUniverse() {
-  float delta = 0.000005f;
+  float delta  = 0.000005f;
   float deltat = universe.deltat;
 
   // Update each galaxy
@@ -285,28 +234,70 @@ void updateUniverse() {
   }
 }
 
+}  // anon namespace
+
+
+void determine_factor(Image const &img) {
+  bool did_first = false;
+  Vector3 vec_min;
+  Vector3 vec_max;
+
+  for (int i = 0; i < (int) universe.galaxies.size(); ++i) {
+    auto &gt = universe.galaxies[i];
+
+    for (auto &star: gt.stars) {
+      Vector3 cur(star.pos[0], star.pos[1], star.pos[2]);
+      if (did_first) {
+        vec_min.set_min(cur);
+        vec_max.set_max(cur);
+      } else {
+        vec_min = cur;
+        vec_max = cur;
+        did_first = true;
+      }
+    }
+  }
+
+  assert(vec_min.x() < 0);
+  assert(vec_min.y() < 0);
+  assert(vec_max.x() > 0);
+  assert(vec_max.y() > 0);
+
+  double max_x = std::abs(vec_min.x());
+  if (max_x < vec_max.x()) max_x = vec_max.x();
+
+  double max_y = vec_max.y();
+  if (max_y < vec_max.y()) max_y = vec_max.y();
+
+  Log::warn << "min/max:\n"
+            << "  vec_min: " << vec_min.dump() << "\n"
+            << "  vec_max: " << vec_max.dump();
+
+  Log::warn << "img w/h: " << img.width() << ", " << img.height() << "\n"
+            << "Max x/y: " << max_x       << ", " << max_y;
+}
+
 
 void draw(Image &img) {
-  float halfCanvasWidth  = (float) (img.width()  / 2);
-  float halfCanvasHeight = (float) (img.height() / 2);
+  img.set_conversion_factor(1000.0);
+  float Factor = 300;
 
   // Draw each galaxy
   for (int i = 0; i < (int) universe.galaxies.size(); ++i) {
     auto &gt = universe.galaxies[i];
-    // TODO ctx.fillStyle = colors[i];
+    img.set_color(colors[i]);
 
     // Draw each star in the galaxy
     for (auto &star: gt.stars) {
-      if (star.pos[2] > 0.0) {
-        float x = std::floor((150 * star.pos[0] / star.pos[2]) + halfCanvasWidth);
-        float y = std::floor((150 * star.pos[1] / star.pos[2]) + halfCanvasHeight);
+      if (star.pos[2] <= 0.0) continue;  // Checked: negative z occurs often
 
-        // TODO draw rect
-        //float z = std::min(std::floor(2 / (star.pos[2] + star.size)) + 1, 10.0f);
-        //ctx.fillRect(x, y, z, z);
+      float x = std::floor((Factor * star.pos[0] / star.pos[2]));
+      float y = std::floor((Factor * star.pos[1] / star.pos[2]));
 
-        img.plot(x,y);
-      }
+      // TODO draw rect
+      float z = std::min(std::floor(2 / (star.pos[2] + star.size)) + 1, 10.0f);
+      img.plot_rect(x, y, (int) z, (int) z);
+      //img.plot(x, y);
     }
   }
 }
@@ -316,10 +307,12 @@ void step() {
   updateUniverse();
 
   s_step += 1;
+/*
   if (s_step > Universe::MAX_LIFETIME()) {
     s_step = 0;
-    universe.reset(galaxyCount);
+    universe.reset(GALAXY_COUNT);
   }
+*/
 }
 
 }  // namespace galaxies

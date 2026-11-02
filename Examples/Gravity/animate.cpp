@@ -32,7 +32,7 @@ void save_animate(std::function<void(Image &img)> plot_image, bool force) {
   if (force || (animate_count >= ANIMATE_SKIP)) {
     std::string filename;
     filename << s_index << "_gravity.bmp";
-    warn << "Model outputting animate to: " << filename;
+    //info << "Model outputting animate to: " << filename;
 
     Image img{512, 512};
     img.set_conversion_factor(IMG_CONVERSION_FACTOR);

@@ -1,36 +1,13 @@
 #ifndef _V3DLIB_GRAVITY_SCALAR_H
 #define _V3DLIB_GRAVITY_SCALAR_H
 #include "defaults.h"
+#include "Vector3.h"
 #include "Support/bmp.h"
-#include <string>
-#include <vector>
 
 /////////////////////////////////////////////////////////////////
 // Scalar simulation
 // Derived From: https://en.wikipedia.org/wiki/N-body_simulation
 /////////////////////////////////////////////////////////////////
-
-struct Vector3 {
-  double e[3] = { 0 };
-
-  Vector3() {}
-  Vector3(double e0, double e1, double e2);
-  ~Vector3() {}
-
-  double x() const { return e[0]; }
-  double y() const { return e[1]; }
-  double z() const { return e[2]; }
-  double length() const;
-
-  Vector3 operator*(double val) const;
-
-  std::string dump() const;
-  static Vector3 random();
-};
-
-
-Vector3 operator*(double lhs, Vector3 const &rhs);
-
 
 struct OrbitalEntity {
   double e[7] = { 0 };
