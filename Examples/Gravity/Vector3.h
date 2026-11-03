@@ -7,6 +7,7 @@ struct Vector3 {
 
   Vector3() {}
   Vector3(double e0, double e1, double e2);
+  Vector3(float const *p_e);
   ~Vector3() {}
 
   double x() const { return e[0]; }
@@ -14,7 +15,16 @@ struct Vector3 {
   double z() const { return e[2]; }
   double length() const;
 
+  double dot(Vector3 const &rhs) const;
+  double dot() const;
+  Vector3 &operator*=(double val);
   Vector3 operator*(double val) const;
+  Vector3 &operator/=(double val);
+  Vector3 operator/(double val) const;
+  Vector3 &operator+=(Vector3 const &rhs);
+  Vector3 operator+(Vector3 const &rhs) const;
+  Vector3 &operator-=(Vector3 const &rhs);
+  Vector3 operator-(Vector3 const &rhs) const;
 
   void set_min(Vector3 const &rhs);
   void set_max(Vector3 const &rhs);

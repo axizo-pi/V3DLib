@@ -107,17 +107,15 @@ void galaxy_run(Image &img) {
 void run_galaxy() {
   warn << "Run galaxy";
 
-  Image img(512, 512);
-  img.set_conversion_factor(1000.0);
-  galaxies::determine_factor(img);
+  Image orbit_img(512, 512);
 
   Timer timer("Galaxy timer", true);
 
-  galaxy_run(img);
+  galaxy_run(orbit_img);
 
   // The plot image is always filled in, output is optional.
   if (settings.output_orbits) {
-    img.save("gravity.bmp");
+    orbit_img.save("gravity.bmp");
   }
 }
 

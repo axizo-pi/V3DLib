@@ -1,6 +1,9 @@
 /**
  * /file
  *
+ * Mass centers of galaxies are used for the gravity calculation,
+ * as opposed to full calculation between stars.
+ *
  * Derived from: https://github.com/rtoal/galaxies/blob/master/galaxies.js
  * **TODO:** Consider adding licence info; is it necessary?
  */
@@ -23,11 +26,12 @@ const unsigned colors[12] = {
   0x80ffbf, 0xbf80ff, 0xffbf80, 0xbfff80, 0x80bfff, 0xff80bf
 };
 
+
 //
-// Default values, taken from original
+// Configuration values
 //
-const int   GALAXY_COUNT = 3;     // Number of galaxies to start up with
-const int   MAX_STARS    = 700;   // Amount of stars in a galaxy
+const int   GALAXY_COUNT = 3;    // Number of galaxies to start up with
+const int   MAX_STARS    = 2000; // Original: 700;   // Amount of stars in a galaxy
 const float RANGE_SIZE   = 0.1f;
 const float MIN_SIZE     = 0.1f;
 
@@ -37,28 +41,41 @@ const float MIN_SIZE     = 0.1f;
 class Universe;  // Forward declaration
 class Galaxy;    // Forward declaration
 
+class Entity {
+public:  
+  float pos[3];
+  float vel[3];
+
+  void set_pos(Vector3 const &rhs) {
+    pos[0] = (float) rhs.x();
+    pos[1] = (float) rhs.y();
+    pos[2] = (float) rhs.z();
+  }
+
+  void set_vel(Vector3 const &rhs) {
+    vel[0] = (float) rhs.x();
+    vel[1] = (float) rhs.y();
+    vel[2] = (float) rhs.z();
+  }
+};
 
 /*
  * A star belongs to a galaxy and has a size, pos, and vel.
  */
-class Star {
+class Star : public Entity {
 public:
-  Star(Galaxy const &galaxy);
-
-  float pos[3];
-  float vel[3];
   float size;
+
+  Star(Galaxy const &galaxy);
 };
 
 
 /*
  * A galaxy exists within a universe and has a mass, size, vel, pos, mat, and stars.
  */
-class Galaxy {
+class Galaxy : public Entity {
 public:
   float mat[3][3];
-  float pos[3];
-  float vel[3];
   std::vector<Star> stars;
 
   Galaxy(Universe const &universe, int num_stars = MAX_STARS);
@@ -92,7 +109,7 @@ public:
     galaxies.clear();
 
     for (int i = 0; i < galaxyCount; i++) {
-      galaxies.push_back(Galaxy(*this, 2000));
+      galaxies.push_back(Galaxy(*this));
     }
   }
 
@@ -177,108 +194,69 @@ void updateUniverse() {
   // Update each galaxy
   for (int i = 0; i < (int) universe.galaxies.size(); ++i) {
     auto &gt = universe.galaxies[i];
+    Vector3 gt_p(gt.pos);
 
     // Update each star in the galaxy
     for (auto &star: gt.stars) {
-      float v0 = star.vel[0];
-      float v1 = star.vel[1];
-      float v2 = star.vel[2];
+      Vector3 star_v(star.vel);
 
+      //
+      // Stars are affected by the galaxies, not individual stars
+      //
       for (int k = 0; k < (int) universe.galaxies.size(); ++k) {
         const auto &gtk = universe.galaxies[k];
-        const float d0 = gtk.pos[0] - star.pos[0];
-        const float d1 = gtk.pos[1] - star.pos[1];
-        const float d2 = gtk.pos[2] - star.pos[2];
+        
+        const Vector3 dv = Vector3(gtk.pos) - Vector3(star.pos);
 
-        float d = d0 * d0 + d1 * d1 + d2 * d2;
-        d = gt.mass() / (d * std::sqrt(d)) * delta;
+        // Mass of stars is always 1
+        auto dot = dv.dot();
+        dot = gt.mass() / (dot * std::sqrt(dot)) * delta;
 
-        v0 += d0 * d;
-        v1 += d1 * d;
-        v2 += d2 * d;
+        star_v += dv * dot;
       }
 
-      star.vel[0] = v0;
-      star.vel[1] = v1;
-      star.vel[2] = v2;
-
-      star.pos[0] += v0 * deltat;
-      star.pos[1] += v1 * deltat;
-      star.pos[2] += v2 * deltat;
+      Vector3 star_p(star.pos);
+      star_p += (star_v * deltat);
+      star.set_pos(star_p);
+      star.set_vel(star_v);
     }
 
-    // Affect the rest of the galaxies
+    //
+    // Affect the rest of the galaxies.
+    // Calculation is between galaxies only, not stars.
+    //
     for (int k = i + 1; k < (int) universe.galaxies.size(); ++k) {
       auto &gtk = universe.galaxies[k];
-      float d0 = gtk.pos[0] - gt.pos[0];
-      float d1 = gtk.pos[1] - gt.pos[1];
-      float d2 = gtk.pos[2] - gt.pos[2];
 
-      float d = d0 * d0 + d1 * d1 + d2 * d2;
-      d = gt.mass() * gt.mass() / (d * std::sqrt(d)) * delta;
+      Vector3 d_pos = Vector3(gtk.pos) - gt_p;
 
-      d0 *= d;
-      d1 *= d;
-      d2 *= d;
-      gt.vel[0] += d0 / gt.mass();
-      gt.vel[1] += d1 / gt.mass();
-      gt.vel[2] += d2 / gt.mass();
-      gtk.vel[0] -= d0 / gtk.mass();
-      gtk.vel[1] -= d1 / gtk.mass();
-      gtk.vel[2] -= d2 / gtk.mass();
+      auto dot = d_pos.dot();
+      dot = gtk.mass() * gt.mass() / (dot * std::sqrt(dot)) * delta;
+
+      d_pos *= dot;
+
+      Vector3 gt_vel(gt.vel);
+      gt_vel += d_pos / gt.mass();
+      gt.set_vel(gt_vel);
+
+      Vector3 gtk_vel(gtk.vel);
+      gtk_vel -= d_pos / gtk.mass();
+      gtk.set_vel(gtk_vel);
     }
 
-    gt.pos[0] += gt.vel[0] * deltat;
-    gt.pos[1] += gt.vel[1] * deltat;
-    gt.pos[2] += gt.vel[2] * deltat;
+    Vector3 gt_pos(gt.pos);
+    Vector3 gt_vel(gt.vel);
+    gt_pos += gt_vel * deltat;
+    gt.set_pos(gt_pos);
   }
 }
 
 }  // anon namespace
 
 
-void determine_factor(Image const &img) {
-  bool did_first = false;
-  Vector3 vec_min;
-  Vector3 vec_max;
-
-  for (int i = 0; i < (int) universe.galaxies.size(); ++i) {
-    auto &gt = universe.galaxies[i];
-
-    for (auto &star: gt.stars) {
-      Vector3 cur(star.pos[0], star.pos[1], star.pos[2]);
-      if (did_first) {
-        vec_min.set_min(cur);
-        vec_max.set_max(cur);
-      } else {
-        vec_min = cur;
-        vec_max = cur;
-        did_first = true;
-      }
-    }
-  }
-
-  assert(vec_min.x() < 0);
-  assert(vec_min.y() < 0);
-  assert(vec_max.x() > 0);
-  assert(vec_max.y() > 0);
-
-  double max_x = std::abs(vec_min.x());
-  if (max_x < vec_max.x()) max_x = vec_max.x();
-
-  double max_y = vec_max.y();
-  if (max_y < vec_max.y()) max_y = vec_max.y();
-
-  Log::warn << "min/max:\n"
-            << "  vec_min: " << vec_min.dump() << "\n"
-            << "  vec_max: " << vec_max.dump();
-
-  Log::warn << "img w/h: " << img.width() << ", " << img.height() << "\n"
-            << "Max x/y: " << max_x       << ", " << max_y;
-}
-
-
 void draw(Image &img) {
+  // Can't properly figure out how coordinates are converted
+  // Following factors work OK
   img.set_conversion_factor(1000.0);
   float Factor = 300;
 
@@ -294,7 +272,6 @@ void draw(Image &img) {
       float x = std::floor((Factor * star.pos[0] / star.pos[2]));
       float y = std::floor((Factor * star.pos[1] / star.pos[2]));
 
-      // TODO draw rect
       float z = std::min(std::floor(2 / (star.pos[2] + star.size)) + 1, 10.0f);
       img.plot_rect(x, y, (int) z, (int) z);
       //img.plot(x, y);

@@ -4,7 +4,6 @@
 
 namespace galaxies {
 
-void determine_factor(Image const &img);
 void step();
 void draw(Image &img);
 

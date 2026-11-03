@@ -10,6 +10,14 @@ Vector3::Vector3(double e0, double e1, double e2) {
 }
 
 
+Vector3::Vector3(float const *p_e) {
+  assert(p_e != nullptr);
+  e[0] = p_e[0];
+  e[1] = p_e[1];
+  e[2] = p_e[2];
+}
+
+
 std::string Vector3::dump() const {
   std::string ret;
   ret << "Vector3(" << (float) e[0] << ", " << (float) e[1] << ", " << (float) e[2] << ")";
@@ -24,13 +32,77 @@ double Vector3::length() const {
 }
 
 
+/**
+ * @brief Return dot product of the vectors
+ */
+double Vector3::dot(Vector3 const &rhs) const {
+  return x()*rhs.x() + y()*rhs.y() + z()*rhs.z();
+}
+
+
+double Vector3::dot() const {
+  return x()*x() + y()*y() + z()*z();
+}
+
+
+Vector3 &Vector3::operator*=(double val) {
+  e[0] *= val;
+  e[1] *= val;
+  e[2] *= val;
+  return *this;
+}
+
+
 Vector3 Vector3::operator*(double val) const {
-  auto  ret = *this;
+  auto ret = *this;
+  ret *= val;
+  return ret;
+}
 
-  ret.e[0] *= val;
-  ret.e[1] *= val;
-  ret.e[2] *= val;
 
+Vector3 &Vector3::operator/=(double val) {
+  e[0] /= val;
+  e[1] /= val;
+  e[2] /= val;
+  return *this;
+}
+
+
+Vector3 Vector3::operator/(double val) const {
+  auto ret = *this;
+  ret /= val;
+  return ret;
+}
+
+
+Vector3 &Vector3::operator+=(Vector3 const &rhs) {
+  e[0] += rhs.x();
+  e[1] += rhs.y();
+  e[2] += rhs.z();
+
+  return *this;
+}
+
+
+Vector3 Vector3::operator+(Vector3 const &rhs) const {
+  auto ret = *this;
+  ret += rhs;
+  return ret;
+}
+
+
+Vector3 &Vector3::operator-=(Vector3 const &rhs) {
+  e[0] -= rhs.x();
+  e[1] -= rhs.y();
+  e[2] -= rhs.z();
+
+  return *this;
+}
+
+
+Vector3 Vector3::operator-(Vector3 const &rhs) const {
+  auto ret = *this;
+  ret -= rhs;
   return ret;
 }
 
