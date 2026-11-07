@@ -607,6 +607,9 @@ int train(std::string filename_input, std::string filename_output, float learnin
         if(loss < min_loss){
             min_loss = loss;
             std::cout << "Writing weights to file. " << std::endl;
+            //
+            // WRI Note: subdir Weights needs to be created beforehand
+            //
             write_binary_matrix("Weights/Uz_epoch_" + std::to_string(epoch) + "_loss_" + std::to_string(loss) + ".bin", U_z);
             write_binary_matrix("Weights/Uh_epoch_" + std::to_string(epoch) + "_loss_" + std::to_string(loss) + ".bin", U_h);
             write_binary_matrix("Weights/Ur_epoch_" + std::to_string(epoch) + "_loss_" + std::to_string(loss) + ".bin", U_r);

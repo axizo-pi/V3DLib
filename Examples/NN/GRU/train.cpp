@@ -1,5 +1,6 @@
 #include "global.h"
 #include "forward.h"
+#include "file.h"
 #include "kernel.h"           // gru_kernel::init()
 #include "LibSettings.h"
 
@@ -347,37 +348,6 @@ namespace {
 std::vector<int> x_input;
 std::vector<int> x_output;
 
-std::vector<int> load_file(std::string filename) {
-  std::vector<int> ret;
-
-  filename.replace(filename.end() - 3, filename.end(), "bin");
-  //warn << "filename: " << filename;
-
-  std::ifstream file_input(filename, std::ios::binary);
-  assert(!file_input.fail());
-
-  file_input.seekg(0, std::ios::beg);
-  uint32_t a = 0;
-
-  while(!file_input.eof()) {
-    file_input.read((char*)&a, sizeof(uint32_t));
-    ret.push_back((int) a);
-  }
-
-  file_input.close();
-
-  return ret;
-}
-
-
-void load_x_y(std::string filename_input, std::string filename_output) {
-  assert(x_input.empty());
-  assert(x_output.empty());
-
-  x_input  = load_file(filename_input);
-  x_output = load_file(filename_output);
-}
-
 
 void read_x_y(MMatrix &x, MMatrix &y, int pos) {
   //timers.start("read_x_y");
@@ -409,7 +379,6 @@ void train(
   int inputSize   = get_input_size(filename_input) - time_steps - 1;
   int limit       = inputSize / 50;
   float min_loss  = 99999999.0f;
-  //std::cout << "Size of input file is : " << inputSize << std::endl;
 
   Model m;
   Model grad;
@@ -420,15 +389,15 @@ void train(
   grad.init_val(m.input_dim(), m.hidden_dim(), m.output_dim(), 0.0f, true);
   cache.init_val(m.input_dim(), m.hidden_dim(), m.output_dim(), 1.0f, false);
 
-  load_x_y(filename_input, filename_output);
+  load_x_y(filename_input, filename_output, x_input, x_output);
+
+  const int max_i = (settings::max_limit == -1)?limit:settings::max_limit;
 
   //
-  // Restrict the number of loops, as well as the log output.
+  // @brief Restrict the number of loops, as well as the log output.
   //
-  // Returns true if the loop can be exited
+  // @return true if the loop should be exited
   //
-  const int max_i = 100; // limit;
-
   auto output_loop = [max_i] (int i) -> bool {
     bool ret  = false;
     bool show = false;
@@ -463,24 +432,16 @@ void train(
 
       State state;
       state.init(time_steps, hidden_dim, output_dim);
-      //warn << "state init: " << state.dump();
 
       MMatrix currX(time_steps, input_dim);
       MMatrix currY(time_steps, output_dim);
 
       read_x_y(currX, currY, i);
-      //warn << "currX: " << currX.dump();
-      //warn << "currY: " << currY.dump();
   
       state.eval();
 
       forward_propagation(m, currX, currY, state, time_steps, input_dim, hidden_dim, output_dim);
-      //warn << "state forward: " << state.dump();
-      //warn << "state.O forward: " << state.O.dump();
-
       loss += (calculate_cost(state.E, time_steps) / (float) limit);
-      //warn << "loss: " << loss;
-
       back_propagation(m, grad, state, currX, currY, input_dim, hidden_dim, output_dim, time_steps);
 
       // gradient_descent(m, grad, learning_rate);
@@ -491,6 +452,7 @@ void train(
     }
 
     std::cout << "Loss: " << loss << ", Epoch: "<< epoch << std::endl;
+		m.write(epoch, loss);
 
     if (loss > prev_loss && prev_loss != 0) {
       learning_rate = learning_rate * 1;
@@ -504,6 +466,7 @@ void train(
     }
   }
 }
+
 
 namespace {
 
@@ -641,26 +604,25 @@ void train_main() {
   gru_kernel::init();
   qpu::init();
 
-  //unit_test();
-  //return;
+  //unit_test(); return;
 
-  //warn << "Called train_main()";
-  std::string base = "Examples/NN/GRU/Tools/GRU/Inputs";
+  //std::string base = "Examples/NN/GRU/Tools/GRU/Inputs";
+	std::string infile  = settings::input_dir + "/donald_trump_input.txt";
+	std::string outfile = settings::input_dir + "/donald_trump_output.txt";
 
   // Dimensions must match with input file
   int input_dim       = 64;
   int hidden_dim      = 128;
   int output_dim      = 64;
   float learning_rate = 0.0005f;
-  int nepochs         = 1; //1000;
   int time_steps      = 20;
   float decay         = 0.000f;
 
   train(
-    base + "/donald_trump_input.txt",
-    base + "/donald_trump_output.txt",
+		infile,
+		outfile,
     learning_rate,
-    nepochs,
+    settings::num_epochs,
     input_dim,
     hidden_dim,
     output_dim,

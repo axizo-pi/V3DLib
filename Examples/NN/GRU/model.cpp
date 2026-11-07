@@ -1,5 +1,6 @@
 #include "model.h"
 #include "global.h"
+#include "file.h"
 #include <iostream>
 
 using namespace std;
@@ -28,13 +29,13 @@ void Model::read(std::string const &epoch, std::string const &loss) {
   std::string postfix = "_epoch_" + epoch + "_loss_" + loss + ".bin";
   MatrixXf tmp;
 
-  read_binary_matrix("Weights/Uz" + postfix, tmp); U_z.set(tmp);
-  read_binary_matrix("Weights/Uh" + postfix, tmp); U_h.set(tmp);
-  read_binary_matrix("Weights/Ur" + postfix, tmp); U_r.set(tmp);
-  read_binary_matrix("Weights/Wz" + postfix, tmp); W_z.set(tmp);
-  read_binary_matrix("Weights/Wh" + postfix, tmp); W_h.set(tmp);
-  read_binary_matrix("Weights/Wr" + postfix, tmp); W_r.set(tmp);
-  read_binary_matrix("Weights/V"  + postfix, tmp);   V.set(tmp);
+  read_binary_matrix("Uz" + postfix, tmp); U_z.set(tmp);
+  read_binary_matrix("Uh" + postfix, tmp); U_h.set(tmp);
+  read_binary_matrix("Ur" + postfix, tmp); U_r.set(tmp);
+  read_binary_matrix("Wz" + postfix, tmp); W_z.set(tmp);
+  read_binary_matrix("Wh" + postfix, tmp); W_h.set(tmp);
+  read_binary_matrix("Wr" + postfix, tmp); W_r.set(tmp);
+  read_binary_matrix("V"  + postfix, tmp);   V.set(tmp);
 }
 
 
@@ -43,13 +44,13 @@ void Model::write(int epoch, float loss) {
 
   std::string postfix = "_epoch_" + std::to_string(epoch) + "_loss_" + std::to_string(loss) + ".bin";
 
-  write_binary_matrix("Weights/Uz" + postfix, U_z.Xf());
-  write_binary_matrix("Weights/Uh" + postfix, U_h.Xf());
-  write_binary_matrix("Weights/Ur" + postfix, U_r.Xf());
-  write_binary_matrix("Weights/Wz" + postfix, W_z.Xf());
-  write_binary_matrix("Weights/Wh" + postfix, W_h.Xf());
-  write_binary_matrix("Weights/Wr" + postfix, W_r.Xf());
-  write_binary_matrix("Weights/V"  + postfix,   V.Xf());
+  write_binary_matrix("Uz" + postfix, U_z.Xf());
+  write_binary_matrix("Uh" + postfix, U_h.Xf());
+  write_binary_matrix("Ur" + postfix, U_r.Xf());
+  write_binary_matrix("Wz" + postfix, W_z.Xf());
+  write_binary_matrix("Wh" + postfix, W_h.Xf());
+  write_binary_matrix("Wr" + postfix, W_r.Xf());
+  write_binary_matrix("V"  + postfix,   V.Xf());
 }
 
 
