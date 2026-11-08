@@ -17,8 +17,6 @@
 using namespace Eigen;
 using namespace V3DLib;
 
-void write_binary_matrix(std::string filename, const MatrixXf& matrix);
-void read_binary_matrix(std::string filename, MatrixXf& matrix);
 
 float sigmoid(float x);
 float sigmoid_grad(float x);

@@ -120,10 +120,11 @@ void predict(vector const &input, model &k_model) {
 }
 
 
-int main(int argc, const char *argv[]) {
-  settings().init(argc, argv);
-
-   // To compare pseudo-random values with ruby   
+/**
+ * @brief Perform internal tests
+ */
+void do_tests() {
+  // To compare pseudo-random values with ruby   
   if (false) {
     std::cout.precision(6);
 
@@ -137,15 +138,22 @@ int main(int argc, const char *argv[]) {
     }
 
     std::cout << buf << "\n";
-    return 0;
+    return;
   }
 
   if (false) {
     test_back_propagation(vector::op_kernel());
     //test_outer_product(vector::op_kernel(), true);
     //test_vector();
-    return 0;
+    return;
   }
+}
+
+
+int main(int argc, const char *argv[]) {
+  settings().init(argc, argv);
+
+	//do_tests(); return 0;
 
   vector inputs[NumInputs] = {32, 32, 32};
   for (int i = 0; i < NumInputs; ++i) {

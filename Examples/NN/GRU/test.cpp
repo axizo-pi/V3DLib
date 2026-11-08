@@ -1,12 +1,5 @@
 #include "forward.h"
-#include <iostream>
-#include <cstdlib>
-#include <ctime>
-#include <climits>
-#include <cmath>
-#include <math.h>
-#include <vector>
-#include <assert.h>
+#include "kernel.h"           // gru_kernel::init()
 #include <map>
 
 
@@ -47,7 +40,7 @@ void predict(Model &m, int input_dim, int output_dim, int hidden_dim, int time_s
   }
 
   std::string input = "i am the best";
-  std::cout << "Input length = " << input.length() << std::endl;
+  //std::cout << "Input length = " << input.length() << std::endl;
   assert((int) input.length() == time_steps);
 
   int i = 0;
@@ -55,7 +48,7 @@ void predict(Model &m, int input_dim, int output_dim, int hidden_dim, int time_s
     X(i, char_to_int.find(c)->second) = 1;
     i++;
   }
-  std::cout << std::endl;
+  //std::cout << std::endl;
 
   std::vector<int> predictions;
 
@@ -87,16 +80,29 @@ void predict(Model &m, int input_dim, int output_dim, int hidden_dim, int time_s
       }
     }
   }
-  std::cout << "Predictions starting with : \n" << input << std::endl;
 
-  for(auto p : predictions){
-    std::cout << mapping_64[p];
+  std::cout << "Predictions starting with '" << string::trim(input) << "': " << std::endl;
+
+	std::string buf;
+  for (auto p : predictions) {
+		char c = mapping_64[p];
+		std::string buf2;
+		if (p == 0) {
+			buf2 = "\\n";
+		} else {
+			buf2 += c;
+		}
+
+    buf << buf2;
   }
-  std::cout << std::endl;
+  std::cout << buf << std::endl;
 }
 
 
 void test_main(std::string const &epoch, std::string const &loss) {
+  gru_kernel::init();
+  qpu::init();
+
   int time_steps = 13;
 
   Model m;

@@ -1,26 +1,5 @@
 #include "common.h"
 
-void write_binary_matrix(std::string filename, const MatrixXf& matrix){
-  std::ofstream out(filename, std::ios::out | std::ios::binary | std::ios::trunc);
-  typename MatrixXf::Index rows=matrix.rows(), cols=matrix.cols();
-  out.write((char*) (&rows), sizeof(typename MatrixXf::Index));
-  out.write((char*) (&cols), sizeof(typename MatrixXf::Index));
-  out.write((char*) matrix.data(), rows * cols * sizeof(typename MatrixXf::Scalar) );
-  out.close();
-}
-
-
-void read_binary_matrix(std::string filename, MatrixXf& matrix){
-  std::ifstream in(filename, std::ios::in | std::ios::binary);
-  typename MatrixXf::Index rows=0, cols=0;
-  in.read((char*) (&rows),sizeof(typename MatrixXf::Index));
-  in.read((char*) (&cols),sizeof(typename MatrixXf::Index));
-  matrix.resize(rows, cols);
-  in.read( (char *) matrix.data() , rows * cols * sizeof(typename MatrixXf::Scalar) );
-  in.close();
-}
-
-
 float sigmoid(float x)      { return 1.0f / (1.0f + (float) exp(-x)); }
 float sigmoid_grad(float x) { return (1 - x) * x; }
 
