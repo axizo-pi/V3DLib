@@ -1,7 +1,7 @@
 #
 # This file is generated!  Editing it directly is a bad idea.
 #
-# Generated on: Sat Oct 31 06:19:51 AM CET 2026
+# Generated on: Sun Nov  8 02:26:29 PM CET 2026
 #
 ###############################################################################
 
@@ -26,6 +26,7 @@ OBJ := \
   Support/bmp.o  \
   Support/basics.o  \
   Support/Helpers.o  \
+  Support/MatrixAdapter.o  \
   Support/HeapManager.o  \
   Support/InstructionComment.o  \
   Kernels/DotVector.o  \
@@ -194,6 +195,8 @@ SUB_PROJECTS := \
   GRU \
   LSTM \
   RNN \
+  Try \
+  nnetcpp \
   Lib \
   RayTracing \
 
@@ -218,6 +221,12 @@ LSTM: $(V3DLIB)
 	
 RNN: $(V3DLIB)
 	@cd Examples/NN/RNN && make DEBUG=${DEBUG}
+	
+Try: $(V3DLIB)
+	@cd Examples/NN/Tools/Try && make DEBUG=${DEBUG}
+	
+nnetcpp: $(V3DLIB)
+	@cd Examples/NN/Tools/nnetcpp && make DEBUG=${DEBUG}
 	
 Lib: $(V3DLIB)
 	@cd Examples/NN/Lib && make DEBUG=${DEBUG}

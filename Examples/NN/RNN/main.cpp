@@ -4,6 +4,7 @@
 #include "Source/Functions.h"  // rotate
 #include "helpers.h"
 #include "global/Timer.h"
+#include "rnn_data.h"
 
 /**
  * /file
@@ -18,49 +19,12 @@
  * Adapted from: https://www.geeksforgeeks.org/numpy/implementation-of-neural-network-from-scratch-using-numpy/
  */
 
-const int NumInputs = 3;
 const int NumEpochs = 1000;
-
-/**
- * 3 inputs: Letters A, B and C (if you squint)
- */
-float a[NumInputs][30] = {
-{  
-  0, 0, 1, 1, 0, 0,
-  0, 1, 0, 0, 1, 0,
-  1, 1, 1, 1, 1, 1,
-  1, 0, 0, 0, 0, 1,
-  1, 0, 0, 0, 0, 1,
-}, {
-  0, 1, 1, 1, 1, 0,
-  0, 1, 0, 0, 1, 0,
-  0, 1, 1, 1, 1, 0,
-  0, 1, 0, 0, 1, 0,
-  0, 1, 1, 1, 1, 0
-}, {        
-  0, 1, 1, 1, 1, 0,
-  0, 1, 0, 0, 0, 0,
-  0, 1, 0, 0, 0, 0,
-  0, 1, 0, 0, 0, 0,
-  0, 1, 1, 1, 1, 0
-}};
-
-
-/**
- * Output of 3 bits, to determine A, B or C
- */
-const int label_size = 3;
-float labels[NumInputs][label_size] = {
-  {1, 0, 0},
-  {0, 1, 0},
-  {0, 0, 1}
-};
-
 
 
 void train(vector const *inputs, vector const *desired, model &k_model) {
   int   epoch = 0;
-  float loss[NumInputs];
+  float loss[rnn::NumInputs];
 
   int epoch_step = 1;
   if (NumEpochs >= 1000) {
@@ -70,7 +34,7 @@ void train(vector const *inputs, vector const *desired, model &k_model) {
   }
 
   while (epoch < NumEpochs) {
-    for (int i = 0; i < NumInputs; ++i) {
+    for (int i = 0; i < rnn::NumInputs; ++i) {
       auto result = k_model.forward(inputs[i]);
 
       loss[i] = scalar::loss(result.arr(), desired[i].arr());
@@ -79,11 +43,11 @@ void train(vector const *inputs, vector const *desired, model &k_model) {
     }
 
     float sum = 0;
-    for (int i = 0; i < NumInputs; ++i) {
+    for (int i = 0; i < rnn::NumInputs; ++i) {
       sum += loss[i];
     }
 
-    sum /= ((float) NumInputs);  // Take average
+    sum /= ((float) rnn::NumInputs);  // Take average
 
     if (epoch % epoch_step == 0) {
       warn << "epoch: " << epoch << " ======== acc: " << fixed << (1 - sum)*100;
@@ -101,7 +65,7 @@ void predict(vector const &input, model &k_model) {
   float maxm = 0;
   int k = 0;
 
-  for (int i = 0; i < NumInputs; ++i) {
+  for (int i = 0; i < rnn::NumInputs; ++i) {
     float n = result[i];
 
     if (maxm < n) {
@@ -155,14 +119,20 @@ int main(int argc, const char *argv[]) {
 
 	//do_tests(); return 0;
 
-  vector inputs[NumInputs] = {32, 32, 32};
-  for (int i = 0; i < NumInputs; ++i) {
-    inputs[i].set(a[i], 30);
+	auto rnn_inputs    = rnn::inputs();
+	const int rnn_size = (int) rnn_inputs.size();
+
+  vector inputs[rnn_size] = {32, 32, 32};
+  for (int i = 0; i < rnn_size; ++i) {
+    inputs[i].set(rnn_inputs[i]);
   }
 
-  vector desired[NumInputs] = {16, 16, 16};
-  for (int i = 0; i < NumInputs; ++i) {
-    desired[i].set(labels[i], label_size);
+	auto rnn_expected   = rnn::expected();
+	const int rnn_size2 = (int) rnn_expected.size();
+
+  vector desired[rnn_size2] = {16, 16, 16};
+  for (int i = 0; i < rnn_size2; ++i) {
+    desired[i].set(rnn_expected[i]);
   }
 
   // Using this as a global var leads to segmentation fault

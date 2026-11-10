@@ -48,7 +48,6 @@ void predict(Model &m, int input_dim, int output_dim, int hidden_dim, int time_s
     X(i, char_to_int.find(c)->second) = 1;
     i++;
   }
-  //std::cout << std::endl;
 
   std::vector<int> predictions;
 

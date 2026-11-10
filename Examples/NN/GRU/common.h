@@ -31,6 +31,22 @@ void read_output(MatrixXf& Y, std::ifstream& outputFile, int time_steps);
 
 qpu::vector copy(MatrixXf const &rhs);
 
+
+/**
+ * ====================================================
+ * Notes
+ * -----
+ *
+ * 1. Eigen `VectorXf` is not derived from `MatrixXf`, as I expected.
+ *    Hence, this class will not work for `VectorXf`.
+ *
+ *    Both are derived from a common template:
+ *
+ *     typedef Matrix<float, Dynamic, Dynamic> MatrixXf;
+ *     typedef Matrix<float, Dynamic, 1>       VectorXf;
+ *
+ *    Source: https://libeigen.gitlab.io/eigen/docs-nightly/group__TutorialMatrixClass.html#TutorialMatrixDynamic
+ */
 class MatrixXfAdapter: public MatrixAdapter {
 public:
 

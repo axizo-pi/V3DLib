@@ -130,6 +130,7 @@ struct vector : public matrix {
   vector(int rows = 0, float val = 0.0f);
 
   void set(float *rhs, int in_size);
+  void set(std::vector<float> const &rhs);
   void set(float init_val);
   float &operator[](int index);
   float operator[](int index) const;
