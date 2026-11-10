@@ -52,32 +52,32 @@ float labels[NumInputs][label_size] = {
 
 
 Inputs inputs() {
-	Inputs ret;
+  Inputs ret;
 
-	ret.resize(NumInputs);
-	for (int i = 0; i < NumInputs; ++i) {
-		ret[i].resize(InputSize);
-	  for (int j = 0; j < InputSize; ++j) {
-		  ret[i][j] = a[i][j];
-		}
-	}
+  ret.resize(NumInputs);
+  for (int i = 0; i < NumInputs; ++i) {
+    ret[i].resize(InputSize);
+    for (int j = 0; j < InputSize; ++j) {
+      ret[i][j] = a[i][j];
+    }
+  }
 
-	return ret;
+  return ret;
 }
 
 
 Inputs expected() {
-	Inputs ret;
+  Inputs ret;
 
-	ret.resize(NumInputs);
-	for (int i = 0; i < NumInputs; ++i) {
-		ret[i].resize(label_size);
-	  for (int j = 0; j < label_size; ++j) {
-		  ret[i][j] = labels[i][j];
-		}
-	}
+  ret.resize(NumInputs);
+  for (int i = 0; i < NumInputs; ++i) {
+    ret[i].resize(label_size);
+    for (int j = 0; j < label_size; ++j) {
+      ret[i][j] = labels[i][j];
+    }
+  }
 
-	return ret;
+  return ret;
 }
 
 

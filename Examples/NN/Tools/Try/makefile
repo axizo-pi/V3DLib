@@ -1,14 +1,14 @@
 # =* required, otherwise preceding whitespace part of value
 SRCDIR  =./
 BASEDIR =./obj
-OBJDIR  =$(BASEDIR)/src
+OBJDIR  =$(BASEDIR)/src/
 BINDIR  =$(BASEDIR)/bin
 
 V3DLIB =/home/wim/projects/V3DLib
 
 INCLUDES = \
 -I ../eigen3/        \
--I ../nnetcpp/src/   \
+-I ../nnetcpp/src    \
 -I ../nnetcpp/tests/ \
 -I $(V3DLIB)/Lib/
 $(info INCLUDES: $(INCLUDES))

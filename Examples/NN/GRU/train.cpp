@@ -350,14 +350,11 @@ std::vector<int> x_output;
 
 
 void read_x_y(MMatrix &x, MMatrix &y, int pos) {
-  //timers.start("read_x_y");
   assert(!x_input.empty());
   assert(!x_output.empty());
 
   x.set(x_input, pos);
   y.set(x_output, pos);
-
-  //timers.stop("read_x_y");
 }
 
 }  // anon namespace

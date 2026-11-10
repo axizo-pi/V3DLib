@@ -866,18 +866,18 @@ void vector::set(float *rhs, int in_size) {
 
 
 void vector::set(std::vector<float> const &rhs) {
-	int in_size = (int) rhs.size();
+  int in_size = (int) rhs.size();
   assert(!rhs.empty());
 
   if (rows() < in_size) {
-		cerr << "vector::set() input size is larger than target size\n"
-			   << "  rhs size: " << rhs.size() << "\n"
-				 << "  lhs     : " << dump();
+    cerr << "vector::set() input size is larger than target size\n"
+         << "  rhs size: " << rhs.size() << "\n"
+         << "  lhs     : " << dump();
 
-		assert(false);
-	}
+    assert(false);
+  }
 
-	// NOTE: same as set(float *); TODO consider consolidating
+  // NOTE: same as set(float *); TODO consider consolidating
   auto &r = matrix::arr();
 
   for (int i = 0; i < in_size; ++i) {

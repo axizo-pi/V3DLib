@@ -23,6 +23,6 @@ const int         num_epochs = 4; //1; //1000;
  *
  * If -1, run to max limit (with  current data, 6642)
  */
-const int         max_limit  = -1; //100;
+const int         max_limit  = 100; // -1;
 
 }  // namespace settings

@@ -117,18 +117,18 @@ void do_tests() {
 int main(int argc, const char *argv[]) {
   settings().init(argc, argv);
 
-	//do_tests(); return 0;
+  //do_tests(); return 0;
 
-	auto rnn_inputs    = rnn::inputs();
-	const int rnn_size = (int) rnn_inputs.size();
+  auto rnn_inputs    = rnn::inputs();
+  const int rnn_size = (int) rnn_inputs.size();
 
   vector inputs[rnn_size] = {32, 32, 32};
   for (int i = 0; i < rnn_size; ++i) {
     inputs[i].set(rnn_inputs[i]);
   }
 
-	auto rnn_expected   = rnn::expected();
-	const int rnn_size2 = (int) rnn_expected.size();
+  auto rnn_expected   = rnn::expected();
+  const int rnn_size2 = (int) rnn_expected.size();
 
   vector desired[rnn_size2] = {16, 16, 16};
   for (int i = 0; i < rnn_size2; ++i) {

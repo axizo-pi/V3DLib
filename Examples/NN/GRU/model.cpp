@@ -26,31 +26,33 @@ void init_matrix(MatrixXf& X, int dimension_row, int dimension_col) {
 
 
 void Model::read(std::string const &epoch, std::string const &loss) {
+  std::string prefix  = settings::weights_dir + "/";
   std::string postfix = "_epoch_" + epoch + "_loss_" + loss + ".bin";
   MatrixXf tmp;
 
-  read_binary_matrix("Uz" + postfix, tmp); U_z.set(tmp);
-  read_binary_matrix("Uh" + postfix, tmp); U_h.set(tmp);
-  read_binary_matrix("Ur" + postfix, tmp); U_r.set(tmp);
-  read_binary_matrix("Wz" + postfix, tmp); W_z.set(tmp);
-  read_binary_matrix("Wh" + postfix, tmp); W_h.set(tmp);
-  read_binary_matrix("Wr" + postfix, tmp); W_r.set(tmp);
-  read_binary_matrix("V"  + postfix, tmp);   V.set(tmp);
+  read_binary_matrix(prefix + "Uz" + postfix, tmp); U_z.set(tmp);
+  read_binary_matrix(prefix + "Uh" + postfix, tmp); U_h.set(tmp);
+  read_binary_matrix(prefix + "Ur" + postfix, tmp); U_r.set(tmp);
+  read_binary_matrix(prefix + "Wz" + postfix, tmp); W_z.set(tmp);
+  read_binary_matrix(prefix + "Wh" + postfix, tmp); W_h.set(tmp);
+  read_binary_matrix(prefix + "Wr" + postfix, tmp); W_r.set(tmp);
+  read_binary_matrix(prefix + "V"  + postfix, tmp);   V.set(tmp);
 }
 
 
 void Model::write(int epoch, float loss) {
   std::cout << "Writing weights to file. " << std::endl;
 
+  std::string prefix  = settings::weights_dir + "/";
   std::string postfix = "_epoch_" + std::to_string(epoch) + "_loss_" + std::to_string(loss) + ".bin";
 
-  write_binary_matrix("Uz" + postfix, U_z.Xf());
-  write_binary_matrix("Uh" + postfix, U_h.Xf());
-  write_binary_matrix("Ur" + postfix, U_r.Xf());
-  write_binary_matrix("Wz" + postfix, W_z.Xf());
-  write_binary_matrix("Wh" + postfix, W_h.Xf());
-  write_binary_matrix("Wr" + postfix, W_r.Xf());
-  write_binary_matrix("V"  + postfix,   V.Xf());
+  write_binary_matrix(prefix + "Uz" + postfix, U_z.Xf());
+  write_binary_matrix(prefix + "Uh" + postfix, U_h.Xf());
+  write_binary_matrix(prefix + "Ur" + postfix, U_r.Xf());
+  write_binary_matrix(prefix + "Wz" + postfix, W_z.Xf());
+  write_binary_matrix(prefix + "Wh" + postfix, W_h.Xf());
+  write_binary_matrix(prefix + "Wr" + postfix, W_r.Xf());
+  write_binary_matrix(prefix + "V"  + postfix,   V.Xf());
 }
 
 

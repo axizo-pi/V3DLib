@@ -1,5 +1,8 @@
 #include "file.h"
-#include "global.h"
+#include "global/global.h"
+#include <fstream>
+
+using namespace Eigen;
 
 /**
  * \file
@@ -36,9 +39,9 @@ std::vector<int> load_file_vector(std::string filename) {
 
 void load_x_y(
   std::string filename_input,
-	std::string filename_output,
-	std::vector<int> &x_input,
-	std::vector<int> &x_output
+  std::string filename_output,
+  std::vector<int> &x_input,
+  std::vector<int> &x_output
 ) {
   assert(x_input.empty());
   assert(x_output.empty());
@@ -52,14 +55,12 @@ void load_x_y(
 
 
 void write_binary_matrix(std::string filename, const MatrixXf& matrix){
-	std::string path = settings::weights_dir + "/" + filename;
-
-  std::ofstream out(path, std::ios::out | std::ios::binary | std::ios::trunc);
-	if (!out) {
-		std::string buf;
-		buf << "Opening outfile failed for file '" << path << "'";
+  std::ofstream out(filename, std::ios::out | std::ios::binary | std::ios::trunc);
+  if (!out) {
+    std::string buf;
+    buf << "Opening outfile failed for file '" << filename << "'";
     throw std::runtime_error(buf);
-	}
+  }
 
   typename MatrixXf::Index rows=matrix.rows(), cols=matrix.cols();
   out.write((char*) (&rows), sizeof(typename MatrixXf::Index));
@@ -70,14 +71,12 @@ void write_binary_matrix(std::string filename, const MatrixXf& matrix){
 
 
 void read_binary_matrix(std::string filename, MatrixXf& matrix) {
-	std::string path = settings::weights_dir + "/" + filename;
-
-  std::ifstream in(path, std::ios::in | std::ios::binary);
-	if (!in) {
-		std::string buf;
-		buf << "Opening infile failed for file '" << path << "'";
+  std::ifstream in(filename, std::ios::in | std::ios::binary);
+  if (!in) {
+    std::string buf;
+    buf << "Opening infile failed for file '" << filename << "'";
     throw std::runtime_error(buf);
-	}
+  }
 
   typename MatrixXf::Index rows=0, cols=0;
   in.read((char*) (&rows),sizeof(typename MatrixXf::Index));
