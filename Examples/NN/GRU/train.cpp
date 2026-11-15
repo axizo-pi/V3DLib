@@ -418,11 +418,11 @@ void train(
     return ret;
   };
 
-  for(int epoch = 0; epoch < nepoch; epoch++) {
+  for (int epoch = 0; epoch < nepoch; epoch++) {
     warn << "train loop epoch: " << epoch << ", limit: " << limit;
 
     float loss = 0;
-    for(int i = 0; i < limit; i++) {
+    for (int i = 0; i < limit; i++) {
       if (output_loop(i)) break;
 
       timers.start("train limit loop");
@@ -449,7 +449,7 @@ void train(
     }
 
     std::cout << "Loss: " << loss << ", Epoch: "<< epoch << std::endl;
-		m.write(epoch, loss);
+    m.write(epoch, loss);
 
     if (loss > prev_loss && prev_loss != 0) {
       learning_rate = learning_rate * 1;
@@ -604,8 +604,8 @@ void train_main() {
   //unit_test(); return;
 
   //std::string base = "Examples/NN/GRU/Tools/GRU/Inputs";
-	std::string infile  = settings::input_dir + "/donald_trump_input.txt";
-	std::string outfile = settings::input_dir + "/donald_trump_output.txt";
+  std::string infile  = settings::input_dir + "/donald_trump_input.txt";
+  std::string outfile = settings::input_dir + "/donald_trump_output.txt";
 
   // Dimensions must match with input file
   int input_dim       = 64;
@@ -616,8 +616,8 @@ void train_main() {
   float decay         = 0.000f;
 
   train(
-		infile,
-		outfile,
+    infile,
+    outfile,
     learning_rate,
     settings::num_epochs,
     input_dim,

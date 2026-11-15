@@ -1,6 +1,6 @@
 #include "forward.h"
 #include "kernel.h"           // gru_kernel::init()
-#include <map>
+#include "file.h"
 
 
 int get_max_index(MatrixXf const &O, int time_steps) {
@@ -25,27 +25,14 @@ void predict(Model &m, int input_dim, int output_dim, int hidden_dim, int time_s
 
   int max_index;
   int start_count;
-/*    
-  char mapping_57[] = {' ', '!', '"', '&', '^', '(', ')', '+', ',', '.', '/', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ':', ';', '?',
-      'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '*', '-', '_', '`', '~', '@', '#'};
-  char mapping_27[] = {'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', ' '};
-  char mapping_39[] = { '\n', ' ', '!', '$', '&', '"', ',', '-', '.', '3', ':', ';', '?', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z' };
-*/    
-  char mapping_64[] = {'\n', ' ', '!', '"', '#', '$', '%', '&', '`', '(', ')', '+', ',', '-', '.', '/', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', ':', ';', '=', '?', '@', '[', ']', '_', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', '{', '|', '}', '~'};
-
-  std::map<char, int> char_to_int;
-
-  for (int i = 0; i < 63; ++i) {
-    char_to_int.insert(std::pair<char, int>(mapping_64[i], i));
-  }
 
   std::string input = "i am the best";
-  //std::cout << "Input length = " << input.length() << std::endl;
   assert((int) input.length() == time_steps);
+	// TODO: use s_to_index() here?
 
   int i = 0;
   for(auto c : input) {
-    X(i, char_to_int.find(c)->second) = 1;
+    X(i, char_to_int_map().find(c)->second) = 1;
     i++;
   }
 
@@ -74,27 +61,14 @@ void predict(Model &m, int input_dim, int output_dim, int hidden_dim, int time_s
         X(i, predictions[s - 1]) = 1;
         s--;
       } else {
-        X(i, char_to_int.find(input[start_count])->second) = 1;
+        X(i, char_to_int_map().find(input[start_count])->second) = 1;
         start_count--;
       }
     }
   }
 
   std::cout << "Predictions starting with '" << string::trim(input) << "': " << std::endl;
-
-	std::string buf;
-  for (auto p : predictions) {
-		char c = mapping_64[p];
-		std::string buf2;
-		if (p == 0) {
-			buf2 = "\\n";
-		} else {
-			buf2 += c;
-		}
-
-    buf << buf2;
-  }
-  std::cout << buf << std::endl;
+  std::cout << index_to_s(predictions) << std::endl;
 }
 
 

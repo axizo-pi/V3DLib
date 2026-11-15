@@ -2,6 +2,7 @@
 #define _GRU_FILE_H
 #include <Eigen/Dense>
 #include <vector>
+#include <map>
 #include <string>
 
 void load_x_y(
@@ -13,5 +14,9 @@ void load_x_y(
 
 void write_binary_matrix(std::string filename, const Eigen::MatrixXf& matrix);
 void read_binary_matrix(std::string filename, Eigen::MatrixXf& matrix);
+
+std::map<char, int> const &char_to_int_map();
+std::string index_to_s(std::vector<int> const &predictions);
+std::vector<int> s_to_index(std::string const &s);
 
 #endif // _GRU_FILE_H

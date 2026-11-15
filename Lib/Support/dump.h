@@ -2,7 +2,6 @@
 #define _V3DLIB_SUPPORT_DUMP_H
 #include "MatrixAdapter.h"
 #include "Source/Float.h"
-//#include <string>
 
 
 class FloatArrayAdapter: public MatrixAdapter {
