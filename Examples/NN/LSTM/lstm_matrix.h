@@ -32,10 +32,11 @@ class matrix: public std::vector<lstm::vector> {
   using Parent = std::vector<lstm::vector>;
     
 public:    
-  //matrix() = default;
   matrix(std::size_t height = 0, std::size_t width = 0) : Parent(height, lstm::vector(width)) {}
 
   lstm::vector operator*(lstm::vector const &v);
+  int rows() const;
+  int cols() const;
   std::string dump_dim() const;
   std::string dump() const;
 };

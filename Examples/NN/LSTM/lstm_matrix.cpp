@@ -113,23 +113,40 @@ vector operator*(float scalar, vector const &v) {
 
 lstm::vector matrix::operator*(lstm::vector const &v) {
   matrix const &m = *this;
+  assert(m.cols() == (int) v.size());
+  //warn << "v: " << v.dump();
 
-  lstm::vector result(m.size(), 0.0);
-  for (std::size_t i = 0; i < m.size(); i++) {
-    for (std::size_t j = 0; j < v.size(); j++) {
-      result[i] += m[i][j] * v[j];
+  lstm::vector result(m.rows(), 0);
+
+  for (int i = 0; i < m.rows(); i++) {
+    for (int j = 0; j < m.cols(); j++) {
+      //warn << "m(" << i << "," << j << "): " << m[i][j];
+      //warn << "v(" << j << "): " << v[j];
+      float val = m[i][j] * v[j];
+      //warn << "val: " << val;
+      result[i] += val;
     }
   }
+
+  //warn << "result: " << result.dump();
   return result;
 }
 
 
-std::string matrix::dump_dim() const {
-  assert(size() >= 1);
-  auto width = at(0).size();
+int matrix::rows() const {
+  return (int) size();
+}
 
+
+int matrix::cols() const {
+  assert(size() >= 1);
+  return (int) at(0).size();
+}
+
+
+std::string matrix::dump_dim() const {
   std::string ret;
-  ret << "(" << size() << ", " << width << ")";
+  ret << "(" << rows() << ", " << cols() << ")";
   return ret;
 }
 

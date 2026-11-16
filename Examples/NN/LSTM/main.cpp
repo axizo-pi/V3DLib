@@ -40,7 +40,9 @@ int main(int argc, const char *argv[]) {
     float actual = (float) sin(x);
     float predicted = lstm.predict(vec);
 
-    std::cout << "  Input: " << x << ", Actual: " << actual << ", "
+    std::cout << "  "
+              << "Input: "     << x         << ", "
+              << "Actual: "    << actual    << ", "
               << "Predicted: " << predicted << std::endl;
   }
 

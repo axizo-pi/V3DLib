@@ -68,7 +68,7 @@ struct matrix {
   matrix &operator+=(matrix const &rhs);
   matrix operator*(float rhs) const;
   matrix &operator*=(float rhs);
-  matrix mul(matrix const &rhs) const;
+  matrix mul_vec(matrix const &rhs) const;
   matrix mul_t(matrix const &rhs) const;
 
   matrix mul_matrix(matrix const &rhs) const;

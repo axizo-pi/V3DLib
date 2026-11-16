@@ -402,10 +402,9 @@ matrix &matrix::operator*=(float rhs) {
 /**
  * @brief Perform multiplication between a matrix and a vector
  *
- * Currently rhs must absolutely be a vector.
- * I fully realize the parameter is confusing.
+ * rhs classed as vector but must absolutely be a vector.
  */
-matrix matrix::mul(matrix const &rhs) const {
+matrix matrix::mul_vec(matrix const &rhs) const {
   //warn << "Called matrix matrix::operator*()";
   //warn << "matrix: " << dump_dim() << ", rhs: " << rhs.dump_dim();
   assert(rhs.is_vector());
@@ -413,7 +412,7 @@ matrix matrix::mul(matrix const &rhs) const {
   assert(m_rows > 0);
 
   if (m_columns != rhs.size()) {
-    cerr << "Matrix::mul() Inner dimension does not match. "
+    cerr << "Matrix::mul_vec() Inner dimension does not match. "
          << "this: " << dump_dim() << ", "
          << "rhs:"   << rhs.dump_dim()
          << thrw;

@@ -15,6 +15,7 @@ obj*
 /*.txt
 github
 generated
+**/lstmcpp/lstm
 # Definitions for CMake
 CMakeCache.txt
 CMakeLists.txt

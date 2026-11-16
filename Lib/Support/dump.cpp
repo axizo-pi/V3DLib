@@ -126,7 +126,12 @@ bool check_precision(float lhs, float rhs, int bit_diff, CompareStats *stats, bo
     
   if (failed) {
     if (do_show) {
-      warn << "check_precision fail, diff: " << diff << ", " << "bit: " << bit;
+      warn << "check_precision fail "
+           <<  "diff: " << diff        << ", "
+           << "bit: "   << bit         << ", "
+           << "lhs: "   << lhs         << ", "
+           << "rhs: "   << rhs
+      ;
     }
     ret = false;
   }

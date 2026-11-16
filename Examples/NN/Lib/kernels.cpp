@@ -221,7 +221,9 @@ void mult_vec_partial(Float::Ptr &input, Float::Ptr &mat, Float::Ptr &result, In
 
     Float tmp = 0.0f;
 
-    Float::Ptr tmp_mat = mat.offset(n*mat_offset);
+    //Float::Ptr tmp_mat = mat.offset(n*mat_offset);
+    Float::Ptr tmp_mat = mat;
+    tmp_mat.offset(n*mat_offset);
     Float::Ptr tmp_vec = input;
 
     For (Int m = 0, m < M, m++)

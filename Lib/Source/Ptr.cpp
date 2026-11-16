@@ -77,8 +77,12 @@ void Pointer::inc() {
 
 
 /**
+ * @brief Add a byte offset to the this-pointer.
+ *
+ * **NOTE**: This changes the value of the this-pointer.
+
  * Convenience function to get rid of the pesky '<<2' needed for ptr's.
- * The factor 4 must now be in the offset.
+ * The offset is in bytes, so the factor `4` must be in the offset.
  *
  * This, however does 'add tmp, ...; mov dst, tmp'. I would rather see it
  * add directly.

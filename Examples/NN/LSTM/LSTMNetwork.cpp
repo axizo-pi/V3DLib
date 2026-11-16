@@ -7,14 +7,14 @@
 void DataSamples::init() {
   for (int i = 0; i < 100; i++) {
     float x = (float) i * 0.1f;
-		lstm::vector vec;
+    lstm::vector vec;
     vec.push_back(x);
 
     DataSample sample;
     sample.features = vec;
     sample.target = (float) sin(x);
 
-		push_back(sample);
+    push_back(sample);
   }
 }
 
@@ -29,7 +29,7 @@ LSTMNetwork::LSTMNetwork(int input_size, int hidden_size, int output_size,
   epochs(epochs) 
 {
   // Initialize output layer
-	normal_rand gen;
+  normal_rand gen;
         
   Wy = matrix(output_size, hidden_size);
   by = vector(output_size, 0.0);
@@ -44,6 +44,14 @@ LSTMNetwork::LSTMNetwork(int input_size, int hidden_size, int output_size,
 
 float LSTMNetwork::train(DataSamples &training_data) {
   float total_loss = 0.0;
+
+  auto show_epoch = [] (int epoch, int epochs) -> bool {
+    if (epochs > 20) {
+      return ((epoch) % 10 == 0);
+    } else {
+      return true;
+    }
+  };
         
   for (int epoch = 0; epoch < epochs; epoch++) {
     float epoch_loss = 0.0;
@@ -94,8 +102,8 @@ float LSTMNetwork::train(DataSamples &training_data) {
     total_loss = epoch_loss;
             
     // Print progress
-    if ((epoch + 1) % 10 == 0 || epoch == 0) {
-      std::cout << "Epoch " << (epoch + 1) << "/" << epochs 
+    if (show_epoch(epoch, epochs)) {
+      std::cout << "Epoch " << epoch << "/" << epochs 
                 << ", Loss: " << epoch_loss << std::endl;
     }
   }
