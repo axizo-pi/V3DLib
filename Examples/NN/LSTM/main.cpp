@@ -17,10 +17,10 @@ int main(int argc, const char *argv[]) {
 
   // Example parameters based on the blog post
   int input_size      = 1;
-  int hidden_size     = 32;    // As mentioned in the blog
+  int hidden_size     = 32;  
   int output_size     = 1;
-  float learning_rate = 0.01f; // As mentioned in the blog
-  int epochs          = 50;    // As mentioned in the blog
+  float learning_rate = 0.01f;
+  int epochs          = 50;
     
   DataSamples training_data;
   training_data.init();

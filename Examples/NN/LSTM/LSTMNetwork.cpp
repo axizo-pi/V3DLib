@@ -46,7 +46,11 @@ float LSTMNetwork::train(DataSamples &training_data) {
   float total_loss = 0.0;
 
   auto show_epoch = [] (int epoch, int epochs) -> bool {
-    if (epochs > 20) {
+    if ( epoch == epochs - 1) {
+			return true;
+		} else if (epochs > 100) {
+      return ((epoch) % 50 == 0);
+		} else if (epochs > 20) {
       return ((epoch) % 10 == 0);
     } else {
       return true;

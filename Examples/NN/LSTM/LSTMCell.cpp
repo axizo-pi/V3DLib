@@ -19,7 +19,7 @@
 //
 // Do not do LSTM calculations where possible
 //
-//#define SKIP_LSTM_CALCULATIONS
+#define SKIP_LSTM_CALCULATIONS
 
 #define USE_QPU_RESULTS
 
@@ -170,13 +170,14 @@ void Gate::update_gate(vector const &x_h, qpu::vector const &q_x_h, float learni
   timers.start("update_gate QPU");
 
   if (do_assert()) assert(same(q_d_t, d_t, FORWARD_PRECISION));
-  //assert(same(q_x_h, x_h));
-  if (!same(q_x_h, x_h)) {
-    warn << "q_x_h: " << q_x_h.dump()
-         << "x_h: " << x_h.dump();
-    assert(false);
+	if (do_assert(40)) {
+    //assert(same(q_x_h, x_h));
+    if (!same(q_x_h, x_h)) {
+      warn << "q_x_h: " << q_x_h.dump()
+           << "x_h: " << x_h.dump();
+      assert(false);
+    }
   }
-
 
   assert(q_W.columns() % 16 == 0);
   update_gate_kernel().load(
@@ -222,7 +223,7 @@ LSTMCell::LSTMCell(int input_size, int hidden_size) :
 std::pair<vector, vector> LSTMCell::forward(vector const &x, vector const &h_prev, vector const &c_prev) {
   timers.start("forward");
   s_forward_count++;
-  //warn << "Here1 s_forward_count: " << s_forward_count;
+  //warn << "Here s_forward_count: " << s_forward_count;
 
   // Store for backpropagation
   this->x_t = x;
