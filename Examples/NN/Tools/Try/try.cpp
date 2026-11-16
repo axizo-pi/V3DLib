@@ -24,16 +24,15 @@ using Sequences = std::vector<std::vector<Vector>>;
 // Dimensions must match with input file
 //
 const int input_dim       = 64;
-const int hidden_dim      = 2*64;
+const int hidden_dim      = 64;
 const int output_dim      = 64;
 const float learning_rate = 0.0005f;
-const int time_steps      = 100;
-//const float decay         = 0.000f;
-const int iterations = 2000;
+const int time_steps      = 10;       //> I guess this is the same as epochs in other example apps
+const int iterations      = 2000;     //> # iterations when doing random iterations
 
 // GRU
 const int  seq_length        = input_dim;
-const bool random_iterations = true;
+const bool random_iterations = false;
 
 
 vector<int> slice(vector<int> &arr, int X, int len) {
@@ -80,7 +79,7 @@ std::string dump(Sequence const &input, bool do_transposed = true) {
 		if (do_transposed) {
     	buf << "\n  " << i << ": <" << cur.transpose() << ">";
 		} else {
-    	buf << cur;
+    	buf << cur << ", ";
 		}
   }
 
@@ -140,6 +139,65 @@ std::string dump(Sequences const &inputs) {
 	}
 
   return buf.str();
+}
+
+
+/**
+ * @brief Train the network on the input sequences (all but the last one)
+ *
+ * Used by `GRU` and `LSTM`.
+ */
+void train_loop(Network *net, Sequences const &inputs, Sequences const &outputs, int steps) {
+	auto display = [] (int step, int steps) -> bool {
+		if (steps >= 500) {
+			return step % 100 == 0;
+		} else if (steps >= 200) {
+			return step % 50 == 0;
+		} else if (steps >= 100) {
+			return step % 20 == 0;
+		} else {
+			return true;
+		}
+	};
+
+  for (int step = 0; step < steps; ++step) {
+
+  	float target_mse = 0.0f;
+    int size = ((int) inputs.size() - 1);
+
+		if (random_iterations) {
+      for (int iteration = 0; iteration < iterations; ++iteration) {
+        int i = rand() % size;
+        assert(i < (int) inputs.size() - 1);
+        target_mse += trainNetwork(net, inputs[i], outputs[i], 1, false, true, false);
+      }
+
+			// Take average MSE over iterations, for better comparison
+			target_mse /= iterations;
+		} else {
+      for (int j = 0; j < size; ++j) {
+     	  target_mse += trainNetwork(net, inputs[j], outputs[j], 1, false, false, false);
+		  }
+
+			target_mse /= size;
+		}
+
+		if (display(step, steps)) {
+		  warn << "======= step: " << step << ",  mse: " << target_mse;
+		}
+  }
+}
+
+
+Sequence do_predict(Network *net, Sequence const &n) {
+	Sequence s;
+	for (int i = 0 ; i < (int) n.size(); ++i) {
+    Vector v = net->predict(n[i]);
+	  //warn << "predict v: " << dump(v);
+		s.push_back(v);
+	}
+
+	return s;
 }
 
 
@@ -255,6 +313,7 @@ void run() {
 
 }  // namespace rnn_try
 
+
 namespace gru {
 
 void to_float(std::vector<float> &out, std::vector<int> in) {
@@ -361,13 +420,7 @@ void load_data(Sequences &inputs, Sequences &outputs) {
 
 
 void do_predict(Network *net, Sequence const &n) {
-	Sequence s;
-	for (int i = 0 ; i < (int) n.size(); ++i) {
-    Vector v = net->predict(n[i]);
-	  //warn << "predict v: " << dump(v);
-		s.push_back(v);
-	}
-
+	Sequence s = ::do_predict(net, n);
 	warn << "predict n: '" << to_string(n) << "'";
 	warn << "predict s: '" << to_string(s) << "'";
 }
@@ -399,39 +452,6 @@ void do_predict(Network *net, std::string const &str) {
 	//warn << "predict_seq: '" << to_string(predict_seq) << "'";
 	//warn << "predict_seq: " << dump(predict_seq);
 	do_predict(net, predict_seq);
-}
-
-
-/**
- * @brief Train the network on the input sequences (all but the last one)
- */
-void train_loop(Network *net, Sequences const &inputs, Sequences const &outputs, int steps) {
-  for (int step = 0; step < steps; ++step) {
-
-  	float target_mse = 0.0f;
-    int size = ((int) inputs.size() - 1);
-
-		if (random_iterations) {
-      for (int iteration = 0; iteration < iterations; ++iteration) {
-        int i = rand() % size;
-        assert(i < (int) inputs.size() - 1);
-        target_mse += trainNetwork(net, inputs[i], outputs[i], 1, false, true, false);
-      }
-
-			// Take average MSE over iterations, for better comparison
-			target_mse /= iterations;
-		} else {
-      for (int j = 0; j < size; ++j) {
-     	  target_mse += trainNetwork(net, inputs[j], outputs[j], 1, false, true, false);
-		  }
-
-			target_mse /= size;
-		}
-
-	  warn << "======= step: " << step << ",  mse: " << target_mse;
-		do_predict(net, inputs);
-	  do_predict(net,"i am the best");
-  }
 }
 
 
@@ -476,6 +496,15 @@ void train_loop(Network *net, Sequences const &inputs, Sequences const &outputs,
  * - Slower but better convergence
  *
  * 2. Double hidden_dim = 128
+ *
+ * ======= step: 99,  mse: 1.138175e-02
+ * predict n: 'thank you to @exxonmobil for your $20 billion investment that is'
+ * predict s: 'henk you th trnairainanltor tou  ar00sell nn in ertient ohen  n '
+ * predict n: 'i am the best'
+ * predict s: 'nn erhe se t '
+ * 
+ * real	18m56.843s
+ * 
  *
  * ----------------------------------------------
  * Old Runs (discard?)
@@ -532,18 +561,85 @@ void run() {
 
 	train_loop(net, inputs, outputs, time_steps);
 
-	//do_predict(net, inputs);
-	//do_predict(net,"i am the best");
+	net->reset();
+	do_predict(net, inputs);
+	do_predict(net,"i am the best");
 
 	delete net;
 }
 
 }  // namespace gru
+
+
+namespace lstm {
+
+const int input_size       = 1;
+const int hidden_size      = 2*32;
+const int output_size      = 1;
+const double learning_rate = 0.01f;
+const int epochs           = 3000; //50;
+
+struct Data {
+
+Sequence input;
+Sequence expected;
+
+Data(int size) {
+	vector<float> f_input;
+	vector<float> f_expected;
+
+  // Create a simple sine wave dataset for demonstration
+  for (int i = 0; i < size; i++) {
+    float x = i * 0.1;
+    f_input.push_back(x);
+    f_expected.push_back(sin(x));
+  }
+
+	input    = makeSequence(f_input);
+	expected = makeSequence(f_expected);
+
+	//warn << "input   : "<< dump(input, false);
+	//warn << "expected: "<< dump(expected, false);
+}
+
+};
+
+
+void run() {
+	warn << "Doing lstm::run()";
+	Data data(100);
+
+  Network *net = makeLSTM(input_size, hidden_size, output_size, learning_rate);
+	train_loop(net, {data.input, {}}, {data.expected}, epochs);
+  //const int iterations = 8000; //200;
+  //float train_error = trainNetwork(net, data.input, data.expected, iterations, false, true, false);
+  //Log::warn << "rnn_try::run() train_error: " << train_error;
+
+  net->reset();
+
+	Data check(10);
+	Sequence predicted = ::do_predict(net, check.input);
+	//warn << "predict : "<< dump(predicted, false);
+	//warn << "expected: "<< dump(expected, false);
+
+	int count = 0;
+	std::string buf;
+	for (auto const &v: predicted) {
+    buf << count << ": " << v[0] << ", expected: " << check.expected[count][0] << "\n";
+		count++;
+	}
+	warn << "buf:\n" << buf;
+
+	delete net;
+}
+
+}  // namespace lstm
 }  // anon namespace
 
 
 int main(int argc, char **argv) {
   //rnn_try::run();
-  gru::run();
+  //gru::run();
+  lstm::run();
   return 0;
 }
