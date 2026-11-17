@@ -465,9 +465,10 @@ void do_predict(Network *net, std::string const &str) {
  * Or vowels.
  *
  * ----------------------------------------------
- *
  * Trial runs
  * ==========
+ *
+ * On `Pi5`.
  *
  * Defaults:
  * - Parameters not mentioned have default values
@@ -507,44 +508,29 @@ void do_predict(Network *net, std::string const &str) {
  * 
  *
  * ----------------------------------------------
- * Old Runs (discard?)
- * --------
+ * Profile timing
+ * --------------
  *
- * - const int hidden_dim      = 128;
- * - const int time_steps      = 100;
- * - double seq_length
- * - All iterations
- * - rest default
+ * Comparison of timing between Pi platforms.
+ *
+ * - Command: `> time ./obj/bin/try`
+ * - All parameters same
+ * - This is scalar
+ *
+ * |----------|------|-----------------|
+ * | Platform | NN   | Real Timing (s) |
+ * |----------|------|-----------------|
+ * | pi5      |  rnn |           0.002 |
+ * | pi4      |  rnn |           0.009 |
+ * | pi5      | lstm |          16.769 |
+ * | pi4      | lstm |          59.747 |
+ * | pi5      |  gru |         283.300 |
+ * | pi4      |  gru |         890.435 |
+ * |----------|------|-----------------|
+ *
+ * - pi5 is >3x faster than pi4
+ * - GRU (pi5 and pi4) epochs do not converge, mse actually increases sometimes
  * 
- * ======= step: 99,  mse: 2.810924e+01
- * predict n: 'thank you to @exxonmobil for your $20 billion investment that is creating more than 45,000 manufacturing & construction jobs in '
- * predict s: 'een  aou th trn in arsnlior tou  ao01iellenn an ert ert then in tooateog aere ahenkte  01 iakalolt rstg a tonairumo ln tois tn t'
- * predict n: '                                                   i am the best'
- * predict s: 'ttttttttttttttttttttttttttttttttttttttttttttttttttt lr iheroett '
- *
- *
- * - const int time_steps      = 500;
- * - double seq_length
- * - All iterations
- * - rest default
- *
- * ======= step: 499,  mse: 2.924953e+01
- * predict n: 'thank you to @exxonmobil for your $20 billion investment that is creating more than 45,000 manufacturing & construction jobs in '
- * predict s: 'h ng you th trn  u arslltor tou  to00till nn in er  e   ihet in tooal og tare thetg o  0  tardsoleii  g t iongt umtion ioil tn t'
- * predict n: '                                                   i am the best'
- * predict s: 'ttttttttttttttttttttttttttttttttttttttttttttttttttt tn ihe ae t '
- * 
- * real  93m57.078s
- * user  93m56.468s
- * sys  0m0.032s
- *
- * - Slow convergence, sometimes goes up (but it _does_ converge).
- *
- *
- * - const int time_steps      = 500;
- * - double seq_length
- * - random iterations
- * - rest default
  */
 void run() {
   Log::warn << "Running GRU";
