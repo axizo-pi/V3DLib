@@ -367,7 +367,7 @@ int introduceAccum(Liveness &live, Instr::List &instrs) {
           }
         }
 
-        if (found_something) warn << buf;
+        if (found_something) info << buf;
       }
     }
   }
