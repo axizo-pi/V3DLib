@@ -9,9 +9,20 @@ namespace {
  * The main goal of this struct is to define constants at the top-level of the kernel,
  * so that they get calculated only once.
  * This avoids recalculating them within loops.
+ *
+ * -----------------------------------------------------------------------------------
+ * Notes
+ * -----
+ *
+ * 1. The conversion factors `DIST_FACTOR`, `MASS_FACTOR` and `ACC_CONSTANT` exist to prevent Inf values.
+ *    Distance and mass values are quite huge and calculations go over the max float value easily.
+ *
+ *    The location vectors and masses are multiplied by these factors to make them much smaller.
+ *    `ACC_CONSTANT` is adjusted to take this into account, so the calculations turn out as intended.
  */
 struct Context {
   Context(Int &in_num_entities) {
+    // See Note 1
     DIST_FACTOR   = 1e-12f;         comment("Init DIST_FACTOR");
     MASS_FACTOR   = 1e-18f;         comment("Init MASS_FACTOR");
 
@@ -23,11 +34,7 @@ struct Context {
     delta_t      = (float) dt;      comment("init delta_t");
   }
 
-  //
-  // These conversion factors exist to prevent Inf values.
-  // Distance and mass values are quite huge and calculations
-  // go over the max float value without breaking a sweat.
-  //
+  // See Note 1
   Float DIST_FACTOR;
   Float MASS_FACTOR;
   Float ACC_CONSTANT;
@@ -165,7 +172,7 @@ void kernel_calc_acc(
   nop(1); header("Start loop kernel_calc_acc");
 
   For (Int cur_index = me(), cur_index < c.num_entities, cur_index += numQPUs())
-    Int ptr_offset = cur_index - index();
+    Int ptr_offset = cur_index - index();     // One entity handled per iteration (not block)
 
     Float::Ptr px0    = in_x    + ptr_offset;
     Float::Ptr py0    = in_y    + ptr_offset; 
@@ -292,74 +299,6 @@ void kernel_step(
 }
 
 } // anon namespace
-
-
-/*
- //
- // Start of the kernel which will be more efficient on vc4,
- // to compensate for the DMA write.
- //
- // For small number of entities, this will perform less than current kernel,
- // because 16 entities are processed per QPU. Entities can thus not
- // be spread out over QPU's.
- //
-
-/ **
- * Handle the entities in blocks of 16
- * /
-void handle_vector(
-  Int num_entities,
-  Float::Ptr  in_x, Float::Ptr  in_y, Float::Ptr  in_z, Float::Ptr in_mass,
-  Float::Ptr acc_x, Float::Ptr acc_y, Float::Ptr acc_z,
-) {
-
-  For (Int i = 0, i < (num_entities >> 4), i += 16)
-    Float vec_x0 = *in_x;
-    Float vec_y0 = *in_y;
-    Float vec_z0 = *in_z;
-    Float vec_mass0 = *in_mass;
-
-    Float accum_x = 0;
-    Float accum_y = 0;
-    Float accum_z = 0;
-
-    For (Int n = 0, i < 16, i++)
-      // Prepare next entity to use
-      Float x0 = 0;
-      Float y0 = 0;
-      Float z0 = 0;
-
-      Where (index() == n)
-        x0 = vec_x0;
-        y0 = vec_y0;
-        z0 = vec_z0;
-      End
-
-      rotate_sum(x0, x0);
-      rotate_sum(y0, y0);
-      rotate_sum(z0, z0);
-
-      vector_calc_acc(
-        x0, y0, z0,
-        accum_x, accum_y, accum_z,
-        n, ((i << 4) + n)
-      );
-    End
-
-    *acc_x = accum_x;
-    *acc_y = accum_y;
-    *acc_z = accum_z;
-
-    accum_x.inc();
-    accum_y.inc();
-    accum_z.inc();
-    in_x.inc();
-    in_y.inc();
-    in_z.inc();
-  End
-}
-
- */
 
 
 /**

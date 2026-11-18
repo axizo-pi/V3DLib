@@ -2,6 +2,7 @@
 #define _GLOBAL_BASICS_H
 #include <string>
 #include <vector>
+#include <cstdint>
 
 //
 // Convenience definitions 
