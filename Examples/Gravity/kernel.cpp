@@ -46,7 +46,8 @@ struct Context {
 
 
 /**
- * Update speed and position.
+ * @brief Update speed and position for current entity
+ *
  */
 void kernel_update(
   Float &x    , Float &y    , Float &z,
@@ -162,6 +163,10 @@ void vector_calc_acc(
  *    This is unfortunate; I was hoping to make using multiple QPU's easier.  
  *    An option might be to use double buffering for speed and position.
  *
+ * 2. One entity handled per iteration (not block). This means that TMU _must_ be used for input.
+ *    This is still efficient, because each entity element is used against different entities
+ *    to perform the gravity calculation.
+ *
  */
 void kernel_calc_acc(
   Float::Ptr &in_x, Float::Ptr &in_y, Float::Ptr &in_z,
@@ -172,7 +177,7 @@ void kernel_calc_acc(
   nop(1); header("Start loop kernel_calc_acc");
 
   For (Int cur_index = me(), cur_index < c.num_entities, cur_index += numQPUs())
-    Int ptr_offset = cur_index - index();     // One entity handled per iteration (not block)
+    Int ptr_offset = cur_index - index();      // Note 2
 
     Float::Ptr px0    = in_x    + ptr_offset;
     Float::Ptr py0    = in_y    + ptr_offset; 
