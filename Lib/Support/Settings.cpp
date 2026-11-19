@@ -298,11 +298,11 @@ bool Settings::process() {
   }
 
   if (compile_only) {
-    Log::warn << "Only compiling, using main memory.";
+    Log::cdebug << "Only compiling, using main memory.";
     Platform::use_main_memory(true);
   }
 
-  int heap_mem     = p["Shared Memory Size"]->get_int_value();
+  int heap_mem = p["Shared Memory Size"]->get_int_value();
   V3DLib::LibSettings::heap_size(heap_mem << 20);
 
   return true;

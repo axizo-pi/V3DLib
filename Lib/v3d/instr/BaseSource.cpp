@@ -40,7 +40,7 @@ BaseSource::BaseSource(Location const &rhs) {
 
 void BaseSource::_init(Location const &rhs) {
   //warn << "_init rhs: " << rhs.dump();
-  assert(!Platform::hw::vc7() || rhs.is_rf());
+  assert(!Platform::compile::for_vc6() || rhs.is_rf());
 
   m_val    = rhs.to_waddr();
   m_is_rf  = rhs.is_rf();
@@ -89,7 +89,7 @@ BaseSource::BaseSource(Instr const &instr, int check_src) {
     default: assert(false);
   }
 
-  if (Platform::hw::vc7()) {
+  if (Platform::compile::for_vc7()) {
     // vc7 - no acc's
     set_from_src(input.raddr, small_imm, false, true);
   } else {
@@ -208,12 +208,11 @@ std::string BaseSource::dump() const {
 
 
 bool BaseSource::uses_global_raddr() const {
-  if (Platform::hw::vc7()) return false;
+  if (Platform::compile::for_vc7()) return false;
 
   if (!m_is_set)      return false;
   if (m_is_small_imm) return true;
   if (m_is_reg)       return false;
-//  if (m_is_dst)       return false;
   if (m_is_magic)     return false;
 
   return true;

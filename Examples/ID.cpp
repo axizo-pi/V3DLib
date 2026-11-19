@@ -20,9 +20,9 @@ int main(int argc, const char *argv[]) {
 
   settings.init(argc, argv);
 
-  auto k = compile(id_kernel, settings);          // Construct kernel
-  //to_file("id_kernel.txt", k.dump());
-	//to_file("ID_kernel.cpp", k.compile().dump_kernel_hex());
+  // true-param for generating kernels
+  auto k = compile(id_kernel, settings); //, true);          // Construct kernel
+  //to_file("id_generated.txt", k.generated_kernels());
 
   k.setNumQPUs(numQPUs);
 
@@ -35,8 +35,10 @@ int main(int argc, const char *argv[]) {
 
   k.load(&result, &index_array).run();            // Load the uniforms and invoke the kernel
 
-  for (int i = 0; i < (int) result.size(); i++) { // Display the result
-    printf("%3i: %2i, %2i\n", i, result[i], index_array[i]);
+  if (!settings.compile_only) {
+    for (int i = 0; i < (int) result.size(); i++) { // Display the result
+      printf("%3i: %2i, %2i\n", i, result[i], index_array[i]);
+    }
   }
 
   //k.dump_compile_data(false, "ID_dump.txt");

@@ -96,6 +96,27 @@ std::string BaseKernel::dump() {
 }
 
 
+/**
+ * @brief Set the number of QPU's to run for the current kernel.
+ *
+ * Default: 1 QPU.
+ * The maximum number of QPU's is hardware dependent, see BaseKernel::setMaxQPUs().
+ */
+BaseKernel &BaseKernel::setNumQPUs(int n) {
+  m_settings.num_qpus = n;
+  return *this;
+}
+
+
+/**
+ * @brief Set the number of QPU's to run to the maximum value for the current kernel.
+ *
+ * The maximum number of QPU's is hardware dependent:
+ *
+ * - `vc4`: 12 QPU's
+ * - `vc6`: 8 QPU's
+ * - `vc7`: 16 QPU's
+ */
 BaseKernel &BaseKernel::setMaxQPUs() {
   m_settings.setMaxQPUs();
   return *this;
@@ -308,6 +329,62 @@ std::string BaseKernel::info() const {
   }
 
   return ret;
+}
+
+
+/**
+ * @brief Make the hex64 output for all kernel types.
+ */
+void BaseKernel::generate_kernels(std::function<void()> f) {
+  Log::cdebug << "Called generate_kernels()";
+  std::string ret;
+  Platform::use_main_memory(true);
+
+  std::unique_ptr<Compile> compile;
+
+  Platform::compile::start(VCType::vc4);
+  compile.reset(new vc4::Compile);
+  compile->compile(f);
+  ret << compile->dump_kernel_hex();
+  m_typelist.clear();
+
+  Platform::compile::start(VCType::vc6);
+  compile.reset(new v3d::Compile);
+  compile->compile(f);
+  ret << compile->dump_kernel_hex();
+  m_typelist.clear();
+
+  Platform::compile::start(VCType::vc7);
+  compile.reset(new v3d::Compile);
+  compile->compile(f);
+  ret << compile->dump_kernel_hex();
+  m_typelist.clear();
+
+  Platform::use_main_memory(false);
+  m_generated_kernels = ret;
+}
+
+
+std::string BaseKernel::generated_kernels() const {
+  if (m_generated_kernels.empty()) {
+    return "m_generated_kernels is empty";
+  }
+
+  return m_generated_kernels;
+}
+
+
+/**
+ * @brief DEBUG method: show the detected types for the param's (uniforms)
+ */
+std::string BaseKernel::dump_typelist() const {
+  std::string buf;
+  buf << "Types: ";
+  for (int i = 0; i < (int) m_typelist.size(); ++i) {
+    buf << m_typelist[i] << ", ";
+  }
+
+  return buf;
 }
 
 }  // namespace V3DLib

@@ -62,24 +62,7 @@ public:
   void compile_init();
   std::string dump();
 
-  /**
-   * @brief Set the number of QPU's to run for the current kernel.
-   *
-   * Default: 1 QPU.
-   * The maximum number of QPU's is hardware dependent, see BaseKernel::setMaxQPUs().
-   */
-  BaseKernel &setNumQPUs(int n) { m_settings.num_qpus = n; return *this; }
-
-
-  /**
-   * @brief Set the number of QPU's to run to the maximum value for the current kernel.
-   *
-   * The maximum number of QPU's is hardware dependent:
-   *
-   * - `vc4`: 12 QPU's
-   * - `vc6`: 8 QPU's
-   * - `vc7`: 16 QPU's
-   */
+  BaseKernel &setNumQPUs(int n);
   BaseKernel &setMaxQPUs();
   int numQPUs() const { return m_settings.num_qpus; }
 
@@ -125,6 +108,8 @@ public:
     return *this;
   }
 
+  std::string generated_kernels() const;
+
 protected:
   BaseSettings m_settings;
   std::vector<std::size_t> m_typelist;
@@ -133,6 +118,12 @@ protected:
   // Defined as unique pointer so that it easily survives std::move
   // (There are other reasons but this is the main one)
   std::unique_ptr<Compile> m_compile;
+
+  void generate_kernels(std::function<void()> f);
+  std::string  dump_typelist() const;
+
+private:
+  std::string m_generated_kernels;  
 };
 
 

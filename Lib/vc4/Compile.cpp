@@ -311,7 +311,11 @@ std::string Compile::emit_opcodes() {
 
 
 std::string Compile::opcode(int index)  {
+  if (m_opcodes.empty()) {
+    generate_opcodes();
+  }
   assert(!m_opcodes.empty());
+
   return m_opcodes[index];
 }
 

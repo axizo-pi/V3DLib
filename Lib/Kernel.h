@@ -60,22 +60,20 @@ public:
   /**
    * Construct kernel out of C++ function
    */
-  Kernel(KernelFunction f, BaseSettings const &settings) : BaseKernel(settings) {
+  Kernel(KernelFunction f, BaseSettings const &settings, bool do_generate_kernels = false) : BaseKernel(settings) {
+    if (do_generate_kernels) {
+      BaseKernel::generate_kernels([this, f] () {
+        f(mkArg<ts>(m_typelist)...);  // Construct the AST
+      });
+    } 
+
     compile_init();
 
     compile().compile([this, f] () {
       f(mkArg<ts>(m_typelist)...);  // Construct the AST
     });
 
-/*  
-    // DEBUG: show the detected types for the param's (uniforms)
-    std::string buf;
-    buf << "Types: ";
-    for (int i = 0; i < (int) m_typelist.size(); ++i) {
-      buf << m_typelist[i] << ", ";
-    }
-    Log::warn << buf;
-*/
+    //Log::warn << dump_typelist();
     Platform::compile::done();
   }
 };
@@ -89,15 +87,15 @@ public:
  * in the calling code.
  */ 
 template <typename... ts>
-BaseKernel compile(void (*f)(ts... params)) {
+BaseKernel compile(void (*f)(ts... params), bool do_generate_kernels = false) {
   BaseSettings settings;
-  return (BaseKernel) Kernel<ts...>(f, settings);
+  return (BaseKernel) Kernel<ts...>(f, settings, do_generate_kernels);
 }
 
 
 template <typename... ts>
-BaseKernel compile(void (*f)(ts... params), BaseSettings const &settings) {
-  return (BaseKernel) Kernel<ts...>(f, settings);
+BaseKernel compile(void (*f)(ts... params), BaseSettings const &settings, bool do_generate_kernels = false) {
+  return (BaseKernel) Kernel<ts...>(f, settings, do_generate_kernels);
 }
 
 }  // namespace V3DLib

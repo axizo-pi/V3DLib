@@ -650,7 +650,7 @@ void _encode(V3DLib::Instr::List const &instrs, Instructions &dst) {
 Compile::Compile() {
   assert(!Platform::compile::for_vc4());
 
-  if(Platform::compile::for_vc7()) {
+  if (Platform::compile::for_vc7()) {
     cdebug << "selecting vc7 as kernel type";
     m_type = VCType::vc7;
   } else {

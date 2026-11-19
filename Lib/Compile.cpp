@@ -55,7 +55,7 @@ CodeStruct const &Compile::code_struct() const {
  */
 void Compile::compile(std::function<void()> create_ast) {
   try {
-    //warn << "Compile::compile() compiling for: " << kernel_type_str();
+    cdebug << "Compile::compile() compiling for: " << kernel_type_str();
     create_ast();
     compile_intern();
 
@@ -220,33 +220,35 @@ std::string Compile::dump_kernel_hex() {
   assert(!has_errors());
   assert(m_code_struct != nullptr);
 
-	allocate(); // For v3d
-	auto const &code = m_code_struct->code();
+  allocate(); // For v3d
+  auto const &code = m_code_struct->code();
 
-	std::stringstream ret;
+  std::stringstream ret;
 
-	ret << "// kernel hex output for " << kernel_type_str() << "\n\n"
-		  << "std::vector<uint64_t> kernel_" << kernel_type_str() << " = {\n";
+  ret << "\n//\n"
+      << "// kernel hex output for " << kernel_type_str() << "\n"
+      << "//\n"
+      << "std::vector<uint64_t> kernel_" << kernel_type_str() << " = {\n";
 
-	for (int i = 0; i < (int) code.size(); ++i) {
-		auto val = code[i];
-		ret << "  0x" << std::setfill('0') << std::setw(16) << std::hex << val;
+  for (int i = 0; i < (int) code.size(); ++i) {
+    auto val = code[i];
+    ret << "  0x" << std::setfill('0') << std::setw(16) << std::hex << val;
 
-		bool is_last = (i == (int) (code.size() - 1));
-		if (!is_last) ret << ",";
+    bool is_last = (i == (int) (code.size() - 1));
+    if (!is_last) ret << ",";
 
-		auto o = opcode(i);
-		if (!o.empty()) {
-			if (is_last) ret << " ";
-			ret << "  // " << o;
-		}
+    auto o = opcode(i);
+    if (!o.empty()) {
+      if (is_last) ret << " ";
+      ret << "  // " << o;
+    }
 
-		ret << "\n";
-	}
+    ret << "\n";
+  }
 
-	ret << "};\n";
+  ret << "};\n";
 
-	return ret.str();
+  return ret.str();
 }
 
 
