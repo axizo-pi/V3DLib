@@ -46,8 +46,7 @@ struct Context {
 
 
 /**
- * @brief Update speed and position for current entity
- *
+ * @brief Update speed and position for current entity from acceleration
  */
 void kernel_update(
   Float &x    , Float &y    , Float &z,
@@ -64,6 +63,81 @@ void kernel_update(
   x = x + v_x * delta_t;
   y = y + v_y * delta_t;
   z = z + v_z * delta_t;
+}
+
+
+/**
+ * @brief Calculate accelerations for current entity against the given block
+ *
+ * The current entity is represented by position/mass `<x0, y0, z0>`.
+ * All elements of the variables have the same value.
+ *
+ * Variables `<x, y, z, mass>` are a block of entities to calculate the acceleration against.
+ * Every element per index of the variables represent a distinct entity.
+ * The block need not be entirely filled; non-entities must be set to zero.
+ *
+ * Variables `<x0_acc, y0_acc, z0_acc>` are the cumulative acceleration over all entities.
+ * The currently calculated acceleration must be added to these variables.
+ *
+ * Elements of the accumulated values will be different at this state;
+ * When the entire calculation is done, all elements must be added to get the final value.
+ *
+ * Further parameters
+ *
+ * @param do_entity If element = 1, calc acceleration vector, otherwise set to zero. 
+ *                  Used to skip acceleration calculation against the same entity.
+ * @param c         Context values for current calculation.
+ *                  Currently, only ACC_CONSTANT is used.
+ */
+void calc_acc(
+  Float &x0    , Float &y0    , Float &z0    ,
+  Float &x     , Float &y     , Float &z     , Float &mass,
+  Float &x0_acc, Float &y0_acc, Float &z0_acc,
+	Int &do_entity,
+  Context &c
+) {
+  // Acceleration vector
+  Float nx1 = x0 - x;                  comment("Calc acceleration vector");
+  Float ny1 = y0 - y; 
+  Float nz1 = z0 - z; 
+
+  // Gravity/Acceleration components
+  Float dx1 = nx1 * nx1;
+  Float dy1 = ny1 * ny1;
+  Float dz1 = nz1 * nz1;
+
+  Float d1 = dx1 + dy1 + dz1;          comment("Calc distance denominator");
+
+  // Set the force/acceleration to zero for current entity,
+  // calculate the rest.
+  Float denom        = 0;
+  Float acceleration = 0;
+
+  Where (do_entity == 1)
+    denom = recipsqrt(d1);
+
+    // Note that mass of entity 0 is not required here
+    acceleration = -1 * mass * c.ACC_CONSTANT * recip(d1);
+  End
+
+  // Post vc4: denom nonzero, acceleration zero for all intents and purposes
+
+  nop(1);                              comment("Calc force factor");
+
+  // Normalize the acceleration vector
+  nx1 *= denom;                        comment("Normalize the acc vector"); 
+  ny1 *= denom; 
+  nz1 *= denom; 
+
+  // Set the force component
+  nx1 *= acceleration; 
+  ny1 *= acceleration; 
+  nz1 *= acceleration; 
+
+  // Add to total
+  x0_acc += nx1;
+  y0_acc += ny1;
+  z0_acc += nz1;
 }
 
 
@@ -91,48 +165,20 @@ void vector_calc_acc(
     Float z    = *pz    * c.DIST_FACTOR;
     Float mass = *pmass * c.MASS_FACTOR;
 
-    // Acceleration vector
-    Float nx1 = x0 - x;                  comment("Calc acceleration vector");
-    Float ny1 = y0 - y; 
-    Float nz1 = z0 - z; 
-
-    // Gravity/Acceleration components
-    Float dx1 = nx1 * nx1;
-    Float dy1 = ny1 * ny1;
-    Float dz1 = nz1 * nz1;
-
-    Float d1 = dx1 + dy1 + dz1;          comment("Calc distance denominator");
-
-    // Set the force/acceleration to zero for current entity,
-    // calculate the rest.
-    Float denom        = 0;
-    Float acceleration = 0;
-
     // Exclude current entity from acceleration calculation
     Int cur_index = (cur_block << 4) + index();
+		Int different_entity = 0;
     Where (cur_index != entity_index)
-      denom        = recipsqrt(d1);
-      acceleration = -1 * mass * c.ACC_CONSTANT * recip(d1);
-    End
+			different_entity = 1;
+		End
 
-    // Post vc4: denom nonzero, acceleration zero for all intents and purposes
-
-    nop(1);                              comment("Calc force factor");
-
-    // Normalize the acceleration vector
-    nx1 *= denom;                        comment("Normalize the acc vector"); 
-    ny1 *= denom; 
-    nz1 *= denom; 
-
-    // Set the force component
-    nx1 *= acceleration; 
-    ny1 *= acceleration; 
-    nz1 *= acceleration; 
-
-    // Add to total
-    x0_acc += nx1;
-    y0_acc += ny1;
-    z0_acc += nz1;
+		calc_acc(
+  		x0, y0, z0,
+  		x, y, z, mass,
+  		x0_acc, y0_acc, z0_acc,
+			different_entity,
+			c
+		);
 
     // Do next iteration
     px.inc();
@@ -240,7 +286,7 @@ void kernel_calc_acc(
 
 
 /**
- *
+ * @brief Update all positions and speeds and store to main memory
  */
 void kernel_step(
   Float::Ptr &p_x    , Float::Ptr &p_y    , Float::Ptr &p_z,
