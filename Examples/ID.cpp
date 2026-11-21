@@ -14,16 +14,26 @@ void id_kernel(Int::Ptr p, Int::Ptr q) {
   *q = index();
 }
 
+//#define GEN_KERNEL
+
+#ifdef GEN_KERNEL
+void generate_kernel() {
+  auto k = gen_kernel(id_kernel);
+  to_file("id_generated.txt", k.generated_kernels());
+}
+#endif
+
 
 int main(int argc, const char *argv[]) {
+
+#ifdef GEN_KERNEL
+	generate_kernel();
+#else
   int numQPUs = 8;                                // Max number of QPUs for vc6, can be increased for vc4 and vc7
 
   settings.init(argc, argv);
 
-  // true-param for generating kernels
-  auto k = compile(id_kernel, settings); //, true);          // Construct kernel
-  //to_file("id_generated.txt", k.generated_kernels());
-
+  auto k = compile(id_kernel, settings);          // Construct kernel
   k.setNumQPUs(numQPUs);
 
    // Allocate and initialise array shared between ARM and GPU
@@ -42,5 +52,7 @@ int main(int argc, const char *argv[]) {
   }
 
   //k.dump_compile_data(false, "ID_dump.txt");
+#endif // GEN_KERNEL
+
   return 0;
 }

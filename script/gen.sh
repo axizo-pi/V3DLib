@@ -46,24 +46,51 @@ $C_OBJ_TEST_TMP
 ")
 OBJ_TEST=$(echo "$OBJ_TEST_TMP" | sed "s/^/  /g")
 
+#
 # Get list of executables
+#
 # NOTE: grepping on 'main(' is not fool-proof, of course.
+#
 EXE1=$(grep -l "main(" Examples/* Tools/* --directories=skip)
-EXE2=$(echo "$EXE1" | sed "s/\\.cpp$/  \\\\/g")
+EXE2=$(echo "$EXE1" | sed "s/\\.cpp$/ \\\\/g")
 EXAMPLES=$(echo "$EXE2" | sed "s/^.*\//  /g")
 
+# TEST: Detect projects with generated kernels
+GEN_EXE1=$(cd Examples; grep -l "GEN_KERNEL" * --directories=skip)
+GEN_BASE=$(echo "$GEN_EXE1" | sed "s/\\.cpp$//g")
+GEN_EXE2=$(echo "$GEN_EXE1" | sed "s/\\.cpp$/_gen_kernel/g")
+GEN_APPS=$(echo "$GEN_EXE1" | sed "s/\\.cpp$/_gen_kernel \\\\/g")
+echo "GEN_EXE1: $GEN_EXE1"
+echo "GEN_APPS: $GEN_APPS"
 
+app_rules="
+#
+# Gen App rules
+#
+\$(OBJDIR)/Examples/${GEN_BASE}_gen_kernel.o: Examples/${GEN_BASE}.cpp | init
+	@echo Compiling $<
+	@mkdir -p \$(@D)
+	@\$(CPP) -DGEN_KERNEL -o \$@ $< 
+
+${GEN_EXE2}: \$(OBJDIR)/bin/${GEN_EXE2}
+"
+
+#
 # Get list of example makefiles
+#
 MAKEFILES=$(find Examples -name 'makefile') # | tr '\n' ' ')
-echo $MAKEFILES
+#echo "Makefiles: $MAKEFILES"
 
-# Jezus Christ, it took me ages to figure following out.
+#
 # Translate string to array.
+#
+# Jezus Christ, it took me ages to figure this out.
+#
 eval "ARR=( $MAKEFILES )"
 makelist=""
 projects=""
 for item in "${ARR[@]}"; do
-	echo Item: $item
+	#echo Item: $item
 	basedir=$(echo "$item" | awk 'BEGIN{FS=OFS="/"}{NF--; NF--; print}')
 	name=$(echo "$item" | awk 'BEGIN{FS=OFS="/"}{print $(NF-1)}')
 
@@ -77,10 +104,13 @@ $name: \$(V3DLIB)
 done
 
 echo Projects: $projects
-echo $makelist
+#echo $makelist
 
 mkdir -p obj
 
+#
+# Output sources makefile
+#
 cat << END > sources.mk
 #
 # This file is generated!  Editing it directly is a bad idea.
@@ -93,7 +123,10 @@ cat << END > sources.mk
 OBJ := \\
 $OBJ
 
-# All programs in the Examples *and Tools* directory
+
+#
+# All programs in the Examples and Tools directory
+#
 EXAMPLES := \\
 $EXAMPLES
 
@@ -105,7 +138,8 @@ $OBJ_TEST
 # sub-projects
 #
 SUB_PROJECTS := \\
-${projects}
+${projects}  ${GEN_APPS}
 $makelist
+${app_rules}
 
 END

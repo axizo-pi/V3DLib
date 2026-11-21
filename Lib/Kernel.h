@@ -56,6 +56,7 @@ struct Kernel : public BaseKernel {
 public:
   Kernel(Kernel const &k) = delete;
   Kernel(Kernel &&k) = default;
+  Kernel(BaseSettings const &settings) : BaseKernel(settings) {}
 
   /**
    * Construct kernel out of C++ function
@@ -65,16 +66,15 @@ public:
       BaseKernel::generate_kernels([this, f] () {
         f(mkArg<ts>(m_typelist)...);  // Construct the AST
       });
-    } 
+    } else {
+      compile_init();
 
-    compile_init();
+      compile().compile([this, f] () {
+        f(mkArg<ts>(m_typelist)...);  // Construct the AST
+      });
 
-    compile().compile([this, f] () {
-      f(mkArg<ts>(m_typelist)...);  // Construct the AST
-    });
-
-    //Log::warn << dump_typelist();
-    Platform::compile::done();
+      Platform::compile::done();
+    }
   }
 };
 
@@ -87,9 +87,17 @@ public:
  * in the calling code.
  */ 
 template <typename... ts>
-BaseKernel compile(void (*f)(ts... params), bool do_generate_kernels = false) {
+BaseKernel compile(void (*f)(ts... params)) {
   BaseSettings settings;
-  return (BaseKernel) Kernel<ts...>(f, settings, do_generate_kernels);
+  return (BaseKernel) Kernel<ts...>(f, settings);
+}
+
+
+template <typename... ts>
+BaseKernel gen_kernel(void (*f)(ts... params)) {
+  BaseSettings settings;
+  // true-param for generating kernels
+  return (BaseKernel) Kernel<ts...>(f, settings, true);
 }
 
 

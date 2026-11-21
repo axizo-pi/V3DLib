@@ -127,7 +127,9 @@ template <typename ...t> bool ppassParam(
 }
 
 
-// Construct an argument of QPU type 't'.
+/**
+ * @brief Construct an argument of QPU type 't'
+ */
 template <typename T> inline T mkArg(std::vector<std::size_t> &typelist) {
   auto t_hash = typeid(T).hash_code(); //both T and T::Ptr return the same value: N6V3DLib7Complex3PtrE
   //Log::warn << "Doing mkArg";

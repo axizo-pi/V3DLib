@@ -336,7 +336,7 @@ std::string BaseKernel::info() const {
  * @brief Make the hex64 output for all kernel types.
  */
 void BaseKernel::generate_kernels(std::function<void()> f) {
-  Log::cdebug << "Called generate_kernels()";
+  Log::warn << "Called generate_kernels()";
   std::string ret;
   Platform::use_main_memory(true);
 
@@ -346,7 +346,7 @@ void BaseKernel::generate_kernels(std::function<void()> f) {
   compile.reset(new vc4::Compile);
   compile->compile(f);
   ret << compile->dump_kernel_hex();
-  m_typelist.clear();
+  m_typelist.clear();                 // typelist if filled 3 times here, need to clear the interim values
 
   Platform::compile::start(VCType::vc6);
   compile.reset(new v3d::Compile);
@@ -358,8 +358,26 @@ void BaseKernel::generate_kernels(std::function<void()> f) {
   compile.reset(new v3d::Compile);
   compile->compile(f);
   ret << compile->dump_kernel_hex();
-  m_typelist.clear();
 
+  Log::warn << dump_typelist();
+
+	// Generate the typelist
+	ret << "\n\n//\n"
+		  << "// Generated typelist\n"
+			<< "//\n"
+      << "std::vector<std::size_t> typelist = {\n";
+
+	for (int i = 0; i < (int) m_typelist.size(); ++i) {
+		if (i > 0) {
+			ret << ",\n";
+		}
+
+		ret << "  " << m_typelist[i];
+	}
+
+	ret << "\n};\n";
+
+  m_typelist.clear();
   Platform::use_main_memory(false);
   m_generated_kernels = ret;
 }

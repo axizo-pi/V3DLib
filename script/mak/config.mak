@@ -58,12 +58,11 @@ CXX_FLAGS = \
 # -D OUTPUT_COMPILEDATA
 
 
-CXX= g++
-LINK= g++
-
-
+#
 # Check platform before building.
+#
 # Can't be indented, otherwise make complains.
+#
 RET := $(shell ${BASE}/Tools/detectPlatform.sh 1>/dev/null && echo "yes" || echo "no")
 #$(info  info: '$(RET)')
 ifneq ($(RET), yes)
@@ -115,23 +114,34 @@ V3DLIB=$(OBJDIR)/libv3dlib.a
 
 LIBS += -L $(OBJDIR) -lv3dlib $(LIB_EXTERN)
 
+CPP=g++ -std=c++17 -c -MMD -MP -MF"$(@:%.o=%.d)" $(INCLUDE) 
+CC=g++ -x c -c $(CXX_FLAGS) $(INCLUDE)
+LINK=g++
 
-# Following prevents deletion of object files after linking
-# Otherwise, deletion happens for targets of the form '%.o'
+
+#
+# Following prevents deletion of object files after linking.
+# Otherwise, deletion happens for targets of the form '%.o'.
+#
 .PRECIOUS: $(OBJDIR)/%.o
 
+#
 # Rule for creating c++ object files
+#
 $(OBJDIR)/%.o: %.cpp | init
 	@echo Compiling $<
 	@mkdir -p $(@D)
-	@$(CXX) -std=c++17 -c -o $@ $< $(CXX_FLAGS) -MMD -MP -MF"$(@:%.o=%.d)" $(INCLUDE) 
+	@$(CPP) -o $@ $< 
 
 
+#
 # Same thing for C-files
+#
 $(OBJDIR)/%.o: %.c | init
 	@echo Compiling $<
 	@mkdir -p $(@D)
-	@$(CXX) -x c -c -o $@ $< $(CXX_FLAGS) $(INCLUDE)
+	@$(CC) -o $@ $<
+
 
 $(OBJDIR)/bin/%: $(OBJDIR)/Examples/%.o $(V3DLIB) $(LIB_DEPEND)
 	@echo Linking $@...

@@ -1,7 +1,7 @@
 #
 # This file is generated!  Editing it directly is a bad idea.
 #
-# Generated on: Sun Nov  8 02:26:29 PM CET 2026
+# Generated on: Sat Nov 21 08:48:13 AM CET 2026
 #
 ###############################################################################
 
@@ -131,22 +131,25 @@ OBJ := \
   vc4/dump_instr.o  \
   v3d/instr/v3d_api.o  \
 
-# All programs in the Examples *and Tools* directory
+
+#
+# All programs in the Examples and Tools directory
+#
 EXAMPLES := \
-  Concurrent  \
-  DMA  \
-  GCD  \
-  Hello  \
-  ID  \
-  Matrix  \
-  OET  \
-  ReqRecv  \
-  Tri  \
-  Counter  \
-  detectPlatform  \
-  Instruction  \
-  KernelParams  \
-  Sub  \
+  Concurrent \
+  DMA \
+  GCD \
+  Hello \
+  ID \
+  Matrix \
+  OET \
+  ReqRecv \
+  Tri \
+  Counter \
+  detectPlatform \
+  Instruction \
+  KernelParams \
+  Sub \
 
 # support files for tests
 TESTS_FILES := \
@@ -199,7 +202,7 @@ SUB_PROJECTS := \
   nnetcpp \
   Lib \
   RayTracing \
-
+  ID_gen_kernel \
 
 Mandelbrot: $(V3DLIB)
 	@cd Examples/Mandelbrot && make DEBUG=${DEBUG}
@@ -234,4 +237,15 @@ Lib: $(V3DLIB)
 RayTracing: $(V3DLIB)
 	@cd Examples/RayTracing && make DEBUG=${DEBUG}
 	
+
+#
+# Gen App rules
+#
+$(OBJDIR)/Examples/ID_gen_kernel.o: Examples/ID.cpp | init
+	@echo Compiling $<
+	@mkdir -p $(@D)
+	@$(CPP) -DGEN_KERNEL -o $@ $< 
+
+ID_gen_kernel: $(OBJDIR)/bin/ID_gen_kernel
+
 
