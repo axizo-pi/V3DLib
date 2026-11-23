@@ -53,19 +53,20 @@ CmdParameters base_params = {
     "Output Generated Code",
     "-f",
     ParamType::NONE,     // Prefix needed to disambiguate
-    "Write representations of the generated code to file"
+    "Write representations of the generated code to file.\n"
+		"Output goes to text file '<Program name>_code.txt' in current directory"
   }, { 
     "Compile Only",
     "-c",
     ParamType::NONE,
     "Compile the QPU kernel but do not run it.\n"
-    "May be ignored for scalar kernels."
+    "May be ignored for scalar kernels"
   }, {
     "Select run type",
     "-r=",
     {"QPU", "interpreter", "emulator", "debugger"},
     "Run the kernel on the QPU, interpreter or the emulator.\n"
-    "Value 'debugger' starts the emulator in debugging mode"
+    "Value 'debugger' starts the emulator in debugging mode."
   }, {
     "Disable logging",
     {"-s", "-silent"},
@@ -88,6 +89,13 @@ CmdParameters base_params = {
     ParamType::POSITIVE_INTEGER,
     "Size in MB of the shared memory to use",
     V3DLib::LibSettings::heap_size() >> 20 
+  }, {
+    "Precompile kernels to hex64 format",
+    { "-gen-kernels=", "-gk="},
+    ParamType::STRING,
+    "Output compiled kernels in hex64 format to given file.\n"
+    "The output file is in c++ format, so that it can be included in any c++ program.\n"
+		"In addition, the parameters type are outputted, so that the kernel invocation can be checked"
   }}
 };
 
