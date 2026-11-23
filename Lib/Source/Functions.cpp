@@ -8,6 +8,7 @@
 #include "Functions.h"
 #include "Lang.h"
 #include "vc4/DMA/VPMArray.h"
+#include "Support/Platform.h"
 #include "LibSettings.h"
 #include "GlobalConstants.h"  // MinInf()
 #include <cmath>

@@ -1,6 +1,5 @@
 #include <V3DLib.h>
 #include "support/support.h"
-#include "Support/Platform.h"
 #include "Support/Helpers.h"
 #include "Support/pgm.h"
 #include "support/dft_support.h"

@@ -77,24 +77,21 @@ extern "C" {
 #endif
 
 struct v3d_device_info const *devinfo() {
-  if (!V3DLib::Platform::hw::vc4()) {
-    if (!_v3d_device_info()) {
-      cerr << "devinfo: Call to _v3d_device_info() failed";
-      return nullptr;
-    }
+  //
+  // compile and unpack has precedence over hardware check.
+  //
+  // Lie about devinfo. `devinfo()` is called for mesa unpack routines
+  // on all hardware platforms.
+  //
+  VCType vc_type = VCType::UNKNOWN;
+
+  if (V3DLib::Platform::compile::running()) {
+    vc_type = V3DLib::Platform::compile::type();
   } else {
-    //
-    // For vc4, lie about devinfo.
-    // devinfo() is still called for mesa unpack routines.
-    //
-    VCType vc_type = VCType::UNKNOWN;
+    vc_type = V3DLib::Platform::unpack::type();
+  }
 
-    if (V3DLib::Platform::compile::running()) {
-      vc_type = V3DLib::Platform::compile::type();
-    } else {
-      vc_type = V3DLib::Platform::unpack::type();
-    }
-
+  if (vc_type != VCType::UNKNOWN) {
     assert(vc_type == VCType::vc6 || vc_type == VCType::vc7);
 
     if (vc_type == VCType::vc6) {
@@ -102,6 +99,15 @@ struct v3d_device_info const *devinfo() {
     } else {
       s_devinfo.ver = 71;
     }
+
+    return &s_devinfo;
+  }
+
+  //warn << "Doing hardware _v3d_device_info()";
+  assert(!V3DLib::Platform::hw::vc4());
+  if (!_v3d_device_info()) {
+    cerr << "devinfo: Call to _v3d_device_info() failed";
+    return nullptr;
   }
 
   return &s_devinfo;

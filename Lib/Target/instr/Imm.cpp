@@ -1,6 +1,5 @@
 #include "Imm.h"
 #include "Support/basics.h"
-#include "Support/Platform.h"
 #include "v3d/instr/SmallImm.h"
 
 namespace V3DLib {

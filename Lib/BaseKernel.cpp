@@ -1,6 +1,7 @@
 #include "BaseKernel.h"
 #include "vc4/Compile.h"
 #include "v3d/Compile.h"
+#include "Support/Platform.h"
 #include "Emulator/Interpreter.h"  // interpreter()
 #include "Emulator/Emulator.h"     // emulate()
 #include <ctime>

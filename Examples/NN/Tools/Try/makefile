@@ -11,7 +11,7 @@ INCLUDES = \
 -I ../nnetcpp/src    \
 -I ../nnetcpp/tests/ \
 -I $(V3DLIB)/Lib/
-$(info INCLUDES: $(INCLUDES))
+#$(info INCLUDES: $(INCLUDES))
 
 LIBS = \
 ../nnetcpp/obj/bin/libnnetcpp.a \
@@ -23,7 +23,7 @@ TARGET=$(BINDIR)/try
 all: init $(TARGET)
 
 -include ../../../../script/mak/extern.mak
-$(info OBJFILES: $(OBJFILES))
+#$(info OBJFILES: $(OBJFILES))
 
 # Disabled warnings (except first) for Eigen3
 CPPFLAGS += \
@@ -33,8 +33,7 @@ CPPFLAGS += \
 -Wno-misleading-indentation  \
 -Wno-int-in-bool-context     \
 $(INCLUDES)
-$(info CPPFLAGS: $(CPPFLAGS))
-
+#$(info CPPFLAGS: $(CPPFLAGS))
 
 init:
 	@mkdir -p $(OBJDIR)

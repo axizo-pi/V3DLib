@@ -1,5 +1,6 @@
 #include "Ptr.h"
 #include "Common/SharedArray.h"
+#include "Support/Platform.h"
 #include "Lang.h"               // comment()
 #include "GlobalConstants.h"    // Var_64();
 

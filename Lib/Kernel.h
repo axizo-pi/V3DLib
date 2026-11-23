@@ -2,6 +2,7 @@
 #define _V3DLIB_KERNEL_H_
 #include "BaseKernel.h"
 #include "Source/Complex.h"
+#include "Support/Platform.h"
 #include <tuple>
 #include <iostream>
 #include <typeinfo>

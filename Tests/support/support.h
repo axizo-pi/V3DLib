@@ -11,6 +11,7 @@
 #include "v3d/Driver.h"
 #include "v3d/instr/Mnemonics.h"
 #include "global/Log.h"
+#include "Support/Platform.h"
 #include <string>
 #include <vector>
 

@@ -38,6 +38,7 @@
 #include "Driver.h"
 #include "v3d.h"
 #include "LibSettings.h"
+#include "Support/Platform.h"
 
 namespace V3DLib {
 namespace v3d {

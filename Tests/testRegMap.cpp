@@ -1,8 +1,8 @@
 #include "doctest.h"
-#include "../Lib/Support/Platform.h"
-#include "../Lib/vc4/vc4.h"
-#include "../Lib/vc4/RegisterMap.h"
-#include "../Lib/v3d/RegisterMapping.h"
+#include "Support/Platform.h"
+#include "vc4/vc4.h"
+#include "vc4/RegisterMap.h"
+#include "v3d/RegisterMapping.h"
 #include <cstdlib>
 
 using namespace V3DLib;

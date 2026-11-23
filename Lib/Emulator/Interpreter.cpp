@@ -2,8 +2,8 @@
 #include "../CodeStruct.h"
 #include "EmuState.h"
 #include "Source/Stmt.h"
-#include "Support/basics.h"
 #include "global/Timer.h"
+#include "Support/Platform.h"
 #include <algorithm>            // reverse()
 
 namespace V3DLib {

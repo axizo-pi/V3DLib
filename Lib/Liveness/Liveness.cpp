@@ -342,10 +342,11 @@ void Liveness::optimize(Instr::List &instrs, int numVars) {
  *   - p.28:
  *     "The accumulators r4 and r5 have special functions and cannot be used
  *     as general-purpose accumulator registers."
+ *
+ * 2. Timing totally inconsequential. Called often but the overhead is tiny.
  */
 int get_free_acc(Instr::List const &instrs, Range const &use_range) {
   assert(use_range.last() < instrs.size());
-  timers.start("get_free_acc(Range)");
 
   uint32_t acc_use = 0xffffffff;  // Keeps track of free acc's, default all free
 
@@ -375,7 +376,6 @@ int get_free_acc(Instr::List const &instrs, Range const &use_range) {
     }
   }
 
-  timers.stop("get_free_acc(Range)");
   return ret;
 }
 

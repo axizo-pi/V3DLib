@@ -1,7 +1,6 @@
 #include "BaseSettings.h"
 #include "Kernel.h"
 #include "Helpers.h"
-#include "Support/Platform.h"
 #include "vc4/PerformanceCounters.h"
 #include "v3d/PerformanceCounters.h"
 

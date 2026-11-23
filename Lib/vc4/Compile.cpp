@@ -11,6 +11,7 @@
 #include "Target/instr/Mnemonics.h"
 #include "RegAlloc.h"
 #include "Support/Helpers.h"
+#include "Support/Platform.h"
 
 namespace V3DLib {
 namespace vc4 {

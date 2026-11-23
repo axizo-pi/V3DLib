@@ -438,7 +438,7 @@ int main(int argc, const char *argv[]) {
   cout << "Decode: " << qpu_decode(&instr) << "\n";
   cout << "Disasm: " << qpu_disasm(packed) << "\n\n";
 
-  if (devinfo_ver() == 42) {
+  if (devinfo()->ver == 42) {
     cout << "---- vc4 instruction ----\n";
 
     if (instr.type == V3D_QPU_INSTR_TYPE_ALU) {

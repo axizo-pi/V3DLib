@@ -1,7 +1,8 @@
-#include "Source/Float.h"
+#include "Float.h"
 #include "Lang.h"            // only for assign()!
 #include "Functions.h"
 #include "GlobalConstants.h"
+#include "Support/Platform.h"
 
 namespace V3DLib {
 namespace {
