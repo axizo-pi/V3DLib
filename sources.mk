@@ -1,7 +1,7 @@
 #
 # This file is generated!  Editing it directly is a bad idea.
 #
-# Generated on: Sat Nov 21 08:48:13 AM CET 2026
+# Generated on: Mon Nov 23 04:10:41 AM CET 2026
 #
 ###############################################################################
 
@@ -241,11 +241,30 @@ RayTracing: $(V3DLIB)
 #
 # Gen App rules
 #
+
+$(OBJDIR)/%.o: $(OBJDIR)/generated/%.cpp | init
+	@echo Compiling $<
+	@mkdir -p $(@D)
+	@$(CPP) -o  $< 
+
+
 $(OBJDIR)/Examples/ID_gen_kernel.o: Examples/ID.cpp | init
 	@echo Compiling $<
 	@mkdir -p $(@D)
 	@$(CPP) -DGEN_KERNEL -o $@ $< 
 
+$(OBJDIR)/Examples/ID_use_hex_kernel.o: Examples/ID.cpp $(OBJDIR)/generated/ID_hex_kernels.cpp | init
+	@echo Compiling $<
+	@mkdir -p $(@D)
+	@$(CPP) -DUSE_HEX_KERNEL -o $@ $< 
+
 ID_gen_kernel: $(OBJDIR)/bin/ID_gen_kernel
+
+ID_use_hex_kernel: $(OBJDIR)/bin/ID_use_hex_kernel
+
+$(OBJDIR)/generated/ID_hex_kernels.cpp: $(OBJDIR)/bin/ID_gen_kernel
+	@echo Generating $<
+	@mkdir -p $(@D)
+	$(OBJDIR)/bin/ID_gen_kernel
 
 

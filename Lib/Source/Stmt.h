@@ -85,8 +85,8 @@ struct Stmt : public InstructionComment {
     std::string dump(bool do_line_numbers, bool show_comments = true, int indent = 0) const;
     Array &operator<<(Array const &b);
 
-	private:
-		std::vector<std::string> opcodes(bool show_comments, int indent) const;
+  private:
+    std::vector<std::string> opcodes(bool show_comments, int indent) const;
   };
 
   Stmt(Tag in_tag) : tag(in_tag) {}
@@ -168,11 +168,11 @@ private:
 
 
 class Stmts : public Stmt::Array {
-	using Parent = Stmt::Array;
+  using Parent = Stmt::Array;
 
 public:
   int lastUniform(bool do_dump = true);
-	std::string dump() const;
+  std::string dump() const;
 };
 
 }  // namespace V3DLib

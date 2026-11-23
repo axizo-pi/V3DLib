@@ -58,6 +58,10 @@ public:
   Kernel(Kernel &&k) = default;
   Kernel(BaseSettings const &settings) : BaseKernel(settings) {}
 
+  Kernel(struct generated_kernels const &kernels, BaseSettings const &settings) : BaseKernel(settings) {
+    load_kernel(kernels);
+  }
+
   /**
    * Construct kernel out of C++ function
    */
@@ -67,7 +71,7 @@ public:
         f(mkArg<ts>(m_typelist)...);  // Construct the AST
       });
     } else {
-      compile_init();
+      init_compile_struct();
 
       compile().compile([this, f] () {
         f(mkArg<ts>(m_typelist)...);  // Construct the AST
@@ -96,14 +100,19 @@ BaseKernel compile(void (*f)(ts... params)) {
 template <typename... ts>
 BaseKernel gen_kernel(void (*f)(ts... params)) {
   BaseSettings settings;
-  // true-param for generating kernels
-  return (BaseKernel) Kernel<ts...>(f, settings, true);
+  return (BaseKernel) Kernel<ts...>(f, settings, InitAction::do_generate);
 }
 
 
 template <typename... ts>
-BaseKernel compile(void (*f)(ts... params), BaseSettings const &settings, bool do_generate_kernels = false) {
-  return (BaseKernel) Kernel<ts...>(f, settings, do_generate_kernels);
+BaseKernel load_kernel(struct generated_kernels const &kernels, BaseSettings const &settings) {
+  return (BaseKernel) Kernel<ts...>(kernels, settings);
+}
+
+
+template <typename... ts>
+BaseKernel compile(void (*f)(ts... params), BaseSettings const &settings, InitAction do_action = InitAction::do_compile) {
+  return (BaseKernel) Kernel<ts...>(f, settings, do_action);
 }
 
 }  // namespace V3DLib

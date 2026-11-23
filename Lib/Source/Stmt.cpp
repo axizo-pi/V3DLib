@@ -513,7 +513,7 @@ Stmt::Array &Stmt::Array::operator<<(Array const &b) {
  * Stmt instances have internal structure, which is indented in the output.
  */
 std::string Stmt::Array::dump(bool do_line_numbers, bool show_comments, int indent) const {
-  if (empty()) return "<Empty>";
+  if (empty()) return "<Empty>\n";
 
   auto lines = opcodes(show_comments, indent);
 

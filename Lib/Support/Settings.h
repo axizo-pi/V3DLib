@@ -17,7 +17,7 @@ struct Settings : public BaseSettings {
   std::string dump() const;
 
 private:
-  CmdParameters * const m_derived_params;
+  CmdParameters const *m_derived_params;
   CmdParameters m_all_params;
   bool const m_use_num_qpus;
 

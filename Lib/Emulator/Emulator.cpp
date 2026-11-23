@@ -511,9 +511,12 @@ void emulate(
   BufferObject &heap,
   bool do_debug
 ) {
-  //warn << "Running emulator";
-
   Instr::List const &instrs = cs.targetCode();
+
+  if (instrs.empty()) {
+    cerr << "No target code instructions available; can not run emulator" << thrw;
+  }
+
   State state(numQPUs, uniforms);
   state.emuHeap.heap_view(heap);
 

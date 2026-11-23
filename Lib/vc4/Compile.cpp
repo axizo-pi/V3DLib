@@ -177,15 +177,21 @@ void Compile::generate_opcodes() {
   m_opcodes = vc4::opcodes(cs.m_code);
 
   //
-  // Check if generated code is as expected
+  // Only do this tests if target code present;
+  // With loading of pregenerated kernels, this is not true any more.
   //
-  // '+ 2' takes tags INIT_BEGIN/INIT_END into account
-  //
-  if ((int) (m_opcodes.size() + 2) != cs.m_targetCode.size()) {
-    Log::cerr << "vc4 emit_opcodes() discrepancy in opcode and target code size. "
-              << "opcode size: " << m_opcodes.size() << " (plus INIT), "
-              << "target code size: " << cs.m_targetCode.size()
-              << thrw;
+  if (!cs.m_targetCode.empty()) {
+    //
+    // Check if generated code is as expected
+    //
+    // '+ 2' takes tags INIT_BEGIN/INIT_END into account
+    //
+    if ((int) (m_opcodes.size() + 2) != cs.m_targetCode.size()) {
+      Log::cerr << "vc4 generated_opcodes() discrepancy in opcode and target code size. "
+                << "opcode size: "      << m_opcodes.size() << " (plus INIT), "
+                << "target code size: " << cs.m_targetCode.size()
+                << thrw;
+    }
   }
 
   //
@@ -246,6 +252,13 @@ std::string Compile::emit_opcodes() {
   assert(!m_opcodes.empty());
 
   auto &cs = code_struct();
+
+  if (cs.m_targetCode.empty()) {
+    // This happens when precompiled kernels are used
+    info << "emit_opcodes(): No target code present";
+    return "<Empty: No target code present>\n";
+  }
+
   std::string ret;
 
   //
@@ -260,6 +273,7 @@ std::string Compile::emit_opcodes() {
       max_size = (int) n.size();
     }
   }
+
   int t_i = 0;
   for (int i = 0; i < (int) m_opcodes.size(); ++i, ++t_i) {
     auto t    = cs.m_targetCode[t_i];

@@ -1,5 +1,6 @@
 #ifndef _V3DLIB_COMPILE_H
 #define _V3DLIB_COMPILE_H
+#include "CodeStruct.h"
 #include "Common/CompileData.h"
 #include "Common/Seq.h"           // IntList
 #include "Support/Platform.h"     // VCType
@@ -7,8 +8,7 @@
 
 namespace V3DLib {
 
-// Forward declarations
-class CodeStruct;
+// Forward declaration(s)
 #ifdef OUTPUT_COMPILEDATA
 class CompileData;
 #endif // OUTPUT_COMPILEDATA

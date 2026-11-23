@@ -1,5 +1,4 @@
 #include "Compile.h"
-#include "CodeStruct.h"
 #include "Source/Lang.h"  // comment()
 #ifdef OUTPUT_COMPILEDATA
 #include "Common/CompileData.h"
@@ -18,6 +17,7 @@ Compile::Compile() {
 #endif // OUTPUT_COMPILEDATA
 }
 
+
 /**
  * @brief class dtor
  *
@@ -30,6 +30,7 @@ Compile::~Compile() {
   delete m_compile_data;
 #endif // OUTPUT_COMPILEDATA
 }
+
 
 std::string Compile::kernel_type_str() const {
   return Platform::vc_type_str(kernel_type());
@@ -49,9 +50,9 @@ CodeStruct const &Compile::code_struct() const {
 
 
 /**
- * Entry point for compilation of source code to target code.
+ * @brief Entry point for compilation of source code to target code.
  *
- * This method is here just to handle thrown exceptions.
+ * This method exists to handle thrown exceptions.
  */
 void Compile::compile(std::function<void()> create_ast) {
   try {
@@ -183,8 +184,13 @@ std::string Compile::dump() {
       << "\n"
 
       << "Target for " << kernel_type_str() << "\n"
-      << "===============\n"
-      << cs.m_targetCode.dump();
+      << "===============\n";
+
+  if (cs.m_targetCode.empty()) {
+    ret << "<Empty>\n";
+  } else {
+    ret << cs.m_targetCode.dump();
+  }
 
   return ret;
 }
@@ -225,11 +231,6 @@ std::string Compile::dump_kernel_hex() {
 
   std::stringstream ret;
 
-  ret << "\n//\n"
-      << "// kernel hex output for " << kernel_type_str() << "\n"
-      << "//\n"
-      << "std::vector<uint64_t> kernel_" << kernel_type_str() << " = {\n";
-
   for (int i = 0; i < (int) code.size(); ++i) {
     auto val = code[i];
     ret << "  0x" << std::setfill('0') << std::setw(16) << std::hex << val;
@@ -245,8 +246,6 @@ std::string Compile::dump_kernel_hex() {
 
     ret << "\n";
   }
-
-  ret << "};\n";
 
   return ret.str();
 }

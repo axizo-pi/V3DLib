@@ -1488,7 +1488,7 @@ ByteCode Instructions::bytecode() const {
 
 
 std::string Instructions::dump() const {
-  if (empty()) return "<No opcodes to print>\n";
+  if (empty()) return "<Empty>\n";
 
   std::string ret;
 

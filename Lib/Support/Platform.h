@@ -39,6 +39,7 @@ namespace hw {
 VCType type();
 std::string type_str();
 bool vc4();
+bool vc6();
 bool vc7();
 
 }  // namespace hw
@@ -46,7 +47,7 @@ bool vc7();
 namespace compile {
 
 void start(VCType in_type);
-bool for_vc4(bool do_break = true);
+bool for_vc4();
 bool for_vc7();
 bool for_vc6();
 bool running();

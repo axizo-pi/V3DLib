@@ -39,9 +39,6 @@ BaseSource::BaseSource(Location const &rhs) {
 
 
 void BaseSource::_init(Location const &rhs) {
-  //warn << "_init rhs: " << rhs.dump();
-  assert(!Platform::compile::for_vc6() || rhs.is_rf());
-
   m_val    = rhs.to_waddr();
   m_is_rf  = rhs.is_rf();
   m_is_reg = rhs.is_reg();

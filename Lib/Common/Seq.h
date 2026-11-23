@@ -59,20 +59,20 @@ public:
   }
 
   T &get(int index) {
-    assertq(!empty(), "seq[]: can not access elements, sequence is empty");
+    assertq(!empty(), "Seq::get(): can not access elements, sequence is empty");
     assertq(0 <= index && index < numElems, "Seq[]: index out of range");
     return elems[index];
   }
 
   T const &get(int index) const{
-    assertq(!empty(), "seq[]: can not access elements, sequence is empty");
+    assertq(!empty(), "Seq::get() const: can not access elements, sequence is empty");
     assertq(0 <= index && index < numElems, "Seq[]: index out of range");
     return elems[index];
   }
 
 
   T operator[](int index) const {
-    assertq(!empty(), "seq[]: can not access elements, sequence is empty");
+    assertq(!empty(), "Seq[]: can not access elements, sequence is empty");
     assertq(0 <= index && index < numElems, "Seq[]: index out of range");
     return elems[index];
   }

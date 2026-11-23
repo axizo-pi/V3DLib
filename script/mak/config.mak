@@ -114,7 +114,7 @@ V3DLIB=$(OBJDIR)/libv3dlib.a
 
 LIBS += -L $(OBJDIR) -lv3dlib $(LIB_EXTERN)
 
-CPP=g++ -std=c++17 -c -MMD -MP -MF"$(@:%.o=%.d)" $(INCLUDE) 
+CPP=g++ -std=c++17 -c -MMD -MP -MF"$(@:%.o=%.d)" $(INCLUDE) $(CXX_FLAGS)
 CC=g++ -x c -c $(CXX_FLAGS) $(INCLUDE)
 LINK=g++
 

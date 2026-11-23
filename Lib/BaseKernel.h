@@ -8,6 +8,25 @@
 namespace V3DLib {
 
 /**
+ * @brief Container for hex kernels.
+ */
+struct generated_kernels {
+  std::vector<uint64_t> vc4;
+  std::vector<uint64_t> vc6;
+  std::vector<uint64_t> vc7;
+  std::vector<std::size_t> typelist;
+};
+
+
+enum InitAction {
+  do_compile,
+  do_generate,
+  do_load
+};
+
+
+
+/**
  * @brief class BaseKernel
  *
  * -------------------------
@@ -49,8 +68,9 @@ namespace V3DLib {
  *    the vc4 kernel driver is always used, even if only assembling for v3d.
  */
 class BaseKernel {
-
 public:
+  using VCType = V3DLib::Platform::VCType;
+
   BaseKernel(BaseSettings const &settings);
   BaseKernel(BaseKernel &&k) = default;
 
@@ -59,7 +79,6 @@ public:
   V3DLib::Compile const &compile() const;
   V3DLib::Compile &compile();
 
-  void compile_init();
   std::string dump();
 
   BaseKernel &setNumQPUs(int n);
@@ -119,11 +138,15 @@ protected:
   // (There are other reasons but this is the main one)
   std::unique_ptr<Compile> m_compile;
 
+  VCType init_compile_struct();
   void generate_kernels(std::function<void()> f);
   std::string  dump_typelist() const;
+  void load_kernel(struct generated_kernels const &kernels);
 
 private:
-  std::string m_generated_kernels;  
+  std::string m_generated_kernels;
+
+  VCType determine_kernel();
 };
 
 

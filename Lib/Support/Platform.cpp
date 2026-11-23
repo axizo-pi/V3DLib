@@ -384,6 +384,7 @@ VCType type() {
 std::string type_str() { return vc_type_str(instance().vc_type); }
 
 bool vc4() { return instance().vc_type == VCType::vc4; }
+bool vc6() { return instance().vc_type == VCType::vc6; }
 bool vc7() { return instance().vc_type == VCType::vc7; }
 
 }  // namespace hw
@@ -427,14 +428,17 @@ void done() {
 }
 
 
-bool for_vc4(bool do_break) {
+/**
+ * @brief Determine if the compilation is done for `vc4`.
+ *
+ * @see header `for_vc7()`.
+ */
+bool for_vc4() {
   if (!running()) return false;  // final return should actually be enough
 
-  if (do_break) {
-    if (instance().m_compiling_for == UNKNOWN) {
-       warn << "compiling::for_vc4 compiling for Unknown";
-       breakpoint;
-    }
+  if (instance().m_compiling_for == UNKNOWN) {
+    warn << "compiling::for_vc4(): compiling for Unknown";
+    return hw::vc4();
   }
 
   return instance().m_compiling_for == vc4;
@@ -442,25 +446,48 @@ bool for_vc4(bool do_break) {
 
 
 /**
- * Determine if the compilation is done for vc7.
+ * @brief Determine if the compilation is done for `vc7`.
  *
- * Device (hardware) is accessed to determine what platform we are compiling on.
+ * Compilation is independent of the underlying hardware platform,
+ * e.g. compilation can be done for `vc4` on `vc6` on a `vc7`, and all permutations.
  *
- * Strictly speaking, it should not be necessary to determine the platform
- * we are running on. It is possible to compile for any platform on any
- * platform.
+ * If no explicit compile target is set, assume underlying hardware platform.
+ *
+ * =================================================================================
+ *
+ * Notes
+ * -----
+ *
+ * 1. If no compilation target selected, assume compilation for current hardware platform.
+ *    This happens in the unit tests, for partial compilations.
  */
 bool for_vc7() {
   assert(!emulate::running());
-  assertq(instance().m_compiling_for != UNKNOWN, "compiling_for_vc7 compiling for Unknown");
+
+  if (instance().m_compiling_for == UNKNOWN) {  // See Note 1
+    info << "compiling::for_vc7(): compiling for Unknown";
+    return hw::vc7();
+  }
 
   return (instance().m_compiling_for == vc7);
 }
 
 
+/**
+ * @brief Determine if the compilation is done for `vc6`.
+ *
+ * @see header `for_vc7()`.
+ */
 bool for_vc6() {
   assert(!emulate::running());
-  return !for_vc4() && (instance().vc_type == vc6);
+
+  if (instance().m_compiling_for == UNKNOWN) {
+    info << "compiling::for_vc6(): compiling for Unknown";
+    return hw::vc6();
+  }
+
+  //return !for_vc4() && (instance().vc_type == vc6);
+  return instance().m_compiling_for == vc6;
 }
 
 } // namespace compile

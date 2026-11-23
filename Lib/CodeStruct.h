@@ -18,6 +18,7 @@ struct CodeStruct {
   void obtain_ast();
 
   Code const &code() const { return m_code; }
+  Code &code() { return m_code; }
   Stmts const &sourceCode() const;
   Instr::List const &targetCode() const { return m_targetCode; }
 

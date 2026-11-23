@@ -738,8 +738,6 @@ void Compile::compile_intern() {
     m_uc = uniform_constants.list();
     uniform_constants.add_uniforms(cs.m_body);
 
-    // Was fully expecting for following to be necessary; alas
-    //VarGen::reset();
     cs.m_targetCode.clear();
     encode_source(cs.m_targetCode, cs.m_body);
   }
@@ -797,25 +795,32 @@ void Compile::invoke(int numQPUs, IntList &params, bool wait_complete) {
 
 
 void Compile::allocate() {
-  assert(!instructions.empty());
+  // Assumption: code in a kernel, once allocated, doesn't change
   auto &cs = code_struct();
 
-  // Assumption: code in a kernel, once allocated, doesn't change
+  // Code can now be allocated from a hex kernel;
+  // in that case no full compile has been executed and instructions are empty.
   if (cs.m_code.allocated()) {
-    if (instructions.size() > cs.m_code.size()) {
-      cerr << "KernelDriver::allocate(): Discrepancy between instruction size: " << (int) instructions.size()
-           << " and m_code size: " << cs.m_code.size();
+    // Paranoia checks where possible
+    if (!instructions.empty()) {
+      if (instructions.size() > cs.m_code.size()) {
+        cerr << "KernelDriver::allocate(): Discrepancy between instruction size: " << (int) instructions.size()
+             << " and m_code size: " << cs.m_code.size();
+      }
+      assert(instructions.size() <= cs.m_code.size());  // Tentative check, not perfect
+                                                        // actual opcode seq can be smaller due to removal labels
     }
-    assert(instructions.size() <= cs.m_code.size());  // Tentative check, not perfect
-                                                      // actual opcode seq can be smaller due to removal labels
-  } else {
-    std::vector<uint64_t> code = to_opcodes();
-    assert(!code.empty());
 
-    // Allocate memory for the QPU code
-    cs.m_code.alloc((uint32_t) code.size());
-    cs.m_code.copyFrom(code);  // Copy kernel to code memory
+    return;  // Already allocated, don't bother further
   }
+
+  assert(!instructions.empty());
+  std::vector<uint64_t> code = to_opcodes();
+  assert(!code.empty());
+
+  // Allocate memory for the QPU code
+  cs.m_code.alloc((uint32_t) code.size());
+  cs.m_code.copyFrom(code);  // Copy kernel to code memory
 }
 
 } // namespace v3d

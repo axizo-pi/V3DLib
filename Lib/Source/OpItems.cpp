@@ -172,7 +172,7 @@ Enum opcode(Op const &op) {
       std::string msg;
       msg << "opcode(): " << item->dump() << " is only for v3d";
       assertq(false, msg);
-    } else if (Platform::compile::for_vc4(false)) {
+    } else if (Platform::compile::for_vc4()) {
       warn << "v3d_specific compiling for vc4";
     }
   }

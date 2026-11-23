@@ -59,20 +59,30 @@ EXAMPLES=$(echo "$EXE2" | sed "s/^.*\//  /g")
 GEN_EXE1=$(cd Examples; grep -l "GEN_KERNEL" * --directories=skip)
 GEN_BASE=$(echo "$GEN_EXE1" | sed "s/\\.cpp$//g")
 GEN_EXE2=$(echo "$GEN_EXE1" | sed "s/\\.cpp$/_gen_kernel/g")
+GEN_EXE3=$(echo "$GEN_EXE1" | sed "s/\\.cpp$/_use_hex_kernel/g")
 GEN_APPS=$(echo "$GEN_EXE1" | sed "s/\\.cpp$/_gen_kernel \\\\/g")
 echo "GEN_EXE1: $GEN_EXE1"
 echo "GEN_APPS: $GEN_APPS"
 
 app_rules="
-#
-# Gen App rules
-#
 \$(OBJDIR)/Examples/${GEN_BASE}_gen_kernel.o: Examples/${GEN_BASE}.cpp | init
 	@echo Compiling $<
 	@mkdir -p \$(@D)
 	@\$(CPP) -DGEN_KERNEL -o \$@ $< 
 
+\$(OBJDIR)/Examples/${GEN_BASE}_use_hex_kernel.o: Examples/${GEN_BASE}.cpp \$(OBJDIR)/generated/ID_hex_kernels.cpp | init
+	@echo Compiling $<
+	@mkdir -p \$(@D)
+	@\$(CPP) -DUSE_HEX_KERNEL -o \$@ $< 
+
 ${GEN_EXE2}: \$(OBJDIR)/bin/${GEN_EXE2}
+
+${GEN_EXE3}: \$(OBJDIR)/bin/${GEN_EXE3}
+
+\$(OBJDIR)/generated/${GEN_BASE}_hex_kernels.cpp: \$(OBJDIR)/bin/${GEN_EXE2}
+	@echo Generating $<
+	@mkdir -p \$(@D)
+	\$(OBJDIR)/bin/${GEN_EXE2}
 "
 
 #
@@ -140,6 +150,16 @@ $OBJ_TEST
 SUB_PROJECTS := \\
 ${projects}  ${GEN_APPS}
 $makelist
+
+#
+# Gen App rules
+#
+
+\$(OBJDIR)/%.o: \$(OBJDIR)/generated/%.cpp | init
+	@echo Compiling $<
+	@mkdir -p \$(@D)
+	@\$(CPP) -o $@ $< 
+
 ${app_rules}
 
 END

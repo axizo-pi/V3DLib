@@ -3,8 +3,10 @@
 #include "v3d/Compile.h"
 #include "Emulator/Interpreter.h"  // interpreter()
 #include "Emulator/Emulator.h"     // emulate()
+#include <ctime>
 
 using VCType = V3DLib::Platform::VCType;
+
 
 /**
  * /file
@@ -40,8 +42,12 @@ V3DLib::Compile &BaseKernel::compile() {
 }
 
 
-void BaseKernel::compile_init() {
-  assert(m_compile.get() == nullptr);
+/**
+ * @brief Determine which kernel (VideoCore type) to run
+ *
+ * **NOTE**: This changes the internal state.
+ */
+VCType BaseKernel::determine_kernel() {
 
   VCType select_kernel = VCType::UNKNOWN;
 
@@ -74,15 +80,25 @@ void BaseKernel::compile_init() {
   }
 #endif
 
-  assert(select_kernel != VCType::UNKNOWN);  
+  assert(select_kernel != VCType::UNKNOWN);
+  return select_kernel;
+}
+
+
+VCType BaseKernel::init_compile_struct() {
+  assert(m_compile.get() == nullptr);
+
+  VCType select_kernel = determine_kernel();
 
   if (select_kernel == VCType::vc4) {
-    Platform::compile::start(select_kernel);
+    Platform::compile::start(select_kernel);  // TODO Check compile::done() called at end
     m_compile.reset(new vc4::Compile);
   } else {
     Platform::compile::start(select_kernel);
     m_compile.reset(new v3d::Compile);
   }
+
+  return select_kernel;
 }
 
 
@@ -340,6 +356,25 @@ void BaseKernel::generate_kernels(std::function<void()> f) {
   std::string ret;
   Platform::use_main_memory(true);
 
+  //
+  // Output header with generation date
+  //
+  std::time_t t = std::time(0);   // Get the time now
+  std::tm* now = std::localtime(&t);
+  char buffer[256];
+  strftime(buffer, sizeof(buffer), "%Y%m%d %H:%M:%S", now);
+
+  ret << "//\n"
+      << "// Hex representation of kernels for all VideoCores.\n"
+      << "//\n"
+      << "// Generation date: " << buffer << "\n"
+      << "//\n"
+      << "#include \"BaseKernel.h\"  // struct generated_kernels\n"
+      << "\n"
+      << "V3DLib::generated_kernels kernels = {\n"
+      << "{\n"
+      << "  // kernel hex output for vc4\n";
+
   std::unique_ptr<Compile> compile;
 
   Platform::compile::start(VCType::vc4);
@@ -348,34 +383,54 @@ void BaseKernel::generate_kernels(std::function<void()> f) {
   ret << compile->dump_kernel_hex();
   m_typelist.clear();                 // typelist if filled 3 times here, need to clear the interim values
 
+  ret << "}, {\n"
+      << "  // kernel hex output for vc6\n";
+
   Platform::compile::start(VCType::vc6);
   compile.reset(new v3d::Compile);
   compile->compile(f);
   ret << compile->dump_kernel_hex();
   m_typelist.clear();
 
+  ret << "}, {\n"
+      << "  // kernel hex output for vc7\n";
+
   Platform::compile::start(VCType::vc7);
   compile.reset(new v3d::Compile);
   compile->compile(f);
   ret << compile->dump_kernel_hex();
 
+  Platform::compile::done();
+
+  ret << "}, {\n";
+
+  //
+  // Generate the typelist
+  //
+  auto i_hash = typeid(Int::Ptr).hash_code();
+
+  auto type_to_str = [&] (std::size_t type) -> std::string {
+    if (i_hash == type) return "Int::Ptr";
+    return "Unknown";  
+  };
+
   Log::warn << dump_typelist();
 
-	// Generate the typelist
-	ret << "\n\n//\n"
-		  << "// Generated typelist\n"
-			<< "//\n"
-      << "std::vector<std::size_t> typelist = {\n";
+  ret << "  // Generated typelist\n";
 
-	for (int i = 0; i < (int) m_typelist.size(); ++i) {
-		if (i > 0) {
-			ret << ",\n";
-		}
+  for (int i = 0; i < (int) m_typelist.size(); ++i) {
+    ret << "  " << m_typelist[i];
 
-		ret << "  " << m_typelist[i];
-	}
+    if (i < (int) m_typelist.size() - 1) {
+      ret << ",";
+    } else {
+      ret << " ";
+    }
 
-	ret << "\n};\n";
+    ret << " // " << type_to_str(m_typelist[i]) << "\n";
+  }
+
+  ret << "}\n};\n";
 
   m_typelist.clear();
   Platform::use_main_memory(false);
@@ -403,6 +458,40 @@ std::string BaseKernel::dump_typelist() const {
   }
 
   return buf;
+}
+
+
+void BaseKernel::load_kernel(struct generated_kernels const &kernels) {
+  VCType select_kernel =  init_compile_struct();
+  auto &code = compile().code_struct().code();
+
+  warn << "Called BaseKernel::load_kernel(); "
+       << "run_type: " << m_settings.run_type  << ", "
+       << "select_kernel: " << select_kernel;
+  warn << "code size pre: " << code.size() << ", "
+       << "typelist pre: "  << m_typelist.size();
+
+
+  switch (select_kernel) {
+    case VCType::vc4:
+      code.copyFrom(kernels.vc4, true);
+      break;
+    case VCType::vc6:
+      code.copyFrom(kernels.vc6, true);
+      break;
+    case VCType::vc7:
+      code.copyFrom(kernels.vc7, true);
+      break;
+    case VCType::UNKNOWN:
+    default:
+      cerr << "load_kernel() Unknown VCType" << thrw;
+  }
+
+  assert(!kernels.typelist.empty());
+  m_typelist = kernels.typelist;
+
+  warn << "code size post: " << code.size() << ", "
+       << "typelist post: "  << m_typelist.size();
 }
 
 }  // namespace V3DLib

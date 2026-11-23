@@ -576,9 +576,13 @@ void interpreter(
   IntList &uniforms,
   BufferObject &heap
 ) {
-  timers.start("Interpreter");
 
   Stmts const &stmts = cs.sourceCode();
+  if (stmts.empty()) {
+    cerr << "No source code instructions available; can not run interpreter" << thrw;
+  }
+
+  timers.start("Interpreter");
   InterpreterState state(numCores, uniforms, Platform::emulate::type() != Platform::VCType::vc4);
 
   // Initialise state

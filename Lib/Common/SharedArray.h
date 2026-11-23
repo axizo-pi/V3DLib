@@ -4,7 +4,6 @@
 #include "Support/basics.h"
 #include "Support/Platform.h"  // has_vc4
 #include <cstring>             // memcpy
-//#include <vector>
 
 namespace V3DLib {
 
@@ -118,10 +117,16 @@ public:
     }
   }
 
-  void copyFrom(std::vector<T> const &src) {
+  void copyFrom(std::vector<T> const &src, bool do_resize = false) {
     assert(!src.empty());
-    assert(src.size() <= size());
 
+    if (do_resize) {
+      alloc((int) src.size());
+    } else {
+      assert(src.size() <= size());
+    }
+
+    // TODO Wouldn't memcpy() work here? Check
     for (uint32_t offset = 0; offset < src.size(); ++offset) {
       (*this)[offset] = src[offset];
     }
@@ -129,7 +134,6 @@ public:
 
 
   /**
-   *
    * Only copy src items, don't assume there is more.  
    * I realize this sounds glaringly obvious, but I _did_ manage to use dst size (`*this`)
    * to copy.
@@ -187,29 +191,29 @@ public:
   std::string dump() const {
     using ::operator<<;
 
-		bool multi_line = size() > 16;
+    bool multi_line = size() > 16;
     std::string ret;
 
-		if (multi_line) {
+    if (multi_line) {
      ret << "(\n  ";
-		} else {
+    } else {
      ret << "( ";
-		}
+    }
 
     for (int c = 0; c < (int) size(); ++c) {
       if ( c != 0 && c % 16 == 0) {
-				ret << "\n";
-		    if (multi_line) {
+        ret << "\n";
+        if (multi_line) {
           ret << "  ";
-				}
-			}
+        }
+      }
 
       ret << (*this)[c] << ", ";
     }
 
-		if (multi_line) {
-    	ret << "\n";
-		}
+    if (multi_line) {
+      ret << "\n";
+    }
     ret << ")";
 
     return ret;

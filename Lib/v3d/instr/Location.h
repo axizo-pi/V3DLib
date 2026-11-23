@@ -7,11 +7,19 @@ namespace V3DLib {
 namespace v3d {
 namespace instr {
 
+/**
+ * Notes
+ * -----
+ *
+ * 1. Abbreviation `rf` stands for 'register file'.
+ *    This indicates a register in a register file, as opposed to
+ *    an accumulator register, which has abbreviation `r`.
+ */
 class Location {
 public:
   v3d_qpu_output_pack output_pack() const { return m_output_pack; }
   v3d_qpu_input_unpack input_unpack() const { return m_input_unpack; }
-  bool is_rf() const  { return m_is_rf; }
+  bool is_rf() const  { return m_is_rf;  }      // See Note 1
   bool is_reg() const { return !m_is_rf; }
   bool is_special() const { return !is_acc(); }
 
