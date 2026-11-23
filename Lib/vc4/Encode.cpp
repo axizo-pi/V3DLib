@@ -1,9 +1,9 @@
 #include "Encode.h"
-#include <stdio.h>
-#include <stdlib.h>
 #include "Support/basics.h"  // fatal()
 #include "Target/Satisfy.h"
 #include "Instr.h"
+#include <stdio.h>
+#include <stdlib.h>
 
 namespace V3DLib {
 

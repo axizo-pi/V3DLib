@@ -165,7 +165,7 @@ static const char *dump_branch_dest(enum v3d_qpu_branch_dest val) {
 
 static const char *dump_mux(struct v3d_qpu_input input) {
   enum v3d_qpu_mux val = input.mux;
-  if (devinfo_ver() >= 71) {
+  if (devinfo()->ver >= 71) {
     return "<<No mux on vc7>>";
   }
 

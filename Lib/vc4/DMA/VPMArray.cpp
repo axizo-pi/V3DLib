@@ -1,6 +1,7 @@
 #include "VPMArray.h"
 #include "Operations.h"
 #include "Source/Functions.h"  // nop(int)
+#include "Support/Platform.h"
 
 namespace V3DLib {
 

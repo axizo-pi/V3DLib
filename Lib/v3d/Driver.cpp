@@ -38,6 +38,7 @@
 #include "Driver.h"
 #include "v3d.h"
 #include "LibSettings.h"
+#include "Support/Platform.h"
 
 namespace V3DLib {
 namespace v3d {
@@ -134,7 +135,7 @@ bool Driver::execute(Code const &code, Data *uniforms, uint32_t thread, bool wai
   WorkGroup workgroup;
   uint32_t wgs_per_sg = 16;
 
-  if (Platform::hw::type() == Platform::vc6) {
+  if (Platform::hw::type() == VCType::vc6) {
     thread--;   // This is what vc6 expects
   }
 

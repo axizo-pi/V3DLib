@@ -2,8 +2,8 @@
 #include "../CodeStruct.h"
 #include "EmuState.h"
 #include "Source/Stmt.h"
-#include "Support/basics.h"
 #include "global/Timer.h"
+#include "Support/Platform.h"
 #include <algorithm>            // reverse()
 
 namespace V3DLib {
@@ -583,7 +583,7 @@ void interpreter(
   }
 
   timers.start("Interpreter");
-  InterpreterState state(numCores, uniforms, Platform::emulate::type() != Platform::VCType::vc4);
+  InterpreterState state(numCores, uniforms, Platform::emulate::type() != VCType::vc4);
 
   // Initialise state
   for (int i = 0; i < numCores; i++) {

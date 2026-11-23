@@ -1,12 +1,10 @@
 #include "BaseKernel.h"
 #include "vc4/Compile.h"
 #include "v3d/Compile.h"
+#include "Support/Platform.h"
 #include "Emulator/Interpreter.h"  // interpreter()
 #include "Emulator/Emulator.h"     // emulate()
 #include <ctime>
-
-using VCType = V3DLib::Platform::VCType;
-
 
 /**
  * /file
@@ -283,11 +281,11 @@ void BaseKernel::qpu(bool wait_complete) {
     err << "BaseKernel::qpu(): Compile-only selected, not running.";
     do_execute = false;
   } else
-  if (compile().is_v3d() && Platform::hw::type() == Platform::vc4) {
+  if (compile().is_v3d() && Platform::hw::type() == VCType::vc4) {
     err << "BaseKernel::qpu(): Trying to run v3d code on vc4 platform, not running.";
     do_execute = false;
   } else
-  if (!compile().is_v3d() && Platform::hw::type() != Platform::vc4) {
+  if (!compile().is_v3d() && Platform::hw::type() != VCType::vc4) {
     err << "BaseKernel::qpu(): Trying to run vc4 code on v3d platform, not running.";
     do_execute = false;
   }

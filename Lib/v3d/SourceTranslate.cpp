@@ -7,6 +7,7 @@
 #include "vc4/DMA/DMA.h"
 #include "Target/instr/Mnemonics.h"
 #include "Common/CompileData.h"
+#include "Support/Platform.h"
 #include <iostream>
 
 namespace V3DLib {

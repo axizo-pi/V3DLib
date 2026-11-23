@@ -1,8 +1,8 @@
 #include "Complex.h"
-#include <cmath>
 #include "Support/basics.h"
 #include "Functions.h"  // ::set_at()
 #include "gather.h"
+#include <cmath>
 
 namespace V3DLib {
 

@@ -69,8 +69,6 @@ enum InitAction {
  */
 class BaseKernel {
 public:
-  using VCType = V3DLib::Platform::VCType;
-
   BaseKernel(BaseSettings const &settings);
   BaseKernel(BaseKernel &&k) = default;
 

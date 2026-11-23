@@ -13,6 +13,9 @@
 #include <bits/stdc++.h>  // swap()
 
 namespace V3DLib {
+
+using namespace Platform;
+
 namespace v3d {
 
 using ::operator<<;  // C++ weirdness; come on c++, get a grip.
@@ -133,7 +136,10 @@ bool set_mul_small_imm(
 
 
 uint64_t Instr::NOP() {
-  if (devinfo_ver() == 42) {
+  assert(!Platform::compile::for_vc4());
+
+  if (Platform::compile::for_vc6()) {
+  //if (devinfo_ver() == 42) {
     return 0x3c003186bb800000;  // This is actually 'nop nop'
   } else {
     // 7x, vc7
@@ -509,7 +515,7 @@ void Instr::init(uint64_t in_code) {
   sig.small_imm_c = false;
   sig.small_imm_d = false;
 
-  // Debian 10 buster can't deal with init substructs
+  // Debian 10 buster can't deal with init substructs, so this is written out explicitly.
   alu.add.op          = V3D_QPU_A_NOP;
   alu.add.a.raddr     = 0;
   alu.add.a.unpack    = V3D_QPU_UNPACK_NONE;
@@ -530,6 +536,7 @@ void Instr::init(uint64_t in_code) {
 
   if (!instr_unpack(in_code, this)) {
     warn << "Instr:init: call to instr_unpack failed.";
+	  breakpoint;
     return;
   }
 

@@ -2,6 +2,7 @@
 #include "BaseKernel.h"
 #include "CodeStruct.h"
 #include "vc4/Invoke.h"
+#include "Support/Platform.h"
 
 namespace V3DLib {
 

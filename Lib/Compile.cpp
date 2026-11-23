@@ -1,5 +1,6 @@
 #include "Compile.h"
-#include "Source/Lang.h"  // comment()
+#include "Source/Lang.h"         // comment()
+#include "Support/Platform.h"
 #ifdef OUTPUT_COMPILEDATA
 #include "Common/CompileData.h"
 #endif // OUTPUT_COMPILEDATA

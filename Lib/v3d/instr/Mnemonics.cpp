@@ -363,7 +363,7 @@ Mnemonic ftoi(Location const &dst, Location const &a) {
 
 
 Mnemonic mov(Location const &dst, Source const &a) {
-  if (Platform::hw::vc7()) {
+  if (Platform::compile::for_vc7()) {
     Mnemonic instr;
     instr.alu_add_dst(dst);
     instr.alu_add_a(a);

@@ -1,16 +1,11 @@
 #ifndef _V3DLIB_SUPPORT_PLATFORM_H
 #define _V3DLIB_SUPPORT_PLATFORM_H
+#include "VCType.h"
 #include <string>
+// poep
 
 namespace V3DLib {
 namespace Platform {
-
-enum VCType {
-  UNKNOWN,
-  vc4,
-  vc6,
-  vc7
-};
 
 enum Tag {
   not_pi,
@@ -47,6 +42,7 @@ bool vc7();
 namespace compile {
 
 void start(VCType in_type);
+VCType type();
 bool for_vc4();
 bool for_vc7();
 bool for_vc6();
@@ -65,11 +61,25 @@ void done();
 
 } // namespace emulate
 
+
 namespace running {
 
 bool vc4();
 
 } // namespace running
+
+
+namespace unpack {
+
+void set_type(VCType vc_type);
+void done();
+
+VCType type();
+bool vc4();
+bool vc6();
+bool vc7();
+
+} // namespace unpack
 
 
 void use_main_memory(bool val);

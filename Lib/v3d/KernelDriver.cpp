@@ -1,4 +1,5 @@
 #include "KernelDriver.h"
+#include "Support/Platform.h"
 
 namespace V3DLib {
 namespace v3d {
@@ -90,7 +91,7 @@ void KernelDriver::invoke(
       cerr << "Zero or negative QPU's selected" << thrw;
   }
 
-  if (Platform::hw::type() == Platform::vc7) {
+  if (Platform::hw::type() == VCType::vc7) {
     if (numQPUs > 16) {
       cerr << "Num QPU's exceeded; Max QPU's is 16 for vc7" << thrw;
     }

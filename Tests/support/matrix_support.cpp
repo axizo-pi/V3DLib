@@ -1,5 +1,6 @@
 #include "matrix_support.h"
 #include "../doctest.h"
+#include "Support/Platform.h"
 #include "Support/Helpers.h"  // random_float()
 
 using namespace V3DLib;

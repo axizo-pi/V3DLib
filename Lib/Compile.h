@@ -3,7 +3,7 @@
 #include "CodeStruct.h"
 #include "Common/CompileData.h"
 #include "Common/Seq.h"           // IntList
-#include "Support/Platform.h"     // VCType
+#include "Support/VCType.h"
 #include <functional>
 
 namespace V3DLib {
@@ -18,8 +18,6 @@ class CompileData;
  */
 class Compile {
 public:
-  using VCType = V3DLib::Platform::VCType;
-
   Compile();
   virtual ~Compile(); // `virtual` required to call dtor's derived types
 

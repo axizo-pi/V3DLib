@@ -1,6 +1,5 @@
 #include "Var.h"
 #include "Support/basics.h"
-#include "Support/Platform.h"
 #include "GlobalConstants.h"
 
 /**
