@@ -180,7 +180,7 @@ bool SmallImm::float_to_opcode_value(float value, int &rep_value) {
   bool is_v3d;
 
   if (Platform::emulate::running()) {
-    is_v3d = Platform::emulate::type() != Platform::VCType::vc4;
+    is_v3d = Platform::emulate::type() != VCType::vc4;
     assert(!is_v3d);  // Block v3d for emulator for the time being.
     //warn << "float_to_opcode_value running emulator v3d:"  << is_v3d;
   } else if (Platform::compile::running()) {

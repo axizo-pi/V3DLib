@@ -428,6 +428,11 @@ void done() {
 }
 
 
+VCType type() {
+  return instance().m_compiling_for;
+}
+
+
 /**
  * @brief Determine if the compilation is done for `vc4`.
  *
@@ -536,6 +541,27 @@ bool vc4() {
 }
 
 } // namespace running
+
+
+namespace unpack {
+
+VCType s_unpack_for = VCType::UNKNOWN;
+
+void set_type(VCType vc_type) { 
+  assert(vc_type != VCType::UNKNOWN);
+  s_unpack_for = vc_type;
+}
+
+void done() {
+  s_unpack_for = VCType::UNKNOWN;
+}
+
+VCType type() { return s_unpack_for; }
+bool vc4() { assert(s_unpack_for != VCType::UNKNOWN); return (s_unpack_for == VCType::vc4); }
+bool vc6() { assert(s_unpack_for != VCType::UNKNOWN); return (s_unpack_for == VCType::vc6); }
+bool vc7() { assert(s_unpack_for != VCType::UNKNOWN); return (s_unpack_for == VCType::vc7); }
+
+} // namespace unpack
 
 
 main_mem::main_mem(bool val) {

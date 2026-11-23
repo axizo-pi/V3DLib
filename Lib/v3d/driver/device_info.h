@@ -1,6 +1,6 @@
 #ifndef _V3DLIB_DEVICE_INFO_H
 #define _V3DLIB_DEVICE_INFO_H
-
+#include "Support/VCType.h"
 #include <stdint.h>
 
 #ifdef __cplusplus
@@ -12,7 +12,6 @@ std::string v3d_device_info();
 extern "C" {
 #endif
 
-uint8_t devinfo_ver();
 struct v3d_device_info const *devinfo();
 
 #ifdef __cplusplus

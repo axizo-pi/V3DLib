@@ -13,6 +13,9 @@
 #include <bits/stdc++.h>  // swap()
 
 namespace V3DLib {
+
+using namespace Platform;
+
 namespace v3d {
 
 using ::operator<<;  // C++ weirdness; come on c++, get a grip.
@@ -133,7 +136,10 @@ bool set_mul_small_imm(
 
 
 uint64_t Instr::NOP() {
-  if (devinfo_ver() == 42) {
+  assert(!Platform::compile::for_vc4());
+
+  if (Platform::compile::for_vc6()) {
+  //if (devinfo_ver() == 42) {
     return 0x3c003186bb800000;  // This is actually 'nop nop'
   } else {
     // 7x, vc7

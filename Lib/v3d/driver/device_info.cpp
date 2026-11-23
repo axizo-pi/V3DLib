@@ -1,5 +1,6 @@
 #include "device_info.h"
 #include "broadcom/common/v3d_device_info.h"
+#include "Support/Platform.h"
 #include "Support/basics.h"
 #include <sstream>
 #include <sys/ioctl.h>
@@ -70,21 +71,37 @@ bool _v3d_device_info() {
 
 }  // anon namespace
 
-
-uint8_t devinfo_ver() {
-  return devinfo()->ver;
-}
-
-
 #ifdef __cplusplus
 // Used in v3d/instr/v3d_api.c, hence the 'extern' brackets
 extern "C" {
 #endif
 
 struct v3d_device_info const *devinfo() {
-  if(!_v3d_device_info()) {
-    cerr << "devinfo: Call to _v3d_device_info() failed";
-    return nullptr;
+  if (!V3DLib::Platform::hw::vc4()) {
+    if (!_v3d_device_info()) {
+      cerr << "devinfo: Call to _v3d_device_info() failed";
+      return nullptr;
+    }
+  } else {
+    //
+    // For vc4, lie about devinfo.
+    // devinfo() is still called for mesa unpack routines.
+    //
+    VCType vc_type = VCType::UNKNOWN;
+
+    if (V3DLib::Platform::compile::running()) {
+      vc_type = V3DLib::Platform::compile::type();
+    } else {
+      vc_type = V3DLib::Platform::unpack::type();
+    }
+
+    assert(vc_type == VCType::vc6 || vc_type == VCType::vc7);
+
+    if (vc_type == VCType::vc6) {
+      s_devinfo.ver = 42;
+    } else {
+      s_devinfo.ver = 71;
+    }
   }
 
   return &s_devinfo;

@@ -173,7 +173,7 @@ private:
   bool m_alu_mul_b_set = false;
 
 protected:
-  static uint64_t NOP();
+  uint64_t NOP();
 
   void init(uint64_t in_code);
   void set_branch_condition(v3d_qpu_branch_cond cond);

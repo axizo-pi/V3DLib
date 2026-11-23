@@ -773,12 +773,15 @@ void Compile::init_uniforms()  {
 
 /**
  * @brief Generate the opcodes for the currrent v3d instruction sequence
- *
- * The translation/removal of labels happens here somewhere 
  */
 ByteCode Compile::to_opcodes() {
+  Platform::unpack::set_type(kernel_type());
   assert(instructions.size() > 0);
-  return instructions.bytecode();
+
+  auto ret = instructions.bytecode();
+
+  Platform::unpack::done();
+  return ret;
 }
 
 
