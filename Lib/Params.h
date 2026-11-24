@@ -38,7 +38,7 @@ inline uint32_t param_value(Int::Array const *p) {
 }
 
 inline std::size_t var_type(int p) {
-  return typeid(Int::Ptr).hash_code();
+  return typeid(Int).hash_code();
 }
 
 inline uint32_t param_value(int p) {
@@ -51,7 +51,7 @@ inline uint32_t param_value(float p) {
 }
 
 inline std::size_t var_type(float p) {
-  return typeid(Float::Ptr).hash_code();
+  return typeid(Float).hash_code();
 }
 
 inline bool ppassParam(IntList &uniforms, std::vector<std::size_t> &typelist, int index) {
@@ -75,10 +75,9 @@ template <typename T> bool append(
   int type_index = index;
 
   if (var_type(val) != typelist[type_index]) {
-    Log::cerr << "ERROR incorrect type for param at index " << index;
+    cerr << "ERROR incorrect type for param at index " << index;
+    cerr << "Got: " << var_type(val) << ", expected: " << typelist[type_index];
     ret = false;
-  } else {
-    //Log::debug << "Param " << index << ": checks out.";
   }
 
   uniforms.append(param_value(val));
@@ -132,12 +131,9 @@ template <typename ...t> bool ppassParam(
  */
 template <typename T> inline T mkArg(std::vector<std::size_t> &typelist) {
   auto t_hash = typeid(T).hash_code(); //both T and T::Ptr return the same value: N6V3DLib7Complex3PtrE
-  //Log::warn << "Doing mkArg";
-  //Log::warn << "mkArg t_hash: " << typeid(T).name();
+  //Log::warn << "mkArg hash code: " << t_hash << ", name: " << typeid(T).name();
 
   auto c_hash = typeid(typename Complex::Ptr).hash_code();
-  auto i_hash = typeid(int).hash_code();
-  //Log::warn << "mkArg i_hash    : " << typeid(int).name();
 
   if (t_hash == c_hash) {
     //Log::warn << "mkArg: Complex::Ptr detected";
@@ -146,17 +142,9 @@ template <typename T> inline T mkArg(std::vector<std::size_t> &typelist) {
     auto p_hash = typeid(typename Float::Ptr).hash_code();
     typelist.push_back(p_hash);
     typelist.push_back(p_hash);
-  } else if (t_hash == i_hash) {
-    Log::warn << "mkArg doing i_hash";  // Hypothesis: this is probably useless
-    typelist.push_back(i_hash);
   } else {
-    auto hash = typeid(typename T::Ptr).hash_code();
-    //Log::warn << "mkArg adding hash: " << typeid(typename T::Ptr).name();
-    //Log::warn << "mkArg hash T     : " << typeid(T).name();
-    //auto hash = typeid(T).hash_code();
-    typelist.push_back(hash);
+    typelist.push_back(t_hash);
   }
-
 
   auto ret = T::mkArg();  
   return ret;

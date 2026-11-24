@@ -6,6 +6,10 @@
 #include "Support/bmp.h"
 #include "global/Timer.h"
 
+#ifdef USE_HEX_KERNEL
+#include "../obj/debug/generated/Mandelbrot_hex_kernels.cpp"
+#endif
+
 using namespace V3DLib;
 using namespace Log;
 
@@ -13,8 +17,6 @@ using namespace Log;
 // ============================================================================
 // Local functions
 // ============================================================================
-
-using KernelType = decltype(mandelbrot_multi);
 
 template<class Array>
 void output_image(Array &result, std::string filename = "") {
@@ -38,72 +40,54 @@ void output_image(Array &result, std::string filename = "") {
 }
 
 
-void run_qpu_kernel(KernelType &kernel) {
-  const bool do_animate = false;
+void run_qpu_kernel() {
   auto const &s = settings();
 
   assertq(0 == s.numStepsWidth % 16, "Width dimension must be a multiple of 16");
   assertq((settings().run_type != 0) || !Platform::hw::vc4() || (4 <= s.num_qpus),
           "Num QPU's must be at least 4 for vc4");
 
+#ifdef USE_HEX_KERNEL
+  Timer timer("Kernel load_kernel");
+  auto k = load_kernel(kernels, s);
+  warn << "Kernel load_kernel: " << timer.dump();
+#else
   Timer timer("Kernel compile");
-  auto k = compile(kernel, s);
+  auto k = compile(mandelbrot_kernel, s);
   warn << "Kernel compile: " << timer.dump();
+#endif
+
+  if (s.compile_only) return;
 
   k.setNumQPUs(s.num_qpus);
 
   Int::Array result(s.num_items());  // Allocate and initialise
 
-  if (do_animate) {
-    int index = 0;
-    animate::init(s);
-
-    while (!animate::done()) {
-      MandRange r = animate::next();
-      if (index % 100 == 0) {
-        warn << "index: " << index;
-      }
-
-      std::string filename;
-      filename << index << "_mandelbrot.bmp";
-
-      k.load(
-        r.topLeftReal, r.topLeftIm,
-        r.offsetX(), r.offsetY(),
-        r.numStepsWidth, r.numStepsHeight,
-        s.num_iterations,
-        &result,
-        s.count
-      ).run();
+  k.load(
+    s.topLeftReal, s.topLeftIm,
+    s.offsetX(), s.offsetY(),
+    s.numStepsWidth, s.numStepsHeight,
+    s.num_iterations,
+    &result,
+    s.count
+  );
   
-      output_image(result, filename);
-      index++;
-    }
-  } else {
-    k.load(
-      s.topLeftReal, s.topLeftIm,
-      s.offsetX(), s.offsetY(),
-      s.numStepsWidth, s.numStepsHeight,
-      s.num_iterations,
-      &result,
-      s.count
-    );
-  
-    Timer timer("Kernel run");
-    k.run();
-    warn << "Kernel run: " << timer.dump();
-  }
+  Timer timer2("Kernel run");
+  k.run();
+  warn << "Kernel run: " << timer2.dump();
 
   output_image(result);
 }
 
 
 /**
- * Run a kernel as specified by the passed kernel index
+ * @brief Run a kernel as specified by the selected kernel index
  */
-void run_kernel(int kernel_index) {
+void run_kernel() {
+  int kernel_index = settings().kernel;
+
   switch (kernel_index) {
-    case 0: run_qpu_kernel(mandelbrot_multi);  break;  
+    case 0: run_qpu_kernel();  break;  
     case 1: {
         int *result = new int [settings().num_items()];  // Allocate and initialise
 
@@ -127,30 +111,8 @@ void run_kernel(int kernel_index) {
 // ============================================================================
 
 int main(int argc, const char *argv[]) {
-  //printf("Check pre\n");
-  //RegisterMap::checkThreadErrors();   // TODO: See if it's useful to check this every time after a kernel has run
-
   settings_init(argc, argv);
-
-#ifdef ARM32
-  if (!Platform::run_vc4() && settings().kernel <= 1) {
-    printf("\nWARNING: Mandelbrot will run *sometimes* on a Pi4 with 32-bit Raspbian when GPU kernels are used "
-           "(-k=multi or -k=single).\n"
-           "Running it has the potential to lock up your Pi. Please use with care.\n\n");
-  }
-#endif  // ARM32
-
-
-  if (settings().kernel == settings().ALL) {
-    for (int i = 0; i < settings().ALL; ++i ) {
-      run_kernel(i);
-    }
-  } else {
-    run_kernel(settings().kernel);
-  }
-
-  //printf("Check post\n");
-  //RegisterMap::checkThreadErrors();
+  run_kernel();
 
   printf("\n");
   return 0;

@@ -54,7 +54,7 @@ CmdParameters base_params = {
     "-f",
     ParamType::NONE,     // Prefix needed to disambiguate
     "Write representations of the generated code to file.\n"
-		"Output goes to text file '<Program name>_code.txt' in current directory"
+    "Output goes to text file '<Program name>_code.txt' in current directory"
   }, { 
     "Compile Only",
     "-c",
@@ -95,7 +95,7 @@ CmdParameters base_params = {
     ParamType::STRING,
     "Output compiled kernels in hex64 format to given file.\n"
     "The output file is in c++ format, so that it can be included in any c++ program.\n"
-		"In addition, the parameters type are outputted, so that the kernel invocation can be checked"
+    "In addition, the parameters type are outputted, so that the kernel invocation can be checked"
   }}
 };
 
@@ -268,6 +268,11 @@ bool Settings::process() {
 
   int qpu_timeout  = p["QPU timeout"]->get_int_value();
   LibSettings::qpu_timeout(qpu_timeout);
+
+  precompiled_outfile = p["Precompile kernels to hex64 format"]->get_string_value();
+  if (!precompiled_outfile.empty()) {
+    compile_only = true;
+  }
 
   if (silent) {
     Log::log_to_cout(false);

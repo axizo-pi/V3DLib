@@ -350,7 +350,7 @@ std::string BaseKernel::info() const {
  * @brief Make the hex64 output for all kernel types.
  */
 void BaseKernel::generate_kernels(std::function<void()> f) {
-  Log::warn << "Called generate_kernels()";
+  //Log::warn << "Called generate_kernels()";
   std::string ret;
   Platform::use_main_memory(true);
 
@@ -363,6 +363,8 @@ void BaseKernel::generate_kernels(std::function<void()> f) {
   strftime(buffer, sizeof(buffer), "%Y%m%d %H:%M:%S", now);
 
   ret << "//\n"
+      << "// This file is generated! Editing it directly is a bad idea.\n"
+      << "//\n"
       << "// Hex representation of kernels for all VideoCores.\n"
       << "//\n"
       << "// Generation date: " << buffer << "\n"
@@ -405,30 +407,11 @@ void BaseKernel::generate_kernels(std::function<void()> f) {
   //
   // Generate the typelist
   //
-  auto i_hash = typeid(Int::Ptr).hash_code();
+  Log::info << "Types: " << dump_typelist();
 
-  auto type_to_str = [&] (std::size_t type) -> std::string {
-    if (i_hash == type) return "Int::Ptr";
-    return "Unknown";  
-  };
-
-  Log::warn << dump_typelist();
-
-  ret << "  // Generated typelist\n";
-
-  for (int i = 0; i < (int) m_typelist.size(); ++i) {
-    ret << "  " << m_typelist[i];
-
-    if (i < (int) m_typelist.size() - 1) {
-      ret << ",";
-    } else {
-      ret << " ";
-    }
-
-    ret << " // " << type_to_str(m_typelist[i]) << "\n";
-  }
-
-  ret << "}\n};\n";
+  ret << "  // Generated typelist\n"
+      << dump_typelist(true)
+      << "}\n};\n";
 
   m_typelist.clear();
   Platform::use_main_memory(false);
@@ -446,16 +429,50 @@ std::string BaseKernel::generated_kernels() const {
 
 
 /**
- * @brief DEBUG method: show the detected types for the param's (uniforms)
+ * @brief Generate the typelist
+ .
+ * With param `false`, this can be used for dump output.
  */
-std::string BaseKernel::dump_typelist() const {
-  std::string buf;
-  buf << "Types: ";
+std::string BaseKernel::dump_typelist(bool cpp_format) const {
+  auto f_hash    = typeid(V3DLib::Float).hash_code();
+  auto fptr_hash = typeid(Float::Ptr).hash_code();
+  auto i_hash    = typeid(Int).hash_code();
+  auto iptr_hash = typeid(Int::Ptr).hash_code();
+
+  auto type_to_str = [&] (std::size_t type) -> std::string {
+    if (f_hash == type) {
+      return "Float";
+    } else if (fptr_hash == type) {
+      return "Float::Ptr";
+    } else if (i_hash == type) {
+      return "Int";
+    } else if (iptr_hash == type) {
+      return "Int::Ptr";
+    }
+    return "Unknown";  
+  };
+
+  std::string ret;
+
   for (int i = 0; i < (int) m_typelist.size(); ++i) {
-    buf << m_typelist[i] << ", ";
+    if (cpp_format) {
+      ret << "  " << m_typelist[i];
+
+      if (i < (int) m_typelist.size() - 1) {
+        ret << ",";
+      } else {
+        ret << " ";
+      }
+
+      ret << " // " << type_to_str(m_typelist[i]) << "\n";
+    } else {
+      ret << m_typelist[i] 
+          << " (" << type_to_str(m_typelist[i]) << ")"
+          << ", ";
+    }
   }
 
-  return buf;
+  return ret;
 }
 
 
@@ -463,12 +480,13 @@ void BaseKernel::load_kernel(struct generated_kernels const &kernels) {
   VCType select_kernel =  init_compile_struct();
   auto &code = compile().code_struct().code();
 
+/*
   warn << "Called BaseKernel::load_kernel(); "
        << "run_type: " << m_settings.run_type  << ", "
        << "select_kernel: " << select_kernel;
   warn << "code size pre: " << code.size() << ", "
        << "typelist pre: "  << m_typelist.size();
-
+*/
 
   switch (select_kernel) {
     case VCType::vc4:
@@ -487,9 +505,10 @@ void BaseKernel::load_kernel(struct generated_kernels const &kernels) {
 
   assert(!kernels.typelist.empty());
   m_typelist = kernels.typelist;
-
+/*
   warn << "code size post: " << code.size() << ", "
        << "typelist post: "  << m_typelist.size();
+*/
 }
 
 }  // namespace V3DLib

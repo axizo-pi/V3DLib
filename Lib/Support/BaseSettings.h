@@ -16,11 +16,12 @@ enum RunType {
 struct BaseSettings {
   std::string name;
 
-  bool    compile_only = false;
-  RunType run_type     = QPU;
-  int     num_qpus     = 1;
-  bool    output_code  = false;
-  bool    show_perf_counters = false;
+  bool    compile_only            = false;
+  RunType run_type                = QPU;
+  int     num_qpus                = 1;
+  bool    output_code             = false;
+  bool    show_perf_counters      = false;
+  std::string precompiled_outfile;
 
   void startPerfCounters();
   void stopPerfCounters();

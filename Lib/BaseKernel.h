@@ -18,14 +18,6 @@ struct generated_kernels {
 };
 
 
-enum InitAction {
-  do_compile,
-  do_generate,
-  do_load
-};
-
-
-
 /**
  * @brief class BaseKernel
  *
@@ -138,7 +130,7 @@ protected:
 
   VCType init_compile_struct();
   void generate_kernels(std::function<void()> f);
-  std::string  dump_typelist() const;
+  std::string  dump_typelist(bool cpp_format = false) const;
   void load_kernel(struct generated_kernels const &kernels);
 
 private:

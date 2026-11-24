@@ -4,7 +4,7 @@
 
 namespace V3DLib {
 
-void mandelbrot_multi(
+void mandelbrot_kernel(
   Float topLeftReal, Float topLeftIm,
   Float offsetX, Float offsetY,
   Int numStepsWidth, Int numStepsHeight,

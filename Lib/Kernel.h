@@ -29,6 +29,31 @@ Doxygen Wisdom
 - Entities declared at namespace scope are only documented if their namespace is documented.
 - Entities declared at file scope are only documented if their file is documented.
 
+==========================
+C++ Notes
+---------
+
+Source: https://git-scm.com/book/en/v2/Git-Tools-Submodules
+
+This looks quite useful for e.g. kernel functions, which can have intricate
+templated types. E.g.:
+
+    void mandelbrot_kernel(
+      Float topLeftReal, Float topLeftIm,
+      Float offsetX, Float offsetY,
+      Int numStepsWidth, Int numStepsHeight,
+      Int numIterations,
+      Int::Ptr result,
+      Int num_repeats
+    );
+    
+    // Usually: `decltype(mandelbrot_kernel) KernelType;
+    // `decltype((x))` will create the lvaluei ie const version
+    using KernelType = decltype(mandelbrot_kernel);
+
+    void run_qpu_kernel(KernelType &kernel) {
+      ...
+    }
 */
 
 namespace V3DLib {
@@ -64,13 +89,17 @@ public:
   }
 
   /**
-   * Construct kernel out of C++ function
+   * @brief Construct kernel out of C++ function
    */
-  Kernel(KernelFunction f, BaseSettings const &settings, bool do_generate_kernels = false) : BaseKernel(settings) {
-    if (do_generate_kernels) {
+  Kernel(KernelFunction f, BaseSettings const &settings) : BaseKernel(settings) {
+    if (!settings.precompiled_outfile.empty()) {
+      Log::warn << "precompiling kernels to: '" << settings.precompiled_outfile << "'";
+
       BaseKernel::generate_kernels([this, f] () {
         f(mkArg<ts>(m_typelist)...);  // Construct the AST
       });
+
+      to_file(settings.precompiled_outfile, generated_kernels());
     } else {
       init_compile_struct();
 
@@ -99,21 +128,14 @@ BaseKernel compile(void (*f)(ts... params)) {
 
 
 template <typename... ts>
-BaseKernel gen_kernel(void (*f)(ts... params)) {
-  BaseSettings settings;
-  return (BaseKernel) Kernel<ts...>(f, settings, InitAction::do_generate);
-}
-
-
-template <typename... ts>
 BaseKernel load_kernel(struct generated_kernels const &kernels, BaseSettings const &settings) {
   return (BaseKernel) Kernel<ts...>(kernels, settings);
 }
 
 
 template <typename... ts>
-BaseKernel compile(void (*f)(ts... params), BaseSettings const &settings, InitAction do_action = InitAction::do_compile) {
-  return (BaseKernel) Kernel<ts...>(f, settings, do_action);
+BaseKernel compile(void (*f)(ts... params), BaseSettings const &settings) {
+  return (BaseKernel) Kernel<ts...>(f, settings);
 }
 
 }  // namespace V3DLib

@@ -69,13 +69,10 @@ void mandelbrotCore(Complex const &c, Int &numIterations, Int &count) {
 
 } // anon namespace
 
+
 namespace V3DLib {
 
-
-/**
- * @brief Multi-QPU version
- */
-void mandelbrot_multi(
+void mandelbrot_kernel(
   Float topLeftReal, Float topLeftIm,
   Float offsetX, Float offsetY,
   Int numStepsWidth, Int numStepsHeight,

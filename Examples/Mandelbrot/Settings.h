@@ -3,21 +3,21 @@
 #include "Support/Settings.h"
 
 struct MandRange {
-	MandRange() = default;
+  MandRange() = default;
 
-	MandRange(float tl_re, float tl_im, float br_re, float br_im) :
-  	topLeftReal(tl_re),
-  	topLeftIm(tl_im),
-  	bottomRightReal(br_re),
-  	bottomRightIm(br_im)
-	{}
+  MandRange(float tl_re, float tl_im, float br_re, float br_im) :
+    topLeftReal(tl_re),
+    topLeftIm(tl_im),
+    bottomRightReal(br_re),
+    bottomRightIm(br_im)
+  {}
 
   float offsetX() const;
   float offsetY() const;
 
-	MandRange& operator=(const MandRange &rhs);
+  MandRange& operator=(const MandRange &rhs);
 
-	std::string dump() const;
+  std::string dump() const;
 
   int numStepsWidth;
   int numStepsHeight;
@@ -30,8 +30,6 @@ struct MandRange {
 
 
 struct MandSettings : public V3DLib::Settings, public MandRange {
-  const int ALL = 3;
-
   int    kernel;
   bool   output_grey;
   bool   output_color;
@@ -40,7 +38,7 @@ struct MandSettings : public V3DLib::Settings, public MandRange {
   int count;
 
   int num_items() const;
-	static std::vector<const char *> const kernels();
+  static std::vector<const char *> const kernels();
 
   MandSettings();
 
