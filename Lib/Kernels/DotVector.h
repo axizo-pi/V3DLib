@@ -38,5 +38,4 @@ void pre_write(Float::Ptr &dst, Float &src, bool add_result, Int const &j);
 
 }  // namespace kernels
 
-
 #endif  // _V3DLIB_KERNELS_DOTVECTOR_H_

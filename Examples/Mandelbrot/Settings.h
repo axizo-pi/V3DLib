@@ -30,10 +30,11 @@ struct MandRange {
 
 
 struct MandSettings : public V3DLib::Settings, public MandRange {
-  int    kernel;
-  bool   output_grey;
-  bool   output_color;
-  int    num_iterations;
+  int  kernel;
+  bool output_grey;
+  bool output_color;
+  int  num_iterations;
+  bool runPrecompKernels;
 
   int count;
 

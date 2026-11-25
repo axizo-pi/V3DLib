@@ -6,9 +6,7 @@
 #include "Support/bmp.h"
 #include "global/Timer.h"
 
-#ifdef USE_HEX_KERNEL
-#include "../obj/debug/generated/Mandelbrot_hex_kernels.cpp"
-#endif
+#include "Mandelbrot_hex_kernels.h"
 
 using namespace V3DLib;
 using namespace Log;
@@ -40,6 +38,17 @@ void output_image(Array &result, std::string filename = "") {
 }
 
 
+BaseKernel prepare_kernel() {
+  auto const &s = settings();
+
+  //warn << "Run precompiled kernels: " << s.runPrecompKernels; 
+  if (s.runPrecompKernels) {
+    return load_kernel(kernels, s);
+  } else {
+    return compile(mandelbrot_kernel, s);
+  }
+}
+
 void run_qpu_kernel() {
   auto const &s = settings();
 
@@ -47,15 +56,11 @@ void run_qpu_kernel() {
   assertq((settings().run_type != 0) || !Platform::hw::vc4() || (4 <= s.num_qpus),
           "Num QPU's must be at least 4 for vc4");
 
-#ifdef USE_HEX_KERNEL
-  Timer timer("Kernel load_kernel");
-  auto k = load_kernel(kernels, s);
-  warn << "Kernel load_kernel: " << timer.dump();
-#else
-  Timer timer("Kernel compile");
-  auto k = compile(mandelbrot_kernel, s);
-  warn << "Kernel compile: " << timer.dump();
-#endif
+  std::string timer_label = (s.runPrecompKernels)?"Kernel load_kernel":"Kernel compile";
+
+  Timer timer(timer_label);
+  auto k = prepare_kernel();
+  warn << timer_label << ": " << timer.dump();
 
   if (s.compile_only) return;
 

@@ -456,7 +456,7 @@ std::string BaseKernel::dump_typelist(bool cpp_format) const {
 
   for (int i = 0; i < (int) m_typelist.size(); ++i) {
     if (cpp_format) {
-      ret << "  " << m_typelist[i];
+      ret << "  " << m_typelist[i] << "ul";
 
       if (i < (int) m_typelist.size() - 1) {
         ret << ",";
@@ -466,7 +466,7 @@ std::string BaseKernel::dump_typelist(bool cpp_format) const {
 
       ret << " // " << type_to_str(m_typelist[i]) << "\n";
     } else {
-      ret << m_typelist[i] 
+      ret << m_typelist[i] << "ul"
           << " (" << type_to_str(m_typelist[i]) << ")"
           << ", ";
     }

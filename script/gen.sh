@@ -55,11 +55,21 @@ EXE1=$(grep -l "main(" Examples/* Tools/* --directories=skip)
 EXE2=$(echo "$EXE1" | sed "s/\\.cpp$/ \\\\/g")
 EXAMPLES=$(echo "$EXE2" | sed "s/^.*\//  /g")
 
-# TEST: Detect projects with generated kernels
-#GEN_EXE1=$(cd Examples; grep -l "USE_HEX_KERNEL" * --directories=skip)
-GEN_EXE1=$(cd Examples; grep -rl "USE_HEX_KERNEL" *)
+#
+# Generate rules for projects with precompiled kernels.
+#
+# This works for single-file example apps, example subprojects are more intricate.
+#
+# Generation for subprojects disabled till I figure it out.
+#
+GEN_EXE1=$(cd Examples; grep -l "USE_HEX_KERNEL" * --directories=skip)
+
+# This version detects subprojects as well
+#GEN_EXE1=$(cd Examples; grep -rl "USE_HEX_KERNEL" *)
 echo "GEN_EXE1: $GEN_EXE1"
 
+# For subprojects, this uses directory for project name prefix.
+# Single-file project names not affected.
 GEN_TMP=$(echo "$GEN_EXE1" | awk -F'/' -v OFS='/' '{print $1}')
 GEN_TMP=$(echo "$GEN_TMP" | sed "s/\\.cpp$//g")
 echo "GEN_TMP: $GEN_TMP"
@@ -171,7 +181,7 @@ ${projects}${GEN_APPS}
 $makelist
 
 #
-# Gen App rules
+# Rules for projects with precompiled kernels
 #
 \$(OBJDIR)/%.o: \$(OBJDIR)/generated/%.cpp | init
 	@echo Compiling $<

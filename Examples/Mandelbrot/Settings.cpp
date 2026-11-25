@@ -15,8 +15,8 @@ CmdParameters params = {
   "The kernel is compute-bound, the calculation time dominates over the data transfer during execution.\n"
   "It is therefore an indicator of compute speed, "
   "and is used for performance comparisons of platforms and configurations.\n"
-	"\n"
-	"NOTE: due to technical limitations, the minimal number of selected QPU's for vc4 is 4.\n",
+  "\n"
+  "NOTE: due to technical limitations, the minimal number of selected QPU's for vc4 is 4.\n",
 
   {{
     "Kernel",
@@ -24,13 +24,13 @@ CmdParameters params = {
     _kernels,
     "Select the kernel to use"
   }, {
-		"Output greyscale image",
+    "Output greyscale image",
     "-grey",
     ParamType::NONE,
     "Output a greyscale BMP-file of the calculated results.\n"
     "A file named 'mandelbrot.bmp' will be created in the current working directory.\n",
   }, {
-		"Output color image",
+    "Output color image",
     "-color",
     ParamType::NONE,
     "Output a color BMP-file of the calculated results.\n"
@@ -77,6 +77,11 @@ CmdParameters params = {
     ParamType::FLOAT,
     "Set the imaginary component of the bottomright coordinate",
     -2.0f
+  }, {
+    "Run precompiled kernels",
+    { "-run-precomp-kernels", "-rpk" },
+    ParamType::NONE,
+    "Execute using the precompiled kernels"
   }}
 };
 
@@ -90,7 +95,7 @@ float MandRange::offsetY() const { return (topLeftIm       - bottomRightIm)/((fl
 
 
 MandRange &MandRange::operator=(const MandRange &rhs) {
- 	numStepsWidth   = rhs.numStepsWidth;
+   numStepsWidth   = rhs.numStepsWidth;
   numStepsHeight  = rhs.numStepsHeight;
 
   topLeftReal     = rhs.topLeftReal;
@@ -98,18 +103,18 @@ MandRange &MandRange::operator=(const MandRange &rhs) {
   bottomRightReal = rhs.bottomRightReal;
   bottomRightIm   = rhs.bottomRightIm;
 
-	return *this;
+  return *this;
 }
 
 
 std::string MandRange::dump() const {
-	std::string ret;
+  std::string ret;
 
-	ret << "  Steps(W,H)         : ("  << numStepsWidth  << ", "  << numStepsHeight << ")\n"
-		  << "  topleft(Re, Im)    : ("  << topLeftReal    << ", "  << topLeftIm      << ")\n"
-		  << "  bottomright(Re, Im): (" << bottomRightReal << ", " << bottomRightIm  << ")\n";
+  ret << "  Steps(W,H)         : ("  << numStepsWidth  << ", "  << numStepsHeight << ")\n"
+      << "  topleft(Re, Im)    : ("  << topLeftReal    << ", "  << topLeftIm      << ")\n"
+      << "  bottomright(Re, Im): (" << bottomRightReal << ", " << bottomRightIm  << ")\n";
 
-	return ret;
+  return ret;
 }
 
 
@@ -135,12 +140,14 @@ bool MandSettings::init_params() {
   bottomRightReal = p["BottomRight Real"      ]->get_float_value();
   bottomRightIm   = p["BottomRight Imaginary" ]->get_float_value();
 
-	if (topLeftReal >= bottomRightReal) {
-		throw Exception("TopLeft real must be smaller than BottomRight real");
-	}
-	if (topLeftIm <= bottomRightIm) {
-		throw Exception("TopLeft imaginary must be larger than BottomRight imaginary");
-	}
+  runPrecompKernels = p["Run precompiled kernels"]->get_bool_value();
+
+  if (topLeftReal >= bottomRightReal) {
+    throw Exception("TopLeft real must be smaller than BottomRight real");
+  }
+  if (topLeftIm <= bottomRightIm) {
+    throw Exception("TopLeft imaginary must be larger than BottomRight imaginary");
+  }
 
   return true;
 }
