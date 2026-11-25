@@ -115,6 +115,32 @@ void run_kernel() {
 // Main
 // ============================================================================
 
+/**
+ * @brief Entry point for Mandelbrot program
+ *
+ * ============================================================================
+ *
+ * Profiling
+ * ---------
+ *
+ * Comparing precompiled kernels versus compile.
+ * Command:
+ *
+ *     > sudo ./obj/debug/bin/Mandelbrot -grey -nmax [-rpk]
+ *
+ * _Timing indicative, best of 3. 'Run' best of all._
+ *
+ * |-------------|-------------|------------------|----------|
+ * | Platform    | Compile (s) | Precomp load (s) | Run (s)  |
+ * |-------------|-------------|------------------|----------|
+ * | pi5   (vc7) |    0.112996 |         0.000444 | 0.067823 |
+ * | pi4   (vc6) |    0.460781 |         0.003054 | 0.246560 |
+ * | pi3b+ (vc4) |    0.384606 |         0.001807 | 0.284984 |
+ * |-------------|-------------|------------------|----------|
+ *
+ * - Precomp kernel load is about 1000x faster than compile in all cases :-).
+ * - Note that pi3b+ competes well with pi4.
+ */
 int main(int argc, const char *argv[]) {
   settings_init(argc, argv);
   run_kernel();
